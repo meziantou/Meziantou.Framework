@@ -331,6 +331,9 @@ internal static partial class WptMediaContainer
         public int Height { get; set; }
         public uint Timescale { get; set; }
 
+        /// <summary>Whether the first sample entry is a protected sample entry (<c>encv</c>, <c>enca</c>).</summary>
+        public bool IsEncrypted { get; set; }
+
         /// <summary>The duration of the media (mdhd) in the timescale of the track.</summary>
         public double Duration { get; set; }
 
@@ -574,6 +577,8 @@ internal static partial class WptMediaContainer
             var boxes = Slice(entry, track.IsVideo ? 78 : 28, entry.Length);
             if (format.SequenceEqual("encv"u8) || format.SequenceEqual("enca"u8))
             {
+                track.IsEncrypted |= entries.Count == 0;
+
                 // Encrypted samples: the codec is the original format (sinf/frma)
                 var frma = FindBox(FindBox(boxes, "sinf"u8), "frma"u8);
                 format = frma.Length >= 4 ? frma[..4] : format;

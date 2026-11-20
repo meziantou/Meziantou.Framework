@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 59 | 94 | 0 | 63% |
+| [Stable](#stable-tests) | 61 | 94 | 0 | 65% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **73** | **118** | **0** | **62%** |
+| **All** | **75** | **118** | **0** | **64%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 32
+- **NOT IMPLEMENTED**: 30
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -91,8 +91,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/camera-potential-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/encrypted-media-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
-| [`reporting/encrypted-media-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`) |
+| [`reporting/encrypted-media-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/encrypted-media-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/encrypted-media-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/fullscreen-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-report-only.html) | Pass | 1 / 1 |  |  |
 | [`reporting/fullscreen-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/fullscreen-reporting.html) | Pass | 1 / 1 |  |  |
 | [`reporting/generic-sensor-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/generic-sensor-report-only.https.html) | Pass | 1 / 1 |  |  |

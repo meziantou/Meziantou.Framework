@@ -131,6 +131,7 @@ public partial class HtmlMediaElement
             var position = OfficialPlaybackPosition;
             ReleasePlayer();
             _readyState = HaveNothing;
+            ResetWaitingForKey();
             ClearActiveCues();
             if (!_paused)
             {

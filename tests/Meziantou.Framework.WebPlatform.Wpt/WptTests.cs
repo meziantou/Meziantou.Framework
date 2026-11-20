@@ -438,6 +438,8 @@ public sealed class WptTests
 
     public static TheoryData<string> MediaPlaybackQualityTests => GetTests("media-playback-quality");
 
+    public static TheoryData<string> EncryptedMediaTests => GetTests("encrypted-media");
+
     public static TheoryData<string> ConsoleTests => GetTests("console");
 
     public static TheoryData<string> CompatTests => GetTests("compat");
@@ -1664,6 +1666,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MediaPlaybackQualityTests))]
     public void MediaPlaybackQuality(string test) => Run("media-playback-quality", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(EncryptedMediaTests))]
+    public void EncryptedMedia(string test) => Run("encrypted-media", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ConsoleTests))]

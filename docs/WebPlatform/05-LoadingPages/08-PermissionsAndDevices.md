@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -17,6 +17,7 @@ the device in a test, or to connect the API to your application.
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
 | [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()` | There is no camera, microphone nor screen: `getUserMedia()` fails with a `NotFoundError` |
+| [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage) | The `persistent-license` sessions of `navigator.requestMediaKeySystemAccess()` (Clear Key) | The sessions are stored in memory, for the browsing contexts of the group |
 | [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
 | [BatteryStatus](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.BatteryStatus) | `navigator.getBattery()` | A fully charged battery that is plugged in |
@@ -785,6 +786,66 @@ Without provider, the keyboard is a US QWERTY keyboard
 ([UsQwerty](cref:Meziantou.Framework.WebPlatform.Dom.KeyboardLayoutProvider.UsQwerty)). Only the writing system keys (the
 letters, the digits and the punctuation) are given to the pages. The frames that their permissions policy does not allow
 (`keyboard-map`) get a `SecurityError`.
+
+## Encrypted media
+
+Encrypted Media Extensions (`navigator.requestMediaKeySystemAccess()`, `MediaKeys`, `MediaKeySession`,
+`video.setMediaKeys()`) implement the Clear Key key system (`org.w3.clearkey`): the license request lists the key IDs of the
+Initialization Data (`keyids`, `cenc` and `webm`), and the license is a JSON Web Key Set that the page gives to
+`update()`. The commercial key systems (Widevine, PlayReady, FairPlay) are not supported. A configuration is supported
+when the [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) of the browsing context plays its MP4 or
+WebM types; Clear Key supports the `cenc`, `cbcs` and `cbcs-1-9` encryption schemes, the empty robustness, no
+distinctive identifier, and the `temporary` and `persistent-license` sessions.
+
+The media data comes from the Media Source Extensions: the segment parser of the backend reports the Initialization Data
+of the initialization segments (each one fires an `encrypted` event at the media element) and how each coded frame is
+encrypted. The library decrypts the frames with the usable keys of the sessions of the `MediaKeys` of the element
+(AES-CTR for `cenc`, AES-CBC with its pattern for `cbcs`); the playback stops before a frame whose key no session has, fires
+`waitingforkey`, and resumes when `update()` provides the key. A frame whose subsamples do not match its data is a decode
+error. For instance, the parser of an MP4 byte stream reads the `tenc`, `senc` (or `saiz` and `saio`) and `seig` sample
+group boxes of the fragments:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/MediaSourceTests.cs;region=WebPlatform_EncryptedMediaFrames;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A frame of a media segment encrypted with the Common Encryption (cenc): AES-CTR on the bytes after the clear header of
+// each subsample. The library decrypts it with the keys of the sessions of the MediaKeys of the media element, and the
+// playback waits until a session has the key.
+byte[] keyId = [0xad, 0x13, 0xf9, 0xea, 0x2b, 0xe6, 0x98, 0xb8, 0x75, 0xf5, 0x04, 0xa8, 0xe3, 0xcc, 0xea, 0x64];
+byte[] initializationVector = [0, 0, 0, 0, 0, 0, 0, 1];
+byte[] data = new byte[100];
+var frame = new MediaCodedFrame(TrackId: 1, PresentationTimestamp: 0, DecodeTimestamp: 0, Duration: 0.04, IsRandomAccessPoint: true)
+{
+    Encryption = new MediaSampleEncryption(MediaEncryptionScheme.Cenc, keyId, initializationVector, [new MediaSubsample(ClearBytes: 5, ProtectedBytes: 95)]),
+    Data = data,
+};
+```
+<!-- endref -->
+
+The `persistent-license` sessions need a configuration whose `persistentState` is `required`. `update()` stores their keys
+in [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage), `load()` reads them
+back in another document, and `remove()` replaces them with a record of license destruction, sent as a `license-release`
+message until the page gives its acknowledgement to `update()`. The sessions are partitioned by storage key: a document
+only loads the sessions of its origin, in the same top-level site. The data contains the keys: a persistent
+[MediaKeysStorageBackend](cref:Meziantou.Framework.WebPlatform.Dom.MediaKeysStorageBackend) should protect it.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/MediaSourceTests.cs;region=WebPlatform_EncryptedMediaStorage;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The persistent-license sessions of Clear Key, shared by the browsing contexts (e.g. a database to keep them between runs)
+var storage = new InMemoryMediaKeysStorageBackend();
+var options = new BrowsingContextOptions
+{
+    MediaKeysStorage = storage,
+};
+```
+<!-- endref -->
+
+- `requestMediaKeySystemAccess()` needs a secure context and the `encrypted-media` permissions policy feature (allowed to
+  the same-origin frames by default); a document whose origin is opaque gets a `NotSupportedError`. A prerendering page
+  waits for its activation.
+- The Initialization Data and the responses of `update()` are limited to 64 KiB, a key ID to 512 bytes, and the keys to
+  16 bytes (AES-128). The keys never leave the library: the page only sees the key IDs and their statuses.
+- The media resources played by URL (without Media Source Extensions) are not decrypted: the backend that plays them has
+  no access to the keys.
 
 ## Media session
 

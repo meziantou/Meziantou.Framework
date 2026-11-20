@@ -228,6 +228,7 @@
       "web-based-payment-handler",
       "media-source",
       "media-playback-quality",
+      "encrypted-media",
       "html/dom",
       "html/syntax",
       "html/semantics",

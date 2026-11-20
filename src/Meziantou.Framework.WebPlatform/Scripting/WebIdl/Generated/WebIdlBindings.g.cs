@@ -417,7 +417,13 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["MediaDeviceInfo"] = Binding_MediaDeviceInfo<TAdapter, TValue>.Binding,
             ["MediaDevices"] = Binding_MediaDevices<TAdapter, TValue>.Binding,
             ["MediaElementAudioSourceNode"] = Binding_MediaElementAudioSourceNode<TAdapter, TValue>.Binding,
+            ["MediaEncryptedEvent"] = Binding_MediaEncryptedEvent<TAdapter, TValue>.Binding,
             ["MediaError"] = Binding_MediaError<TAdapter, TValue>.Binding,
+            ["MediaKeyMessageEvent"] = Binding_MediaKeyMessageEvent<TAdapter, TValue>.Binding,
+            ["MediaKeySession"] = Binding_MediaKeySession<TAdapter, TValue>.Binding,
+            ["MediaKeyStatusMap"] = Binding_MediaKeyStatusMap<TAdapter, TValue>.Binding,
+            ["MediaKeySystemAccess"] = Binding_MediaKeySystemAccess<TAdapter, TValue>.Binding,
+            ["MediaKeys"] = Binding_MediaKeys<TAdapter, TValue>.Binding,
             ["MediaList"] = Binding_MediaList<TAdapter, TValue>.Binding,
             ["MediaMetadata"] = Binding_MediaMetadata<TAdapter, TValue>.Binding,
             ["MediaQueryList"] = Binding_MediaQueryList<TAdapter, TValue>.Binding,
@@ -945,6 +951,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions dictionaryDom_MagnetometerSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MagnetometerSensorOptions(r, dictionaryDom_MagnetometerSensorOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaEncryptedEventInit dictionaryDom_MediaEncryptedEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaEncryptedEventInit(r, dictionaryDom_MediaEncryptedEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageEventInit dictionaryDom_MediaKeyMessageEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeyMessageEventInit(r, dictionaryDom_MediaKeyMessageEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackEventInit dictionaryDom_MediaStreamTrackEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaStreamTrackEventInit(r, dictionaryDom_MediaStreamTrackEventInit);
@@ -1509,6 +1521,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaImage dictionaryDom_MediaImage:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaImage(r, dictionaryDom_MediaImage);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration dictionaryDom_MediaKeySystemConfiguration:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeySystemConfiguration(r, dictionaryDom_MediaKeySystemConfiguration);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability dictionaryDom_MediaKeySystemMediaCapability:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeySystemMediaCapability(r, dictionaryDom_MediaKeySystemMediaCapability);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy dictionaryDom_MediaKeysPolicy:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeysPolicy(r, dictionaryDom_MediaKeysPolicy);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaMetadataInit dictionaryDom_MediaMetadataInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaMetadataInit(r, dictionaryDom_MediaMetadataInit);
@@ -2200,6 +2221,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind enumDom_MediaDeviceKind:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaDeviceKind(enumDom_MediaDeviceKind));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType enumDom_MediaKeyMessageType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyMessageType(enumDom_MediaKeyMessageType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason enumDom_MediaKeySessionClosedReason:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionClosedReason(enumDom_MediaKeySessionClosedReason));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType enumDom_MediaKeySessionType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionType(enumDom_MediaKeySessionType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus enumDom_MediaKeyStatus:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyStatus(enumDom_MediaKeyStatus));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement enumDom_MediaKeysRequirement:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeysRequirement(enumDom_MediaKeysRequirement));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction enumDom_MediaSessionAction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaSessionAction(enumDom_MediaSessionAction));
                 return true;
@@ -2544,6 +2580,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.LockManagerSnapshot> taskSystem_Threading_Tasks_Task_Dom_LockManagerSnapshot_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_LockManagerSnapshot_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_LockManagerSnapshot(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason> taskSystem_Threading_Tasks_Task_Dom_MediaKeySessionClosedReason_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeySessionClosedReason_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionClosedReason(v)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus> taskSystem_Threading_Tasks_Task_Dom_MediaKeyStatus_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeyStatus_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyStatus(v)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess> taskSystem_Threading_Tasks_Task_Dom_MediaKeySystemAccess_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeySystemAccess_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeys> taskSystem_Threading_Tasks_Task_Dom_MediaKeys_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeys_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaStream> taskSystem_Threading_Tasks_Task_Dom_MediaStream_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaStream_, static (r, v) => r.Wrap(v));

@@ -160,6 +160,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions Defaults_Dom_MagnetometerSensorOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration Defaults_Dom_MediaKeySystemConfiguration = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy Defaults_Dom_MediaKeysPolicy = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState Defaults_Dom_MediaPositionState = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions Defaults_Dom_MediaRecorderOptions = new();
@@ -497,6 +501,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_LoginStatus_Values = new[] { "logged-in", "logged-out" };
 
     internal static readonly string[] Enum_MagnetometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
+
+    internal static readonly string[] Enum_MediaKeyMessageType_Values = new[] { "license-request", "license-renewal", "license-release", "individualization-request" };
+
+    internal static readonly string[] Enum_MediaKeySessionType_Values = new[] { "temporary", "persistent-license" };
+
+    internal static readonly string[] Enum_MediaKeysRequirement_Values = new[] { "required", "optional", "not-allowed" };
 
     internal static readonly string[] Enum_MediaSessionAction_Values = new[] { "play", "pause", "seekbackward", "seekforward", "previoustrack", "nexttrack", "skipad", "stop", "seekto", "togglemicrophone", "togglecamera", "togglescreenshare", "hangup", "previousslide", "nextslide", "enterpictureinpicture", "voiceactivity" };
 
@@ -2522,12 +2532,63 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_MediaEncryptedEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaEncryptedEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "initData", (value.InitData is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        r.SetMember(result, "initDataType", r.FromString(value.InitDataType));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaImage value)
     {
         var result = r.CreateObject();
         r.SetMember(result, "sizes", r.FromString(value.Sizes));
         r.SetMember(result, "src", r.FromString(value.Src));
         r.SetMember(result, "type", r.FromString(value.Type));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaKeyMessageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "message", r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, value.Message));
+        r.SetMember(result, "messageType", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyMessageType(value.MessageType)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaKeySystemConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "audioCapabilities", r.FromSequence(value.AudioCapabilities, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeySystemMediaCapability(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "distinctiveIdentifier", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeysRequirement(value.DistinctiveIdentifier)));
+        r.SetMember(result, "initDataTypes", r.FromSequence(value.InitDataTypes, static (r, e) => r.FromString(e)));
+        r.SetMember(result, "label", r.FromString(value.Label));
+        r.SetMember(result, "persistentState", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeysRequirement(value.PersistentState)));
+        if (value.SessionTypes is not null) r.SetMember(result, "sessionTypes", r.FromSequence(value.SessionTypes, static (r, e) => r.FromString(e)));
+        r.SetMember(result, "videoCapabilities", r.FromSequence(value.VideoCapabilities, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeySystemMediaCapability(r, dictionaryValue2) : r.Adapter.Null)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaKeySystemMediaCapability(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "contentType", r.FromString(value.ContentType));
+        r.SetMember(result, "encryptionScheme", r.FromString(value.EncryptionScheme));
+        r.SetMember(result, "robustness", r.FromString(value.Robustness));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MediaKeysPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy value)
+    {
+        var result = r.CreateObject();
+        if (value.MinHdcpVersion is not null) r.SetMember(result, "minHdcpVersion", r.FromString(value.MinHdcpVersion));
         return result;
     }
 
@@ -5684,6 +5745,53 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind.AudioInput => "audioinput",
         global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind.AudioOutput => "audiooutput",
         global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind.VideoInput => "videoinput",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaKeyMessageType(global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.LicenseRequest => "license-request",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.LicenseRenewal => "license-renewal",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.LicenseRelease => "license-release",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.IndividualizationRequest => "individualization-request",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaKeySessionClosedReason(global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason.InternalError => "internal-error",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason.ClosedByApplication => "closed-by-application",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason.ReleaseAcknowledged => "release-acknowledged",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason.HardwareContextReset => "hardware-context-reset",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason.ResourceEvicted => "resource-evicted",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaKeySessionType(global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType.Temporary => "temporary",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType.PersistentLicense => "persistent-license",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaKeyStatus(global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.Usable => "usable",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.Expired => "expired",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.Released => "released",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.OutputRestricted => "output-restricted",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.OutputDownscaled => "output-downscaled",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.UsableInFuture => "usable-in-future",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.StatusPending => "status-pending",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus.InternalError => "internal-error",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MediaKeysRequirement(global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement.Required => "required",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement.Optional => "optional",
+        global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement.NotAllowed => "not-allowed",
         _ => value.ToString(),
     };
 
@@ -9919,6 +10027,29 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaEncryptedEventInit ToDictionary_Dom_MediaEncryptedEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaEncryptedEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "initData");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)null : (r.IsNullOrUndefined(m3_value) ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)null : r.ToBufferSource(m3_value, 1u, false, "ArrayBuffer"));
+        var m4_value = r.GetDictionaryMember(value, "initDataType");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"" : r.ToDomString(m4_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaEncryptedEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            InitData = m3?.Bytes,
+            InitDataType = m4,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.MediaImage ToDictionary_Dom_MediaImage(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "MediaImage");
@@ -9934,6 +10065,90 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Sizes = m0,
             Src = m1,
             Type = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageEventInit ToDictionary_Dom_MediaKeyMessageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaKeyMessageEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "message");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("MediaKeyMessageEventInit", "message");
+        var m3 = r.ToBufferSource(m3_value, 1u, false, "ArrayBuffer");
+        var m4_value = r.GetDictionaryMember(value, "messageType");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("MediaKeyMessageEventInit", "messageType");
+        var m4 = r.ToEnumerationValue(m4_value, "MediaKeyMessageType", WebIdlHelpers<TAdapter, TValue>.Enum_MediaKeyMessageType_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Message = m3.Bytes,
+            MessageType = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_MediaKeyMessageType(m4),
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration ToDictionary_Dom_MediaKeySystemConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaKeySystemConfiguration");
+        var m0_value = r.GetDictionaryMember(value, "audioCapabilities");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaKeySystemMediaCapability(r, e));
+        var m1_value = r.GetDictionaryMember(value, "distinctiveIdentifier");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"optional" : r.ToEnumerationValue(m1_value, "MediaKeysRequirement", WebIdlHelpers<TAdapter, TValue>.Enum_MediaKeysRequirement_Values);
+        var m2_value = r.GetDictionaryMember(value, "initDataTypes");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (global::System.Collections.Generic.List<string>)new global::System.Collections.Generic.List<string>() : r.ToSequence<string>(m2_value, static (r, e) => r.ToDomString(e));
+        var m3_value = r.GetDictionaryMember(value, "label");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "persistentState");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"optional" : r.ToEnumerationValue(m4_value, "MediaKeysRequirement", WebIdlHelpers<TAdapter, TValue>.Enum_MediaKeysRequirement_Values);
+        var m5_value = r.GetDictionaryMember(value, "sessionTypes");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (global::System.Collections.Generic.List<string>?)r.ToSequence<string>(m5_value, static (r, e) => r.ToDomString(e)) : default;
+        var m6_value = r.GetDictionaryMember(value, "videoCapabilities");
+        var m6 = r.Adapter.IsUndefined(m6_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability>(m6_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaKeySystemMediaCapability(r, e));
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration
+        {
+            AudioCapabilities = m0,
+            DistinctiveIdentifier = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_MediaKeysRequirement(m1),
+            InitDataTypes = m2,
+            Label = m3,
+            PersistentState = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_MediaKeysRequirement(m4),
+            SessionTypes = m5_present ? m5 : Defaults_Dom_MediaKeySystemConfiguration.SessionTypes,
+            VideoCapabilities = m6,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability ToDictionary_Dom_MediaKeySystemMediaCapability(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaKeySystemMediaCapability");
+        var m0_value = r.GetDictionaryMember(value, "contentType");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"" : r.ToDomString(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "encryptionScheme");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (string?)(string?)null : (r.IsNullOrUndefined(m1_value) ? (string?)null : r.ToDomString(m1_value));
+        var m2_value = r.GetDictionaryMember(value, "robustness");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (string)"" : r.ToDomString(m2_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability
+        {
+            ContentType = m0,
+            EncryptionScheme = m1,
+            Robustness = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy ToDictionary_Dom_MediaKeysPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MediaKeysPolicy");
+        var m0_value = r.GetDictionaryMember(value, "minHdcpVersion");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (string?)r.ToDomString(m0_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy
+        {
+            MinHdcpVersion = m0_present ? m0 : Defaults_Dom_MediaKeysPolicy.MinHdcpVersion,
         };
     }
 
@@ -15292,6 +15507,30 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "device" => global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Device,
         "screen" => global::Meziantou.Framework.WebPlatform.Dom.MagnetometerLocalCoordinateSystem.Screen,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType ToEnum_Dom_MediaKeyMessageType(string value) => value switch
+    {
+        "license-request" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.LicenseRequest,
+        "license-renewal" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.LicenseRenewal,
+        "license-release" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.LicenseRelease,
+        "individualization-request" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType.IndividualizationRequest,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType ToEnum_Dom_MediaKeySessionType(string value) => value switch
+    {
+        "temporary" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType.Temporary,
+        "persistent-license" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType.PersistentLicense,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement ToEnum_Dom_MediaKeysRequirement(string value) => value switch
+    {
+        "required" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement.Required,
+        "optional" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement.Optional,
+        "not-allowed" => global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement.NotAllowed,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

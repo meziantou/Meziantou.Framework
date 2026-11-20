@@ -91,6 +91,14 @@ public sealed partial record BrowsingContextOptions
     public FileSystemBackend? FileSystem { get; init; }
 
     /// <summary>
+    /// Gets or sets the storage of the persistent key sessions of Encrypted Media Extensions (the <c>persistent-license</c>
+    /// sessions of Clear Key, and their records of license destruction), e.g. a database or a
+    /// <see cref="InMemoryMediaKeysStorageBackend"/> shared by several browsing contexts. The default is null: each browsing
+    /// context created by the application has its own in-memory storage, shared by its auxiliary browsing contexts.
+    /// </summary>
+    public MediaKeysStorageBackend? MediaKeysStorage { get; init; }
+
+    /// <summary>
     /// Gets or sets the options of the storage of the origins (<c>navigator.storage</c>): the quota that
     /// <c>estimate()</c> reports and that the origin private file system enforces, and the answer to <c>persist()</c>. The
     /// default is null: the quota is <see cref="StorageOptions.DefaultQuota"/>, and the storage is never persistent.

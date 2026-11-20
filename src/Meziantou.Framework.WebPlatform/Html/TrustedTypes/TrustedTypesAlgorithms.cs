@@ -220,7 +220,7 @@ internal static class TrustedTypesAlgorithms
             return false;
 
         var type = attribute[2..];
-        return EventHandlerNames.Elements.Contains(type) || EventHandlerNames.WindowReflecting.Contains(type);
+        return EventHandlerNames.Elements.Contains(type) || EventHandlerNames.WindowReflecting.Contains(type) || HtmlMediaElement.EncryptedMediaEventHandlerTypes.Contains(type, StringComparer.Ordinal);
     }
 
     /// <summary>The element interface for a local name and a namespace (https://dom.spec.whatwg.org/#concept-element-interface), restricted to the interfaces of the Trusted Types tables.</summary>

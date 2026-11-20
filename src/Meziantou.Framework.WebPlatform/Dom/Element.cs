@@ -595,6 +595,10 @@ public partial class Element : Node
         if (this is SvgAnimationElement && type is "begin" or "end" or "repeat")
             return true;
 
+        // https://w3c.github.io/encrypted-media/#htmlmediaelement-extensions
+        if (this is HtmlMediaElement && HtmlMediaElement.EncryptedMediaEventHandlerTypes.Contains(type, StringComparer.Ordinal))
+            return true;
+
         return IsHtmlNamespace && TagId is Html.TagId.Body or Html.TagId.Frameset && Html.EventHandlerNames.WindowReflecting.Contains(type);
     }
 

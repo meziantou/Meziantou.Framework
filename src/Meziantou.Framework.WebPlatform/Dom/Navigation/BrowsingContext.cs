@@ -99,6 +99,7 @@ public sealed partial class BrowsingContext : IDisposable
     private IndexedDBBackend? _indexedDBBackend;
     private CacheStorageBackend? _cacheStorageBackend;
     private FileSystemBackend? _fileSystemBackend;
+    private MediaKeysStorageBackend? _mediaKeysStorageBackend;
     private StoragePersistenceState? _storagePersistence;
     private StorageShed? _sessionStorageShed;
     private ServiceWorkerBackend? _serviceWorkerBackend;
@@ -286,6 +287,12 @@ public sealed partial class BrowsingContext : IDisposable
     /// backend of the browsing context created by the application that owns the group.
     /// </summary>
     internal CacheStorageBackend CacheStorageBackend => Options.CacheStorage ?? (ReferenceEquals(GroupOwner, this) ? LazyInitializer.EnsureInitialized(ref _cacheStorageBackend, static () => new InMemoryCacheStorageBackend()) : GroupOwner.CacheStorageBackend);
+
+    /// <summary>
+    /// The storage of the persistent key sessions: <see cref="BrowsingContextOptions.MediaKeysStorage"/>, or the in-memory
+    /// backend of the browsing context created by the application that owns the group.
+    /// </summary>
+    internal MediaKeysStorageBackend MediaKeysStorageBackend => Options.MediaKeysStorage ?? (ReferenceEquals(GroupOwner, this) ? LazyInitializer.EnsureInitialized(ref _mediaKeysStorageBackend, static () => new InMemoryMediaKeysStorageBackend()) : GroupOwner.MediaKeysStorageBackend);
 
     /// <summary>
     /// The storage of the origin private file systems: <see cref="BrowsingContextOptions.FileSystem"/>, or the in-memory

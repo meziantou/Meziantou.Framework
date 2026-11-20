@@ -99,7 +99,7 @@ internal sealed class SanitizerConfiguration
         [.. SanitizerDefaults.AnimatingUrlAttributes.Select(e => (new SanitizerName(e.Element, e.ElementNamespace), new SanitizerName(e.Attribute, Namespace: null)))];
 
     /// <summary>The event handler content attributes (https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-content-attributes).</summary>
-    private static readonly string[] EventHandlerAttributes = [.. EventHandlerNames.Elements.Union(EventHandlerNames.WindowReflecting).Select(name => "on" + name).Order(StringComparer.Ordinal)];
+    private static readonly string[] EventHandlerAttributes = [.. EventHandlerNames.Elements.Union(EventHandlerNames.WindowReflecting).Union(HtmlMediaElement.EncryptedMediaEventHandlerTypes).Select(name => "on" + name).Order(StringComparer.Ordinal)];
 
     // ----------------------------------------------------------------------------------------------------------------
     // Canonicalization (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#canonicalize-the-configuration)

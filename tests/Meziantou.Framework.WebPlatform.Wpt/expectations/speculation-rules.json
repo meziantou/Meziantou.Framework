@@ -1461,16 +1461,10 @@
     }
   },
   "speculation-rules/prerender/restriction-encrypted-media-unsupported-config.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Encrypted Media API should be deferred with the\n    unsupported configurations until the prerendered page is activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-encrypted-media.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Encrypted Media API should be deferred until the\n    prerendered page is activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-focus.https.html": {
     "total": 1

@@ -839,6 +839,14 @@ public class SourceBuffer : EventTarget
             parent.RunOnElement(static element => element.OnMediaSourceInitialized());
         }
 
+        // The Initialization Data of the segment (e.g. the pssh boxes of an MP4 file): an encrypted event is fired at the
+        // media element (https://w3c.github.io/encrypted-media/#initdata-encountered)
+        if (segment.InitData.Count > 0)
+        {
+            var initData = segment.InitData.Select(data => (data.InitDataType, data.Data.ToArray())).ToArray();
+            parent.RunOnElement(element => element.OnInitializationDataEncountered(initData));
+        }
+
         return _parent is not null;
     }
 
@@ -925,6 +933,13 @@ public class SourceBuffer : EventTarget
         foreach (var frame in frames)
         {
             if (FindTrackBuffer(frame.TrackId) is null)
+                return false;
+        }
+
+        // An encrypted frame is decrypted by the library: its data is required
+        foreach (var frame in frames)
+        {
+            if (frame.Encryption is not null && frame.Data.IsEmpty)
                 return false;
         }
 
@@ -1034,7 +1049,8 @@ public class SourceBuffer : EventTarget
                 trackBuffer.RemoveRange(highestEndTimestamp, frameEndTimestamp, out _);
             }
 
-            trackBuffer.Add(new BufferedFrame(presentationTimestamp, decodeTimestamp, frameDuration, frame.IsRandomAccessPoint, trackBuffer.Width, trackBuffer.Height, frameByteCount));
+            var encrypted = frame.Encryption is { } encryption ? new EncryptedFrameData(encryption, frame.Data.ToArray()) : null;
+            trackBuffer.Add(new BufferedFrame(presentationTimestamp, decodeTimestamp, frameDuration, frame.IsRandomAccessPoint, trackBuffer.Width, trackBuffer.Height, frameByteCount, encrypted));
             trackBuffer.LastDecodeTimestamp = decodeTimestamp;
             trackBuffer.LastFrameDuration = frameDuration;
             if (trackBuffer.HighestEndTimestamp is not { } highest || frameEndTimestamp > highest)
@@ -1059,8 +1075,35 @@ public class SourceBuffer : EventTarget
             parent.ChangeDuration(Math.Max(parent.DurationValue, _groupEndTimestamp));
         }
 
+        // The encrypted frames whose key is available are decrypted (https://w3c.github.io/encrypted-media/#encrypted-block-encountered)
+        if (!DecryptFrames(parent.DecryptionKeys, out _))
+        {
+            parent.OnMediaDataCorrupted();
+        }
+
         // The ready state of the media element follows the buffered ranges
         parent.OnStateChanged();
+        return true;
+    }
+
+    /// <summary>
+    /// Decrypts the encrypted frames of the track buffers whose key is in a session of the <c>MediaKeys</c> of the media
+    /// element (https://w3c.github.io/encrypted-media/#attempt-to-decrypt). Returns false when a frame cannot be decrypted.
+    /// </summary>
+    internal bool DecryptFrames(MediaKeysDecryptionKeys? keys, out bool changed)
+    {
+        changed = false;
+        if (keys is null)
+            return true;
+
+        foreach (var track in _tracks)
+        {
+            if (!track.Buffer.DecryptFrames(keys, out var trackChanged))
+                return false;
+
+            changed |= trackChanged;
+        }
+
         return true;
     }
 

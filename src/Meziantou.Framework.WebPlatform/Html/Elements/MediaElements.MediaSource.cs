@@ -72,6 +72,12 @@ public partial class HtmlMediaElement
         _mediaSourceBuffered = null;
         IsMediaDataCorsSameOrigin = true;
         SetDelayingTheLoadEvent(false);
+
+        // The encrypted frames of the source are decrypted with the keys of the MediaKeys of the element
+        if (_mediaKeys is { } mediaKeys)
+        {
+            source.SetDecryptionKeys(global, mediaKeys.DecryptionKeys);
+        }
     }
 
     /// <summary>
@@ -350,7 +356,10 @@ public partial class HtmlMediaElement
         private MediaSourceSnapshot? _playbackRangesSnapshot;
         private MediaTimeRange[] _playbackRanges = [];
 
-        /// <summary>The ranges of the media timeline that can be played without interruption: the buffered ranges, without their short gaps.</summary>
+        /// <summary>
+        /// The ranges of the media timeline that can be played without interruption: the buffered ranges, without their short
+        /// gaps, and without the ranges whose frames wait for a key (Encrypted Media Extensions).
+        /// </summary>
         private MediaTimeRange[] PlaybackRanges
         {
             get
@@ -373,8 +382,41 @@ public partial class HtmlMediaElement
                     }
                 }
 
+                MediaTimeRange[] result = [.. ranges];
+                if (snapshot.EncryptedRanges.Length > 0)
+                {
+                    result = MediaTimeRanges.Subtract(result, snapshot.EncryptedRanges);
+                }
+
                 _playbackRangesSnapshot = snapshot;
-                return _playbackRanges = [.. ranges];
+                return _playbackRanges = result;
+            }
+        }
+
+        /// <summary>
+        /// Whether the data of the current playback position waits for a key: the frames at the position, or the frames that
+        /// follow the data played up to the position, cannot be decrypted (https://w3c.github.io/encrypted-media/#wait-for-key).
+        /// </summary>
+        public bool IsWaitingForKey
+        {
+            get
+            {
+                var encryptedRanges = Snapshot.EncryptedRanges;
+                if (encryptedRanges.Length == 0)
+                    return false;
+
+                // The playback can still advance
+                var position = _position;
+                if (CurrentRange is { } range && range.End - position > 0.000001)
+                    return false;
+
+                foreach (var encrypted in encryptedRanges)
+                {
+                    if (encrypted.End > position && encrypted.Start - position <= PlaybackGapSeconds)
+                        return true;
+                }
+
+                return false;
             }
         }
 
@@ -387,7 +429,7 @@ public partial class HtmlMediaElement
         {
             var snapshot = Snapshot;
             var ranges = PlaybackRanges;
-            if (ranges.Length > 0 && position < ranges[0].Start && ranges[0].Start < StartFudgeSeconds)
+            if (ranges.Length > 0 && position < ranges[0].Start && ranges[0].Start < StartFudgeSeconds && !Array.Exists(snapshot.EncryptedRanges, encrypted => encrypted.Start < ranges[0].Start))
                 return new MediaTimeRange(position, ranges[0].End);
 
             var tolerance = Math.Max(snapshot.GapTolerance, PlaybackGapSeconds);

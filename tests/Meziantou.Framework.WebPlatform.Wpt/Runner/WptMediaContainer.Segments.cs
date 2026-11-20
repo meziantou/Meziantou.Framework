@@ -30,7 +30,7 @@ internal static partial class WptMediaContainer
     /// An initialization segment is a movie box (<c>moov</c>), after a file type box; a media segment is a movie fragment
     /// box (<c>moof</c>) followed by its media data box (<c>mdat</c>). The other valid top-level boxes are ignored.
     /// </summary>
-    private sealed class Mp4SegmentParser(Func<string, bool> isCodecSupported) : MediaSegmentParser
+    private sealed partial class Mp4SegmentParser(Func<string, bool> isCodecSupported) : MediaSegmentParser
     {
         private sealed class FragmentTrack
         {
@@ -42,7 +42,11 @@ internal static partial class WptMediaContainer
 
             // trex: the defaults of the samples of the fragments
             public uint DefaultDuration { get; set; }
+            public uint DefaultSize { get; set; }
             public uint DefaultFlags { get; set; }
+
+            /// <summary>The Common Encryption of the samples of the track (the sinf box of the sample entry), or null for a clear track.</summary>
+            public TrackProtection? Protection { get; init; }
 
             /// <summary>The decode time of the next sample, for a fragment without <c>tfdt</c> box.</summary>
             public double NextDecodeTime { get; set; }
@@ -76,13 +80,12 @@ internal static partial class WptMediaContainer
 
                 var frames = new List<MediaCodedFrame>();
                 var fragment = data[headerSize..(int)size];
+                var segment = input[..(int)(size + dataSize)];
                 var offset = 0;
                 while (TryReadBox(fragment, ref offset, out var childType, out var traf))
                 {
-                    if (childType.SequenceEqual("traf"u8))
-                    {
-                        ReadTrackFragment(traf, frames);
-                    }
+                    if (childType.SequenceEqual("traf"u8) && !ReadTrackFragment(traf, frames, segment))
+                        return MediaSegmentParseResult.Error("The encryption of the samples of a fragment is not valid");
                 }
 
                 return MediaSegmentParseResult.Media((int)(size + dataSize), Interleave(frames));
@@ -183,7 +186,7 @@ internal static partial class WptMediaContainer
         {
             var tracks = new List<MediaSegmentTrack>();
             var fragmentTracks = new Dictionary<uint, FragmentTrack>();
-            var defaults = new Dictionary<uint, (uint Duration, uint Flags)>();
+            var defaults = new Dictionary<uint, (uint Duration, uint Size, uint Flags)>();
             var movieTimescale = 0d;
             var movieDuration = 0d;
             var fragmentDuration = 0d;
@@ -208,7 +211,7 @@ internal static partial class WptMediaContainer
                     {
                         if (extendsType.SequenceEqual("trex"u8) && trex.Length >= 24 && defaults.Count < MaxTracks)
                         {
-                            defaults[(uint)ReadBigEndian(trex, 4, 4)] = ((uint)ReadBigEndian(trex, 12, 4), (uint)ReadBigEndian(trex, 20, 4));
+                            defaults[(uint)ReadBigEndian(trex, 4, 4)] = ((uint)ReadBigEndian(trex, 12, 4), (uint)ReadBigEndian(trex, 16, 4), (uint)ReadBigEndian(trex, 20, 4));
                         }
                     }
                 }
@@ -232,14 +235,20 @@ internal static partial class WptMediaContainer
 
                 // As Chromium does, the tracks are the main tracks and have no label
                 tracks.Add(new MediaSegmentTrack(track.Id, track.IsVideo, "main", "", track.Language, track.IsVideo ? track.Width : 0, track.IsVideo ? track.Height : 0));
-                var (defaultDuration, defaultFlags) = defaults.GetValueOrDefault(track.Id);
+                var (defaultDuration, defaultSize, defaultFlags) = defaults.GetValueOrDefault(track.Id);
+                TrackProtection? protection = null;
+                if (track.IsEncrypted && (protection = ReadTrackProtection(trak)) is null)
+                    return MediaSegmentParseResult.Error("The protection scheme of an encrypted track is not supported");
+
                 fragmentTracks[track.Id] = new FragmentTrack
                 {
                     IsVideo = track.IsVideo,
                     Timescale = track.Timescale,
                     PresentationOffset = ReadPresentationOffset(trak, movieTimescale, track.Timescale),
                     DefaultDuration = defaultDuration,
+                    DefaultSize = defaultSize,
                     DefaultFlags = defaultFlags,
+                    Protection = protection,
                 };
             }
 
@@ -255,7 +264,8 @@ internal static partial class WptMediaContainer
                 duration = (fragmentDuration > 0 ? fragmentDuration : movieDuration) / movieTimescale;
             }
 
-            return MediaSegmentParseResult.Initialization(size, new MediaInitializationSegment(tracks, duration));
+            // The pssh boxes of the movie are the cenc Initialization Data (https://www.w3.org/TR/eme-initdata-cenc/)
+            return MediaSegmentParseResult.Initialization(size, new MediaInitializationSegment(tracks, duration) { InitData = ReadPsshBoxes(movie) });
         }
 
         /// <summary>
@@ -291,7 +301,11 @@ internal static partial class WptMediaContainer
             return result;
         }
 
-        private void ReadTrackFragment(ReadOnlySpan<byte> traf, List<MediaCodedFrame> frames)
+        /// <summary>Reads the samples of a track fragment. Returns false when the encryption of the samples cannot be read.</summary>
+        /// <param name="traf">The track fragment box.</param>
+        /// <param name="frames">The frames of the media segment.</param>
+        /// <param name="segment">The media segment: the movie fragment box (the base of the offsets) and its media data.</param>
+        private bool ReadTrackFragment(ReadOnlySpan<byte> traf, List<MediaCodedFrame> frames, ReadOnlyMemory<byte> segment)
         {
             // tfhd: version, flags, track_ID, then the fields selected by the flags: base_data_offset (0x1, 8 bytes),
             // sample_description_index (0x2), default_sample_duration (0x8), default_sample_size (0x10),
@@ -299,12 +313,13 @@ internal static partial class WptMediaContainer
             var tfhd = FindBox(traf, "tfhd"u8);
             var trackId = (uint)ReadBigEndian(tfhd, 4, 4);
             if (!_tracks.TryGetValue(trackId, out var track))
-                return;
+                return true;
 
             var headerFlags = ReadBigEndian(tfhd, 1, 3);
             var position = 8 + ((headerFlags & 0x1) != 0 ? 8 : 0) + ((headerFlags & 0x2) != 0 ? 4 : 0);
             var defaultDuration = track.DefaultDuration;
             var defaultFlags = track.DefaultFlags;
+            var defaultSize = track.DefaultSize;
             if ((headerFlags & 0x8) != 0)
             {
                 defaultDuration = (uint)ReadBigEndian(tfhd, position, 4);
@@ -313,6 +328,7 @@ internal static partial class WptMediaContainer
 
             if ((headerFlags & 0x10) != 0)
             {
+                defaultSize = (uint)ReadBigEndian(tfhd, position, 4);
                 position += 4;
             }
 
@@ -329,11 +345,20 @@ internal static partial class WptMediaContainer
                 time = ReadBigEndian(tfdt, 4, tfdt[0] == 1 ? 8 : 4);
             }
 
+            // The data of the samples: the offsets are relative to the movie fragment box (default-base-is-moof)
+            var firstFrame = frames.Count;
+            var samples = new List<(int Offset, int Size)>();
+            var dataOffset = 0L;
             var offset = 0;
             while (TryReadBox(traf, ref offset, out var type, out var trun))
             {
                 if (!type.SequenceEqual("trun"u8) || trun.Length < 8)
                     continue;
+
+                if ((ReadBigEndian(trun, 1, 3) & 0x1) != 0)
+                {
+                    dataOffset = (int)ReadBigEndian(trun, 8, 4);
+                }
 
                 // trun: version, flags, sample_count, data_offset (0x1), first_sample_flags (0x4), then for each sample:
                 // duration (0x100), size (0x200), flags (0x400), composition time offset (0x800, signed in version 1)
@@ -366,10 +391,15 @@ internal static partial class WptMediaContainer
                         field += 4;
                     }
 
+                    var sampleSize = defaultSize;
                     if ((flags & 0x200) != 0)
                     {
+                        sampleSize = (uint)ReadBigEndian(trun, field, 4);
                         field += 4;
                     }
+
+                    samples.Add((dataOffset is >= 0 and <= int.MaxValue ? (int)dataOffset : -1, (int)Math.Min(sampleSize, int.MaxValue)));
+                    dataOffset += sampleSize;
 
                     if ((flags & 0x400) != 0)
                     {
@@ -391,6 +421,7 @@ internal static partial class WptMediaContainer
             }
 
             track.NextDecodeTime = time;
+            return track.Protection is not { } protection || AddEncryption(traf, protection, frames, firstFrame, samples, segment);
         }
     }
 

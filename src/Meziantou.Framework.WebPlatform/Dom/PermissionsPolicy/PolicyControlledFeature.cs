@@ -52,6 +52,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://w3c.github.io/mediacapture-screen-share/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature DisplayCapture { get; } = new("display-capture", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/encrypted-media/#permissions-policy-integration: its default allowlist is 'self'.</summary>
+    public static PolicyControlledFeature EncryptedMedia { get; } = new("encrypted-media", isAllowedForAllByDefault: false);
+
     /// <summary>https://wicg.github.io/page-lifecycle/#feature-policies: its default allowlist is *.</summary>
     public static PolicyControlledFeature ExecutionWhileNotRendered { get; } = new("execution-while-not-rendered", isAllowedForAllByDefault: true);
 
@@ -152,7 +155,7 @@ internal sealed partial class PolicyControlledFeature
         DigitalCredentialsCreate,
         DigitalCredentialsGet,
         DisplayCapture,
-        new("encrypted-media", isAllowedForAllByDefault: false),
+        EncryptedMedia,
         ExecutionWhileNotRendered,
         ExecutionWhileOutOfViewport,
         FocusWithoutUserActivation,

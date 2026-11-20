@@ -482,6 +482,46 @@ public sealed class MediaSourceTests : IDisposable
         Assert.Equal("durationchange|loadedmetadata|error|code=3", document.Title);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EncryptedMedia_PersistentLicense_IsReleasedWhenItsDocumentIsDestroyed(bool navigate)
+    {
+        const string PersistentPrelude = EncryptedMediaPrelude + """
+            const persistentConfiguration = { ...configuration, persistentState: 'required', sessionTypes: ['persistent-license'] };
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [persistentConfiguration])).createMediaKeys();
+            """;
+        var storage = new InMemoryMediaKeysStorageBackend();
+
+        // The session is stored, and never closed
+        var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, MediaBackend = new FakeBackend(), MediaKeysStorage = storage, TimeProvider = _clock, UnhandledScriptError = (_, error) => _errors.Add(error) });
+        var first = context.Navigate("https://example.com/", _ => Prelude + "<script>(async () => {" + PersistentPrelude + """
+            const session = keys.createSession('persistent-license');
+            session.generateRequest('keyids', keyIdsInitData);
+            await event(session, 'message');
+            await session.update(license('persistent-license'));
+            log.push(session.sessionId);
+            done();
+            """ + "})().catch(e => document.title = 'FAILED: ' + e);</script>");
+        Advance(0.01);
+        var sessionId = first.Title;
+        Assert.Matches("^[0-9]+$", sessionId);
+
+        // A navigation does not keep the document in the back/forward cache (it holds the license): it is destroyed, as when its browsing context is closed
+        if (navigate)
+        {
+            context.Navigate("https://example.com/next", _ => "<p>next</p>");
+        }
+        else
+        {
+            context.Dispose();
+        }
+
+        Advance(0.01);
+        var second = Load(PersistentPrelude + "log.push(await keys.createSession('persistent-license').load('" + sessionId + "')); done();", mediaKeysStorage: storage);
+        Assert.Equal("true", second.Title);
+    }
+
     [Fact]
     public void EncryptedMedia_PersistentLicense_IsOnlyLoadedInItsStoragePartition()
     {

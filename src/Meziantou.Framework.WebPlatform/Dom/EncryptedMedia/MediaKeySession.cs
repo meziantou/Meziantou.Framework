@@ -475,6 +475,22 @@ public sealed class MediaKeySession : EventTarget
         _closed.TrySetResult(reason);
     }
 
+    /// <summary>Whether a window has a persistent session that holds its stored license (no other document can load it).</summary>
+    internal static bool HasLoadedPersistentSessions(Window window) => GetOpenSessions(window).Exists(session => !session._closingOrClosed && session._loadedFrom is not null);
+
+    /// <summary>
+    /// Closes the sessions of a window whose document is destroyed (https://w3c.github.io/encrypted-media/#mediakeysession-interface:
+    /// the CDM closes the key sessions that become inaccessible): their keys are released, and the stored licenses they
+    /// loaded can be loaded by another document.
+    /// </summary>
+    internal static void CloseSessionsOfDestroyedDocument(Window window)
+    {
+        foreach (var session in GetOpenSessions(window))
+        {
+            session.RunSessionClosed(MediaKeySessionClosedReason.ResourceEvicted);
+        }
+    }
+
     private static List<MediaKeySession> GetOpenSessions(Window window)
     {
         lock (OpenSessions)

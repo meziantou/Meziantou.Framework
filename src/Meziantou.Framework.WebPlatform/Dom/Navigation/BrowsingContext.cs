@@ -3654,6 +3654,9 @@ public sealed partial class BrowsingContext : IDisposable
         {
             WebLocks.OnEnvironmentDiscarded(destroyedWindow);
             destroyedWindow.ReleaseFileSystemResources();
+
+            // The key sessions of the document are closed: the persistent licenses they loaded can be loaded again
+            MediaKeySession.CloseSessionsOfDestroyedDocument(destroyedWindow);
         }
         if (document.ChildNavigables is { } children)
         {

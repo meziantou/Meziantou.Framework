@@ -90,7 +90,9 @@ public sealed partial class BrowsingContext
             }
 
             // The connections that the browsers do not keep alive in the cache
-            if (EventSource.HasActiveEventSources(window) || window.HasFileSystemResources)
+            // A document that holds a loaded persistent license (Encrypted Media Extensions) is not cached: the license cannot be
+            // loaded by another document until it is destroyed, which closes its sessions
+            if (EventSource.HasActiveEventSources(window) || window.HasFileSystemResources || MediaKeySession.HasLoadedPersistentSessions(window))
             {
                 AddReason(reasons, "masked");
             }

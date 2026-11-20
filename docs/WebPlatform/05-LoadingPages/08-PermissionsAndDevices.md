@@ -825,7 +825,9 @@ The `persistent-license` sessions need a configuration whose `persistentState` i
 in [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage), `load()` reads them
 back in another document, and `remove()` replaces them with a record of license destruction, sent as a `license-release`
 message until the page gives its acknowledgement to `update()`. The sessions are partitioned by storage key: a document
-only loads the sessions of its origin, in the same top-level site. The data contains the keys: a persistent
+only loads the sessions of its origin, in the same top-level site. A stored session is loaded by one document at a time,
+until the session is closed or its document is destroyed (a document that holds one is not kept in the back/forward
+cache). The data contains the keys: a persistent
 [MediaKeysStorageBackend](cref:Meziantou.Framework.WebPlatform.Dom.MediaKeysStorageBackend) should protect it.
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/MediaSourceTests.cs;region=WebPlatform_EncryptedMediaStorage;format=md-fenced-code-block;dedent=true -->

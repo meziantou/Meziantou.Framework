@@ -18670,6 +18670,7 @@ namespace Meziantou.Framework.WebPlatform.WebCodecs
         public uint? DesiredHeight { get => throw null; init { } }
         public uint? DesiredWidth { get => throw null; init { } }
         public bool? PreferAnimation { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<object>? Transfer { get => throw null; init { } }
         public required string Type { get => throw null; init { } }
     }
 

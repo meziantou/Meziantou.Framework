@@ -504,6 +504,10 @@ public sealed class VideoFrame : IStructuredSerializable, IStructuredTransferabl
             return;
         }
 
+        // The images of the styles are always tainted (as in Chromium)
+        if (image is Css.TypedOm.CssImageValue)
+            throw new DomException("The image is not origin-clean", "SecurityError");
+
         var global = GlobalScope.Current ?? (image as Node)?.OwnerDocument?.DefaultView ?? throw new DomException("The image cannot be used", "InvalidStateError");
         var bitmap = ImageBitmapFactory.GetSourceBitmap(global, image, new ImageBitmapOptions());
         if (!bitmap.IsOriginClean)

@@ -9,27 +9,29 @@ description: "The results of the web-platform-tests of video-rvfc, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 8 | 8 | – |
+| [Stable](#stable-tests) | 5 | 8 | 0 | 63% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **8** | **8** | **–** |
+| **All** | **5** | **8** | **0** | **63%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 8
+- **NOT IMPLEMENTED**: 1
+- **REQUIRES**: 2
+  - `hardware`: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.window.js`](https://wpt.fyi/results/video-rvfc/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback-before-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-before-xr-session.https.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback-dom.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-dom.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback-during-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-during-xr-session.https.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback-parallel.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-parallel.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback-repeating.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-repeating.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback-webrtc.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-webrtc.https.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
-| [`request-video-frame-callback.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback.html) | Disabled | – | NOT IMPLEMENTED | `HTMLVideoElement.requestVideoFrameCallback()`: the frames of the videos are not decoded |
+| [`idlharness.window.js`](https://wpt.fyi/results/video-rvfc/idlharness.window.js) | Pass | 18 / 18 |  |  |
+| [`request-video-frame-callback-before-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-before-xr-session.https.html) | Error | 0 / 0 | REQUIRES(hardware) | WebXR Device API (`xr_session_promise_test` of `/webxr/resources/webxr_util.js`) |
+| [`request-video-frame-callback-dom.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-dom.html) | Pass | 3 / 3 |  |  |
+| [`request-video-frame-callback-during-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-during-xr-session.https.html) | Error | 0 / 0 | REQUIRES(hardware) | WebXR Device API (`xr_session_promise_test` of `/webxr/resources/webxr_util.js`) |
+| [`request-video-frame-callback-parallel.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-parallel.html) | Pass | 2 / 2 |  |  |
+| [`request-video-frame-callback-repeating.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-repeating.html) | Pass | 2 / 2 |  |  |
+| [`request-video-frame-callback-webrtc.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-webrtc.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`) |
+| [`request-video-frame-callback.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback.html) | Pass | 5 / 5 |  |  |

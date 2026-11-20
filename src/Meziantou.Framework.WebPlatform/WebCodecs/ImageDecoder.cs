@@ -42,6 +42,11 @@ public sealed class ImageDecoderInit
     /// <seealso href="https://w3c.github.io/webcodecs/#dom-imagedecoderinit-preferanimation"/>
     [IdlMember("preferAnimation", "https://w3c.github.io/webcodecs/#dom-imagedecoderinit-preferanimation")]
     public bool? PreferAnimation { get; init; }
+
+    /// <summary>Gets the <c>ArrayBuffer</c> objects detached by the construction (the data is not copied twice).</summary>
+    /// <seealso href="https://w3c.github.io/webcodecs/#dom-imagedecoderinit-transfer"/>
+    [IdlMember("transfer", "https://w3c.github.io/webcodecs/#dom-imagedecoderinit-transfer")]
+    public IReadOnlyList<object>? Transfer { get; init; }
 }
 
 /// <summary>The options of <see cref="ImageDecoder.Decode"/> (https://w3c.github.io/webcodecs/#dictdef-imagedecodeoptions).</summary>
@@ -188,6 +193,10 @@ public sealed class ImageDecoder
 
         if (bytes is { Length: 0 })
             throw new TypeErrorException("The data is empty or detached");
+
+        // https://w3c.github.io/webcodecs/#dom-imagedecoder-imagedecoder: the buffers of the transfer list are detached
+        var transfer = WebCodecsBuffers.ValidateTransfer(init.Transfer);
+        WebCodecsBuffers.DetachTransfer(transfer);
 
         if (init.DesiredWidth.HasValue != init.DesiredHeight.HasValue)
             throw new TypeErrorException("The desired width and height must be given together");

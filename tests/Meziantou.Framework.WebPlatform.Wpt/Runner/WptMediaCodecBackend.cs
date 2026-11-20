@@ -315,6 +315,7 @@ internal sealed class WptMediaCodecBackend : MediaCodecBackend
         private readonly int _frameSize;
         private readonly List<float> _pending = [];
         private long? _nextTimestamp;
+        private bool _hasPendingFlush;
 
         public OpusAudioEncoder(AudioEncoderConfig config)
         {
@@ -361,6 +362,7 @@ internal sealed class WptMediaCodecBackend : MediaCodecBackend
             }
 
             _nextTimestamp ??= data.Timestamp;
+            _hasPendingFlush = true;
             _pending.AddRange(Resample(floats, _channels, (int)_config.SampleRate, OpusSampleRate));
             return EncodeFrames(flush: false);
         }
@@ -370,6 +372,7 @@ internal sealed class WptMediaCodecBackend : MediaCodecBackend
         public override void Reset()
         {
             _pending.Clear();
+            _hasPendingFlush = false;
             _nextTimestamp = null;
             _encoder.ResetState();
         }
@@ -384,8 +387,9 @@ internal sealed class WptMediaCodecBackend : MediaCodecBackend
         {
             var outputs = new List<MediaEncodedAudio>();
             var frameSamples = _frameSize * _channels;
-            if (flush && _pending.Count > 0)
+            if (flush && _hasPendingFlush)
             {
+                _hasPendingFlush = false;
                 // The samples delayed by the look-ahead of the encoder are flushed: the decoder discards the pre-skip samples
                 _pending.AddRange(new float[_encoder.Lookahead * _channels]);
                 if (_pending.Count % frameSamples != 0)

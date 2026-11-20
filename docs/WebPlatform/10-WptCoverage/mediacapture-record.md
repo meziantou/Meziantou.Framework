@@ -9,40 +9,40 @@ description: "The results of the web-platform-tests of mediacapture-record, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 21 | 21 | – |
+| [Stable](#stable-tests) | 18 | 21 | 0 | 86% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **21** | **21** | **–** |
+| **All** | **18** | **21** | **0** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 21
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`BlobEvent-constructor.html`](https://wpt.fyi/results/mediacapture-record/BlobEvent-constructor.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-bitrate.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-bitrate.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-blob-timecode.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-blob-timecode.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-canvas-media-source.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-canvas-media-source.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-creation.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-creation.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-destroy-script-execution.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-destroy-script-execution.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-detached-context.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-detached-context.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-disabled-tracks.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-disabled-tracks.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-error.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-error.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-events-and-exceptions.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-events-and-exceptions.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-mimetype.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-mimetype.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-pause-resume.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-pause-resume.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-peerconnection-no-sink.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-peerconnection-no-sink.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-peerconnection.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-peerconnection.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-requestData.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-requestData.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-start.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-start.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-stop.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-stop.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`MediaRecorder-video-key-frame-distance.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-video-key-frame-distance.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`idlharness.window.js`](https://wpt.fyi/results/mediacapture-record/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`legacy/MediaRecorder-canvas-media-source-legacy.https.html`](https://wpt.fyi/results/mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
-| [`passthrough/MediaRecorder-passthrough.https.html`](https://wpt.fyi/results/mediacapture-record/passthrough/MediaRecorder-passthrough.https.html) | Disabled | – | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`): it needs the audio and video encoders of WebCodecs (WebCodecs is a later phase) |
+| [`BlobEvent-constructor.html`](https://wpt.fyi/results/mediacapture-record/BlobEvent-constructor.html) | Pass | 5 / 5 |  |  |
+| [`MediaRecorder-bitrate.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-bitrate.https.html) | Pass | 18 / 18 |  |  |
+| [`MediaRecorder-blob-timecode.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-blob-timecode.https.html) | Pass | 3 / 3 |  |  |
+| [`MediaRecorder-canvas-media-source.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-canvas-media-source.https.html) | Pass | 16 / 16 |  |  |
+| [`MediaRecorder-creation.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-creation.https.html) | Pass | 3 / 3 |  |  |
+| [`MediaRecorder-destroy-script-execution.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-destroy-script-execution.html) | Pass | 4 / 4 |  |  |
+| [`MediaRecorder-detached-context.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-detached-context.html) | Pass | 1 / 1 |  |  |
+| [`MediaRecorder-disabled-tracks.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-disabled-tracks.https.html) | Pass | 3 / 3 |  |  |
+| [`MediaRecorder-error.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-error.html) | Pass | 4 / 4 |  |  |
+| [`MediaRecorder-events-and-exceptions.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-events-and-exceptions.html) | Pass | 16 / 16 |  |  |
+| [`MediaRecorder-mimetype.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-mimetype.html) | Pass | 261 / 261 |  |  |
+| [`MediaRecorder-pause-resume.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-pause-resume.html) | Pass | 74 / 74 |  |  |
+| [`MediaRecorder-peerconnection-no-sink.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-peerconnection-no-sink.https.html) | Error | 0 / 0 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`) |
+| [`MediaRecorder-peerconnection.https.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-peerconnection.https.html) | Error | 0 / 44 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`) |
+| [`MediaRecorder-requestData.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-requestData.html) | Pass | 6 / 6 |  |  |
+| [`MediaRecorder-start.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-start.html) | Pass | 1 / 1 |  |  |
+| [`MediaRecorder-stop.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-stop.html) | Pass | 176 / 176 |  |  |
+| [`MediaRecorder-video-key-frame-distance.html`](https://wpt.fyi/results/mediacapture-record/MediaRecorder-video-key-frame-distance.html) | Pass | 2 / 2 |  |  |
+| [`idlharness.window.js`](https://wpt.fyi/results/mediacapture-record/idlharness.window.js) | Pass | 60 / 60 |  |  |
+| [`legacy/MediaRecorder-canvas-media-source-legacy.https.html`](https://wpt.fyi/results/mediacapture-record/legacy/MediaRecorder-canvas-media-source-legacy.https.html) | Pass | 16 / 16 |  |  |
+| [`passthrough/MediaRecorder-passthrough.https.html`](https://wpt.fyi/results/mediacapture-record/passthrough/MediaRecorder-passthrough.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`) |

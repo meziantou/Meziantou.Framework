@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of mediacapture-extensions, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 4 | 13 | 1 | 33% |
+| [Stable](#stable-tests) | 12 | 13 | 1 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **4** | **13** | **1** | **33%** |
+| **All** | **12** | **13** | **1** | **100%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -28,13 +28,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`GUM-backgroundBlur.https.html`](https://wpt.fyi/results/mediacapture-extensions/GUM-backgroundBlur.https.html) | Pass | 8 / 8 |  |  |
 | [`GUM-eyeGazeCorrection.https.html`](https://wpt.fyi/results/mediacapture-extensions/GUM-eyeGazeCorrection.https.html) | Pass | 4 / 4 |  |  |
 | [`GUM-faceFraming.https.html`](https://wpt.fyi/results/mediacapture-extensions/GUM-faceFraming.https.html) | Pass | 4 / 4 |  |  |
-| [`MediaStream-in-dedicated-worker.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStream-in-dedicated-worker.https.html) | Fail | 0 / 9 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStream-in-dedicated-worker.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStream-in-dedicated-worker.https.html) | Pass | 9 / 9 |  |  |
 | [`MediaStreamTrack-audio-stats.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-audio-stats.https.html) | Disabled | – | NOT IMPLEMENTED | the frame counters of `MediaStreamTrackAudioStats` (`totalFrames`, `totalFramesDuration`, `deliveredFrames`, `deliveredFramesDuration`), which the editor's draft of Media Capture Extensions defines but not its IDL in webref (only the latencies): the test waits for them in an endless microtask loop (`await Promise.resolve()`), which never yields to the event loop, so the page hangs |
-| [`MediaStreamTrack-structured-clone.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-structured-clone.https.html) | Fail | 3 / 7 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-worker-attributes.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-attributes.https.html) | Fail | 0 / 50 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-worker-clone.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-clone.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-worker-data-holder.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-data-holder.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-worker-mute.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-mute.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-worker-source-lifetime.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-source-lifetime.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
-| [`MediaStreamTrack-transfer-to-worker-teardown.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-teardown.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | the transfer of `MediaStreamTrack` (`postMessage()` with a transfer list, the `[Transferable]` extension of Media Capture Extensions) and the exposure of `MediaStream` and `MediaStreamTrack` in the dedicated workers: the tracks cannot be cloned nor transferred (`DataCloneError`) |
+| [`MediaStreamTrack-structured-clone.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-structured-clone.https.html) | Pass | 7 / 7 |  |  |
+| [`MediaStreamTrack-transfer-to-worker-attributes.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-attributes.https.html) | Pass | 50 / 50 |  |  |
+| [`MediaStreamTrack-transfer-to-worker-clone.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-clone.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaStreamTrack-transfer-to-worker-data-holder.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-data-holder.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-transfer-to-worker-mute.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-mute.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-transfer-to-worker-source-lifetime.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-source-lifetime.https.html) | Pass | 2 / 2 |  |  |
+| [`MediaStreamTrack-transfer-to-worker-teardown.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-transfer-to-worker-teardown.https.html) | Pass | 5 / 5 |  |  |
 | [`MediaStreamTrack-video-stats.https.html`](https://wpt.fyi/results/mediacapture-extensions/MediaStreamTrack-video-stats.https.html) | Pass | 15 / 15 |  |  |

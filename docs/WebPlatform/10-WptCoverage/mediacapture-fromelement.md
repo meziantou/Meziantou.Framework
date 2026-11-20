@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of mediacapture-fromelement,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 7 | 11 | 0 | 64% |
+| [Stable](#stable-tests) | 9 | 11 | 0 | 82% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **8** | **12** | **0** | **67%** |
+| **All** | **10** | **12** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **NOT IMPLEMENTED**: 2
 - **REQUIRES**: 1
   - `media`: 1
 
@@ -30,8 +29,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`HTMLCanvasElement-getImageData-noframe.html`](https://wpt.fyi/results/mediacapture-fromelement/HTMLCanvasElement-getImageData-noframe.html) | Pass | 1 / 1 |  |  |
 | [`capture-audio-unaffected-volume.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-audio-unaffected-volume.html) | Timeout | 0 / 4 | REQUIRES(media) | the media backend does not decode the audio of the media resources: the captured audio of a file is silence, and the test waits for sound (the audio of a stream played by the element is captured) |
-| [`capture-muted.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-muted.html) | Fail | 0 / 3 | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`), which the test uses to check that the captured media flows: it needs the encoders of WebCodecs |
-| [`capture.html`](https://wpt.fyi/results/mediacapture-fromelement/capture.html) | Fail | 3 / 6 | NOT IMPLEMENTED | MediaStream Recording (`MediaRecorder`), which the test uses to check that the captured media flows: it needs the encoders of WebCodecs |
+| [`capture-muted.html`](https://wpt.fyi/results/mediacapture-fromelement/capture-muted.html) | Pass | 3 / 3 |  |  |
+| [`capture.html`](https://wpt.fyi/results/mediacapture-fromelement/capture.html) | Pass | 6 / 6 |  |  |
 | [`creation.html`](https://wpt.fyi/results/mediacapture-fromelement/creation.html) | Pass | 6 / 6 |  |  |
 | [`cross-origin.html`](https://wpt.fyi/results/mediacapture-fromelement/cross-origin.html) | Pass | 1 / 1 |  |  |
 | [`ended.html`](https://wpt.fyi/results/mediacapture-fromelement/ended.html) | Pass | 6 / 6 |  |  |

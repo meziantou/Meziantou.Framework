@@ -4908,6 +4908,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.DesiredHeight is not null) r.SetMember(result, "desiredHeight", (value.DesiredHeight.HasValue ? r.FromNumber((double)value.DesiredHeight.GetValueOrDefault()) : r.Adapter.Null));
         if (value.DesiredWidth is not null) r.SetMember(result, "desiredWidth", (value.DesiredWidth.HasValue ? r.FromNumber((double)value.DesiredWidth.GetValueOrDefault()) : r.Adapter.Null));
         if (value.PreferAnimation is not null) r.SetMember(result, "preferAnimation", r.FromBoolean(value.PreferAnimation));
+        r.SetMember(result, "transfer", r.FromSequence(value.Transfer, static (r, e) => r.ToJs((object?)e)));
         r.SetMember(result, "type", r.FromString(value.Type));
         return result;
     }
@@ -14446,9 +14447,11 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m4_value = r.GetDictionaryMember(value, "preferAnimation");
         var m4_present = !r.Adapter.IsUndefined(m4_value);
         var m4 = m4_present ? (bool?)r.ToBoolean(m4_value) : default;
-        var m5_value = r.GetDictionaryMember(value, "type");
-        if (r.Adapter.IsUndefined(m5_value)) throw r.MissingRequiredDictionaryMember("ImageDecoderInit", "type");
-        var m5 = r.ToDomString(m5_value);
+        var m5_value = r.GetDictionaryMember(value, "transfer");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource>(m5_value, static (r, e) => r.ToBufferSource(e, 1u, false, "ArrayBuffer"));
+        var m6_value = r.GetDictionaryMember(value, "type");
+        if (r.Adapter.IsUndefined(m6_value)) throw r.MissingRequiredDictionaryMember("ImageDecoderInit", "type");
+        var m6 = r.ToDomString(m6_value);
         return new global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit
         {
             ColorSpaceConversion = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_ColorSpaceConversion(m0),
@@ -14456,7 +14459,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             DesiredHeight = m2_present ? m2 : Defaults_WebCodecs_ImageDecoderInit.DesiredHeight,
             DesiredWidth = m3_present ? m3 : Defaults_WebCodecs_ImageDecoderInit.DesiredWidth,
             PreferAnimation = m4_present ? m4 : Defaults_WebCodecs_ImageDecoderInit.PreferAnimation,
-            Type = m5,
+            Transfer = m5,
+            Type = m6,
         };
     }
 

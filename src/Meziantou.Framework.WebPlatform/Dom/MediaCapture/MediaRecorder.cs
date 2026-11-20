@@ -289,8 +289,8 @@ public sealed class MediaRecorder : EventTarget
         var tracks = Stream.GetTracks();
         var videoTrack = tracks.FirstOrDefault(track => track.Kind == "video");
         var audioTrack = tracks.FirstOrDefault(track => track.Kind == "audio");
-        // An audio type cannot record the video tracks
-        if (_constrainedMimeType.Length > 0 && Infra.MimeType.Parse(_constrainedMimeType) is { Type: "audio" } && videoTrack is not null)
+        // An audio type cannot record a stream of video only
+        if (_constrainedMimeType.Length > 0 && Infra.MimeType.Parse(_constrainedMimeType) is { Type: "audio" } && audioTrack is null)
             throw new DomException("An audio type cannot record a video track", "NotSupportedError");
 
         var (container, videoCodec, audioCodec, unknownCodec) = ResolveType(_constrainedMimeType, videoTrack is not null, audioTrack is not null);

@@ -253,7 +253,7 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
 
 ## Limitations
 
-The limitations of the library are listed in the [documentation](https://meziantou.github.io/Meziantou.Framework/webplatform/limitations.html).
+The limitations of the library are listed in the [documentation](https://framework.meziantou.net/webplatform/limitations.html).
 
 ## Specifications
 

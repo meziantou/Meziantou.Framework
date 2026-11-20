@@ -456,6 +456,7 @@ public sealed partial class PageInput
         else
         {
             _page.RunEventLoop();
+            _page.ThrowIfDialogFailed();
         }
     }
 

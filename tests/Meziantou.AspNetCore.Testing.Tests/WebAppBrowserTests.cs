@@ -272,11 +272,11 @@ public sealed class WebAppBrowserTests
     [Fact]
     public async Task Dialogs_HandleNextChecksTheDialog()
     {
+        #region DialogController_HandleNext
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server);
         var page = await browser.OpenAsync("/dialogs");
 
-        #region DialogController_HandleNext
         // Check the dialog, then answer it
         page.Dialogs.HandleNext(dialog =>
         {
@@ -293,11 +293,11 @@ public sealed class WebAppBrowserTests
     [Fact]
     public async Task Dialogs_HandleAll()
     {
+        #region DialogController_HandleAll
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server);
         var page = await browser.OpenAsync("/dialogs");
 
-        #region DialogController_HandleAll
         // Answer the dialogs that no queued handler answers
         page.Dialogs.HandleAll(dialog =>
         {
@@ -329,11 +329,11 @@ public sealed class WebAppBrowserTests
     [Fact]
     public async Task Dialogs_StrictModeFailsTheActionThatShowsAnUnexpectedDialog()
     {
+        #region DialogController_StrictMode
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server);
         var page = await browser.OpenAsync("/dialogs");
 
-        #region DialogController_StrictMode
         // No answer: confirm() returns false, and the click fails
         var exception = await Assert.ThrowsAsync<UnexpectedDialogException>(() => page.GetByRole("button", "Delete").ClickAsync());
 
@@ -343,6 +343,21 @@ public sealed class WebAppBrowserTests
 
         Assert.True(exception.Dialog?.IsUnexpected);
         Assert.False(exception.Dialog?.Accepted);
+
+        // The failure is reported once
+        await page.WaitForIdleAsync();
+    }
+
+    [Fact]
+    public async Task Dialogs_StrictModeFailsAClickThatDoesNotWait()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/dialogs");
+
+        // The confirm() of the click handler is synchronous: the click fails even when it does not wait afterward
+        var exception = await Assert.ThrowsAsync<UnexpectedDialogException>(() => page.GetByRole("button", "Delete").ClickAsync(new ClickOptions { NoWaitAfter = true }));
+        Assert.Equal("Delete Report.pdf?", exception.Dialog?.Message);
 
         // The failure is reported once
         await page.WaitForIdleAsync();
@@ -400,11 +415,11 @@ public sealed class WebAppBrowserTests
     [Fact]
     public async Task Dialogs_DismissTheBeforeUnloadConfirmationToStayOnThePage()
     {
+        #region DialogController_BeforeUnload
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server);
         var page = await browser.OpenAsync("/dialogs");
 
-        #region DialogController_BeforeUnload
         // The click gives the page the sticky activation that the confirmation requires
         page.Dialogs.DismissNext();
         await page.GetByRole("button", "Delete").ClickAsync();
@@ -427,11 +442,11 @@ public sealed class WebAppBrowserTests
     [Fact]
     public async Task Dialogs_WaitForDialog()
     {
+        #region TestPage_WaitForDialog
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server);
         var page = await browser.OpenAsync("/dialogs");
 
-        #region TestPage_WaitForDialog
         // The answer is set up before the dialog: the script waits for it
         page.Dialogs.AcceptNext();
         await page.GetByRole("button", "Save").ClickAsync(new ClickOptions { NoWaitAfter = true });

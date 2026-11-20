@@ -22,9 +22,8 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
     private readonly List<string> _consoleMessages = [];
     private readonly List<ScriptError> _scriptErrors = [];
     private readonly List<ContentSecurityPolicyViolationReport> _contentSecurityPolicyViolations = [];
-    private readonly List<PageDialog> _dialogs = [];
+    private readonly Queue<PageDialog> _unreadDialogs = [];
     private readonly List<Exception> _dialogFailures = [];
-    private int _observedDialogCount;
     private readonly Lock _signalLock = new();
     private TaskCompletionSource _workSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private bool _disposed;
@@ -293,14 +292,9 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
         {
             await WaitCoreAsync(() =>
             {
-                lock (_dialogs)
+                lock (_unreadDialogs)
                 {
-                    if (_observedDialogCount >= _dialogs.Count)
-                        return false;
-
-                    dialog = _dialogs[_observedDialogCount];
-                    _observedDialogCount++;
-                    return true;
+                    return _unreadDialogs.TryDequeue(out dialog);
                 }
             }, timeout, cancellationToken).ConfigureAwait(false);
         }
@@ -426,9 +420,9 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
 
     internal void OnDialogShown(PageDialog dialog)
     {
-        lock (_dialogs)
+        lock (_unreadDialogs)
         {
-            _dialogs.Add(dialog);
+            _unreadDialogs.Enqueue(dialog);
         }
     }
 

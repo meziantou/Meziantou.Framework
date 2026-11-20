@@ -57,6 +57,10 @@ not expect does not go unnoticed:
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=DialogController_StrictMode;format=md-fenced-code-block;dedent=true -->
 ```csharp
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server);
+var page = await browser.OpenAsync("/dialogs");
+
 // No answer: confirm() returns false, and the click fails
 var exception = await Assert.ThrowsAsync<UnexpectedDialogException>(() => page.GetByRole("button", "Delete").ClickAsync());
 
@@ -79,6 +83,10 @@ silently; [IsUnexpected](cref:Meziantou.AspNetCore.Testing.PageDialog.IsUnexpect
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=DialogController_HandleNext;format=md-fenced-code-block;dedent=true -->
 ```csharp
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server);
+var page = await browser.OpenAsync("/dialogs");
+
 // Check the dialog, then answer it
 page.Dialogs.HandleNext(dialog =>
 {
@@ -105,6 +113,10 @@ handler answers; [AcceptAll](cref:Meziantou.AspNetCore.Testing.DialogController.
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=DialogController_HandleAll;format=md-fenced-code-block;dedent=true -->
 ```csharp
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server);
+var page = await browser.OpenAsync("/dialogs");
+
 // Answer the dialogs that no queued handler answers
 page.Dialogs.HandleAll(dialog =>
 {
@@ -170,6 +182,10 @@ then returns it with its answer. Each call returns the next dialog of the page t
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=TestPage_WaitForDialog;format=md-fenced-code-block;dedent=true -->
 ```csharp
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server);
+var page = await browser.OpenAsync("/dialogs");
+
 // The answer is set up before the dialog: the script waits for it
 page.Dialogs.AcceptNext();
 await page.GetByRole("button", "Save").ClickAsync(new ClickOptions { NoWaitAfter = true });
@@ -193,6 +209,10 @@ dismiss it to stay on the page, accept it to leave.
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=DialogController_BeforeUnload;format=md-fenced-code-block;dedent=true -->
 ```csharp
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server);
+var page = await browser.OpenAsync("/dialogs");
+
 // The click gives the page the sticky activation that the confirmation requires
 page.Dialogs.DismissNext();
 await page.GetByRole("button", "Delete").ClickAsync();

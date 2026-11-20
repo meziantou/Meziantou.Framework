@@ -4,9 +4,10 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
-    <IsPackable>false</IsPackable>
-    <!-- The runtime of .NET in the browser (Mono) does not run the runtime async methods: Main fails before it starts -->
-    <MeziantouRuntimeAsync>false</MeziantouRuntimeAsync>
+    <!-- The wasm-tools workload (installed on the CI images) runs the ReadWasmProps task, whose custom task factory fails
+         in the multithreaded builds (-mt) of the CI. The application does not need native relinking nor AOT: publish
+         the runtime pack as is, whether the workload is installed or not -->
+    <UsingBrowserRuntimeWorkload>false</UsingBrowserRuntimeWorkload>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
@@ -16,11 +17,4 @@
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="11.0.0" />
   </ItemGroup>
-
-  <!-- Directory.Build.targets enables runtime async for .NET 11 -->
-  <Target Name="DisableRuntimeAsync" BeforeTargets="CoreCompile">
-    <PropertyGroup>
-      <Features>$(Features.Replace(';runtime-async=on', ''))</Features>
-    </PropertyGroup>
-  </Target>
 </Project>

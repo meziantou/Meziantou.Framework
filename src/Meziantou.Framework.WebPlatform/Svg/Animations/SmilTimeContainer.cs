@@ -132,12 +132,10 @@ internal sealed class SmilTimeContainer(SvgSvgElement owner)
         var elements = Elements.ToArray();
         var wasActive = new bool[elements.Length];
         var activeBegins = new SmilTime[elements.Length];
-        var repeats = new long[elements.Length];
         for (var i = 0; i < elements.Length; i++)
         {
             wasActive[i] = elements[i].IsActive;
             activeBegins[i] = elements[i].ActiveBegin;
-            repeats[i] = wasActive[i] ? elements[i].CurrentProgress.Repeat : 0;
         }
 
         if (target < _latestUpdateTime)
@@ -168,12 +166,6 @@ internal sealed class SmilTimeContainer(SvgSvgElement owner)
             if (isActive && (!wasActive[i] || newInterval))
             {
                 elements[i].QueueTimeEvent("beginEvent", 0);
-            }
-
-            // The iterations skipped by the seek fire one repeat event (as the browsers)
-            if (isActive && elements[i].CurrentProgress.Repeat is var repeat && repeat > (newInterval || !wasActive[i] ? 0 : repeats[i]))
-            {
-                elements[i].QueueTimeEvent("repeatEvent", (int)Math.Min(repeat, int.MaxValue));
             }
         }
     }

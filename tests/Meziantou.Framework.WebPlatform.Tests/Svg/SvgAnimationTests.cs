@@ -305,11 +305,11 @@ public sealed class SvgAnimationTests : IDisposable
             }
         }
 
-        // The seek skips the iterations 1 to 3 of the source: the repeat(3) value begins the dependent at 3s, and the skipped
-        // iterations fire one repeat event
+        // The seek skips the iterations 1 to 3 of the source: the repeat(3) value begins the dependent at 3s, and the seek of
+        // the started timeline fires no repeat event
         svg.SetCurrentTime(3.5f);
         _contexts.EventLoop.RunUntilIdle();
-        Assert.Equal(["source:repeatEvent:3", "dependent:beginEvent:0"], events);
+        Assert.Equal(["dependent:beginEvent:0"], events);
         Assert.Equal(3, ((SvgAnimationElement)document.GetElementById("dependent")!).GetStartTime());
     }
 

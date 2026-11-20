@@ -555,7 +555,10 @@
     "total": 1
   },
   "svg/animations/seek-repeat-event-condition.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "repeat(3) begins after seeking into the third repeat iteration": "FAIL"
+    }
   },
   "svg/animations/seeking-events-1.html": {
     "total": 1

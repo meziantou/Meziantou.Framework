@@ -98,6 +98,15 @@ public sealed partial record BrowsingContextOptions
     public StorageOptions? Storage { get; init; }
 
     /// <summary>
+    /// Gets or sets the Network Error Logging policies of the origins (https://w3c.github.io/network-error-logging/): the
+    /// <c>NEL</c> header of a secure response sets the policy of its origin, and the requests to an origin that has a policy
+    /// generate <c>network-error</c> reports, sent to the endpoint of the policy. The cache can be shared by several browsing
+    /// contexts. The default is null: Network Error Logging is disabled, the <c>NEL</c> headers are ignored and no report is
+    /// sent (the reports describe the requests of the user to collectors chosen by the sites).
+    /// </summary>
+    public NetworkErrorLoggingCache? NetworkErrorLogging { get; init; }
+
+    /// <summary>
     /// Gets or sets the storage of the service worker registrations of the browsing contexts
     /// (<c>navigator.serviceWorker</c>), e.g. a database or a <see cref="InMemoryServiceWorkerBackend"/> shared by several
     /// browsing contexts: the registrations, and the scripts of their service workers, outlive the browsing contexts. The
@@ -153,6 +162,17 @@ public sealed partial record BrowsingContextOptions
     /// <c>canPlayType()</c> returns the empty string and <c>play()</c> is rejected with a <c>NotSupportedError</c>).
     /// </summary>
     public Media.MediaBackend? MediaBackend { get; init; }
+
+    /// <summary>
+    /// Gets or sets the capture devices of the browsing contexts (see <see cref="Media.MediaCaptureBackend"/>): the cameras and
+    /// the microphones of <c>navigator.mediaDevices.getUserMedia()</c> and <c>enumerateDevices()</c>, and the screen of
+    /// <c>getDisplayMedia()</c> (https://w3c.github.io/mediacapture-main/). The library implements the permissions, the
+    /// device identifiers, the constraints, the tracks and the streams; the backend produces the media. The <c>camera</c> and
+    /// <c>microphone</c> permissions are checked with <see cref="Permissions"/> and <see cref="RequestPermission"/>. The
+    /// default is null: there is no capture device (<c>enumerateDevices()</c> returns an empty list and <c>getUserMedia()</c>
+    /// is rejected with a <c>NotFoundError</c>).
+    /// </summary>
+    public Media.MediaCaptureBackend? MediaCapture { get; init; }
 
     /// <summary>
     /// Gets or sets whether the media elements are allowed to play without a user gesture
@@ -226,6 +246,13 @@ public sealed partial record BrowsingContextOptions
     /// By default, the documents are prefetched and prerendered when a <see cref="DocumentLoader"/> is configured.
     /// </summary>
     public SpeculativeLoadingOptions SpeculativeLoading { get; init; } = SpeculativeLoadingOptions.Default;
+
+    /// <summary>
+    /// Gets or sets the limits of the XSLT transformations: the transformations of <see cref="XsltProcessor"/> created by the
+    /// scripts of the windows, and of the XML documents whose <c>xml-stylesheet</c> processing instruction references an XSLT
+    /// stylesheet. The default is <see cref="XsltOptions.Default"/>.
+    /// </summary>
+    public XsltOptions Xslt { get; init; } = XsltOptions.Default;
 
     /// <summary>The features of the browsing contexts: <see cref="Features"/>, or the default features.</summary>
     internal WebPlatformFeatures EffectiveFeatures => Features ?? WebPlatformFeatures.Default;
@@ -667,6 +694,14 @@ public sealed partial record BrowsingContextOptions
     public WebAuthenticationOptions? WebAuthentication { get; init; }
 
     /// <summary>
+    /// Gets or sets the user interface of the user agent (see <see cref="UserAgentUIBackend"/>): the prompts that the APIs show to
+    /// the user (the credential and account choosers, the payment sheet, the secure payment confirmation, the digital
+    /// credential requests), which the backend shows and answers. The default is null: every prompt behaves as if the user
+    /// dismissed it.
+    /// </summary>
+    public UserAgentUIBackend? UserAgentUI { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Screen Orientation API (https://w3c.github.io/screen-orientation/,
     /// <c>screen.orientation</c>): <see cref="ScreenOrientationOptions.Provider"/> is the screen of the device, its orientation
     /// and its locks. The default is null: a desktop screen, whose orientation cannot be locked.
@@ -697,8 +732,26 @@ public sealed partial record BrowsingContextOptions
     /// </summary>
     public PendingInputOptions? PendingInput { get; init; }
 
+    /// <summary>
+    /// Gets or sets the host hooks of the protocol handlers (https://html.spec.whatwg.org/multipage/system-state.html#custom-handlers,
+    /// <c>navigator.registerProtocolHandler()</c>): <see cref="ProtocolHandlerOptions.Registry"/> holds the registered
+    /// handlers, which handle the navigations to the URLs of their scheme. The default is null: the handlers are not
+    /// registered, and the URLs whose scheme is not a fetch scheme are handed off to external software.
+    /// </summary>
+    public ProtocolHandlerOptions? ProtocolHandlers { get; init; }
+
     /// <summary>The list of notifications (https://notifications.spec.whatwg.org/#list-of-notifications) of the browsing contexts. Lock it to use it.</summary>
     internal List<NotificationRecord> ShownNotifications { get; } = [];
+
+    /// <summary>
+    /// The origins whose credentials cannot be returned without user mediation
+    /// (https://w3c.github.io/webappsec-credential-management/#origin-requires-user-mediation), set by
+    /// <c>navigator.credentials.preventSilentAccess()</c>. Lock it to use it.
+    /// </summary>
+    internal HashSet<string> OriginsRequiringUserMediation { get; } = new(StringComparer.Ordinal);
+
+    /// <summary>The FedCM state of the user agent: the connected accounts set and the login status of the identity providers.</summary>
+    internal IdentityCredentialState IdentityCredentials { get; } = new();
 }
 
 /// <summary>
@@ -785,6 +838,9 @@ public abstract class DocumentLoader
 /// <summary>A request of a document, given to <see cref="DocumentLoader.LoadAsync"/>.</summary>
 public sealed class DocumentRequest
 {
+    /// <summary>The exception thrown by the <see cref="DocumentLoader"/> when the request failed (the type of the <c>network-error</c> reports), or null.</summary>
+    internal Exception? LoaderException { get; set; }
+
     /// <summary>Creates a request.</summary>
     /// <param name="url">The absolute URL of the document, serialized as specified by the WHATWG URL Standard.</param>
     public DocumentRequest(string url)
@@ -1184,6 +1240,19 @@ public enum RequestDestination
     /// https://webaudio.github.io/web-audio-api/#AudioWorklet), and the modules it imports.
     /// </summary>
     AudioWorklet,
+
+    /// <summary>
+    /// An XSLT stylesheet: the one of an <c>&lt;?xml-stylesheet type="text/xsl"?&gt;</c> processing instruction of an XML
+    /// document, or of an <c>xsl:include</c> or <c>xsl:import</c> element (see <see cref="XsltProcessor"/>).
+    /// </summary>
+    Xslt,
+
+    /// <summary>
+    /// A request of Federated Credential Management to an identity provider (https://w3c-fedid.github.io/FedCM/#idp-api): its
+    /// well-known file, its config file, its accounts, client metadata, identity assertion and disconnect endpoints, and the
+    /// pictures of its accounts. The resource should be returned as bytes, with its status and its headers.
+    /// </summary>
+    WebIdentity,
 }
 
 /// <summary>The mode of a <see cref="DocumentRequest"/> (https://fetch.spec.whatwg.org/#concept-request-mode).</summary>

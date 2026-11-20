@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 385 | 395 | 0 | 97% |
+| [Reftests](#reftests) | 363 | 373 | 0 | 97% |
 | [Crash tests](#crash-tests) | 22 | 23 | 1 | 100% |
-| **All** | **445** | **456** | **1** | **98%** |
+| **All** | **423** | **434** | **1** | **98%** |
 
 ## Failure reasons
 
@@ -183,28 +183,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`clip-under-filter-002.html`](https://wpt.fyi/results/css/filter-effects/clip-under-filter-002.html) | Pass | 1 / 1 |  |  |
 | [`clip-under-filter-003.html`](https://wpt.fyi/results/css/filter-effects/clip-under-filter-003.html) | Pass | 1 / 1 |  |  |
 | [`css-backdrop-filter-transform-clip.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filter-transform-clip.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-blur.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-blur.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-brightness.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-brightness.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-combined.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-combined.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-contrast.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-contrast.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-drop-shadow.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-drop-shadow.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-grayscale.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-grayscale.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-hue-rotate.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-hue-rotate.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-invert.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-invert.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-opacity.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-opacity.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-saturate.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-saturate.html) | Pass | 1 / 1 |  |  |
-| [`css-backdrop-filters-animation-sepia.html`](https://wpt.fyi/results/css/filter-effects/css-backdrop-filters-animation-sepia.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-blur.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-blur.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-brightness.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-brightness.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-combined-001.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-combined-001.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-contrast.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-contrast.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-drop-shadow.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-drop-shadow.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-grayscale.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-grayscale.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-hue-rotate.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-hue-rotate.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-invert.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-invert.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-opacity.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-opacity.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-saturate.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-saturate.html) | Pass | 1 / 1 |  |  |
-| [`css-filters-animation-sepia.html`](https://wpt.fyi/results/css/filter-effects/css-filters-animation-sepia.html) | Pass | 1 / 1 |  |  |
 | [`css-reference-large-svg-filter.html`](https://wpt.fyi/results/css/filter-effects/css-reference-large-svg-filter.html) | Pass | 1 / 1 |  |  |
 | [`drop-shadow-clipped-001.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-clipped-001.html) | Pass | 1 / 1 |  |  |
 | [`drop-shadow-currentcolor-dynamic-001.html`](https://wpt.fyi/results/css/filter-effects/drop-shadow-currentcolor-dynamic-001.html) | Pass | 1 / 1 |  |  |

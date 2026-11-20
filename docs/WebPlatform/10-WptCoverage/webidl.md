@@ -9,25 +9,25 @@ description: "The results of the web-platform-tests of webidl, and why the tests
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 42 | 46 | 2 | 95% |
+| [Stable](#stable-tests) | 43 | 46 | 0 | 93% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **42** | **46** | **2** | **95%** |
+| **All** | **43** | **46** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 1
-- **TEST RUNNER**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`current-realm.html`](https://wpt.fyi/results/webidl/current-realm.html) | Disabled | – | TEST RUNNER | only `webidl/ecmascript-binding` is fetched and run |
+| [`current-realm.html`](https://wpt.fyi/results/webidl/current-realm.html) | Fail | 22 / 33 | BUG | the platform objects that are not nodes (`NodeList`, `Event`, `Range`, `NodeIterator`, `TreeWalker`, `ImageData`, `HTMLCollection`) are wrapped in the current realm (the realm of the called function, e.g. `Document.prototype.querySelectorAll` of the top-level window called on the document of the iframe), with one wrapper per realm, instead of once in their relevant realm (the realm of the iframe): 11 subtests get an object of the top-level realm, and `getElementsByTagName()` called through the two realms returns two different wrappers of the same collection |
 | [`ecmascript-binding/allow-resizable.html`](https://wpt.fyi/results/webidl/ecmascript-binding/allow-resizable.html) | Pass | 2 / 2 |  |  |
 | [`ecmascript-binding/allow-shared.https.html`](https://wpt.fyi/results/webidl/ecmascript-binding/allow-shared.https.html) | Fail | 0 / 1 | TEST BUG, NOT IMPLEMENTED | the test expects `new ImageDecoder({ data, type: "invalid" })` not to throw, but the constructor throws a TypeError when the type is not a valid image MIME type (https://w3c.github.io/webcodecs/#valid-imagedecoderinit, step 1); `MIDIMessageEvent` (Web MIDI) |
 | [`ecmascript-binding/attributes-accessors-unique-function-objects.html`](https://wpt.fyi/results/webidl/ecmascript-binding/attributes-accessors-unique-function-objects.html) | Pass | 1 / 1 |  |  |
@@ -72,4 +72,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ecmascript-binding/sequence-conversion.html`](https://wpt.fyi/results/webidl/ecmascript-binding/sequence-conversion.html) | Pass | 8 / 8 |  |  |
 | [`ecmascript-binding/setter-argument.html`](https://wpt.fyi/results/webidl/ecmascript-binding/setter-argument.html) | Pass | 17 / 17 |  |  |
 | [`ecmascript-binding/window-named-properties-object.html`](https://wpt.fyi/results/webidl/ecmascript-binding/window-named-properties-object.html) | Pass | 13 / 13 |  |  |
-| [`idlharness.any.js`](https://wpt.fyi/results/webidl/idlharness.any.js) | Disabled | – | TEST RUNNER | only `webidl/ecmascript-binding` is fetched and run |
+| [`idlharness.any.js`](https://wpt.fyi/results/webidl/idlharness.any.js) | Pass | 318 / 318 |  |  |

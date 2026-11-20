@@ -65,10 +65,9 @@ patching of the content (`HtmlTemplateElement.HtmlFor`) is standard.
 
 <a id="WEBPLATEXP0004"></a>
 
-## WEBPLATEXP0004: CSS Mixins @result and @private rules
+## WEBPLATEXP0004: CSS Mixins @private rule
 
-`CssMixinResultRule`, the `@result` rule that the browsers and the web-platform-tests use in the body of the mixins (the
-specification no longer defines it), and `CssPrivateRule`, the `@private` rule
+`CssPrivateRule`, the `@private` rule that declares the private properties of a style rule or of a mixin body
 ([w3c/csswg-drafts#14243](https://github.com/w3c/csswg-drafts/issues/14243#issuecomment-5180782117)). The other rules of
 [CSS Mixins](https://drafts.csswg.org/css-mixins-1/) (`@mixin`, `@apply`, `@contents`, `@function`) are not experimental.
 
@@ -158,7 +157,9 @@ The properties of `CssStyleProperties` that the browsers implement but no specif
 `IJsAdapter<TValue>.GetAbstractModuleSource()` and `SetModuleSourceClassName()`: `WebAssembly.Module` extends the
 `%AbstractModuleSource%` intrinsic of the [source phase imports proposal](https://github.com/tc39/proposal-source-phase-imports)
 (TC39), as the [ESM integration of WebAssembly](https://github.com/WebAssembly/esm-integration) defines, and its instances
-are module source objects. Only the script engine adapters implement or call them.
+are module source objects. `IJsAdapter<TValue>.GetModuleOfNamespace()` returns the module record of a module namespace
+object, for `WebAssembly.namespaceInstance()` of the ESM integration. Only the script engine adapters implement or call
+them.
 
 <a id="WEBPLATEXP0015"></a>
 
@@ -273,3 +274,14 @@ tentative web-platform-tests of `html/canvas/element/text` (`2d.text.shape.*`): 
 text styles of the context, whose glyph runs and clusters are drawn later, with the positions and selection APIs of the text
 clusters of `TextMetrics`, which it is meant to replace. No specification or explainer describes it yet. Its API and behavior
 may change.
+
+<a id="WEBPLATEXP0026"></a>
+
+## WEBPLATEXP0026: resource timing initiator URL
+
+`PerformanceResourceTiming.InitiatorUrl` implements the `initiatorUrl` attribute that Chromium implements behind a flag
+([w3c/resource-timing#263](https://github.com/w3c/resource-timing/issues/263)), as tested by the tentative
+web-platform-tests of `resource-timing/tentative/initiator-url`: the URL of the style sheet that fetched a resource, else
+the URL of the script to which the task that started the fetch is attributed (the script that runs, or the script that
+scheduled the timer, the task, the callback or the asynchronous operation that runs), else the URL of the document or of
+the worker. No specification defines it yet. Its API and behavior may change.

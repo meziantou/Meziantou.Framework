@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 99 | 107 | 0 | 93% |
-| [Tentative](#tentative-tests) | 20 | 21 | 0 | 95% |
+| [Tentative](#tentative-tests) | 19 | 20 | 0 | 95% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | [Crash tests](#crash-tests) | 13 | 13 | 0 | 100% |
-| **All** | **138** | **147** | **0** | **94%** |
+| **All** | **137** | **146** | **0** | **94%** |
 
 ## Failure reasons
 
@@ -158,7 +158,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ua-important-001.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`ua-important-002.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`ua-important-003.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important-003.tentative.html) | Pass | 1 / 1 |  |  |
-| [`ua-important.tentative.html`](https://wpt.fyi/results/css/css-transitions/ua-important.tentative.html) | Pass | 1 / 1 |  |  |
 
 ## Reftests
 

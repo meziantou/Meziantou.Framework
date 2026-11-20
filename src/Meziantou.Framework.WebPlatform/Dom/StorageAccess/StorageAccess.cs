@@ -54,7 +54,7 @@ internal static class StorageAccess
 
     /// <summary>
     /// Whether the storage access of an embedded origin is granted for a top-level origin: the <c>storage-access</c>
-    /// permission is granted, or the origins are same site (<see cref="Document.RequestStorageAccess"/> grants it without
+    /// permission is granted, or the origins are same site (<see cref="Document.RequestStorageAccess()"/> grants it without
     /// asking the user, e.g. a frame of the top-level site with a cross-site ancestor).
     /// </summary>
     public static bool IsGranted(PermissionStore? store, OriginRecord topLevel, OriginRecord embedded)

@@ -19,14 +19,13 @@ description: "The results of the web-platform-tests of css/css-exclusions, and w
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 11
-- **TEST RUNNER**: 1
+- **NOT IMPLEMENTED**: 12
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`inheritance.html`](https://wpt.fyi/results/css/css-exclusions/inheritance.html) | Disabled | – | TEST RUNNER | `css/css-exclusions` is not fetched (CSS Exclusions are not implemented and most tests need layout) |
+| [`inheritance.html`](https://wpt.fyi/results/css/css-exclusions/inheritance.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
 | [`wrap-flow-001.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-001.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
 | [`wrap-flow-002.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-002.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
 | [`wrap-flow-003.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-003.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |

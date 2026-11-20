@@ -903,7 +903,15 @@ internal static class CssSubstitution
         if (name.StartsWith("viewport-segment-", StringComparison.Ordinal))
             return indices.Length == 2 && environment.ViewportSegments?.GetValue(name, indices[0], indices[1]) is { } value ? CssSerializer.SerializeNumber(value) + "px" : null;
 
-        return indices.IsEmpty ? GetEnvironmentVariable(name, environment) : null;
+        if (!indices.IsEmpty)
+            return null;
+
+        // https://drafts.csswg.org/css-link-params-1/#using: the link parameters passed to the document are custom environment
+        // variables (and the color and accent-color environment variables)
+        if (environment.LinkParameters?.GetValue(name) is { } parameter)
+            return parameter;
+
+        return GetEnvironmentVariable(name, environment);
     }
 
     /// <summary>

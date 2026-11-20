@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of fs, and why the tests tha
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 32 | 35 | 0 | 91% |
+| [Stable](#stable-tests) | 33 | 35 | 0 | 94% |
 | [Tentative](#tentative-tests) | 2 | 8 | 0 | 25% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **34** | **43** | **0** | **79%** |
+| **All** | **35** | **43** | **0** | **81%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 8
+- **NOT IMPLEMENTED**: 7
 
 ## Stable tests
 
@@ -28,7 +28,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`FileSystemBaseHandle-IndexedDB-deferred-deserialization.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-IndexedDB-deferred-deserialization.https.any.js) | Pass | 6 / 6 |  |  |
 | [`FileSystemBaseHandle-IndexedDB.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-IndexedDB.https.any.js) | Pass | 18 / 18 |  |  |
-| [`FileSystemBaseHandle-buckets.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-buckets.https.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, whose buckets have their own file system); only Chromium implements it |
+| [`FileSystemBaseHandle-buckets.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-buckets.https.any.js) | Pass | 9 / 9 |  |  |
 | [`FileSystemBaseHandle-getUniqueId.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-getUniqueId.https.any.js) | Fail | 0 / 33 | NOT IMPLEMENTED | `FileSystemHandle.getUniqueId()`, a proposal (https://github.com/whatwg/fs/pull/46) that is not in the File System Standard; the test fails in every browser |
 | [`FileSystemBaseHandle-isSameEntry.https.any.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-isSameEntry.https.any.js) | Pass | 42 / 42 |  |  |
 | [`FileSystemBaseHandle-postMessage-BroadcastChannel.https.window.js`](https://wpt.fyi/results/fs/FileSystemBaseHandle-postMessage-BroadcastChannel.https.window.js) | Pass | 1 / 1 |  |  |

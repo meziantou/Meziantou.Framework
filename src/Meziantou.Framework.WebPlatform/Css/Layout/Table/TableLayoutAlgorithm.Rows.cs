@@ -91,7 +91,8 @@ internal sealed partial class TableLayoutAlgorithm
     /// <param name="paddingBasis">The inline size of the containing block of the table (the basis of the percentages of its paddings).</param>
     /// <param name="percentageBlockSize">The block size of the containing block of the table when it is definite (the basis of a percentage <c>height</c>).</param>
     /// <param name="fixedBlockSize">The border-box block size imposed by the parent of the table (a stretched flex or grid item), or null.</param>
-    public BoxFragment Layout(double inlineSize, double paddingBasis, double? percentageBlockSize, double? fixedBlockSize)
+    /// <param name="blockMargins">The block margins of the table wrapper box, which <c>stretch(&lt;length-percentage&gt;)</c> subtracts from its argument.</param>
+    public BoxFragment Layout(double inlineSize, double paddingBasis, double? percentageBlockSize, double? fixedBlockSize, double blockMargins = 0)
     {
         var model = Model;
         var border = Border;
@@ -147,7 +148,7 @@ internal sealed partial class TableLayoutAlgorithm
 
         // A table without column (its rows have no cell) has no border spacing between its rows, unless its height is
         // distributed to them (as in the browsers, WPT css/css-tables/tentative/table-rows-with-zero-columns.html)
-        var specifiedBlockSize = fixedBlockSize ?? ResolveTableBlockSize(percentageBlockSize, edgesBlock);
+        var specifiedBlockSize = fixedBlockSize ?? ResolveTableBlockSize(percentageBlockSize, edgesBlock, blockMargins);
         var isTableBlockSizeSpecified = specifiedBlockSize is not null || !_style.Box.GetSize(!_writingDirection.IsHorizontal).IsAuto;
 
         // https://drafts.csswg.org/css-sizing-4/#aspect-ratio: the block size transferred from the inline size is a minimum block
@@ -501,7 +502,7 @@ internal sealed partial class TableLayoutAlgorithm
     /// "If the table has a height property with a value other than auto, it is treated as a minimum height for the table grid"
     /// (its <c>min-height</c> too), or null.
     /// </summary>
-    private double? ResolveTableBlockSize(double? percentageBlockSize, double edges)
+    private double? ResolveTableBlockSize(double? percentageBlockSize, double edges, double blockMargins = 0)
     {
         var blockIsHorizontal = !_writingDirection.IsHorizontal;
         var sizing = new AxisSizing(_context, _grid)
@@ -512,6 +513,7 @@ internal sealed partial class TableLayoutAlgorithm
             PaddingAndBorder = edges,
             Edges = edges,
             StretchSize = percentageBlockSize,
+            Margins = blockMargins,
         };
 
         var boxModel = _style.Box;
@@ -536,7 +538,8 @@ internal sealed partial class TableLayoutAlgorithm
     /// browsers, a percentage that does not resolve (the block size of the containing block of the table is indefinite) behaves
     /// as <c>auto</c> (WPT css/css-tables/percent-height-table-cell-child.html).
     /// </summary>
-    private bool IsTableHeightExplicit(double? percentageBlockSize) => _style.Box.GetSize(!_writingDirection.IsHorizontal).TryResolve(percentageBlockSize) is not null;
+    private bool IsTableHeightExplicit(double? percentageBlockSize) => _style.Box.GetSize(!_writingDirection.IsHorizontal) is var height
+        && (height.TryResolve(percentageBlockSize) is not null || height.Kind == SizeKind.StretchFunction && height.Value.TryResolve(percentageBlockSize) is not null);
 
     /// <summary>
     /// Returns the block size of a range of rows, with the border spacing between them. The collapsed rows are sized as the

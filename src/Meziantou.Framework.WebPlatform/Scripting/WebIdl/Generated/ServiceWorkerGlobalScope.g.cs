@@ -39,6 +39,10 @@ internal static class Binding_ServiceWorkerGlobalScope<TAdapter, TValue> where T
     private static void Set_onnotificationclick(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "notificationclick", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onnotificationclose(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "notificationclose");
     private static void Set_onnotificationclose(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "notificationclose", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_oncanmakepayment(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "canmakepayment");
+    private static void Set_oncanmakepayment(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "canmakepayment", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_onpaymentrequest(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "paymentrequest");
+    private static void Set_onpaymentrequest(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "paymentrequest", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Op_skipWaiting(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerGlobalScope>(t, Binding);
@@ -58,6 +62,8 @@ internal static class Binding_ServiceWorkerGlobalScope<TAdapter, TValue> where T
         r.DefineAttribute(instanceTarget, "oncookiechange", Get_oncookiechange, Set_oncookiechange);
         r.DefineAttribute(instanceTarget, "onnotificationclick", Get_onnotificationclick, Set_onnotificationclick);
         r.DefineAttribute(instanceTarget, "onnotificationclose", Get_onnotificationclose, Set_onnotificationclose);
+        r.DefineAttribute(instanceTarget, "oncanmakepayment", Get_oncanmakepayment, Set_oncanmakepayment);
+        r.DefineAttribute(instanceTarget, "onpaymentrequest", Get_onpaymentrequest, Set_onpaymentrequest);
         r.DefineOperation(instanceTarget, "skipWaiting", 0, Op_skipWaiting, returnsPromise: true);
     }
 }

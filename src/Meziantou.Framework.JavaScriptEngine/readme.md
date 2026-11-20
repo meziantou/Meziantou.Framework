@@ -189,6 +189,13 @@ The value of a source phase import (`import source x from` and `import.source()`
 whose `ModuleSourceClassName` is set (e.g. `WebAssembly.Module`). The source phase import of a module that has no module
 source, such as a JavaScript module, throws a SyntaxError.
 
+`JsRealm.CreateHostDefinedModule` creates a cyclic module implemented by the host, such as a WebAssembly module: the
+modules it requests are loaded, linked and evaluated before it, like the imports of a JavaScript module, and it can be
+part of a cycle. The names it declares to import (`importedNames`) are checked when the graph is linked: a missing
+export is a SyntaxError, and no module runs. Its evaluation steps read its imports (`JsHostDefinedModule.GetImport`)
+and initialize its exports (`SetExport`, or `SetExportGetter` for a live binding); an export that is not initialized
+throws a ReferenceError.
+
 ## Documentation
 
 [docs/architecture.md](docs/architecture.md) describes the values, the objects, the realms, the compiler and the

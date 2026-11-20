@@ -9,25 +9,26 @@ description: "The results of the web-platform-tests of storage, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 11 | 14 | 0 | 79% |
-| [Tentative](#tentative-tests) | 0 | 13 | 0 | 0% |
+| [Stable](#stable-tests) | 14 | 14 | 0 | 100% |
+| [Tentative](#tentative-tests) | 4 | 13 | 0 | 31% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **11** | **27** | **0** | **41%** |
+| **All** | **18** | **27** | **0** | **67%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 16
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 8
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`buckets/detached-iframe.https.html`](https://wpt.fyi/results/storage/buckets/detached-iframe.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/idlharness-worker.https.any.js`](https://wpt.fyi/results/storage/buckets/idlharness-worker.https.any.js) | Fail | 51 / 150 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/opaque-origin.https.window.js`](https://wpt.fyi/results/storage/buckets/opaque-origin.https.window.js) | Error | 0 / 2 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
+| [`buckets/detached-iframe.https.html`](https://wpt.fyi/results/storage/buckets/detached-iframe.https.html) | Pass | 3 / 3 |  |  |
+| [`buckets/idlharness-worker.https.any.js`](https://wpt.fyi/results/storage/buckets/idlharness-worker.https.any.js) | Pass | 150 / 150 |  |  |
+| [`buckets/opaque-origin.https.window.js`](https://wpt.fyi/results/storage/buckets/opaque-origin.https.window.js) | Pass | 2 / 2 |  |  |
 | [`estimate-indexeddb.https.any.js`](https://wpt.fyi/results/storage/estimate-indexeddb.https.any.js) | Pass | 2 / 2 |  |  |
 | [`estimate-parallel.https.any.js`](https://wpt.fyi/results/storage/estimate-parallel.https.any.js) | Pass | 2 / 2 |  |  |
 | [`idlharness.https.any.js`](https://wpt.fyi/results/storage/idlharness.https.any.js) | Pass | 66 / 66 |  |  |
@@ -44,12 +45,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`buckets/bucket-quota-indexeddb.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/bucket-quota-indexeddb.tentative.https.any.js) | Error | 0 / 2 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/bucket-storage-policy.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/bucket-storage-policy.tentative.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/bucket_names.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/bucket_names.tentative.https.any.js) | Fail | 0 / 87 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/buckets_basic.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/buckets_basic.tentative.https.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/buckets_storage_policy.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/buckets_storage_policy.tentative.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
-| [`buckets/storage_bucket_object.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/storage_bucket_object.tentative.https.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, `StorageBucketManager`, `StorageBucket`), a WICG proposal that only Chromium implements; the storage of an origin is its default bucket |
+| [`buckets/bucket-quota-indexeddb.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/bucket-quota-indexeddb.tentative.https.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the quota of the storage buckets for IndexedDB: the quota of a bucket only limits its origin private file system, so the transaction that stores 2 MB in a bucket with a 1.5 MB quota commits |
+| [`buckets/bucket-storage-policy.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/bucket-storage-policy.tentative.https.any.js) | Pass | 3 / 3 |  |  |
+| [`buckets/bucket_names.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/bucket_names.tentative.https.any.js) | Pass | 87 / 87 |  |  |
+| [`buckets/buckets_basic.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/buckets_basic.tentative.https.any.js) | Pass | 9 / 9 |  |  |
+| [`buckets/buckets_storage_policy.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/buckets_storage_policy.tentative.https.any.js) | Pass | 3 / 3 |  |  |
+| [`buckets/storage_bucket_object.tentative.https.any.js`](https://wpt.fyi/results/storage/buckets/storage_bucket_object.tentative.https.any.js) | Fail | 18 / 27 | TEST BUG | 3 subtests: `StorageBucket.durability()` and the `durability` option of `open()`, which the Storage Buckets specification no longer defines (its IDL has no `durability`) |
 | [`estimate-usage-details-caches.https.tentative.any.js`](https://wpt.fyi/results/storage/estimate-usage-details-caches.https.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the `usageDetails` member of `StorageEstimate` (the usage per storage endpoint), an extension of Chromium that is not in the Storage Standard |
 | [`estimate-usage-details-indexeddb.https.tentative.any.js`](https://wpt.fyi/results/storage/estimate-usage-details-indexeddb.https.tentative.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the `usageDetails` member of `StorageEstimate` (the usage per storage endpoint), an extension of Chromium that is not in the Storage Standard |
 | [`estimate-usage-details-service-workers.https.tentative.window.js`](https://wpt.fyi/results/storage/estimate-usage-details-service-workers.https.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `usageDetails` member of `StorageEstimate` (the usage per storage endpoint), an extension of Chromium that is not in the Storage Standard |

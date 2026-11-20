@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of service-workers, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 250 | 283 | 5 | 90% |
+| [Stable](#stable-tests) | 253 | 283 | 5 | 91% |
 | [Tentative](#tentative-tests) | 7 | 11 | 0 | 64% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 3 | 0 | 67% |
-| **All** | **260** | **298** | **5** | **89%** |
+| **All** | **263** | **298** | **5** | **90%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 14
-- **NOT IMPLEMENTED**: 16
+- **NOT IMPLEMENTED**: 13
 - **TEST RUNNER**: 2
 - **FLAKY**: 4
 
@@ -38,7 +38,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cache-storage/cache-match.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-match.https.any.js) | Pass | 100 / 100 |  |  |
 | [`cache-storage/cache-matchAll.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-matchAll.https.any.js) | Pass | 64 / 64 |  |  |
 | [`cache-storage/cache-put.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-put.https.any.js) | Pass | 108 / 108 |  |  |
-| [`cache-storage/cache-storage-buckets.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-storage-buckets.https.any.js) | Fail | 0 / 8 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`) |
+| [`cache-storage/cache-storage-buckets.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-storage-buckets.https.any.js) | Pass | 8 / 8 |  |  |
 | [`cache-storage/cache-storage-keys.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-storage-keys.https.any.js) | Pass | 4 / 4 |  |  |
 | [`cache-storage/cache-storage-match.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-storage-match.https.any.js) | Pass | 44 / 44 |  |  |
 | [`cache-storage/cache-storage.https.any.js`](https://wpt.fyi/results/service-workers/cache-storage/cache-storage.https.any.js) | Pass | 40 / 40 |  |  |
@@ -103,7 +103,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/embed-and-object-are-not-intercepted.https.html`](https://wpt.fyi/results/service-workers/service-worker/embed-and-object-are-not-intercepted.https.html) | Pass | 8 / 8 |  |  |
 | [`service-worker/extendable-event-async-waituntil.https.html`](https://wpt.fyi/results/service-workers/service-worker/extendable-event-async-waituntil.https.html) | Pass | 14 / 14 |  |  |
 | [`service-worker/extendable-event-waituntil.https.html`](https://wpt.fyi/results/service-workers/service-worker/extendable-event-waituntil.https.html) | Pass | 6 / 6 |  |  |
-| [`service-worker/fetch-audio-tainting.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-audio-tainting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `MediaElementAudioSourceNode` (`createMediaElementSource()`), which the test uses to check that the audio of the element is tainted |
+| [`service-worker/fetch-audio-tainting.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-audio-tainting.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-canvas-tainting-double-write.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-double-write.https.html) | Pass | 1 / 1 |  |  |
 | [`service-worker/fetch-canvas-tainting-image-cache.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-image-cache.https.html) | Pass | 40 / 40 |  |  |
 | [`service-worker/fetch-canvas-tainting-image.https.html`](https://wpt.fyi/results/service-workers/service-worker/fetch-canvas-tainting-image.https.html) | Pass | 40 / 40 |  |  |
@@ -311,7 +311,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`service-worker/worker-interception.https.html`](https://wpt.fyi/results/service-workers/service-worker/worker-interception.https.html) | Pass | 16 / 16 |  |  |
 | [`service-worker/xhr-content-length.https.window.js`](https://wpt.fyi/results/service-workers/service-worker/xhr-content-length.https.window.js) | Pass | 5 / 5 |  |  |
 | [`service-worker/xhr-response-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/xhr-response-url.https.html) | Pass | 6 / 6 |  |  |
-| [`service-worker/xsl-base-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/xsl-base-url.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | XSLT |
+| [`service-worker/xsl-base-url.https.html`](https://wpt.fyi/results/service-workers/service-worker/xsl-base-url.https.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 

@@ -173,6 +173,9 @@ public sealed class VirtualAuthenticatorEnvironment
         }
     }
 
+    /// <summary>The browser bound key store of Secure Payment Confirmation of the user agent that uses the environment.</summary>
+    internal BrowserBoundKeyStore BrowserBoundKeys { get; } = new();
+
     /// <summary>Records that the user agent mediated an authentication for an origin (the condition of a conditional create).</summary>
     internal void RecordAuthentication(string origin, long timestamp)
     {
@@ -482,6 +485,9 @@ internal sealed class StoredCredential(byte[] id, string rpId, CredentialKey key
     public CredentialKey Key { get; } = key;
 
     public bool IsResident { get; init; }
+
+    /// <summary>Whether the credential was created with the <c>payment</c> extension (an SPC credential, which a third party can use, https://w3c.github.io/secure-payment-confirmation/#sctn-steps-to-check-if-a-payment-can-be-made).</summary>
+    public bool IsPaymentCredential { get; init; }
 
     public byte[]? UserHandle { get; init; }
 

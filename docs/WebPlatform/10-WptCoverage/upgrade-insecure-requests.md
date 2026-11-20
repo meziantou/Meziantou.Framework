@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of upgrade-insecure-requests
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 191 | 197 | 0 | 97% |
+| [Stable](#stable-tests) | 191 | 194 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **191** | **197** | **0** | **97%** |
+| **All** | **191** | **194** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 6
+- **TEST BUG**: 3
 
 ## Stable tests
 
@@ -27,7 +27,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`gen/iframe-blank-inherit.meta/unset/fetch.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/fetch.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/iframe-blank-inherit.meta/unset/iframe-tag.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/iframe-tag.https.html) | Timeout | 5 / 6 | TEST BUG | without the directive, an expected-blocked iframe (mixed content, or a redirect to an `http:` URL) never posts a `message` and an iframe has no `error` event, so the subtest waits until the test times out (as in Chrome and Safari) |
-| [`gen/iframe-blank-inherit.meta/unset/img-tag.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/img-tag.https.html) | Fail | 0 / 6 | TEST BUG | without the directive, the expected-blocked `http:` image is autoupgraded to `https:` by Mixed Content (https://w3c.github.io/webappsec-mixed-content/#upgrade-algorithm) and loads on the https port: fails in every browser |
 | [`gen/iframe-blank-inherit.meta/unset/sharedworker-classic.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/sharedworker-classic.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/iframe-blank-inherit.meta/unset/sharedworker-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/sharedworker-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/iframe-blank-inherit.meta/unset/sharedworker-import.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/iframe-blank-inherit.meta/unset/sharedworker-import.https.html) | Pass | 6 / 6 |  |  |
@@ -93,7 +92,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gen/sharedworker-module.http-rp/upgrade/xhr.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/sharedworker-module.http-rp/upgrade/xhr.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/fetch.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/fetch.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/iframe-tag.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/iframe-tag.https.html) | Timeout | 5 / 6 | TEST BUG | without the directive, an expected-blocked iframe (mixed content, or a redirect to an `http:` URL) never posts a `message` and an iframe has no `error` event, so the subtest waits until the test times out (as in Chrome and Safari) |
-| [`gen/srcdoc-inherit.meta/unset/img-tag.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/img-tag.https.html) | Fail | 0 / 6 | TEST BUG | without the directive, the expected-blocked `http:` image is autoupgraded to `https:` by Mixed Content (https://w3c.github.io/webappsec-mixed-content/#upgrade-algorithm) and loads on the https port: fails in every browser |
 | [`gen/srcdoc-inherit.meta/unset/sharedworker-classic.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/sharedworker-classic.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/sharedworker-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/sharedworker-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/srcdoc-inherit.meta/unset/sharedworker-import.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/srcdoc-inherit.meta/unset/sharedworker-import.https.html) | Pass | 6 / 6 |  |  |
@@ -156,7 +154,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gen/top.http-rp/upgrade/xhr.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.http-rp/upgrade/xhr.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/unset/fetch.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/unset/fetch.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/unset/iframe-tag.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/unset/iframe-tag.https.html) | Timeout | 0 / 6 | TEST BUG | without the directive, an expected-blocked iframe (mixed content, or a redirect to an `http:` URL) never posts a `message` and an iframe has no `error` event, so the subtest waits until the test times out (as in Chrome and Safari) |
-| [`gen/top.meta/unset/img-tag.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/unset/img-tag.https.html) | Fail | 0 / 6 | TEST BUG | without the directive, the expected-blocked `http:` image is autoupgraded to `https:` by Mixed Content (https://w3c.github.io/webappsec-mixed-content/#upgrade-algorithm) and loads on the https port: fails in every browser |
 | [`gen/top.meta/unset/sharedworker-classic.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/unset/sharedworker-classic.https.html) | Pass | 3 / 3 |  |  |
 | [`gen/top.meta/unset/sharedworker-import-data.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/unset/sharedworker-import-data.https.html) | Pass | 6 / 6 |  |  |
 | [`gen/top.meta/unset/sharedworker-import.https.html`](https://wpt.fyi/results/upgrade-insecure-requests/gen/top.meta/unset/sharedworker-import.https.html) | Pass | 6 / 6 |  |  |

@@ -45,7 +45,7 @@ internal static class ModuleOperations
     public static JsValue LoadRequestedModules(JsModule module, object? hostDefined, List<string>? importedNames = null)
     {
         var capability = PromiseCapability.CreateIntrinsic(module.Realm);
-        if (module is not JsSourceTextModule)
+        if (module is not JsCyclicModule)
         {
             capability.Resolve(default);
             return capability.Promise;
@@ -63,7 +63,7 @@ internal static class ModuleOperations
     /// </summary>
     private static void InnerModuleLoading(GraphLoadingState state, JsModule module, List<string>? importedNames, bool loadDependencies = true)
     {
-        if (loadDependencies && module is JsSourceTextModule cyclic)
+        if (loadDependencies && module is JsCyclicModule cyclic)
         {
             List<ModuleRequest> requestsToLoad = [];
             if (state.Visited.TryAdd(cyclic) && cyclic.Status == JsModuleStatus.New)
@@ -126,7 +126,7 @@ internal static class ModuleOperations
         }
     }
 
-    private static JsModule? FindLoadedModule(JsSourceTextModule referrer, ModuleRequest request)
+    private static JsModule? FindLoadedModule(JsCyclicModule referrer, ModuleRequest request)
     {
         foreach (var (loadedRequest, module) in referrer.LoadedModules)
         {
@@ -165,7 +165,7 @@ internal static class ModuleOperations
     /// <summary>FinishLoadingImportedModule(referrer, moduleRequest, payload, result)</summary>
     public static void FinishLoadingImportedModule(IScriptOrModule? referrer, ModuleRequest request, object payload, JsModule? module, JsValue error)
     {
-        if (module is not null && referrer is JsSourceTextModule referrerModule)
+        if (module is not null && referrer is JsCyclicModule referrerModule)
         {
             if (FindLoadedModule(referrerModule, request) is { } existing)
             {
@@ -201,11 +201,11 @@ internal static class ModuleOperations
             return;
         }
 
-        var cyclic = (JsSourceTextModule)module;
+        var cyclic = (JsCyclicModule)module;
         if (cyclic.Status is JsModuleStatus.New or JsModuleStatus.Linking or JsModuleStatus.Evaluating)
             throw new InvalidOperationException("The module cannot be linked: its status is " + cyclic.Status);
 
-        var stack = new List<JsSourceTextModule>();
+        var stack = new List<JsCyclicModule>();
         try
         {
             InnerModuleLinking(cyclic, stack, 0);
@@ -237,7 +237,7 @@ internal static class ModuleOperations
     /// An exception filter that resets the status of the modules being linked when the linking fails, and does not catch
     /// the exception (a catch block that rethrows nests the exception dispatch).
     /// </summary>
-    private static bool ResetLinkingModules(List<JsSourceTextModule> stack)
+    private static bool ResetLinkingModules(List<JsCyclicModule> stack)
     {
         foreach (var m in stack)
         {
@@ -248,9 +248,9 @@ internal static class ModuleOperations
     }
 
     /// <summary>InnerModuleLinking(module, stack, index)</summary>
-    private static int InnerModuleLinking(JsModule module, List<JsSourceTextModule> stack, int index)
+    private static int InnerModuleLinking(JsModule module, List<JsCyclicModule> stack, int index)
     {
-        if (module is not JsSourceTextModule cyclic)
+        if (module is not JsCyclicModule cyclic)
         {
             ((JsSyntheticModule)module).LinkCore();
             return index;
@@ -270,17 +270,25 @@ internal static class ModuleOperations
         foreach (var required in linkingList)
         {
             index = InnerModuleLinking(required, stack, index);
-            if (required is JsSourceTextModule { Status: JsModuleStatus.Linking } requiredCyclic)
+            if (required is JsCyclicModule { Status: JsModuleStatus.Linking } requiredCyclic)
             {
                 cyclic.DfsAncestorIndex = Math.Min(cyclic.DfsAncestorIndex, requiredCyclic.DfsAncestorIndex);
             }
         }
 
-        InitializeEnvironment(cyclic);
+        if (cyclic is JsSourceTextModule sourceTextModule)
+        {
+            InitializeEnvironment(sourceTextModule);
+        }
+        else
+        {
+            ((JsHostDefinedModule)cyclic).InitializeEnvironment();
+        }
+
         ValidateAllRequestedOptionalNamespaceExports(previouslyImportedNames);
         if (cyclic.DfsAncestorIndex == cyclic.DfsIndex)
         {
-            JsSourceTextModule required;
+            JsCyclicModule required;
             do
             {
                 required = stack[^1];
@@ -298,7 +306,7 @@ internal static class ModuleOperations
     /// requests, and for the <c>export defer</c> declarations that provide the names they import. The module of a source
     /// phase import is not linked.
     /// </summary>
-    private static void BuildLinkingList(List<JsModule> linkingList, JsSourceTextModule referrer, List<ModuleRequest> moduleRequests, PreviouslyImportedNames previouslyImportedNames)
+    private static void BuildLinkingList(List<JsModule> linkingList, JsCyclicModule referrer, List<ModuleRequest> moduleRequests, PreviouslyImportedNames previouslyImportedNames)
     {
         foreach (var request in moduleRequests)
         {
@@ -309,13 +317,13 @@ internal static class ModuleOperations
             if (!linkingList.Contains(required))
             {
                 linkingList.Add(required);
-                if (required is JsSourceTextModule cyclicRequired)
+                if (required is JsCyclicModule cyclicRequired)
                 {
                     previouslyImportedNames.TryAdd(cyclicRequired);
                 }
             }
 
-            if (required is JsSourceTextModule requiredCyclic)
+            if (required is JsCyclicModule requiredCyclic)
             {
                 var optionalRequests = GetNewOptionalIndirectExportsModuleRequests(requiredCyclic, request.ImportedNames, previouslyImportedNames);
                 BuildLinkingList(linkingList, requiredCyclic, optionalRequests, previouslyImportedNames);
@@ -370,7 +378,7 @@ internal static class ModuleOperations
     /// ValidateRequestedOptionalIndirectExports(module, importedNames): the <c>export defer</c> declarations that provide
     /// <paramref name="importedNames"/> (null for all the names) must be resolvable.
     /// </summary>
-    private static void ValidateRequestedOptionalIndirectExports(JsSourceTextModule module, List<string>? importedNames)
+    private static void ValidateRequestedOptionalIndirectExports(JsCyclicModule module, List<string>? importedNames)
     {
         if (module.OptionalIndirectExportEntries.Count == 0)
             return;
@@ -463,7 +471,7 @@ internal static class ModuleOperations
         JsInterpreter.Run(frame);
     }
 
-    private static string GetResolutionError(string name, ResolvedBinding? resolution, JsModule module)
+    internal static string GetResolutionError(string name, ResolvedBinding? resolution, JsModule module)
     {
         var url = module.Url is null ? "the module" : "'" + module.Url + "'";
         return resolution is null
@@ -481,7 +489,7 @@ internal static class ModuleOperations
         if (module is JsSyntheticModule synthetic)
             return synthetic.EvaluateCore();
 
-        var cyclic = (JsSourceTextModule)module;
+        var cyclic = (JsCyclicModule)module;
         if (cyclic.Status is not (JsModuleStatus.Linked or JsModuleStatus.EvaluatingAsync or JsModuleStatus.Evaluated))
             throw new InvalidOperationException("The module cannot be evaluated: its status is " + cyclic.Status);
 
@@ -493,7 +501,7 @@ internal static class ModuleOperations
         if (cyclic.TopLevelCapability is { } existing)
             return existing.Promise;
 
-        var stack = new List<JsSourceTextModule>();
+        var stack = new List<JsCyclicModule>();
         var capability = PromiseCapability.CreateIntrinsic(cyclic.Realm);
         cyclic.TopLevelCapability = capability;
         try
@@ -524,7 +532,7 @@ internal static class ModuleOperations
         return capability.Promise;
     }
 
-    private static void SetEvaluationError(List<JsSourceTextModule> stack, JsValue error, JsSourceLocation? location)
+    private static void SetEvaluationError(List<JsCyclicModule> stack, JsValue error, JsSourceLocation? location)
     {
         foreach (var m in stack)
         {
@@ -539,9 +547,9 @@ internal static class ModuleOperations
     }
 
     /// <summary>InnerModuleEvaluation(module, stack, index)</summary>
-    private static int InnerModuleEvaluation(JsModule module, List<JsSourceTextModule> stack, int index)
+    private static int InnerModuleEvaluation(JsModule module, List<JsCyclicModule> stack, int index)
     {
-        if (module is not JsSourceTextModule cyclic)
+        if (module is not JsCyclicModule cyclic)
         {
             var promise = (JsPromise)((JsSyntheticModule)module).EvaluateCore();
             if (promise.State == PromiseState.Rejected)
@@ -577,7 +585,7 @@ internal static class ModuleOperations
         foreach (var required in evaluationList)
         {
             index = InnerModuleEvaluation(required, stack, index);
-            if (required is JsSourceTextModule requiredCyclic)
+            if (required is JsCyclicModule requiredCyclic)
             {
                 if (requiredCyclic.Status == JsModuleStatus.Evaluating)
                 {
@@ -603,7 +611,7 @@ internal static class ModuleOperations
             cyclic.AsyncEvaluationOrder = ++cyclic.Realm.Engine.ModuleAsyncEvaluationCount;
             if (cyclic.PendingAsyncDependencies == 0)
             {
-                ExecuteAsyncModule(cyclic);
+                ExecuteAsyncModule((JsSourceTextModule)cyclic);
             }
         }
         else
@@ -613,7 +621,7 @@ internal static class ModuleOperations
 
         if (cyclic.DfsAncestorIndex == cyclic.DfsIndex)
         {
-            JsSourceTextModule required;
+            JsCyclicModule required;
             do
             {
                 required = stack[^1];
@@ -650,7 +658,7 @@ internal static class ModuleOperations
     /// provide the names they import. The asynchronous dependencies of the deferred modules are gathered, or the deferred
     /// requests are ignored, depending on <paramref name="onDeferredNamespace"/>.
     /// </summary>
-    private static void BuildEvaluationList(List<JsModule> evaluationList, JsSourceTextModule referrer, List<ModuleRequest> moduleRequests, PreviouslyImportedNames previouslyImportedNames, DeferredNamespaceHandling onDeferredNamespace)
+    private static void BuildEvaluationList(List<JsModule> evaluationList, JsCyclicModule referrer, List<ModuleRequest> moduleRequests, PreviouslyImportedNames previouslyImportedNames, DeferredNamespaceHandling onDeferredNamespace)
     {
         foreach (var request in moduleRequests)
         {
@@ -669,7 +677,7 @@ internal static class ModuleOperations
                 AddUnique(evaluationList, required);
             }
 
-            if (required is not JsSourceTextModule requiredCyclic)
+            if (required is not JsCyclicModule requiredCyclic)
                 continue;
 
             previouslyImportedNames.TryAdd(requiredCyclic);
@@ -693,7 +701,7 @@ internal static class ModuleOperations
     /// GetNewOptionalIndirectExportsModuleRequests(module, importedNames, previouslyImportedNames): the requests of the
     /// <c>export defer</c> declarations for the names that were not already requested from the module, which are recorded.
     /// </summary>
-    private static List<ModuleRequest> GetNewOptionalIndirectExportsModuleRequests(JsSourceTextModule module, ImportedNames importedNames, PreviouslyImportedNames previouslyImportedNames)
+    private static List<ModuleRequest> GetNewOptionalIndirectExportsModuleRequests(JsCyclicModule module, ImportedNames importedNames, PreviouslyImportedNames previouslyImportedNames)
     {
         previouslyImportedNames.TryAdd(module);
 
@@ -725,7 +733,7 @@ internal static class ModuleOperations
             return [];
 
         seen.Add(module);
-        if (module is not JsSourceTextModule cyclic || cyclic.Status == JsModuleStatus.Evaluating || IsModuleSccEvaluated(cyclic))
+        if (module is not JsCyclicModule cyclic || cyclic.Status == JsModuleStatus.Evaluating || IsModuleSccEvaluated(cyclic))
             return [];
 
         if (cyclic.HasTopLevelAwait)
@@ -735,7 +743,7 @@ internal static class ModuleOperations
     }
 
     /// <summary>GatherAsynchronousTransitiveDependenciesForRequests(referrer, moduleRequests, seen, previouslyImportedNames)</summary>
-    private static List<JsModule> GatherAsynchronousTransitiveDependenciesForRequests(JsSourceTextModule referrer, List<ModuleRequest> moduleRequests, List<JsModule> seen, PreviouslyImportedNames previouslyImportedNames)
+    private static List<JsModule> GatherAsynchronousTransitiveDependenciesForRequests(JsCyclicModule referrer, List<ModuleRequest> moduleRequests, List<JsModule> seen, PreviouslyImportedNames previouslyImportedNames)
     {
         var result = new List<JsModule>();
         foreach (var request in moduleRequests)
@@ -745,7 +753,7 @@ internal static class ModuleOperations
 
             var required = referrer.GetImportedModule(request);
             AddUnique(result, GatherAsynchronousTransitiveDependencies(required, seen, previouslyImportedNames));
-            if (required is JsSourceTextModule requiredCyclic)
+            if (required is JsCyclicModule requiredCyclic)
             {
                 var optionalRequests = GetNewOptionalIndirectExportsModuleRequests(requiredCyclic, request.ImportedNames, previouslyImportedNames);
                 AddUnique(result, GatherAsynchronousTransitiveDependenciesForRequests(requiredCyclic, optionalRequests, seen, previouslyImportedNames));
@@ -756,7 +764,7 @@ internal static class ModuleOperations
     }
 
     /// <summary>IsModuleSCCEvaluated(module): whether the whole strongly connected component of the module is evaluated.</summary>
-    private static bool IsModuleSccEvaluated(JsSourceTextModule module) => (module.CycleRoot ?? module).Status == JsModuleStatus.Evaluated;
+    private static bool IsModuleSccEvaluated(JsCyclicModule module) => (module.CycleRoot ?? module).Status == JsModuleStatus.Evaluated;
 
     /// <summary>
     /// ReadyForSyncExecution(module, importedNames, onDeferredNamespace, [seen]): whether a module, and the export defer
@@ -764,7 +772,7 @@ internal static class ModuleOperations
     /// </summary>
     private static bool ReadyForSyncExecution(JsModule module, List<string>? importedNames, DeferredNamespaceHandling onDeferredNamespace, PreviouslyImportedNames? seen = null)
     {
-        if (module is not JsSourceTextModule cyclic)
+        if (module is not JsCyclicModule cyclic)
             return true;
 
         seen ??= new PreviouslyImportedNames();
@@ -813,7 +821,7 @@ internal static class ModuleOperations
             ThrowHelper.ThrowTypeError("The deferred module '" + module.Url + "' cannot be evaluated synchronously: it or one of its dependencies is being evaluated or has a top-level await");
 
         var evaluationList = new List<JsModule> { module };
-        if (module is JsSourceTextModule cyclic)
+        if (module is JsCyclicModule cyclic)
         {
             var previouslyImportedNames = new PreviouslyImportedNames();
             previouslyImportedNames.TryAdd(cyclic);
@@ -871,9 +879,15 @@ internal static class ModuleOperations
         }
     }
 
-    /// <summary>ExecuteModule() without a capability: runs the body of a module that has no top-level await.</summary>
-    private static void ExecuteModule(JsSourceTextModule module)
+    /// <summary>ExecuteModule() without a capability: runs the body of a module that has no top-level await, or the evaluation steps of a host-defined module.</summary>
+    private static void ExecuteModule(JsCyclicModule cyclic)
     {
+        if (cyclic is not JsSourceTextModule module)
+        {
+            ((JsHostDefinedModule)cyclic).ExecuteModule();
+            return;
+        }
+
         var frame = new Frame(module.Code.Body, module.Realm, module.Environment!, [])
         {
             Script = module,
@@ -888,8 +902,8 @@ internal static class ModuleOperations
         var capability = PromiseCapability.CreateIntrinsic(module.Realm);
         JsPromise.PerformPromiseThen(
             (JsPromise)capability.Promise,
-            static (state, _) => AsyncModuleExecutionFulfilled((JsSourceTextModule)state!),
-            static (state, error) => AsyncModuleExecutionRejected((JsSourceTextModule)state!, error),
+            static (state, _) => AsyncModuleExecutionFulfilled((JsCyclicModule)state!),
+            static (state, error) => AsyncModuleExecutionRejected((JsCyclicModule)state!, error),
             module);
 
         var frame = new Frame(module.Code.Body, module.Realm, module.Environment!, [])
@@ -901,7 +915,7 @@ internal static class ModuleOperations
     }
 
     /// <summary>GatherAvailableAncestors(module, execList)</summary>
-    private static void GatherAvailableAncestors(JsSourceTextModule module, List<JsSourceTextModule> execList)
+    private static void GatherAvailableAncestors(JsCyclicModule module, List<JsCyclicModule> execList)
     {
         foreach (var m in module.AsyncParentModules)
         {
@@ -921,7 +935,7 @@ internal static class ModuleOperations
     }
 
     /// <summary>AsyncModuleExecutionFulfilled(module)</summary>
-    private static void AsyncModuleExecutionFulfilled(JsSourceTextModule module)
+    private static void AsyncModuleExecutionFulfilled(JsCyclicModule module)
     {
         if (module.Status == JsModuleStatus.Evaluated)
             return;
@@ -930,7 +944,7 @@ internal static class ModuleOperations
         module.Status = JsModuleStatus.Evaluated;
         module.TopLevelCapability?.Resolve(default);
 
-        var execList = new List<JsSourceTextModule>();
+        var execList = new List<JsCyclicModule>();
         GatherAvailableAncestors(module, execList);
         execList.Sort(static (a, b) => a.AsyncEvaluationOrder.CompareTo(b.AsyncEvaluationOrder));
         for (var i = 0; i < execList.Count; i++)
@@ -943,7 +957,7 @@ internal static class ModuleOperations
             {
                 if (m.HasTopLevelAwait)
                 {
-                    ExecuteAsyncModule(m);
+                    ExecuteAsyncModule((JsSourceTextModule)m);
                     continue;
                 }
 
@@ -973,7 +987,7 @@ internal static class ModuleOperations
     }
 
     /// <summary>AsyncModuleExecutionRejected(module, error)</summary>
-    internal static void AsyncModuleExecutionRejected(JsSourceTextModule module, JsValue error)
+    internal static void AsyncModuleExecutionRejected(JsCyclicModule module, JsValue error)
     {
         if (module.Status == JsModuleStatus.Evaluated)
             return;
@@ -1188,7 +1202,7 @@ internal static class ModuleOperations
         // import.defer(): only the asynchronous dependencies are evaluated. The export defer declarations are evaluated on
         // access to the namespace, only their asynchronous dependencies are evaluated now
         var evaluationList = state.Phase == ModulePhase.Defer ? GatherAsynchronousTransitiveDependencies(module) : [module];
-        if (module is JsSourceTextModule cyclic)
+        if (module is JsCyclicModule cyclic)
         {
             var optionalRequests = cyclic.GetOptionalIndirectExportsModuleRequests(state.ImportedNames);
             AddUnique(evaluationList, GatherAsynchronousTransitiveDependenciesForRequests(cyclic, optionalRequests, [], new PreviouslyImportedNames()));

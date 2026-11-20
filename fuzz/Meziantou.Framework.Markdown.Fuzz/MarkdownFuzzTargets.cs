@@ -31,7 +31,7 @@ public static class MarkdownFuzzTargets
 
     private static readonly string[] ExtensionTokens =
     [
-        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "+---+", "+===+", "ABC-12", "(X-1)", "![](a.mp4)", "![](https://youtu.be/x)", "+:-:+", "+---+---+\n", "| a | b |\n", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ", "\u0645", "\u05D0", "\u3002", "\u30C6", "\uFF01", "| [^1] |\n", "| # a |\n", "| > [!NOTE] |\n", "| --- |\n",
+        .. GfmTokens, "^", "++", "==", "~a~", "^a^", "&plus;", "&reg;", "\u2212", "\u2020", "$", "$$", "$$\n", "\\$", "---\n", "...\n", "```mermaid\n", "```nomnoml\n", "> [!NOTE]\n", "[!TIP]", "[!x]  \n", "*[A]: ", "*[A B]: x\n", "A ", "[^1]", "[^1]: ", "\n    ", "[^a]:\n", "{", "}", "{#a}", "{.b}", "{c=d}", "{e=\"f\"}", "{g}\n", "# a\n", "[a]", "a\n===\n", "\u00E9", "\u00DF", "\u00C6", ":::", "::::", ":::x\n", ":::\n", "::", ":   ", "~   ", "\n:   ", "a. ", "B) ", "iv. ", "XI) ", "'", "\"", "''", "<<", ">>", "...", "--", "---", ":smile:", ":)", ":*", "<3", "]:)", "->", "o:)", "^^^", "^^^ c\n", "^^ ", "\"\"", "+---+", "+===+", "ABC-12", "(X-1)", "![](a.mp4)", "![](https://youtu.be/x)", "+:-:+", "+---+---+\n", "| a | b |\n", "||", "|-|", "| :--: |", "\\-", "\\:", "|{.c}", "-|-\n", " | ", "\u0645", "\u05D0", "\u3002", "\u30C6", "\uFF01", "tel:", "*http://a.b", "| [^1] |\n", "| # a |\n", "| > [!NOTE] |\n", "| --- |\n",
     ];
 
     // Every extension, with the pipe tables and the autolinks of Markdig. A text of odd length has the tables and the autolinks
@@ -407,8 +407,9 @@ public static class MarkdownFuzzTargets
             if (options.DisableHtml)
             {
                 // The HTML of the text is text, so every id is one the renderer writes: the ids of the document have the prefix, and
-                // so do the links to the footnotes and back
-                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(html, "(?: id=\"|href=\"#)(?<id>[^\"]*)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
+                // so do the links to the footnotes and back. The attributes are the ones in a tag: the text of a diagram is written as
+                // Markdig writes it, where only < and & are escaped, so it can contain id="a" as text.
+                foreach (System.Text.RegularExpressions.Match match in System.Text.RegularExpressions.Regex.Matches(html, "(?<=<[^<>]*)(?: id=\"|href=\"#)(?<id>[^\"]*)\"", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(10)))
                 {
                     var id = match.Groups["id"].Value;
                     FuzzAssert.True(id.StartsWith("u-", StringComparison.Ordinal) || (match.Value.StartsWith(" id", StringComparison.Ordinal) && id.StartsWith("pragma-line-", StringComparison.Ordinal)) || (match.Value.StartsWith("href", StringComparison.Ordinal) && !id.StartsWith("fn", StringComparison.Ordinal)), $"The id {FuzzAssert.Format(id)} of {FuzzAssert.Format(match.Value)} has no prefix: {FuzzAssert.Format(text)}");
@@ -802,18 +803,33 @@ public static class MarkdownFuzzTargets
             {
                 foreach (var attributes in (MarkdownGenericAttributes?[])[FuzzAttributes, null])
                 {
-                    MarkdownSyntaxTree updated;
+                    var expected = attributes ?? MarkdownGenericAttributes.Empty;
                     try
                     {
-                        updated = tree.WithGenericAttributes(block, attributes);
+                        var updated = tree.WithGenericAttributes(block, attributes);
+                        FuzzAssert.True(updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Any(node => node.RawKind == block.RawKind && node.GetGenericAttributes().Equals(expected)), $"The block at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                    }
+                    catch (InvalidOperationException)
+                    {
+                    }
+
+                    // The copy of the block is written without parsing the document: the block has the attributes once the text of the
+                    // document with the copy is parsed again, and the copy is the block that parsing the text gives
+                    MarkdownBlockSyntax copy;
+                    try
+                    {
+                        copy = block.WithGenericAttributes(attributes);
                     }
                     catch (InvalidOperationException)
                     {
                         continue;
                     }
 
-                    var expected = attributes ?? MarkdownGenericAttributes.Empty;
-                    FuzzAssert.True(updated.GetRoot().DescendantNodes().OfType<MarkdownBlockSyntax>().Any(node => node.RawKind == block.RawKind && node.GetGenericAttributes().Equals(expected)), $"The block at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                    Replace(tree, block, copy);
+                    var reparsed = MarkdownSyntaxTree.ParseText(root.ReplaceNode(block, copy).ToFullString(), options).GetRoot();
+                    var parsedBlock = reparsed.DescendantNodes().OfType<MarkdownBlockSyntax>().FirstOrDefault(node => node.RawKind == block.RawKind && node.SpanStart == block.SpanStart);
+                    FuzzAssert.True(parsedBlock is not null && parsedBlock.GetGenericAttributes().Equals(expected), $"The copy of the {block.Kind()} at {block.Span} does not have the attributes it was given: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(parsedBlock.IsEquivalentTo(copy) && parsedBlock.DescendantTokens().Select(GetIntValue).SequenceEqual(copy.DescendantTokens().Select(GetIntValue)), $"The copy of the {block.Kind()} at {block.Span} is not the block parsed from its text: {FuzzAssert.Format(text)}");
                 }
             }
         }
@@ -868,6 +884,9 @@ public static class MarkdownFuzzTargets
     }
 
     private static readonly MarkdownGenericAttributes FuzzAttributes = new("fz-id", ["fz"], [new("data-fz", "a b'"), new("fz", null)]);
+
+    // The value of a token that is not its text, such as where generic attributes are
+    private static int? GetIntValue(SyntaxToken token) => token.Value is int value ? value : null;
 
     // The text of the tree with the node replaced reproduces the text around the node, and is parsed again
     private static void Replace(MarkdownSyntaxTree tree, MarkdownSyntaxNode node, MarkdownSyntaxNode replacement)

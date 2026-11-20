@@ -395,24 +395,6 @@
   "css/css-display/reading-flow/reading-order-valid.html": {
     "total": 4
   },
-  "css/css-display/reading-flow/tentative/reading-flow-computed.html": {
-    "total": 7
-  },
-  "css/css-display/reading-flow/tentative/reading-flow-invalid.html": {
-    "total": 9
-  },
-  "css/css-display/reading-flow/tentative/reading-flow-valid.html": {
-    "total": 7
-  },
-  "css/css-display/reading-flow/tentative/reading-order-computed.html": {
-    "total": 4
-  },
-  "css/css-display/reading-flow/tentative/reading-order-invalid.html": {
-    "total": 9
-  },
-  "css/css-display/reading-flow/tentative/reading-order-valid.html": {
-    "total": 4
-  },
   "css/css-display/run-in/counter-increment-applies-to-011.xht": {
     "reftest": "PASS"
   },

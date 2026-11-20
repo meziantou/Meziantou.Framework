@@ -127,6 +127,12 @@ internal enum SizeKind : byte
     /// <summary><c>stretch</c> (https://drafts.csswg.org/css-sizing-4/#valdef-width-stretch).</summary>
     Stretch,
 
+    /// <summary>
+    /// <c>stretch(&lt;length-percentage&gt;)</c> (https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch): the margin box
+    /// fits the argument, which is <see cref="Size.Value"/>.
+    /// </summary>
+    StretchFunction,
+
     /// <summary><c>contain</c> (https://drafts.csswg.org/css-sizing-4/#valdef-width-contain).</summary>
     Contain,
 
@@ -158,7 +164,7 @@ internal readonly struct Size : IEquatable<Size>
 
     public SizeKind Kind { get; }
 
-    /// <summary>The &lt;length-percentage&gt; of <see cref="SizeKind.LengthPercentage"/> and <see cref="SizeKind.FitContentFunction"/>.</summary>
+    /// <summary>The &lt;length-percentage&gt; of <see cref="SizeKind.LengthPercentage"/>, <see cref="SizeKind.FitContentFunction"/> and <see cref="SizeKind.StretchFunction"/>.</summary>
     public LengthPercentage Value => _value;
 
     public bool IsAuto => Kind == SizeKind.Auto;
@@ -195,6 +201,8 @@ internal readonly struct Size : IEquatable<Size>
     public static Size FromKind(SizeKind kind) => new(kind, default);
 
     public static Size FitContentFunction(LengthPercentage value) => new(SizeKind.FitContentFunction, value);
+
+    public static Size StretchFunction(LengthPercentage value) => new(SizeKind.StretchFunction, value);
 
     /// <summary>Resolves a &lt;length-percentage&gt; size, or returns null when it is not one or its percentage basis is unknown.</summary>
     public double? TryResolve(double? percentageBasis) => Kind == SizeKind.LengthPercentage ? _value.TryResolve(percentageBasis) : null;
@@ -245,6 +253,12 @@ internal readonly struct Size : IEquatable<Size>
                 return FitContentFunction(limit);
             }
 
+            if (InfraAscii.EqualsIgnoreAsciiCase(function.Name, "stretch") && GetSingleArgument(function) is { } stretchArgument
+                && LengthPercentage.TryParse(CssSerializer.SerializeValue([stretchArgument], property: null), zoom, nonNegative: true, out var marginBoxSize))
+            {
+                return StretchFunction(marginBoxSize);
+            }
+
             if (InfraAscii.EqualsIgnoreAsciiCase(function.Name, "calc-size"))
                 return new Size(SizeKind.CalcSize, LengthPercentage.FromCalc(new CalcLength(function, zoom, nonNegative: true)));
         }
@@ -288,6 +302,7 @@ internal readonly struct Size : IEquatable<Size>
     {
         SizeKind.LengthPercentage => _value.ToString(),
         SizeKind.FitContentFunction => "fit-content(" + _value.ToString() + ")",
+        SizeKind.StretchFunction => "stretch(" + _value.ToString() + ")",
         SizeKind.CalcSize => _value.ToString(),
         _ => Kind.ToString(),
     };

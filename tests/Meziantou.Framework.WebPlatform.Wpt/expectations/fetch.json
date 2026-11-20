@@ -2358,72 +2358,108 @@
     "total": 1
   },
   "fetch/local-network-access/dedicated-worker.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 6,
+    "failures": {
+      "LNA Dedicated Worker Public to Loopback Fetch without permission": "FAIL",
+      "LNA Dedicated Worker Public to Loopback WebSocket with permission": "NOTRUN",
+      "LNA Dedicated Worker Public to Loopback WebSocket without permission": "NOTRUN",
+      "LNA Dedicated Worker Public to Loopback WebTransport with permission": "TIMEOUT",
+      "LNA Dedicated Worker Public to Loopback WebTransport without permission": "NOTRUN"
+    }
   },
   "fetch/local-network-access/fetch.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4,
+    "failures": {
+      "LNA Public to local http mixed content bypass": "FAIL",
+      "LNA Public to local with permission denied": "FAIL"
+    }
   },
   "fetch/local-network-access/iframe-opener.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "LNA Public to loopback navigate iframe from opener with permission": "TIMEOUT",
+      "LNA Public to loopback navigate iframe from opener without permission": "NOTRUN"
+    }
   },
   "fetch/local-network-access/iframe.tentative.https.window.js?include=from-local": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/iframe.tentative.https.window.js?include=from-loopback": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/iframe.tentative.https.window.js?include=from-public": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 5,
+    "failures": {
+      "public to local: permission denied.": "FAIL",
+      "public to loopback: permission denied.": "FAIL"
+    }
   },
   "fetch/local-network-access/navigate.tentative.https.window.js?include=from-local": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/navigate.tentative.https.window.js?include=from-loopback": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/navigate.tentative.https.window.js?include=from-public": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/navigate.tentative.window.js?include=from-local": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/navigate.tentative.window.js?include=from-loopback": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/navigate.tentative.window.js?include=from-public": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 3
   },
   "fetch/local-network-access/service-worker-background-fetch.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 2,
+    "failures": {
+      "LNA Service Worker Public to Loopback Background Fetch with permission": "FAIL"
+    }
   },
   "fetch/local-network-access/service-worker.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 9,
+    "failures": {
+      "LNA Service Worker Public navigate to Loopback in iframe with permission": "NOTRUN",
+      "LNA Service Worker Public navigate to Loopback in iframe without permission": "NOTRUN",
+      "LNA Service Worker Public navigate to Loopback main frame without permission": "NOTRUN",
+      "LNA Service Worker Public to Loopback Fetch without permission": "FAIL",
+      "LNA Service Worker Public to Loopback WebSocket with permission": "NOTRUN",
+      "LNA Service Worker Public to Loopback WebSocket without permission": "NOTRUN",
+      "LNA Service Worker Public to Loopback WebTransport with permission": "TIMEOUT",
+      "LNA Service Worker Public to Loopback WebTransport without permission": "NOTRUN"
+    }
   },
   "fetch/local-network-access/shared-worker.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 6,
+    "failures": {
+      "LNA Shared Worker Public to Loopback Fetch without permission": "FAIL",
+      "LNA Shared Worker Public to Loopback WebSocket with permission": "NOTRUN",
+      "LNA Shared Worker Public to Loopback WebSocket without permission": "NOTRUN",
+      "LNA Shared Worker Public to Loopback WebTransport with permission": "TIMEOUT",
+      "LNA Shared Worker Public to Loopback WebTransport without permission": "NOTRUN"
+    }
   },
   "fetch/local-network-access/websocket.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4,
+    "failures": {
+      "LNA Public to loopback websocket without permission": "FAIL"
+    }
   },
   "fetch/local-network-access/webtransport.tentative.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "LNA Public to loopback webtransport with permission": "TIMEOUT",
+      "LNA Public to loopback webtransport without permission": "NOTRUN",
+      "LNA local to loopback webtransport with permission": "NOTRUN",
+      "LNA local to loopback webtransport without permission": "NOTRUN"
+    }
   },
   "fetch/metadata/audio-worklet.https.html": {
     "total": 5
@@ -2481,13 +2517,9 @@
       "background-image sec-fetch-site - Same-Site -> Same-Site": "TIMEOUT",
       "background-image sec-fetch-storage-access - Cross-site": "TIMEOUT",
       "border-image sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "border-image sec-fetch-storage-access - Cross-site": "FAIL",
       "content sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "content sec-fetch-storage-access - Cross-site": "FAIL",
       "cursor sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "cursor sec-fetch-storage-access - Cross-site": "FAIL",
-      "list-style-image sec-fetch-site - HTTPS downgrade-upgrade": "FAIL",
-      "list-style-image sec-fetch-storage-access - Cross-site": "FAIL"
+      "list-style-image sec-fetch-site - HTTPS downgrade-upgrade": "FAIL"
     }
   },
   "fetch/metadata/generated/css-images.sub.tentative.html": {
@@ -2513,8 +2545,7 @@
   "fetch/metadata/generated/element-audio.https.sub.html": {
     "total": 23,
     "failures": {
-      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-audio.sub.html": {
@@ -2523,36 +2554,26 @@
   "fetch/metadata/generated/element-embed.https.sub.html": {
     "total": 19,
     "failures": {
-      "sec-fetch-mode": "FAIL",
-      "sec-fetch-storage-access - Cross-site": "FAIL"
+      "sec-fetch-mode": "FAIL"
     }
   },
   "fetch/metadata/generated/element-embed.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-frame.https.sub.html": {
-    "total": 20,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site": "FAIL"
-    }
+    "total": 20
   },
   "fetch/metadata/generated/element-frame.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-iframe.https.sub.html": {
-    "total": 20,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site": "FAIL"
-    }
+    "total": 20
   },
   "fetch/metadata/generated/element-iframe.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/element-img-environment-change.https.sub.html": {
-    "total": 22,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
-    }
+    "total": 22
   },
   "fetch/metadata/generated/element-img-environment-change.sub.html": {
     "total": 18
@@ -2560,9 +2581,7 @@
   "fetch/metadata/generated/element-img.https.sub.html": {
     "total": 45,
     "failures": {
-      "sec-fetch-site - src - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - src - Cross-site, no attributes": "FAIL",
-      "sec-fetch-storage-access - srcset - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - src - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-img.sub.html": {
@@ -2571,8 +2590,7 @@
   "fetch/metadata/generated/element-input-image.https.sub.html": {
     "total": 20,
     "failures": {
-      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-input-image.sub.html": {
@@ -2644,8 +2662,7 @@
       "sec-fetch-dest attributes: as=style": "FAIL",
       "sec-fetch-dest attributes: as=track": "FAIL",
       "sec-fetch-dest attributes: as=video": "FAIL",
-      "sec-fetch-dest attributes: as=worker": "FAIL",
-      "sec-fetch-storage-access - Cross-site no attributes": "FAIL"
+      "sec-fetch-dest attributes: as=worker": "FAIL"
     }
   },
   "fetch/metadata/generated/element-link-prefetch.optional.sub.html": {
@@ -2658,21 +2675,13 @@
     "total": 18
   },
   "fetch/metadata/generated/element-picture.https.sub.html": {
-    "total": 66,
-    "failures": {
-      "sec-fetch-storage-access - img[src] - Cross-site, no attributes": "FAIL",
-      "sec-fetch-storage-access - img[srcset] - Cross-site, no attributes": "FAIL",
-      "sec-fetch-storage-access - source[srcset] - Cross-site, no attributes": "FAIL"
-    }
+    "total": 66
   },
   "fetch/metadata/generated/element-picture.sub.html": {
     "total": 54
   },
   "fetch/metadata/generated/element-script.https.sub.html": {
-    "total": 37,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
-    }
+    "total": 37
   },
   "fetch/metadata/generated/element-script.sub.html": {
     "total": 36
@@ -2695,25 +2704,17 @@
   "fetch/metadata/generated/element-video.https.sub.html": {
     "total": 23,
     "failures": {
-      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site, no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade, no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/element-video.sub.html": {
     "total": 18
   },
   "fetch/metadata/generated/fetch-via-serviceworker.https.sub.html": {
-    "total": 44,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, init: mode=no-cors, credentials=include - fallback": "FAIL",
-      "sec-fetch-storage-access - Cross-site, init: mode=no-cors, credentials=include - respondWith": "FAIL"
-    }
+    "total": 44
   },
   "fetch/metadata/generated/fetch.https.sub.html": {
-    "total": 22,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site, init: mode=no-cors, credentials=include": "FAIL"
-    }
+    "total": 22
   },
   "fetch/metadata/generated/fetch.sub.html": {
     "total": 18
@@ -2725,11 +2726,7 @@
     "total": 36
   },
   "fetch/metadata/generated/header-link.https.sub.html": {
-    "total": 37,
-    "failures": {
-      "sec-fetch-storage-access rel=icon - Cross-site": "FAIL",
-      "sec-fetch-storage-access rel=stylesheet - Cross-site": "FAIL"
-    }
+    "total": 37
   },
   "fetch/metadata/generated/header-link.https.sub.tentative.html": {
     "total": 1
@@ -2774,8 +2771,7 @@
     "total": 23,
     "failures": {
       "sec-fetch-dest no attributes": "FAIL",
-      "sec-fetch-site - HTTPS downgrade-upgrade no attributes": "FAIL",
-      "sec-fetch-storage-access - Cross-site no attributes": "FAIL"
+      "sec-fetch-site - HTTPS downgrade-upgrade no attributes": "FAIL"
     }
   },
   "fetch/metadata/generated/svg-image.sub.html": {
@@ -2806,10 +2802,7 @@
     "total": 5
   },
   "fetch/metadata/generated/worker-dedicated-importscripts.https.sub.html": {
-    "total": 19,
-    "failures": {
-      "sec-fetch-storage-access - Cross-site": "FAIL"
-    }
+    "total": 19
   },
   "fetch/metadata/generated/worker-dedicated-importscripts.sub.html": {
     "total": 18
@@ -2854,28 +2847,13 @@
     "total": 20
   },
   "fetch/metadata/trailing-dot.https.sub.any.js": {
-    "total": 3,
-    "failures": {
-      "Fetching a resource from a cross-site host, spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same origin, but spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same site, but spelled with a trailing dot.": "FAIL"
-    }
+    "total": 15
   },
   "fetch/metadata/trailing-dot.https.sub.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Fetching a resource from a cross-site host, spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same origin, but spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same site, but spelled with a trailing dot.": "FAIL"
-    }
+    "total": 15
   },
   "fetch/metadata/trailing-dot.https.sub.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "Fetching a resource from a cross-site host, spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same origin, but spelled with a trailing dot.": "FAIL",
-      "Fetching a resource from the same site, but spelled with a trailing dot.": "FAIL"
-    }
+    "total": 15
   },
   "fetch/metadata/unload.https.sub.html": {
     "total": 5
@@ -2885,9 +2863,6 @@
   },
   "fetch/metadata/worker.https.sub.html": {
     "total": 5
-  },
-  "fetch/metadata/zz-debug.https.sub.html": {
-    "total": 1
   },
   "fetch/nosniff/image.html": {
     "total": 11
@@ -3072,10 +3047,7 @@
     "total": 35
   },
   "fetch/range/cache-revalidate-construct-range-response.html": {
-    "total": 1,
-    "failures": {
-      "Range request after cache revalidation with 200 OK response should succeed": "FAIL"
-    }
+    "total": 1
   },
   "fetch/range/data.any.js": {
     "total": 2

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 /// <seealso href="https://w3c.github.io/ServiceWorker/#serviceworkerglobalscope"/>
 [IdlInterface("ServiceWorkerGlobalScope", "https://w3c.github.io/ServiceWorker/#serviceworkerglobalscope")]
-public sealed class ServiceWorkerGlobalScope : WorkerGlobalScope
+public sealed partial class ServiceWorkerGlobalScope : WorkerGlobalScope
 {
     private Clients? _clients;
 

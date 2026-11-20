@@ -77,6 +77,12 @@ public abstract class JsModule : JsScriptOrModule
         return ModuleOperations.GetModuleNamespace(this);
     }
 
+    /// <summary>
+    /// Gets the module of a module namespace object ([[Module]] of a module namespace exotic object, e.g. the value of
+    /// <c>import * as ns from</c> or of <c>await import()</c>), or null when <paramref name="value"/> is not a module namespace object.
+    /// </summary>
+    public static JsModule? FromNamespace(JsValue value) => value.Cell is ModuleNamespaceObject ns ? ns.Module : null;
+
     /// <summary>GetExportedNames(exportStarSet)</summary>
     internal abstract List<string> GetExportedNames(List<JsModule> exportStarSet);
 

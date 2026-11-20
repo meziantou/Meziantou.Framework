@@ -19,7 +19,8 @@ description: "The results of the web-platform-tests of web-locks, and why the te
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 2
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -59,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`bfcache/release.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/release.tentative.https.html) | Pass | 4 / 4 |  |  |
 | [`bfcache/sharedworker-multiple.tentative.https.html`](https://wpt.fyi/results/web-locks/bfcache/sharedworker-multiple.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`partitioned-web-locks.tentative.https.html`](https://wpt.fyi/results/web-locks/partitioned-web-locks.tentative.https.html) | Pass | 2 / 2 |  |  |
-| [`storage-buckets.tentative.https.any.js`](https://wpt.fyi/results/web-locks/storage-buckets.tentative.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Storage Buckets API (`navigator.storageBuckets`, whose buckets have their own lock managers) |
+| [`storage-buckets.tentative.https.any.js`](https://wpt.fyi/results/web-locks/storage-buckets.tentative.https.any.js) | Fail | 0 / 3 | TEST BUG | the test uses `StorageBucket.locks`, which the Storage Buckets specification does not define (its IDL has no `locks` attribute) |
 
 ## Crash tests
 

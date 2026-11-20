@@ -9,40 +9,39 @@ description: "The results of the web-platform-tests of screen-capture, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 13 | 13 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 12 | 13 | 0 | 92% |
+| [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **15** | **15** | **–** |
+| **All** | **13** | **15** | **0** | **87%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 15
-  - `hardware`: 15
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`capture-controller-event-target.https.window.js`](https://wpt.fyi/results/screen-capture/capture-controller-event-target.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`delegate-request.https.sub.html`](https://wpt.fyi/results/screen-capture/delegate-request.https.sub.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`getdisplaymedia-after-discard.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-after-discard.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`getdisplaymedia-capture-controller.https.window.js`](https://wpt.fyi/results/screen-capture/getdisplaymedia-capture-controller.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`getdisplaymedia-framerate.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-framerate.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`getdisplaymedia-restrictOwnAudio.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-restrictOwnAudio.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`getdisplaymedia-settings.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-settings.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`getdisplaymedia.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`historical.https.html`](https://wpt.fyi/results/screen-capture/historical.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/screen-capture/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`permissions-policy-audio+video.https.sub.html`](https://wpt.fyi/results/screen-capture/permissions-policy-audio+video.https.sub.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`permissions-policy-audio.https.sub.html`](https://wpt.fyi/results/screen-capture/permissions-policy-audio.https.sub.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`permissions-policy-video.https.sub.html`](https://wpt.fyi/results/screen-capture/permissions-policy-video.https.sub.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
+| [`capture-controller-event-target.https.window.js`](https://wpt.fyi/results/screen-capture/capture-controller-event-target.https.window.js) | Pass | 3 / 3 |  |  |
+| [`delegate-request.https.sub.html`](https://wpt.fyi/results/screen-capture/delegate-request.https.sub.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the capability delegation of `display-capture` (`postMessage()` with `delegate`): a subframe without user activation cannot call `getDisplayMedia()` |
+| [`getdisplaymedia-after-discard.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-after-discard.https.html) | Pass | 1 / 1 |  |  |
+| [`getdisplaymedia-capture-controller.https.window.js`](https://wpt.fyi/results/screen-capture/getdisplaymedia-capture-controller.https.window.js) | Pass | 51 / 51 |  |  |
+| [`getdisplaymedia-framerate.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-framerate.https.html) | Pass | 1 / 1 |  |  |
+| [`getdisplaymedia-restrictOwnAudio.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-restrictOwnAudio.https.html) | Pass | 3 / 3 |  |  |
+| [`getdisplaymedia-settings.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia-settings.https.html) | Pass | 2 / 2 |  |  |
+| [`getdisplaymedia.https.html`](https://wpt.fyi/results/screen-capture/getdisplaymedia.https.html) | Pass | 78 / 78 |  |  |
+| [`historical.https.html`](https://wpt.fyi/results/screen-capture/historical.https.html) | Pass | 1 / 1 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/screen-capture/idlharness.https.window.js) | Pass | 23 / 23 |  |  |
+| [`permissions-policy-audio+video.https.sub.html`](https://wpt.fyi/results/screen-capture/permissions-policy-audio+video.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`permissions-policy-audio.https.sub.html`](https://wpt.fyi/results/screen-capture/permissions-policy-audio.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`permissions-policy-video.https.sub.html`](https://wpt.fyi/results/screen-capture/permissions-policy-video.https.sub.html) | Pass | 5 / 5 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`getallscreensmedia-exposure.tentative.https.window.js`](https://wpt.fyi/results/screen-capture/getallscreensmedia-exposure.tentative.https.window.js) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
-| [`tentative/getdisplaymedia-captured-surface-resolution.https.html`](https://wpt.fyi/results/screen-capture/tentative/getdisplaymedia-captured-surface-resolution.https.html) | Disabled | – | REQUIRES(hardware) | Screen Capture, getDisplayMedia() |
+| [`getallscreensmedia-exposure.tentative.https.window.js`](https://wpt.fyi/results/screen-capture/getallscreensmedia-exposure.tentative.https.window.js) | Pass | 2 / 2 |  |  |
+| [`tentative/getdisplaymedia-captured-surface-resolution.https.html`](https://wpt.fyi/results/screen-capture/tentative/getdisplaymedia-captured-surface-resolution.https.html) | Fail | 2 / 6 | NOT IMPLEMENTED | the Window Management API (`window.getScreenDetails()`), which the test uses to compare the size of the captured screen |

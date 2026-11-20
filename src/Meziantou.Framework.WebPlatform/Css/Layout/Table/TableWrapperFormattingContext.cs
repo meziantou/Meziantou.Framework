@@ -132,7 +132,7 @@ internal sealed class TableWrapperFormattingContext : FormattingContext
                 percentageBlockSize = null;
             }
 
-            gridFragment = algorithm.Layout(inlineSize, space.PercentageInlineSize, percentageBlockSize, fixedBlockSize is { } fixedBlock ? Math.Max(0, fixedBlock - captionsBlockSize) : null);
+            gridFragment = algorithm.Layout(inlineSize, space.PercentageInlineSize, percentageBlockSize, fixedBlockSize is { } fixedBlock ? Math.Max(0, fixedBlock - captionsBlockSize) : null, logicalMargin.BlockSum());
             inlineSize = Math.Max(inlineSize, writingDirection.ToLogical(gridFragment.Size).Inline);
         }
 

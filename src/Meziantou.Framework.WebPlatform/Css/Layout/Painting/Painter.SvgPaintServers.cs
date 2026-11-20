@@ -19,6 +19,9 @@ internal sealed partial class Painter
     /// <summary>The number of elements being painted for feImage primitives.</summary>
     private int _filterImageDepth;
 
+    /// <summary>The patterns (with their templates) whose content is being painted, to detect the references that form a cycle.</summary>
+    private readonly HashSet<Element> _paintedPatterns = [];
+
     /// <summary>
     /// Creates the paint of a paint server element for an element, in the user space of the element (without opacity). Returns false
     /// when the element is not a paint server (the fallback of the paint is used); the paint is null when nothing is painted (e.g. a
@@ -40,6 +43,11 @@ internal sealed partial class Painter
             case SvgLinearGradientElement or SvgRadialGradientElement:
                 paint = CreateGradientPaint(server, element, getBoundingBox, context);
                 return true;
+
+            // A reference that forms a cycle (the content of a pattern painted with the pattern or one of its templates) is invalid: the
+            // fallback paint is used (https://svgwg.org/svg2-draft/painting.html#SpecifyingPaint)
+            case SvgPatternElement when GetTemplateChain(server).Exists(_paintedPatterns.Contains):
+                return false;
 
             case SvgPatternElement:
                 paint = CreatePatternPaint(server, element, getBoundingBox, context, out var invalidTile);
@@ -336,15 +344,24 @@ internal sealed partial class Painter
 
         var contentElement = chain.Find(static item => item.Children.Any(static child => child is SvgElement)) ?? pattern;
         var tileSize = new PhysicalSize(tileWidth, tileHeight);
-        var tile = PaintSvgResourceContent(contentElement, contentTransform, tileSize, context with
+        DisplayList tile;
+        _paintedPatterns.UnionWith(chain);
+        try
         {
-            IsResourceContent = true,
-            UseInstanceRoot = null,
-            ParentStyle = null,
-            UseSize = default,
-            Source = null,
-            Depth = context.Depth + 1,
-        });
+            tile = PaintSvgResourceContent(contentElement, contentTransform, tileSize, context with
+            {
+                IsResourceContent = true,
+                UseInstanceRoot = null,
+                ParentStyle = null,
+                UseSize = default,
+                Source = null,
+                Depth = context.Depth + 1,
+            });
+        }
+        finally
+        {
+            _paintedPatterns.ExceptWith(chain);
+        }
 
         var transform = SvgAffine.Translation(tileX, tileY).Then(GetTemplateTransform(chain));
         var shader = new TiledShader(new DisplayListShader(tile, tileSize), tileSize, default, SpreadMode.Repeat, SpreadMode.Repeat) { LocalTransform = DisplayMatrix.FromSvg(transform) };

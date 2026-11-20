@@ -295,7 +295,7 @@ internal static class LegacyExceptionHandling
             }
 
             var content = new ArrayBufferWriter<byte>();
-            WriteU32(content, checked((uint)(_typeEntryCount + _newTypes.Count)));
+            WriteU32(content, (uint)_typeEntryCount + (uint)_newTypes.Count);
             if (section is { } typeSection)
             {
                 var reader = new Reader(bytes, typeSection.Start, typeSection.End);
@@ -321,9 +321,9 @@ internal static class LegacyExceptionHandling
         private void ReadTypeSection(Section section)
         {
             var reader = new Reader(bytes, section.Start, section.End);
-            var count = reader.ReadU32();
-            _typeEntryCount = checked((int)count);
-            for (var i = 0u; i < count; i++)
+            var count = reader.ReadIndex();
+            _typeEntryCount = count;
+            for (var i = 0; i < count; i++)
             {
                 if (reader.PeekByte() is 0x4E)
                 {
@@ -422,7 +422,7 @@ internal static class LegacyExceptionHandling
                 switch (reader.ReadByte())
                 {
                     case 0x00: // function
-                        _functionTypes.Add(checked((int)reader.ReadU32()));
+                        _functionTypes.Add(reader.ReadIndex());
                         _importedFunctionCount++;
                         break;
 
@@ -444,7 +444,7 @@ internal static class LegacyExceptionHandling
                         if (reader.ReadByte() is not 0)
                             throw new InvalidModuleException();
 
-                        _tagTypes.Add(checked((int)reader.ReadU32()));
+                        _tagTypes.Add(reader.ReadIndex());
                         break;
 
                     default:
@@ -461,7 +461,7 @@ internal static class LegacyExceptionHandling
             var count = reader.ReadU32();
             for (var i = 0u; i < count; i++)
             {
-                _functionTypes.Add(checked((int)reader.ReadU32()));
+                _functionTypes.Add(reader.ReadIndex());
             }
 
             reader.EnsureAtEnd();
@@ -476,7 +476,7 @@ internal static class LegacyExceptionHandling
                 if (reader.ReadByte() is not 0)
                     throw new InvalidModuleException();
 
-                _tagTypes.Add(checked((int)reader.ReadU32()));
+                _tagTypes.Add(reader.ReadIndex());
             }
 
             reader.EnsureAtEnd();
@@ -1050,7 +1050,7 @@ internal static class LegacyExceptionHandling
             var key = Convert.ToHexString(type.WrittenSpan);
             if (!_newTypeIndices.TryGetValue(key, out var index))
             {
-                index = checked(_types.Count + _newTypes.Count);
+                index = _types.Count + _newTypes.Count;
                 _newTypes.Add(type.WrittenSpan.ToArray());
                 _newTypeIndices.Add(key, index);
             }
@@ -1140,6 +1140,13 @@ internal static class LegacyExceptionHandling
             return value <= uint.MaxValue ? (uint)value : throw new InvalidModuleException();
         }
 
+        /// <summary>Reads a count or an index that a module can hold: larger values are not valid.</summary>
+        public int ReadIndex()
+        {
+            var value = ReadU32();
+            return value <= int.MaxValue ? (int)value : throw new InvalidModuleException();
+        }
+
         public ulong ReadU64() => ReadUnsigned(maxBytes: 10);
 
         private ulong ReadUnsigned(int maxBytes)
@@ -1180,7 +1187,7 @@ internal static class LegacyExceptionHandling
             throw new InvalidModuleException();
         }
 
-        public void SkipName() => Skip(checked((int)ReadU32()));
+        public void SkipName() => Skip(ReadIndex());
 
         public void SkipLimits()
         {

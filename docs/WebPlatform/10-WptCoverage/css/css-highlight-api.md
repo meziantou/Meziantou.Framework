@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of css/css-highlight-api, an
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 19 | 19 | 0 | 100% |
-| [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
-| [Reftests](#reftests) | 114 | 118 | 0 | 97% |
+| [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
+| [Reftests](#reftests) | 107 | 111 | 0 | 96% |
 | [Crash tests](#crash-tests) | 5 | 5 | 0 | 100% |
-| **All** | **141** | **146** | **0** | **97%** |
+| **All** | **132** | **137** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -52,8 +52,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`Highlight-type-attribute.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/Highlight-type-attribute.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-animation-properties.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-animation-properties.tentative.html) | Fail | 0 / 66 | TEST BUG | expects the `animation-*`, `transition-*` and `opacity` declarations of the highlight pseudo-elements (`::highlight()`, `::selection`, `::target-text`, `::spelling-error`, `::grammar-error`, `::search-text`) in their computed style: only `color`, `background-color`, `text-decoration`, `text-shadow`, the stroke and fill properties and the custom properties apply to them (https://drafts.csswg.org/css-pseudo-4/#highlight-styling), the others are copied from the originating element, so the library ignores these declarations |
-| [`custom-highlight-universal-escaped-star.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-escaped-star.tentative.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-parsing-and-computed-style.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-parsing-and-computed-style.tentative.html) | Pass | 10 / 10 |  |  |
 
 ## Reftests
 
@@ -61,19 +59,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`custom-highlight-escaped-star-001.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-escaped-star-001.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-deep-chain-001.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-deep-chain-001.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-deep-chain-001.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-deep-chain-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-inheritance-001.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-inheritance-001.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-inheritance-001.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-inheritance-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-no-named-rule-001.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-no-named-rule-001.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-no-named-rule-001.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-no-named-rule-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-no-named-rule-002.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-no-named-rule-002.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-no-named-rule-002.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-no-named-rule-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-painting-001.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-painting-001.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-painting-001.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-painting-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-painting-002.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-painting-002.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-painting-002.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-painting-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`custom-highlight-universal-painting-003.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-painting-003.html) | Pass | 1 / 1 |  |  |
-| [`custom-highlight-universal-painting-003.tentative.html`](https://wpt.fyi/results/css/css-highlight-api/custom-highlight-universal-painting-003.tentative.html) | Pass | 1 / 1 |  |  |
 | [`highlight-fallback-not-tinted.html`](https://wpt.fyi/results/css/css-highlight-api/highlight-fallback-not-tinted.html) | Pass | 1 / 1 |  |  |
 | [`highlight-image-currentcolor.html`](https://wpt.fyi/results/css/css-highlight-api/highlight-image-currentcolor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the highlight overlay of the replaced elements: the custom highlights whose range contains an image paint nothing over it (the highlights are only painted for the text fragments); only Chrome passes |
 | [`highlight-image-stacked.html`](https://wpt.fyi/results/css/css-highlight-api/highlight-image-stacked.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the highlight overlay of the replaced elements: the custom highlights whose range contains an image paint nothing over it (the highlights are only painted for the text fragments); only Chrome passes |

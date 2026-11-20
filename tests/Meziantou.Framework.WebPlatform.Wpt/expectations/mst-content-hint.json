@@ -1,0 +1,25 @@
+{
+  "mst-content-hint/MediaStreamTrack-contentHint.html": {
+    "total": 7
+  },
+  "mst-content-hint/RTCRtpSendParameters-degradationEffect.html": {
+    "total": 1,
+    "failures": {
+      "Maintain-framerate reduces resolution on bandwidth cut": "FAIL"
+    }
+  },
+  "mst-content-hint/RTCRtpSendParameters-degradationPreference.html": {
+    "total": 6,
+    "failures": {
+      "setParameters with degradationPreference set should succeed on audio transceiver": "FAIL",
+      "setParameters with degradationPreference set should succeed on video transceiver": "FAIL",
+      "setParameters with degradationPreference unset should succeed on audio transceiver": "FAIL",
+      "setParameters with degradationPreference unset should succeed on video transceiver": "FAIL",
+      "setParameters with invalid degradationPreference should throw TypeError on audio transceiver": "FAIL",
+      "setParameters with invalid degradationPreference should throw TypeError on video transceiver": "FAIL"
+    }
+  },
+  "mst-content-hint/idlharness.window.js": {
+    "total": 9
+  }
+}

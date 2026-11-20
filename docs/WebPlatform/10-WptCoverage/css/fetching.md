@@ -9,21 +9,14 @@ description: "The results of the web-platform-tests of css/fetching, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 1 | 2 | 0 | 50% |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **1** | **2** | **0** | **50%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST BUG**: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`fetch-resources.https.sub.html`](https://wpt.fyi/results/css/fetching/fetch-resources.https.sub.html) | Pass | 4 / 4 |  |  |
-| [`fetch-resources.sub.html`](https://wpt.fyi/results/css/fetching/fetch-resources.sub.html) | Fail | 2 / 4 | TEST BUG | over http, the CORS mode of the shape and font requests is detected with the `Origin` header, which the Fetch Standard only sends for a cross-origin CORS request (https://fetch.spec.whatwg.org/#append-a-request-origin-header); Firefox also fails |

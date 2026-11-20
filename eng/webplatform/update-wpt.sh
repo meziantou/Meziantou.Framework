@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Updates the pinned web-platform-tests to the latest release, rewrites the WPT expectations from the new results and
-# regenerates the WPT coverage, so the diff shows the tests whose result changed.
+# regenerates the WPT coverage, which deletes the expectations of the tests removed or moved upstream, so the diff shows
+# the tests whose result changed and the tests that no longer exist.
 # Exits with 1 when a test of Meziantou.Framework.WebPlatform.Tests fails or when a test that does not pass has no reason.
 set -euo pipefail
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"

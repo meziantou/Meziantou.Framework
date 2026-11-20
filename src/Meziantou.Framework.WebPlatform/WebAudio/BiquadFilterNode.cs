@@ -104,7 +104,7 @@ public sealed class BiquadFilterNode : AudioNode
         Frequency = new AudioParam(context, this, "BiquadFilterNode.frequency", 350, 0, nyquist, AutomationRate.ARate);
         Detune = new AudioParam(context, this, "BiquadFilterNode.detune", 0, -OscillatorNode.MaxDetune, OscillatorNode.MaxDetune, AutomationRate.ARate);
         Q = new AudioParam(context, this, "BiquadFilterNode.Q", 1, -float.MaxValue, float.MaxValue, AutomationRate.ARate);
-        Gain = new AudioParam(context, this, "BiquadFilterNode.gain", 0, -float.MaxValue, (float)(40 * Math.Log10(float.MaxValue)), AutomationRate.ARate);
+        Gain = new AudioParam(context, this, "BiquadFilterNode.gain", 0, -float.MaxValue, 40 * MathF.Log10(float.MaxValue), AutomationRate.ARate);
         ApplyOptions(options);
         if (options is not null)
         {

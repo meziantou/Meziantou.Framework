@@ -197,6 +197,8 @@ internal static partial class WptPythonHandlers
         ["/xhr/resources/win-1252-xml.py"] = (_, response, _) => Respond(response, "application/xml;charset=windows-1252", [(byte)'<', 0xFF, (byte)'/', (byte)'>']),
         ["/xhr/resources/bad-chunk-encoding.py"] = (_, response, _) => response.NetworkError = true,
 
+        ["/fetch/local-network-access/resources/target.py"] = LocalNetworkAccessTarget,
+
         // fetch/api/resources
         ["/fetch/api/resources/redirect.py"] = FetchRedirect,
         ["/fetch/nosniff/resources/js.py"] = NosniffJs,
@@ -521,6 +523,62 @@ internal static partial class WptPythonHandlers
     }
 
     // fetch/nosniff/resources/js.py: a script with X-Content-Type-Options: nosniff and the type parameter as its Content-Type
+    /// <summary>
+    /// fetch/local-network-access/resources/target.py: the target of a (possible) Local Network Access request. The
+    /// <c>final-headers</c> parameter selects the CORS headers (<c>cors</c>, <c>cors+sw</c> or <c>navigation</c>), <c>redirect</c>
+    /// redirects (301), <c>mime-type</c> is the Content-Type, and the body is the file of the <c>file</c> parameter (relative to
+    /// the directory, after a random JavaScript comment with <c>random-js-prefix</c>), the <c>body</c> parameter, or "success".
+    /// </summary>
+    private static void LocalNetworkAccessTarget(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        switch (request.Get("final-headers"))
+        {
+            case "cors":
+                response.Set("Access-Control-Allow-Methods", request.Method);
+                response.Set("Access-Control-Allow-Origin", "*");
+                break;
+
+            case "cors+sw":
+                response.Set("Access-Control-Allow-Methods", request.Method);
+                response.Set("Access-Control-Allow-Origin", "*");
+                response.Set("Access-Control-Allow-Headers", "Service-Worker");
+                break;
+
+            case "navigation":
+                response.Set("Access-Control-Allow-Methods", request.Method);
+                response.Set("Access-Control-Allow-Origin", request.Header("Origin") ?? "");
+                response.Set("Access-Control-Allow-Credentials", "true");
+                break;
+        }
+
+        if (request.Get("redirect") is { } redirect)
+        {
+            response.Status = 301;
+            response.Set("Location", redirect);
+            return;
+        }
+
+        if (request.Get("mime-type") is { } mimeType)
+        {
+            response.Set("Content-Type", mimeType);
+        }
+
+        if (request.Get("is-loaded-in-fenced-frame") is { Length: > 0 })
+        {
+            response.Set("Supports-Loading-Mode", "fenced-frame");
+        }
+
+        if (request.Get("file") is { } file)
+        {
+            var prefix = request.Get("random-js-prefix") is { Length: > 0 } ? Encoding.ASCII.GetBytes("// Random value: " + System.Security.Cryptography.RandomNumberGenerator.GetInt32(0, 1_000_000_001).ToString(CultureInfo.InvariantCulture) + "\n\n") : [];
+            response.Body = [.. prefix, .. ReadWptFile("fetch/local-network-access/resources/" + file)];
+        }
+        else
+        {
+            response.Content = request.Get("body") is { Length: > 0 } body ? body : "success";
+        }
+    }
+
     private static void NosniffJs(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
     {
         var type = request.Get("type");

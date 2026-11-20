@@ -1977,7 +1977,7 @@ public static class MarkdownHtmlRenderer
                 start = firstText;
             }
 
-            if (inlines.LastOrDefault().AsNode() is MarkdownLinkSyntax { RawKind: (int)SyntaxKind.Link } last)
+            if (inlines.Count > 0 && inlines[inlines.Count - 1].AsNode() is MarkdownLinkSyntax { RawKind: (int)SyntaxKind.Link } last)
             {
                 var children = last.ChildNodesAndTokens();
                 for (var i = 1; i < children.Count; i++)
@@ -2204,29 +2204,35 @@ public static class MarkdownHtmlRenderer
                     break;
 
                 case MarkdownLinkSyntax { IsImage: true } image:
+                {
+                    var title = image.Title;
                     Markup.Append("<img src=\"");
                     AppendAttributeEscaped(NormalizeUrl(image.Destination));
                     Markup.Append('"');
-                    AppendAttributes(image, renderedAttributes: string.IsNullOrEmpty(image.Title) ? ImageAttributes : ImageAttributesWithTitle);
+                    AppendAttributes(image, renderedAttributes: string.IsNullOrEmpty(title) ? ImageAttributes : ImageAttributesWithTitle);
                     Markup.Append(" alt=\"");
                     WriteAltText(image.Text);
                     Markup.Append('"');
-                    AppendTitle(image.Title);
+                    AppendTitle(title);
                     Markup.Append(" />");
                     break;
+                }
 
                 case MarkdownLinkSyntax link:
+                {
+                    var title = link.Title;
                     Markup.Append("<a href=\"");
                     AppendAttributeEscaped(NormalizeUrl(rendererOptions.IdPrefix is { Length: > 0 } idPrefix && link.Heading is { Identifier: { } headingId } ? "#" + idPrefix + headingId : link.Destination));
                     Markup.Append('"');
-                    AppendAttributes(link, renderedAttributes: GetLinkAttributes(link.Title, rel: true));
-                    AppendTitle(link.Title);
+                    AppendAttributes(link, renderedAttributes: GetLinkAttributes(title, rel: true));
+                    AppendTitle(title);
                     AppendRel();
                     Markup.Append('>');
                     // The text is between the opening bracket and the closing one
                     WriteInlines(link.ChildNodesAndTokens(), start: 1, end: link.CloseIndex);
                     Markup.Append("</a>");
                     break;
+                }
             }
         }
 
@@ -2279,14 +2285,15 @@ public static class MarkdownHtmlRenderer
             }
 
             var mediaOptions = rendererOptions.MediaLinks;
-            ParsedAttributes? imageAttributes = null;
-            _ = _attributes?.TryGetValue(image, out imageAttributes);
-            var attributes = new ParsedAttributes(imageAttributes?.Id, [.. imageAttributes?.Classes ?? []], [.. imageAttributes?.Properties ?? []]);
             if (uri.IsAbsoluteUri && IsHttpOrHttps(uri))
             {
+                string? uriHost = null;
                 foreach (var host in mediaOptions.Hosts)
                 {
-                    if (!host.TryHandle(uri, isSchemaRelative, out var iframeUrl))
+                    var handled = host is MarkdownMediaHost.MediaHost knownHost
+                        ? knownHost.TryHandle(uri, uriHost ??= uri.Host, out var iframeUrl)
+                        : host.TryHandle(uri, isSchemaRelative, out iframeUrl);
+                    if (!handled)
                     {
                         continue;
                     }
@@ -2296,6 +2303,7 @@ public static class MarkdownHtmlRenderer
                         return false;
                     }
 
+                    var attributes = CreateAttributes();
                     Markup.Append("<iframe src=\"");
                     AppendAttributeEscaped(NormalizeUrl(iframeUrl));
                     Markup.Append('"');
@@ -2324,20 +2332,21 @@ public static class MarkdownHtmlRenderer
 
             var isAudio = mimeType.StartsWith("audio", StringComparison.Ordinal);
             var tag = isAudio ? "audio" : "video";
+            var mediaAttributes = CreateAttributes();
             Markup.Append('<').Append(tag);
-            AddProperty(attributes, "width", mediaOptions.Width);
+            AddProperty(mediaAttributes, "width", mediaOptions.Width);
             if (!isAudio)
             {
-                AddProperty(attributes, "height", mediaOptions.Height);
+                AddProperty(mediaAttributes, "height", mediaOptions.Height);
             }
 
             if (mediaOptions.AddControls)
             {
-                AddProperty(attributes, "controls", value: null);
+                AddProperty(mediaAttributes, "controls", value: null);
             }
 
-            AddClass(attributes, mediaOptions.Class);
-            AppendAttributes(image, attributes);
+            AddClass(mediaAttributes, mediaOptions.Class);
+            AppendAttributes(image, mediaAttributes);
             Markup.Append("><source type=\"");
             AppendAttributeEscaped(mimeType);
             Markup.Append("\" src=\"");
@@ -2346,6 +2355,14 @@ public static class MarkdownHtmlRenderer
             return true;
 
             static bool IsHttpOrHttps(Uri uri) => uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps;
+
+            // The attributes of the image, which the ones of the options are added to: made once the image is known to be a media
+            ParsedAttributes CreateAttributes()
+            {
+                ParsedAttributes? imageAttributes = null;
+                _ = _attributes?.TryGetValue(image, out imageAttributes);
+                return new ParsedAttributes(imageAttributes?.Id, [.. imageAttributes?.Classes ?? []], [.. imageAttributes?.Properties ?? []]);
+            }
 
             static void AddClass(ParsedAttributes attributes, string? cssClass)
             {

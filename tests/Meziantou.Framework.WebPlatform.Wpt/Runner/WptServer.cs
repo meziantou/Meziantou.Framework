@@ -55,10 +55,19 @@ internal static partial class WptServer
     /// <summary>The subdomain of the configuration of wptserve that does not resolve (<c>not_subdomains</c>): its requests are network errors.</summary>
     private const string NotSubdomain = "nonexistent";
 
+    /// <summary>
+    /// The ports of the servers. The <c>-local</c> and <c>-public</c> ports are the servers that wptserve runs for the tests of Local
+    /// Network Access (the browsers treat them as the local and public address spaces): their port is chosen by wptserve
+    /// (<c>auto</c> in the configuration), and they serve the same files.
+    /// </summary>
     private static readonly Dictionary<string, int[]> Ports = new(StringComparer.Ordinal)
     {
         ["http"] = [8000, 8001],
+        ["http-local"] = [8002],
+        ["http-public"] = [8003],
         ["https"] = [8443, 8444],
+        ["https-local"] = [8445],
+        ["https-public"] = [8446],
         ["ws"] = [8888],
         ["wss"] = [8889],
         ["h2"] = [9000],
@@ -72,9 +81,20 @@ internal static partial class WptServer
     /// common/security-features).
     /// </summary>
     public static bool IsHost(Url url) => url.Protocol is "http:" or "https:"
-        && (url.Hostname is Domain or AltDomain or "127.0.0.1" || url.Hostname.EndsWith("." + Domain, StringComparison.Ordinal) || url.Hostname.EndsWith("." + AltDomain, StringComparison.Ordinal))
-        && !url.Hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
-        && (url.Port.Length == 0 || url.Port is var port && (url.Protocol == "http:" ? Ports["http"] : [.. Ports["https"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port));
+        && GetHostname(url) is var hostname
+        && (hostname is Domain or AltDomain or "127.0.0.1" || hostname.EndsWith("." + Domain, StringComparison.Ordinal) || hostname.EndsWith("." + AltDomain, StringComparison.Ordinal))
+        && !hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
+        && (url.Port.Length == 0 || url.Port is var port && (url.Protocol == "http:" ? (int[])[.. Ports["http"], .. Ports["http-local"], .. Ports["http-public"]] : [.. Ports["https"], .. Ports["https-local"], .. Ports["https-public"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port));
+
+    /// <summary>
+    /// Whether the host of a URL is the subdomain of the configuration of wptserve that does not resolve (<c>nonexistent</c>):
+    /// its requests fail with a DNS error.
+    /// </summary>
+    public static bool IsUnresolvedHost(Url url) => url.Protocol is "http:" or "https:"
+        && GetHostname(url) is var hostname
+        && hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
+        && hostname[(NotSubdomain.Length + 1)..] is var domain
+        && (domain is Domain or AltDomain || domain.EndsWith("." + Domain, StringComparison.Ordinal) || domain.EndsWith("." + AltDomain, StringComparison.Ordinal));
 
     /// <summary>
     /// Whether a URL is served by the WebSocket server of wptserve: the hosts of <see cref="IsHost"/>, on the <c>ws</c> port for
@@ -82,9 +102,13 @@ internal static partial class WptServer
     /// handshake of a WebSocket has the <c>http</c> or <c>https</c> scheme).
     /// </summary>
     public static bool IsWebSocketHost(Url url) => url.Protocol is "http:" or "https:"
-        && (url.Hostname is Domain or AltDomain || url.Hostname.EndsWith("." + Domain, StringComparison.Ordinal) || url.Hostname.EndsWith("." + AltDomain, StringComparison.Ordinal))
-        && !url.Hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
+        && GetHostname(url) is var hostname
+        && (hostname is Domain or AltDomain || hostname.EndsWith("." + Domain, StringComparison.Ordinal) || hostname.EndsWith("." + AltDomain, StringComparison.Ordinal))
+        && !hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
         && url.Port is var port && (url.Protocol == "http:" ? Ports["ws"] : [.. Ports["wss"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port);
+
+    /// <summary>The host name of a URL, without the trailing dot of a fully qualified domain name (<c>web-platform.test.</c> resolves as <c>web-platform.test</c>).</summary>
+    private static string GetHostname(Url url) => url.Hostname is [.. var name, '.'] ? name : url.Hostname;
 
     /// <summary>Whether a URL is served by the HTTP/2 server of wptserve (the <c>h2</c> port): its responses have no reason phrase.</summary>
     public static bool IsHttp2(Url url) => url.Protocol == "https:" && Ports["h2"].Any(p => p.ToString(CultureInfo.InvariantCulture) == url.Port);
@@ -167,6 +191,15 @@ internal static partial class WptServer
 
         if (expression is "uuid()")
             return Guid.NewGuid().ToString("D");
+
+        // fs_path(path): the absolute path of a file of the test suite on the file system of the server, relative to the
+        // directory of the file (or to the root of the test suite when it starts with a slash)
+        if (expression.StartsWith("fs_path(", StringComparison.Ordinal) && expression.EndsWith(")", StringComparison.Ordinal))
+        {
+            var path = expression["fs_path(".Length..^1];
+            var directory = path.StartsWith("/", StringComparison.Ordinal) ? "" : url.Pathname[..(url.Pathname.LastIndexOf("/", StringComparison.Ordinal) + 1)].TrimStart('/');
+            return Path.GetFullPath(Path.Combine(WptPaths.Wpt, (directory + path.TrimStart('/')).Replace('/', Path.DirectorySeparatorChar)));
+        }
 
         var match = IndexedRegex().Match(expression);
         if (!match.Success)

@@ -1,9 +1,12 @@
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
+using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Css.Selectors;
+using Meziantou.Framework.WebPlatform.Css.Syntax;
 using Meziantou.Framework.WebPlatform.Css.Values;
 using Meziantou.Framework.WebPlatform.Dom;
+using Meziantou.Framework.WebPlatform.Rendering;
 
 namespace Meziantou.Framework.WebPlatform.Fuzz;
 
@@ -25,7 +28,8 @@ public static partial class WebPlatformFuzzTargets
         " viewBox=", " xlink:href=", " style=", "{", "}", ":", ";", ",", "*", ">", "+", "~", "[", "]", "=", "~=", "^=", "|=", " i]",
         "::before", "::after", "::marker", ":is(", ":not(", ":has(", ":hover", "content:", "'x'", "all:", "inherit", "none", "display:",
         "list-item", "contents", "counter(", "counter-increment:", "attr(", "var(--", "--x:", "transition:", "animation:", "@keyframes",
-        "@media", "@layer", "@scope", "@namespace", "box-sizing:", "color:", "width:", "float:", "position:", "!important",
+        "@media", "@layer", "@scope", "@namespace", "box-sizing:", "color:", "width:", "float:", "position:", "!important", "stretch(", "fit-content(", "margin:", "height:",
+        "@mixin --m", "@mixin --m(--x", "@apply --m", "@apply --m(", "@contents", "@private", "&", ".a", "{ }",
     ];
 
     /// <summary>The names of the supported properties that are not aliases, in the order of the registry.</summary>
@@ -129,6 +133,67 @@ public static partial class WebPlatformFuzzTargets
         }
 
         return [.. result];
+    }
+
+    /// <summary>The maximum length of the input of the link parameters target.</summary>
+    private const int LinkParametersMaxLength = 1024;
+
+    /// <summary>The tokens of the link parameters target: the grammar of param(), of its types, and of the fragment directives.</summary>
+    private static string[] LinkParametersTokens =>
+    [
+        "param(", "--a", "--b", "--", "color", "accent-color", ":", ": ", ",", ")", " ", "<color>", "<length>", "<custom-ident>+", "<number>#", "type(", " | ", "*",
+        "var(--x)", "var(--missing, red)", "env(--a)", "ident(\"--a\")", "currentcolor", "none", "red", "10px", "#0a5c2e", ";", "!", "{", "}",
+        "#:~:", "&", "%20", "%3A", "text=", "url(\"a.svg\" ", "cross-origin(anonymous)",
+    ];
+
+    /// <summary>
+    /// Parses link parameters (https://drafts.csswg.org/css-link-params-1/): the input is a value of <c>link-parameters</c>, the
+    /// modifiers of a <c>url()</c> and the fragment directive of a URL. The serialization of a valid value is parsed as the same
+    /// value; the parameters of the fragment are serialized as parameters parsed as themselves; and the parameters resolved
+    /// against an element are equal when they are resolved again, so that the rendering of an SVG image with them is cached.
+    /// </summary>
+    public static void LinkParameters(string input)
+    {
+        using var context = new BrowsingContext(new BrowsingContextOptions { TimeProvider = FrozenTimeProvider.Instance });
+        var document = context.Navigate("https://example.com/", _ => "<div id=d style='--x: blue; color: green'></div>");
+        var element = (HtmlElement)document.GetElementById("d")!;
+
+        // The value of the property, and the modifiers of a url()
+        foreach (var (property, value) in (ReadOnlySpan<(string, string)>)[("link-parameters", input), ("background-image", "url(\"a.svg\" " + input + ")")])
+        {
+            element.Style.SetProperty(property, value);
+            var serialized = element.Style.GetPropertyValue(property);
+            if (serialized.Length == 0)
+                continue;
+
+            element.Style.RemoveProperty(property);
+            element.Style.SetProperty(property, serialized);
+            FuzzAssert.Equal(serialized, element.Style.GetPropertyValue(property), $"The serialization of {property} is not parsed as the same value: {FuzzAssert.Format(serialized)}");
+        }
+
+        // The parameters of the fragment directive: the URL of the document has no fragment directive
+        var url = "https://example.com/a.svg#box:~:" + input;
+        FuzzAssert.Equal("https://example.com/a.svg#box", CssLinkParameters.RemoveFragmentDirective(url), "The fragment directive is not removed");
+        var directives = CssLinkParameters.ParseFragmentDirectives(url);
+        foreach (var parameter in directives)
+        {
+            var text = parameter.ToString();
+            var reparsed = CssParser.ParseListOfComponentValues(text) is [CssFunction function] ? CssLinkParameters.Parse(function) : null;
+            FuzzAssert.Equal(text, reparsed?.ToString(), $"The serialization of a parameter is not parsed as the same parameter: {FuzzAssert.Format(text)}");
+        }
+
+        // The resolution against the element: the property, the fragment and the modifiers of the url()
+        var style = document.GetStyleEngine().GetStyle(element);
+        var modifiers = CssParser.ParseListOfComponentValues(element.Style.GetPropertyValue("background-image")) is [var image] ? CssUrlModifiers.GetLinkParameters(image) : [];
+        var resolved = CssLinkParameters.Resolve(style, url, modifiers, document);
+        var again = CssLinkParameters.Resolve(style, url, modifiers, document);
+        FuzzAssert.True(Equals(resolved, again) && (resolved?.GetHashCode() ?? 0) == (again?.GetHashCode() ?? 0), "The parameters resolved twice are not equal");
+
+        // The SVG image uses the parameters, and its rendering is cached by them
+        var bytes = System.Text.Encoding.UTF8.GetBytes("<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10'><rect width='env(--a, 10px)' height='10' fill='env(--b, red)' stroke='env(color)'/></svg>");
+        var svgImage = SvgImage.Get(new PaintImage(url, 10, 10, bytes, "image/svg+xml"), document)!;
+        var list = svgImage.GetDisplayList(new PhysicalSize(10, 10), linkParameters: resolved);
+        FuzzAssert.True(ReferenceEquals(list, svgImage.GetDisplayList(new PhysicalSize(10, 10), linkParameters: again)), "The rendering of the SVG image is not cached by its parameters");
     }
 
     /// <summary>A clock that does not move: the two documents of the style target compute the same animated values.</summary>

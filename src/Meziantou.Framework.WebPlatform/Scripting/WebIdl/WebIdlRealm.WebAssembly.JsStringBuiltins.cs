@@ -61,14 +61,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>
-    /// Whether the import of a module is provided by the host (https://webassembly.github.io/spec/js-api/#read-the-imports):
-    /// its module is the one of an enabled builtin set, or the module of the imported string constants.
-    /// </summary>
-    internal static bool IsWasmBuiltinOrStringImport(WasmImport import, IReadOnlyList<string> builtinSets, string? importedStringModule)
-        => (import.Module == JsStringBuiltinModule && builtinSets.Contains(JsStringBuiltinSetName, StringComparer.Ordinal)) || (importedStringModule is not null && import.Module == importedStringModule);
-
-    /// <summary>
-    /// Whether <c>WebAssembly.Module.imports()</c> skips an import (https://webassembly.github.io/spec/js-api/#dom-module-imports):
+    /// Whether an import is provided by the host (https://webassembly.github.io/spec/js-api/#read-the-imports), and is not an
+    /// external import (skipped by <c>WebAssembly.Module.imports()</c>, https://webassembly.github.io/spec/js-api/#dom-module-imports):
     /// a builtin of an enabled builtin set, or an imported string constant.
     /// </summary>
     internal static bool IsReflectedAsWasmBuiltinOrStringImport(WasmImport import, IReadOnlyList<string> builtinSets, string? importedStringModule)

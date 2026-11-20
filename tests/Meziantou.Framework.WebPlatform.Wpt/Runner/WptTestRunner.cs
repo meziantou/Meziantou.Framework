@@ -101,6 +101,12 @@ internal sealed partial class WptTestRunner
     /// <summary>The position of the device, overridden by test_driver.bidi.emulation.set_geolocation_override().</summary>
     private readonly GeolocationProvider _geolocation = new() { Position = DefaultGeolocationPosition };
 
+    /// <summary>The screen, whose orientation can be locked, and overridden by test_driver.bidi.emulation.set_screen_orientation_override().</summary>
+    private readonly ScreenOrientationProvider _screenOrientation = new();
+
+    /// <summary>The protocol handlers registered by the pages of the test.</summary>
+    private readonly ProtocolHandlerOptions _protocolHandlers = new();
+
     /// <summary>The preference of Global Privacy Control, set by test_driver.set_global_privacy_control().</summary>
     private volatile bool _globalPrivacyControl;
 
@@ -115,6 +121,9 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
+
+    /// <summary>The prompts of the user agent (payment sheet, account choosers...), driven by the commands of the test driver.</summary>
+    private readonly WptUserAgentUI _userAgentUI = new();
 
     /// <summary>The display features of the screen, set by test_driver.set_display_features().</summary>
     private readonly DisplayFeaturesProvider _displayFeatures = new();
@@ -160,12 +169,45 @@ internal sealed partial class WptTestRunner
         // Origin-bound cookies are an option of the jar (the browsers do not enable them by default): the tests of the
         // feature enable it, the other tests share the cookies of a host between its schemes and ports (e.g. the cookies
         // of the WebSocket tests, whose server listens on another port)
-        _cookieJar = new CookieJar(_clock) { OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal) };
+        _cookieJar = new CookieJar(_clock)
+        {
+            OriginBound = test.Id.StartsWith("cookies/origin-bound-cookies/", StringComparison.Ordinal),
+            BlockThirdPartyCookies = BlocksThirdPartyCookies(test.Id),
+        };
         _webSocketServer = new WptWebSocketServer(this);
     }
 
     /// <summary>Gets the cookie store of the browser (the cookies of the test driver).</summary>
     internal CookieJar CookieJar => _cookieJar;
+
+    /// <summary>
+    /// The tests that expect the user agent to block the unpartitioned third-party cookies by default, as the browsers that
+    /// block them (Safari, and Chromium in the configurations that test it, where these tests run): the tentative tests of
+    /// third-party cookie blocking, the <c>Sec-Fetch-Storage-Access</c> header of the Fetch Metadata tests (<c>none</c> for
+    /// the cross-site requests), and the Storage Access API tests that expect a request without user activation, or whose
+    /// permission is denied, to be rejected. The other tests run with the default of the library (<see cref="CookieJar.BlockThirdPartyCookies"/> is
+    /// false): the <c>SameSite</c> tests of <c>cookies/</c> expect the <c>SameSite=None</c> cookies to be sent and stored
+    /// in the cross-site contexts.
+    /// </summary>
+    private static readonly string[] ThirdPartyCookieBlockingTests =
+    [
+        "cookies/third-party-cookies/",
+        "fetch/metadata/",
+        "storage-access-api/requestStorageAccess-cross-site-iframe.",
+        "storage-access-api/requestStorageAccess-nested-cross-site-iframe.",
+        "storage-access-api/storage-access-beyond-cookies.",
+    ];
+
+    private static bool BlocksThirdPartyCookies(string testId)
+    {
+        foreach (var prefix in ThirdPartyCookieBlockingTests)
+        {
+            if (testId.StartsWith(prefix, StringComparison.Ordinal))
+                return true;
+        }
+
+        return false;
+    }
 
     // The testharness.js tests have the rendering backend of the reftests: the images are decoded (decode(), createImageBitmap())
     public static WptResult Run(WptTest test) => new WptTestRunner(test, WptReftestRunner.Backend, reftest: false).Run();
@@ -197,6 +239,9 @@ internal sealed partial class WptTestRunner
                 // The cookies of the responses of the WPT server, sent with the next requests (see GetRequestHeaders)
                 CookieJar = _cookieJar,
 
+                // Network Error Logging is enabled, as in Chromium: the network-error reports are sent to report.py
+                NetworkErrorLogging = new NetworkErrorLoggingCache(),
+
                 // The history of the visited links of the test, which starts empty: the page of the test is visited (as in the
                 // browsers, where the tests link to their own URL to get a visited link), the other URLs are not
                 VisitedLinks = new InMemoryVisitedLinkStore(),
@@ -217,8 +262,9 @@ internal sealed partial class WptTestRunner
                 Permissions = _permissionStore,
                 ClipboardPermission = (_, access) => !_permissions.TryGetValue(access == ClipboardAccess.Read ? "clipboard-read" : "clipboard-write", out var state) || state != "denied",
 
-                // As in Chromium, the screen wake lock is granted without asking the user; the other prompts are dismissed
-                RequestPermission = (_, name) => name == "screen-wake-lock" ? PermissionState.Granted : PermissionState.Prompt,
+                // As in Chromium, the screen wake lock is granted without asking the user, and the prompts of the capture
+                // devices are accepted (--use-fake-ui-for-media-stream); the other prompts are dismissed
+                RequestPermission = (_, name) => name is "screen-wake-lock" or "camera" or "microphone" ? PermissionState.Granted : PermissionState.Prompt,
 
                 // The device knows its position (overridden by test_driver.bidi.emulation.set_geolocation_override)
                 Geolocation = _geolocation,
@@ -236,9 +282,17 @@ internal sealed partial class WptTestRunner
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
 
+                // The prompts of the user agent, answered by the commands of the test driver (test_driver.set_spc_transaction_mode(),
+                // test_driver.select_fedcm_account(), test_driver.set_virtual_wallet_behavior()...)
+                UserAgentUI = _userAgentUI,
+
                 // A screen whose orientation can be locked (as the test environment of Chromium), and whose display features
                 // are set by test_driver.set_display_features()
-                ScreenOrientation = new ScreenOrientationOptions { Provider = new ScreenOrientationProvider() },
+                ScreenOrientation = new ScreenOrientationOptions { Provider = _screenOrientation },
+
+                // The handlers of navigator.registerProtocolHandler(), registered when the test sets the automation mode of the
+                // document with test_driver.set_rph_registration_mode()
+                ProtocolHandlers = _protocolHandlers,
                 ViewportSegments = new ViewportSegmentsOptions { Provider = _displayFeatures },
 
                 // The pages of the reftests are rasterized; the images of all the tests are decoded by the backend
@@ -249,6 +303,9 @@ internal sealed partial class WptTestRunner
 
                 // The media files are not decoded: their metadata is read and they are played with the virtual clock
                 MediaBackend = WptMediaBackend.Instance,
+
+                // The fake capture devices: a camera, a microphone and the display surfaces of getDisplayMedia()
+                MediaCapture = new WptMediaCaptureBackend(),
 
                 // The values of the client hints: a desktop user agent on Linux, with the memory and the network of a
                 // recent machine (the library sends no device memory nor network hint by default)
@@ -287,7 +344,11 @@ internal sealed partial class WptTestRunner
                 }
                 catch (System.Xml.XmlException ex)
                 {
-                    return new WptResult("ERROR", "The test page is not well-formed XML: " + ex.Message, [], LogSnapshot);
+                    // A page that is not well-formed is displayed as by a browser: the response of a navigation, whose document
+                    // shows the parsing error (the scripts before the error run)
+                    Log("The test page is not well-formed XML: " + ex.Message);
+                    var bytes = File.ReadAllBytes(_test.FilePath);
+                    browsingContext.Navigate(_test.Url, _ => new DocumentResource(bytes) { Headers = [new("Content-Type", GetXmlContentType(_test.RelativePath))] });
                 }
             }
             else
@@ -422,8 +483,12 @@ internal sealed partial class WptTestRunner
             if (cancellationToken.IsCancellationRequested)
                 return ValueTask.FromCanceled<DocumentResource?>(cancellationToken);
 
-            // The requests of fetch() and XMLHttpRequest
-            if (request.Destination == RequestDestination.Empty)
+            // The subdomain that does not resolve: the request fails with a DNS error (the type of the network-error reports)
+            if (WptServer.IsUnresolvedHost(new Url(request.Url)))
+                return ValueTask.FromException<DocumentResource?>(new HttpRequestException(HttpRequestError.NameResolutionError, "The host name does not resolve"));
+
+            // The requests of fetch() and XMLHttpRequest, and the requests of FedCM to the identity providers
+            if (request.Destination is RequestDestination.Empty or RequestDestination.WebIdentity)
                 return runner.LoadFetchResource(request, cancellationToken);
 
             return Load(request.Url, request);
@@ -745,6 +810,9 @@ internal sealed partial class WptTestRunner
 
         var path = Uri.UnescapeDataString(parsed.Pathname);
         var file = Path.Combine(WptPaths.Wpt, path.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(file) && GetGeneratedWindowPage(path, parsed) is { } generatedPage)
+            return generatedPage;
+
         if (!File.Exists(file))
         {
             Log("Document not found: " + path);
@@ -1151,6 +1219,11 @@ internal sealed partial class WptTestRunner
                 var body = Encoding.UTF8.GetBytes(GetTestHtml());
                 resource = new DocumentResource(body) { Headers = [new("Content-Type", "text/html; charset=utf-8"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture))] };
             }
+            else if (GetGeneratedWindowPage(path, url) is { } generatedPage)
+            {
+                // The page that wptserve generates for another .window.js or .any.js file
+                resource = generatedPage;
+            }
             else
             {
                 // wptserve returns a 404 page
@@ -1493,6 +1566,9 @@ internal sealed partial class WptTestRunner
         if (_test.Kind == WptTestKind.Html)
             return File.ReadAllText(_test.FilePath);
 
+        if (!_test.IsWorker)
+            return GetWindowWrapperHtml(_test.FilePath, _test.RelativePath, _test.Kind == WptTestKind.AnyJs);
+
         // https://web-platform-tests.org/writing-tests/testharness.html#multi-global-tests
         var meta = WptTestDiscovery.ParseMeta(File.ReadAllText(_test.FilePath));
         var html = new StringBuilder();
@@ -1507,35 +1583,53 @@ internal sealed partial class WptTestRunner
             html.Append("<meta name=timeout content=long>\n");
         }
 
-        if (_test.Kind == WptTestKind.AnyJs)
-        {
-            html.Append("<script>self.GLOBAL = { isWindow: function() { return true; }, isWorker: function() { return false; }, isShadowRealm: function() { return false; } };</script>\n");
-        }
-
         // The tests of a worker are run by the worker, and their results are sent to the page (the wrappers of wptserve,
         // https://github.com/web-platform-tests/wpt/blob/master/tools/serve/serve.py)
-        if (_test.IsWorker)
+        var workerUrl = JavaScriptString("/" + GetWorkerScriptPath() + _test.Variant);
+        var worker = _test.Kind switch
         {
-            var workerUrl = JavaScriptString("/" + GetWorkerScriptPath() + _test.Variant);
-            var worker = _test.Kind switch
-            {
-                WptTestKind.AnyJsDedicatedWorkerModule => $"new Worker({workerUrl}, {{ type: 'module' }})",
-                WptTestKind.AnyJsSharedWorker => $"new SharedWorker({workerUrl})",
-                WptTestKind.AnyJsSharedWorkerModule => $"new SharedWorker({workerUrl}, {{ type: 'module' }})",
-                _ => $"new Worker({workerUrl})",
-            };
-            html.Append("<script src=\"/resources/testharness.js\"></script>\n<script src=\"/resources/testharnessreport.js\"></script>\n<div id=log></div>\n");
-            if (_test.Kind is WptTestKind.AnyJsServiceWorker or WptTestKind.AnyJsServiceWorkerModule)
-            {
-                // The service worker is registered for a scope without clients, after the registration of a previous run is removed
-                var options = _test.Kind == WptTestKind.AnyJsServiceWorkerModule ? "{ scope, type: 'module' }" : "{ scope }";
-                html.Append("<script>\n(async function() {\n  const scope = 'does/not/exist';\n  let reg = await navigator.serviceWorker.getRegistration(scope);\n  if (reg) await reg.unregister();\n");
-                html.Append("  reg = await navigator.serviceWorker.register(").Append(workerUrl).Append(", ").Append(options).Append(");\n  fetch_tests_from_worker(reg.installing);\n})();\n</script>\n");
-                return html.ToString();
-            }
-
-            html.Append("<script>\nfetch_tests_from_worker(").Append(worker).Append(");\n</script>\n");
+            WptTestKind.AnyJsDedicatedWorkerModule => $"new Worker({workerUrl}, {{ type: 'module' }})",
+            WptTestKind.AnyJsSharedWorker => $"new SharedWorker({workerUrl})",
+            WptTestKind.AnyJsSharedWorkerModule => $"new SharedWorker({workerUrl}, {{ type: 'module' }})",
+            _ => $"new Worker({workerUrl})",
+        };
+        html.Append("<script src=\"/resources/testharness.js\"></script>\n<script src=\"/resources/testharnessreport.js\"></script>\n<div id=log></div>\n");
+        if (_test.Kind is WptTestKind.AnyJsServiceWorker or WptTestKind.AnyJsServiceWorkerModule)
+        {
+            // The service worker is registered for a scope without clients, after the registration of a previous run is removed
+            var options = _test.Kind == WptTestKind.AnyJsServiceWorkerModule ? "{ scope, type: 'module' }" : "{ scope }";
+            html.Append("<script>\n(async function() {\n  const scope = 'does/not/exist';\n  let reg = await navigator.serviceWorker.getRegistration(scope);\n  if (reg) await reg.unregister();\n");
+            html.Append("  reg = await navigator.serviceWorker.register(").Append(workerUrl).Append(", ").Append(options).Append(");\n  fetch_tests_from_worker(reg.installing);\n})();\n</script>\n");
             return html.ToString();
+        }
+
+        html.Append("<script>\nfetch_tests_from_worker(").Append(worker).Append(");\n</script>\n");
+        return html.ToString();
+    }
+
+    /// <summary>
+    /// The page that wptserve generates for a <c>.window.js</c> file, or for the window variant of a <c>.any.js</c> file
+    /// (https://web-platform-tests.org/writing-tests/testharness.html#multi-global-tests): its <c>META</c> title, timeout and
+    /// scripts, then the file.
+    /// </summary>
+    private static string GetWindowWrapperHtml(string filePath, string relativePath, bool isAnyJs)
+    {
+        var meta = WptTestDiscovery.ParseMeta(File.ReadAllText(filePath));
+        var html = new StringBuilder();
+        html.Append("<!doctype html>\n<meta charset=utf-8>\n");
+        if (meta.Find(m => m.Key == "title") is { Value: { } title })
+        {
+            html.Append("<title>").Append(System.Net.WebUtility.HtmlEncode(title)).Append("</title>\n");
+        }
+
+        if (meta.Exists(m => m.Key == "timeout" && m.Value == "long"))
+        {
+            html.Append("<meta name=timeout content=long>\n");
+        }
+
+        if (isAnyJs)
+        {
+            html.Append("<script>self.GLOBAL = { isWindow: function() { return true; }, isWorker: function() { return false; }, isShadowRealm: function() { return false; } };</script>\n");
         }
 
         html.Append("<script src=\"/resources/testharness.js\"></script>\n<script src=\"/resources/testharnessreport.js\"></script>\n");
@@ -1544,8 +1638,27 @@ internal sealed partial class WptTestRunner
             html.Append("<script src=\"").Append(script.Value).Append("\"></script>\n");
         }
 
-        html.Append("<div id=log></div>\n<script src=\"/").Append(_test.RelativePath).Append("\"></script>\n");
+        html.Append("<div id=log></div>\n<script src=\"/").Append(relativePath).Append("\"></script>\n");
         return html.ToString();
+    }
+
+    /// <summary>
+    /// The page that wptserve generates for the <c>.window.html</c> or <c>.any.html</c> URL of a <c>.window.js</c> or
+    /// <c>.any.js</c> file that exists (a test, or a resource of a test), with the headers of the <c>.headers</c> files of the
+    /// file, or null.
+    /// </summary>
+    private DocumentResource? GetGeneratedWindowPage(string path, Url url)
+    {
+        if (!path.EndsWith(".window.html", StringComparison.Ordinal) && !path.EndsWith(".any.html", StringComparison.Ordinal))
+            return null;
+
+        var relativePath = path.TrimStart('/')[..^".html".Length] + ".js";
+        var file = Path.Combine(WptPaths.Wpt, relativePath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(file))
+            return null;
+
+        var body = Encoding.UTF8.GetBytes(GetWindowWrapperHtml(file, relativePath, isAnyJs: path.EndsWith(".any.html", StringComparison.Ordinal)));
+        return new DocumentResource(body) { Headers = [new("Content-Type", "text/html; charset=utf-8"), new("Content-Length", body.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)), .. GetHeaders(file, url)] };
     }
 
     /// <summary>The path of the script of the worker of the test: the <c>.worker.js</c> file, or the wrapper of the <c>.any.js</c> file.</summary>
@@ -1803,6 +1916,61 @@ internal sealed partial class WptTestRunner
             });
             return adapter.Undefined;
         });
+        Define("__wpt_set_rph_registration_mode", 4, (_, args) =>
+        {
+            // Set RPH Registration Mode: as a WebDriver command, the mode is set after the tasks that are already queued
+            var window = realm.ToInterface<Window>(args[0], "Window");
+            ProtocolHandlerAutomationMode? mode = adapter.ToString(args[1]) switch
+            {
+                "none" => ProtocolHandlerAutomationMode.None,
+                "autoAccept" => ProtocolHandlerAutomationMode.AutoAccept,
+                "autoReject" => ProtocolHandlerAutomationMode.AutoReject,
+                _ => null,
+            };
+            var completion = CreateCompletion(args[2], args[3]);
+            QueueTask(() =>
+            {
+                if (mode is not { } value)
+                {
+                    completion("invalid argument: the mode must be none, autoAccept or autoReject");
+                    return;
+                }
+
+                window.Document.ProtocolHandlerAutomationMode = value;
+                completion(null);
+            });
+            return adapter.Undefined;
+        });
+        Define("__wpt_set_screen_orientation_override", 4, (_, args) =>
+        {
+            // emulation.setScreenOrientationOverride: as a WebDriver command, the override is set after the tasks that are already
+            // queued, and the command completes once the documents ran their screen orientation change steps (queued by the provider)
+            var hasOverride = adapter.ToBoolean(args[0]);
+            var natural = adapter.ToString(args[1]) == "portrait" ? OrientationType.PortraitPrimary : OrientationType.LandscapePrimary;
+            OrientationType? type = adapter.ToString(args[2]) switch
+            {
+                "portrait-primary" => OrientationType.PortraitPrimary,
+                "portrait-secondary" => OrientationType.PortraitSecondary,
+                "landscape-primary" => OrientationType.LandscapePrimary,
+                "landscape-secondary" => OrientationType.LandscapeSecondary,
+                _ => null,
+            };
+            var completion = CreateCompletion(args[3], args[3]);
+            QueueTask(() =>
+            {
+                if (hasOverride && type is { } overrideType)
+                {
+                    _screenOrientation.SetOrientationOverride(natural, overrideType);
+                }
+                else
+                {
+                    _screenOrientation.ClearOrientationOverride();
+                }
+
+                QueueTask(() => completion(null));
+            });
+            return adapter.Undefined;
+        });
         Define("__wpt_global_privacy_control", 2, (_, args) =>
         {
             // As a WebDriver command, the value is set after the tasks that are already queued
@@ -1901,6 +2069,30 @@ internal sealed partial class WptTestRunner
                 try
                 {
                     result = WptTestDriver.ExecuteWebAuthnCommand(_authenticators, command, arguments);
+                }
+                catch (WptWebDriverException ex)
+                {
+                    return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
+                }
+
+                return adapter.Call(resolve, adapter.Undefined, [result is null ? adapter.Undefined : adapter.FromString(result)]);
+            }));
+            return adapter.Undefined;
+        });
+
+        // The commands of the prompts of the user agent (see WptUserAgentUI): the arguments and the result are JSON; as WebDriver
+        // commands, they run after the tasks that are already queued
+        Define("__wpt_user_agent_ui", 4, (_, args) =>
+        {
+            var command = adapter.ToString(args[0]);
+            var arguments = adapter.ToString(args[1]);
+            var (resolve, reject) = (args[2], args[3]);
+            QueueTask(() => realm.Run(() =>
+            {
+                string? result;
+                try
+                {
+                    result = _userAgentUI.Execute(command, System.Text.Json.Nodes.JsonNode.Parse(arguments)?.AsArray() ?? throw WptWebDriverException.InvalidArgument("the arguments are not an array"));
                 }
                 catch (WptWebDriverException ex)
                 {
@@ -2253,6 +2445,7 @@ internal sealed partial class WptTestRunner
         "cpu" => PressureSource.Cpu,
         _ => null,
     };
+
     /// <summary>
     /// Parses the display features of the Set Display Features command (https://drafts.csswg.org/css-viewport/#set-display-features),
     /// or returns null with the error.
@@ -2427,8 +2620,9 @@ internal sealed partial class WptTestRunner
 
             // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
             // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks
-            if (_webSocketServer.IsBusy)
+            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch of a
+            // payment method manifest)
+            if (_webSocketServer.IsBusy || eventLoop.HasPendingUserAgentWork)
             {
                 workerWait.SpinOnce();
                 continue;

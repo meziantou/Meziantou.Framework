@@ -103,6 +103,7 @@ public sealed class LayoutStyleTests : IDisposable
     [InlineData("fit-content", SizeKind.FitContent)]
     [InlineData("fit-content(50%)", SizeKind.FitContentFunction)]
     [InlineData("stretch", SizeKind.Stretch)]
+    [InlineData("stretch(50%)", SizeKind.StretchFunction)]
     [InlineData("contain", SizeKind.Contain)]
     [InlineData("content", SizeKind.Content)]
     [InlineData("100px", SizeKind.LengthPercentage)]
@@ -119,6 +120,17 @@ public sealed class LayoutStyleTests : IDisposable
         Assert.Null(size.TryResolve(200));
         Assert.Equal(SizeKind.None, Size.Parse("anchor-size(width)", 1, SizeKind.None).Kind);
         Assert.NotNull(Size.Parse("calc-size(auto, size + 10px)", 1).CalcSizeFunction);
+    }
+
+    [Fact]
+    public void Size_StretchFunction()
+    {
+        var size = Size.Parse("stretch(calc(50% + 10px))", 2);
+        Assert.Equal(SizeKind.StretchFunction, size.Kind);
+        Assert.Equal(120, size.Value.Resolve(200));
+        Assert.Null(size.TryResolve(200));
+        Assert.False(size.IsIntrinsic);
+        Assert.Equal(SizeKind.Auto, Size.Parse("stretch(auto)", 1).Kind);
     }
 
     // ----------------------------------------------------------------------------------------------------------------

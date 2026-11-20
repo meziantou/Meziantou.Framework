@@ -9,30 +9,24 @@ description: "The results of the web-platform-tests of payment-method-manifest, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 11 | 11 | – |
+| [Stable](#stable-tests) | 11 | 11 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **11** | **11** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 11
+| **All** | **11** | **11** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`fetch-options.https.window.js`](https://wpt.fyi/results/payment-method-manifest/fetch-options.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`link-header-parsing.https.window.js`](https://wpt.fyi/results/payment-method-manifest/link-header-parsing.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`link-header-selection.https.window.js`](https://wpt.fyi/results/payment-method-manifest/link-header-selection.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`link-header-target-url.https.window.js`](https://wpt.fyi/results/payment-method-manifest/link-header-target-url.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`pmi-http-status.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmi-http-status.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`pmi-redirects.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmi-redirects.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`pmm-default-applications.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-default-applications.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`pmm-http-status.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-http-status.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`pmm-redirect-disallowed.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-redirect-disallowed.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`pmm-supported-origins.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-supported-origins.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
-| [`wam-redirect-disallowed.https.window.js`](https://wpt.fyi/results/payment-method-manifest/wam-redirect-disallowed.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API (payment method manifests) |
+| [`fetch-options.https.window.js`](https://wpt.fyi/results/payment-method-manifest/fetch-options.https.window.js) | Pass | 4 / 4 |  |  |
+| [`link-header-parsing.https.window.js`](https://wpt.fyi/results/payment-method-manifest/link-header-parsing.https.window.js) | Pass | 5 / 5 |  |  |
+| [`link-header-selection.https.window.js`](https://wpt.fyi/results/payment-method-manifest/link-header-selection.https.window.js) | Pass | 5 / 5 |  |  |
+| [`link-header-target-url.https.window.js`](https://wpt.fyi/results/payment-method-manifest/link-header-target-url.https.window.js) | Pass | 2 / 2 |  |  |
+| [`pmi-http-status.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmi-http-status.https.window.js) | Pass | 3 / 3 |  |  |
+| [`pmi-redirects.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmi-redirects.https.window.js) | Pass | 4 / 4 |  |  |
+| [`pmm-default-applications.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-default-applications.https.window.js) | Pass | 10 / 10 |  |  |
+| [`pmm-http-status.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-http-status.https.window.js) | Pass | 2 / 2 |  |  |
+| [`pmm-redirect-disallowed.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-redirect-disallowed.https.window.js) | Pass | 1 / 1 |  |  |
+| [`pmm-supported-origins.https.window.js`](https://wpt.fyi/results/payment-method-manifest/pmm-supported-origins.https.window.js) | Pass | 13 / 13 |  |  |
+| [`wam-redirect-disallowed.https.window.js`](https://wpt.fyi/results/payment-method-manifest/wam-redirect-disallowed.https.window.js) | Pass | 1 / 1 |  |  |

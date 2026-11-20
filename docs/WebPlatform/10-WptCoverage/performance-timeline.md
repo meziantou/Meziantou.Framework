@@ -10,17 +10,17 @@ description: "The results of the web-platform-tests of performance-timeline, and
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 32 | 44 | 0 | 73% |
-| [Tentative](#tentative-tests) | 7 | 21 | 0 | 33% |
+| [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **39** | **65** | **0** | **60%** |
+| **All** | **38** | **53** | **0** | **72%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 25
+- **NOT IMPLEMENTED**: 14
 
 ## Stable tests
 
@@ -84,15 +84,3 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`navigation-id-mark-measure.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-mark-measure.tentative.html) | Pass | 1 / 1 |  |  |
 | [`navigation-id-reset.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-reset.tentative.html) | Fail | 0 / 1 | TEST BUG | the test does not wait for the reload: `location.reload()` navigates from a task, so the `waitForPageShow` and the mark of the next scripts still run in the document restored from the back/forward cache, and the second navigation id is the one of that document (the restoration does regenerate it, which the first assertion checks) |
 | [`navigation-id-resource-timing.tentative.html`](https://wpt.fyi/results/performance-timeline/navigation-id-resource-timing.tentative.html) | Pass | 1 / 1 |  |  |
-| [`not-restored-reasons/performance-navigation-timing-attributes.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-attributes.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-bfcache-reasons-stay.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache-reasons-stay.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-bfcache.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-cross-origin-bfcache.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-cross-origin-bfcache.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-fetch.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-fetch.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-iframes-without-attributes.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-iframes-without-attributes.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-navigation-failure.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-navigation-failure.tentative.window.js) | Pass | 1 / 1 |  |  |
-| [`not-restored-reasons/performance-navigation-timing-not-bfcached.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-not-bfcached.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-redirect-on-history.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-redirect-on-history.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-reload.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-reload.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-same-origin-bfcache.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-bfcache.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |
-| [`not-restored-reasons/performance-navigation-timing-same-origin-replace.tentative.window.js`](https://wpt.fyi/results/performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-replace.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | `PerformanceNavigationTiming.notRestoredReasons` (the `NotRestoredReasons` interfaces), and `RTCPeerConnection`, which most tests use to make a page ineligible for the back/forward cache |

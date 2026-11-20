@@ -438,8 +438,13 @@ public sealed class CookieStore : EventTarget, ICookieChangeListener
         attributes.SameSite = sameSite;
         attributes.Partitioned = partitioned;
 
-        // Step 22: the storage failures are not reported
-        cookieJar.ReceiveCookie(GetContext(url), encodedName, encodedValue, attributes);
+        // Step 22: the storage failures are not reported, except the blocking of the unpartitioned cookies in a third-party
+        // context (as in Chromium, the promise is rejected: the cookie cannot be set by this context)
+        var context = GetContext(url);
+        if (!partitioned && cookieJar.IsUnpartitionedCookieAccessBlocked(context))
+            return false;
+
+        cookieJar.ReceiveCookie(context, encodedName, encodedValue, attributes);
         return true;
     }
 

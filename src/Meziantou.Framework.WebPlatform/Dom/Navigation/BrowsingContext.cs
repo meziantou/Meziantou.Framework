@@ -1310,6 +1310,15 @@ public sealed partial class BrowsingContext : IDisposable
         if (IsDestroyed)
             return;
 
+        // https://html.spec.whatwg.org/multipage/system-state.html#protocol-handler-invocation: a registered handler of the
+        // scheme handles the URL, so the navigation is a navigation to the URL of the handler. As in the browsers, the URL is
+        // translated when the navigation starts, so the checks (the sandboxing, the beforeunload event...) run once, for the
+        // URL that is navigated to.
+        if (traversalEntry is null && url.Scheme is not ("http" or "https" or "file" or "about" or "blob" or "data" or "javascript") && Options.ProtocolHandlers?.Registry.Translate(url) is { } handlerUrl)
+        {
+            url = handlerUrl;
+        }
+
         // As in the browsers, the navigables nested too deeply do not navigate (e.g. a document that loads itself in an
         // iframe with a relative URL would nest documents endlessly)
         if (GetNestingDepth() >= MaxNestingDepth && traversalEntry is null)
@@ -2749,6 +2758,9 @@ public sealed partial class BrowsingContext : IDisposable
     /// <summary>https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-xml</summary>
     private void LoadXmlDocument(UrlRecord url, string content, string contentType, WebEncodingId encoding)
     {
+        if (TryLoadXsltDocument(url, content, contentType, encoding))
+            return;
+
         var document = XmlDocumentParser.CreateDocument(new XmlParserOptions { Url = url.Serialize(), ContentType = contentType, BrowsingContext = this });
         document.Encoding = encoding;
         new Html.Parsing.XmlScriptingParser(document, content, runTheEnd: ReferenceEquals(document.BrowsingContext, this)).Start();
@@ -3009,9 +3021,14 @@ public sealed partial class BrowsingContext : IDisposable
         document.EnvironmentHasStorageAccess = parameters.HasStorageAccess;
 
         // The window of an initial about:blank document is reused by a same origin-domain document, unless the credentialless
-        // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse)
+        // attribute of the iframe changed since the initial document was created (https://wicg.github.io/anonymous-iframe/#spec-window-reuse).
+        // The result of the XSLT transformation of a document replaces it in its window.
         Window window;
-        if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document) && activeDocument.IsCredentialless == document.IsCredentialless)
+        if (parameters.XsltSourceDocument is { RelevantWindow: { } sourceWindow } && ReferenceEquals(parameters.XsltSourceDocument, activeDocument))
+        {
+            window = sourceWindow;
+        }
+        else if (!switchesGroup && activeDocument.IsInitialAboutBlank && Document.IsSameOriginDomain(activeDocument, document) && activeDocument.IsCredentialless == document.IsCredentialless)
         {
             window = activeDocument.RelevantWindow!;
         }
@@ -3030,7 +3047,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the reporting endpoints of the response
         window.InitializeReportingEndpoints(parameters.Headers, document.UrlRecord);
 
-        Activate(document, window, parameters.HistoryHandling, parameters.Srcdoc, parameters.TraversalEntry, parameters.RequestReferrerPolicy, parameters);
+        Activate(document, window, parameters.XsltSourceDocument is not null ? NavigationHistoryBehavior.Replace : parameters.HistoryHandling, parameters.Srcdoc, parameters.TraversalEntry, parameters.RequestReferrerPolicy, parameters);
 
         // https://html.spec.whatwg.org/multipage/document-lifecycle.html#initialise-the-document-object: the Refresh header
         if (HeaderList.Get(parameters.Headers, "Refresh") is { } refresh)
@@ -3552,6 +3569,11 @@ public sealed partial class BrowsingContext : IDisposable
             PointerLockModel.OnDocumentUnloaded(document);
             ReleaseDeviceLocks(document);
             ModelContext.RunUnloadingDocumentCleanupSteps(document);
+            PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
+
+            // The prompts of the user agent that the document shows are closed, including when it enters the back/forward
+            // cache: a pending request cannot be answered after the document is restored
+            document.ClosePrompts();
             if (persisted)
                 return;
 
@@ -3580,6 +3602,9 @@ public sealed partial class BrowsingContext : IDisposable
             {
                 navigator.WakeLockOrNull?.ReleaseAll();
                 navigator.KeyboardOrNull?.OnDocumentUnloaded();
+
+                // https://w3c.github.io/mediacapture-main/#life-cycle-and-media-flow: the capture of the devices stops
+                navigator.MediaDevicesOrNull?.OnDocumentUnloaded();
             }
 
             PressureObserverRegistry.OnUnloaded(window);
@@ -3597,6 +3622,7 @@ public sealed partial class BrowsingContext : IDisposable
     {
         // https://webmachinelearning.github.io/webmcp/#unloading-document-cleanup-steps (the documents that are destroyed without being unloaded, e.g. an initial about:blank document)
         ModelContext.RunUnloadingDocumentCleanupSteps(document);
+        PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
 
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)
@@ -3664,6 +3690,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         // The realtime audio contexts of the document are closed
         document.CloseAudioContexts();
+
+        // The prompts of the user agent that the document shows are closed (e.g. a pending digital credential request is aborted)
+        document.ClosePrompts();
 
         // https://w3c.github.io/FileAPI/#lifeTime: the blob URLs created by the document are revoked
         document.BrowsingContext?.BlobUrls.RemoveEntries(document);
@@ -3884,6 +3913,7 @@ public sealed partial class BrowsingContext : IDisposable
             Options.ScriptEngine?.DestroyRealm(window);
         }
 
+        IdentityProviderDialogs.NotifyDestroyed(this);
         Options.BrowsingContextDestroyed?.Invoke(CallbackContext.For(this));
     }
 
@@ -4209,6 +4239,9 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The content type of a document that the HTML parser creates for another type (a text document or a media document), or null.</summary>
         public string? ContentType { get; set; }
+
+        /// <summary>The XML document whose XSLT transformation creates the document: the document replaces it in its window, or null.</summary>
+        public Document? XsltSourceDocument { get; set; }
 
         /// <summary>The fragment directive removed from the URL of the navigation (or of its last redirect), or null (https://wicg.github.io/scroll-to-text-fragment/#fragment-directive).</summary>
         public string? FragmentDirective { get; set; }

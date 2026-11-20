@@ -116,8 +116,9 @@ update the WPT expectations, add the reasons of the new failures to `wpt-reasons
 ([Reasons](web-platform-tests.md#reasons)), regenerate the WPT coverage pages, then commit.
 
 `eng/webplatform/update-wpt.sh` updates WPT to its latest release, rewrites the WPT expectations from the new results
-(`WPT_UPDATE_EXPECTATIONS=1`) and regenerates the coverage, so the diff of `expectations/` lists the tests whose result
-changed. Add the reasons of the new failures to `wpt-reasons.json`; the script fails while a test that does not pass has
+(`WPT_UPDATE_EXPECTATIONS=1`) and regenerates the coverage, which deletes the expectations of the tests removed or moved
+upstream, so the diff of `expectations/` lists the tests whose result changed and the tests that no longer exist. Remove
+the reasons that `wpt-coverage` reports as matching no test (the ones of the deleted tests). Add the reasons of the new failures to `wpt-reasons.json`; the script fails while a test that does not pass has
 no reason.
 
 To add WPT tests, add their directory to the `paths` of `wpt` in `sources.json` and run `fetch-tests`: the pinned commit

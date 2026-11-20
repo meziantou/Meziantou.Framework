@@ -801,6 +801,37 @@ public sealed class GeometryTests
     }
 
     [Fact]
+    public void EstimateHomographyFindsTheHomographyOfPointsCloseTogether()
+    {
+        // No three of the four points are on a line, but two or three of them are half a pixel apart, and one of them can be
+        // near the horizon: the normal equations AᵀA square the condition number of the problem, and lose the homography
+        (PointD[] Corners, PointD[] Points)[] cases =
+        [
+            ([new(-1, -1), new(99, 1), new(100, 100), new(0, 100)], [new(50, 50), new(50, 113.5), new(50.5, 50.5), new(50.5, 50)]),
+            ([new(0, 0), new(6, 0), new(100, 100), new(0, 116)], [new(49.5, 50), new(52, -6.5), new(42, 105.5), new(50, 50)]),
+        ];
+
+        foreach (var (corners, source) in cases)
+        {
+            var truth = ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 100, 100), corners[0], corners[1], corners[2], corners[3]);
+            var destination = new PointD[source.Length];
+            for (var i = 0; i < source.Length; i++)
+            {
+                Assert.True(truth.TryTransform(source[i], out destination[i]));
+            }
+
+            var estimate = ProjectiveTransform.EstimateHomography(source, destination);
+            for (var i = 0; i < source.Length; i++)
+            {
+                Assert.True(estimate.TryTransform(source[i], out var actual));
+                Assert.InRange(actual.DistanceTo(destination[i]), 0, 1e-6 * (1 + Math.Abs(destination[i].X) + Math.Abs(destination[i].Y)));
+            }
+
+            Assert.Equal(4, ProjectiveTransform.EstimateHomographyRobust(source, destination, new HomographyRansacOptions { Iterations = 1, Threshold = 1e-3 }).InlierCount);
+        }
+    }
+
+    [Fact]
     public void EstimateHomographyRejectsDegenerateCorrespondences()
     {
         PointD[] square = [new(0, 0), new(1, 0), new(1, 1), new(0, 1)];

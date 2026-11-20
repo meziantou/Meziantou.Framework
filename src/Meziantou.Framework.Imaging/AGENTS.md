@@ -1471,7 +1471,9 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   the cut points: the body of a chord where a curve turns back crosses itself, its shoelace sum is almost zero, and
   its sign must stay what it was. A widened path (`Widen`) and `StrokeContains` keep every piece as it is.
   `DrawingFuzzTests.StrokesPaintLikeTheirSeparatePieces` compares the pixels with the pieces kept apart
-  (`Stroker.KeepsPiecesApartOnCurrentThread`); they must be the same.
+  (`Stroker.KeepsPiecesApartOnCurrentThread`); they must be the same. The pieces kept apart are still cut where they
+  meet (`SplitsSides`): a side and the half of it the next piece shares are otherwise crossed at points a few units of
+  the last place apart, and a pixel whose center is on both is in neither.
 - Dashes are cut before the stroker (`Dasher`), which strokes each dash as an open contour. The first dash of a contour
   is held back until the contour ends, because the last dash of a closed contour continues with it. On a canvas, only
   the parts of a segment whose dashes can change a pixel are cut (the canvas seen along the segment, plus the reach of

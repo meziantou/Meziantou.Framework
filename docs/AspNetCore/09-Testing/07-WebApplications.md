@@ -37,7 +37,7 @@ await Expect(page.Locator("#greeting")).ToHaveTextAsync("Hello Ada");
 [TestDocumentLoaders.FromDirectories](cref:Meziantou.AspNetCore.Testing.TestDocumentLoaders.FromDirectories(System.Uri,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.String))
 serves the files of folders, such as the output of `dotnet publish`: the URL of a folder serves its `index.html` file,
 and the fallback file serves the routes of a single-page application, as `MapFallbackToFile` does. See
-[Blazor WebAssembly applications](08-BlazorApplications.md#blazor-webassembly-applications).
+[Blazor WebAssembly](08-BlazorApplications.md#blazor-webassembly).
 
 The pages handle the cookies and the redirects, as a browser does: the pages of a
 [WebAppBrowser](cref:Meziantou.AspNetCore.Testing.WebAppBrowser) share their cookies
@@ -109,6 +109,32 @@ Assert.Single(reports);
 
 [ComponentTestHostOptions](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions) has the same function for the page that hosts the components.
 
+## WebAssembly
+
+The pages run no WebAssembly by default: the `WebAssembly` namespace of their scripts is not defined, so a page that
+instantiates a module fails, and a Blazor WebAssembly application does not start. Set
+[WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to a runtime: the
+[WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) of the
+[Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+package runs the modules with Wasmtime (see [WebAssembly](../../WebPlatform/06-Scripting/05-WebAssembly.md) for its
+options). The pages share the runtime and the browser does not dispose it: dispose it after the browser.
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_WebAssemblyRuntime;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The runtime of the Meziantou.Framework.WebPlatform.Wasmtime package: the pages share it
+using var runtime = new WasmtimeRuntime();
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { WebAssemblyRuntime = runtime });
+
+// The page instantiates a WebAssembly module and calls its add function
+var page = await browser.OpenAsync("/wasm");
+
+await Expect(page.Locator("output")).ToHaveTextAsync("2 + 3 = 5");
+```
+<!-- endref -->
+
+[ComponentTestHostOptions.WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions.WebAssemblyRuntime) is the runtime of the page that hosts the components in the same way, when it runs JavaScript.
+
 ## Clipboard
 
 Each page has a clipboard of its own, so tests that run in parallel do not see what the others copy.
@@ -149,6 +175,29 @@ Assert.Equal("Pasted text", page.Find("output").TextContent);
 When the content returned by [ProvideContent](cref:Meziantou.AspNetCore.Testing.FakeClipboard.ProvideContent) changes, as when another application writes to the clipboard,
 [NotifyContentChanged](cref:Meziantou.AspNetCore.Testing.FakeClipboard.NotifyContentChanged) fires the `clipboardchange`
 events of the pages.
+
+## Clock
+
+[TimeProvider](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.TimeProvider) is the clock of the pages: the
+timers (`setTimeout()`, the animations...) and the dates (`Date.now()`, `new Date()`, and `DateTime.Now` in a Blazor
+WebAssembly application, which reads the dates of JavaScript), with the local time zone of the clock. Use a
+`FakeTimeProvider` (Microsoft.Extensions.TimeProvider.Testing) to test the code that depends on the date:
+
+<!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_TimeProvider;format=md-fenced-code-block;dedent=true -->
+```csharp
+var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+clock.SetLocalTimeZone(TimeZoneInfo.CreateCustomTimeZone("Test", TimeSpan.FromHours(2), "Test", "Test"));
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { TimeProvider = clock });
+
+// The page writes new Date().toISOString() and new Date().getTimezoneOffset()
+var page = await browser.OpenAsync("/clock");
+
+Assert.Equal("2026-01-10T12:00:00.000Z -120", page.Find("output").TextContent);
+```
+<!-- endref -->
+
+[ComponentTestHostOptions.TimeProvider](cref:Meziantou.AspNetCore.Testing.Components.ComponentTestHostOptions.TimeProvider) is the clock of the page that hosts the components in the same way.
 
 ## Waiting
 

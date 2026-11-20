@@ -9,20 +9,20 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 733 | 752 | 2 | 98% |
-| [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
-| [Reftests](#reftests) | 625 | 693 | 2 | 90% |
-| [Crash tests](#crash-tests) | 29 | 55 | 26 | 100% |
-| **All** | **1,433** | **1,547** | **30** | **94%** |
+| [Stable](#stable-tests) | 733 | 751 | 0 | 98% |
+| [Tentative](#tentative-tests) | 43 | 44 | 0 | 98% |
+| [Reftests](#reftests) | 643 | 693 | 2 | 93% |
+| [Crash tests](#crash-tests) | 55 | 55 | 0 | 100% |
+| **All** | **1,474** | **1,543** | **2** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 4
-- **TEST BUG**: 15
-- **NOT IMPLEMENTED**: 60
-- **TEST RUNNER**: 33
+- **TEST BUG**: 23
+- **NOT IMPLEMENTED**: 35
+- **TEST RUNNER**: 5
 - **FLAKY**: 2
 
 ## Stable tests
@@ -379,7 +379,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`geometry/svg-image-intrinsic-size-with-cssstyle-auto.html`](https://wpt.fyi/results/svg/geometry/svg-image-intrinsic-size-with-cssstyle-auto.html) | Pass | 32 / 32 |  |  |
 | [`geometry/svg-length-convert-to-percentage-precision.html`](https://wpt.fyi/results/svg/geometry/svg-length-convert-to-percentage-precision.html) | Pass | 4 / 4 |  |  |
 | [`historical.html`](https://wpt.fyi/results/svg/historical.html) | Pass | 68 / 68 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Disabled | – | TEST RUNNER | the files of the `svg` directory root are not fetched (except `historical.html`) |
+| [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Fail | 1,678 / 1,685 | NOT IMPLEMENTED | the `ShadowAnimation` interface of SVG 2 (the animations of the elements referenced by a `use` element, mirrored on their instances) is not exposed: the 7 subtests of the interface fail |
 | [`interact/focus-inside-hidden-svg-containers-01.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-01.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-02.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-03.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-03.html) | Pass | 1 / 1 |  |  |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shapes/scripted/ellipse-auto-radii.svg`](https://wpt.fyi/results/svg/shapes/scripted/ellipse-auto-radii.svg) | Pass | 7 / 7 |  |  |
 | [`shapes/scripted/shapes-clip-path.svg`](https://wpt.fyi/results/svg/shapes/scripted/shapes-clip-path.svg) | Pass | 3 / 3 |  |  |
 | [`shapes/scripted/stroke-dashes-hit-at-high-scale.svg`](https://wpt.fyi/results/svg/shapes/scripted/stroke-dashes-hit-at-high-scale.svg) | Pass | 1 / 1 |  |  |
-| [`sniffing-content-type.html`](https://wpt.fyi/results/svg/sniffing-content-type.html) | Disabled | – | TEST RUNNER | the files of the `svg` directory root are not fetched (except `historical.html`) |
+| [`sniffing-content-type.html`](https://wpt.fyi/results/svg/sniffing-content-type.html) | Pass | 1 / 1 |  |  |
 | [`struct/SVGSVGElement-currentTranslate-SameObject.html`](https://wpt.fyi/results/svg/struct/SVGSVGElement-currentTranslate-SameObject.html) | Pass | 4 / 4 |  |  |
 | [`struct/SVGSVGElement-deselectAll.html`](https://wpt.fyi/results/svg/struct/SVGSVGElement-deselectAll.html) | Pass | 7 / 7 |  |  |
 | [`struct/scripted/SVGSVGElement-currentTranslate.html`](https://wpt.fyi/results/svg/struct/scripted/SVGSVGElement-currentTranslate.html) | Pass | 7 / 7 |  |  |
@@ -616,7 +616,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`struct/scripted/use-composedpath-closed-shadow-tree.html`](https://wpt.fyi/results/svg/struct/scripted/use-composedpath-closed-shadow-tree.html) | Pass | 2 / 2 |  |  |
 | [`struct/scripted/use-external-reload-in-iframe.html`](https://wpt.fyi/results/svg/struct/scripted/use-external-reload-in-iframe.html) | Pass | 1 / 1 |  |  |
 | [`struct/scripted/use-iframe-onload.html`](https://wpt.fyi/results/svg/struct/scripted/use-iframe-onload.html) | Pass | 1 / 1 |  |  |
-| [`struct/scripted/use-inline-event-handlers.html`](https://wpt.fyi/results/svg/struct/scripted/use-inline-event-handlers.html) | Pass | 2 / 2 |  |  |
 | [`struct/scripted/use-script-not-executed.html`](https://wpt.fyi/results/svg/struct/scripted/use-script-not-executed.html) | Pass | 6 / 6 |  |  |
 | [`struct/systemLanguage-matching.html`](https://wpt.fyi/results/svg/struct/systemLanguage-matching.html) | Pass | 14 / 14 |  |  |
 | [`struct/systemLanguage-parsing.html`](https://wpt.fyi/results/svg/struct/systemLanguage-parsing.html) | Pass | 13 / 13 |  |  |
@@ -830,9 +829,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text/scripted/getcharnumatposition-slr.tentative.html`](https://wpt.fyi/results/svg/text/scripted/getcharnumatposition-slr.tentative.html) | Pass | 1 / 1 |  |  |
 | [`text/scripted/textpath-path-attr-smil.tentative.html`](https://wpt.fyi/results/svg/text/scripted/textpath-path-attr-smil.tentative.html) | Pass | 4 / 4 |  |  |
 | [`text/scripted/textpath-textlength-text-anchor-001.tentative.svg`](https://wpt.fyi/results/svg/text/scripted/textpath-textlength-text-anchor-001.tentative.svg) | Pass | 1 / 1 |  |  |
-| [`types/scripted/SVGList-getItem-identity.tentative.html`](https://wpt.fyi/results/svg/types/scripted/SVGList-getItem-identity.tentative.html) | Pass | 18 / 18 |  |  |
-| [`types/scripted/SVGList-identity-across-attribute-change.tentative.html`](https://wpt.fyi/results/svg/types/scripted/SVGList-identity-across-attribute-change.tentative.html) | Pass | 17 / 17 |  |  |
-| [`types/scripted/SVGList-mutator-return-identity.tentative.html`](https://wpt.fyi/results/svg/types/scripted/SVGList-mutator-return-identity.tentative.html) | Pass | 18 / 18 |  |  |
 
 ## Reftests
 
@@ -1347,34 +1343,34 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`struct/reftests/use-symbol-inline-css-003.svg`](https://wpt.fyi/results/svg/struct/reftests/use-symbol-inline-css-003.svg) | Pass | 1 / 1 |  |  |
 | [`styling/border-spacing-svg-zoom-table-display.html`](https://wpt.fyi/results/svg/styling/border-spacing-svg-zoom-table-display.html) | Pass | 1 / 1 |  |  |
 | [`styling/color-inherit-link-visited.svg`](https://wpt.fyi/results/svg/styling/color-inherit-link-visited.svg) | Pass | 1 / 1 |  |  |
-| [`styling/css-linked-parameters/css-linked-parameters-precedence-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/css-linked-parameters-precedence-1.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/css-linked-parameters-precedence-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/css-linked-parameters-precedence-2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/img-with-custom-property-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-custom-property-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/img-with-linked-parameters-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-linked-parameters-1.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/img-with-linked-parameters-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-linked-parameters-2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
+| [`styling/css-linked-parameters/css-linked-parameters-precedence-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/css-linked-parameters-precedence-1.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/css-linked-parameters-precedence-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/css-linked-parameters-precedence-2.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/img-with-custom-property-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-custom-property-dynamic.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/img-with-linked-parameters-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-linked-parameters-1.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/img-with-linked-parameters-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-linked-parameters-2.html) | Pass | 1 / 1 |  |  |
 | [`styling/css-linked-parameters/img-with-linked-parameters-cleared-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-linked-parameters-cleared-dynamic.html) | Pass | 1 / 1 |  |  |
-| [`styling/css-linked-parameters/img-with-url-fragment-identifiers-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-1.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/img-with-url-fragment-identifiers-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/img-with-url-function-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-function-1.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/img-with-url-function-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-function-2.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-background-image.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-background-image.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-basic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-basic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-currentcolor-typed.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-currentcolor-typed.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-currentcolor-untyped.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-currentcolor-untyped.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-duplicate-name.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-duplicate-name.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-fallback.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fallback.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-feimage-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-feimage-resolution.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-resolution.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-feimage-subregion.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-subregion.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-feimage.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-fragment-identifier-background.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-identifier-background.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-fragment-identifier.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-identifier.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-fragment-shared-resource.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-shared-resource.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-geometry.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-geometry.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-invalid-typed-value.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-invalid-typed-value.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
+| [`styling/css-linked-parameters/img-with-url-fragment-identifiers-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-1.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/img-with-url-fragment-identifiers-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-fragment-identifiers-2.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/img-with-url-function-1.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-function-1.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/img-with-url-function-2.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/img-with-url-function-2.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-background-image.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-background-image.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-basic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-basic.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-currentcolor-typed.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-currentcolor-typed.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-currentcolor-untyped.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-currentcolor-untyped.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-duplicate-name.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-duplicate-name.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-dynamic.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-fallback.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fallback.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-feimage-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-dynamic.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275): the declarations of `link-parameters` are invalid, so the image keeps the fallback of its `env()` (the test passes with the colon) |
+| [`styling/css-linked-parameters/link-parameters-feimage-resolution.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-resolution.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275), and the value `50` of `--x` is a unitless number substituted in the `x` attribute of the image (`x="env(--x, 0)"`), which is invalid at computed-value time in an SVG document as with `var()` (css-var-on-length-attributes-04.svg, web-platform-tests/wpt#56390) |
+| [`styling/css-linked-parameters/link-parameters-feimage-subregion.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-subregion.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275), and the value `50` of `--x` is a unitless number substituted in the `x` attribute of the image (`x="env(--x, 0)"`), which is invalid at computed-value time in an SVG document as with `var()` (css-var-on-length-attributes-04.svg, web-platform-tests/wpt#56390) |
+| [`styling/css-linked-parameters/link-parameters-feimage.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275): the declaration of `link-parameters` is invalid, so the image keeps the fallback of its `env()` (the test passes with the colon) |
+| [`styling/css-linked-parameters/link-parameters-fragment-identifier-background.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-identifier-background.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275) in the link parameter directive of the URL: the directive is not a valid `param()`, so it is ignored (the element `box` is targeted, and the test passes with the colon) |
+| [`styling/css-linked-parameters/link-parameters-fragment-identifier.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-identifier.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275) in the link parameter directive of the URL: the directive is not a valid `param()`, so it is ignored (the element `box` is targeted, and the test passes with the colon) |
+| [`styling/css-linked-parameters/link-parameters-fragment-shared-resource.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-shared-resource.html) | Fail | 0 / 1 | TEST BUG | the test uses the comma of the former grammar (`param(--bg, green)`), which the specification replaced with a colon (`param(--bg: green)`, w3c/csswg-drafts#14275) in the link parameter directives of the URLs: the directives are not valid `param()`, so they are ignored (the test passes with the colon) |
+| [`styling/css-linked-parameters/link-parameters-geometry.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-geometry.html) | Fail | 0 / 1 | TEST BUG | `param(--x: 50)` passes the unitless number `50`, which is substituted in the `x` attribute of the image (`x="env(--x, 0)"`): a unitless number that results from a substitution is invalid at computed-value time in an SVG document, as with `var()` (css-var-on-length-attributes-04.svg, web-platform-tests/wpt#56390), so the rectangle stays at 0 |
+| [`styling/css-linked-parameters/link-parameters-invalid-typed-value.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-invalid-typed-value.html) | Pass | 1 / 1 |  |  |
 | [`styling/css-linked-parameters/link-parameters-none.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-none.html) | Pass | 1 / 1 |  |  |
-| [`styling/css-linked-parameters/link-parameters-per-container.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-per-container.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
+| [`styling/css-linked-parameters/link-parameters-per-container.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-per-container.html) | Pass | 1 / 1 |  |  |
 | [`styling/css-var-on-length-attributes-01.svg`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-01.svg) | Pass | 1 / 1 |  |  |
 | [`styling/css-var-on-length-attributes-02.svg`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-02.svg) | Pass | 1 / 1 |  |  |
 | [`styling/css-var-on-length-attributes-03.svg`](https://wpt.fyi/results/svg/styling/css-var-on-length-attributes-03.svg) | Pass | 1 / 1 |  |  |
@@ -1546,32 +1542,32 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/end-of-time-002-crash.html`](https://wpt.fyi/results/svg/animations/end-of-time-002-crash.html) | Pass | 1 / 1 |  |  |
 | [`animations/mpath-zero-radius-crash.html`](https://wpt.fyi/results/svg/animations/mpath-zero-radius-crash.html) | Pass | 1 / 1 |  |  |
 | [`animations/svg-style-animate-crash.html`](https://wpt.fyi/results/svg/animations/svg-style-animate-crash.html) | Pass | 1 / 1 |  |  |
-| [`crashtests/chrome-bug-1172059.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1172059.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1205852.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1205852.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1207590.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1207590.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1238412.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1238412.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1345806.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1345806.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1371700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1371700.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-1474157.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1474157.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-333487749.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-333487749.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-452651700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-452651700.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-485819134.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-485819134.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-517309206.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-517309206.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/chrome-bug-565674533.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-565674533.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/deep-nesting.html`](https://wpt.fyi/results/svg/crashtests/deep-nesting.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1688293.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1688293.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1703592.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1703592.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1719483.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1719483.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1723249.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1723249.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1724237.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1724237.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1753105.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1753105.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1883804.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1883804.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1966754.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1966754.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-1980267.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1980267.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/firefox-bug-2018671.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-2018671.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/image-dispatch-event-on-destruct.html`](https://wpt.fyi/results/svg/crashtests/image-dispatch-event-on-destruct.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/negative-viewbox.html`](https://wpt.fyi/results/svg/crashtests/negative-viewbox.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/svg-zero-width-img-crash.html`](https://wpt.fyi/results/svg/crashtests/svg-zero-width-img-crash.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`svg/crashtests`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
+| [`crashtests/chrome-bug-1172059.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1172059.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1205852.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1205852.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1207590.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1207590.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1238412.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1238412.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1345806.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1345806.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1371700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1371700.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-1474157.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-1474157.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-333487749.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-333487749.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-452651700.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-452651700.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-485819134.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-485819134.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-517309206.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-517309206.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/chrome-bug-565674533.html`](https://wpt.fyi/results/svg/crashtests/chrome-bug-565674533.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/deep-nesting.html`](https://wpt.fyi/results/svg/crashtests/deep-nesting.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1688293.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1688293.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1703592.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1703592.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1719483.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1719483.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1723249.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1723249.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1724237.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1724237.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1753105.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1753105.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1883804.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1883804.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1966754.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1966754.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-1980267.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-1980267.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/firefox-bug-2018671.html`](https://wpt.fyi/results/svg/crashtests/firefox-bug-2018671.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/image-dispatch-event-on-destruct.html`](https://wpt.fyi/results/svg/crashtests/image-dispatch-event-on-destruct.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/negative-viewbox.html`](https://wpt.fyi/results/svg/crashtests/negative-viewbox.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/svg-zero-width-img-crash.html`](https://wpt.fyi/results/svg/crashtests/svg-zero-width-img-crash.html) | Pass | 1 / 1 |  |  |
 | [`embedded/svg-zero-size-crash.html`](https://wpt.fyi/results/svg/embedded/svg-zero-size-crash.html) | Pass | 1 / 1 |  |  |
 | [`extensibility/foreignObject/foreign-object-circular-filter-reference-crash.html`](https://wpt.fyi/results/svg/extensibility/foreignObject/foreign-object-circular-filter-reference-crash.html) | Pass | 1 / 1 |  |  |
 | [`extensibility/foreignObject/foreign-object-under-clip-path-crash.html`](https://wpt.fyi/results/svg/extensibility/foreignObject/foreign-object-under-clip-path-crash.html) | Pass | 1 / 1 |  |  |

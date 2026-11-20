@@ -226,18 +226,33 @@ public sealed class StorageShed
 /// the storage of an origin embedded by another site is partitioned by the site of the top-level document, and so is the
 /// storage of an origin embedded by its own site through a cross-site document (<see cref="HasCrossSiteAncestor"/>). The
 /// storage key of a first-party environment (a top-level document, or a document whose ancestors are all same site with the
-/// top-level document) has no top-level site.
+/// top-level document) has no top-level site. <see cref="Bucket"/> identifies a storage bucket other than the default bucket
+/// (https://wicg.github.io/storage-buckets/): the endpoints of a bucket (IndexedDB, the Cache API, the origin private file
+/// system) are stored apart from the ones of the default bucket.
 /// </summary>
-internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce, string? TopLevelSite = null, bool HasCrossSiteAncestor = false)
+internal readonly record struct StorageKey(string Origin, Guid? PartitionNonce, string? TopLevelSite = null, bool HasCrossSiteAncestor = false, string? Bucket = null)
 {
     /// <summary>Whether the key is the one of a first-party environment (it has no top-level site).</summary>
     public bool IsFirstParty => TopLevelSite is null;
 
     /// <summary>
     /// The key of the storage in the backends (IndexedDB, the Cache API, the origin private file system): the serialized origin
-    /// of a first-party key, else the origin, the top-level site and the cross-site ancestor bit, separated by <c>^</c>.
+    /// of a first-party key, else the origin, the top-level site and the cross-site ancestor bit, separated by <c>^</c>, followed
+    /// by <c>#</c> and the identity of the bucket for a bucket other than the default one (its name, <c>~</c> and the GUID
+    /// of its lifetime, see <see cref="StorageBucketBackends"/>: the names of the buckets only contain lowercase ASCII
+    /// letters, digits, <c>-</c> and <c>_</c>).
     /// </summary>
-    public string Serialize() => TopLevelSite is null ? Origin : Origin + "^" + TopLevelSite + (HasCrossSiteAncestor ? "^1" : "^0");
+    public string Serialize()
+    {
+        var key = TopLevelSite is null ? Origin : Origin + "^" + TopLevelSite + (HasCrossSiteAncestor ? "^1" : "^0");
+        return Bucket is null ? key : key + "#" + Bucket;
+    }
+
+    /// <summary>
+    /// The storage key of the first-party environments of the origin of this key (an environment that is not partitioned): the
+    /// key of the unpartitioned storage that a document gets access to with a <see cref="StorageAccessHandle"/>.
+    /// </summary>
+    public StorageKey ToFirstParty() => this with { TopLevelSite = null, HasCrossSiteAncestor = false, PartitionNonce = null };
 
     /// <summary>
     /// https://storage.spec.whatwg.org/#obtain-a-storage-key: the storage key of an environment (the document of a window or

@@ -9,17 +9,11 @@ description: "The results of the web-platform-tests of gyroscope, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 9 | 10 | 0 | 90% |
+| [Stable](#stable-tests) | 10 | 10 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **9** | **10** | **0** | **90%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST RUNNER**: 1
+| **All** | **10** | **10** | **0** | **100%** |
 
 ## Stable tests
 
@@ -32,6 +26,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
 | [`Gyroscope-iframe-access.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope-iframe-access.https.html) | Pass | 4 / 4 |  |  |
 | [`Gyroscope-supported-by-permissions-policy.html`](https://wpt.fyi/results/gyroscope/Gyroscope-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
-| [`Gyroscope.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope.https.html) | Fail | 19 / 20 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`Gyroscope.https.html`](https://wpt.fyi/results/gyroscope/Gyroscope.https.html) | Pass | 20 / 20 |  |  |
 | [`Gyroscope_insecure_context.html`](https://wpt.fyi/results/gyroscope/Gyroscope_insecure_context.html) | Pass | 1 / 1 |  |  |
 | [`idlharness.https.window.js`](https://wpt.fyi/results/gyroscope/idlharness.https.window.js) | Pass | 16 / 16 |  |  |

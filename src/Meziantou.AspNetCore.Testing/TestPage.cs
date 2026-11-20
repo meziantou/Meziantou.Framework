@@ -40,6 +40,7 @@ public abstract class TestPage : LocatorScope, IAsyncDisposable, IDisposable
             CookieJar = settings.CookieJar,
             RenderingBackend = new ImagingRenderingBackend(),
             ScriptEngine = settings.ScriptEngine,
+            WebAssemblyRuntime = settings.WebAssemblyRuntime,
             TimeProvider = settings.TimeProvider,
         };
 

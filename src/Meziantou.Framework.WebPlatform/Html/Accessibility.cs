@@ -334,7 +334,12 @@ internal static partial class Accessibility
             "number" => "spinbutton",
             "search" => hasList ? "combobox" : "searchbox",
             "email" or "tel" or "url" => hasList ? "combobox" : "textbox",
-            "color" or "date" or "datetime-local" or "file" or "hidden" or "month" or "password" or "time" or "week" => "",
+
+            // HTML-AAM gives these types no role, but the browsers expose them, as Playwright does: the date, time,
+            // color and password fields are text fields, and the file field is a button
+            "color" or "date" or "datetime-local" or "month" or "password" or "time" or "week" => "textbox",
+            "file" => "button",
+            "hidden" => "",
             _ => hasList ? "combobox" : "textbox",
         };
     }

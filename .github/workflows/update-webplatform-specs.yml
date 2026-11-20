@@ -39,7 +39,7 @@ jobs:
             script: ./eng/webplatform/update-wpt.sh
             branch: update-webplatform-wpt
             title: Update WebPlatform web-platform-tests
-            description: "Automated update of the pinned web-platform-tests to the latest release (`eng/webplatform/update-wpt.sh`). The expectations are rewritten from the new results, so their diff lists the tests whose result changed."
+            description: "Automated update of the pinned web-platform-tests to the latest release (`eng/webplatform/update-wpt.sh`). The expectations are rewritten from the new results and the ones of the tests removed upstream are deleted, so their diff lists the tests whose result changed and the tests that no longer exist."
             failure: The tests of Meziantou.Framework.WebPlatform fail, or a test that does not pass has no reason in `wpt-reasons.json`
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

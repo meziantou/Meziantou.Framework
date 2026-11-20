@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -152,10 +153,33 @@ internal static partial class Scanners
         return builder.ToString();
     }
 
+    // The characters of a label that NormalizeLabel keeps as they are: ASCII but the uppercase letters, tabs and line endings
+    private static readonly SearchValues<char> NormalizedLabelCharacters = SearchValues.Create(CreateNormalizedLabelCharacters());
+
+    private static string CreateNormalizedLabelCharacters()
+    {
+        var characters = new StringBuilder();
+        for (var c = '\0'; c < (char)0x80; c++)
+        {
+            if (!char.IsAsciiLetterUpper(c) && c is not ('\t' or '\r' or '\n'))
+            {
+                characters.Append(c);
+            }
+        }
+
+        return characters.ToString();
+    }
+
     // The key that matches the labels: the runs of whitespace are one space, and the text is case folded with the Unicode full
     // case folding, as cmark does, so that [ﬀ] matches [FF] and [ẞ] matches [SS]
     public static string NormalizeLabel(string label)
     {
+        // Most labels are already normalized: ASCII without uppercase letters, whose words are separated by one space
+        if (!label.AsSpan().ContainsAnyExcept(NormalizedLabelCharacters) && !label.StartsWith(' ', StringComparison.Ordinal) && !label.EndsWith(' ', StringComparison.Ordinal) && !label.Contains("  ", StringComparison.Ordinal))
+        {
+            return label;
+        }
+
         const string Whitespaces = " \t\r\n";
         var builder = new StringBuilder(label.Length);
         var span = label.AsSpan().Trim(Whitespaces);

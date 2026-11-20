@@ -9,49 +9,50 @@ description: "The results of the web-platform-tests of mediacapture-image, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 23 | 23 | – |
+| [Stable](#stable-tests) | 10 | 23 | 0 | 43% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| [Crash tests](#crash-tests) | 0 | 1 | 1 | – |
-| **All** | **0** | **24** | **24** | **–** |
+| [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
+| **All** | **11** | **24** | **0** | **46%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 24
-  - `hardware`: 24
+- **BUG**: 2
+- **NOT IMPLEMENTED**: 1
+- **TEST RUNNER**: 12
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`ImageCapture-MediaTrackSupportedConstraints.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-MediaTrackSupportedConstraints.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`ImageCapture-creation.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-creation.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`ImageCapture-grabFrame.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-grabFrame.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`ImageCapture-track.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-track.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-applyConstraints-fast.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints-fast.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-applyConstraints-getSettings.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints-getSettings.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-applyConstraints-reject.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints-reject.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-applyConstraints.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-clone.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-clone.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-getCapabilities-fast.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getCapabilities-fast.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-getCapabilities.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getCapabilities.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-getConstraints.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getConstraints.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-getSettings-fast.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getSettings-fast.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`MediaStreamTrack-getSettings.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getSettings.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`detached-HTMLCanvasElement.html`](https://wpt.fyi/results/mediacapture-image/detached-HTMLCanvasElement.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`getPhotoCapabilities.https.html`](https://wpt.fyi/results/mediacapture-image/getPhotoCapabilities.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`getPhotoSettings.https.html`](https://wpt.fyi/results/mediacapture-image/getPhotoSettings.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`getusermedia.https.html`](https://wpt.fyi/results/mediacapture-image/getusermedia.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/mediacapture-image/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`takePhoto-reject.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto-reject.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`takePhoto-with-PhotoSettings.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto-with-PhotoSettings.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`takePhoto-without-PhotoCapabilities.https.window.js`](https://wpt.fyi/results/mediacapture-image/takePhoto-without-PhotoCapabilities.https.window.js) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
-| [`takePhoto.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
+| [`ImageCapture-MediaTrackSupportedConstraints.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-MediaTrackSupportedConstraints.https.html) | Pass | 1 / 1 |  |  |
+| [`ImageCapture-creation.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-creation.https.html) | Pass | 4 / 4 |  |  |
+| [`ImageCapture-grabFrame.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-grabFrame.https.html) | Pass | 1 / 1 |  |  |
+| [`ImageCapture-track.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-track.https.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-applyConstraints-fast.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints-fast.html) | Pass | 3 / 3 |  |  |
+| [`MediaStreamTrack-applyConstraints-getSettings.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints-getSettings.https.html) | Error | 0 / 4 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`MediaStreamTrack-applyConstraints-reject.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints-reject.https.html) | Error | 24 / 48 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`MediaStreamTrack-applyConstraints.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-applyConstraints.https.html) | Fail | 0 / 1 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`MediaStreamTrack-clone.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-clone.https.html) | Error | 0 / 3 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`MediaStreamTrack-getCapabilities-fast.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getCapabilities-fast.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-getCapabilities.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getCapabilities.https.html) | Error | 2 / 4 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`MediaStreamTrack-getConstraints.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getConstraints.https.html) | Error | 16 / 32 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`MediaStreamTrack-getSettings-fast.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getSettings-fast.html) | Pass | 1 / 1 |  |  |
+| [`MediaStreamTrack-getSettings.https.html`](https://wpt.fyi/results/mediacapture-image/MediaStreamTrack-getSettings.https.html) | Error | 2 / 4 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`detached-HTMLCanvasElement.html`](https://wpt.fyi/results/mediacapture-image/detached-HTMLCanvasElement.html) | Pass | 1 / 1 |  |  |
+| [`getPhotoCapabilities.https.html`](https://wpt.fyi/results/mediacapture-image/getPhotoCapabilities.https.html) | Fail | 1 / 3 | BUG, TEST RUNNER | `getPhotoCapabilities()` and `getPhotoSettings()` answer at once: a track stopped right after the call does not reject the promise with an `OperationError`; the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`getPhotoSettings.https.html`](https://wpt.fyi/results/mediacapture-image/getPhotoSettings.https.html) | Fail | 1 / 3 | BUG, TEST RUNNER | `getPhotoCapabilities()` and `getPhotoSettings()` answer at once: a track stopped right after the call does not reject the promise with an `OperationError`; the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`getusermedia.https.html`](https://wpt.fyi/results/mediacapture-image/getusermedia.https.html) | Pass | 9 / 9 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/mediacapture-image/idlharness.https.window.js) | Pass | 29 / 29 |  |  |
+| [`takePhoto-reject.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto-reject.https.html) | Error | 0 / 6 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`takePhoto-with-PhotoSettings.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto-with-PhotoSettings.https.html) | Fail | 0 / 1 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
+| [`takePhoto-without-PhotoCapabilities.https.window.js`](https://wpt.fyi/results/mediacapture-image/takePhoto-without-PhotoCapabilities.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the legacy `MediaStreamTrackGenerator` of MediaStreamTrack Insertable Streams, which the test uses to create a track without photo capabilities |
+| [`takePhoto.https.html`](https://wpt.fyi/results/mediacapture-image/takePhoto.https.html) | Error | 1 / 3 | TEST RUNNER | the test needs the `ImageCaptureTest` mock of the platform image capture of Chromium (`/resources/chromium/mock-imagecapture.js`, MojoJS): it is not defined, and loading `/resources/test-only-api.js` once per subtest declares `isChromiumBased` twice |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`ImageCapture-grabFrame-crash.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-grabFrame-crash.https.html) | Disabled | – | REQUIRES(hardware) | MediaStream Image Capture, needs a camera |
+| [`ImageCapture-grabFrame-crash.https.html`](https://wpt.fyi/results/mediacapture-image/ImageCapture-grabFrame-crash.https.html) | Pass | 1 / 1 |  |  |

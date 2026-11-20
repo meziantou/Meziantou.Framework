@@ -4,7 +4,8 @@
 (testharness.js tests and [reftests](#reftests)) against the library:
 
 - The test page is loaded by a navigation, with the headers of its `.headers` files (an XML test page is parsed from its
-  file: only the `Content-Language` of its `.headers` file is applied, as the default language of its elements), in a top-level
+  file: only the `Content-Language` of its `.headers` file is applied, as the default language of its elements; a page that
+  is not well-formed is loaded by a navigation, whose document shows the parsing error as in a browser), in a top-level
   [browsing context](browsing-context.md) whose script engine is `JavaScriptScriptEngine`, implemented with [Meziantou.Framework.JavaScriptEngine](../../Meziantou.Framework.JavaScriptEngine/readme.md) (see [scripting.md](scripting.md)). The library
   runs the scripts as in a browser: the script elements, the event handler content attributes, the `javascript:` URLs.
   The documents of the iframes and the scripts are loaded from the files of the test suite by the `DocumentLoader` of the
@@ -209,7 +210,11 @@
   `https://web-platform.test:8443/`, the ones whose variant has the `h2` flag (`?wpt_flags=h2`) from
   `https://web-platform.test:9000/` (the HTTP/2 server, which serves the same responses without reason phrase: their
   `statusText` is empty), the other ones from
-  `http://web-platform.test:8000/`. The `.mjs` files are JavaScript, and a navigation to a missing file gets
+  `http://web-platform.test:8000/`. The servers that wptserve runs for the tests of Local Network Access
+  (`{{ports[http-local]}}`, `{{ports[http-public]}}`, `{{ports[https-local]}}`, `{{ports[https-public]}}`, whose port
+  wptserve chooses) are the ports 8002, 8003, 8445 and 8446: they serve the same files, and all the hosts are in the same
+  address space. A host spelled with a trailing dot (`web-platform.test.`) is the same host. As wptserve, the runner generates
+  the page of the `.window.html` and `.any.html` URLs of every `.window.js` and `.any.js` file (a resource of a test too). The `.mjs` files are JavaScript, and a navigation to a missing file gets
   the 404 response of wptserve (a document with the origin of its URL), not a network error. The `nonexistent` subdomain (`{{domains[nonexistent]}}`) does not resolve: its requests are network errors. The responses have the headers of the `.headers` files (with the substitutions for the `.sub.headers` files) and of `pipe=header()`: the library checks the
   `Access-Control-Allow-Origin` header of the cross-origin requests in the CORS mode (a script with a `crossorigin`
   attribute, a module script, `fetch()`, `XMLHttpRequest`), and performs the CORS-preflight requests of `fetch()` and
@@ -218,7 +223,7 @@
   is a network error). The
   `.sub.` files and the `pipe=sub` responses get the substitutions of wptserve (`Runner/WptServer.cs`:
   `{{host}}`, `{{domains[...]}}`, `{{hosts[...][...]}}`, `{{ports[...][...]}}`, `{{GET[...]}}`, `{{location[...]}}`,
-  `{{uuid()}}`, and the variables: `{{$id:uuid()}}` sets the variable `id`, `{{$id}}` is its value, in the same file). As in wptserve, the values are HTML-escaped by `pipe=sub` and in the `.sub.` markup files (`.html`,
+  `{{uuid()}}`, `{{fs_path(...)}}` (the absolute path of a file of the test suite), and the variables: `{{$id:uuid()}}` sets the variable `id`, `{{$id}}` is its value, in the same file). As in wptserve, the values are HTML-escaped by `pipe=sub` and in the `.sub.` markup files (`.html`,
   `.svg`...), not by `pipe=sub(none)`, in the other `.sub.` files (e.g. scripts) and in the `.sub.headers` files.
 - The global object of each realm is the library's `Window`. Each window (the test page and its iframes) has its own
   realm of the engine (global object, intrinsics, interface objects), so that cross-realm tests behave as in a browser. The
@@ -310,10 +315,15 @@
     [release actions](https://w3c.github.io/webdriver/#release-actions) of WebDriver: the keys and the buttons of the
     pointers that the previous action sequences left pressed are released (e.g. a sequence that ends with a `pointerDown`
     is followed by a `pointerup` event when the next sequence starts).
+  - The actions of a sequence target the browsing context of its context (`setContext()`), not its window: an action
+    performed after a navigation of the browsing context (e.g. `location.reload()` during a drag) is dispatched to the
+    window of its new document.
   - The click count is counted within an action sequence: the presses of the same button at the same position and on the
     same element are a multiple click (the `detail` of `mousedown`, `mouseup`, `click` and `auxclick`), unless more than
     500 ms separate them.
 
+  `send_keys()` on a file input selects the files of the paths of the keys (one per line, e.g. `{{fs_path(...)}}`), then
+  fires the `input` and `change` events, as WebDriver does. On the other elements,
   `send_keys()` dispatches the keyboard events of the keys (and inserts the characters in a text control or in editable
   content). The keyboard events are trusted, so the library runs the default actions of the user agent (see
   [Focus](browsing-context.md#focus)): `send_keys()` focuses the element (unless it is focused), the keyboard events are
@@ -385,7 +395,9 @@ in the file name or a `tentative` directory: experimental features that no speci
 separately from the stable tests. The pages are generated from the
 [WPT manifest](https://github.com/web-platform-tests/wpt/releases) of the pinned revision, the expectations and the
 reasons (see [Reasons](#reasons)): regenerate them after updating the expectations (CI fails when they are out of date or
-when a test that does not pass has no reason).
+when a test that does not pass has no reason). The generation also deletes the expectations of the test files that are not
+in the manifest (tests moved or removed upstream since the expectations were recorded, which the runner no longer runs):
+the check fails while there are some.
 
 ```bash
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-coverage

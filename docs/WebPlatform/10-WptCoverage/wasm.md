@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 334 | 342 | 0 | 98% |
-| [Tentative](#tentative-tests) | 22 | 70 | 0 | 31% |
+| [Stable](#stable-tests) | 334 | 340 | 0 | 98% |
+| [Tentative](#tentative-tests) | 69 | 70 | 0 | 99% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **356** | **412** | **0** | **86%** |
+| **All** | **403** | **410** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 52
+- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
@@ -309,9 +309,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/js-string/basic.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/basic.any.js) | Pass | 10 / 10 |  |  |
 | [`jsapi/js-string/constants.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/constants.any.js) | Pass | 80 / 80 |  |  |
 | [`jsapi/js-string/imports.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/imports.any.js) | Pass | 2 / 2 |  |  |
-| [`jsapi/jspi/js-promise-integration.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/js-promise-integration.any.js) | Fail | 2 / 26 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run |
-| [`jsapi/jspi/notraps.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/notraps.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run |
-| [`jsapi/jspi/rejects.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/rejects.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run |
+| [`jsapi/jspi/js-promise-integration.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/js-promise-integration.any.js) | Fail | 2 / 26 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in the asynchronous API of its C API (`wasmtime/async.h`: `wasmtime_config_async_support_set`, `wasmtime_func_call_async` and `wasmtime_call_future_poll`, `wasmtime_linker_define_async_func`), which runs the WebAssembly code, its host functions and the continuations of the asynchronous host functions on a separate stack (a fiber) allocated by Wasmtime: the .NET runtime cannot run the managed code of the imported JavaScript functions on a foreign stack (stack walks of the GC, exception handling, stack overflow probes), so it would take a native shim that runs the host functions back on the thread stack |
+| [`jsapi/jspi/notraps.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/notraps.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in the asynchronous API of its C API (`wasmtime/async.h`: `wasmtime_config_async_support_set`, `wasmtime_func_call_async` and `wasmtime_call_future_poll`, `wasmtime_linker_define_async_func`), which runs the WebAssembly code, its host functions and the continuations of the asynchronous host functions on a separate stack (a fiber) allocated by Wasmtime: the .NET runtime cannot run the managed code of the imported JavaScript functions on a foreign stack (stack walks of the GC, exception handling, stack overflow probes), so it would take a native shim that runs the host functions back on the thread stack |
+| [`jsapi/jspi/rejects.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/rejects.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in the asynchronous API of its C API (`wasmtime/async.h`: `wasmtime_config_async_support_set`, `wasmtime_func_call_async` and `wasmtime_call_future_poll`, `wasmtime_linker_define_async_func`), which runs the WebAssembly code, its host functions and the continuations of the asynchronous host functions on a separate stack (a fiber) allocated by Wasmtime: the .NET runtime cannot run the managed code of the imported JavaScript functions on a foreign stack (stack walks of the GC, exception handling, stack overflow probes), so it would take a native shim that runs the host functions back on the thread stack |
 | [`jsapi/memory/buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/buffer.any.js) | Pass | 8 / 8 |  |  |
 | [`jsapi/memory/constructor.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor.any.js) | Pass | 48 / 48 |  |  |
 | [`jsapi/memory/grow.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/grow.any.js) | Pass | 38 / 38 |  |  |
@@ -335,14 +335,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`serialization/arraybuffer/transfer.window.js`](https://wpt.fyi/results/wasm/serialization/arraybuffer/transfer.window.js) | Pass | 2 / 2 |  |  |
 | [`serialization/module/broadcastchannel-success-and-failure.html`](https://wpt.fyi/results/wasm/serialization/module/broadcastchannel-success-and-failure.html) | Pass | 1 / 1 |  |  |
 | [`serialization/module/broadcastchannel-success.html`](https://wpt.fyi/results/wasm/serialization/module/broadcastchannel-success.html) | Pass | 1 / 1 |  |  |
-| [`serialization/module/cross-origin-module-sharing-fails.html`](https://wpt.fyi/results/wasm/serialization/module/cross-origin-module-sharing-fails.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | origin-keyed agent clusters by default: the same-site cross-origin iframe is in the agent cluster of the page (the agent clusters are keyed by site), so it receives the module |
 | [`serialization/module/identity-not-preserved.html`](https://wpt.fyi/results/wasm/serialization/module/identity-not-preserved.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/nested-worker-success.any.js`](https://wpt.fyi/results/wasm/serialization/module/nested-worker-success.any.js) | Pass | 2 / 2 |  |  |
 | [`serialization/module/no-transferring.html`](https://wpt.fyi/results/wasm/serialization/module/no-transferring.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/serialization-via-history.html`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-history.html) | Pass | 4 / 4 |  |  |
 | [`serialization/module/serialization-via-idb.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-idb.any.js) | Pass | 4 / 4 |  |  |
 | [`serialization/module/serialization-via-notifications-api.any.js`](https://wpt.fyi/results/wasm/serialization/module/serialization-via-notifications-api.any.js) | Pass | 4 / 4 |  |  |
-| [`serialization/module/share-module-cross-origin-fails.sub.html`](https://wpt.fyi/results/wasm/serialization/module/share-module-cross-origin-fails.sub.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | origin-keyed agent clusters by default: the same-site cross-origin iframe is in the agent cluster of the page (the agent clusters are keyed by site), so it receives the module |
 | [`serialization/module/window-cross-origin-isolated.https.sub.html`](https://wpt.fyi/results/wasm/serialization/module/window-cross-origin-isolated.https.sub.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/window-cross-site-failure.html`](https://wpt.fyi/results/wasm/serialization/module/window-cross-site-failure.html) | Pass | 3 / 3 |  |  |
 | [`serialization/module/window-domain-success.sub.html`](https://wpt.fyi/results/wasm/serialization/module/window-domain-success.sub.html) | Pass | 1 / 1 |  |  |
@@ -373,44 +371,44 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`jsapi/esm-integration/exports.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/exports.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/global-exports-live-bindings.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/global-exports-live-bindings.tentative.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/global-exports.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/global-exports.tentative.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/js-wasm-cycle.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/js-wasm-cycle.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/mutable-global-sharing.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/namespace-instance.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/namespace-instance.tentative.any.js) | Fail | 2 / 6 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/reserved-import-names.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/reserved-import-names.tentative.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/resolve-export.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/resolve-export.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/source-phase-string-builtins.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/source-phase-string-builtins.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/source-phase-string-constants.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/source-phase-string-constants.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/source-phase.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/source-phase.tentative.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/string-builtins.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/string-builtins.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/string-constants.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/string-constants.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/v128-tdz.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/v128-tdz.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
+| [`jsapi/esm-integration/exports.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/exports.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/esm-integration/global-exports-live-bindings.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/global-exports-live-bindings.tentative.any.js) | Pass | 4 / 4 |  |  |
+| [`jsapi/esm-integration/global-exports.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/global-exports.tentative.any.js) | Pass | 10 / 10 |  |  |
+| [`jsapi/esm-integration/js-wasm-cycle.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/js-wasm-cycle.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/esm-integration/mutable-global-sharing.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js) | Pass | 10 / 10 |  |  |
+| [`jsapi/esm-integration/namespace-instance.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/namespace-instance.tentative.any.js) | Pass | 6 / 6 |  |  |
+| [`jsapi/esm-integration/reserved-import-names.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/reserved-import-names.tentative.any.js) | Pass | 10 / 10 |  |  |
+| [`jsapi/esm-integration/resolve-export.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/resolve-export.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/esm-integration/source-phase-string-builtins.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/source-phase-string-builtins.tentative.any.js) | Pass | 6 / 6 |  |  |
+| [`jsapi/esm-integration/source-phase-string-constants.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/source-phase-string-constants.tentative.any.js) | Pass | 6 / 6 |  |  |
+| [`jsapi/esm-integration/source-phase.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/source-phase.tentative.any.js) | Pass | 4 / 4 |  |  |
+| [`jsapi/esm-integration/string-builtins.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/string-builtins.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/esm-integration/string-constants.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/string-constants.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/esm-integration/v128-tdz.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/v128-tdz.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js) | Pass | 2 / 2 |  |  |
 | [`jsapi/exception/basic.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/basic.tentative.any.js) | Pass | 15 / 15 |  |  |
 | [`jsapi/exception/constructor.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/constructor.tentative.any.js) | Pass | 12 / 12 |  |  |
 | [`jsapi/exception/getArg.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/getArg.tentative.any.js) | Fail | 8 / 10 | TEST BUG | expects a `RangeError` for the indices that are not finite or out of the range of `unsigned long`, while `getArg()` converts the index with `[EnforceRange] unsigned long` (a `TypeError`) |
 | [`jsapi/exception/identity.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/identity.tentative.any.js) | Pass | 2 / 2 |  |  |
 | [`jsapi/exception/is.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/is.tentative.any.js) | Pass | 6 / 6 |  |  |
 | [`jsapi/exception/toString.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/toString.tentative.any.js) | Pass | 4 / 4 |  |  |
-| [`jsapi/function/call.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/call.tentative.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | `WebAssembly.Function` (the type reflection of WebAssembly) |
-| [`jsapi/function/constructor.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/constructor.tentative.any.js) | Fail | 0 / 22 | NOT IMPLEMENTED | `WebAssembly.Function` (the type reflection of WebAssembly) |
-| [`jsapi/function/table.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/table.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | `WebAssembly.Function` (the type reflection of WebAssembly) |
-| [`jsapi/function/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/type.tentative.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | `WebAssembly.Function` (the type reflection of WebAssembly) |
+| [`jsapi/function/call.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/call.tentative.any.js) | Pass | 4 / 4 |  |  |
+| [`jsapi/function/constructor.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/constructor.tentative.any.js) | Pass | 22 / 22 |  |  |
+| [`jsapi/function/table.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/table.tentative.any.js) | Pass | 2 / 2 |  |  |
+| [`jsapi/function/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/type.tentative.any.js) | Pass | 4 / 4 |  |  |
 | [`jsapi/gc/casts.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/gc/casts.tentative.any.js) | Pass | 22 / 22 |  |  |
 | [`jsapi/gc/exported-object.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/gc/exported-object.tentative.any.js) | Pass | 38 / 38 |  |  |
 | [`jsapi/gc/i31.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/gc/i31.tentative.any.js) | Pass | 12 / 12 |  |  |
-| [`jsapi/global/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/global/type.tentative.any.js) | Fail | 0 / 26 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
+| [`jsapi/global/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/global/type.tentative.any.js) | Pass | 26 / 26 |  |  |
 | [`jsapi/memory/constructor-shared.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-shared.tentative.any.js) | Pass | 6 / 6 |  |  |
-| [`jsapi/memory/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-types.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
-| [`jsapi/memory/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/type.tentative.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
+| [`jsapi/memory/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor-types.tentative.any.js) | Pass | 6 / 6 |  |  |
+| [`jsapi/memory/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/type.tentative.any.js) | Pass | 12 / 12 |  |  |
 | [`jsapi/module/moduleSource.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/module/moduleSource.tentative.any.js) | Pass | 8 / 8 |  |  |
-| [`jsapi/table/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/table/constructor-types.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
-| [`jsapi/table/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/table/type.tentative.any.js) | Fail | 0 / 8 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
+| [`jsapi/table/constructor-types.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/table/constructor-types.tentative.any.js) | Pass | 6 / 6 |  |  |
+| [`jsapi/table/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/table/type.tentative.any.js) | Pass | 8 / 8 |  |  |
 | [`jsapi/tag/constructor.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/tag/constructor.tentative.any.js) | Pass | 12 / 12 |  |  |
 | [`jsapi/tag/toString.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/tag/toString.tentative.any.js) | Pass | 4 / 4 |  |  |
-| [`jsapi/tag/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/tag/type.tentative.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the type reflection of WebAssembly (`type()`, the `minimum` member of the descriptors) |
+| [`jsapi/tag/type.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/tag/type.tentative.any.js) | Pass | 6 / 6 |  |  |
 | [`proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html`](https://wpt.fyi/results/wasm/proposals/wide-arithmetic/core/wide-arithmetic.wast.js.tentative.html) | Pass | 123 / 123 |  |  |
 | [`serialization/memory/clone-error.tentative.https.any.js`](https://wpt.fyi/results/wasm/serialization/memory/clone-error.tentative.https.any.js) | Pass | 16 / 16 |  |  |
 | [`serialization/memory/messageport-via-sharedworker-success.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/messageport-via-sharedworker-success.tentative.https.html) | Pass | 1 / 1 |  |  |
@@ -418,28 +416,28 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-nested-dedicated-worker-failure.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`serialization/memory/window-sharedworker-failure.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-sharedworker-failure.tentative.https.html) | Pass | 3 / 3 |  |  |
 | [`serialization/memory/window-success.tentative.https.html`](https://wpt.fyi/results/wasm/serialization/memory/window-success.tentative.https.html) | Pass | 3 / 3 |  |  |
-| [`webapi/esm-integration/execute-start.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/execute-start.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/exported-names.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/exported-names.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/invalid-bytecode.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/invalid-bytecode.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/js-wasm-cycle-errors.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/js-wasm-cycle-errors.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/js-wasm-cycle.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/js-wasm-cycle.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/module-parse-error.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/module-parse-error.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/resolve-export.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/resolve-export.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/reuse-wasm-loaded-as-classic-script.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/reuse-wasm-loaded-as-classic-script.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/script-src-allows-source-phase-wasm.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/script-src-allows-source-phase-wasm.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/script-src-allows-wasm.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/script-src-allows-wasm.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
+| [`webapi/esm-integration/execute-start.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/execute-start.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/exported-names.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/exported-names.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/invalid-bytecode.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/invalid-bytecode.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/js-wasm-cycle-errors.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/js-wasm-cycle-errors.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/js-wasm-cycle.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/js-wasm-cycle.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/module-parse-error.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/module-parse-error.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/resolve-export.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/resolve-export.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/reuse-wasm-loaded-as-classic-script.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/reuse-wasm-loaded-as-classic-script.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/script-src-allows-source-phase-wasm.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/script-src-allows-source-phase-wasm.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/script-src-allows-wasm.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/script-src-allows-wasm.tentative.html) | Pass | 1 / 1 |  |  |
 | [`webapi/esm-integration/script-src-blocks-wasm.tentative.sub.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/script-src-blocks-wasm.tentative.sub.html) | Pass | 1 / 1 |  |  |
 | [`webapi/esm-integration/scripting-disabled.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/scripting-disabled.tentative.html) | Pass | 1 / 1 |  |  |
 | [`webapi/esm-integration/source-phase-blocked-by-csp.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-blocked-by-csp.tentative.html) | Pass | 1 / 1 |  |  |
-| [`webapi/esm-integration/source-phase-import-non-UTF8.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-import-non-UTF8.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/source-phase-js-string.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-js-string.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/source-phase-preload.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-preload.tentative.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/source-phase.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/wasm-import-wasm-export.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-import-wasm-export.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/wasm-import.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-import.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/wasm-js-cycle.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-js-cycle.tentative.html) | Timeout | 0 / 0 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/wasm-to-wasm-link-error.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-to-wasm-link-error.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/worker-import-source-phase.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worker-import-source-phase.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/worker-import.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worker-import.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/worker.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worker.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`webapi/esm-integration/worklet-import-source-phase.tentative.https.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worklet-import-source-phase.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
+| [`webapi/esm-integration/source-phase-import-non-UTF8.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-import-non-UTF8.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/source-phase-js-string.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-js-string.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/source-phase-preload.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase-preload.tentative.html) | Pass | 2 / 2 |  |  |
+| [`webapi/esm-integration/source-phase.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/source-phase.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/wasm-import-wasm-export.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-import-wasm-export.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/wasm-import.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-import.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/wasm-js-cycle.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-js-cycle.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/wasm-to-wasm-link-error.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/wasm-to-wasm-link-error.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/worker-import-source-phase.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worker-import-source-phase.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/worker-import.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worker-import.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/worker.tentative.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worker.tentative.html) | Pass | 1 / 1 |  |  |
+| [`webapi/esm-integration/worklet-import-source-phase.tentative.https.html`](https://wpt.fyi/results/wasm/webapi/esm-integration/worklet-import-source-phase.tentative.https.html) | Pass | 1 / 1 |  |  |

@@ -19,7 +19,7 @@ description: "The results of the web-platform-tests of referrer-policy, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST RUNNER**: 1
+- **TEST BUG**: 1
 
 ## Stable tests
 
@@ -1474,7 +1474,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`generic/inheritance/iframe-inheritance-srcdoc-child.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-srcdoc-child.html) | Pass | 1 / 1 |  |  |
 | [`generic/inheritance/iframe-inheritance-srcdoc.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/iframe-inheritance-srcdoc.html) | Pass | 1 / 1 |  |  |
 | [`generic/inheritance/popup-inheritance-about-blank.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/popup-inheritance-about-blank.html) | Pass | 4 / 4 |  |  |
-| [`generic/inheritance/popup-inheritance-form-submission.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/popup-inheritance-form-submission.html) | Fail | 0 / 1 | TEST RUNNER | the assertion reads the top-level test page's `document.referrer` (empty: the runner loads the page without a referrer), not the popup's, and expects the iframe URL |
+| [`generic/inheritance/popup-inheritance-form-submission.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/popup-inheritance-form-submission.html) | Fail | 0 / 1 | TEST BUG | the assertion reads `document.referrer` of the test page (empty: the test page is loaded without a referrer), not the one of the popup opened by the form submission (`window_opened_from_form`), and expects the URL of the iframe |
 | [`generic/inheritance/workers.html`](https://wpt.fyi/results/referrer-policy/generic/inheritance/workers.html) | Pass | 2 / 2 |  |  |
 | [`generic/link-rel-prefetch.html`](https://wpt.fyi/results/referrer-policy/generic/link-rel-prefetch.html) | Pass | 1 / 1 |  |  |
 | [`generic/meta-referrer-domparser.html`](https://wpt.fyi/results/referrer-policy/generic/meta-referrer-domparser.html) | Pass | 3 / 3 |  |  |

@@ -9,17 +9,11 @@ description: "The results of the web-platform-tests of orientation-sensor, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 14 | 16 | 0 | 88% |
+| [Stable](#stable-tests) | 16 | 16 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **14** | **16** | **0** | **88%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST RUNNER**: 2
+| **All** | **16** | **16** | **0** | **100%** |
 
 ## Stable tests
 
@@ -31,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`AbsoluteOrientationSensor-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/orientation-sensor/AbsoluteOrientationSensor-enabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
 | [`AbsoluteOrientationSensor-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/orientation-sensor/AbsoluteOrientationSensor-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
 | [`AbsoluteOrientationSensor-iframe-access.https.html`](https://wpt.fyi/results/orientation-sensor/AbsoluteOrientationSensor-iframe-access.https.html) | Pass | 4 / 4 |  |  |
-| [`AbsoluteOrientationSensor.https.html`](https://wpt.fyi/results/orientation-sensor/AbsoluteOrientationSensor.https.html) | Fail | 21 / 22 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`AbsoluteOrientationSensor.https.html`](https://wpt.fyi/results/orientation-sensor/AbsoluteOrientationSensor.https.html) | Pass | 22 / 22 |  |  |
 | [`OrientationSensor_insecure_context.html`](https://wpt.fyi/results/orientation-sensor/OrientationSensor_insecure_context.html) | Pass | 2 / 2 |  |  |
 | [`RelativeOrientationSensor-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor-disabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
 | [`RelativeOrientationSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor-enabled-by-permissions-policy-attribute-redirect-on-load.https.html) | Pass | 2 / 2 |  |  |
@@ -39,5 +33,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`RelativeOrientationSensor-enabled-by-permissions-policy.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor-enabled-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
 | [`RelativeOrientationSensor-enabled-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor-enabled-on-self-origin-by-permissions-policy.https.html) | Pass | 3 / 3 |  |  |
 | [`RelativeOrientationSensor-iframe-access.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor-iframe-access.https.html) | Pass | 4 / 4 |  |  |
-| [`RelativeOrientationSensor.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor.https.html) | Fail | 21 / 22 | TEST RUNNER | the `referenceFrame: 'screen'` subtest calls `test_driver.bidi.emulation.set_screen_orientation_override()`, which the runner does not implement (the natural orientation of its `ScreenOrientationProvider` is fixed), so the screen stays in its natural orientation and the screen coordinate system is the device one |
+| [`RelativeOrientationSensor.https.html`](https://wpt.fyi/results/orientation-sensor/RelativeOrientationSensor.https.html) | Pass | 22 / 22 |  |  |
 | [`idlharness.https.window.js`](https://wpt.fyi/results/orientation-sensor/idlharness.https.window.js) | Pass | 29 / 29 |  |  |

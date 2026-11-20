@@ -386,6 +386,7 @@ internal sealed partial class IdlModel
         AddContainerQueryListChangeEvent(model);
         AddPaintWorkletExtensions(model);
         AddMediaSourceHandleToMediaProvider(model);
+        AddRequestStorageAccessTypes(model);
         AddLayoutAndAnimationWorkletExtensions(model);
         AddContentVisibilityAutoStateChangeEventHandler(model);
         RenameSnapEventHandlers(model);
@@ -395,6 +396,7 @@ internal sealed partial class IdlModel
         AddUrlPatternTentativeMethods(model);
         AddLongTasks(model);
         AddScrollTiming(model);
+        AddResourceTimingInitiatorUrl(model);
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
         RemoveSvgPathElementGeometryMembers(model);
         FixCssParserApiTypes(model);
@@ -409,7 +411,32 @@ internal sealed partial class IdlModel
         AddCanvasGradientInterpolation(model);
         AddWebMcpPullRequests(model);
         AddHtmlInCanvas(model);
+        AddFedCmNonce(model);
         return model;
+    }
+
+    /// <summary>
+    /// The deprecated <c>nonce</c> member of the FedCM requests, which the specification moved to the <c>params</c> member
+    /// (https://github.com/w3c-fedid/FedCM/pull/697), but which the browsers still send to the identity assertion endpoint and
+    /// the web-platform-tests of <c>fedcm</c> use:
+    /// <code>
+    /// partial dictionary IdentityProviderRequestOptions { DOMString nonce; };
+    /// </code>
+    /// </summary>
+    private static void AddFedCmNonce(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("IdentityProviderRequestOptions", out var options) || options.Members.Exists(m => m.Name == "nonce"))
+            return;
+
+        options.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Field,
+            Name = "nonce",
+            Type = new IdlType { Name = "DOMString" },
+            Href = "https://w3c-fedid.github.io/FedCM/#dom-identityproviderrequestoptions-nonce",
+            Source = "fedcm",
+            DeclaringDefinition = options.Name,
+        });
     }
 
     /// <summary>
@@ -762,6 +789,31 @@ internal sealed partial class IdlModel
     }
 
     /// <summary>
+    /// The <c>initiatorUrl</c> attribute of PerformanceResourceTiming (https://github.com/w3c/resource-timing/issues/263), which
+    /// Chromium implements behind a flag and the tentative web-platform-tests of <c>resource-timing/tentative/initiator-url</c> test:
+    /// <code>
+    /// partial interface PerformanceResourceTiming { readonly attribute USVString initiatorUrl; };
+    /// </code>
+    /// </summary>
+    private static void AddResourceTimingInitiatorUrl(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("PerformanceResourceTiming", out var definition) || definition.Members.Exists(member => member.Name == "initiatorUrl"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = "initiatorUrl",
+            Type = new IdlType { Name = "USVString" },
+            Readonly = true,
+            Href = "https://github.com/web-platform-tests/wpt/blob/c8fa86fb13d4596dad4c5367cb4555b585c05f8a/resource-timing/resources/test-initiator.js#L39",
+            Source = "resource-timing",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "ResourceTimingInitiatorUrl",
+        });
+    }
+
+    /// <summary>
     /// The tentative compareComponent() and generate() methods of URLPattern, tested by the WPT revision pinned in
     /// tests/Meziantou.Framework.WebPlatform.SpecData/versions.json.
     /// </summary>
@@ -1031,6 +1083,34 @@ internal sealed partial class IdlModel
             Source = "shadow-dom",
             DeclaringDefinition = definition.Name,
             ExperimentalApi = "ShadowRootExtensions",
+        });
+    }
+
+    /// <summary>
+    /// The <c>requestStorageAccess(types)</c> overload of Document defined by Extending Storage Access API (SAA) to non-cookie
+    /// storage (https://privacycg.github.io/saa-non-cookie-storage/#request-storage-access-types), which the IDL extracted
+    /// by webref does not include (only <c>hasUnpartitionedCookieAccess()</c>, <c>StorageAccessTypes</c> and
+    /// <c>StorageAccessHandle</c>):
+    /// <code>
+    /// partial interface Document {
+    ///   Promise&lt;StorageAccessHandle&gt; requestStorageAccess(StorageAccessTypes types);
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddRequestStorageAccessTypes(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("Document", out var definition) || !model.Definitions.ContainsKey("StorageAccessHandle"))
+            return;
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Operation,
+            Name = "requestStorageAccess",
+            Type = new IdlType { Generic = "Promise", Subtypes = [new IdlType { Name = "StorageAccessHandle" }] },
+            Arguments = [new IdlArgument { Name = "types", Type = new IdlType { Name = "StorageAccessTypes" } }],
+            Href = "https://privacycg.github.io/saa-non-cookie-storage/#dom-document-requeststorageaccess-types",
+            Source = "saa-non-cookie-storage",
+            DeclaringDefinition = definition.Name,
         });
     }
 
@@ -1330,7 +1410,7 @@ internal sealed partial class IdlModel
             Members = [],
             Source = "css-mixins-1",
             SpecUrl = "https://drafts.csswg.org/css-mixins-1/",
-            ExperimentalApi = "CssMixinResultAndPrivateRules",
+            ExperimentalApi = "CssPrivateRule",
         };
     }
 

@@ -36,6 +36,9 @@ the role given by [ElementInternals](cref:Meziantou.Framework.WebPlatform.Dom.El
 an `a` with an `href`, `listitem`, `textbox`, `combobox`, `generic` for a `div` or a `span`... An empty string means
 that the element has no role (`head`, `br`).
 
+HTML-AAM gives no role to some `input` types. As the browsers and Playwright, the library exposes the `date`,
+`datetime-local`, `month`, `week`, `time`, `color` and `password` inputs as `textbox`, and the `file` input as `button`.
+
 An element that is not rendered (`display: none` on it or on an ancestor) is not in the accessibility tree: its role is
 `none`. The elements hidden by `visibility: hidden` or `aria-hidden="true"` keep their role.
 

@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 383 | 385 | 0 | 99% |
+| [Stable](#stable-tests) | 384 | 385 | 0 | 99.7% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,023 | 1,028 | 0 | 99.5% |
+| [Reftests](#reftests) | 1,024 | 1,028 | 0 | 99.6% |
 | [Crash tests](#crash-tests) | 29 | 29 | 0 | 100% |
-| **All** | **1,441** | **1,448** | **0** | **99.5%** |
+| **All** | **1,443** | **1,448** | **0** | **99.6%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 5
-- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -348,7 +347,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/flex-basis-computed.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-basis-computed.html) | Pass | 12 / 12 |  |  |
 | [`parsing/flex-basis-fit-content-function.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-basis-fit-content-function.html) | Pass | 17 / 17 |  |  |
 | [`parsing/flex-basis-invalid.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-basis-invalid.html) | Pass | 7 / 7 |  |  |
-| [`parsing/flex-basis-stretch-function.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-basis-stretch-function.html) | Fail | 3 / 17 | NOT IMPLEMENTED | 14 of 17 subtests: the `stretch(<length-percentage>)` value of the sizing properties (https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch): `<box-size>` is overridden in `CssPropertyRegistry` without it, so `flex-basis: stretch(10px)` and `flex: 1 stretch(10px)` are rejected |
+| [`parsing/flex-basis-stretch-function.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-basis-stretch-function.html) | Pass | 17 / 17 |  |  |
 | [`parsing/flex-basis-valid.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-basis-valid.html) | Pass | 8 / 8 |  |  |
 | [`parsing/flex-computed.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-computed.html) | Pass | 41 / 41 |  |  |
 | [`parsing/flex-direction-computed.html`](https://wpt.fyi/results/css/css-flexbox/parsing/flex-direction-computed.html) | Pass | 4 / 4 |  |  |
@@ -682,7 +681,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`flex-basis-012.html`](https://wpt.fyi/results/css/css-flexbox/flex-basis-012.html) | Pass | 1 / 1 |  |  |
 | [`flex-basis-fit-content-function-001.html`](https://wpt.fyi/results/css/css-flexbox/flex-basis-fit-content-function-001.html) | Pass | 1 / 1 |  |  |
 | [`flex-basis-item-margins-001.html`](https://wpt.fyi/results/css/css-flexbox/flex-basis-item-margins-001.html) | Pass | 1 / 1 |  |  |
-| [`flex-basis-stretch-function-001.html`](https://wpt.fyi/results/css/css-flexbox/flex-basis-stretch-function-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `stretch(<length-percentage>)` value of the sizing properties (https://drafts.csswg.org/css-sizing-4/#funcdef-width-stretch): `flex-basis: stretch(...)` is invalid |
+| [`flex-basis-stretch-function-001.html`](https://wpt.fyi/results/css/css-flexbox/flex-basis-stretch-function-001.html) | Pass | 1 / 1 |  |  |
 | [`flex-box-wrap.html`](https://wpt.fyi/results/css/css-flexbox/flex-box-wrap.html) | Pass | 1 / 1 |  |  |
 | [`flex-child-percent-basis-resize-1.html`](https://wpt.fyi/results/css/css-flexbox/flex-child-percent-basis-resize-1.html) | Pass | 1 / 1 |  |  |
 | [`flex-column-reverse-multiline-item-position.html`](https://wpt.fyi/results/css/css-flexbox/flex-column-reverse-multiline-item-position.html) | Pass | 1 / 1 |  |  |

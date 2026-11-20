@@ -1105,9 +1105,6 @@
   "css/css-fonts/lang-attribute-affects-rendering-of-second-text-run.html": {
     "reftest": "PASS"
   },
-  "css/css-fonts/lang-attribute-affects-rendering.html": {
-    "reftest": "PASS"
-  },
   "css/css-fonts/line-gap-override.html": {
     "reftest": "PASS"
   },

@@ -1,0 +1,115 @@
+{
+  "payment-request/PaymentMethodChangeEvent/methodDetails-attribute.https.html": {
+    "total": 2
+  },
+  "payment-request/PaymentMethodChangeEvent/methodName-attribute.https.html": {
+    "total": 2
+  },
+  "payment-request/PaymentRequestUpdateEvent/constructor.http.html": {
+    "total": 1
+  },
+  "payment-request/PaymentRequestUpdateEvent/constructor.https.html": {
+    "total": 3
+  },
+  "payment-request/PaymentRequestUpdateEvent/updatewith-method.https.html": {
+    "total": 3
+  },
+  "payment-request/constructor_convert_method_data.https.html": {
+    "total": 3
+  },
+  "payment-request/delegate-request.https.sub.html": {
+    "total": 4,
+    "failures": {
+      "Payment-request from a subframe succeeds with delegation when the top frame has user activation": "FAIL"
+    }
+  },
+  "payment-request/historical.https.html": {
+    "total": 9
+  },
+  "payment-request/idlharness.https.window.js": {
+    "total": 74
+  },
+  "payment-request/onpaymentmethodchange-attribute.https.html": {
+    "total": 4
+  },
+  "payment-request/payment-is-showing.https.html": {
+    "total": 3
+  },
+  "payment-request/payment-request-abort-method.https.html": {
+    "total": 4
+  },
+  "payment-request/payment-request-canmakepayment-method.https.html": {
+    "total": 6
+  },
+  "payment-request/payment-request-constructor-thcrash.https.html": {
+    "total": 10
+  },
+  "payment-request/payment-request-constructor.https.sub.html": {
+    "total": 30
+  },
+  "payment-request/payment-request-ctor-currency-code-checks.https.sub.html": {
+    "total": 10
+  },
+  "payment-request/payment-request-ctor-pmi-handling.https.sub.html": {
+    "total": 4
+  },
+  "payment-request/payment-request-disallowed-when-hidden.https.html": {
+    "total": 1
+  },
+  "payment-request/payment-request-hasenrolledinstrument-method-protection.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Optionally, at the user agent's discretion, return a promise rejected with a \"NotAllowedError\" DOMException.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-hasenrolledinstrument-method.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "If request.[[state]] is \"closed\", then return a promise rejected with an \"InvalidStateError\" DOMException.": "FAIL",
+      "If request.[[state]] is \"interactive\", then return a promise rejected with an \"InvalidStateError\" DOMException.": "FAIL",
+      "hasEnrolledInstrument() resolves to false for unsupported payment methods.": "FAIL"
+    }
+  },
+  "payment-request/payment-request-id-attribute.https.html": {
+    "total": 2
+  },
+  "payment-request/payment-request-insecure.http.html": {
+    "total": 1
+  },
+  "payment-request/payment-request-not-exposed.https.worker.js": {
+    "total": 1
+  },
+  "payment-request/payment-request-onshippingaddresschange-attribute.https.html": {
+    "total": 4
+  },
+  "payment-request/payment-request-onshippingoptionchange-attribute.https.html": {
+    "total": 4
+  },
+  "payment-request/payment-request-shippingAddress-attribute.https.html": {
+    "total": 2
+  },
+  "payment-request/payment-request-shippingOption-attribute.https.html": {
+    "total": 6
+  },
+  "payment-request/payment-request-shippingType-attribute.https.html": {
+    "total": 3
+  },
+  "payment-request/payment-request-show-method.https.html": {
+    "total": 4
+  },
+  "payment-request/payment-response/onpayerdetailchange-attribute.https.html": {
+    "total": 2
+  },
+  "payment-request/rejects_if_not_active.https.html": {
+    "total": 4,
+    "failures": {
+      "PaymentRequest.show() aborts if the document is active, but not fully active.": "FAIL"
+    }
+  },
+  "payment-request/show-consume-activation.https.html": {
+    "total": 1
+  },
+  "payment-request/show-method-optional-promise-rejects.https.html": {
+    "total": 10
+  }
+}

@@ -338,6 +338,7 @@ namespace Meziantou.AspNetCore.Testing
         public string TestIdAttribute { get => throw null; init { } }
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions Viewport { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
     }
 
     public sealed class WebAppBrowser : System.IAsyncDisposable, System.IDisposable
@@ -363,6 +364,7 @@ namespace Meziantou.AspNetCore.Testing
         public string TestIdAttribute { get => throw null; init { } }
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions Viewport { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
         public static bool IsDefaultLongLivedRequest(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request) => throw null;
     }
 }
@@ -434,6 +436,7 @@ namespace Meziantou.AspNetCore.Testing.Components
         public string TestIdAttribute { get => throw null; init { } }
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ViewportOptions Viewport { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime? WebAssemblyRuntime { get => throw null; init { } }
     }
 
     public sealed class FragmentContainer : Microsoft.AspNetCore.Components.IComponent

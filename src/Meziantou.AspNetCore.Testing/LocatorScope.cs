@@ -73,7 +73,8 @@ public abstract class LocatorScope
 
     /// <summary>
     /// Creates a locator of the elements labelled by a text: the elements referenced by <c>aria-labelledby</c>, else the
-    /// <c>aria-label</c> attribute, else the <c>label</c> elements of a form control.
+    /// <c>aria-label</c> attribute, else the <c>label</c> elements of a form control. As in the accessible name computation, the
+    /// text of a <c>label</c> element does not include the control it labels, and the other controls it contains contribute their value.
     /// </summary>
     /// <param name="text">The text of the label.</param>
     /// <param name="exact">Whether the text matches the whole label, with the case. By default, it matches a substring, ignoring the case.</param>

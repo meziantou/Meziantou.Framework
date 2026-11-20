@@ -306,7 +306,7 @@ internal sealed class WorkerAgent
             return;
         }
 
-        var moduleScript = new ModuleScript(global, script.SourceText, script.Url.Serialize()) { Url = script.Url.Serialize(), FetchOptions = new ModuleFetchOptions { CredentialsMode = WorkerScriptFetching.ToCredentialsMode(Credentials) } };
+        var moduleScript = new ModuleScript(global, script.SourceText, script.Url.Serialize()) { Url = script.Url.Serialize(), FetchOptions = new ModuleFetchOptions { CredentialsMode = WorkerScriptFetching.ToCredentialsMode(Credentials) }, WasmBytes = script.WasmBytes };
         global.IsFetchingModuleScriptGraph = true;
         engine.LoadModuleScriptGraph(moduleScript, loaded =>
         {
@@ -498,6 +498,9 @@ internal sealed record FetchedWorkerScript(UrlRecord Url, string SourceText, IRe
 
     /// <summary>The id of the reserved client of the fetch of the script (the id of the environment of the worker), or null.</summary>
     public string? ReservedClientId { get; init; }
+
+    /// <summary>The bytes of the WebAssembly module of a module worker whose response has the <c>application/wasm</c> MIME type, or null.</summary>
+    public byte[]? WasmBytes { get; init; }
 }
 
 /// <summary>
@@ -564,7 +567,7 @@ internal static class WorkerScriptFetching
                         owner.QueueGlobalTask(() => timing.Report(response));
                     }
 
-                    var script = completed.IsCompletedSuccessfully ? ProcessResponse(completed.Result, includeCredentials: credentialsMode == FetchCredentialsMode.Include, isWorkerScript: true) : null;
+                    var script = completed.IsCompletedSuccessfully ? ProcessResponse(completed.Result, includeCredentials: credentialsMode == FetchCredentialsMode.Include, isWorkerScript: true, isModuleScript: type == WorkerType.Module) : null;
                     onComplete(script is null ? null : script with { ActiveServiceWorker = request.ReservedClient?.ActiveServiceWorker, ReservedClientId = request.ReservedClient?.Id });
                 }
                 finally
@@ -684,7 +687,7 @@ internal static class WorkerScriptFetching
         };
     }
 
-    private static FetchedWorkerScript? ProcessResponse(FetchResponse response, bool includeCredentials, bool isWorkerScript)
+    private static FetchedWorkerScript? ProcessResponse(FetchResponse response, bool includeCredentials, bool isWorkerScript, bool isModuleScript = false)
     {
         if (response.IsNetworkError)
             return null;
@@ -698,6 +701,11 @@ internal static class WorkerScriptFetching
         // response must be a JavaScript MIME type (any MIME type is allowed for a data: or a blob: URL), and the MIME type
         // of an imported script must be a JavaScript MIME type (https://html.spec.whatwg.org/multipage/webappapis.html#fetch-a-classic-worker-imported-script)
         var essence = HeaderList.ExtractMimeType(internalResponse.HeaderList)?.Essence ?? "";
+
+        // The script of a module worker can be a WebAssembly module (https://webassembly.github.io/esm-integration/js-api/index.html)
+        if (isModuleScript && essence == "application/wasm")
+            return new FetchedWorkerScript(responseUrl, "", internalResponse.HeaderList, includeCredentials) { WasmBytes = internalResponse.Body ?? [] };
+
         if ((!isWorkerScript || responseUrl.Scheme is "http" or "https") && !HtmlScriptElement.IsJavaScriptMimeTypeEssenceMatch(essence))
             return null;
 

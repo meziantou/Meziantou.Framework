@@ -84,6 +84,10 @@ internal sealed class TexturePixels : IDisposable
                 else
                 {
                     plan.ConvertRow(source, destination);
+                    if (sourceFormat == PixelFormat.RgbaHalf && precision == TexturePrecision.Float)
+                    {
+                        RestoreNaNPayloads(unsafe(MemoryMarshal.Cast<byte, ushort>(source)), pixels.GetFloats(y));
+                    }
                 }
             }
 
@@ -94,6 +98,21 @@ internal sealed class TexturePixels : IDisposable
             pixels.Dispose();
             throw;
         }
+    }
+
+    /// <summary>
+    /// Converts a sample to the bits of a half: a not-a-number keeps the top bits of its payload and its signaling bit,
+    /// which the conversion of <see cref="Half"/> quiets, so that the halves widened by <see cref="Load"/> are stored back
+    /// unchanged.
+    /// </summary>
+    public static ushort ToHalfBits(float value)
+    {
+        if (!float.IsNaN(value))
+            return BitConverter.HalfToUInt16Bits((Half)value);
+
+        var bits = BitConverter.SingleToUInt32Bits(value);
+        var payload = (bits >> 13) & 0x3FF;
+        return (ushort)(((bits >> 16) & 0x8000) | 0x7C00 | (payload == 0 ? 0x200 : payload));
     }
 
     /// <summary>Gets the bytes of a row.</summary>
@@ -144,6 +163,19 @@ internal sealed class TexturePixels : IDisposable
     {
         var floats = unsafe(MemoryMarshal.Cast<byte, float>(GetRow(y)));
         return floats;
+    }
+
+    /// <summary>Widens the not-a-number halves of a row with their payload and their signaling bit, which the conversions quiet.</summary>
+    private static void RestoreNaNPayloads(ReadOnlySpan<ushort> halves, Span<float> samples)
+    {
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var bits = (uint)halves[i];
+            if ((bits & 0x7FFF) > 0x7C00)
+            {
+                samples[i] = BitConverter.UInt32BitsToSingle(((bits & 0x8000) << 16) | 0x7F800000 | ((bits & 0x3FF) << 13));
+            }
+        }
     }
 
     public void Dispose()

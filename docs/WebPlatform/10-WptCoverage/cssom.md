@@ -12,18 +12,12 @@ description: "The results of the web-platform-tests of cssom, and why the tests 
 | Stable | 0 | 0 | 0 | – |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| [Crash tests](#crash-tests) | 0 | 2 | 2 | – |
-| **All** | **0** | **2** | **2** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST RUNNER**: 2
+| [Crash tests](#crash-tests) | 2 | 2 | 0 | 100% |
+| **All** | **2** | **2** | **0** | **100%** |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`crashtests/csstext-with-all.html`](https://wpt.fyi/results/cssom/crashtests/csstext-with-all.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`cssom`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
-| [`crashtests/delete-rule.html`](https://wpt.fyi/results/cssom/crashtests/delete-rule.html) | Disabled | – | TEST RUNNER | crash tests of a directory that is not fetched (`cssom`, see `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`) |
+| [`crashtests/csstext-with-all.html`](https://wpt.fyi/results/cssom/crashtests/csstext-with-all.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/delete-rule.html`](https://wpt.fyi/results/cssom/crashtests/delete-rule.html) | Pass | 1 / 1 |  |  |

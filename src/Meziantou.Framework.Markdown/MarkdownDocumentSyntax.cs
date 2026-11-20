@@ -1,6 +1,7 @@
 using System.Globalization;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
+using Meziantou.Framework.Markdown.Syntax.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
@@ -18,6 +19,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     private Dictionary<string, MarkdownAbbreviationDefinitionSyntax>? _abbreviations;
     private Dictionary<string, MarkdownFootnoteDefinitionSyntax>? _footnotes;
     private Dictionary<MarkdownHeadingSyntax, string>? _headingIdentifiers;
+    private Dictionary<MarkdownSyntaxNode, TargetAttributes>? _genericAttributes;
 
     // Whether the document has generic attributes: 0 when not computed yet, 1 when it has none, 2 when it has some
     private int _hasGenericAttributes;
@@ -171,18 +173,47 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
     internal MarkdownParseOptions Options => (SyntaxTree as MarkdownSyntaxTree)?.Options ?? MarkdownParseOptions.Default;
 
     /// <summary>Gets a value indicating whether the document has generic attributes, which most documents have none of.</summary>
-    /// <remarks>The green tree is searched: it skips the tokens and creates no red node.</remarks>
+    /// <remarks>The green nodes know whether they contain generic attributes: the tree is not walked.</remarks>
     internal bool HasGenericAttributes
     {
         get
         {
             if (_hasGenericAttributes == 0)
             {
-                _hasGenericAttributes = Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && ContainsKind(Green, SyntaxKind.GenericAttributes) ? 2 : 1;
+                _hasGenericAttributes = Options.Extensions.HasFlag(MarkdownExtensions.GenericAttributes) && HasRareKind(MarkdownRareKinds.GenericAttributes) ? 2 : 1;
             }
 
             return _hasGenericAttributes == 2;
         }
+    }
+
+    private bool HasRareKind(MarkdownRareKinds kind) => Green is MarkdownNode node && (node.RareKinds & kind) != MarkdownRareKinds.None;
+
+    /// <summary>Gets the generic attributes of a node of the document, merged from every <c>{...}</c> that is for it, and these <c>{...}</c>.</summary>
+    /// <remarks>The targets of all the attributes are found once, in one pass over the document.</remarks>
+    internal (MarkdownGenericAttributes Attributes, IReadOnlyList<MarkdownGenericAttributesSyntax> Nodes) GetGenericAttributes(MarkdownSyntaxNode target)
+    {
+        if (!HasGenericAttributes)
+            return (MarkdownGenericAttributes.Empty, []);
+
+        if (_genericAttributes is null)
+        {
+            var targets = new Dictionary<MarkdownSyntaxNode, TargetAttributes>();
+            _ = MarkdownGenericAttributesSyntax.FindTargets(this, (attributes, target) =>
+            {
+                if (!targets.TryGetValue(target, out var targetAttributes))
+                {
+                    targetAttributes = new TargetAttributes();
+                    targets.Add(target, targetAttributes);
+                }
+
+                targetAttributes.Nodes.Add(attributes);
+            });
+
+            _genericAttributes = targets;
+        }
+
+        return _genericAttributes.TryGetValue(target, out var result) ? (result.GetAttributes(), result.Nodes) : (MarkdownGenericAttributes.Empty, []);
     }
 
     /// <summary>Gets the identifier of a heading of the document: the id of its generic attributes, or the one of auto-identifiers.</summary>
@@ -232,7 +263,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
                 });
             }
 
-            if (gridTables)
+            if (gridTables && document.HasRareKind(MarkdownRareKinds.GridTable))
             {
                 foreach (var table in document.DescendantNodes(IsBlockContainer).OfType<MarkdownGridTableSyntax>())
                 {
@@ -283,17 +314,23 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
                 AddIdentifiers(block);
             }
 
-            void AddIdentifiers(MarkdownBlockSyntax block)
+            // The nodes of the block, parents before children, as DescendantNodesAndSelf(IsBlockContainer) finds them, without
+            // its iterators and without enumerating the inlines: only the children of the containers can be headings
+            void AddIdentifiers(SyntaxNode node)
             {
-                foreach (var node in block.DescendantNodesAndSelf(IsBlockContainer))
+                switch (node)
                 {
-                    switch (node)
-                    {
-                        case MarkdownHeadingSyntax heading when !identifiers.ContainsKey(heading):
+                    case MarkdownHeadingSyntax heading:
+                        if (!identifiers.ContainsKey(heading))
+                        {
                             identifiers[heading] = CreateIdentifier(heading);
-                            break;
+                        }
 
-                        case MarkdownGridTableSyntax table when gridTables:
+                        return;
+
+                    case MarkdownGridTableSyntax table:
+                        if (gridTables)
+                        {
                             foreach (var row in table.Rows)
                             {
                                 foreach (var cell in row.Cells)
@@ -304,8 +341,19 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
                                     }
                                 }
                             }
+                        }
 
-                            break;
+                        return;
+                }
+
+                if (IsBlockContainer(node))
+                {
+                    foreach (var child in node.ChildNodesAndTokens())
+                    {
+                        if (child.AsNode() is { } childNode)
+                        {
+                            AddIdentifiers(childNode);
+                        }
                     }
                 }
             }
@@ -384,7 +432,7 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
 
     // The blocks of a kind, in the order of the text, as DescendantNodes(IsBlockContainer).OfType<T>() finds them, without its
     // iterators and without enumerating the tokens of the containers
-    private List<T> GetBlocks<T>()
+    internal List<T> GetBlocks<T>()
         where T : MarkdownSyntaxNode
     {
         var blocks = new List<T>();
@@ -413,26 +461,13 @@ public sealed class MarkdownDocumentSyntax : MarkdownSyntaxNode
         }
     }
 
-    private static bool ContainsKind(GreenNode root, SyntaxKind kind)
+    // The attributes that are for a node, in the order Markdig applies them
+    private sealed class TargetAttributes
     {
-        var stack = new Stack<GreenNode>();
-        stack.Push(root);
-        while (stack.TryPop(out var node))
-        {
-            if (node.RawKind == (int)kind)
-            {
-                return true;
-            }
+        private MarkdownGenericAttributes? _attributes;
 
-            for (var i = 0; i < node.SlotCount; i++)
-            {
-                if (node.GetSlot(i) is { IsToken: false } child)
-                {
-                    stack.Push(child);
-                }
-            }
-        }
+        public List<MarkdownGenericAttributesSyntax> Nodes { get; } = [];
 
-        return false;
+        public MarkdownGenericAttributes GetAttributes() => _attributes ??= MarkdownBlockSyntax.MergeGenericAttributes(Nodes);
     }
 }

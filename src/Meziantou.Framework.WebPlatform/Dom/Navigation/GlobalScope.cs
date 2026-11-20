@@ -154,6 +154,9 @@ public abstract partial class GlobalScope : EventTarget
         _workers.Add(worker);
     }
 
+    /// <summary>The dedicated workers owned by the global object that are not closing.</summary>
+    internal WorkerAgent[] GetWorkers() => _workers is { } workers ? [.. workers.Where(agent => !agent.IsClosing)] : [];
+
     /// <summary>Terminates the dedicated workers owned by the global object (e.g. when the document of a window is discarded).</summary>
     internal void TerminateWorkers()
     {

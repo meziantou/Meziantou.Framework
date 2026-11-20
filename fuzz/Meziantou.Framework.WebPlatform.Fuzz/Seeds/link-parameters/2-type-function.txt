@@ -1,0 +1,1 @@
+param(--a type(<color> | <length>): 1px), param(--a type(<color>): red)

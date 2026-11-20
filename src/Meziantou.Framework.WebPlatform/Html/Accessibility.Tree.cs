@@ -30,8 +30,15 @@ internal static partial class Accessibility
         public AccessibilityNode Build()
         {
             _visited.Add(root);
-            var rootNode = new PendingNode(root, GetProperties(root, GetRole(root), cache, isHidden: false));
+            var rootRole = GetRole(root);
+            var rootNode = new PendingNode(root, GetProperties(root, rootRole, cache, isHidden: false));
             Enter(root, rootNode, parent: null, ownsTarget: true);
+
+            // As in Visit, an element without a role has no value (a hidden input of a document without browsing context)
+            if (rootRole is not ("" or "none" or "generic"))
+            {
+                AddValue(root, rootNode);
+            }
 
             // The traversal uses an explicit stack: a deep document does not overflow the call stack
             AccessibilityNode? result = null;
@@ -99,8 +106,12 @@ internal static partial class Accessibility
 
             var node = new PendingNode(element, GetProperties(element, role, cache, isHidden: false));
             Enter(element, node, parent, ownsTarget: true);
+            AddValue(element, node);
+        }
 
-            // The value of a text field, as Playwright exposes it
+        /// <summary>Adds the value of a text field, as Playwright exposes it.</summary>
+        private static void AddValue(Element element, PendingNode node)
+        {
             switch (element)
             {
                 case HtmlInputElement { InputType: not (InputType.Checkbox or InputType.Radio or InputType.File) } input:

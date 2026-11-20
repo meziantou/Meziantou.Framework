@@ -9,57 +9,59 @@ description: "The results of the web-platform-tests of payment-request, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 31 | 31 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 29 | 31 | 0 | 94% |
+| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **33** | **33** | **–** |
+| **All** | **29** | **33** | **0** | **88%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 33
+- **TEST BUG**: 1
+- **NOT IMPLEMENTED**: 1
+- **OUT OF SCOPE**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`PaymentMethodChangeEvent/methodDetails-attribute.https.html`](https://wpt.fyi/results/payment-request/PaymentMethodChangeEvent/methodDetails-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`PaymentMethodChangeEvent/methodName-attribute.https.html`](https://wpt.fyi/results/payment-request/PaymentMethodChangeEvent/methodName-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`PaymentRequestUpdateEvent/constructor.http.html`](https://wpt.fyi/results/payment-request/PaymentRequestUpdateEvent/constructor.http.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`PaymentRequestUpdateEvent/constructor.https.html`](https://wpt.fyi/results/payment-request/PaymentRequestUpdateEvent/constructor.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`PaymentRequestUpdateEvent/updatewith-method.https.html`](https://wpt.fyi/results/payment-request/PaymentRequestUpdateEvent/updatewith-method.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`constructor_convert_method_data.https.html`](https://wpt.fyi/results/payment-request/constructor_convert_method_data.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`delegate-request.https.sub.html`](https://wpt.fyi/results/payment-request/delegate-request.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`historical.https.html`](https://wpt.fyi/results/payment-request/historical.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/payment-request/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`onpaymentmethodchange-attribute.https.html`](https://wpt.fyi/results/payment-request/onpaymentmethodchange-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-is-showing.https.html`](https://wpt.fyi/results/payment-request/payment-is-showing.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-abort-method.https.html`](https://wpt.fyi/results/payment-request/payment-request-abort-method.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-canmakepayment-method.https.html`](https://wpt.fyi/results/payment-request/payment-request-canmakepayment-method.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-constructor-thcrash.https.html`](https://wpt.fyi/results/payment-request/payment-request-constructor-thcrash.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-constructor.https.sub.html`](https://wpt.fyi/results/payment-request/payment-request-constructor.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-ctor-currency-code-checks.https.sub.html`](https://wpt.fyi/results/payment-request/payment-request-ctor-currency-code-checks.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-ctor-pmi-handling.https.sub.html`](https://wpt.fyi/results/payment-request/payment-request-ctor-pmi-handling.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-disallowed-when-hidden.https.html`](https://wpt.fyi/results/payment-request/payment-request-disallowed-when-hidden.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-id-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-id-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-insecure.http.html`](https://wpt.fyi/results/payment-request/payment-request-insecure.http.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-not-exposed.https.worker.js`](https://wpt.fyi/results/payment-request/payment-request-not-exposed.https.worker.js) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-onshippingaddresschange-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-onshippingaddresschange-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-onshippingoptionchange-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-onshippingoptionchange-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-shippingAddress-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-shippingAddress-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-shippingOption-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-shippingOption-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-shippingType-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-shippingType-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-show-method.https.html`](https://wpt.fyi/results/payment-request/payment-request-show-method.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-response/onpayerdetailchange-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-response/onpayerdetailchange-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`rejects_if_not_active.https.html`](https://wpt.fyi/results/payment-request/rejects_if_not_active.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`show-consume-activation.https.html`](https://wpt.fyi/results/payment-request/show-consume-activation.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`show-method-optional-promise-rejects.https.html`](https://wpt.fyi/results/payment-request/show-method-optional-promise-rejects.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
+| [`PaymentMethodChangeEvent/methodDetails-attribute.https.html`](https://wpt.fyi/results/payment-request/PaymentMethodChangeEvent/methodDetails-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`PaymentMethodChangeEvent/methodName-attribute.https.html`](https://wpt.fyi/results/payment-request/PaymentMethodChangeEvent/methodName-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`PaymentRequestUpdateEvent/constructor.http.html`](https://wpt.fyi/results/payment-request/PaymentRequestUpdateEvent/constructor.http.html) | Pass | 1 / 1 |  |  |
+| [`PaymentRequestUpdateEvent/constructor.https.html`](https://wpt.fyi/results/payment-request/PaymentRequestUpdateEvent/constructor.https.html) | Pass | 3 / 3 |  |  |
+| [`PaymentRequestUpdateEvent/updatewith-method.https.html`](https://wpt.fyi/results/payment-request/PaymentRequestUpdateEvent/updatewith-method.https.html) | Pass | 3 / 3 |  |  |
+| [`constructor_convert_method_data.https.html`](https://wpt.fyi/results/payment-request/constructor_convert_method_data.https.html) | Pass | 3 / 3 |  |  |
+| [`delegate-request.https.sub.html`](https://wpt.fyi/results/payment-request/delegate-request.https.sub.html) | Fail | 3 / 4 | NOT IMPLEMENTED | capability delegation (the `delegate` option of `postMessage()`, https://wicg.github.io/capability-delegation/spec.html): the subframe has no transient activation, so `show()` rejects with a `SecurityError` |
+| [`historical.https.html`](https://wpt.fyi/results/payment-request/historical.https.html) | Pass | 9 / 9 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/payment-request/idlharness.https.window.js) | Pass | 74 / 74 |  |  |
+| [`onpaymentmethodchange-attribute.https.html`](https://wpt.fyi/results/payment-request/onpaymentmethodchange-attribute.https.html) | Pass | 4 / 4 |  |  |
+| [`payment-is-showing.https.html`](https://wpt.fyi/results/payment-request/payment-is-showing.https.html) | Pass | 3 / 3 |  |  |
+| [`payment-request-abort-method.https.html`](https://wpt.fyi/results/payment-request/payment-request-abort-method.https.html) | Pass | 4 / 4 |  |  |
+| [`payment-request-canmakepayment-method.https.html`](https://wpt.fyi/results/payment-request/payment-request-canmakepayment-method.https.html) | Pass | 6 / 6 |  |  |
+| [`payment-request-constructor-thcrash.https.html`](https://wpt.fyi/results/payment-request/payment-request-constructor-thcrash.https.html) | Pass | 10 / 10 |  |  |
+| [`payment-request-constructor.https.sub.html`](https://wpt.fyi/results/payment-request/payment-request-constructor.https.sub.html) | Pass | 30 / 30 |  |  |
+| [`payment-request-ctor-currency-code-checks.https.sub.html`](https://wpt.fyi/results/payment-request/payment-request-ctor-currency-code-checks.https.sub.html) | Pass | 10 / 10 |  |  |
+| [`payment-request-ctor-pmi-handling.https.sub.html`](https://wpt.fyi/results/payment-request/payment-request-ctor-pmi-handling.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`payment-request-disallowed-when-hidden.https.html`](https://wpt.fyi/results/payment-request/payment-request-disallowed-when-hidden.https.html) | Pass | 1 / 1 |  |  |
+| [`payment-request-id-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-id-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`payment-request-insecure.http.html`](https://wpt.fyi/results/payment-request/payment-request-insecure.http.html) | Pass | 1 / 1 |  |  |
+| [`payment-request-not-exposed.https.worker.js`](https://wpt.fyi/results/payment-request/payment-request-not-exposed.https.worker.js) | Pass | 1 / 1 |  |  |
+| [`payment-request-onshippingaddresschange-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-onshippingaddresschange-attribute.https.html) | Pass | 4 / 4 |  |  |
+| [`payment-request-onshippingoptionchange-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-onshippingoptionchange-attribute.https.html) | Pass | 4 / 4 |  |  |
+| [`payment-request-shippingAddress-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-shippingAddress-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`payment-request-shippingOption-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-shippingOption-attribute.https.html) | Pass | 6 / 6 |  |  |
+| [`payment-request-shippingType-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-request-shippingType-attribute.https.html) | Pass | 3 / 3 |  |  |
+| [`payment-request-show-method.https.html`](https://wpt.fyi/results/payment-request/payment-request-show-method.https.html) | Pass | 4 / 4 |  |  |
+| [`payment-response/onpayerdetailchange-attribute.https.html`](https://wpt.fyi/results/payment-request/payment-response/onpayerdetailchange-attribute.https.html) | Pass | 2 / 2 |  |  |
+| [`rejects_if_not_active.https.html`](https://wpt.fyi/results/payment-request/rejects_if_not_active.https.html) | Fail | 3 / 4 | TEST BUG | the test calls `test_driver.bless()` in an iframe whose parent was navigated away: a document that is not fully active cannot get transient activation, so `show()` rejects with a `SecurityError` (https://w3c.github.io/payment-request/#show-method, step 2) before it checks that the document is fully active (step 4); Chromium fails it too |
+| [`show-consume-activation.https.html`](https://wpt.fyi/results/payment-request/show-consume-activation.https.html) | Pass | 1 / 1 |  |  |
+| [`show-method-optional-promise-rejects.https.html`](https://wpt.fyi/results/payment-request/show-method-optional-promise-rejects.https.html) | Pass | 10 / 10 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`payment-request-hasenrolledinstrument-method-protection.tentative.https.html`](https://wpt.fyi/results/payment-request/payment-request-hasenrolledinstrument-method-protection.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
-| [`payment-request-hasenrolledinstrument-method.tentative.https.html`](https://wpt.fyi/results/payment-request/payment-request-hasenrolledinstrument-method.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Payment Request API |
+| [`payment-request-hasenrolledinstrument-method-protection.tentative.https.html`](https://wpt.fyi/results/payment-request/payment-request-hasenrolledinstrument-method-protection.tentative.https.html) | Fail | 0 / 1 | OUT OF SCOPE | `PaymentRequest.hasEnrolledInstrument()` is a proposal of Chromium that is not in the Payment Request API (it is not in its IDL) |
+| [`payment-request-hasenrolledinstrument-method.tentative.https.html`](https://wpt.fyi/results/payment-request/payment-request-hasenrolledinstrument-method.tentative.https.html) | Fail | 0 / 3 | OUT OF SCOPE | `PaymentRequest.hasEnrolledInstrument()` is a proposal of Chromium that is not in the Payment Request API (it is not in its IDL) |

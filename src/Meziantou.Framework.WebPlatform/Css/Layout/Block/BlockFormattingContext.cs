@@ -1289,13 +1289,15 @@ internal sealed class BlockFormattingContext : FormattingContext
 
             // "top and bottom margins of a box that does not establish a new block formatting context and that has zero computed
             // 'min-height', zero or 'auto' computed 'height', and no in-flow children"
-            // (a percentage of the block size of the containing block is treated as auto); the stretch-fit size and the size
-            // given by an aspect ratio are not zero
+            // (a percentage of the block size of the containing block is treated as auto); the stretch-fit size, stretch() (the
+            // margins are taken off its argument: a negative margin makes it larger) and the size given by an aspect ratio are not zero
             var blockIsHorizontal = !horizontal;
             var blockSize = boxModel.GetSize(blockIsHorizontal);
             var minBlockSize = boxModel.GetMinSize(blockIsHorizontal);
             if (paddingAndBorder.BlockEnd != 0 || blockSize.TryResolve(null) is > 0 || minBlockSize.TryResolveMinimum(null) is > 0
-                || blockSize.Kind == SizeKind.Stretch || minBlockSize.Kind == SizeKind.Stretch || blockSize.IsAuto && boxModel.AspectRatio.HasRatio && childInlineSize > 0)
+                || blockSize.Kind == SizeKind.Stretch || minBlockSize.Kind == SizeKind.Stretch
+                || blockSize.Kind == SizeKind.StretchFunction && blockSize.Value.TryResolve(null) is not null || minBlockSize.Kind == SizeKind.StretchFunction
+                || blockSize.IsAuto && boxModel.AspectRatio.HasRatio && childInlineSize > 0)
             {
                 return false;
             }

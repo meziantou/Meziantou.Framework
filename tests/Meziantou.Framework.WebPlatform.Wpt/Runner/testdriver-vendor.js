@@ -83,6 +83,13 @@
 
   // The Page Lifecycle of the top-level browsing context (BrowsingContext.IsFrozen of the library): the documents are frozen
   // from a task, which fires their freeze events; the promise of the frozen document is resolved once it is resumed
+  // Set RPH Registration Mode (https://html.spec.whatwg.org/multipage/system-state.html#set-rph-registration-mode): the
+  // registerProtocolHandler() automation mode of the active document of the browsing context
+  internal.set_rph_registration_mode = function (mode, context) {
+    const target = context === null || context === undefined ? window : context;
+    return new Promise((resolve, reject) => __wpt_set_rph_registration_mode(target, String(mode), resolve, (message) => reject(new Error(message))));
+  };
+
   internal.freeze = function (context) {
     const target = (context === null || context === undefined ? window : context).top;
     return new Promise(resolve => __wpt_freeze(target, resolve));
@@ -209,6 +216,17 @@
       resolve));
   };
 
+  // emulation.setScreenOrientationOverride (https://w3c.github.io/webdriver-bidi/#command-emulation-setScreenOrientationOverride):
+  // the orientation of the ScreenOrientationProvider of the runner (no screenOrientation removes the override)
+  internal.bidi.emulation.set_screen_orientation_override = function (params) {
+    const orientation = params && params.screenOrientation;
+    return new Promise(resolve => __wpt_set_screen_orientation_override(
+      !!orientation,
+      orientation ? String(orientation.natural) : '',
+      orientation ? String(orientation.type) : '',
+      resolve));
+  };
+
   // The virtual sensors (https://w3c.github.io/sensors/#automation) of the DeviceSensorProvider of the runner: the readings
   // are JSON objects, parsed by the reading parsing algorithm of the sensor type
   internal.create_virtual_sensor = function (sensor_type, sensor_params, context) {
@@ -314,6 +332,55 @@
 
   internal.set_credential_properties = function (authenticator_id, credential_id, props, context) {
     return webauthn('set_credential_properties', authenticator_id, credential_id, props);
+  };
+
+  // The prompts of the user agent (see WptUserAgentUI.cs): the payment sheet and the transaction dialog of Secure Payment
+  // Confirmation, the dialogs of FedCM and the virtual wallet of the Digital Credentials API. The arguments and the results are
+  // JSON, as the WebDriver commands.
+  const userAgentUI = (command, ...args) => new Promise((resolve, reject) => __wpt_user_agent_ui(
+    command,
+    JSON.stringify(args),
+    (result) => resolve(result === undefined ? undefined : JSON.parse(result)),
+    (message) => reject(new Error(message))));
+
+  internal.set_spc_transaction_mode = function (mode, context) {
+    return userAgentUI('set_spc_transaction_mode', mode);
+  };
+
+  internal.set_fedcm_delay_enabled = function (enabled, context) {
+    return userAgentUI('set_fedcm_delay_enabled', enabled);
+  };
+
+  internal.reset_fedcm_cooldown = function (context) {
+    return userAgentUI('reset_fedcm_cooldown');
+  };
+
+  internal.get_fedcm_dialog_type = function (context) {
+    return userAgentUI('get_fedcm_dialog_type');
+  };
+
+  internal.get_fedcm_dialog_title = function (context) {
+    return userAgentUI('get_fedcm_dialog_title');
+  };
+
+  internal.get_fedcm_account_list = function (context) {
+    return userAgentUI('get_fedcm_account_list');
+  };
+
+  internal.select_fedcm_account = function (account_index, context) {
+    return userAgentUI('select_fedcm_account', account_index);
+  };
+
+  internal.cancel_fedcm_dialog = function (context) {
+    return userAgentUI('cancel_fedcm_dialog');
+  };
+
+  internal.click_fedcm_dialog_button = function (dialog_button, context) {
+    return userAgentUI('click_fedcm_dialog_button', dialog_button);
+  };
+
+  internal.set_virtual_wallet_behavior = function (action, protocol, response, context) {
+    return userAgentUI('set_virtual_wallet_behavior', action, protocol === undefined ? null : protocol, response === undefined ? null : response);
   };
 
   // The properties of the contact of a pointer action (https://w3c.github.io/webdriver/#dfn-process-pointer-parameters)

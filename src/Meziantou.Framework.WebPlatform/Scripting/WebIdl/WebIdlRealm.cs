@@ -77,6 +77,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// </summary>
     internal bool IsSecureContext => GlobalScope.IsSecureContext;
 
+    /// <summary>
+    /// Whether the cross-origin isolated capability of the global object is true: the members declared with
+    /// [CrossOriginIsolated] (https://webidl.spec.whatwg.org/#CrossOriginIsolated) are only exposed in such a realm.
+    /// </summary>
+    internal bool IsCrossOriginIsolated => GlobalScope.CrossOriginIsolated;
+
     /// <summary>The kind of the global object of the realm, to check whether the interfaces and the members are exposed (https://webidl.spec.whatwg.org/#dfn-exposed).</summary>
     internal ExposureSet GlobalExposure => GlobalScope.Exposure;
 
@@ -477,6 +483,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             parentInterfaceObject = abstractModuleSource;
             parentPrototype = Adapter.Get(abstractModuleSource, Key("prototype"));
         }
+        else if ((binding.Flags & InterfaceBindingFlags.Function) != InterfaceBindingFlags.None)
+        {
+            // https://webassembly.github.io/js-types/js-api/#exported-functions: WebAssembly.Function extends Function
+            parentInterfaceObject = EvaluateBuiltIn("Function");
+            parentPrototype = EvaluateBuiltIn("Function.prototype");
+        }
         else
         {
             parentPrototype = ObjectPrototype;
@@ -533,6 +545,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         else if (binding.Name == "HTMLTemplateElement")
         {
             DefineTemplatePatchingMembers(prototype);
+        }
+        else if (binding.Name is "StorageAccessHandle" or "StorageBucket" && Features.CacheStorageEnabled && Features.FetchEnabled)
+        {
+            DefinePartitionedCacheStorageAttribute(prototype, binding.Name);
         }
 
         binding.InterfaceObjectPropertyCount = Math.Max(binding.InterfaceObjectPropertyCount, Adapter.GetPropertyCount(interfaceObject));

@@ -238,10 +238,20 @@ internal sealed partial class FetchRequest
     /// <summary>The referrer: "client", "no-referrer" or a URL (https://fetch.spec.whatwg.org/#concept-request-referrer).</summary>
     public string Referrer { get; set; } = "client";
 
+    /// <summary>The URL of the style sheet that fetches the resource (the initiator URL of its resource timing entry, see <see cref="PerformanceResourceTiming.InitiatorUrl"/>), or null.</summary>
+    public string? InitiatorUrl { get; set; }
+
     /// <summary>The referrer policy, or the empty string (https://fetch.spec.whatwg.org/#concept-request-referrer-policy).</summary>
     public string ReferrerPolicy { get; set; } = "";
 
     public RequestMode Mode { get; set; } = RequestMode.NoCors;
+
+    /// <summary>
+    /// Whether a no-cors request is made by the user agent, which reads its response (the "user-agent-no-cors" mode,
+    /// https://github.com/whatwg/fetch/pull/1533, e.g. the requests of FedCM): the response is not opaque, and the redirect
+    /// mode can be "error". The <c>Sec-Fetch-Mode</c> header is <c>no-cors</c>.
+    /// </summary>
+    public bool UserAgentNoCors { get; set; }
 
     public bool UseCorsPreflight { get; set; }
 
@@ -405,6 +415,13 @@ internal sealed partial class FetchRequest
     /// request has the <c>Sec-Purpose: prefetch</c> header.
     /// </summary>
     public bool IsPrefetch { get; set; }
+
+    /// <summary>
+    /// Whether the request is fetched by the user agent for itself and its internal responses are read by the user agent
+    /// (e.g. the payment method manifests, which Chromium fetches without CORS): a no-cors request can then use the
+    /// "manual" and "error" redirect modes.
+    /// </summary>
+    public bool IsUserAgentRequest { get; set; }
 
     /// <summary>
     /// The value of the <c>Sec-Purpose</c> header of a prefetch (<see cref="IsPrefetch"/>): <c>prefetch</c> by default,

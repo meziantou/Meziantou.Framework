@@ -17,6 +17,80 @@ internal static partial class WptPythonHandlers
             response.Content = "FAIL";
         },
 
+        // the-video-element/timeout_on_seek.py: movie_300 (the extension parameter) served as the range of the Range header
+        // (206) or entirely (200), with the Content-Length of the range, but whose bytes from 50% to 95% of the file are never
+        // sent: a range that starts before them is sent up to them, then the connection is closed (the body is incomplete), and
+        // a range that starts in them gets its headers only
+        ["/html/semantics/embedded-content/the-video-element/timeout_on_seek.py"] = (request, response, _) =>
+        {
+            var extension = request.Get("extension") ?? "";
+            var file = ReadWptFile("media/movie_300." + extension);
+            var range = request.Header("Range");
+            var (start, last) = (0, file.Length - 1);
+            if (range is not null && Regex.Match(range, @"bytes=(\d*)-(\d*)") is { Success: true } match)
+            {
+                start = match.Groups[1].Value.Trim().Length > 0 ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
+                last = match.Groups[2].Value.Trim().Length > 0 ? int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) : file.Length - 1;
+            }
+
+            response.Status = range is not null ? 206 : 200;
+            response.Set("Accept-Ranges", "bytes");
+            response.Set("Content-Type", "video/" + extension);
+            if (range is not null)
+            {
+                response.Set("Content-Range", string.Create(CultureInfo.InvariantCulture, $"bytes {start}-{last}/{file.Length}"));
+            }
+
+            response.Set("Content-Length", (last - start + 1).ToString(CultureInfo.InvariantCulture));
+            var gapStart = (int)(file.Length * 0.5);
+            var gapLast = (int)(file.Length * 0.95);
+            if (gapStart < start && start < gapLast)
+            {
+                response.Chunks.Add((TimeSpan.Zero, []));
+                response.ChunksError = true;
+                return;
+            }
+
+            var sentLast = start < gapStart ? Math.Min(last, gapStart) : last;
+            response.Chunks.Add((TimeSpan.Zero, file[start..(sentLast + 1)]));
+            response.ChunksError = sentLast < last;
+        },
+
+        // fetch/range/resources/video-with-aged-proxy-cache.py: an audio file served as the range of the Range header (206),
+        // a 304 response to a conditional request without Range, or the whole file (200) with the headers of an aged response
+        // of a proxy cache (Age of 24 hours, Expires and Last-Modified in the past, an ETag)
+        ["/fetch/range/resources/video-with-aged-proxy-cache.py"] = (request, response, _) =>
+        {
+            var file = File.ReadAllBytes(Path.Combine(WptPaths.Wpt, "media", "sine440.mp3"));
+            const string EntityTag = "\"sine440-v1\"";
+            response.Set("Content-Type", "audio/mp3");
+            if (request.Header("Range") is { } range && Regex.Match(range, @"^bytes=(\d*)-(\d*)$") is { Success: true } match)
+            {
+                var start = match.Groups[1].Value.Length > 0 ? int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture) : 0;
+                var end = match.Groups[2].Value.Length > 0 ? int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture) : file.Length;
+                response.Status = 206;
+                response.Set("Content-Range", string.Create(CultureInfo.InvariantCulture, $"bytes {start}-{end}/{file.Length}"));
+                response.Set("Accept-Ranges", "bytes");
+                response.Set("ETag", EntityTag);
+                end = Math.Min(end + 1, file.Length);
+                response.Body = file[start..end];
+                return;
+            }
+
+            // The handler checks the If-Not-Match header (sic), not If-None-Match
+            if (request.Header("If-Modified-Since") is not null || request.Header("If-Not-Match") is not null)
+            {
+                response.Status = 304;
+                return;
+            }
+
+            response.Set("Age", "86400");
+            response.Set("Expires", "Wed, 21 Oct 2015 07:28:00 GMT");
+            response.Set("Last-Modified", "Wed, 21 Oct 2015 07:28:00 GMT");
+            response.Set("ETag", EntityTag);
+            response.Body = file;
+        },
+
         // fetch/range/resources/video-with-range.py: an audio file served as the range of the Range header (206), or
         // entirely (200); the rewrites parameter replaces the range or the status of the responses of given ranges
         ["/fetch/range/resources/video-with-range.py"] = (request, response, _) =>

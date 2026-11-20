@@ -7,6 +7,7 @@ using Meziantou.Framework.WebPlatform.Wasmtime;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Time.Testing;
 using static Meziantou.AspNetCore.Testing.Expectations;
 
 namespace Meziantou.AspNetCore.Testing.Tests;
@@ -265,6 +266,52 @@ public sealed class WebAppBrowserTests
     }
 
     [Fact]
+    public async Task TimeProviderIsTheClockOfTheDates()
+    {
+        #region WebAppBrowser_TimeProvider
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 10, 12, 0, 0, TimeSpan.Zero));
+        clock.SetLocalTimeZone(TimeZoneInfo.CreateCustomTimeZone("Test", TimeSpan.FromHours(2), "Test", "Test"));
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { TimeProvider = clock });
+
+        // The page writes new Date().toISOString() and new Date().getTimezoneOffset()
+        var page = await browser.OpenAsync("/clock");
+
+        Assert.Equal("2026-01-10T12:00:00.000Z -120", page.Find("output").TextContent);
+        #endregion
+        Assert.Empty(page.ScriptErrors);
+    }
+
+    [Fact]
+    public async Task WebAssemblyRuntimeRunsTheModulesOfThePages()
+    {
+        #region WebAppBrowser_WebAssemblyRuntime
+        // The runtime of the Meziantou.Framework.WebPlatform.Wasmtime package: the pages share it
+        using var runtime = new WasmtimeRuntime();
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { WebAssemblyRuntime = runtime });
+
+        // The page instantiates a WebAssembly module and calls its add function
+        var page = await browser.OpenAsync("/wasm");
+
+        await Expect(page.Locator("output")).ToHaveTextAsync("2 + 3 = 5");
+        #endregion
+        Assert.Same(runtime, page.BrowsingContext.Options.WebAssemblyRuntime);
+        Assert.Empty(page.ScriptErrors);
+    }
+
+    [Fact]
+    public async Task WebAssemblyIsNotDefinedWithoutRuntime()
+    {
+        await using var factory = new WebApplicationFactory<Program>();
+        await using var browser = WebAppBrowser.Create(factory.Server);
+        var page = await browser.OpenAsync("/wasm");
+
+        Assert.Equal("WebAssembly is not defined", page.Find("output").TextContent);
+        Assert.Null(page.BrowsingContext.Options.WebAssemblyRuntime);
+    }
+
+    [Fact]
     public async Task PagesWithoutJavaScript()
     {
         await using var factory = new WebApplicationFactory<Program>();
@@ -317,6 +364,17 @@ public sealed class WebAppBrowserTests
             Assert.Null(await loader.LoadAsync(new DocumentRequest("https://example.com/accounts"), TestContext.Current.CancellationToken));
             Assert.Equal("<title>Index</title>", await LoadAsync(loaderWithoutFallback, "https://localhost/"));
             Assert.Equal("404", await LoadAsync(loaderWithoutFallback, "https://localhost/accounts/42"));
+
+            // The URL of a folder without its trailing slash redirects to the folder, so that the relative URLs of its page
+            // resolve in the folder
+            var redirect = await loader.LoadAsync(new DocumentRequest("https://localhost/docs?a=1") { FollowRedirects = false }, TestContext.Current.CancellationToken);
+            Assert.NotNull(redirect);
+            Assert.Equal(301, redirect.StatusCode);
+            Assert.Equal("https://localhost/docs/?a=1", Assert.Single(redirect.Headers, header => header.Key == "Location").Value);
+            var followed = await loader.LoadAsync(new DocumentRequest("https://localhost/docs"), TestContext.Current.CancellationToken);
+            Assert.NotNull(followed);
+            Assert.Equal("https://localhost/docs/", followed.Url);
+            Assert.Equal("<title>Docs</title>", Encoding.UTF8.GetString(followed.ContentBytes!.Value.Span));
         }
         finally
         {
@@ -328,6 +386,28 @@ public sealed class WebAppBrowserTests
             var resource = await loader.LoadAsync(new DocumentRequest(url), TestContext.Current.CancellationToken);
             Assert.NotNull(resource);
             return resource.StatusCode is 404 ? "404" : Encoding.UTF8.GetString(resource.ContentBytes!.Value.Span);
+        }
+    }
+
+    [Fact]
+    public async Task FromDirectories_RedirectsAFolderWithoutItsTrailingSlash()
+    {
+        var directory = Directory.CreateTempSubdirectory("meziantou-aspnetcore-testing-");
+        try
+        {
+            File.WriteAllText(Path.Combine(directory.FullName, "index.html"), "<script src=\"main.js\"></script>");
+            File.WriteAllText(Path.Combine(directory.FullName, "main.js"), "document.title = 'loaded';");
+            var origin = new Uri("https://localhost/");
+            await using var browser = new WebAppBrowser(origin, TestDocumentLoaders.FromDirectories(origin, [new("/app", directory.FullName)]));
+
+            var page = await browser.OpenAsync("/app");
+
+            await Expect(page).ToHaveTitleAsync("loaded");
+            Assert.Equal("https://localhost/app/", page.Url);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
         }
     }
 
@@ -348,7 +428,7 @@ public sealed class WebAppBrowserTests
         await using var browser = new WebAppBrowser(origin, loader, new WebAppBrowserOptions
         {
             DefaultTimeout = TimeSpan.FromSeconds(30),
-            ConfigureBrowsingContext = options => options with { WebAssemblyRuntime = wasmtime },
+            WebAssemblyRuntime = wasmtime,
         });
 
         var page = await browser.OpenAsync("/accounts/42");

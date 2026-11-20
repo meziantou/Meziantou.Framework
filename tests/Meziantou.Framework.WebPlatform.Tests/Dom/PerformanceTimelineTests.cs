@@ -262,6 +262,65 @@ public sealed class PerformanceTimelineTests : IDisposable
     }
 
     [Fact]
+    public void ResourceTiming_InitiatorUrl_IsTheStyleSheetOrTheDocument()
+    {
+        _loader.Resources["https://example.com/dir/style.css"] = new DocumentResource("@import url(nested.css);") { Headers = [new("Content-Type", "text/css")] };
+        _loader.Resources["https://example.com/dir/nested.css"] = new DocumentResource("p { color: red }") { Headers = [new("Content-Type", "text/css")] };
+        var document = Load("<link rel=stylesheet href=style.css>");
+
+#pragma warning disable WEBPLATEXP0026 // The initiator URL is experimental
+        var initiators = document.DefaultView!.Performance.GetEntriesByType("resource").Cast<PerformanceResourceTiming>().ToDictionary(entry => entry.Name, entry => entry.InitiatorUrl, StringComparer.Ordinal);
+#pragma warning restore WEBPLATEXP0026
+        Assert.Equal("https://example.com/dir/page.html", initiators["https://example.com/dir/style.css"]);
+        Assert.Equal("https://example.com/dir/style.css", initiators["https://example.com/dir/nested.css"]);
+    }
+
+    [Fact]
+    public async Task MeasureUserAgentSpecificMemory_AttributesTheRealmsOfTheBrowsingContextGroup()
+    {
+        KeyValuePair<string, string>[] isolation = [new("Cross-Origin-Opener-Policy", "same-origin"), new("Cross-Origin-Embedder-Policy", "require-corp")];
+        KeyValuePair<string, string>[] embedded = [new("Cross-Origin-Embedder-Policy", "require-corp"), new("Cross-Origin-Resource-Policy", "cross-origin")];
+        _loader.Resources["https://example.com/dir/page.html"] = Html("<iframe id=a src=frame.html></iframe><iframe id=b src=https://other.example/frame.html></iframe>", isolation);
+        _loader.Resources["https://example.com/dir/frame.html"] = Html("<p>same origin</p>", embedded);
+        _loader.Resources["https://other.example/frame.html"] = Html("<p>other origin</p>", embedded);
+        var context = CreateContext();
+        context.Navigate("https://example.com/dir/page.html");
+        _contexts.EventLoop.RunUntilIdle();
+        var document = context.Document;
+        Assert.True(document.DefaultView!.CrossOriginIsolated);
+
+        #region WebPlatform_MeasureMemory
+        var measurement = document.DefaultView!.Performance.MeasureUserAgentSpecificMemory();
+        #endregion
+
+        _contexts.EventLoop.RunUntilIdle();
+        var result = await measurement;
+        Assert.Equal(result.Breakdown.Aggregate(0ul, (sum, entry) => sum + entry.Bytes), result.Bytes);
+        Assert.Single(result.Breakdown, entry => entry is { Bytes: 0, Attribution.Count: 0, Types.Count: 0 });
+        var attributions = result.Breakdown.SelectMany(entry => entry.Attribution).ToList();
+        Assert.Contains(attributions, attribution => attribution is { Url: "https://example.com/dir/page.html", Scope: "Window", Container: null });
+        Assert.Contains(attributions, attribution => attribution is { Url: "https://example.com/dir/frame.html", Scope: "Window", Container.Id: "a" });
+        Assert.Contains(attributions, attribution => attribution is { Url: "cross-origin-url", Scope: "cross-origin-aggregated", Container: { Id: "b", Src: "https://other.example/frame.html" } });
+
+        // The estimate is deterministic
+        var second = document.DefaultView.Performance.MeasureUserAgentSpecificMemory();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(result.Bytes, (await second).Bytes);
+    }
+
+    [Fact]
+    public async Task MeasureUserAgentSpecificMemory_IsRejectedWhenTheWindowIsNotCrossOriginIsolated()
+    {
+        _loader.Resources["https://other.example/frame.html"] = Html("<p>other origin</p>");
+        var document = Load("<iframe src=https://other.example/frame.html></iframe>");
+        Assert.False(document.DefaultView!.CrossOriginIsolated);
+
+        var measurement = document.DefaultView.Performance.MeasureUserAgentSpecificMemory();
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("SecurityError", (await Assert.ThrowsAsync<DomException>(() => measurement)).Name);
+    }
+
+    [Fact]
     public void Iframe_CrossOrigin_ReportsAnOpaqueEntryWhenItIsLoaded()
     {
         _loader.Resources["https://other.example/frame.html"] = Html("frame");

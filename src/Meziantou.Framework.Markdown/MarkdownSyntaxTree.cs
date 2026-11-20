@@ -34,9 +34,13 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     // For the content of a cell, the blocks it is in, in this tree and the trees around it
     internal int CellDepth => _cell?.Depth ?? 0;
 
+    // Whether the tree is the content of a cell of a grid table, which has no YAML front matter
+    internal bool IsCell => _cell is not null;
+
     // The normalized labels of the link reference definitions and of the footnotes that the cells of the grid tables of the tree
     // use: the ones of the tree and of the trees around it. They are read once for all the cells of the tree.
     private CellLabels? _cellLabels;
+    private DocumentDefinitions? _definitions;
 
     private sealed record CellLabels(string[] References, string[] Footnotes);
 
@@ -63,6 +67,32 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
         var cell = new CellContext(labels?.References ?? [], labels?.Footnotes ?? [], KeepsGridTable: !isClosed, depth);
         var green = MarkdownParser.Parse(text, options, cell);
         return new MarkdownSyntaxTree(SourceText.From(text), options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), container?.FilePath, container, cell);
+    }
+
+    // Parses a part of the text of the document, such as a few of its blocks, as the document reads it: the references to the
+    // definitions of the document that are not in the part, such as a reference link, are read as they are in the document
+    internal MarkdownDocumentSyntax ParsePart(string text)
+    {
+        var green = MarkdownParser.Parse(text, Options, _cell, GetDefinitions());
+        return new MarkdownSyntaxTree(SourceText.From(text), Options, (MarkdownDocumentSyntax)green.CreateRed(parent: null, position: 0), FilePath, Container, _cell).GetRoot();
+    }
+
+    private DocumentDefinitions GetDefinitions()
+    {
+        if (_definitions is { } definitions)
+        {
+            return definitions;
+        }
+
+        var root = GetRoot();
+        var labels = GetCellLabels();
+        KeyValuePair<string, int>[] abbreviations = Options.Extensions.HasFlag(MarkdownExtensions.Abbreviations) ? [.. root.GetBlocks<MarkdownAbbreviationDefinitionSyntax>().Select(definition => KeyValuePair.Create(definition.Label, definition.Title.Length))] : [];
+        string[] headingLabels = Options.Extensions.HasFlag(MarkdownExtensions.AutoIdentifiers) && Options.AutoIdentifierOptions.HasFlag(MarkdownAutoIdentifierOptions.AutoLink)
+            ? [.. root.GetBlocks<MarkdownHeadingSyntax>().Select(heading => Scanners.NormalizeLabel(heading.GetFirstLineLabel(Options))).Where(label => label.Length > 0)]
+            : [];
+        definitions = new DocumentDefinitions(labels.References, labels.Footnotes, abbreviations, headingLabels);
+        _definitions = definitions;
+        return definitions;
     }
 
     // Parses a new text as this tree was: the content of a cell keeps the definitions of its table
@@ -211,7 +241,9 @@ public sealed class MarkdownSyntaxTree : SyntaxTree
     /// <para>
     /// The text is parsed again, and checked to give the attributes to the block and to keep its text. To change the attributes
     /// of several blocks, use <see cref="MarkdownSyntaxTreeEditor.SetGenericAttributes(MarkdownBlockSyntax, MarkdownGenericAttributes?)"/>,
-    /// which parses the text once.
+    /// which parses the text once, or, in a <see cref="MarkdownSyntaxRewriter"/>,
+    /// <see cref="MarkdownBlockSyntax.WithGenericAttributes(MarkdownGenericAttributes?)"/>, which changes a block whose attributes are
+    /// written in it without parsing the document again.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="block"/> is <see langword="null"/>.</exception>

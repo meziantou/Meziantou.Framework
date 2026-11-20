@@ -133,6 +133,21 @@ internal static class MarkdownNodeEditor
     {
         var underline = (Green.SyntaxToken)heading.UnderlineToken.Node!;
         var tokens = heading.DescendantTokens().Where(token => token.RawKind != (int)SyntaxKind.SetextHeadingUnderlineToken).ToList();
+
+        // The whitespace at the end of the text of a setext heading is not part of the text of an ATX heading: it is trivia. It can be
+        // text tokens of their own, such as on a line that a grid table could start, whose text is kept as Markdig keeps it. The heading
+        // does not keep these tokens.
+        var end = tokens.Count;
+        var trailingWhitespace = "";
+        while (end > 1 && tokens[end - 1] is { RawKind: (int)SyntaxKind.TextToken, HasLeadingTrivia: false } whitespace && whitespace.Parent == heading && (end == tokens.Count || !whitespace.HasTrailingTrivia) && whitespace.Text.AsSpan().TrimEnd(" \t").IsEmpty)
+        {
+            trailingWhitespace = whitespace.Text + trailingWhitespace;
+            end--;
+        }
+
+        var removed = tokens.Count - end;
+        tokens.RemoveRange(end, removed);
+
         var replacements = new Dictionary<SyntaxToken, Green.SyntaxToken>();
         var text = new System.Text.StringBuilder();
         var atLineStart = false;
@@ -173,10 +188,18 @@ internal static class MarkdownNodeEditor
             // The last token ends the line, with the line ending after the underline. The whitespace at the end of its text, which ends
             // the text of a setext heading, is not part of the text of an ATX heading: it is trivia.
             var trailing = i == tokens.Count - 1 ? underline.TrailingTrivia : JoinLines(green.TrailingTrivia, ref atLineStart, text);
-            if (i == tokens.Count - 1 && replacement.RawKind == (int)SyntaxKind.TextToken && replacement.Text.TrimEnd(' ', '\t') is { Length: > 0 } trimmed && trimmed.Length < replacement.Text.Length)
+            if (i == tokens.Count - 1)
             {
-                trailing = Green.SyntaxList.Concat(Whitespace(replacement.Text[trimmed.Length..]), trailing);
-                replacement = Token(SyntaxKind.TextToken, trimmed, replacement.LeadingTrivia, trailingTrivia: null);
+                if (replacement.RawKind == (int)SyntaxKind.TextToken && replacement.Text.TrimEnd(' ', '\t') is { Length: > 0 } trimmed && trimmed.Length < replacement.Text.Length)
+                {
+                    trailingWhitespace = replacement.Text[trimmed.Length..] + trailingWhitespace;
+                    replacement = Token(SyntaxKind.TextToken, trimmed, replacement.LeadingTrivia, trailingTrivia: null);
+                }
+
+                if (trailingWhitespace.Length > 0)
+                {
+                    trailing = Green.SyntaxList.Concat(Whitespace(trailingWhitespace), trailing);
+                }
             }
 
             replacements.Add(token, replacement.WithTrivia(replacement.LeadingTrivia, trailing));
@@ -184,7 +207,10 @@ internal static class MarkdownNodeEditor
 
         var rewritten = heading.ReplaceTokens(tokens, (original, _) => new SyntaxToken(parent: null, replacements[original], position: 0, index: 0));
         var children = GetChildren(rewritten);
-        children.RemoveAt(IndexOfToken(children, SyntaxKind.SetextHeadingUnderlineToken));
+
+        // The whitespace tokens that are removed are the children before the underline
+        var underlineIndex = IndexOfToken(children, SyntaxKind.SetextHeadingUnderlineToken);
+        children.RemoveRange(underlineIndex - removed, removed + 1);
 
         // The text can end with # that an ATX heading reads as its closing sequence: a closing sequence after it keeps them
         var content = text.ToString().TrimEnd(' ', '\t');

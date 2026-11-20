@@ -38,7 +38,8 @@ public static class TestDocumentLoaders
     /// <summary>
     /// Creates a loader that serves the files of folders for the URLs of an origin, by URL path prefix: <c>{ "/" : "wwwroot" }</c>
     /// serves <c>https://localhost/css/app.css</c> from <c>wwwroot/css/app.css</c>, and <c>https://localhost/</c> from
-    /// <c>wwwroot/index.html</c>. The other URLs are network errors.
+    /// <c>wwwroot/index.html</c>. The URL of a folder without its trailing slash (<c>/docs</c>) redirects to the folder
+    /// (<c>/docs/</c>). The other URLs are network errors.
     /// </summary>
     /// <param name="origin">The origin of the URLs (<c>https://localhost/</c>).</param>
     /// <param name="folders">The folders, by URL path prefix.</param>
@@ -48,7 +49,8 @@ public static class TestDocumentLoaders
     /// <summary>
     /// Creates a loader that serves the files of folders for the URLs of an origin, by URL path prefix: <c>{ "/" : "wwwroot" }</c>
     /// serves <c>https://localhost/css/app.css</c> from <c>wwwroot/css/app.css</c>, and <c>https://localhost/</c> from
-    /// <c>wwwroot/index.html</c>. The URLs that match no file and whose path has no extension serve the file of
+    /// <c>wwwroot/index.html</c>. The URL of a folder without its trailing slash (<c>/docs</c>) redirects to the folder
+    /// (<c>/docs/</c>). The URLs that match no file and whose path has no extension serve the file of
     /// <paramref name="fallbackPath"/>, as <c>MapFallbackToFile</c> does: the routes of a single-page application, such as a
     /// Blazor WebAssembly application, serve its page. The other URLs are network errors.
     /// </summary>

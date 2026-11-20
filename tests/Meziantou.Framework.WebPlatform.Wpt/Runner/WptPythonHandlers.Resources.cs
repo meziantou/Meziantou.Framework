@@ -10,6 +10,15 @@ internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> ResourceHandlers = new(StringComparer.Ordinal)
     {
+        // measure-memory/resources/redirect.py: redirects to the location parameter (302, or the status parameter), with the COEP and CORP headers
+        ["/measure-memory/resources/redirect.py"] = (request, response, _) =>
+        {
+            response.Status = int.TryParse(request.Get("status"), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var status) ? status : 302;
+            response.Set("Location", request.Get("location") ?? "");
+            response.Set("Cross-Origin-Embedder-Policy", "require-corp");
+            response.Set("Cross-Origin-Resource-Policy", "cross-origin");
+        },
+
         // The headers after a delay, then the body after another delay
         ["/html/browsers/browsing-the-web/back-forward-cache/resources/slow.py"] = (request, response, _) =>
         {

@@ -29,13 +29,7 @@
   "secure-contexts/sandboxed-iframe-child.https.html": {
     "total": 1
   },
-  "secure-contexts/shared-worker-insecure-first.https.html": {
-    "total": 4
-  },
   "secure-contexts/shared-worker-insecure-first.tentative.https.html": {
-    "total": 4
-  },
-  "secure-contexts/shared-worker-secure-first.https.html": {
     "total": 4
   },
   "secure-contexts/shared-worker-secure-first.tentative.https.html": {

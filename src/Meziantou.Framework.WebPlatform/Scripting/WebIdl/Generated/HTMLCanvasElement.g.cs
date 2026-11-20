@@ -60,6 +60,12 @@ internal static class Binding_HTMLCanvasElement<TAdapter, TValue> where TAdapter
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
         var result = o.TransferControlToOffscreen(); return r.Wrap(result);
     }
+    private static TValue Op_captureStream(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement>(t, Binding);
+        var has0 = !r.IsMissing(a, 0); var a0 = has0 ? (double?)r.ToDouble(a[0], restricted: true) : default;
+        var result = o.CaptureStream((has0 ? a0 : default(double?))); return r.Wrap(result);
+    }
     #pragma warning disable WEBPLATEXP0023 // The binding exposes the experimental Web IDL member
     private static TValue Op_requestPaint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -124,6 +130,7 @@ internal static class Binding_HTMLCanvasElement<TAdapter, TValue> where TAdapter
         r.DefineOperation(instanceTarget, "toDataURL", 0, Op_toDataURL);
         r.DefineOperation(instanceTarget, "toBlob", 1, Op_toBlob);
         r.DefineOperation(instanceTarget, "transferControlToOffscreen", 0, Op_transferControlToOffscreen);
+        r.DefineOperation(instanceTarget, "captureStream", 0, Op_captureStream);
         r.DefineOperation(instanceTarget, "requestPaint", 0, Op_requestPaint);
         r.DefineOperation(instanceTarget, "captureElementImage", 1, Op_captureElementImage);
         r.DefineOperation(instanceTarget, "updateElementGeometry", 1, Op_updateElementGeometry);

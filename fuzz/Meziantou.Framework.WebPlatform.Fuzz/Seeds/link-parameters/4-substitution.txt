@@ -1,0 +1,1 @@
+param(--a: var(--x)), param(--b <color>: var(--missing, red)), param(ident("--a"): 1)

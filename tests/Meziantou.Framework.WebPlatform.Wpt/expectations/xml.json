@@ -1,0 +1,92 @@
+{
+  "xml/attlist-defaults.html": {
+    "total": 27
+  },
+  "xml/eol-normalization.html": {
+    "total": 3
+  },
+  "xml/onreadystatechange-crash-on-stop.xhtml": {
+    "total": 1
+  },
+  "xml/retain_redundant_xmlns.html": {
+    "total": 3
+  },
+  "xml/retain_undeclared_xmlns.html": {
+    "total": 4
+  },
+  "xml/xml-bom.html": {
+    "total": 5
+  },
+  "xml/xml-doc-innerHTML-crash.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xml-innerHTML-unpaired-surrogate.html": {
+    "total": 2
+  },
+  "xml/xml-prolog-accepted-versions.html": {
+    "total": 10
+  },
+  "xml/xslt/document-element.window.js": {
+    "total": 1
+  },
+  "xml/xslt/document-function.window.js": {
+    "total": 3
+  },
+  "xml/xslt/encoding-single-chunk.html": {
+    "reftest": "PASS"
+  },
+  "xml/xslt/fetch/xslt.https.sub.html": {
+    "total": 5
+  },
+  "xml/xslt/functions.tentative.window.js": {
+    "total": 177
+  },
+  "xml/xslt/import-include-no-href-crash.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/invalid-output-encoding-crash.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/large-cdata.html": {
+    "reftest": "PASS"
+  },
+  "xml/xslt/sort.html": {
+    "reftest": "PASS"
+  },
+  "xml/xslt/strip-space-crash.xml": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/svg/crashtests/xslt-in-img-001.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/svg/crashtests/xslt-in-img-002.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/transformToDocument-xml-scripting-support-disabled.html": {
+    "total": 9
+  },
+  "xml/xslt/transformToFragment-on-node-from-inactive-document-crash.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/transformToFragment.tentative.window.js": {
+    "total": 2
+  },
+  "xml/xslt/xslt-attribute-double-free-crash.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/xslt-mutation-crash.xhtml": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/xslt-number-pattern-cache-reentrancy-crash.html": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/xslt-reparent-custom-element-crash.xml": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/xslt-reparent-root-crash.xml": {
+    "crashtest": "PASS"
+  },
+  "xml/xslt/xslt-type-confusion-crash.html": {
+    "crashtest": "PASS"
+  }
+}

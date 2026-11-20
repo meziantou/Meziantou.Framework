@@ -1,6 +1,6 @@
 ---
 title: Blazor applications
-description: Test the static rendering, the enhanced navigation and forms, and the Interactive Server components of a Blazor Web App, and the Blazor WebAssembly applications.
+description: Test the static rendering, the enhanced navigation and forms, and the Interactive Server and WebAssembly components of a Blazor application.
 ---
 
 A page of a Blazor Web App runs the real `blazor.web.js` of the application: the enhanced navigation and forms of the
@@ -25,18 +25,21 @@ await Expect(page.GetByRole("status")).ToHaveTextAsync("Current count: 1");
   falls back to long polling, as it does behind a proxy that blocks them.
 - The render batches come from the server after the action: wait for the result with an
   [assertion](03-Locators.md#assert-the-state-of-the-page) of `Expect`.
-- The Interactive WebAssembly components of a Blazor Web App are not supported: the pages of
-  `WebAppBrowser.Create(server)` have no WebAssembly runtime, so the runtime of .NET does not start.
+- The Interactive WebAssembly components need a WebAssembly runtime, which the pages do not have by default: without
+  it, `blazor.webassembly.js` fails to start. See [WebAssembly](07-WebApplications.md#webassembly).
 
-## Blazor WebAssembly applications
+## Blazor WebAssembly
 
-A standalone Blazor WebAssembly application runs in the page: open the output of `dotnet publish` with
-[FromDirectories](cref:Meziantou.AspNetCore.Testing.TestDocumentLoaders.FromDirectories(System.Uri,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.String)),
-and give the pages a WebAssembly runtime: the runtime of .NET (`dotnet.native.wasm`) runs on
-[Wasmtime](../../WebPlatform/06-Scripting/05-WebAssembly.md), installed with the
-`Meziantou.Framework.WebPlatform.Wasmtime` package.
+A Blazor WebAssembly application (standalone, or the Interactive WebAssembly components of a Blazor Web App) runs the
+.NET runtime in WebAssembly, in the page:
 
-<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Wasmtime" />
+- Set [WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to the
+  [WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) of the
+  [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+  package.
+- The application must serve the files of the runtime (`_framework/`): for a standalone application, serve the
+  `wwwroot` folder of its published output (`dotnet publish`) with
+  [FromDirectories](cref:Meziantou.AspNetCore.Testing.TestDocumentLoaders.FromDirectories(System.Uri,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.String)).
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_BlazorWebAssembly;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -53,7 +56,7 @@ var loader = TestDocumentLoaders.FromDirectories(origin, [new("/", wwwroot)], fa
 await using var browser = new WebAppBrowser(origin, loader, new WebAppBrowserOptions
 {
     DefaultTimeout = TimeSpan.FromSeconds(30),
-    ConfigureBrowsingContext = options => options with { WebAssemblyRuntime = wasmtime },
+    WebAssemblyRuntime = wasmtime,
 });
 
 var page = await browser.OpenAsync("/accounts/42");
@@ -69,6 +72,8 @@ await Expect(page).ToHaveUrlAsync("/");
 
 - The fallback file (`/index.html`) serves the routes of the application, so a test can open any page directly
   (`/accounts/42`), as `MapFallbackToFile` does on a server.
+- The applications of .NET 10 and .NET 11 run: the runtime of .NET 10 uses the legacy exception handling instructions
+  of WebAssembly, which the Wasmtime runtime translates to the ones Wasmtime supports.
 - The first start compiles the runtime of .NET to native code, which takes from a second to tens of seconds (an
   application published with AOT compilation has a much larger module). Share the
   [WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) between the tests, and set

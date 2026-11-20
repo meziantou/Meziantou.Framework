@@ -29,8 +29,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// Integer components are scaled to the samples of the source layout: 1-bit components to 0 and 255, 8-bit ones as they
 /// are, 10 and 12-bit ones to the nearest 16-bit sample, <c>(v × 65535 + max / 2) / max</c>, and 16-bit ones as they are.
-/// 64-bit components are read in single precision when the conversion is exact, and rejected otherwise. Cb, Y and Cr
-/// components are converted to R'G'B' (<see cref="DpxYCbCrConverter"/>).
+/// 64-bit components are read in single precision when the conversion is exact, and rejected otherwise; a signaling NaN
+/// of either depth becomes the quiet NaN of the same sign and payload. Cb, Y and Cr components are converted to R'G'B'
+/// (<see cref="DpxYCbCrConverter"/>).
 /// </para>
 /// </remarks>
 internal sealed class DpxRowReader
@@ -219,7 +220,7 @@ internal sealed class DpxRowReader
         {
             for (var i = 0; i < components.Length; i++)
             {
-                components[i] = ReadWord(stored, i);
+                components[i] = QuietNaN(ReadWord(stored, i));
             }
 
             return;
@@ -236,6 +237,14 @@ internal sealed class DpxRowReader
             components[i] = BitConverter.SingleToUInt32Bits(single);
         }
     }
+
+    /// <summary>
+    /// Sets the quiet bit of a signaling NaN, keeping its sign and payload, as a 64-bit component read in single precision
+    /// gets it: the conversions to the default pixel format of a gray or alpha element go through double precision, which
+    /// quiets a signaling NaN, so that a sequential reader of <see cref="SourcePixelFormat"/> would otherwise give other
+    /// bits than a load.
+    /// </summary>
+    private static uint QuietNaN(uint bits) => (bits & 0x7F80_0000) == 0x7F80_0000 && (bits & 0x007F_FFFF) != 0 ? bits | 0x0040_0000 : bits;
 
     private void ReadBitStream(ReadOnlySpan<byte> stored, Span<uint> components, int bits)
     {

@@ -579,6 +579,7 @@ internal abstract class FormattingContext
         // block is definite in the axis
         var (inlineStretchFit, blockStretchFit) = GetStretchFitSizes(isOrthogonal, margin, paddingAndBorder, in space);
         var untrimmedInlineMargins = writingDirection.ToLogical(untrimmedMargin).InlineSum();
+        var untrimmedBlockMargins = writingDirection.ToLogical(untrimmedMargin).BlockSum();
         var aspectRatio = GetPreferredAspectRatio(context, box, inlineIsHorizontal, paddingAndBorder);
         var isCompressedBlockSize = IntrinsicSizing.IsCompressibleFormControl(box)
             && (IntrinsicSizing.HasPercentageSize(box, blockIsHorizontal) || boxModel.GetMaxSize(blockIsHorizontal) is { IsLengthPercentage: true, Value.HasPercentage: true });
@@ -590,6 +591,7 @@ internal abstract class FormattingContext
             PaddingAndBorder = paddingAndBorder.BlockSum(),
             Edges = edges.BlockSum(),
             StretchSize = blockStretchFit,
+            Margins = untrimmedBlockMargins,
 
             // The intrinsic block sizes of a replaced element are its natural block size (https://drafts.csswg.org/css-sizing-3/#intrinsic-sizes):
             // they are known before its layout. As in Gecko and WebKit, the ones of a compressible form control whose block size or
@@ -1455,9 +1457,10 @@ internal abstract class FormattingContext
     private static bool IsZeroMinimumSize(LayoutStyle style, bool horizontal, double? percentageBasis)
     {
         // The intrinsic size keywords and stretch are treated as zero, like a percentage of an indefinite size (their size is
-        // only known once the contents are laid out)
+        // only known once the contents are laid out); stretch() is not, its size depends on the margins (the caller compares
+        // the size of the box with its automatic size)
         var min = style.Box.GetMinSize(horizontal);
-        return min.IsAuto || min.TryResolveMinimum(percentageBasis) is not > 0;
+        return min.IsAuto || min.Kind != SizeKind.StretchFunction && min.TryResolveMinimum(percentageBasis) is not > 0;
     }
 
     /// <summary>

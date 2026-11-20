@@ -47,8 +47,8 @@ internal static class ElementInterfacesGenerator
         "css-contain-2", "css-scroll-snap-2",
     };
 
-    /// <summary>The reflected IDL attributes whose setter has additional steps (Trusted Types): they are hand-written.</summary>
-    private static readonly HashSet<string> HandWrittenReflectedAttributes = new(StringComparer.Ordinal) { "HTMLScriptElement.src", "HTMLCanvasElement.content" };
+    /// <summary>The reflected IDL attributes whose getter or setter has additional steps (Trusted Types, a media stream): they are hand-written.</summary>
+    private static readonly HashSet<string> HandWrittenReflectedAttributes = new(StringComparer.Ordinal) { "HTMLScriptElement.src", "HTMLCanvasElement.content", "HTMLMediaElement.preload" };
 
     // The supported tokens of the DOMTokenList attributes that define them (the members of Html.SupportedTokens): supports()
     // throws a TypeError for the other ones

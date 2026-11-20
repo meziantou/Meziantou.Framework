@@ -47,3 +47,29 @@ await Expect(page.Locator("#greeting")).ToHaveTextAsync("Hello Ada");
 As in Playwright, `GetByRole`, `GetByLabel`, `GetByText` and the other locators find their element again each time they
 are used, the actions wait until the element is visible, stable, enabled and not covered, and the assertions of
 `Expectations.Expect` retry until they pass. The elements are the DOM elements of `Meziantou.Framework.WebPlatform.Dom`.
+
+## WebAssembly and Blazor WebAssembly
+
+The pages run no WebAssembly by default: the `WebAssembly` namespace is not defined, so `blazor.webassembly.js` fails to
+start. Set `WebAppBrowserOptions.WebAssemblyRuntime` (or `ComponentTestHostOptions.WebAssemblyRuntime`) to the
+`WasmtimeRuntime` of the [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+package:
+
+<!-- ref:../../tests/Meziantou.AspNetCore.Testing.Tests/WebAppBrowserTests.cs;region=WebAppBrowser_WebAssemblyRuntime;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The runtime of the Meziantou.Framework.WebPlatform.Wasmtime package: the pages share it
+using var runtime = new WasmtimeRuntime();
+await using var factory = new WebApplicationFactory<Program>();
+await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { WebAssemblyRuntime = runtime });
+
+// The page instantiates a WebAssembly module and calls its add function
+var page = await browser.OpenAsync("/wasm");
+
+await Expect(page.Locator("output")).ToHaveTextAsync("2 + 3 = 5");
+```
+<!-- endref -->
+
+A Blazor WebAssembly application must also serve the files of its runtime (`_framework/`; for a standalone application,
+the `wwwroot` folder of its published output, with `TestDocumentLoaders.FromDirectories` and a fallback file for its
+routes). The applications of .NET 10, whose runtime uses the legacy exception handling instructions of WebAssembly, run
+too: the Wasmtime runtime translates these instructions to the ones Wasmtime supports.

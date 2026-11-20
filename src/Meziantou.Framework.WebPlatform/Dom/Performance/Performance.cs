@@ -12,7 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 /// <seealso href="https://w3c.github.io/hr-time/#sec-performance"/>
 [IdlInterface("Performance", "https://w3c.github.io/hr-time/#sec-performance")]
-public sealed class Performance : EventTarget
+public sealed partial class Performance : EventTarget
 {
     /// <summary>The initial size limit of the resource timing buffer (https://w3c.github.io/resource-timing/#dfn-resource-timing-buffer-size-limit).</summary>
     private const int DefaultResourceTimingBufferSize = 250;

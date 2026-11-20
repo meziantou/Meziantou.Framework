@@ -368,13 +368,7 @@
   "css/css-overflow/line-clamp/line-clamp-012.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-012.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-013.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-013.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-014.html": {
@@ -404,25 +398,13 @@
   "css/css-overflow/line-clamp/line-clamp-022.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-022.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-023.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-023.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-024.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-024.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-025.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-025.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-026.html": {
@@ -536,9 +518,6 @@
   "css/css-overflow/line-clamp/line-clamp-auto-015.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-015.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-016.html": {
     "reftest": "PASS"
   },
@@ -548,43 +527,22 @@
   "css/css-overflow/line-clamp/line-clamp-auto-018.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-018.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-019.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-019.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-020.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-020.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-021.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-021.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-022.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-022.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-023.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-023.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-024.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-024.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-025.html": {
@@ -593,37 +551,19 @@
   "css/css-overflow/line-clamp/line-clamp-auto-027.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-027.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-028.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-028.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-029.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-029.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-030.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-030.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-031.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-031.tentative.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-032.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-032.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-033.html": {

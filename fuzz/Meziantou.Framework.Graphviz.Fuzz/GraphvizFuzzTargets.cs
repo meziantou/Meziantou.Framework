@@ -18,7 +18,7 @@ public static partial class GraphvizFuzzTargets
         "digraph", "graph", "strict", "subgraph", "node", "edge", "{", "}", "[", "]", "=", ";", ",", ":", "+", "->", "--", "\"", "<", ">", "\n", "\r\n", " ",
         "//", "/*", "*/", "\n#", "\\", "\\\"", "\\\\", "\\\n", "\\n", "\\l", "\\r", "\\N", "\\G", "\\E", "\\T", "\\H", ((char)0xFEFF).ToString(), "-1.5", ".5", "2a",
         "cluster_", "cluster=true", "label=", "xlabel=", "shape=", "style=", "color=", "fillcolor=", "bgcolor=", "pencolor=", "fontcolor=", "fontsize=", "penwidth=",
-        "URL=", "href=", "tooltip=", "class=", "sides=", "rankdir=LR", "rankdir=BT", "nodesep=", "ranksep=", "splines=ortho", "splines=line", "compound=true",
+        "URL=", "href=", "javascript:", "https:", "mailto:", "tooltip=", "class=", "sides=", "rankdir=LR", "rankdir=BT", "nodesep=", "ranksep=", "splines=ortho", "splines=line", "compound=true",
         "lhead=", "ltail=", "dir=both", "dir=back", "dir=none", "arrowhead=", "arrowtail=", "minlen=", "rank=same", "layout=neato", "headport=", ":n", ":sw",
         "box", "ellipse", "circle", "doublecircle", "point", "diamond", "record", "Mrecord", "plaintext", "polygon", "note", "cylinder", "star", "none",
         "filled", "rounded", "dashed", "dotted", "bold", "invis", "solid", "setlinewidth(2)", "normal", "dot", "tee", "diamond", "odot", "vee",
@@ -33,10 +33,10 @@ public static partial class GraphvizFuzzTargets
         new("graphviz-render", RenderTarget) { Seeds = GetSeeds, Dictionary = Tokens },
     ];
 
-    private static readonly GraphvizParseOptions Options = new() { MaxEdges = 400, MaxNodes = 200, MaxTextSize = 20_000, MaxDepth = 16 };
+    private static readonly GraphvizParseOptions Options = new() { MaxEdges = 400, MaxNodes = 200, MaxTextSize = 20_000, MaxDepth = 16, MaxInheritedAttributes = 20_000 };
 
     // The written text of an expanded graph can be longer than the text it was read from
-    private static readonly GraphvizParseOptions WrittenOptions = new() { MaxEdges = 400, MaxNodes = 200, MaxTextSize = int.MaxValue, MaxDepth = 16 };
+    private static readonly GraphvizParseOptions WrittenOptions = new() { MaxEdges = 400, MaxNodes = 200, MaxTextSize = int.MaxValue, MaxDepth = 16, MaxInheritedAttributes = int.MaxValue };
 
     /// <summary><see cref="GraphvizDocument.Parse(string, GraphvizParseOptions?)"/> agrees with TryParse, and its errors and warnings are inside the text.</summary>
     private static void ParseTarget(ReadOnlySpan<byte> data)
@@ -66,6 +66,40 @@ public static partial class GraphvizFuzzTargets
         foreach (var warning in document!.Warnings)
         {
             CheckPosition(lines, warning.Line, warning.Column, warning.ToString());
+        }
+
+        CheckLinks(document.Diagram.Nodes, document.Diagram.Subgraphs);
+    }
+
+    /// <summary>The links of the nodes and the clusters cannot run a script: they are relative, or use http, https or mailto.</summary>
+    private static void CheckLinks(IEnumerable<FlowchartNode> nodes, IEnumerable<FlowchartSubgraph> subgraphs)
+    {
+        foreach (var node in nodes)
+        {
+            CheckLink(node.Link);
+        }
+
+        foreach (var subgraph in subgraphs)
+        {
+            CheckLink(subgraph.Link);
+            CheckLinks(subgraph.Nodes, subgraph.Subgraphs);
+        }
+
+        static void CheckLink(string? link)
+        {
+            if (link is null)
+                return;
+
+            var trimmed = link.Trim();
+            var colon = trimmed.IndexOf(':', StringComparison.Ordinal);
+            var separator = trimmed.IndexOfAny(['/', '?', '#']);
+            if (colon < 0 || (separator >= 0 && separator < colon))
+                return;
+
+            var scheme = trimmed[..colon];
+            FuzzAssert.True(
+                scheme.Equals("http", StringComparison.OrdinalIgnoreCase) || scheme.Equals("https", StringComparison.OrdinalIgnoreCase) || scheme.Equals("mailto", StringComparison.OrdinalIgnoreCase),
+                $"The link {FuzzAssert.Format(link)} has the scheme '{scheme}'");
         }
     }
 

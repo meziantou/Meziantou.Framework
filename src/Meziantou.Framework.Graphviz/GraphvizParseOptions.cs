@@ -15,6 +15,9 @@ public sealed class GraphvizParseOptions
     /// <summary>Gets the largest number of edges of a graph, after the edges between groups of nodes are expanded, and before the duplicate edges of a strict graph are merged. The default is 10,000.</summary>
     public int MaxEdges { get; init; } = 10_000;
 
+    /// <summary>Gets the largest number of attributes the default attributes (<c>node [...]</c>, <c>edge [...]</c> and the attributes of the parent graphs) give to the nodes, the edges and the subgraphs, in total. The default is 1,000,000.</summary>
+    public int MaxInheritedAttributes { get; init; } = 1_000_000;
+
     /// <summary>Gets the deepest nesting of the subgraphs. The default is 32.</summary>
     public int MaxDepth { get; init; } = 32;
 

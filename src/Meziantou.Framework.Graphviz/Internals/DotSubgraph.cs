@@ -17,6 +17,12 @@ internal sealed class DotSubgraph(string? name, DotSubgraph? parent, int positio
 
     public DotAttributes Attributes { get; } = attributes;
 
+    /// <summary>Gets or sets the default attributes of the nodes of the subgraph, kept when its body is reopened, or <see langword="null"/> before its first body.</summary>
+    public DotAttributes? NodeDefaults { get; set; }
+
+    /// <summary>Gets or sets the default attributes of the edges of the subgraph, kept when its body is reopened, or <see langword="null"/> before its first body.</summary>
+    public DotAttributes? EdgeDefaults { get; set; }
+
     /// <summary>Gets the nodes of the subgraph and of its nested subgraphs, in the order they are mentioned.</summary>
     public List<DotNode> Nodes { get; } = [];
 

@@ -1,0 +1,1 @@
+digraph { subgraph cluster_a { URL="javascript:alert(1)"; a [href=" JavaScript:alert(1)"] } }

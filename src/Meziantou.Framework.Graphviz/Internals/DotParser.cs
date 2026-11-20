@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace Meziantou.Framework.Graphviz.Internals;
 
@@ -12,6 +13,8 @@ internal sealed class DotParser
     private DotGraph _graph = null!;
     private int _anonymousSubgraphs;
     private int _edgeCount;
+    private long _inheritedAttributeCount;
+    private int _depth;
 
     private DotParser(DotContext context)
     {
@@ -169,14 +172,35 @@ internal sealed class DotParser
             }
         }
 
-        if (scope.Subgraph.Depth + 1 > _context.Options.MaxDepth)
+        // The bodies are counted as they are opened: a named subgraph reopened inside itself keeps its depth
+        if (_depth + 1 > _context.Options.MaxDepth)
             throw _context.Error(start, string.Create(CultureInfo.InvariantCulture, $"The subgraphs are nested too deeply: the limit is {_context.Options.MaxDepth}."));
 
         Expect(DotTokenKind.LeftBrace, "'{'");
         var subgraph = GetOrCreateSubgraph(name, scope.Subgraph, start);
-        ParseStatements(new Scope(subgraph, scope.NodeDefaults.Clone(), scope.EdgeDefaults.Clone()));
+
+        // A subgraph starts with the defaults of the enclosing scope, and keeps its own when its body is reopened
+        subgraph.NodeDefaults ??= CloneDefaults(scope.NodeDefaults, start);
+        subgraph.EdgeDefaults ??= CloneDefaults(scope.EdgeDefaults, start);
+        _depth++;
+        ParseStatements(new Scope(subgraph, subgraph.NodeDefaults, subgraph.EdgeDefaults));
+        _depth--;
         Expect(DotTokenKind.RightBrace, "'}'");
         return subgraph;
+    }
+
+    private DotAttributes CloneDefaults(DotAttributes attributes, int position)
+    {
+        CountInheritedAttributes(attributes.Count, position);
+        return attributes.Clone();
+    }
+
+    private void CountInheritedAttributes(int count, int position)
+    {
+        // The defaults are copied to each node, edge and subgraph: a long list of defaults and many elements would multiply the memory used
+        _inheritedAttributeCount += count;
+        if (_inheritedAttributeCount > _context.Options.MaxInheritedAttributes)
+            throw _context.Error(position, string.Create(CultureInfo.InvariantCulture, $"The default attributes are copied to too many nodes, edges and subgraphs: the limit is {_context.Options.MaxInheritedAttributes} attributes."));
     }
 
     private void ParseEdges(Scope scope, Operand first, int start)
@@ -204,12 +228,7 @@ internal sealed class DotParser
             }
         }
 
-        var attributes = scope.EdgeDefaults.Clone();
-        if (_lexer.Peek().Kind is DotTokenKind.LeftBracket)
-        {
-            attributes.SetAll(ParseAttributeLists());
-        }
-
+        var attributes = _lexer.Peek().Kind is DotTokenKind.LeftBracket ? ParseAttributeLists() : new DotAttributes();
         for (var i = 0; i + 1 < operands.Count; i++)
         {
             var tails = operands[i].GetNodes();
@@ -218,13 +237,13 @@ internal sealed class DotParser
             {
                 foreach (var head in heads)
                 {
-                    AddEdge(tail, head, attributes, start);
+                    AddEdge(tail, head, scope.EdgeDefaults, attributes, start);
                 }
             }
         }
     }
 
-    private void AddEdge(DotNode tail, DotNode head, DotAttributes attributes, int position)
+    private void AddEdge(DotNode tail, DotNode head, DotAttributes defaults, DotAttributes attributes, int position)
     {
         // The edges merged in a strict graph count too, so that expanding large groups of nodes stays bounded
         if (++_edgeCount > _context.Options.MaxEdges)
@@ -232,7 +251,7 @@ internal sealed class DotParser
 
         if (_graph.IsStrict)
         {
-            // A strict graph has at most one edge between two nodes: the attributes of the next ones are merged
+            // A strict graph has at most one edge between two nodes: the explicit attributes of the next ones are merged, not their defaults
             if (_strictEdges.TryGetValue((tail, head), out var existing) || (!_graph.IsDirected && _strictEdges.TryGetValue((head, tail), out existing)))
             {
                 existing.Attributes.SetAll(attributes);
@@ -240,7 +259,9 @@ internal sealed class DotParser
             }
         }
 
-        var edge = new DotEdge(tail, head, position, attributes.Clone());
+        var edgeAttributes = CloneDefaults(defaults, position);
+        edgeAttributes.SetAll(attributes);
+        var edge = new DotEdge(tail, head, position, edgeAttributes);
         _graph.Edges.Add(edge);
         if (_graph.IsStrict)
         {
@@ -308,7 +329,7 @@ internal sealed class DotParser
                 if (_lexer.Peek().Kind is not DotTokenKind.Plus)
                     return token;
 
-                var value = token.Value;
+                var value = new StringBuilder(token.Value);
                 while (_lexer.Peek().Kind is DotTokenKind.Plus)
                 {
                     _lexer.Next();
@@ -316,10 +337,10 @@ internal sealed class DotParser
                     if (next.Kind is not DotTokenKind.QuotedString)
                         throw _context.Error(next.Start, $"Only quoted strings can be joined with '+', but found {Describe(next)}.");
 
-                    value += next.Value;
+                    value.Append(next.Value);
                 }
 
-                return token with { Value = value };
+                return token with { Value = value.ToString() };
             default:
                 throw _context.Error(token.Start, $"Expected a name, a number or a string, but found {Describe(token)}.");
         }
@@ -342,7 +363,7 @@ internal sealed class DotParser
             if (_graph.Nodes.Count >= _context.Options.MaxNodes)
                 throw _context.Error(id.Start, string.Create(CultureInfo.InvariantCulture, $"The graph has too many nodes: the limit is {_context.Options.MaxNodes}."));
 
-            node = new DotNode(id.Value, id.Start, scope.NodeDefaults.Clone());
+            node = new DotNode(id.Value, id.Start, CloneDefaults(scope.NodeDefaults, id.Start));
             _graph.Nodes.Add(node);
             _graph.NodesById.Add(node.Id, node);
         }
@@ -373,6 +394,7 @@ internal sealed class DotParser
             return existing;
 
         // A subgraph starts with the attributes of its parent graph, as in Graphviz
+        CountInheritedAttributes(parent.Attributes.Count, position);
         var subgraph = new DotSubgraph(name, parent, position, parent.Attributes.CloneInherited())
         {
             GeneratedName = name is null ? "%" + (++_anonymousSubgraphs).ToString(CultureInfo.InvariantCulture) : null,

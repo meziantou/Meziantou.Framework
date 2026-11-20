@@ -216,7 +216,7 @@ internal sealed class DotWriter
         }
 
         attributes.Add(("shape", DotShapes.ToDot(node.Shape)));
-        var style = ResolveStyle(node.CssClasses, node.Style);
+        var style = ResolveStyle(node.CssClasses, node.Style, includeDefaultClass: true);
         var styles = new List<string>();
         if (node.Shape is FlowchartNodeShape.RoundedRectangle)
         {
@@ -301,19 +301,26 @@ internal sealed class DotWriter
         }
 
         style = style?.Merge(edge.Style) ?? edge.Style;
+        var styles = new List<string>();
         switch (edge.LineStyle)
         {
             case FlowchartLineStyle.Dotted:
-                attributes.Add(("style", IsPattern(style?.StrokeDashArray, DotFlowchartBuilder.DashedPattern) ? "dashed" : "dotted"));
+                styles.Add(IsPattern(style?.StrokeDashArray, DotFlowchartBuilder.DashedPattern) ? "dashed" : "dotted");
                 break;
             case FlowchartLineStyle.Thick:
-                attributes.Add(("style", "bold"));
+                styles.Add("bold");
+                AddDashStyle(styles, style?.StrokeDashArray);
                 break;
             case FlowchartLineStyle.Invisible:
-                attributes.Add(("style", "invis"));
+                styles.Add("invis");
+                break;
+            default:
+                // The dashes of a solid edge can come from its style, its classes or the default style of the edges
+                AddDashStyle(styles, style?.StrokeDashArray);
                 break;
         }
 
+        AddStyle(attributes, styles);
         AddColor(attributes, "color", style?.Stroke);
         AddColor(attributes, "fontcolor", style?.TextColor);
         AddNumber(attributes, "penwidth", style?.StrokeWidth);
@@ -373,9 +380,15 @@ internal sealed class DotWriter
         return false;
     }
 
-    private DiagramStyle? ResolveStyle(IList<string> classes, DiagramStyle? style)
+    private DiagramStyle? ResolveStyle(IList<string> classes, DiagramStyle? style, bool includeDefaultClass = false)
     {
+        // The renderer applies the "default" class to every node, before the classes of the node
         DiagramStyle? result = null;
+        if (includeDefaultClass && _diagram.ClassDefinitions.TryGetValue("default", out var defaultDefinition))
+        {
+            result = defaultDefinition;
+        }
+
         foreach (var name in classes)
         {
             if (_diagram.ClassDefinitions.TryGetValue(name, out var definition))

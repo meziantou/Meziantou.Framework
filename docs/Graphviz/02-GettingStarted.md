@@ -78,7 +78,8 @@ Assert.Equal((3, 7), (error.Line, error.Column));
 
 [GraphvizParseOptions](cref:Meziantou.Framework.Graphviz.GraphvizParseOptions) limits the size of the text, the number
 of nodes and edges, and the depth of the nesting of the subgraphs. The edges between groups of nodes multiply:
-`{a b c} -> {d e f}` is nine edges, and each counts. Keep the limits when the text comes from users.
+`{a b c} -> {d e f}` is nine edges, and each counts. The default attributes multiply too: each node, edge and subgraph
+gets a copy of them, and the copies count against `MaxInheritedAttributes`. Keep the limits when the text comes from users.
 
 ## Warnings
 

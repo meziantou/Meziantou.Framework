@@ -50,6 +50,7 @@ namespace Meziantou.Framework.Graphviz
         public Meziantou.Framework.Diagrams.DiagramTheme? DefaultTheme { get => throw null; init { } }
         public int MaxDepth { get => throw null; init { } }
         public int MaxEdges { get => throw null; init { } }
+        public int MaxInheritedAttributes { get => throw null; init { } }
         public int MaxNodes { get => throw null; init { } }
         public int MaxTextSize { get => throw null; init { } }
     }

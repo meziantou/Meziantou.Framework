@@ -238,7 +238,7 @@ internal sealed class DotFlowchartBuilder
             GetColor(attributes, "fontcolor"),
             GetFontSize(attributes),
             style.Invisible);
-        cluster.Link = GetEscapedText(attributes, "URL") ?? GetEscapedText(attributes, "href");
+        cluster.Link = GetLink(attributes);
         cluster.Tooltip = GetEscapedText(attributes, "tooltip");
         AddClasses(attributes, cluster.CssClasses);
     }
@@ -319,7 +319,7 @@ internal sealed class DotFlowchartBuilder
             GetColor(attributes, "fontcolor"),
             GetFontSize(attributes),
             style.Invisible);
-        flowchartNode.Link = GetEscapedText(attributes, "URL", node.Id) ?? GetEscapedText(attributes, "href", node.Id);
+        flowchartNode.Link = GetLink(attributes, node.Id);
         flowchartNode.Tooltip = GetEscapedText(attributes, "tooltip", node.Id);
         AddClasses(attributes, flowchartNode.CssClasses);
     }
@@ -532,6 +532,27 @@ internal sealed class DotFlowchartBuilder
 
         var text = DotValues.Unescape(attribute.Value, nodeName, _graph.Name);
         return text.Length is 0 ? null : text;
+    }
+
+    /// <summary>Gets the link of a node or a cluster, when it cannot run a script: http, https, mailto, relative addresses and fragments.</summary>
+    private string? GetLink(DotAttributes attributes, string? nodeName = null)
+    {
+        var name = attributes.Get("URL") is { Value.Length: > 0 } ? "URL" : "href";
+        if (GetEscapedText(attributes, name, nodeName) is not { } link)
+            return null;
+
+        var trimmed = link.Trim();
+        var colon = trimmed.IndexOf(':', StringComparison.Ordinal);
+        var separator = trimmed.IndexOfAny(['/', '?', '#']);
+        if (colon < 0 || (separator >= 0 && separator < colon))
+            return link;
+
+        var scheme = trimmed[..colon];
+        if (scheme.Equals("http", StringComparison.OrdinalIgnoreCase) || scheme.Equals("https", StringComparison.OrdinalIgnoreCase) || scheme.Equals("mailto", StringComparison.OrdinalIgnoreCase))
+            return link;
+
+        _context.WarnOnce("link:" + scheme, attributes.Get(name)!.Value.Position, $"The link '{trimmed}' is ignored: only http, https, mailto and relative addresses are allowed.");
+        return null;
     }
 
     private static void AddClasses(DotAttributes attributes, IList<string> classes)

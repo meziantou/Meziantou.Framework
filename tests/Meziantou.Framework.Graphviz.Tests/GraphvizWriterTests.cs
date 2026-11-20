@@ -76,6 +76,35 @@ public sealed class GraphvizWriterTests
     }
 
     [Fact]
+    public void Write_DashesOfSolidEdgesAndDefaultClass()
+    {
+        var flowchart = new FlowchartDiagram { DefaultEdgeStyle = new DiagramStyle { StrokeDashArray = [5, 2] } };
+        flowchart.ClassDefinitions["default"] = new DiagramStyle { Fill = SceneColor.Parse("#ffcccc"), Stroke = SceneColor.Parse("red") };
+        flowchart.AddEdge("a", "b");
+        flowchart.AddEdge("b", "c").Style = new DiagramStyle { StrokeDashArray = [1, 3] };
+        flowchart.AddSubgraph("group", "Group");
+
+        var dot = GraphvizWriter.Write(flowchart);
+
+        Assert.Equal(
+            """
+            digraph {
+                a [shape=box, style=filled, fillcolor="#ffcccc", color="#ff0000"];
+                b [shape=box, style=filled, fillcolor="#ffcccc", color="#ff0000"];
+                c [shape=box, style=filled, fillcolor="#ffcccc", color="#ff0000"];
+                subgraph group {
+                    label="Group";
+                    cluster=true;
+                }
+                a -> b [style=dashed];
+                b -> c [style=dotted];
+            }
+
+            """.ReplaceLineEndings("\n"),
+            dot);
+    }
+
+    [Fact]
     public void Write_TextWriter()
     {
         var flowchart = new FlowchartDiagram();

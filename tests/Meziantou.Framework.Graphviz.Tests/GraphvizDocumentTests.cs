@@ -108,6 +108,8 @@ public sealed class GraphvizDocumentTests
         Assert.Equal("(1, 17): The graph has too many nodes: the limit is 2.", GetError("digraph { a; b; c }", new GraphvizParseOptions { MaxNodes = 2 }));
         Assert.Equal("(1, 11): The graph has too many edges: the limit is 2.", GetError("digraph { a -> {b c d} }", new GraphvizParseOptions { MaxEdges = 2 }));
         Assert.Equal("(1, 22): The subgraphs are nested too deeply: the limit is 1.", GetError("digraph { subgraph { subgraph { a } } }", new GraphvizParseOptions { MaxDepth = 1 }));
+        Assert.Equal("(1, 37): The subgraphs are nested too deeply: the limit is 2.", GetError("digraph { subgraph s { subgraph s { subgraph s { a } } } }", new GraphvizParseOptions { MaxDepth = 2 }));
+        Assert.Equal("(1, 33): The default attributes are copied to too many nodes, edges and subgraphs: the limit is 5 attributes.", GetError("digraph { node [a=1 b=2]; x; y; z }", new GraphvizParseOptions { MaxInheritedAttributes = 5 }));
 
         static string GetError(string text, GraphvizParseOptions options)
         {
@@ -159,6 +161,49 @@ public sealed class GraphvizDocumentTests
 
         var undirected = GraphvizDocument.Parse("strict graph { a -- b; b -- a }");
         Assert.Single(undirected.Diagram.Edges);
+    }
+
+    [Fact]
+    public void StrictGraph_MergesOnlyExplicitAttributes()
+    {
+        var document = GraphvizDocument.Parse("strict digraph { edge [color=red]; a -> b [color=blue]; a -> b }");
+
+        var edge = Assert.Single(document.Diagram.Edges);
+        Assert.Equal("#0000ff", edge.Style?.Stroke?.ToString());
+    }
+
+    [Fact]
+    public void ReopenedSubgraphKeepsItsDefaults()
+    {
+        var flowchart = GraphvizDocument.Parse("digraph { subgraph s { node [shape=box]; a } subgraph s { b } c }").Diagram;
+
+        Assert.Equal([FlowchartNodeShape.Rectangle, FlowchartNodeShape.Rectangle, FlowchartNodeShape.Stadium], flowchart.Nodes.Select(node => node.Shape));
+    }
+
+    [Fact]
+    public void JoinedStrings()
+    {
+        var text = "digraph { a [label=\"x\"" + string.Concat(Enumerable.Repeat(" + \"y\"", 1000)) + "] }";
+
+        var node = Assert.Single(GraphvizDocument.Parse(text).Diagram.Nodes);
+        Assert.Equal("x" + new string('y', 1000), node.Label?.Text);
+    }
+
+    [Theory]
+    [InlineData("javascript:alert(1)", null)]
+    [InlineData(" JavaScript:alert(1)", null)]
+    [InlineData("data:text/html,x", null)]
+    [InlineData("https://example.com/a?b=c:d", "https://example.com/a?b=c:d")]
+    [InlineData("mailto:someone@example.com", "mailto:someone@example.com")]
+    [InlineData("docs/page.html#a:b", "docs/page.html#a:b")]
+    public void Links_OnlySafeSchemes(string url, string? expected)
+    {
+        var document = GraphvizDocument.Parse($$"""digraph { subgraph cluster_a { URL="{{url}}"; a [href="{{url}}"] } }""");
+
+        var cluster = Assert.Single(document.Diagram.Subgraphs);
+        Assert.Equal(expected, cluster.Link);
+        Assert.Equal(expected, Assert.Single(cluster.Nodes).Link);
+        Assert.Equal(expected is null, document.Warnings.Any(warning => warning.Message.Contains("is ignored: only http", StringComparison.Ordinal)));
     }
 
     [Fact]

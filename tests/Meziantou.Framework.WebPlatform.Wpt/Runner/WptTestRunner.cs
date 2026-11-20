@@ -2669,6 +2669,7 @@ internal sealed partial class WptTestRunner
 
             // Read before the next timer is computed: a worker that runs a task afterwards may add a timer or queue a task
             var workerActivity = eventLoop.WorkerActivity;
+            var webSocketTimerCount = _webSocketServer.TimerCount;
             var delay = eventLoop.PromoteDueTimers();
             if (eventLoop.RunTask())
             {
@@ -2718,6 +2719,10 @@ internal sealed partial class WptTestRunner
                 // A worker may have moved a timer to its task queue while the next timer was computed, or run a task since then
                 // (e.g. a timer that became due when the clock was read): the next timer is computed again
                 if (eventLoop.HasRunningWorkers || eventLoop.WorkerActivity != workerActivity)
+                    continue;
+
+                // A handler of the WebSocket server may have queued a timer (time.sleep()) since the next timer was computed
+                if (_webSocketServer.TimerCount != webSocketTimerCount)
                     continue;
 
                 workerWait.Reset();

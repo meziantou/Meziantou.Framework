@@ -86,6 +86,9 @@ internal static class PdfFuzzOracle
     private static async Task ReadAsync(byte[] data, PdfReadOptions options, bool render)
     {
         var document = PdfDocument.Open(data, options);
+        if (document.IsRepaired && !document.Diagnostics.Any(diagnostic => diagnostic.Kind == PdfDiagnosticKind.CrossReferenceRebuilt))
+            throw new InvalidOperationException("A repaired document does not report that its cross-reference information was rebuilt");
+
         var pageCount = document.Pages.Count;
         var texts = new List<string>();
         foreach (var page in document.Pages.Take(MaxPages))
@@ -105,10 +108,20 @@ internal static class PdfFuzzOracle
             foreach (var annotation in page.Annotations)
             {
                 _ = annotation.Rectangle;
-                if (annotation is PdfLinkAnnotation link)
+                _ = annotation.Border.Width;
+                switch (annotation)
                 {
-                    _ = link.Uri;
-                    _ = link.Destination;
+                    case PdfLinkAnnotation link:
+                        _ = link.Uri;
+                        _ = link.Destination;
+                        break;
+                    case PdfMarkupAnnotation markup:
+                        _ = markup.Popup;
+                        _ = markup.InReplyTo;
+                        break;
+                    case PdfWidgetAnnotation widget:
+                        _ = widget.AppearanceCharacteristics.Rotation;
+                        break;
                 }
             }
         }

@@ -43,6 +43,27 @@ page.Redact(areas);
 ```
 <!-- endref -->
 
+## Mark regions to redact
+
+A reviewer can mark the regions to remove first, and the redactions are applied later. A redaction annotation
+([AddRedaction](cref:Meziantou.Framework.Pdf.PdfAnnotationCollection.AddRedaction)) outlines its regions in red, and the content stays until
+[ApplyRedactions](cref:Meziantou.Framework.Pdf.PdfDocument.ApplyRedactions) removes it:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfNavigationTests.cs;region=Pdf_RedactionAnnotations;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A reviewer marks the regions to remove; the content stays until the redactions are applied
+page.Annotations.AddRedaction([new PdfRectangle(105, 45, 160, 65)], overlayText: "REDACTED");
+var applied = document.ApplyRedactions();
+```
+<!-- endref -->
+
+- The content of the regions of each redaction annotation is removed as [Redact](cref:Meziantou.Framework.Pdf.PdfPage.Redact) removes it, and the
+  redaction annotations are removed.
+- Each region is painted with the [InteriorColor](cref:Meziantou.Framework.Pdf.PdfRedactAnnotation.InteriorColor) of its annotation, or [FillColor](cref:Meziantou.Framework.Pdf.PdfRedactionOptions.FillColor) when it has none,
+  and its [OverlayText](cref:Meziantou.Framework.Pdf.PdfRedactAnnotation.OverlayText) is drawn in it, in Helvetica, black or white on a dark color. The overlay text is content
+  of the page: the text extraction reads it.
+- The redaction annotations of a file, added by a viewer, are applied the same way.
+
 ## What is removed
 
 The content of the page is rewritten, and so is the content of the forms it paints:

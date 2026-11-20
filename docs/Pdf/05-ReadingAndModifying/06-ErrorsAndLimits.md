@@ -48,6 +48,9 @@ The mistakes of the code that uses the library throw the usual exceptions: `Argu
 for a wrong argument, `InvalidOperationException` for a call that is not allowed in the current state (a text operator
 outside a text object, an incremental save of a repaired document).
 
+A damaged file that can be repaired throws nothing: [PdfDocument.Diagnostics](cref:Meziantou.Framework.Pdf.PdfDocument.Diagnostics) lists what was repaired, see
+[List what was repaired](02-OpeningDocuments.md#list-what-was-repaired).
+
 ## Untrusted files
 
 A file can be written to make a reader use a lot of memory or time: a small stream that decodes to gigabytes, objects

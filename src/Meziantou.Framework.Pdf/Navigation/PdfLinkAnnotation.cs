@@ -39,4 +39,34 @@ public sealed class PdfLinkAnnotation : PdfAnnotation
             return null;
         }
     }
+
+    /// <summary>
+    /// Gets or sets the action of the link (<c>/A</c>, ISO 32000-2, 12.6), or <see langword="null"/> when it has none: a
+    /// destination of the link (<c>/Dest</c>) is read as a <see cref="PdfGoToAction"/>. Setting an action removes the
+    /// destination.
+    /// </summary>
+    /// <exception cref="ArgumentException">The action refers to objects of another document.</exception>
+    public PdfAction? Action
+    {
+        get
+        {
+            if (Dictionary.Get<PdfDictionary>(PdfNames.A) is { } action)
+                return PdfAction.Read(Page.Document, action);
+
+            return Dictionary.GetResolved(PdfNames.Dest) is { } destination and (PdfArray or PdfName or PdfString)
+                ? new PdfGoToAction(new PdfDictionary { [PdfNames.S] = PdfNames.GoTo, [PdfNames.D] = destination }, Page.Document)
+                : null;
+        }
+
+        set
+        {
+            if (value is not null)
+            {
+                PdfAction.CheckDocument(value, Page.Document, nameof(value));
+            }
+
+            Dictionary.Remove(PdfNames.Dest);
+            Dictionary[PdfNames.A] = value?.Dictionary;
+        }
+    }
 }

@@ -24,6 +24,9 @@ internal sealed class ContentStreamReader
         _parser = new PdfObjectParser(_lexer, objects: null, maxDepth);
     }
 
+    /// <summary>Gets the offset in the data after the last operation read: the bytes of an operation are those between two positions.</summary>
+    public int Position => _lexer.Position;
+
     /// <summary>Reads the next operation.</summary>
     /// <param name="operands">The list that receives the operands; it is cleared first.</param>
     /// <param name="name">The operator.</param>

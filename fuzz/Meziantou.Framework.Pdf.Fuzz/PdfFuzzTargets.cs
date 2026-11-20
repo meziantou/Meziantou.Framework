@@ -47,6 +47,8 @@ public static class PdfFuzzTargets
 
     private static readonly string[] LineEndings = ["None", "Square", "Circle", "Diamond", "OpenArrow", "ClosedArrow", "Butt", "ROpenArrow", "RClosedArrow", "Slash"];
 
+    private static readonly string[] FlowLayoutTokens = ["\n", "# ", "## ", "- ", "|", "---", " ", "W"];
+
     private static readonly Rendering.PdfRenderOptions RenderOptions = new() { Dpi = 18, MaxOperations = 200_000, UseSystemFonts = false };
 
     private static readonly string[] HeaderFooterTokens = ["{page}", "{pages}", "{label}", "{date}", "{bates}", "{{", "}}", "{", "}", "Page ", " of "];
@@ -65,12 +67,18 @@ public static class PdfFuzzTargets
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
         new("pdf-xfdf", Xfdf) { Seeds = () => GetSeeds(".xfdf"), Dictionary = XfdfTokens },
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-diagnostics", Diagnostics) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-http-range", HttpRange) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
+        new("pdf-annotation-model", AnnotationModel) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-document-views", DocumentViews) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-separations", Separations) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
+        new("pdf-flow-layout", FlowLayout) { Seeds = GetFlowLayoutSeeds, Dictionary = FlowLayoutTokens },
+        new("pdf-auto-tag", AutoTag) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-imposition", Imposition) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-script-extraction", ScriptExtraction) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -239,6 +247,411 @@ public static class PdfFuzzTargets
 
         FuzzAssert.True(sanitized.Output.Span.StartsWith(bytes), "The sanitizer did not keep the bytes of the file");
         FuzzAssert.False(PdfSaveSanitizer.Sanitize(sanitized.Output, ReadOptions).HasChanges, "The output of the sanitizer still needs repairs");
+    }
+
+    /// <summary>
+    /// The input is a PDF file, opened with all its objects read. The diagnostics are within their bounds: a repaired file
+    /// reports that its cross-reference information was rebuilt, the offsets are in the file, the object numbers are
+    /// positive, the list is bounded, and reading the file again adds nothing.
+    /// </summary>
+    private static void Diagnostics(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { LoadAllObjects = true, MaxDecodedStreamLength = 1 << 20 });
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        var diagnostics = document.Diagnostics;
+        FuzzAssert.True(diagnostics.Count <= 1000, "The number of diagnostics is not bounded");
+        FuzzAssert.Equal(document.IsRepaired, diagnostics.Any(diagnostic => diagnostic.Kind == PdfDiagnosticKind.CrossReferenceRebuilt), "A repaired file must report that its cross-reference information was rebuilt, and only a repaired file");
+        foreach (var diagnostic in diagnostics)
+        {
+            FuzzAssert.True(diagnostic.Offset is not { } offset || (offset >= 0 && offset <= data.Length), $"The offset of a diagnostic is outside of the file: {diagnostic}");
+            FuzzAssert.True(diagnostic.ObjectNumber is null or >= 0, $"The object number of a diagnostic is negative: {diagnostic}");
+            FuzzAssert.False(string.IsNullOrEmpty(diagnostic.ToString()), "A diagnostic has no text");
+        }
+
+        try
+        {
+            FuzzAssert.Equal(diagnostics.Count, document.ValidateStructure().Count, "Reading the file again reports new problems");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file, opened from memory and over HTTP with range requests (a server of the bytes of the input).
+    /// Both read the same document: the same pages and the same text of the first page after a prefetch, or both throw a
+    /// documented exception.
+    /// </summary>
+    private static void HttpRange(ReadOnlySpan<byte> data)
+    {
+        var file = data.ToArray();
+        var options = new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 };
+        (int Pages, string Text)? expected;
+        try
+        {
+            var local = PdfDocument.Open(file, options);
+            expected = (local.Pages.Count, local.Pages.Count > 0 ? local.Pages[0].ExtractText() : "");
+        }
+        catch (PdfException)
+        {
+            expected = null;
+        }
+
+        var (actual, servedBytes) = ReadOverHttpAsync(file, options).GetAwaiter().GetResult();
+        FuzzAssert.Equal(expected, actual, "The document read over HTTP is not the document read from memory");
+        FuzzAssert.True(servedBytes <= (2L * file.Length) + (64 * 1024), "The bytes of the file are downloaded more than once");
+    }
+
+    private static async Task<((int Pages, string Text)? Result, long ServedBytes)> ReadOverHttpAsync(byte[] file, PdfReadOptions options)
+    {
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        try
+        {
+            var remote = await PdfDocument.OpenAsync(client, new Uri("https://localhost/file.pdf"), options).ConfigureAwait(false);
+            if (remote.Pages.Count > 0)
+            {
+                await remote.PrefetchPageAsync(0).ConfigureAwait(false);
+            }
+
+            return ((remote.Pages.Count, remote.Pages.Count > 0 ? remote.Pages[0].ExtractText() : ""), handler.ServedBytes);
+        }
+        catch (PdfException)
+        {
+            return (null, handler.ServedBytes);
+        }
+    }
+
+    /// <summary>Serves a file with range requests (RFC 9110, 14).</summary>
+    private sealed class RangeHandler(byte[] file) : HttpMessageHandler
+    {
+        public long ServedBytes { get; private set; }
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => Serve(request);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(Serve(request));
+
+        private HttpResponseMessage Serve(HttpRequestMessage request)
+        {
+            if (file.Length == 0 || request.Headers.Range is not { Ranges.Count: 1 } range || range.Ranges.First() is not { From: { } from, To: { } to } || from >= file.Length)
+            {
+                // An unsatisfiable range gives the length of the file (RFC 9110, 15.5.17)
+                var empty = new ByteArrayContent([]);
+                empty.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(file.Length);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.RequestedRangeNotSatisfiable) { Content = empty };
+            }
+
+            to = Math.Min(to, file.Length - 1);
+            ServedBytes += to - from + 1;
+            var content = new ByteArrayContent(file, (int)from, (int)(to - from + 1));
+            content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(from, to, file.Length);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.PartialContent) { Content = content };
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The typed views of its annotations read within their bounds (the opacity, the border, the
+    /// rotation of the widgets); their appearances are drawn; flattening every annotation leaves only the pop-ups of the
+    /// annotations of other pages and the widgets of signed signatures, the redactions are applied, and the document
+    /// reads back.
+    /// </summary>
+    private static void AnnotationModel(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+            if (document.Pages.Count == 0)
+                return;
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            foreach (var page in document.Pages.Take(4))
+            {
+                foreach (var annotation in page.Annotations.Take(64))
+                {
+                    ReadAnnotation(annotation);
+                    _ = annotation.UpdateAppearance();
+                }
+            }
+
+            foreach (var page in document.Pages.Take(4))
+            {
+                page.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = annotation => annotation is not PdfRedactAnnotation });
+                foreach (var annotation in page.Annotations)
+                {
+                    FuzzAssert.True(annotation is PdfPopupAnnotation or PdfWidgetAnnotation or PdfRedactAnnotation, $"A {annotation.Subtype} annotation was not flattened");
+                }
+            }
+
+            document.ApplyRedactions();
+            FuzzAssert.False(document.Pages.Take(4).Any(page => page.Annotations.OfType<PdfRedactAnnotation>().Any()), "A redaction annotation was not applied");
+            var read = PdfDocument.Open(document.ToByteArray());
+            FuzzAssert.Equal(document.Pages.Count, read.Pages.Count, "The pages of the flattened document did not read back");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The typed views of the document read within their bounds: the actions and their
+    /// <c>/Next</c> chains, the additional actions, the optional content, the viewer preferences, the portfolio and its
+    /// folders, and the revisions, which are prefixes of the file in increasing order that open as documents.
+    /// </summary>
+    private static void DocumentViews(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            ReadAction(document.OpenAction, depth: 0);
+            foreach (var trigger in document.AdditionalActions.Triggers)
+            {
+                ReadAction(document.AdditionalActions[trigger], depth: 0);
+            }
+
+            foreach (var page in document.Pages.Take(4))
+            {
+                foreach (var trigger in page.AdditionalActions.Triggers)
+                {
+                    ReadAction(page.AdditionalActions[trigger], depth: 0);
+                }
+
+                foreach (var annotation in page.Annotations.Take(64))
+                {
+                    _ = annotation.OptionalContent;
+                    ReadAction((annotation as PdfLinkAnnotation)?.Action ?? (annotation as PdfWidgetAnnotation)?.Action, depth: 0);
+                    foreach (var trigger in annotation.AdditionalActions.Triggers)
+                    {
+                        ReadAction(annotation.AdditionalActions[trigger], depth: 0);
+                    }
+                }
+            }
+
+            foreach (var item in document.Outlines.Take(64))
+            {
+                ReadAction(item.Action, depth: 0);
+            }
+
+            var content = document.OptionalContent;
+            foreach (var group in content.Groups.Take(64))
+            {
+                _ = (group.Name, group.Intents, group.IsVisible);
+            }
+
+            if (content.DefaultConfiguration is { } configuration)
+            {
+                _ = (configuration.BaseState, configuration.LockedGroups, configuration.RadioButtonGroups, configuration.Name);
+            }
+
+            FuzzAssert.True(content.Configurations.Count <= 4096, "Too many optional content configurations");
+            var preferences = document.ViewerPreferences;
+            _ = (preferences.HideToolbar, preferences.DisplayDocumentTitle, preferences.NonFullScreenPageMode, preferences.Direction, preferences.Duplex, preferences.PickTrayByPdfSize, preferences.EnforcedPreferences);
+            FuzzAssert.True(preferences.PrintPageRanges.All(range => range.First >= 0 && range.Last >= range.First), "A print page range is not in order");
+            FuzzAssert.True(preferences.NumberOfCopies is null or (>= 1 and <= 5), "The number of copies is out of range");
+            _ = (document.PageLayout, document.PageMode);
+
+            if (document.Portfolio is { } portfolio)
+            {
+                _ = (portfolio.View, portfolio.InitialFile, portfolio.SortFields, portfolio.SortAscending);
+                foreach (var field in portfolio.Fields)
+                {
+                    _ = (field.Name, field.Type, field.Order, field.IsVisible, field.IsEditable);
+                }
+
+                var pending = new Stack<(PdfPortfolioFolder Folder, int Depth)>();
+                if (portfolio.RootFolder is { } root)
+                {
+                    pending.Push((root, 0));
+                }
+
+                var count = 0;
+                while (pending.Count > 0 && count++ < 10_000)
+                {
+                    var (folder, depth) = pending.Pop();
+                    FuzzAssert.True(depth <= 32, "The folders of a portfolio are nested too deeply");
+                    _ = (folder.Name, folder.Id);
+                    foreach (var child in folder.Children.Take(16))
+                    {
+                        pending.Push((child, depth + 1));
+                    }
+                }
+            }
+
+            var revisions = document.Revisions;
+            for (var i = 0; i < revisions.Count; i++)
+            {
+                FuzzAssert.True(revisions[i].Length > 0 && revisions[i].Length <= data.Length, "A revision is not a prefix of the file");
+                FuzzAssert.True(i == 0 || revisions[i].Length > revisions[i - 1].Length, "The revisions are not in increasing order");
+                FuzzAssert.Equal(i == revisions.Count - 1, revisions[i].IsLatest, "Only the last revision is the latest");
+            }
+
+            foreach (var revision in revisions.Take(3))
+            {
+                try
+                {
+                    _ = revision.Open().Pages.Count;
+                }
+                catch (PdfException)
+                {
+                }
+            }
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    private static void ReadAction(PdfAction? action, int depth)
+    {
+        if (action is null || depth > 4)
+            return;
+
+        _ = action.Kind;
+        switch (action)
+        {
+            case PdfGoToAction goTo:
+                _ = goTo.Destination;
+                break;
+            case PdfGoToRemoteAction remote:
+                _ = (remote.FileName, remote.PageIndex, remote.DestinationName, remote.NewWindow);
+                break;
+            case PdfGoToEmbeddedAction embedded:
+                _ = (embedded.FileName, embedded.TargetFileName);
+                break;
+            case PdfLaunchAction launch:
+                _ = launch.FileName;
+                break;
+            case PdfUriAction uri:
+                _ = (uri.Uri, uri.IsMap);
+                break;
+            case PdfNamedAction named:
+                _ = named.Name;
+                break;
+            case PdfSubmitFormAction submit:
+                _ = (submit.Url, submit.FieldNames, submit.Flags);
+                break;
+            case PdfResetFormAction reset:
+                _ = (reset.FieldNames, reset.Exclude);
+                break;
+            case PdfImportDataAction import:
+                _ = import.FileName;
+                break;
+            case PdfHideAction hide:
+                _ = (hide.FieldNames, hide.Hides);
+                break;
+            case PdfSetOptionalContentStateAction state:
+                _ = (state.Changes, state.PreserveRadioButtons);
+                break;
+            case PdfJavaScriptAction script:
+                _ = script.Script;
+                break;
+        }
+
+        var next = action.Next;
+        FuzzAssert.True(next.Count <= 256, "Too many actions after an action");
+        foreach (var item in next.Take(4))
+        {
+            ReadAction(item, depth + 1);
+        }
+    }
+
+    private static void ReadAnnotation(PdfAnnotation annotation)
+    {
+        _ = annotation.Rectangle;
+        _ = annotation.Contents;
+        _ = annotation.UniqueName;
+        _ = annotation.ModificationDate;
+        _ = annotation.Color;
+        _ = annotation.HasAppearance;
+        var border = annotation.Border;
+        FuzzAssert.True(border.Width >= 0 && double.IsFinite(border.Width), "The width of a border is not a positive number");
+        FuzzAssert.True(border.CloudyIntensity is >= 0 and <= 2, "The intensity of a cloudy border is out of range");
+        FuzzAssert.True(border.DashPattern.Count is > 0 and <= 16 && border.DashPattern.All(length => length >= 0), "The dashes of a border are out of range");
+        _ = border.BorderStyle;
+        if (annotation is PdfMarkupAnnotation markup)
+        {
+            FuzzAssert.True(markup.Opacity is >= 0 and <= 1, "The opacity of an annotation is out of range");
+            _ = markup.Popup;
+            _ = markup.InReplyTo;
+            _ = markup.ReplyType;
+            _ = markup.RichContents;
+            _ = markup.GetReplies();
+        }
+
+        switch (annotation)
+        {
+            case PdfTextAnnotation text:
+                _ = (text.Icon, text.IsOpen, text.State, text.StateModel);
+                break;
+            case PdfFreeTextAnnotation freeText:
+                _ = (freeText.DefaultAppearance, freeText.Alignment, freeText.CalloutLineEnding, freeText.Intent);
+                FuzzAssert.True(freeText.CalloutLine.Count is 0 or 2 or 3, "A callout line does not have 2 or 3 points");
+                break;
+            case PdfLineAnnotation line:
+                _ = (line.Start, line.End, line.StartEnding, line.EndEnding, line.InteriorColor, line.LeaderLineLength, line.LeaderLineExtension, line.ShowCaption);
+                break;
+            case PdfSquareAnnotation square:
+                _ = square.InteriorColor;
+                break;
+            case PdfCircleAnnotation circle:
+                _ = circle.InteriorColor;
+                break;
+            case PdfPolygonAnnotation polygon:
+                FuzzAssert.True(polygon.Vertices.Count <= 65536, "Too many vertices");
+                _ = polygon.InteriorColor;
+                break;
+            case PdfPolyLineAnnotation polyline:
+                FuzzAssert.True(polyline.Vertices.Count <= 65536, "Too many vertices");
+                _ = (polyline.StartEnding, polyline.EndEnding, polyline.InteriorColor);
+                break;
+            case PdfInkAnnotation ink:
+                FuzzAssert.True(ink.Strokes.Sum(stroke => stroke.Count) <= 65536, "Too many points in the strokes");
+                break;
+            case PdfTextMarkupAnnotation textMarkup:
+                _ = (textMarkup.Kind, textMarkup.Regions);
+                break;
+            case PdfStampAnnotation stamp:
+                FuzzAssert.False(string.IsNullOrEmpty(stamp.Icon), "A stamp has no name");
+                break;
+            case PdfCaretAnnotation caret:
+                _ = caret.ShowsParagraphSymbol;
+                break;
+            case PdfRedactAnnotation redact:
+                FuzzAssert.True(redact.Regions.Count > 0, "A redaction has no region");
+                _ = (redact.InteriorColor, redact.OverlayText, redact.RepeatOverlayText);
+                break;
+            case PdfPopupAnnotation popup:
+                _ = (popup.Parent, popup.IsOpen);
+                break;
+            case PdfWidgetAnnotation widget:
+                var characteristics = widget.AppearanceCharacteristics;
+                FuzzAssert.True(characteristics.Rotation is 0 or 90 or 180 or 270, "The rotation of a widget is not a multiple of 90");
+                _ = (widget.AppearanceState, widget.HighlightMode, characteristics.BorderColor, characteristics.BackgroundColor, characteristics.NormalCaption, characteristics.RolloverCaption, characteristics.DownCaption);
+                break;
+        }
     }
 
     /// <summary>
@@ -438,6 +851,229 @@ public static class PdfFuzzTargets
         }
 
         FuzzAssert.Equal(3, PdfDocument.Open(document.ToByteArray()).Pages.Count, "The stamped document lost pages");
+    }
+
+    /// <summary>
+    /// The input is an option byte (the page size, the alignment, the columns), then a text whose lines are blocks: a
+    /// heading (<c>#</c>), a list item (<c>-</c>), a table row (<c>|</c>), a rule (<c>---</c>), or a paragraph. The text is
+    /// laid out without an exception, every line of every page is inside the margins, and the document reads back with
+    /// its tags.
+    /// </summary>
+    private static void FlowLayout(ReadOnlySpan<byte> data)
+    {
+        if (data.IsEmpty)
+            return;
+
+        var options = data[0];
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+
+        // The characters of the standard font: the others are an argument error of the caller
+        var text = new string([.. FuzzText.Decode(data[1..]).Take(4000).Where(c => c is '\n' || (c >= ' ' && font.CanEncode(c.ToString())))]);
+        var size = (options & 1) == 0 ? new PdfSize(200, 220) : PdfSize.A5;
+        var alignment = (PdfTextAlignment)((options >> 1) & 3);
+        var flow = new PdfFlowDocument(new PdfFlowOptions { PageSize = size, MarginLeft = 20, MarginRight = 20, MarginTop = 20, MarginBottom = 20, Footer = (page, count) => $"{page}/{count}" });
+        var style = new PdfParagraphStyle { Alignment = alignment };
+        void AddBlocks(PdfFlowContainer container, IEnumerable<string> lines)
+        {
+            var items = new List<string>();
+            var rows = new List<string[]>();
+            void Flush()
+            {
+                if (items.Count > 0)
+                {
+                    container.List([.. items], ordered: (options & 8) != 0);
+                    items.Clear();
+                }
+
+                if (rows.Count > 0)
+                {
+                    container.Table(table =>
+                    {
+                        // The first row gives the columns; the cells of a longer row do not fit
+                        table.HeaderRow(rows[0]);
+                        foreach (var row in rows.Skip(1))
+                        {
+                            table.Row(cells =>
+                            {
+                                for (var i = 0; i < row.Length; i++)
+                                {
+                                    cells.Cell(row[i], rowSpan: i == 0 && row.Length < rows[0].Length ? 2 : 1);
+                                }
+                            });
+                        }
+                    });
+                    rows.Clear();
+                }
+            }
+
+            foreach (var line in lines)
+            {
+                if (line.StartsWith("- ", StringComparison.Ordinal))
+                {
+                    items.Add(line[2..]);
+                    continue;
+                }
+
+                if (line.StartsWith('|', StringComparison.Ordinal))
+                {
+                    rows.Add(line.Split('|', StringSplitOptions.RemoveEmptyEntries).Take(8).DefaultIfEmpty("").ToArray());
+                    continue;
+                }
+
+                Flush();
+                if (line == "---")
+                {
+                    container.Rule();
+                }
+                else if (line.StartsWith('#', StringComparison.Ordinal))
+                {
+                    container.Heading(Math.Clamp(line.TakeWhile(c => c == '#').Count(), 1, 6), line.TrimStart('#'));
+                }
+                else
+                {
+                    container.Paragraph(line, style);
+                }
+            }
+
+            Flush();
+        }
+
+        var lines = text.Split('\n');
+        if ((options & 16) != 0)
+        {
+            flow.TableOfContents();
+        }
+
+        if ((options & 32) != 0)
+        {
+            flow.Columns(2, 10, columns => AddBlocks(columns, lines));
+        }
+        else
+        {
+            AddBlocks(flow, lines);
+        }
+
+        PdfDocument document;
+        try
+        {
+            document = flow.Build();
+        }
+        catch (ArgumentException ex) when (ex.Message.Contains("do not fit", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        FuzzAssert.Equal(document.Pages.Count, read.Pages.Count, "The pages of the flow document did not read back");
+        FuzzAssert.True(read.StructureTree.Exists, "The flow document is not tagged");
+        foreach (var page in read.Pages.Take(16))
+        {
+            foreach (var line in page.ExtractTextLayout().Lines)
+            {
+                // The glyphs of a line can go a little beyond its box (accents, the footer in the margin)
+                FuzzAssert.True(line.Bounds.Left >= 19 && line.Bounds.Right <= size.Width - 19, $"A line is outside of the margins: {line.Text} {line.Bounds}");
+                FuzzAssert.True(line.Bounds.Bottom >= 0 && line.Bounds.Top <= size.Height, $"A line is outside of the page: {line.Text} {line.Bounds}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The layout of its pages has nodes in bounds, and tagging the document does not change what
+    /// its first page shows (only marked-content operators are added): the rendering is the same, the document reads back
+    /// with a structure tree, and it cannot be tagged twice.
+    /// </summary>
+    private static void AutoTag(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+            if (document.Pages.Count is 0 or > 8 || document.StructureTree.Exists)
+                return;
+
+            foreach (var page in document.ExtractLayout())
+            {
+                foreach (var node in page.Nodes)
+                {
+                    FuzzAssert.True(double.IsFinite(node.Bounds.Width) && node.Bounds.Width >= 0, $"The bounds of a {node.Kind} are not valid");
+                    FuzzAssert.True(node.Kind != PdfLayoutNodeKind.Heading || node.Level is >= 1 and <= 6, "The level of a heading is out of range");
+                }
+            }
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        byte[] before;
+        try
+        {
+            using var image = Rendering.PdfRenderer.RenderPage(document.Pages[0], RenderOptions);
+            before = Pixels(image);
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            document.AutoTag();
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            // Already marked as tagged
+            return;
+        }
+
+        var read = PdfDocument.Open(document.ToByteArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+        FuzzAssert.True(read.StructureTree.Exists, "The tagged document has no structure tree");
+        using (var image = Rendering.PdfRenderer.RenderPage(read.Pages[0], RenderOptions))
+        {
+            FuzzAssert.True(Pixels(image).AsSpan().SequenceEqual(before), "Tagging the document changed what its first page shows");
+        }
+
+        var tagged = false;
+        try
+        {
+            read.AutoTag();
+        }
+        catch (InvalidOperationException)
+        {
+            tagged = true;
+        }
+
+        FuzzAssert.True(tagged, "A tagged document was tagged again");
+    }
+
+    private static byte[] Pixels(Imaging.Image<Imaging.Rgba32> image)
+    {
+        var result = new byte[image.Width * image.Height * 4];
+        var index = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                result[index++] = pixel.R;
+                result[index++] = pixel.G;
+                result[index++] = pixel.B;
+                result[index++] = pixel.A;
+            }
+        }
+
+        return result;
+    }
+
+    private static IEnumerable<FuzzSeed> GetFlowLayoutSeeds()
+    {
+        yield return FuzzSeed.FromText("document", [0x11], "# Title\nA paragraph of text that is long enough to be broken into several lines of the page.\n- One\n- Two\n|a|b\n|c|d\n|e\n---\n## Section\nEnd.");
+        yield return FuzzSeed.FromText("columns", [0x26], "# Columns\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\n- item");
+        yield return FuzzSeed.FromText("long-word", [0x00], new string('W', 200));
     }
 
     private static IEnumerable<FuzzSeed> GetHeaderFooterSeeds()

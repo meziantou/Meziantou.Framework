@@ -391,7 +391,10 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
     private void Collect(PdfDictionary node, PdfReference? reference, HashSet<PdfObject> visited, int depth)
     {
         if (!visited.Add(node) || depth > MaxTreeDepth)
+        {
+            ReportInvalidNode(reference, depth > MaxTreeDepth ? "The page tree is nested too deeply: the node is skipped" : "A node of the page tree is reached twice: it is skipped");
             return;
+        }
 
         if (node.Get<PdfArray>(PdfNames.Kids) is { } kids && !node.IsType(PdfNames.Page))
         {
@@ -401,9 +404,18 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
                 {
                     Collect(child, kid as PdfReference, visited, depth + 1);
                 }
+                else
+                {
+                    ReportInvalidNode(reference, "A child of a node of the page tree is not a dictionary: it is skipped");
+                }
             }
 
             return;
+        }
+
+        if (reference is null)
+        {
+            ReportInvalidNode(reference, "A page is not an indirect object: it is skipped");
         }
 
         // A leaf: a page, even without /Type (some producers omit it). A page must be an indirect object.
@@ -414,6 +426,8 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
             _pagesByReference[reference] = page;
         }
     }
+
+    private void ReportInvalidNode(PdfReference? reference, string message) => _document.Reader?.Diagnostics.Report(PdfDiagnosticKind.InvalidPageTreeNode, message, objectNumber: reference?.ObjectNumber);
 
     private PdfReference GetOrCreateRoot()
     {

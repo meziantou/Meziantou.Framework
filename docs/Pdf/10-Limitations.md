@@ -9,8 +9,11 @@ description: What the library does not do, so that you can plan around it.
   algorithm, without a dictionary: the languages written without spaces between their words (Thai, Lao, Khmer,
   Burmese) are broken between their characters only when a word does not fit. It does not apply the bidirectional
   algorithm to the lines.
-- The cells of a table hold text: no image, nested table or cell that spans several rows. The justified lines stretch
-  the spaces only.
+- The cells of a table of the content builder ([PdfTable](cref:Meziantou.Framework.Pdf.PdfTable)) hold text: no image, nested table or cell that spans
+  several rows; the tables of a flow document have them. The justified lines stretch the spaces only.
+- A flow document ([PdfFlowDocument](cref:Meziantou.Framework.Pdf.PdfFlowDocument)) does not hyphenate, nor break with a dictionary. It reorders the
+  runs of a right-to-left paragraph, not the characters of different directions inside a run of a standard font. A
+  table row taller than a page goes beyond the bottom margin. It has no form fields.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.
@@ -29,6 +32,12 @@ description: What the library does not do, so that you can plan around it.
   from the blank spaces of the page: it reads them from left to right, and keeps the order of the content for the text
   written vertically.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- The folders of a portfolio are read, not created, and the files are not associated with their folder. The actions
+  without a class of their own (threads, sounds, movies, renditions, transitions, 3D views, rich media) are read as
+  dictionaries. The library does not run the actions, except the scripts of the form fields
+  ([Form scripts](05-ReadingAndModifying/10-FormScripts.md)).
+- A document opened over HTTP reads its whole page tree, so the dictionaries of all its pages are downloaded when the
+  pages are first used; the hint tables of a linearized file are not read.
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
 - A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and
@@ -52,8 +61,11 @@ description: What the library does not do, so that you can plan around it.
 
 ## Converting to PDF/A
 
-- [ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) converts to PDF/A-2 and PDF/A-3, levels b and u. It does not tag documents
-  (level a), and does not convert to PDF/A-1, which has no transparency, or to PDF/A-4.
+- [ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) converts to PDF/A-2 and PDF/A-3, levels b and u, and level a for a document
+  that is tagged ([AutoTag](cref:Meziantou.Framework.Pdf.PdfDocument.AutoTag) tags one, from a guess of its layout). It does not convert to PDF/A-1, which
+  has no transparency, or to PDF/A-4.
+- [AutoTag](cref:Meziantou.Framework.Pdf.PdfDocument.AutoTag) puts a text operator in one element, does not reorder the content, and finds the tables from their
+  rules only: see [Tagging existing documents](08-AccessibilityAndArchiving/06-AutoTagging.md#limits).
 - It embeds substitutes for the Latin standard fonts only, and has no CMYK profile: see
   [What it cannot fix](08-AccessibilityAndArchiving/04-ConvertingToPdfA.md#what-it-cannot-fix).
 
@@ -74,6 +86,9 @@ description: What the library does not do, so that you can plan around it.
 - The halftones are ignored unless the options ask for them. They are then applied to the red, green and blue
   components of the image, to fully opaque objects only; the screens of the other colorants, `AccurateScreens` and the
   named device halftones are not used (see [Halftones](06-Rendering/05-Halftones.md)).
+- [FlattenAnnotations](cref:Meziantou.Framework.Pdf.PdfDocument.FlattenAnnotations) draws the appearances in the rectangles of the annotations: the `NoZoom` and
+  `NoRotate` flags are not applied. The appearances [UpdateAppearance](cref:Meziantou.Framework.Pdf.PdfAnnotation.UpdateAppearance) draws for the free texts use the standard 14
+  fonts, and draw the borders of the shapes without their cloudy effect.
 - The appearances generated for the annotations that have none are simple: their text is not wrapped, a rich text value
   is drawn with the standard 14 fonts, and the alignment of a text is estimated without the metrics of its font (see
   [Layers and annotations](06-Rendering/04-LayersAndAnnotations.md)).

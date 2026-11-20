@@ -4,7 +4,8 @@ description: Turn an existing PDF document into a PDF/A-2 or PDF/A-3 document, s
 ---
 
 [PdfDocument.ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) changes an existing document, such as a file a user sends, so that it can be saved as
-PDF/A-2b, PDF/A-2u, PDF/A-3b or PDF/A-3u. It removes what PDF/A does not allow and completes what it needs, without
+PDF/A-2b, PDF/A-2u, PDF/A-3b or PDF/A-3u, and PDF/A-2a or PDF/A-3a when it is tagged ([Tagging existing documents](06-AutoTagging.md)
+tags one). It removes what PDF/A does not allow and completes what it needs, without
 moving anything on the pages, then checks the document as the save does:
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_ConvertToPdfA;format=md-fenced-code-block;dedent=true -->
@@ -62,7 +63,7 @@ The conversion reports these, and does not set the level:
 - DeviceCMYK without a CMYK output intent: pass the profile of the printing condition in
   [OutputIntentProfile](cref:Meziantou.Framework.Pdf.PdfAConversionOptions.OutputIntentProfile).
 - An annotation without appearance that the library cannot draw, such as a note or a stamp: remove it.
-- For the level u, text whose font gives no Unicode value: convert to the level b.
+- For the levels u and a, text whose font gives no Unicode value: convert to the level b.
 - A stream whose data is in an external file, or encoded with LZW data that cannot be decoded.
 
 The conversion is not a validator: it fixes and checks what the save checks (see [PDF/A](03-PdfA.md#what-the-save-checks)).

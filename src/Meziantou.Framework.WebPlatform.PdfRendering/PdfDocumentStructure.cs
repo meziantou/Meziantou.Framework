@@ -259,23 +259,21 @@ internal sealed class PdfDocumentStructure
 
             case "TH" or "TD":
             {
-                var attributes = new PdfDictionary { [PdfName.Create("O")] = PdfName.Create("Table") };
                 if (role == "TH")
                 {
-                    attributes[PdfName.Create("Scope")] = PdfName.Create(GetHeaderScope(element));
+                    structureElement.SetAttribute("Table", "Scope", PdfName.Create(GetHeaderScope(element)));
                 }
 
                 if (TryGetSpan(element, "rowspan", out var rowSpan))
                 {
-                    attributes[PdfName.Create("RowSpan")] = PdfInteger.Get(rowSpan);
+                    structureElement.SetAttribute("Table", "RowSpan", PdfInteger.Get(rowSpan));
                 }
 
                 if (TryGetSpan(element, "colspan", out var colSpan))
                 {
-                    attributes[PdfName.Create("ColSpan")] = PdfInteger.Get(colSpan);
+                    structureElement.SetAttribute("Table", "ColSpan", PdfInteger.Get(colSpan));
                 }
 
-                structureElement.Dictionary[PdfName.Create("A")] = attributes;
                 break;
             }
         }

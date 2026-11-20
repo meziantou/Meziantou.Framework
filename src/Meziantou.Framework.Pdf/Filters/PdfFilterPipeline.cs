@@ -76,7 +76,7 @@ internal static class PdfFilterPipeline
     /// <param name="imageFilter">The image filter that was not applied, and its parameters.</param>
     public static byte[] Decode(PdfStream stream, bool stopBeforeImageFilters, out (PdfName Name, PdfDictionary? Parameters)? imageFilter)
     {
-        return Decode(stream.EncodedData, stream.Dictionary, stream.DecodeLimits, stopBeforeImageFilters, out imageFilter);
+        return Decode(stream.EncodedData, stream.Dictionary, stream.DecodeLimits, stopBeforeImageFilters, out imageFilter, stream);
     }
 
     /// <summary>Decodes data with the filters of a dictionary (a stream or an inline image).</summary>
@@ -93,6 +93,9 @@ internal static class PdfFilterPipeline
     /// <exception cref="UnsupportedPdfFeatureException">A filter is unknown or not supported.</exception>
     /// <exception cref="PdfResourceLimitException">The decoded data exceeds the limits.</exception>
     public static byte[] Decode(ReadOnlyMemory<byte> data, PdfDictionary dictionary, PdfDecodeLimits limits, bool stopBeforeImageFilters, out (PdfName Name, PdfDictionary? Parameters)? imageFilter)
+        => Decode(data, dictionary, limits, stopBeforeImageFilters, out imageFilter, source: null);
+
+    private static byte[] Decode(ReadOnlyMemory<byte> data, PdfDictionary dictionary, PdfDecodeLimits limits, bool stopBeforeImageFilters, out (PdfName Name, PdfDictionary? Parameters)? imageFilter, object? source)
     {
         imageFilter = null;
         var filters = GetFilters(dictionary);
@@ -113,7 +116,7 @@ internal static class PdfFilterPipeline
 
             current = filter.Value switch
             {
-                "FlateDecode" => Predictor.Decode(FlateFilter.Decode(input, limit), filterParameters, limit),
+                "FlateDecode" => Predictor.Decode(DecodeFlate(input, limit, limits, source ?? dictionary), filterParameters, limit),
                 "LZWDecode" => Predictor.Decode(LzwFilter.Decode(input.Span, (int)(filterParameters?.GetInteger(PdfNames.EarlyChange, 1) ?? 1), limit), filterParameters, limit),
                 "ASCIIHexDecode" => AsciiHexFilter.Decode(input.Span, limit),
                 "ASCII85Decode" => Ascii85Filter.Decode(input.Span, limit),
@@ -128,5 +131,16 @@ internal static class PdfFilterPipeline
         }
 
         return current ?? data.ToArray();
+    }
+
+    private static byte[] DecodeFlate(ReadOnlyMemory<byte> input, long limit, PdfDecodeLimits limits, object source)
+    {
+        var result = FlateFilter.Decode(input, limit, out var isDamaged);
+        if (isDamaged)
+        {
+            limits.Diagnostics?.Report(source, PdfDiagnosticKind.DamagedStreamData, "The Flate data of a stream is damaged: the bytes decoded before the damage are kept");
+        }
+
+        return result;
     }
 }

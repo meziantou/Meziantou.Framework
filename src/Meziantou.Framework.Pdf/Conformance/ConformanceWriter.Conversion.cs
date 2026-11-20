@@ -74,7 +74,8 @@ internal static partial class ConformanceWriter
             Change("Removed the XMP metadata: the save writes it again from the document information");
         }
 
-        if (conformance is PdfAConformance.PdfA2U or PdfAConformance.PdfA3U)
+        // The level a includes the level u: the text of every glyph (ISO 19005-2, 6.2.11.7.2)
+        if (conformance is PdfAConformance.PdfA2U or PdfAConformance.PdfA3U or PdfAConformance.PdfA2A or PdfAConformance.PdfA3A)
         {
             var pageNumber = 0;
             foreach (var page in document.Pages)
@@ -82,7 +83,7 @@ internal static partial class ConformanceWriter
                 pageNumber++;
                 if (TextExtractor.CountGlyphsWithoutText(page) > 0)
                 {
-                    violations.Add($"Page {pageNumber} shows glyphs whose fonts give no Unicode text: the level u needs the text of every glyph (use the level b)");
+                    violations.Add($"Page {pageNumber} shows glyphs whose fonts give no Unicode text: the levels u and a need the text of every glyph (use the level b)");
                 }
             }
         }

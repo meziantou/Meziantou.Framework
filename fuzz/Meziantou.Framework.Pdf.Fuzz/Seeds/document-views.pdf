@@ -1,0 +1,96 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /PageLayout /TwoPageRight /PageMode /UseOC /Outlines 20 0 R /OpenAction [3 0 R /Fit] /AA << /WC << /S /JavaScript /JS (close) /Next << /S /Named /N /FirstPage >> >> >> /ViewerPreferences << /HideToolbar true /DisplayDocTitle true /Direction /R2L /PrintScaling /None /Duplex /Simplex /PrintPageRange [1 1 2 3] /NumCopies 2 /Enforce [/PrintScaling] >> /OCProperties << /OCGs [5 0 R 6 0 R] /D << /BaseState /ON /OFF [6 0 R] /Locked [5 0 R] /RBGroups [[5 0 R 6 0 R]] /Order [5 0 R 6 0 R] >> /Configs [<< /Name (Alt) /BaseState /Unchanged >>] >> /Collection << /Type /Collection /View /T /D (a.txt) /Schema << /Type /CollectionSchema /n << /Subtype /F /N (Name) /O 0 >> /o << /Subtype /S /N (Owner) /O 1 /E true >> >> /Sort << /S [/o /n] /A [true false] >> /Folders 7 0 R >> /Names << /EmbeddedFiles << /Names [(a.txt) 9 0 R] >> >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /AA << /O << /S /Named /N /LastPage >> >> /Annots [4 0 R 11 0 R 12 0 R 13 0 R] >>
+endobj
+4 0 obj
+<< /Type /Annot /Subtype /Link /Rect [0 0 10 10] /OC 5 0 R /A << /S /GoToR /F (other.pdf) /D [2 /Fit] /NewWindow true /Next [<< /S /URI /URI (https://example.com) >> << /S /Thread /D 0 >>] >> >>
+endobj
+5 0 obj
+<< /Type /OCG /Name (Notes) /Intent [/View /Design] >>
+endobj
+6 0 obj
+<< /Type /OCG /Name (Draft) >>
+endobj
+7 0 obj
+<< /Type /Folder /ID 1 /Name (Root) /Child 8 0 R >>
+endobj
+8 0 obj
+<< /Type /Folder /ID 2 /Name (Sub) /Next 8 0 R /Child 7 0 R >>
+endobj
+9 0 obj
+<< /Type /Filespec /F (a.txt) /UF (a.txt) /EF << /F 10 0 R >> /CI << /o (Finance) /n << /D (a) /P (x) >> >> >>
+endobj
+10 0 obj
+<< /Type /EmbeddedFile /Length 3 >>
+stream
+abc
+endstream
+endobj
+11 0 obj
+<< /Type /Annot /Subtype /Link /Rect [0 0 10 10] /A << /S /SubmitForm /F << /FS /URL /F (https://example.com/s) >> /Fields [(a) 14 0 R] /Flags 36 >> >>
+endobj
+12 0 obj
+<< /Type /Annot /Subtype /Link /Rect [0 0 10 10] /A << /S /SetOCGState /State [/OFF 5 0 R /Toggle 6 0 R /ON] >> >>
+endobj
+13 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (b) /Rect [0 0 10 10] /A << /S /Hide /T [(a) 13 0 R] /H false >> /AA << /E << /S /ResetForm /Fields [(a)] /Flags 1 >> /K << /S /ImportData /F (d.fdf) >> /Fo << /S /Launch /F << /UF (app.exe) >> >> /Bl << /S /GoToE /T << /R /C /N (e.pdf) >> >> >> >>
+endobj
+14 0 obj
+<< /T (child) /Parent 15 0 R >>
+endobj
+15 0 obj
+<< /T (parent) >>
+endobj
+20 0 obj
+<< /Type /Outlines /First 21 0 R /Last 21 0 R /Count 1 >>
+endobj
+21 0 obj
+<< /Title (Reset) /Parent 20 0 R /A << /S /ResetForm >> >>
+endobj
+xref
+0 22
+0000000000 65535 f 
+0000000015 00000 n 
+0000000891 00000 n 
+0000000972 00000 n 
+0000001098 00000 n 
+0000001308 00000 n 
+0000001378 00000 n 
+0000001424 00000 n 
+0000001491 00000 n 
+0000001569 00000 n 
+0000001695 00000 n 
+0000001768 00000 n 
+0000001936 00000 n 
+0000002067 00000 n 
+0000002377 00000 n 
+0000002425 00000 n 
+0000000000 65535 f 
+0000000000 65535 f 
+0000000000 65535 f 
+0000000000 65535 f 
+0000002459 00000 n 
+0000002533 00000 n 
+trailer
+<< /Size 22 /Root 1 0 R >>
+startxref
+2608
+%%EOF
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /PageLayout /OneColumn /PageMode /UseOC /Outlines 20 0 R /OpenAction [3 0 R /Fit] /AA << /WC << /S /JavaScript /JS (close) /Next << /S /Named /N /FirstPage >> >> >> /ViewerPreferences << /HideToolbar true /DisplayDocTitle true /Direction /R2L /PrintScaling /None /Duplex /Simplex /PrintPageRange [1 1 2 3] /NumCopies 2 /Enforce [/PrintScaling] >> /OCProperties << /OCGs [5 0 R 6 0 R] /D << /BaseState /ON /OFF [6 0 R] /Locked [5 0 R] /RBGroups [[5 0 R 6 0 R]] /Order [5 0 R 6 0 R] >> /Configs [<< /Name (Alt) /BaseState /Unchanged >>] >> /Collection << /Type /Collection /View /T /D (a.txt) /Schema << /Type /CollectionSchema /n << /Subtype /F /N (Name) /O 0 >> /o << /Subtype /S /N (Owner) /O 1 /E true >> >> /Sort << /S [/o /n] /A [true false] >> /Folders 7 0 R >> /Names << /EmbeddedFiles << /Names [(a.txt) 9 0 R] >> >> >>
+endobj
+xref
+1 1
+0000003114 00000 n 
+trailer
+<< /Size 22 /Root 1 0 R /Prev 2608 >>
+startxref
+3987
+%%EOF

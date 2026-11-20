@@ -33,3 +33,4 @@ descriptions of the figures, the colors. The library's own tests validate the do
 - [PDF/A](03-PdfA.md): the levels, what each requires, and attached files of PDF/A-3.
 - [Converting to PDF/A](04-ConvertingToPdfA.md): turn an existing document into a PDF/A-2 or PDF/A-3 document.
 - [Inspecting accessibility](05-InspectingAccessibility.md): find the accessibility issues of an existing document.
+- [Tagging existing documents](06-AutoTagging.md): find the layout of untagged pages, and tag the document.

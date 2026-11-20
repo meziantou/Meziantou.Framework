@@ -1,0 +1,93 @@
+%PDF-1.7
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [17 0 R] >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 200] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Contents 19 0 R /Resources << /Font << /F1 20 0 R >> >> /Annots [4 0 R 5 0 R 6 0 R 7 0 R 8 0 R 9 0 R 10 0 R 11 0 R 12 0 R 13 0 R 14 0 R 15 0 R 16 0 R 17 0 R 18 0 R] >>
+endobj
+4 0 obj
+<< /Type /Annot /Subtype /Text /Rect [0 0 20 20] /C [1 1 0] /Name /Key /Open true /State (Accepted) /StateModel (Review) /Popup 5 0 R /NM (n1) /M (D:20240102030405Z) /CA 0.5 >>
+endobj
+5 0 obj
+<< /Type /Annot /Subtype /Popup /Rect [20 20 120 80] /Parent 4 0 R /Open true >>
+endobj
+6 0 obj
+<< /Type /Annot /Subtype /FreeText /Rect [0 100 100 130] /Contents (Free text) /DA (/Helvetica 9 Tf 0 0 1 rg) /Q 2 /CL [10 10 20 20 30 20] /LE /OpenArrow /IT /FreeTextCallout /BS << /W 1 /S /D /D [2 1] >> >>
+endobj
+7 0 obj
+<< /Type /Annot /Subtype /Line /Rect [0 0 100 100] /L [10 20 90 80] /LE [/Circle /ClosedArrow] /C [0 0 1] /IC [1 0 0] /LL 5 /LLE 2 /Cap true >>
+endobj
+8 0 obj
+<< /Type /Annot /Subtype /Square /Rect [0 0 10 10] /C [0 0 1] /IC [0 1 0] /Border [0 0 3 [2 1]] /BE << /S /C /I 1 >> >>
+endobj
+9 0 obj
+<< /Type /Annot /Subtype /Circle /Rect [0 0 10 10] /C [0] /IC [0.5] >>
+endobj
+10 0 obj
+<< /Type /Annot /Subtype /Polygon /Rect [0 0 10 10] /C [1 0 0] /Vertices [0 0 10 0 5 10] >>
+endobj
+11 0 obj
+<< /Type /Annot /Subtype /PolyLine /Rect [0 0 10 10] /C [1 0 0] /Vertices [0 0 10 0 5] /LE [/None /Slash] >>
+endobj
+12 0 obj
+<< /Type /Annot /Subtype /Ink /Rect [0 0 10 10] /C [0 1 0] /InkList [[0 0 1 1] [2 2]] >>
+endobj
+13 0 obj
+<< /Type /Annot /Subtype /Squiggly /Rect [0 0 10 10] /C [1 0 0] /QuadPoints [0 10 10 10 0 0 10 0] /IRT 4 0 R /RT /Group >>
+endobj
+14 0 obj
+<< /Type /Annot /Subtype /Stamp /Rect [100 0 190 40] /Name /Confidential /C [0 0.5 0] >>
+endobj
+15 0 obj
+<< /Type /Annot /Subtype /Caret /Rect [0 0 10 10] /Sy /P >>
+endobj
+16 0 obj
+<< /Type /Annot /Subtype /Redact /Rect [100 140 190 160] /QuadPoints [100 160 190 160 100 140 190 140] /OverlayText (Removed) /Repeat true /IC [0 0 0] >>
+endobj
+17 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Btn /T (check) /Rect [150 50 170 70] /P 3 0 R /AS /On /H /P /MK << /R 450 /BC [1 0 0] /BG [1] /CA (4) /RC (Over) /AC (Down) >> >>
+endobj
+18 0 obj
+<< /Type /Annot /Subtype /Link /Rect [0 180 50 200] /A << /S /URI /URI (https://example.com) >> >>
+endobj
+19 0 obj
+<< /Length 38 >>
+stream
+BT /F1 12 Tf 105 145 Td (Secret) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 21
+0000000000 65535 f 
+0000000015 00000 n 
+0000000097 00000 n 
+0000000178 00000 n 
+0000000391 00000 n 
+0000000583 00000 n 
+0000000679 00000 n 
+0000000902 00000 n 
+0000001061 00000 n 
+0000001196 00000 n 
+0000001282 00000 n 
+0000001390 00000 n 
+0000001515 00000 n 
+0000001620 00000 n 
+0000001759 00000 n 
+0000001864 00000 n 
+0000001940 00000 n 
+0000002110 00000 n 
+0000002294 00000 n 
+0000002409 00000 n 
+0000002498 00000 n 
+trailer
+<< /Size 21 /Root 1 0 R >>
+startxref
+2569
+%%EOF

@@ -4,7 +4,10 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
 
@@ -986,7 +989,6 @@ public sealed class PdfDocumentTests
 
     [Theory]
     [InlineData(PdfAConformance.PdfA1B)]
-    [InlineData(PdfAConformance.PdfA2A)]
     [InlineData(PdfAConformance.PdfA4)]
     [InlineData(PdfAConformance.None)]
     public void ConvertToPdfA_RejectsTheLevelsItDoesNotSupport(PdfAConformance conformance)
@@ -994,6 +996,202 @@ public sealed class PdfDocumentTests
         var document = new PdfDocument();
 
         Assert.Throws<ArgumentOutOfRangeException>(() => document.ConvertToPdfA(conformance));
+    }
+
+    [Fact]
+    public void AutoTagKeepsTheOperatorsAsTheyAre()
+    {
+        const string Content = "q 0.0000004 0 0 0.0000004 0 0 cm 0 0 m 250000000 0 l 250000000 250000000 l f Q\nBT /F1 12 Tf 72 700 Td (Text) Tj ET";
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 800] /Resources << /Font << /F1 4 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(Content))
+            .ToArray();
+        var document = PdfDocument.Open(file);
+        using var before = document.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+
+        document.AutoTag();
+
+        var content = Encoding.Latin1.GetString(document.Pages[0].GetContentData());
+        Assert.Contains("0.0000004 0 0 0.0000004 0 0 cm", content, StringComparison.Ordinal);
+        Assert.Contains("(Text) Tj", content, StringComparison.Ordinal);
+        Assert.Contains("BDC", content, StringComparison.Ordinal);
+        using var after = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        for (var y = 0; y < before.Height; y++)
+        {
+            for (var x = 0; x < before.Width; x++)
+            {
+                if (before.Frames[0][x, y] != after.Frames[0][x, y])
+                    Assert.Fail($"The pixel ({x}, {y}) changed");
+            }
+        }
+    }
+
+    [Fact]
+    public void ConvertToPdfA_LevelANeedsTheTextOfTheGlyphs()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().BeginText().SetFont(font, 10).ShowGlyphs([new PdfGlyph(font.Face.MapCodePoint('A'), 0, 0)]).EndText();
+        document = PdfDocument.Open(document.ToByteArray());
+        document.AutoTag();
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2A);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Violations, violation => violation.Contains("no Unicode text", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExtractLayout_KeepsTheTextBesideATableAndTheFiguresInTheirColumn()
+    {
+        var content = string.Join('\n',
+            "BT /F1 11 Tf 72 720 Td (Left column text.) Tj ET",
+            "BT /F1 11 Tf 72 706 Td (More left text.) Tj ET",
+            "BT /F1 11 Tf 350 720 Td (Right column text.) Tj ET",
+            "BT /F1 11 Tf 350 706 Td (More right text.) Tj ET",
+            "q 50 0 0 50 72 620 cm BI /W 2 /H 2 /CS /G /BPC 8 ID \u0000\u00ff\u0000\u00ff EI Q",
+            "0.5 w 72 500 m 300 500 l S 72 520 m 300 520 l S 72 540 m 300 540 l S 72 500 m 72 540 l S 186 500 m 186 540 l S 300 500 m 300 540 l S",
+            "BT /F1 11 Tf 80 526 Td (Name) Tj ET BT /F1 11 Tf 194 526 Td (Value) Tj ET",
+            "BT /F1 11 Tf 80 506 Td (A) Tj ET BT /F1 11 Tf 194 506 Td (1) Tj ET",
+            "BT /F1 11 Tf 304 526 Td (Note) Tj ET");
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(content))
+            .ToArray();
+
+        var nodes = PdfDocument.Open(file).Pages[0].ExtractLayout().Nodes;
+
+        var left = nodes.ToList().FindIndex(node => node.Text.StartsWith("Left", StringComparison.Ordinal));
+        var right = nodes.ToList().FindIndex(node => node.Text.StartsWith("Right", StringComparison.Ordinal));
+        var figure = nodes.ToList().FindIndex(node => node.Kind == PdfLayoutNodeKind.Figure);
+        Assert.True(left < figure && figure < right, string.Join(" | ", nodes.Select(node => node.Kind + ":" + node.Text)));
+        var table = Assert.Single(nodes, node => node.Kind == PdfLayoutNodeKind.Table);
+        Assert.Equal(["Name", "Value", "A", "1"], table.Children.Select(cell => cell.Text));
+        Assert.Contains(nodes, node => node.Kind == PdfLayoutNodeKind.Paragraph && node.Text.Contains("Note", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ConvertToPdfA_LevelANeedsATaggedDocument()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+
+        Assert.Throws<InvalidOperationException>(() => document.ConvertToPdfA(PdfAConformance.PdfA2A));
+        document.AutoTag();
+        Assert.NotNull(document.ConvertToPdfA(PdfAConformance.PdfA3A));
+    }
+
+    [Fact]
+    public void ExtractLayout_FindsTheHeadingsParagraphsListsTablesFiguresAndFooters()
+    {
+        var document = PdfDocument.Open(CreateUntaggedReport());
+
+        var pages = document.ExtractLayout();
+
+        var first = pages[0].Nodes;
+        Assert.Equal([PdfLayoutNodeKind.Heading, PdfLayoutNodeKind.Paragraph, PdfLayoutNodeKind.List, PdfLayoutNodeKind.Table, PdfLayoutNodeKind.Figure, PdfLayoutNodeKind.Footer], first.Select(node => node.Kind));
+        Assert.Equal(1, first[0].Level);
+        Assert.Equal("Annual report", first[0].Text);
+        Assert.Equal("This is the first paragraph of the report.\nIt continues on a second line.", first[1].Text);
+        Assert.Equal(["- First item", "- Second item"], first[2].Children.Select(item => item.Text));
+        Assert.All(first[2].Children, item => Assert.Equal(PdfLayoutNodeKind.ListItem, item.Kind));
+        var cells = first[3].Children;
+        Assert.Equal(["Name", "Value", "A", "1"], cells.Select(cell => cell.Text));
+        Assert.Equal([(0, 0), (0, 1), (1, 0), (1, 1)], cells.Select(cell => (cell.Row, cell.Column)));
+        Assert.NotNull(first[4].Image);
+        Assert.Equal("Page 1", first[5].Text);
+        Assert.Equal([PdfLayoutNodeKind.Paragraph, PdfLayoutNodeKind.Footer], pages[1].Nodes.Select(node => node.Kind));
+
+        // A page alone has no footer: nothing repeats
+        var single = document.Pages[0].ExtractLayout().Nodes;
+        Assert.DoesNotContain(single, node => node.Kind == PdfLayoutNodeKind.Footer);
+        Assert.Contains(single, node => node is { Kind: PdfLayoutNodeKind.Paragraph, Text: "Page 1" });
+    }
+
+    [Fact]
+    public void Example_AutoTag()
+    {
+        var file = CreateUntaggedReport();
+        using var before = PdfDocument.Open(file).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        File.WriteAllBytes("untagged-report.pdf", file);
+
+        #region Pdf_AutoTag
+        var document = PdfDocument.Open("untagged-report.pdf");
+        var result = document.AutoTag(new PdfAutoTagOptions
+        {
+            Language = "en-US",
+            FigureAlternateText = image => "Company logo",
+        });
+        #endregion
+
+        File.Delete("untagged-report.pdf");
+
+        Assert.Equal(1, result.Headings);
+        Assert.Equal(2, result.Paragraphs);
+        Assert.Equal(1, result.Lists);
+        Assert.Equal(1, result.Tables);
+        Assert.Equal(1, result.Figures);
+        Assert.Equal(0, result.FiguresWithoutAlternateText);
+        Assert.True(result.Artifacts > 0);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var root = Assert.Single(read.StructureTree.Elements);
+        Assert.Equal(["H1", "P", "L", "Table", "Figure", "P"], root.Children.Select(element => element.Type));
+        Assert.Equal("Company logo", root.Children[4].AlternateDescription);
+        var table = root.Children[3];
+        Assert.Equal(["TH", "TH"], table.Children[0].Children.Select(cell => cell.Type));
+        Assert.Equal(PdfName.Create("Column"), table.Children[0].Children[0].GetAttribute("Table", "Scope"));
+        Assert.Equal("en-US", read.Language);
+        var report = PdfAccessibilityInspector.Inspect(read);
+        Assert.DoesNotContain(report.Issues, issue => issue.Kind is PdfAccessibilityIssueKind.UntaggedContent or PdfAccessibilityIssueKind.MissingAlternateText);
+
+        // The content is the same: only marked-content operators were added
+        using var after = read.Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        for (var y = 0; y < before.Height; y++)
+        {
+            for (var x = 0; x < before.Width; x++)
+            {
+                if (before.Frames[0][x, y] != after.Frames[0][x, y])
+                    Assert.Fail($"The pixel ({x}, {y}) changed");
+            }
+        }
+
+        Assert.Equal(PdfDocument.Open(file).Pages[0].ExtractText(), read.Pages[0].ExtractText());
+        Assert.Throws<InvalidOperationException>(() => read.AutoTag());
+    }
+
+    private static byte[] CreateUntaggedReport()
+    {
+        var page1 = string.Join('\n',
+            "BT /F2 20 Tf 72 720 Td (Annual report) Tj ET",
+            "BT /F1 11 Tf 72 690 Td (This is the first paragraph of the report.) Tj ET",
+            "BT /F1 11 Tf 72 676 Td (It continues on a second line.) Tj ET",
+            "BT /F1 11 Tf 72 640 Td (- First item) Tj ET",
+            "BT /F1 11 Tf 72 626 Td (- Second item) Tj ET",
+            "0.5 w 72 500 m 300 500 l S 72 520 m 300 520 l S 72 540 m 300 540 l S 72 500 m 72 540 l S 186 500 m 186 540 l S 300 500 m 300 540 l S",
+            "BT /F1 11 Tf 80 526 Td (Name) Tj ET BT /F1 11 Tf 194 526 Td (Value) Tj ET",
+            "BT /F1 11 Tf 80 506 Td (A) Tj ET BT /F1 11 Tf 194 506 Td (1) Tj ET",
+            "q 50 0 0 50 72 400 cm BI /W 2 /H 2 /CS /G /BPC 8 ID \u0000\u00ff\u0000\u00ff EI Q",
+            "BT /F1 9 Tf 280 30 Td (Page 1) Tj ET");
+        var page2 = string.Join('\n',
+            "BT /F1 11 Tf 72 720 Td (The second page has a paragraph.) Tj ET",
+            "BT /F1 9 Tf 280 30 Td (Page 2) Tj ET");
+        return new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R /F2 6 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 7 0 R >>")
+            .Add(4, "<< /Type /Page /Parent 2 0 R /Contents 8 0 R >>")
+            .Add(5, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(6, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>")
+            .Add(7, HandWrittenPdf.Stream(page1))
+            .Add(8, HandWrittenPdf.Stream(page2))
+            .ToArray();
     }
 
     [Fact]

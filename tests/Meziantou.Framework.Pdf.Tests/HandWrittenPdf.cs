@@ -28,6 +28,9 @@ internal sealed class HandWrittenPdf
     /// <summary>Gets or sets a value indicating whether the cross-reference information is a stream (7.5.8) instead of a table.</summary>
     public bool UseXrefStream { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the object stream is compressed with FlateDecode.</summary>
+    public bool CompressObjectStreams { get; set; }
+
     public HandWrittenPdf Add(int number, string body)
     {
         _objects.Add((number, body));
@@ -88,7 +91,21 @@ internal sealed class HandWrittenPdf
 
             var first = Encoding.Latin1.GetByteCount(header.ToString());
             offsets[containerNumber] = output.Length;
-            Write(output, string.Create(CultureInfo.InvariantCulture, $"{containerNumber} 0 obj\n{Stream(header.ToString() + body, $" /Type /ObjStm /N {_compressed.Count} /First {first}")}\nendobj\n"));
+            var data = header.ToString() + body;
+            var filter = "";
+            if (CompressObjectStreams)
+            {
+                using var compressed = new MemoryStream();
+                using (var zlib = new System.IO.Compression.ZLibStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+                {
+                    zlib.Write(Encoding.Latin1.GetBytes(data));
+                }
+
+                data = Encoding.Latin1.GetString(compressed.ToArray());
+                filter = " /Filter /FlateDecode";
+            }
+
+            Write(output, string.Create(CultureInfo.InvariantCulture, $"{containerNumber} 0 obj\n{Stream(data, $" /Type /ObjStm /N {_compressed.Count} /First {first}{filter}")}\nendobj\n"));
             foreach (var number in containers.Keys)
             {
                 offsets.Remove(number);

@@ -65,6 +65,17 @@ public sealed partial class PdfDocument
         }
     }
 
+    private static PdfDocument Create(PdfFileReader reader, PdfReadOptions options)
+    {
+        var document = new PdfDocument(reader);
+        if (options.LoadAllObjects)
+        {
+            document.ValidateStructure();
+        }
+
+        return document;
+    }
+
     /// <summary>Gets the indirect objects of the document.</summary>
     public PdfIndirectObjectCollection Objects { get; }
 
@@ -124,6 +135,122 @@ public sealed partial class PdfDocument
 
     /// <summary>Gets a value indicating whether the cross-reference information of the file was wrong and was rebuilt by scanning the file. A repaired document cannot be saved incrementally.</summary>
     public bool IsRepaired => Reader?.IsRepaired ?? false;
+
+    /// <summary>
+    /// Gets the problems the reader found in the file and repaired: a header after other bytes, wrong offsets, a damaged
+    /// cross-reference table, streams whose length is wrong, objects that cannot be found... An empty list for a document
+    /// that was not read from a file, or a file without problems.
+    /// </summary>
+    /// <remarks>
+    /// The objects are read when they are first used, so the list grows as the document is read: it lists the problems
+    /// found so far. Call <see cref="ValidateStructure"/>, or open the document with
+    /// <see cref="PdfReadOptions.LoadAllObjects"/>, to read the whole file first.
+    /// </remarks>
+    public IReadOnlyList<PdfDiagnostic> Diagnostics => Reader?.Diagnostics.Items ?? [];
+
+    /// <summary>
+    /// Reads every object of the file, the page tree and the data of every stream, so that <see cref="Diagnostics"/> lists
+    /// every problem of the file. A stream that cannot be decoded is reported, not thrown.
+    /// </summary>
+    /// <returns>The diagnostics of the document.</returns>
+    /// <exception cref="PdfResourceLimitException">An object is nested more deeply than <see cref="PdfReadOptions.MaxNestingDepth"/>.</exception>
+    public IReadOnlyList<PdfDiagnostic> ValidateStructure()
+    {
+        if (Reader is not { } reader)
+            return [];
+
+        var failedContainers = new HashSet<int>();
+        var visited = new HashSet<PdfObject>(ReferenceEqualityComparer.Instance);
+        foreach (var entry in Objects.Entries.OrderBy(entry => entry.Reference.ObjectNumber).ToArray())
+        {
+            if (entry.State is not (IndirectObjectState.Unloaded or IndirectObjectState.Loaded))
+                continue;
+
+            // An object of an object stream that exceeds the limits cannot be loaded: it is reported once per container,
+            // and the other objects are validated
+            if (entry.ContainerNumber > 0 && failedContainers.Contains(entry.ContainerNumber))
+                continue;
+
+            PdfObject value;
+            try
+            {
+                value = Objects.Load(entry);
+            }
+            catch (PdfResourceLimitException ex) when (entry.ContainerNumber > 0 && !CanDecodeContainer(entry.ContainerNumber))
+            {
+                failedContainers.Add(entry.ContainerNumber);
+                reader.Diagnostics.Report(PdfDiagnosticKind.UndecodableObjectStream, "The object stream cannot be decoded: " + ex.Message, objectNumber: entry.ContainerNumber);
+                continue;
+            }
+
+            // The references the object contains: a reference with another generation is reported when it is resolved
+            CheckReferences(value, visited, depth: 0);
+            if (value is PdfStream stream)
+            {
+                try
+                {
+                    _ = stream.GetDecodedData();
+                }
+                catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
+                {
+                    reader.Diagnostics.Report(PdfDiagnosticKind.UndecodableStream, "The stream cannot be decoded: " + ex.Message, objectNumber: entry.Reference.ObjectNumber);
+                }
+            }
+        }
+
+        _ = Pages.Count;
+        return Diagnostics;
+    }
+
+    /// <summary>Gets a value indicating whether an object stream decodes within the limits: a member that exceeds a limit itself (its nesting) is not a failure of its container.</summary>
+    private bool CanDecodeContainer(int objectNumber)
+    {
+        if (Objects.GetEntry(objectNumber) is not { } container)
+            return false;
+
+        try
+        {
+            return Objects.Load(container) is PdfStream stream && stream.GetDecodedData() is not null;
+        }
+        catch (PdfException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Looks up the entries of the references of an object, so that the references with another generation than their object are reported (7.3.10).</summary>
+    private void CheckReferences(PdfObject value, HashSet<PdfObject> visited, int depth)
+    {
+        if (depth > (Reader?.Options.MaxNestingDepth ?? PdfReadOptions.Default.MaxNestingDepth))
+            return;
+
+        switch (value)
+        {
+            case PdfReference reference:
+                _ = Objects.GetEntry(reference);
+                break;
+            case PdfStream stream when visited.Add(stream):
+                CheckReferences(stream.Dictionary, visited, depth + 1);
+                break;
+            case PdfDictionary dictionary when visited.Add(dictionary):
+                foreach (var (_, item) in dictionary)
+                {
+                    if (item is not null)
+                    {
+                        CheckReferences(item, visited, depth + 1);
+                    }
+                }
+
+                break;
+            case PdfArray array when visited.Add(array):
+                foreach (var item in array)
+                {
+                    CheckReferences(item, visited, depth + 1);
+                }
+
+                break;
+        }
+    }
 
     /// <summary>Gets the pages of the document.</summary>
     public PdfPageCollection Pages => _pages ??= new PdfPageCollection(this);
@@ -278,7 +405,7 @@ public sealed partial class PdfDocument
     {
         options ??= PdfReadOptions.Default;
         var reader = PdfFileReader.Open(data, options);
-        return new PdfDocument(reader);
+        return Create(reader, options);
     }
 
     /// <summary>Reads a document from a stream. The stream is read to its end and is not closed.</summary>
@@ -328,7 +455,7 @@ public sealed partial class PdfDocument
 
         options ??= PdfReadOptions.Default;
         var reader = PdfFileReader.Open(new StreamPdfInput(stream), options);
-        return new PdfDocument(reader);
+        return Create(reader, options);
     }
 
     /// <summary>Reads a document from a file.</summary>

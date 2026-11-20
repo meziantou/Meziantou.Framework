@@ -26,6 +26,7 @@ public partial class Window
     /// <param name="showDialog">Ignored: there is no find dialog.</param>
     /// <returns>Whether the text was found.</returns>
     /// <seealso href="https://developer.mozilla.org/docs/Web/API/Window/find#syntax"/>
+    [SuppressMessage("Style", "IDE0060:Remove unused parameter", Justification = "The arguments of the API of the browsers: searchInFrames and showDialog are ignored")]
     [Experimental(ExperimentalApis.WindowFind, UrlFormat = ExperimentalApis.UrlFormat)]
     [IdlMember("find", "https://developer.mozilla.org/docs/Web/API/Window/find#syntax")]
     public bool Find(string text = "", bool caseSensitive = false, bool backwards = false, bool wrapAround = false, bool wholeWord = false, bool searchInFrames = false, bool showDialog = false)

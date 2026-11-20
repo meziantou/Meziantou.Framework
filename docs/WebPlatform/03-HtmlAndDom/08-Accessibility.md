@@ -142,6 +142,20 @@ document that the `aria-notify` permissions policy feature disables, are not sen
 are ignored, as when no assistive technology is running.
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/AccessibilityTests.cs;region=WebPlatform_AriaNotify;format=md-fenced-code-block;dedent=true -->
+```csharp
+var notifications = new List<string>();
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    // The notifications that the page sends to the assistive technologies with ariaNotify()
+    AriaNotification = (callbackContext, notification) => notifications.Add($"{notification.Priority}: {notification.Announcement}"),
+});
+var document = context.Navigate(_ => "<p id=status>Saved</p><p id=hidden hidden></p>");
+
+document.QuerySelector("#status")!.AriaNotify("The file is saved");
+document.AriaNotify("Connection lost", new AriaNotificationOptions { Priority = AriaNotifyPriority.High });
+
+Assert.Equal(["Normal: The file is saved", "High: Connection lost"], notifications);
+```
 <!-- endref -->
 
 ## With and without a browsing context

@@ -69,6 +69,20 @@ public sealed class PdfReaderTests
     }
 
     [Fact]
+    public void PreviousSectionWithDamagedTrailerKeepsItsEntries()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Trailer = "[ /Size {size} /Root 1 0 R";
+        var updated = HandWrittenPdf.AppendUpdate(file.ToArray(), [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Prev {prev} >>");
+
+        var document = PdfDocument.Open(updated);
+
+        Assert.False(document.IsRepaired);
+        Assert.Equal("Hello", Assert.Single(document.Pages).ExtractText());
+        Assert.Equal("T", document.Information.Title);
+    }
+
+    [Fact]
     public void WrongOffsetsAreRecovered()
     {
         var file = HandWrittenPdf.CreateSimple();

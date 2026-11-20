@@ -211,7 +211,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                     break;
 
                 var section = ReadSection(offset);
-                if (section is null)
+                if (section is null || (section.IsTrailerDamaged && trailer is null))
                 {
                     if (trailer is null)
                         return false;
@@ -344,8 +344,23 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             }
         }
 
-        if (parser.ParseObject() is not PdfDictionary trailer)
-            return null;
+        PdfObject? trailerObject;
+        try
+        {
+            trailerObject = parser.ParseObject();
+        }
+        catch (InvalidPdfContentException)
+        {
+            trailerObject = null;
+        }
+
+        if (trailerObject is not PdfDictionary trailer)
+        {
+            // The entries of the table are valid: a section reached by a /Prev keeps them, and its trailer, which can end
+            // the file unterminated, gives no entry to inherit. Bytes appended to the file (an incremental update) would
+            // otherwise complete the trailer, and change the objects of the file
+            return new XrefSection(entries, new PdfDictionary(), isStream: false) { IsTrailerDamaged = true };
+        }
 
         // A hybrid file (7.5.8.4): the objects of the cross-reference stream are free or absent in the table
         if (trailer.GetResolved(PdfNames.XRefStm) is PdfInteger xrefStm && xrefStm.Value >= 0 && xrefStm.Value < _input.Length)

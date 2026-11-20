@@ -44,6 +44,13 @@ internal sealed class ObjectGraph
                 {
                     continue;
                 }
+
+                // An indirect object whose value is a reference: the document follows the chain (PdfReference.ResolveIfReference)
+                if (value is PdfReference && item.Depth <= MaxDepth)
+                {
+                    pending.Push((value, item.Container, null, item.Depth + 1));
+                    continue;
+                }
             }
 
             if (value is not (PdfDictionary or PdfArray or PdfStream))

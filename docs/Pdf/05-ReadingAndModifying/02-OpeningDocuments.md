@@ -99,6 +99,8 @@ the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is t
 
 - A repaired document is read and saved in full like any other, but it cannot be saved incrementally.
 - A reference to an object that does not exist is the null object, as the specification says.
+- An older cross-reference table (reached by the `/Prev` of a newer one) whose trailer is damaged keeps its entries:
+  the file is not repaired, and the trailer gives no entry to the newer ones.
 - In a repaired file, a reference whose generation is not the generation of the object resolves to the object when
   the file defines one generation of it only; when it defines several, the reference is the null object.
 - The bytes of a stream whose length is right, such as an uncompressed embedded PDF document, are not taken for objects

@@ -16,13 +16,69 @@ public sealed class TdsServerOptions
     /// <summary>The default value of <see cref="MaxMessageSize"/>.</summary>
     public const int DefaultMaxMessageSize = 16 * 1024 * 1024;
 
+    /// <summary>The default value of <see cref="ProgramName"/>, the name SQL Server reports.</summary>
+    public const string DefaultProgramName = "Microsoft SQL Server";
+
+    // B_VARCHAR stores the length of the program name in one byte (MS-TDS 2.2.7.14)
+    private const int MaxProgramNameLength = byte.MaxValue;
+
     private readonly Lock _tlsCertificateLock = new();
     private int _packetSize = 4096;
     private int _maxMessageSize = DefaultMaxMessageSize;
+    private string _programName = DefaultProgramName;
+    private Version _serverVersion = DefaultServerVersion;
     private X509Certificate2? _tlsCertificate;
     private bool _tlsCertificateLoaded;
 
     internal List<TdsTcpListenerOptions> TcpListeners { get; } = [];
+
+    /// <summary>Gets the default value of <see cref="ServerVersion"/>, the version of SQL Server 2022 (16.0.1000.6).</summary>
+    public static Version DefaultServerVersion { get; } = new(16, 0, 1000, 6);
+
+    /// <summary>Gets or sets the program name the server sends to the clients when they log in.</summary>
+    /// <remarks>Must contain between 1 and 255 characters.</remarks>
+    /// <exception cref="ArgumentException">The value is empty.</exception>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The value is longer than 255 characters.</exception>
+    public string ProgramName
+    {
+        get => _programName;
+        set
+        {
+            ArgumentException.ThrowIfNullOrEmpty(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Length, MaxProgramNameLength, nameof(value));
+
+            _programName = value;
+        }
+    }
+
+    /// <summary>Gets or sets the version the server reports to the clients.</summary>
+    /// <remarks>
+    /// <para>
+    /// Clients and tools read this version to know which features the server supports, and some of them reject
+    /// servers that report an old version. The default value is the version of SQL Server 2022.
+    /// </para>
+    /// <para>
+    /// The login response only contains the major, minor and build numbers, so <c>SqlConnection.ServerVersion</c>
+    /// reports <c>16.00.1000</c> for the default value. The SQL Server Browser responder reports the full version.
+    /// The major and minor numbers must be at most 255, and the build number at most 65535.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">A part of the version is too large to be sent to the clients.</exception>
+    public Version ServerVersion
+    {
+        get => _serverVersion;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Major, byte.MaxValue, nameof(value));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Minor, byte.MaxValue, nameof(value));
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value.Build, ushort.MaxValue, nameof(value));
+
+            _serverVersion = value;
+        }
+    }
 
     /// <summary>Gets or sets the packet size used when writing TDS packets.</summary>
     /// <remarks>

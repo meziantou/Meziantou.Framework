@@ -49,6 +49,7 @@ public static class TdsServerBuilderExtensions
             TdsSqlServerBrowserResponder.Validate(browserOptions);
             builder.Services.AddHostedService(services => new TdsSqlServerBrowserHostedService(
                 browserOptions,
+                options.ServerVersion,
                 tdsListenOptions,
                 services.GetRequiredService<ILogger<TdsSqlServerBrowserHostedService>>()));
         }

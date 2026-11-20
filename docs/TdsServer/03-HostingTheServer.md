@@ -164,10 +164,18 @@ builder.AddTdsServer(options =>
 | [TlsPfxPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPath), [TlsPfxPassword](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPassword) | none | The TLS certificate, as a PFX file. |
 | [TlsPemCertificatePath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPemCertificatePath), [TlsPemPrivateKeyPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPemPrivateKeyPath) | none | The TLS certificate, as PEM files. |
 | [SqlServerBrowser](cref:Meziantou.Framework.Tds.TdsServerOptions.SqlServerBrowser) | none | Answers the SQL Server Browser requests, so clients can connect with an instance name. See [Connect with an instance name](10-ConnectingClients.md#connect-with-an-instance-name). |
+| [ServerVersion](cref:Meziantou.Framework.Tds.TdsServerOptions.ServerVersion) | `16.0.1000.6` ([DefaultServerVersion](cref:Meziantou.Framework.Tds.TdsServerOptions.DefaultServerVersion)) | The version the server reports to the clients, SQL Server 2022 by default. |
+| [ProgramName](cref:Meziantou.Framework.Tds.TdsServerOptions.ProgramName) | `Microsoft SQL Server` ([DefaultProgramName](cref:Meziantou.Framework.Tds.TdsServerOptions.DefaultProgramName)) | The program name the server reports to the clients when they log in, from 1 to 255 characters. |
 
 The server buffers a whole request before it parses it, so [MaxMessageSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MaxMessageSize) bounds the memory a client can make the
 server allocate, including before it logs in. A larger request closes the connection. Raise the limit when clients
 send large SQL batches or parameters.
+
+Clients and tools read the server version to know which features the server supports, and some of them reject a server
+that reports an old version, so the server reports the version of SQL Server 2022 by default. Set
+[ServerVersion](cref:Meziantou.Framework.Tds.TdsServerOptions.ServerVersion) to mimic another version. The login response only contains the major, minor and build numbers,
+which must be at most 255, 255 and 65535: `SqlConnection.ServerVersion` reports `16.00.1000` for the default value. The
+[SQL Server Browser responder](10-ConnectingClients.md#connect-with-an-instance-name) advertises the four parts of the version.
 
 The TLS certificate is loaded when the server starts ([AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer) or [StartAsync](cref:Meziantou.Framework.Tds.TdsServer.StartAsync)): a missing file or an invalid
 combination of options throws there, not on the first connection.

@@ -8,20 +8,22 @@ namespace Meziantou.Framework.Tds.Hosting;
 internal sealed class TdsSqlServerBrowserHostedService : IHostedService, IDisposable
 {
     private readonly TdsSqlServerBrowserOptions _options;
+    private readonly Version _serverVersion;
     private readonly IReadOnlyList<ListenOptions> _listenOptions;
     private readonly ILogger<TdsSqlServerBrowserHostedService> _logger;
     private TdsSqlServerBrowserResponder? _responder;
 
-    public TdsSqlServerBrowserHostedService(TdsSqlServerBrowserOptions options, IReadOnlyList<ListenOptions> listenOptions, ILogger<TdsSqlServerBrowserHostedService> logger)
+    public TdsSqlServerBrowserHostedService(TdsSqlServerBrowserOptions options, Version serverVersion, IReadOnlyList<ListenOptions> listenOptions, ILogger<TdsSqlServerBrowserHostedService> logger)
     {
         _options = options;
+        _serverVersion = serverVersion;
         _listenOptions = listenOptions;
         _logger = logger;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
-        _responder = TdsSqlServerBrowserResponder.Start(_options, GetTcpPort, _logger);
+        _responder = TdsSqlServerBrowserResponder.Start(_options, _serverVersion, GetTcpPort, _logger);
         return Task.CompletedTask;
     }
 

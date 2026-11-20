@@ -77,7 +77,7 @@ public sealed class TdsServer : IDisposable
             if (_options.SqlServerBrowser is { } browserOptions)
             {
                 var tcpPort = Ports[0];
-                _browserResponder = TdsSqlServerBrowserResponder.Start(browserOptions, () => tcpPort, _logger);
+                _browserResponder = TdsSqlServerBrowserResponder.Start(browserOptions, _options.ServerVersion, () => tcpPort, _logger);
             }
         }
         catch

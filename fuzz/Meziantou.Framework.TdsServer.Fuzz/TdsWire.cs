@@ -361,8 +361,20 @@ internal static class TdsWire
 
                     break;
 
-                case 0xAD or 0xE3:
-                    // LOGINACK, ENVCHANGE
+                case 0xAD:
+                    var loginAck = new Reader(reader.ReadBytes(reader.ReadUInt16()));
+                    _ = loginAck.ReadByte(); // interface
+                    _ = loginAck.ReadUInt32(); // TDS version
+                    var programName = loginAck.ReadUtf16(loginAck.ReadByte() * 2);
+                    var major = loginAck.ReadByte();
+                    var minor = loginAck.ReadByte();
+                    var build = BinaryPrimitives.ReadUInt16BigEndian(loginAck.ReadBytes(2));
+                    FuzzAssert.True(loginAck.IsEmpty, "The LOGINACK token is longer than its fields");
+                    result.LoginAck = (programName, new Version(major, minor, build));
+                    break;
+
+                case 0xE3:
+                    // ENVCHANGE
                     _ = reader.ReadBytes(reader.ReadUInt16());
                     break;
 
@@ -732,6 +744,8 @@ internal static class TdsWire
         public List<DecodedResultSet> ResultSets { get; } = [];
 
         public List<ushort> DoneStatuses { get; } = [];
+
+        public (string ProgramName, Version Version)? LoginAck { get; set; }
     }
 
     public sealed class DecodedResultSet

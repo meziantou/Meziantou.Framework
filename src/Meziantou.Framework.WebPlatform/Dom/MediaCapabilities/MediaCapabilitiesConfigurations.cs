@@ -319,10 +319,10 @@ public abstract class MediaCapabilitiesInfo
 [IdlInterface("MediaCapabilitiesDecodingInfo", "https://w3c.github.io/media-capabilities/#dictdef-mediacapabilitiesdecodinginfo")]
 public sealed class MediaCapabilitiesDecodingInfo : MediaCapabilitiesInfo
 {
-    /// <summary>Gets the access to the key system of a supported encrypted configuration, or null. Encrypted Media Extensions are not implemented: it is always null.</summary>
+    /// <summary>Gets the access to the key system of a supported encrypted configuration (Clear Key), or null.</summary>
     /// <seealso href="https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesdecodinginfo-keysystemaccess"/>
     [IdlMember("keySystemAccess", "https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesdecodinginfo-keysystemaccess")]
-    public object? KeySystemAccess { get; init; }
+    public MediaKeySystemAccess? KeySystemAccess { get; init; }
 
     /// <summary>Gets the configuration.</summary>
     /// <seealso href="https://w3c.github.io/media-capabilities/#dom-mediacapabilitiesdecodinginfo-configuration"/>

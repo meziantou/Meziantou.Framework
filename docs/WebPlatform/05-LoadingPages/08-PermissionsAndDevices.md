@@ -934,10 +934,11 @@ private sealed class WebMMediaBackend : MediaBackend
 Without a backend, nothing is supported. The library has no performance model: a supported configuration is `smooth`,
 and it is not `powerEfficient`, since the library cannot tell whether a backend uses hardware codecs. A `colorGamut` or
 a `transferFunction` must match the color space of a VP9 or AV1 codec string (BT.709 when the string does not give it),
-and a video with HDR metadata (`hdrMetadataType`) is not supported, as the rendering is in sRGB. Encrypted Media
-Extensions are not implemented: a configuration with a `keySystemConfiguration` is validated (it is rejected with a
-`SecurityError` in a context that is not secure, and with an `InvalidStateError` in a worker), then reported as not
-supported, with a null `keySystemAccess`. .NET code calls
+and a video with HDR metadata (`hdrMetadataType`) is not supported, as the rendering is in sRGB. A configuration with
+a `keySystemConfiguration` is rejected with a `SecurityError` in a context that is not secure, and with an
+`InvalidStateError` in a worker; otherwise it is checked by Encrypted Media Extensions (the Clear Key key system, with
+the media types that the media backend plays): a supported configuration has a `keySystemAccess`, the
+`MediaKeySystemAccess` that `requestMediaKeySystemAccess()` would give. .NET code calls
 [DecodingInfo](cref:Meziantou.Framework.WebPlatform.Dom.MediaCapabilities.DecodingInfo) and
 [EncodingInfo](cref:Meziantou.Framework.WebPlatform.Dom.MediaCapabilities.EncodingInfo) on
 [Navigator.MediaCapabilities](cref:Meziantou.Framework.WebPlatform.Dom.Navigator.MediaCapabilities).

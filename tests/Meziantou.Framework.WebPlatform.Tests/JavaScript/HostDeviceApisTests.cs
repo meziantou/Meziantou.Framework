@@ -3890,14 +3890,21 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
-    public async Task MediaCapabilities_KeySystem_IsNotSupported()
+    public async Task MediaCapabilities_KeySystem_IsCheckedByEncryptedMediaExtensions()
     {
         var document = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() });
-        const string Script = """decode([{ type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey' } }, { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey', audio: {} } }])""";
+        const string Script = """
+            decode([
+              { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey' } },
+              { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'com.example.unknown' } },
+              { type: 'file', video: video('video/webm; codecs="vp8"'), keySystemConfiguration: { keySystem: 'org.w3.clearkey', audio: {} } },
+            ])
+            """;
 
-        Assert.Equal("false,false,false,|TypeError", await RunAsync(document, Script));
+        // Clear Key gives the access to the key system that requestMediaKeySystemAccess() gives; another key system is not supported
+        Assert.Equal("true,true,false,[object MediaKeySystemAccess]|false,false,false,|TypeError", await RunAsync(document, Script));
         var insecure = Load("<script>" + MediaCapabilitiesScript + "</script>", new BrowsingContextOptions { MediaBackend = new WebMMediaBackend() }, url: "http://example.com/");
-        Assert.Equal("SecurityError|TypeError", await RunAsync(insecure, Script));
+        Assert.Equal("SecurityError|SecurityError|TypeError", await RunAsync(insecure, Script));
     }
 
     #region WebPlatform_MediaCapabilitiesBackend

@@ -26,8 +26,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// Without a backend, nothing is supported. There is no performance model: a supported configuration is smooth, and not
 /// power efficient (the library cannot tell whether a backend uses hardware codecs). A <c>colorGamut</c> or a
 /// <c>transferFunction</c> must match the color space of a VP9 or AV1 codec string (BT.709 when the string does not give
-/// it), and a video with HDR metadata is not supported (the rendering is in sRGB). Encrypted Media Extensions are not
-/// implemented: a configuration with a key system is not supported.
+/// it), and a video with HDR metadata is not supported (the rendering is in sRGB). A configuration with a key system is
+/// checked by Encrypted Media Extensions (Clear Key): a supported one gets a <see cref="MediaKeySystemAccess"/>.
 /// </summary>
 /// <seealso href="https://w3c.github.io/media-capabilities/#mediacapabilities"/>
 [IdlInterface("MediaCapabilities", "https://w3c.github.io/media-capabilities/#mediacapabilities")]
@@ -62,7 +62,15 @@ public sealed class MediaCapabilities
         }
 
         var supported = MediaCapabilitiesSupport.IsSupported(_global, configuration);
-        return Resolve(new MediaCapabilitiesDecodingInfo { Supported = supported, Smooth = supported, PowerEfficient = false, KeySystemAccess = null, Configuration = configuration });
+        MediaKeySystemAccess? keySystemAccess = null;
+        if (configuration.KeySystemConfiguration is { } keySystem && _global is Window window)
+        {
+            // https://w3c.github.io/media-capabilities/#is-encrypted-decode-supported: the access to the key system (Clear Key)
+            keySystemAccess = MediaCapabilitiesSupport.GetKeySystemAccess(window, configuration, keySystem);
+            supported = keySystemAccess is not null && MediaCapabilitiesSupport.IsSupported(_global, configuration, ignoreKeySystem: true);
+        }
+
+        return Resolve(new MediaCapabilitiesDecodingInfo { Supported = supported, Smooth = supported, PowerEfficient = false, KeySystemAccess = keySystemAccess, Configuration = configuration });
     }
 
     /// <summary>Returns whether the user agent can encode media with a configuration (https://w3c.github.io/media-capabilities/#dom-mediacapabilities-encodinginfo).</summary>

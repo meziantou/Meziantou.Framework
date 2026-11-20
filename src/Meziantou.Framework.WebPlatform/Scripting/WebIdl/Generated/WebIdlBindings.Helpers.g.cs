@@ -2605,7 +2605,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "smooth", r.FromBoolean(value.Smooth));
         r.SetMember(result, "supported", r.FromBoolean(value.Supported));
         r.SetMember(result, "configuration", (value.Configuration is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaDecodingConfiguration(r, dictionaryValue) : r.Adapter.Null));
-        r.SetMember(result, "keySystemAccess", r.ToJs((object?)value.KeySystemAccess));
+        r.SetMember(result, "keySystemAccess", r.Wrap(value.KeySystemAccess));
         return result;
     }
 

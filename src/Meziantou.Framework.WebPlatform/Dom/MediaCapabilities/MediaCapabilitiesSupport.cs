@@ -117,16 +117,46 @@ internal static class MediaCapabilitiesSupport
     }
 
     /// <summary>Returns whether a configuration that is valid is supported by the backends of a global object.</summary>
-    public static bool IsSupported(GlobalScope global, MediaDecodingConfiguration configuration)
+    public static bool IsSupported(GlobalScope global, MediaDecodingConfiguration configuration, bool ignoreKeySystem = false)
     {
-        // https://w3c.github.io/media-capabilities/#is-encrypted-decode-supported: no key system is supported
-        if (configuration.KeySystemConfiguration is not null)
+        // An encrypted configuration is checked with its key system (see GetKeySystemAccess)
+        if (configuration.KeySystemConfiguration is not null && !ignoreKeySystem)
             return false;
 
         if (configuration.Video is { } video && !IsSupported(global, video, configuration.Type))
             return false;
 
         return configuration.Audio is not { } audio || IsSupported(global, audio, configuration.Type);
+    }
+
+    /// <summary>
+    /// Returns the access to the key system of an encrypted configuration (https://w3c.github.io/media-capabilities/#is-encrypted-decode-supported),
+    /// or null when the key system or the configuration is not supported: the configuration of Encrypted Media Extensions
+    /// is built from the one of Media Capabilities, then checked by the Get Supported Configuration algorithm.
+    /// </summary>
+    public static MediaKeySystemAccess? GetKeySystemAccess(Window window, MediaDecodingConfiguration configuration, MediaCapabilitiesKeySystemConfiguration keySystem)
+    {
+        if (!KeySystemConfiguration.IsSupportedKeySystem(keySystem.KeySystem) || !PermissionsPolicyAlgorithms.IsAllowedToUse(window.Document, PolicyControlledFeature.EncryptedMedia))
+            return null;
+
+        var candidate = new MediaKeySystemConfiguration
+        {
+            InitDataTypes = keySystem.InitDataType.Length > 0 ? [keySystem.InitDataType] : [],
+            DistinctiveIdentifier = ParseRequirement(keySystem.DistinctiveIdentifier),
+            PersistentState = ParseRequirement(keySystem.PersistentState),
+            SessionTypes = keySystem.SessionTypes,
+            AudioCapabilities = configuration.Audio is { } audio ? [new MediaKeySystemMediaCapability { ContentType = audio.ContentType, Robustness = keySystem.Audio?.Robustness ?? "", EncryptionScheme = keySystem.Audio?.EncryptionScheme }] : [],
+            VideoCapabilities = configuration.Video is { } video ? [new MediaKeySystemMediaCapability { ContentType = video.ContentType, Robustness = keySystem.Video?.Robustness ?? "", EncryptionScheme = keySystem.Video?.EncryptionScheme }] : [],
+        };
+        var supported = KeySystemConfiguration.GetSupportedConfiguration(candidate, window.Options.MediaBackend, canPersistState: !window.Document.Origin.IsOpaque);
+        return supported is null ? null : new MediaKeySystemAccess(window, keySystem.KeySystem, supported);
+
+        static MediaKeysRequirement ParseRequirement(string value) => value switch
+        {
+            "required" => MediaKeysRequirement.Required,
+            "not-allowed" => MediaKeysRequirement.NotAllowed,
+            _ => MediaKeysRequirement.Optional,
+        };
     }
 
     /// <summary>Returns whether a configuration that is valid is supported by the backends of a global object.</summary>

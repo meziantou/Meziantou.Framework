@@ -449,9 +449,15 @@ internal abstract class RarUnpacker
         }
     }
 
-    /// <summary>Throws when a match refers to bytes before the start of the stream or out of the window.</summary>
+    /// <summary>
+    /// Throws when a match refers to bytes before the start of the stream or out of the window, or has a distance of 0 (a
+    /// repeated distance that no match set yet), which <see cref="CopyMatch"/> cannot copy.
+    /// </summary>
     private protected void CheckDistance(ulong distance, long position)
     {
+        if (distance is 0)
+            throw new InvalidDataException("The compressed data contain a match whose distance is 0.");
+
         if (distance > (ulong)position || distance > (ulong)Window.Length)
             throw new InvalidDataException("The compressed data refer to data before the start of the dictionary.");
     }

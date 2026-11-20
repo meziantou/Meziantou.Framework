@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 66 | 69 | 0 | 96% |
+| [Stable](#stable-tests) | 68 | 69 | 0 | 99% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **67** | **70** | **0** | **96%** |
+| **All** | **69** | **70** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -62,10 +61,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`safe-passing-of-structured-data/structured-cloning-error-stack-optional.sub.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/structured-cloning-error-stack-optional.sub.window.js) | Pass | 20 / 20 |  |  |
 | [`safe-passing-of-structured-data/structured-cloning-error-stack.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/structured-cloning-error-stack.window.js) | Pass | 10 / 10 |  |  |
 | [`safe-passing-of-structured-data/structuredclone_0.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/structuredclone_0.html) | Pass | 43 / 43 |  |  |
-| [`safe-passing-of-structured-data/transfer-audiodata.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-audiodata.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebCodecs (`AudioData`) |
+| [`safe-passing-of-structured-data/transfer-audiodata.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-audiodata.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/transfer-errors.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-errors.window.js) | Pass | 17 / 17 |  |  |
 | [`safe-passing-of-structured-data/transfer-mediasourcehandle.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-mediasourcehandle.html) | Pass | 1 / 1 |  |  |
-| [`safe-passing-of-structured-data/transfer-videoframe.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-videoframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebCodecs (`VideoFrame`) |
+| [`safe-passing-of-structured-data/transfer-videoframe.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/transfer-videoframe.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/window-postmessage.window.js`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/window-postmessage.window.js) | Pass | 152 / 152 |  |  |
 | [`terminology/plugins/text-plain.html`](https://wpt.fyi/results/html/infrastructure/terminology/plugins/text-plain.html) | Pass | 1 / 1 |  |  |
 | [`urls/base-url/base-url-detached-document-blank.https.window.js`](https://wpt.fyi/results/html/infrastructure/urls/base-url/base-url-detached-document-blank.https.window.js) | Pass | 1 / 1 |  |  |

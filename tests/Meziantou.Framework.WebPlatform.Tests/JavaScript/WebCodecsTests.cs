@@ -968,6 +968,11 @@ public sealed class WebCodecsTests : IDisposable
     public void WebMWriter_WritesALiveStream()
     {
         var writer = new WebMWriter([new WebMTrack(1, IsVideo: true, "V_VP8", Width: 2, Height: 2), new WebMTrack(2, IsVideo: false, "A_OPUS", [1, 2], SampleRate: 48000, Channels: 1, CodecDelay: 6_500_000)]);
+
+        // The header is written with the first frame, or on demand
+        Assert.Equal(0, writer.PendingLength);
+        writer.WriteHeader();
+        writer.WriteHeader();
         var header = writer.TakeBytes();
         Assert.Equal([0x1A, 0x45, 0xDF, 0xA3], header[..4]);
         Assert.Equal(0, writer.PendingLength);
@@ -994,6 +999,7 @@ public sealed class WebCodecsTests : IDisposable
     {
         Assert.Throws<ArgumentException>(() => new WebMWriter([]));
         var writer = new WebMWriter([new WebMTrack(1, IsVideo: true, "V_VP8", Width: 2, Height: 2)], docType: "matroska");
+        writer.WriteHeader();
         Assert.Contains("DocType:matroska", WebMReader.ReadElements(writer.TakeBytes()));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteFrame(2, 0, isKeyFrame: true, [1]));
         Assert.Throws<ArgumentOutOfRangeException>(() => writer.WriteFrame(1, -1, isKeyFrame: true, [1]));

@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,139 | 3,170 | 0 | 99% |
+| [Stable](#stable-tests) | 3,140 | 3,170 | 0 | 99% |
 | [Tentative](#tentative-tests) | 206 | 301 | 0 | 68% |
 | [Reftests](#reftests) | 554 | 584 | 0 | 95% |
 | [Crash tests](#crash-tests) | 18 | 18 | 0 | 100% |
-| **All** | **3,917** | **4,073** | **0** | **96%** |
+| **All** | **3,918** | **4,073** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 23
 - **TEST BUG**: 14
-- **NOT IMPLEMENTED**: 111
+- **NOT IMPLEMENTED**: 110
 - **REQUIRES**: 7
   - `media`: 7
 - **TEST RUNNER**: 1
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`element/line-styles/2d.line.width.valid.html`](https://wpt.fyi/results/html/canvas/element/line-styles/2d.line.width.valid.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/context-attributes/canvas-with-padding.html`](https://wpt.fyi/results/html/canvas/element/manual/context-attributes/canvas-with-padding.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/context-attributes/getContextAttributes.html`](https://wpt.fyi/results/html/canvas/element/manual/context-attributes/getContextAttributes.html) | Fail | 12 / 16 | NOT IMPLEMENTED | the HDR settings of the canvases (`toneMapping`, `colorType` in `getContextAttributes()`) |
-| [`element/manual/drawing-images-to-the-canvas/desynchronized-crossorigin-snapshot-isolation.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/desynchronized-crossorigin-snapshot-isolation.html) | Fail | 8 / 10 | NOT IMPLEMENTED | 2 of 10 subtests: the constructors of `VideoFrame` (WebCodecs): `new VideoFrame()` throws `TypeError: Illegal constructor` |
+| [`element/manual/drawing-images-to-the-canvas/desynchronized-crossorigin-snapshot-isolation.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/desynchronized-crossorigin-snapshot-isolation.html) | Pass | 10 / 10 |  |  |
 | [`element/manual/drawing-images-to-the-canvas/drawimage_canvas.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_canvas.html) | Fail | 150 / 151 | BUG | scenario 12 (a source rectangle partly outside of the image, enlarged 2.5 times, `imageSmoothingEnabled = false`): the center of the pixel (82, 82) maps exactly to the corner between four pixels of the image (5, 5); the nearest sampling of Meziantou.Framework.Imaging takes the pixel `floor(u)` (the black inside), where the test expects the pixel before it (the blue border: the exact tie rounded down); changing the rounding of the nearest sampling of every drawing is not attempted |
 | [`element/manual/drawing-images-to-the-canvas/drawimage_crossorigin.sub.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_crossorigin.sub.html) | Pass | 4 / 4 |  |  |
 | [`element/manual/drawing-images-to-the-canvas/drawimage_html_image.html`](https://wpt.fyi/results/html/canvas/element/manual/drawing-images-to-the-canvas/drawimage_html_image.html) | Pass | 127 / 127 |  |  |

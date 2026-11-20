@@ -4302,10 +4302,10 @@ public sealed class HostDeviceApisTests : IDisposable
         var withoutCodecs = Load("<canvas></canvas><script>" + RecorderScript + "record(document.querySelector('canvas').captureStream());</script>", new BrowsingContextOptions { TimeProvider = clock });
         Assert.Equal("recording|error NotSupportedError|inactive", Run(withoutCodecs, "log.push(recorder.state); done()"));
 
-        // A track added to the stream stops the recording
+        // A track added to the stream stops the recording, in a task (a recorder stopped before it fires no error)
         var document = Load("<canvas></canvas><script>" + RecorderScript + "window.stream = document.querySelector('canvas').captureStream(); record(stream);</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
         Run(document, "stream.addTrack(document.createElement('canvas').captureStream().getVideoTracks()[0]); log.push(recorder.state);");
-        Assert.Equal("recording|start video/webm;codecs=vp8|inactive|error InvalidModificationError|data video/webm;codecs=vp8 true 0|stop inactive", Run(document, "done()"));
+        Assert.Equal("recording|start video/webm;codecs=vp8|recording|error InvalidModificationError|data video/webm;codecs=vp8 true 0|stop inactive", Run(document, "done()"));
     }
 
     [Fact]

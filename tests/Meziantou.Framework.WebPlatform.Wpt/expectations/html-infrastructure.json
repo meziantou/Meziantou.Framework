@@ -135,10 +135,7 @@
     "total": 43
   },
   "html/infrastructure/safe-passing-of-structured-data/transfer-audiodata.html": {
-    "total": 1,
-    "failures": {
-      "AudioData can be transferred through a MessageChannel": "FAIL"
-    }
+    "total": 1
   },
   "html/infrastructure/safe-passing-of-structured-data/transfer-errors.window.js": {
     "total": 17
@@ -147,10 +144,7 @@
     "total": 1
   },
   "html/infrastructure/safe-passing-of-structured-data/transfer-videoframe.html": {
-    "total": 1,
-    "failures": {
-      "VideoFrame can be transferred through a MessageChannel": "FAIL"
-    }
+    "total": 1
   },
   "html/infrastructure/safe-passing-of-structured-data/window-postmessage.window.js": {
     "total": 152

@@ -17,7 +17,7 @@
     <!-- The package provides the native library of Wasmtime for each platform: the C API is called directly, as the .NET
          API of the package does not expose the host memories, the tags, the exceptions and the GC references (only the
          native assets are imported) -->
-    <PackageReference Include="Wasmtime" Version="48.0.2" IncludeAssets="native" />
+    <PackageReference Include="Wasmtime" Version="50.0.1" IncludeAssets="native" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />

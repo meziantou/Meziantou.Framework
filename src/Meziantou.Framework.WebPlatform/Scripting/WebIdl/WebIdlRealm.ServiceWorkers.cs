@@ -169,6 +169,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IServiceWorkerFetchO
         {
             var internalValue = Adapter.Get(serialized, Key("internal"));
             var internalResponse = Adapter.IsObject(internalValue) ? CreateResponse(internalValue) : FetchResponse.Create(0, "", [], body: null);
+            internalResponse.RangeRequested = Adapter.IsObject(internalValue) && Adapter.ToBoolean(Adapter.Get(internalValue, Key("rangeRequested")));
             internalResponse.RequestIncludesCredentials = Adapter.ToBoolean(Adapter.Get(serialized, Key("requestIncludesCredentials")));
             return type == "opaque" ? internalResponse.ToOpaque() : internalResponse.ToOpaqueRedirect();
         }

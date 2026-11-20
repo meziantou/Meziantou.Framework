@@ -194,7 +194,19 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   rendered. The `Link` headers of the other responses (style sheets, images, scripts, fonts...) are ignored.
 - The responses are stored in an HTTP cache shared by the browsing contexts of the loader, as in a browser: a fresh
   response is used without a request, a stale one is revalidated with `If-None-Match` and `If-Modified-Since`, and a stale
-  response within its `stale-while-revalidate` window is used while a request revalidates it in the background.
+  response within its `stale-while-revalidate` window is used while a request revalidates it in the background. The
+  partial responses (`206`) of the range requests are stored too: a fresh stored response (complete or partial) answers
+  the range requests whose range it contains, and a request without `Range` header completes a stored partial response
+  that starts at the first byte with a request of the rest of the representation (`Range: bytes=<next byte>-`, with an
+  `If-Range` header when the partial response has a validator).
+- A `421 Misdirected Request` response is retried once, as the browsers retry it on a new connection: the loader gets
+  the request again. A request whose body is a `ReadableStream` is not retried (its body cannot be sent again).
+- The opaque range responses (`206` or `416`) of the range requests (e.g. of a media element) are network errors for the
+  no-cors requests without `Range` header: a service worker cannot give the partial response of an audio file, stored or
+  put in a cache, to a script element.
+- A `fetch()` request whose body is a `ReadableStream` (`duplex: "half"`) reads the stream before the request is sent to
+  the loader: the response arrives once the body is sent, as with the half duplex of the browsers. The body of a request
+  of another scheme than `http:` and `https:` (e.g. a `data:` URL) is not read.
 - The icon of a top-level document (`<link rel=icon>`) is requested (destination `image`, a CORS request with a
   `crossorigin` attribute), as the browsers request the icon of a tab, but it is not rendered. The element fires no
   `load` or `error` event, and the request has no resource timing entry.

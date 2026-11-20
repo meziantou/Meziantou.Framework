@@ -60,6 +60,52 @@ public static partial class WebPlatformFuzzTargets
         }
     }
 
+    /// <summary>The tokens of the byte ranges of the HTTP cache range target.</summary>
+    private static string[] HttpCacheRangeTokens => ["bytes ", "bytes=", "-", "/", "*", "\n", "0", "1", "9", "10", "999999999999999999", ",", " "];
+
+    /// <summary>
+    /// Stores a response whose <c>Content-Range</c> header is the first line of the input and whose body is the second line
+    /// (a <c>206</c> response, then the same body as a complete <c>200</c> response), and answers the <c>Range</c> header of
+    /// the third line with it: the parsed <c>Content-Range</c> round-trips through <see cref="HttpCache.FormatContentRange"/>,
+    /// the stored range is within the body and the complete length, and a <c>206</c> response given from the stored response
+    /// has a range within the stored range and the bytes of the stored body at that range.
+    /// </summary>
+    public static void CacheRanges(string input)
+    {
+        var lines = input.Split('\n', 3);
+        var contentRange = lines[0];
+        var body = System.Text.Encoding.UTF8.GetBytes(lines.Length > 1 ? lines[1] : "");
+        var range = lines.Length > 2 ? lines[2] : "bytes=0-";
+        var time = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+        List<KeyValuePair<string, string>> headers = [new("Content-Range", contentRange)];
+        if (HttpCache.ParseContentRange(headers) is var (first, last, completeLength))
+        {
+            FuzzAssert.True(first <= last && last < completeLength, $"The range {first}-{last}/{completeLength} of '{contentRange}' is not valid");
+            FuzzAssert.True(HttpCache.ParseContentRange([new("Content-Range", HttpCache.FormatContentRange(first, last, completeLength))]) == (first, last, completeLength), $"The range of '{contentRange}' does not round-trip");
+        }
+
+        Check(new HttpCacheEntry(IncludeCredentials: false, [], 206, "Partial Content", headers, body, time, time));
+        Check(new HttpCacheEntry(IncludeCredentials: false, [], 200, "OK", [], body, time, time));
+
+        void Check(HttpCacheEntry entry)
+        {
+            if (HttpCache.GetStoredRange(entry) is not var (storedFirst, storedLast, storedLength))
+            {
+                FuzzAssert.True(HttpCache.GetRangeEntry(entry, range) is null, "A response without stored range answers a range request");
+                return;
+            }
+
+            FuzzAssert.True(storedFirst <= storedLast && storedLast < storedLength && storedLast - storedFirst < entry.Body.Length, $"The stored range {storedFirst}-{storedLast}/{storedLength} is not within the body of {entry.Body.Length} bytes");
+            if (HttpCache.GetRangeEntry(entry, range) is not { } rangeEntry)
+                return;
+
+            FuzzAssert.Equal(206, rangeEntry.Status, "The response of a range is not a 206 response");
+            FuzzAssert.True(HttpCache.ParseContentRange(rangeEntry.Headers) is var (rangeFirst, rangeLast, rangeLength)
+                && rangeLength == storedLength && rangeFirst >= storedFirst && rangeLast <= storedLast && rangeEntry.Body.Length == rangeLast - rangeFirst + 1
+                && rangeEntry.Body.AsSpan().SequenceEqual(entry.Body.AsSpan((int)(rangeFirst - storedFirst), rangeEntry.Body.Length)), $"The response of '{range}' is not the bytes of the stored range {storedFirst}-{storedLast}/{storedLength}");
+        }
+    }
+
     private static int HttpCacheFreshnessRank(HttpCacheFreshness freshness) => freshness switch
     {
         HttpCacheFreshness.Fresh => 2,

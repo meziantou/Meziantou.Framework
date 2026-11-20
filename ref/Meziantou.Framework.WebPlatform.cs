@@ -3763,6 +3763,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.ReadOnlyMemory<byte>? Body { get => throw null; init { } }
         public string? CrossOriginResourcePolicy { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Headers { get => throw null; init { } }
+        public bool RangeRequested { get => throw null; init { } }
         public bool RequestIncludesCredentials { get => throw null; init { } }
         public int Status { get => throw null; init { } }
         public string StatusText { get => throw null; init { } }

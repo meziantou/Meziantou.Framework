@@ -164,6 +164,13 @@ public sealed class CachedResponse
     /// </summary>
     public string? CrossOriginResourcePolicy { get; init; }
 
+    /// <summary>
+    /// Gets whether the request of an opaque response had a <c>Range</c> header
+    /// (https://fetch.spec.whatwg.org/#concept-response-range-requested-flag): its range response (<c>206</c> or <c>416</c>)
+    /// is a network error for a no-cors request without <c>Range</c> header.
+    /// </summary>
+    public bool RangeRequested { get; init; }
+
     /// <summary>Gets the body, or null for a response without body.</summary>
     public ReadOnlyMemory<byte>? Body { get; init; }
 }

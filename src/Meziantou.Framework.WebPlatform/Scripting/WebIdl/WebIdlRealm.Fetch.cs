@@ -561,6 +561,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         SetMember(result, "headers", FromHeaderList(response.HeaderList));
         SetMember(result, "body", !streamed && response.Body is { } body ? FromBuffer(JsBufferKind.Uint8Array, body) : Adapter.Null);
         SetMember(result, "urlList", CreateArray(response.UrlList.Select(url => Adapter.FromString(url.Serialize())).ToArray()));
+        SetMember(result, "rangeRequested", Adapter.FromBoolean(response.RangeRequested));
         return result;
     }
 

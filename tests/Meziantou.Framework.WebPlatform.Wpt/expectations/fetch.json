@@ -209,22 +209,13 @@
     "total": 2
   },
   "fetch/api/basic/request-upload-421.any.js": {
-    "total": 1,
-    "failures": {
-      "Fetch with POST with text body on 421 response should be retried once on new connection.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/request-upload-421.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Fetch with POST with text body on 421 response should be retried once on new connection.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/request-upload-421.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Fetch with POST with text body on 421 response should be retried once on new connection.": "FAIL"
-    }
+    "total": 1
   },
   "fetch/api/basic/request-upload.any.js": {
     "total": 18
@@ -236,46 +227,13 @@
     "total": 18
   },
   "fetch/api/basic/request-upload.h2.any.js": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "Feature detect for POST with ReadableStream": "TIMEOUT",
-      "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "ReadbleStream should be closed on signal.abort": "NOTRUN",
-      "Streaming upload should fail on a 401 response": "NOTRUN",
-      "Streaming upload with body containing a String": "NOTRUN",
-      "Streaming upload with body containing a number": "NOTRUN",
-      "Streaming upload with body containing null": "NOTRUN",
-      "Synchronous feature detect fails if feature unsupported": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/api/basic/request-upload.h2.any.js#dedicatedworker": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "Feature detect for POST with ReadableStream": "TIMEOUT",
-      "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "ReadbleStream should be closed on signal.abort": "NOTRUN",
-      "Streaming upload should fail on a 401 response": "NOTRUN",
-      "Streaming upload with body containing a String": "NOTRUN",
-      "Streaming upload with body containing a number": "NOTRUN",
-      "Streaming upload with body containing null": "NOTRUN",
-      "Synchronous feature detect fails if feature unsupported": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/api/basic/request-upload.h2.any.js#sharedworker": {
-    "harness": "TIMEOUT",
-    "total": 12,
-    "failures": {
-      "Feature detect for POST with ReadableStream": "TIMEOUT",
-      "Feature detect for POST with ReadableStream, using request object": "NOTRUN",
-      "ReadbleStream should be closed on signal.abort": "NOTRUN",
-      "Streaming upload should fail on a 401 response": "NOTRUN",
-      "Streaming upload with body containing a String": "NOTRUN",
-      "Streaming upload with body containing a number": "NOTRUN",
-      "Streaming upload with body containing null": "NOTRUN",
-      "Synchronous feature detect fails if feature unsupported": "NOTRUN"
-    }
+    "total": 12
   },
   "fetch/api/basic/response-null-body.any.js": {
     "total": 11
@@ -2270,42 +2228,24 @@
   "fetch/http-cache/partial.any.js": {
     "total": 9,
     "failures": {
-      "HTTP cache stores complete response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it with only-if-cached": "FAIL",
-      "HTTP cache stores partial content and completes it": "FAIL",
       "HTTP cache stores partial content and reuses it": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores partial response and serves smaller ranges from it (byte-range-spec)": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL"
     }
   },
   "fetch/http-cache/partial.any.js#dedicatedworker": {
     "total": 9,
     "failures": {
-      "HTTP cache stores complete response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it with only-if-cached": "FAIL",
-      "HTTP cache stores partial content and completes it": "FAIL",
       "HTTP cache stores partial content and reuses it": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores partial response and serves smaller ranges from it (byte-range-spec)": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL"
     }
   },
   "fetch/http-cache/partial.any.js#sharedworker": {
     "total": 9,
     "failures": {
-      "HTTP cache stores complete response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL",
-      "HTTP cache stores complete response and serves smaller ranges from it with only-if-cached": "FAIL",
-      "HTTP cache stores partial content and completes it": "FAIL",
       "HTTP cache stores partial content and reuses it": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (absent last-byte-pos)": "FAIL",
-      "HTTP cache stores partial response and serves smaller ranges from it (byte-range-spec)": "FAIL",
       "HTTP cache stores partial response and serves smaller ranges from it (suffix-byte-range-spec)": "FAIL"
     }
   },
@@ -3028,11 +2968,7 @@
     "total": 3
   },
   "fetch/range/sw-416.https.window.js": {
-    "total": 2,
-    "failures": {
-      "416 response not allowed following no-cors ranged request": "FAIL",
-      "Cached 416 response not allowed following no-cors ranged request": "FAIL"
-    }
+    "total": 2
   },
   "fetch/range/sw-intercept-range.https.window.js": {
     "total": 2
@@ -3041,11 +2977,7 @@
     "total": 1
   },
   "fetch/range/sw.https.window.js": {
-    "total": 10,
-    "failures": {
-      "Cached ranged response not allowed following no-cors ranged request": "FAIL",
-      "Ranged response not allowed following no-cors ranged request": "FAIL"
-    }
+    "total": 10
   },
   "fetch/redirect-navigate/302-found-post.html": {
     "total": 1

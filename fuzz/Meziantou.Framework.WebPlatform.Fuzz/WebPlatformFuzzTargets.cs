@@ -111,6 +111,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-webm-writer", WebMWriterTarget) { Seeds = GetWebMWriterSeeds },
         new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
+        new("webplatform-http-cache-ranges", data => CacheRanges(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache-ranges"), Dictionary = HttpCacheRangeTokens },
         new("webplatform-image-metadata", ImageMetadataTarget) { Seeds = GetImageMetadataSeeds, Dictionary = ImageMetadataTokens },
         new("webplatform-webauthn", WebAuthentication) { Seeds = GetWebAuthnSeeds, Dictionary = WebAuthnTokens },
         new("webplatform-media-constraints", MediaConstraints) { Seeds = GetMediaConstraintsSeeds, Dictionary = MediaConstraintsTokens },

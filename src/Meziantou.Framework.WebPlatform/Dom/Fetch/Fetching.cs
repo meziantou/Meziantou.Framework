@@ -409,6 +409,11 @@ internal static class Fetching
         if (!response.IsNetworkError && DocumentResource.IsBlocked(internalResponse.HeaderList, request.Destination))
             return FetchResponse.NetworkError();
 
+        // Step 19 (continued): a range response (206 or 416) of a range request given to a no-cors request without Range header
+        // (e.g. a ranged response of a media element, stored by a service worker and given to a script element) is a network error
+        if (response.Type == FetchResponseType.Opaque && internalResponse.Status is 206 or 416 && internalResponse.RangeRequested && !FetchHeaders.Contains(request.HeaderList, "Range"))
+            return FetchResponse.NetworkError();
+
         // https://wicg.github.io/signature-based-sri/#server-initiated-integrity-checks: a response whose signature is not valid
         // is a network error
         if (signatures is { Failed: true })
@@ -547,7 +552,9 @@ internal static class Fetching
                 headers.Add(new("Content-Length", slice.Length.ToString(CultureInfo.InvariantCulture)));
                 headers.Add(new("Content-Type", GetBlobContentType(blob)));
                 headers.Add(new("Content-Range", "bytes " + start.ToString(CultureInfo.InvariantCulture) + "-" + end.ToString(CultureInfo.InvariantCulture) + "/" + bytes.Length.ToString(CultureInfo.InvariantCulture)));
-                return FetchResponse.Create(206, "Partial Content", headers, slice);
+                var partialResponse = FetchResponse.Create(206, "Partial Content", headers, slice);
+                partialResponse.RangeRequested = true;
+                return partialResponse;
             }
 
             case "data":
@@ -653,7 +660,7 @@ internal static class Fetching
         }
 
         // Step 6.3
-        var response = await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: false, cancellationToken).ConfigureAwait(false);
+        var response = await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: false, isNewConnectionFetch: false, cancellationToken).ConfigureAwait(false);
         request.SingleHopCacheMode = null;
         if (response.IsNetworkError)
             return response;
@@ -802,8 +809,22 @@ internal static class Fetching
         return await MainFetchAsync(request, recursive: true, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>https://fetch.spec.whatwg.org/#concept-http-network-or-cache-fetch</summary>
-    private static async Task<FetchResponse> HttpNetworkOrCacheFetchAsync(FetchRequest request, bool isAuthenticationFetch, CancellationToken cancellationToken)
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#concept-http-network-or-cache-fetch: the response of a request that has a <c>Range</c>
+    /// header (from the network or from the HTTP cache) gets the range-requested flag.
+    /// </summary>
+    private static async Task<FetchResponse> HttpNetworkOrCacheFetchAsync(FetchRequest request, bool isAuthenticationFetch, bool isNewConnectionFetch, CancellationToken cancellationToken)
+    {
+        var response = await HttpNetworkOrCacheFetchCoreAsync(request, isAuthenticationFetch, isNewConnectionFetch, cancellationToken).ConfigureAwait(false);
+        if (!response.IsNetworkError && FetchHeaders.Contains(request.HeaderList, "Range"))
+        {
+            response.Internal.RangeRequested = true;
+        }
+
+        return response;
+    }
+
+    private static async Task<FetchResponse> HttpNetworkOrCacheFetchCoreAsync(FetchRequest request, bool isAuthenticationFetch, bool isNewConnectionFetch, CancellationToken cancellationToken)
     {
         var headers = new List<KeyValuePair<string, string>>(request.HeaderList);
 
@@ -975,9 +996,45 @@ internal static class Fetching
         var requestHeaders = headers;
         var now = GetHttpCacheTime(request);
         var requestDirectives = HttpCache.ParseCacheControl(headers);
+        HttpCacheEntry? partialResponse = null;
         if (cache is not null && cacheMode != "reload" && request.Method == "GET" && !requestDirectives.ContainsKey("no-store"))
         {
             storedResponse = cache.Select(cacheKey!, includeCredentials, headers);
+
+            // The byte ranges (https://httpwg.org/specs/rfc9111.html#incomplete.responses): a fresh stored response (complete or
+            // partial) that contains the range of a range request answers it, else the range is requested from the network. A
+            // fresh partial response that starts at the first byte is completed by a range request of the rest of the
+            // representation (as in Chromium), with an If-Range header when it has a validator.
+            if (storedResponse is not null && (storedResponse.Status == 206 || (storedResponse.Status == 200 && FetchHeaders.Contains(headers, "Range"))))
+            {
+                var fresh = cacheMode is "force-cache" or "only-if-cached" || HttpCache.GetFreshness(storedResponse, headers, now) == HttpCacheFreshness.Fresh;
+                if (HeaderList.Get(headers, "Range") is { } rangeHeader)
+                {
+                    if (fresh && HttpCache.GetRangeEntry(storedResponse, rangeHeader) is { } rangeEntry)
+                        return CreateCachedResponse(request, rangeEntry, includeCredentials);
+                }
+                else if (fresh && HttpCache.GetStoredRange(storedResponse) is { First: 0 } storedRange)
+                {
+                    partialResponse = storedResponse;
+                    headers = [.. headers, new("Range", "bytes=" + (storedRange.Last + 1).ToString(CultureInfo.InvariantCulture) + "-")];
+                    if (HeaderList.Get(storedResponse.Headers, "ETag") is { } partialEtag && !partialEtag.StartsWith("W/", StringComparison.Ordinal))
+                    {
+                        headers.Add(new("If-Range", partialEtag));
+                    }
+                    else if (HeaderList.Get(storedResponse.Headers, "Last-Modified") is { } partialLastModified)
+                    {
+                        headers.Add(new("If-Range", partialLastModified));
+                    }
+
+                    if (!FetchHeaders.Contains(headers, "Accept-Encoding"))
+                    {
+                        headers.Add(new("Accept-Encoding", "identity"));
+                    }
+                }
+
+                storedResponse = null;
+            }
+
             if (storedResponse is not null)
             {
                 var freshness = cacheMode is "force-cache" or "only-if-cached" ? HttpCacheFreshness.Fresh : HttpCache.GetFreshness(storedResponse, headers, now);
@@ -1050,9 +1107,36 @@ internal static class Fetching
             }
         }
 
+        // The response that completes a stored partial response is not read as it arrives: its body is joined to the stored one
+        var streamsBody = request.StreamsBody;
+        if (partialResponse is not null)
+        {
+            request.StreamsBody = false;
+        }
+
         var response = await NetworkFetchAsync(request, networkHeaders, includeCredentials, dictionary, cancellationToken).ConfigureAwait(false);
+        request.StreamsBody = streamsBody;
         if (response.IsNetworkError)
             return response;
+
+        // The rest of a stored partial response: a 206 response of the next bytes completes it, another response (e.g. the
+        // complete representation, when the If-Range validator does not match) is used as it is. A 206 response that cannot
+        // complete it is not used: the complete representation is requested.
+        if (partialResponse is not null && response.Status == 206)
+        {
+            if (CompletePartialResponse(partialResponse, response) is { } completed)
+            {
+                response = completed;
+            }
+            else
+            {
+                headers = [.. requestHeaders];
+                networkHeaders = headers;
+                response = await NetworkFetchAsync(request, networkHeaders, includeCredentials, dictionary: null, cancellationToken).ConfigureAwait(false);
+                if (response.IsNetworkError)
+                    return response;
+            }
+        }
 
         // https://w3c.github.io/webappsec-clear-site-data/#fetch-integration: the Clear-Site-Data header clears the data of
         // the origin once the cookies of the response are stored, before the response is stored in the HTTP cache
@@ -1086,7 +1170,17 @@ internal static class Fetching
             if (!request.CurrentUrl.IncludesCredentials || isAuthenticationFetch)
                 return response;
 
-            return await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: true, cancellationToken).ConfigureAwait(false);
+            return await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch: true, isNewConnectionFetch: false, cancellationToken).ConfigureAwait(false);
+        }
+
+        // Step 16: a 421 (Misdirected Request) response is retried once on a new connection, unless the body of the request
+        // is a stream that cannot be sent again (the loader opens the connections: the request is given to it again)
+        if (response.Status == 421 && !isNewConnectionFetch && (request.Body is null || request.BodyHasSource))
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return FetchResponse.NetworkError(aborted: true);
+
+            return await HttpNetworkOrCacheFetchAsync(request, isAuthenticationFetch, isNewConnectionFetch: true, cancellationToken).ConfigureAwait(false);
         }
 
         // The credentials of the URL that were accepted are remembered for the origin
@@ -1212,6 +1306,42 @@ internal static class Fetching
     /// <summary>The loader of a request: the one of its navigable, of the environment of its client, or of the browsing context of a keepalive request.</summary>
     private static DocumentLoader? GetDocumentLoader(FetchRequest request)
         => (request.Navigable?.Options ?? request.Client?.EnvironmentOptions ?? (request.Navigable ?? request.KeepaliveBrowsingContext)?.Options)?.DocumentLoader;
+
+    /// <summary>
+    /// Combines a stored partial response that starts at the first byte with the <c>206</c> response of the rest of the
+    /// representation (https://httpwg.org/specs/rfc9111.html#combining.responses): the <c>200</c> response of the complete
+    /// representation, with the headers of the new response, or null when the new response does not start where the stored
+    /// one ends, does not end at the end of the representation, or has another strong validator.
+    /// </summary>
+    private static FetchResponse? CompletePartialResponse(HttpCacheEntry partialResponse, FetchResponse response)
+    {
+        if (HttpCache.GetStoredRange(partialResponse) is not var (_, storedLast, storedLength) || HttpCache.ParseContentRange(response.HeaderList) is not var (first, last, completeLength))
+            return null;
+
+        var body = response.Body ?? [];
+        if (first != storedLast + 1 || completeLength != storedLength || last != completeLength - 1 || body.Length != last - first + 1)
+            return null;
+
+        if (HeaderList.Get(partialResponse.Headers, "ETag") is { } storedEtag && HeaderList.Get(response.HeaderList, "ETag") is { } etag && storedEtag != etag)
+            return null;
+
+        var completeBody = new byte[completeLength];
+        partialResponse.Body.AsSpan(0, (int)storedLast + 1).CopyTo(completeBody);
+        body.CopyTo(completeBody.AsSpan((int)first));
+        var headers = new List<KeyValuePair<string, string>>(response.HeaderList.Count);
+        foreach (var header in response.HeaderList)
+        {
+            if (!header.Key.Equals("Content-Range", StringComparison.OrdinalIgnoreCase) && !header.Key.Equals("Content-Length", StringComparison.OrdinalIgnoreCase))
+            {
+                headers.Add(header);
+            }
+        }
+
+        headers.Add(new("Content-Length", completeBody.Length.ToString(CultureInfo.InvariantCulture)));
+        var completed = FetchResponse.Create(200, "OK", headers, completeBody);
+        completed.UrlList = response.UrlList;
+        return completed;
+    }
 
     /// <summary>The response constructed from a stored response (https://httpwg.org/specs/rfc9111.html#constructing.responses.from.caches).</summary>
     private static FetchResponse CreateCachedResponse(FetchRequest request, HttpCacheEntry entry, bool includeCredentials, string cacheState = "local")
@@ -1904,7 +2034,7 @@ internal static class Fetching
             preflight.HeaderList.Add(new("Access-Control-Request-Headers", FetchHeaders.Join(unsafeHeaderNames)));
         }
 
-        var response = await HttpNetworkOrCacheFetchAsync(preflight, isAuthenticationFetch: false, cancellationToken).ConfigureAwait(false);
+        var response = await HttpNetworkOrCacheFetchAsync(preflight, isAuthenticationFetch: false, isNewConnectionFetch: false, cancellationToken).ConfigureAwait(false);
         if (response.IsNetworkError || !CorsCheck(request, response) || !HeaderList.IsOkStatus(response.Status))
             return FetchResponse.NetworkError();
 

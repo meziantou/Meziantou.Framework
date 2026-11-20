@@ -546,6 +546,12 @@ internal sealed class FetchResponse
     /// </summary>
     public string CacheState { get; set; } = "";
 
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#concept-response-range-requested-flag: the response is the response of a request that
+    /// had a <c>Range</c> header (a property of the internal response).
+    /// </summary>
+    public bool RangeRequested { get; set; }
+
     /// <summary>https://fetch.spec.whatwg.org/#response-request-includes-credentials (a property of the internal response)</summary>
     public bool RequestIncludesCredentials { get; set; } = true;
 

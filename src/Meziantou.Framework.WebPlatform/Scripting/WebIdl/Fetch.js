@@ -1041,8 +1041,14 @@
         });
       };
 
-      // The body of the request is read before the request is sent (the requests are not streamed)
+      // The body of the request is read before the request is sent (the requests are not streamed: as with "duplex: 'half'",
+      // the response is only received once the body is sent). Only an HTTP(S) request sends its body: the scheme fetch of the
+      // other schemes (e.g. a data: URL) ignores it, so a stream that never closes does not stop the fetch.
+      const url = request.urlList[0];
+      const isHttpRequest = url[0] === 'h' && url[1] === 't' && url[2] === 't' && url[3] === 'p' && (url[4] === ':' || (url[4] === 's' && url[5] === ':'));
       if (request.body === null) {
+        start(null);
+      } else if (request.body.source === null && !isHttpRequest) {
         start(null);
       } else if (request.body.source !== null) {
         streams.lock(request.body.stream);

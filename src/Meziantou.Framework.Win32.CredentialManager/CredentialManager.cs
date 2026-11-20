@@ -50,16 +50,10 @@ public static class CredentialManager
         ArgumentNullException.ThrowIfNull(applicationName);
 
         var read = PInvoke.CredRead(applicationName, (CRED_TYPE)type, out var handle);
-        if (read)
+        using (handle)
         {
-            try
-            {
-                return ReadCredential(handle);
-            }
-            finally
-            {
-                PInvoke.CredFree(handle);
-            }
+            if (read)
+                return ReadCredential(handle.DangerousValue);
         }
 
         return null;

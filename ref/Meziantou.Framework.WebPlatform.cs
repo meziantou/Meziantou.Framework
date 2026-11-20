@@ -9769,7 +9769,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public sealed class MediaCapabilitiesDecodingInfo : Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesInfo
     {
         public required Meziantou.Framework.WebPlatform.Dom.MediaDecodingConfiguration Configuration { get => throw null; init { } }
-        public object? KeySystemAccess { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess? KeySystemAccess { get => throw null; init { } }
     }
 
     public sealed class MediaCapabilitiesEncodingInfo : Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesInfo

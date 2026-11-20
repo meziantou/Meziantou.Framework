@@ -391,6 +391,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_AppendMode_Values = new[] { "segments", "sequence" };
 
+    internal static readonly string[] Enum_AriaNotifyPriority_Values = new[] { "normal", "high" };
+
     internal static readonly string[] Enum_AudioContextLatencyCategory_Values = new[] { "balanced", "interactive", "playback" };
 
     internal static readonly string[] Enum_AudioContextRenderSizeCategory_Values = new[] { "default", "hardware" };
@@ -522,6 +524,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_LoginStatus_Values = new[] { "logged-in", "logged-out" };
 
     internal static readonly string[] Enum_MagnetometerLocalCoordinateSystem_Values = new[] { "device", "screen" };
+
+    internal static readonly string[] Enum_MakeupGainOptions_Values = new[] { "automatic" };
 
     internal static readonly string[] Enum_MediaDecodingType_Values = new[] { "file", "media-source", "webrtc" };
 
@@ -1007,6 +1011,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "allAcceptedCredentialIds", r.FromSequence(value.AllAcceptedCredentialIds, static (r, e) => r.FromString(e)));
         r.SetMember(result, "rpId", r.FromString(value.RpId));
         r.SetMember(result, "userId", r.FromString(value.UserId));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_AriaNotificationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "priority", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_AriaNotifyPriority(value.Priority)));
         return result;
     }
 
@@ -4890,6 +4901,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.ChannelInterpretation is not null) r.SetMember(result, "channelInterpretation", (value.ChannelInterpretation.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_ChannelInterpretation(value.ChannelInterpretation.GetValueOrDefault())) : r.Adapter.Null));
         r.SetMember(result, "attack", r.FromNumber((double)value.Attack));
         r.SetMember(result, "knee", r.FromNumber((double)value.Knee));
+        r.SetMember(result, "makeupGain", r.ToJs((object?)value.MakeupGain));
         r.SetMember(result, "ratio", r.FromNumber((double)value.Ratio));
         r.SetMember(result, "release", r.FromNumber((double)value.Release));
         r.SetMember(result, "threshold", r.FromNumber((double)value.Threshold));
@@ -5543,6 +5555,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         global::Meziantou.Framework.WebPlatform.Dom.AppendMode.Segments => "segments",
         global::Meziantou.Framework.WebPlatform.Dom.AppendMode.Sequence => "sequence",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_AriaNotifyPriority(global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority.Normal => "normal",
+        global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority.High => "high",
         _ => value.ToString(),
     };
 
@@ -6647,6 +6666,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_WebAudio_MakeupGainOptions(global::Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions.Automatic => "automatic",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_WebAudio_OscillatorType(global::Meziantou.Framework.WebPlatform.WebAudio.OscillatorType value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.WebAudio.OscillatorType.Sine => "sine",
@@ -7502,6 +7527,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             AllAcceptedCredentialIds = m0,
             RpId = m1,
             UserId = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions ToDictionary_Dom_AriaNotificationOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AriaNotificationOptions");
+        var m0_value = r.GetDictionaryMember(value, "priority");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"normal" : r.ToEnumerationValue(m0_value, "AriaNotifyPriority", WebIdlHelpers<TAdapter, TValue>.Enum_AriaNotifyPriority_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions
+        {
+            Priority = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_AriaNotifyPriority(m0),
         };
     }
 
@@ -14655,12 +14691,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m3 = r.Adapter.IsUndefined(m3_value) ? (float)(float)(0.003d) : r.ToFloat(m3_value, restricted: true);
         var m4_value = r.GetDictionaryMember(value, "knee");
         var m4 = r.Adapter.IsUndefined(m4_value) ? (float)(float)(30d) : r.ToFloat(m4_value, restricted: true);
-        var m5_value = r.GetDictionaryMember(value, "ratio");
-        var m5 = r.Adapter.IsUndefined(m5_value) ? (float)(float)(12d) : r.ToFloat(m5_value, restricted: true);
-        var m6_value = r.GetDictionaryMember(value, "release");
-        var m6 = r.Adapter.IsUndefined(m6_value) ? (float)(float)(0.25d) : r.ToFloat(m6_value, restricted: true);
-        var m7_value = r.GetDictionaryMember(value, "threshold");
-        var m7 = r.Adapter.IsUndefined(m7_value) ? (float)(float)(-24d) : r.ToFloat(m7_value, restricted: true);
+        var m5_value = r.GetDictionaryMember(value, "makeupGain");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (object?)(object)"automatic" : WebIdlHelpers<TAdapter, TValue>.ToUnion_e8330aed(r, m5_value);
+        var m6_value = r.GetDictionaryMember(value, "ratio");
+        var m6 = r.Adapter.IsUndefined(m6_value) ? (float)(float)(12d) : r.ToFloat(m6_value, restricted: true);
+        var m7_value = r.GetDictionaryMember(value, "release");
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (float)(float)(0.25d) : r.ToFloat(m7_value, restricted: true);
+        var m8_value = r.GetDictionaryMember(value, "threshold");
+        var m8 = r.Adapter.IsUndefined(m8_value) ? (float)(float)(-24d) : r.ToFloat(m8_value, restricted: true);
         return new global::Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorOptions
         {
             ChannelCount = m0_present ? m0 : Defaults_WebAudio_DynamicsCompressorOptions.ChannelCount,
@@ -14668,9 +14706,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             ChannelInterpretation = m2_present ? (m2 is { } enumValue_m2 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_ChannelInterpretation(enumValue_m2) : (global::Meziantou.Framework.WebPlatform.WebAudio.ChannelInterpretation?)null) : Defaults_WebAudio_DynamicsCompressorOptions.ChannelInterpretation,
             Attack = m3,
             Knee = m4,
-            Ratio = m5,
-            Release = m6,
-            Threshold = m7,
+            MakeupGain = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_WebAudio_FloatOrMakeupGainOptions(r, m5),
+            Ratio = m6,
+            Release = m7,
+            Threshold = m8,
         };
     }
 
@@ -15777,6 +15816,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority ToEnum_Dom_AriaNotifyPriority(string value) => value switch
+    {
+        "normal" => global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority.Normal,
+        "high" => global::Meziantou.Framework.WebPlatform.Dom.AriaNotifyPriority.High,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.AudioSelectionPreference ToEnum_Dom_AudioSelectionPreference(string value) => value switch
     {
         "preferred" => global::Meziantou.Framework.WebPlatform.Dom.AudioSelectionPreference.Preferred,
@@ -16609,6 +16655,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions ToEnum_WebAudio_MakeupGainOptions(string value) => value switch
+    {
+        "automatic" => global::Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions.Automatic,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.WebAudio.OscillatorType ToEnum_WebAudio_OscillatorType(string value) => value switch
     {
         "sine" => global::Meziantou.Framework.WebPlatform.WebAudio.OscillatorType.Sine,
@@ -17211,6 +17263,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         byte v => (uint)v,
         sbyte v => (uint)v,
         _ => throw new global::System.InvalidCastException("The value cannot be converted to AudioContextRenderSizeHint"),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.WebAudio.FloatOrMakeupGainOptions ToUnionStruct_WebAudio_FloatOrMakeupGainOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        string enumValue when WebIdlHelpers<TAdapter, TValue>.TryToEnum_WebAudio_MakeupGainOptions(enumValue, out var enumResult) => enumResult,
+        float v => v,
+        int v => (float)v,
+        uint v => (float)v,
+        double v => (float)v,
+        short v => (float)v,
+        ushort v => (float)v,
+        long v => (float)v,
+        ulong v => (float)v,
+        byte v => (float)v,
+        sbyte v => (float)v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to FloatOrMakeupGainOptions"),
     };
 
     internal static global::Meziantou.Framework.WebPlatform.WebAudio.StringOrAudioSinkOptions ToUnionStruct_WebAudio_StringOrAudioSinkOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
@@ -18425,6 +18493,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return r.ToDomString(value);
     }
 
+    /// <summary>(float or MakeupGainOptions)</summary>
+    internal static object? ToUnion_e8330aed(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToFloat(value, restricted: true);
+        return r.ToEnumerationValue(value, "MakeupGainOptions", WebIdlHelpers<TAdapter, TValue>.Enum_MakeupGainOptions_Values);
+    }
+
     /// <summary>(DOMString or PerformanceMeasureOptions)</summary>
     internal static object? ToUnion_eddcf589(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
@@ -18635,6 +18713,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         try
         {
             result = WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_AudioContextRenderSizeCategory(value);
+            return true;
+        }
+        catch (global::System.ArgumentException)
+        {
+            result = default;
+            return false;
+        }
+    }
+
+    internal static bool TryToEnum_WebAudio_MakeupGainOptions(string value, out global::Meziantou.Framework.WebPlatform.WebAudio.MakeupGainOptions result)
+    {
+        try
+        {
+            result = WebIdlHelpers<TAdapter, TValue>.ToEnum_WebAudio_MakeupGainOptions(value);
             return true;
         }
         catch (global::System.ArgumentException)

@@ -774,6 +774,14 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         var a4 = r.IsMissing(a, 4) ? (global::Meziantou.Framework.WebPlatform.Dom.XPathResult?)(global::Meziantou.Framework.WebPlatform.Dom.XPathResult?)null : (r.IsNullOrUndefined(a[4]) ? (global::Meziantou.Framework.WebPlatform.Dom.XPathResult?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.XPathResult>(a[4], "XPathResult"));
         var result = o.Evaluate(a0, a1, a2, a3, a4); return r.Wrap(result);
     }
+    private static TValue Op_ariaNotify(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("ariaNotify", 1, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.Dom.AriaNotificationOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AriaNotificationOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AriaNotificationOptions(r, a[1]);
+        o.AriaNotify(a0, a1); return r.Adapter.Undefined;
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "implementation", Get_implementation, null);
@@ -1009,6 +1017,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineOperation(instanceTarget, "createExpression", 1, Op_createExpression);
         r.DefineOperation(instanceTarget, "createNSResolver", 1, Op_createNSResolver);
         r.DefineOperation(instanceTarget, "evaluate", 2, Op_evaluate);
+        r.DefineOperation(instanceTarget, "ariaNotify", 1, Op_ariaNotify);
     }
     private static void DefineUnforgeableMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue instance)
     {

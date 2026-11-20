@@ -61,6 +61,29 @@ public sealed class AccessibilityTests : IDisposable
     public void ComputedRole(string html, string expected) => Assert.Equal(expected, Get(html).ComputedRole);
 
     [Fact]
+    public void AriaNotify_SendsTheNotificationsToTheHost()
+    {
+        #region WebPlatform_AriaNotify
+        var notifications = new List<string>();
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            // The notifications that the page sends to the assistive technologies with ariaNotify()
+            AriaNotification = (callbackContext, notification) => notifications.Add($"{notification.Priority}: {notification.Announcement}"),
+        });
+        var document = context.Navigate(_ => "<p id=status>Saved</p><p id=hidden hidden></p>");
+
+        document.QuerySelector("#status")!.AriaNotify("The file is saved");
+        document.AriaNotify("Connection lost", new AriaNotificationOptions { Priority = AriaNotifyPriority.High });
+
+        Assert.Equal(["Normal: The file is saved", "High: Connection lost"], notifications);
+        #endregion
+
+        // A hidden element is excluded from the accessibility tree: its notifications are not sent
+        document.QuerySelector("#hidden")!.AriaNotify("Not sent");
+        Assert.Equal(2, notifications.Count);
+    }
+
+    [Fact]
     public void ComputedRole_ShowingPopoverIsGroup()
     {
         var popover = (HtmlElement)Get("<div id=target popover>x</div>");

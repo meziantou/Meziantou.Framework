@@ -26,6 +26,7 @@ internal static class Binding_DynamicsCompressorNode<TAdapter, TValue> where TAd
     private static TValue Get_reduction(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorNode>(t, Binding); return r.FromNumber((double)o.Reduction); }
     private static TValue Get_attack(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorNode>(t, Binding); return r.Wrap(o.Attack); }
     private static TValue Get_release(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorNode>(t, Binding); return r.Wrap(o.Release); }
+    private static TValue Get_makeupGain(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.WebAudio.DynamicsCompressorNode>(t, Binding); return r.Wrap(o.MakeupGain); }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "threshold", Get_threshold, null);
@@ -34,6 +35,7 @@ internal static class Binding_DynamicsCompressorNode<TAdapter, TValue> where TAd
         r.DefineAttribute(instanceTarget, "reduction", Get_reduction, null);
         r.DefineAttribute(instanceTarget, "attack", Get_attack, null);
         r.DefineAttribute(instanceTarget, "release", Get_release, null);
+        r.DefineAttribute(instanceTarget, "makeupGain", Get_makeupGain, null);
     }
 
     private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)

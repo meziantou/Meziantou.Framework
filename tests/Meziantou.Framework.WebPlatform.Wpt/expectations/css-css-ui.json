@@ -2791,12 +2791,7 @@
     "total": 2
   },
   "css/css-ui/interactivity-inert-find.html": {
-    "total": 3,
-    "failures": {
-      "Fail to find inert text": "FAIL",
-      "Find non-inert text": "FAIL",
-      "Find non-inert text inside inert ancestor": "FAIL"
-    }
+    "total": 3
   },
   "css/css-ui/interactivity-inert-focus.html": {
     "total": 3

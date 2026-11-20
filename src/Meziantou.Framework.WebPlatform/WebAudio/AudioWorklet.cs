@@ -129,6 +129,14 @@ public sealed class AudioWorkletGlobalScope : WorkletGlobalScope
     [IdlMember("renderQuantumSize", "https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-renderquantumsize")]
     public uint RenderQuantumSize => Context.RenderQuantumSize;
 
+    /// <summary>
+    /// Gets the performance object of the global scope (https://w3c.github.io/hr-time/#the-audioworklet-performance-attribute):
+    /// its <see cref="WorkletPerformance.Now"/> method measures the time from the time origin of the document of the worklet.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/hr-time/#dom-audioworkletglobalscope-performance"/>
+    [IdlMember("performance", "https://w3c.github.io/hr-time/#dom-audioworkletglobalscope-performance")]
+    public new WorkletPerformance Performance => field ??= new WorkletPerformance(this);
+
     /// <summary>Gets the port connected to the port of the <see cref="AudioWorklet"/>.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-port"/>
     [IdlMember("port", "https://webaudio.github.io/web-audio-api/#dom-audioworkletglobalscope-port")]

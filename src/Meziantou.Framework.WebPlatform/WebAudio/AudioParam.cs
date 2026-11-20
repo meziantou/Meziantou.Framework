@@ -56,6 +56,7 @@ public sealed class AudioParam
         get => Clamp(_currentValue);
         set
         {
+            ThrowIfNotModifiable();
             _currentValue = value;
             SetValueAtTime(value, Context.CurrentTime);
         }
@@ -97,6 +98,7 @@ public sealed class AudioParam
     [IdlMember("setValueAtTime", "https://webaudio.github.io/web-audio-api/#dom-audioparam-setvalueattime")]
     public AudioParam SetValueAtTime(float value, double startTime)
     {
+        ThrowIfNotModifiable();
         ValidateTime(startTime, nameof(startTime));
         Insert(new AutomationEvent { Type = AutomationEventType.SetValue, Time = ClampTime(startTime), Value = value });
         return this;
@@ -107,6 +109,7 @@ public sealed class AudioParam
     [IdlMember("linearRampToValueAtTime", "https://webaudio.github.io/web-audio-api/#dom-audioparam-linearramptovalueattime")]
     public AudioParam LinearRampToValueAtTime(float value, double endTime)
     {
+        ThrowIfNotModifiable();
         ValidateTime(endTime, nameof(endTime));
         Insert(new AutomationEvent { Type = AutomationEventType.LinearRamp, Time = ClampTime(endTime), Value = value });
         return this;
@@ -117,6 +120,7 @@ public sealed class AudioParam
     [IdlMember("exponentialRampToValueAtTime", "https://webaudio.github.io/web-audio-api/#dom-audioparam-exponentialramptovalueattime")]
     public AudioParam ExponentialRampToValueAtTime(float value, double endTime)
     {
+        ThrowIfNotModifiable();
         if (value == 0)
             throw new RangeErrorException("The value of an exponential ramp cannot be 0");
 
@@ -130,6 +134,7 @@ public sealed class AudioParam
     [IdlMember("setTargetAtTime", "https://webaudio.github.io/web-audio-api/#dom-audioparam-settargetattime")]
     public AudioParam SetTargetAtTime(float target, double startTime, float timeConstant)
     {
+        ThrowIfNotModifiable();
         ValidateTime(startTime, nameof(startTime));
         if (timeConstant < 0)
             throw new RangeErrorException($"The time constant {timeConstant} cannot be negative");
@@ -143,6 +148,7 @@ public sealed class AudioParam
     [IdlMember("setValueCurveAtTime", "https://webaudio.github.io/web-audio-api/#dom-audioparam-setvaluecurveattime")]
     public AudioParam SetValueCurveAtTime(IReadOnlyList<float> values, double startTime, double duration)
     {
+        ThrowIfNotModifiable();
         ArgumentNullException.ThrowIfNull(values);
         ValidateTime(startTime, nameof(startTime));
         if (!double.IsFinite(duration) || duration <= 0)
@@ -160,6 +166,7 @@ public sealed class AudioParam
     [IdlMember("cancelScheduledValues", "https://webaudio.github.io/web-audio-api/#dom-audioparam-cancelscheduledvalues")]
     public AudioParam CancelScheduledValues(double cancelTime)
     {
+        ThrowIfNotModifiable();
         ValidateTime(cancelTime, nameof(cancelTime));
         _timeline.CancelScheduledValues(ClampTime(cancelTime), LastIntrinsicValue);
         return this;
@@ -170,10 +177,28 @@ public sealed class AudioParam
     [IdlMember("cancelAndHoldAtTime", "https://webaudio.github.io/web-audio-api/#dom-audioparam-cancelandholdattime")]
     public AudioParam CancelAndHoldAtTime(double cancelTime)
     {
+        ThrowIfNotModifiable();
         ValidateTime(cancelTime, nameof(cancelTime));
         _timeline.CancelAndHoldAtTime(ClampTime(cancelTime), LastIntrinsicValue);
         return this;
     }
+
+    /// <summary>
+    /// Whether the value is computed by the node (e.g. the automatic makeup gain of a <see cref="DynamicsCompressorNode"/>):
+    /// setting the value, scheduling or canceling automation events, and connecting a node to the parameter throw an
+    /// <c>InvalidStateError</c>.
+    /// </summary>
+    internal bool IsComputedByNode { get; init; }
+
+    /// <summary>Throws an <c>InvalidStateError</c> when the parameter cannot be modified (see <see cref="IsComputedByNode"/>).</summary>
+    internal void ThrowIfNotModifiable()
+    {
+        if (IsComputedByNode)
+            throw new DomException($"{Name} is computed by the node: it cannot be modified", "InvalidStateError");
+    }
+
+    /// <summary>Sets [[current value]] to a value computed by the node (see <see cref="IsComputedByNode"/>).</summary>
+    internal void SetComputedValue(float value) => _currentValue = value;
 
     /// <summary>Sets the value given to the constructor of the node (the value before any automation event).</summary>
     internal void SetInitialValue(float value)

@@ -2054,6 +2054,11 @@ internal static class UserAgentDefaultActions
                     // The key opened or closed the picker of a select element, or picked or focused one of its options
                     topDocument.SpaceKeyActivationTarget = null;
                 }
+                else if (!canceled && HtmlInputElement.RunDateTimeKeyDefaultAction(keyboardEvent, target))
+                {
+                    // Tab, Shift+Tab or an arrow key moved the focus between the fields of the date and time control, or
+                    // stepped its focused field
+                }
                 else if (!canceled && keyboardEvent.Key == "Tab" && !keyboardEvent.CtrlKey && !keyboardEvent.AltKey && !keyboardEvent.MetaKey)
                 {
                     // As in browsers (unspecified), moving the focus with the keyboard ends the activation of the element

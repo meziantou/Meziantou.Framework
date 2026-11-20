@@ -54,13 +54,7 @@
     }
   },
   "wai-aria/idlharness.window.js": {
-    "total": 121,
-    "failures": {
-      "Document interface: operation ariaNotify(DOMString, optional AriaNotificationOptions)": "FAIL",
-      "Element interface: calling ariaNotify(DOMString, optional AriaNotificationOptions) on element with too few arguments must throw TypeError": "FAIL",
-      "Element interface: element must inherit property \"ariaNotify(DOMString, optional AriaNotificationOptions)\" with the proper type": "FAIL",
-      "Element interface: operation ariaNotify(DOMString, optional AriaNotificationOptions)": "FAIL"
-    }
+    "total": 121
   },
   "wai-aria/pressed/pressed.tentative.html": {
     "total": 4

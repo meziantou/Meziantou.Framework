@@ -480,6 +480,56 @@ public sealed class UserInputTests : IDisposable
     }
 
     [Fact]
+    public void Keyboard_DateControl_EditsTheFields()
+    {
+        var document = Load("<input id=date type=date required><input id=next>");
+        var date = (HtmlInputElement)document.GetElementById("date")!;
+        var events = new List<string>();
+        date.AddEventListener("input", _ => events.Add("input " + date.Value));
+        date.AddEventListener("change", _ => events.Add("change " + date.Value));
+        date.Focus();
+        var keyboard = document.BrowsingContext!.Input.Keyboard;
+
+        // Tab moves to the next field (month, day, year), then to the next control
+        keyboard.Type("1");
+        keyboard.Press("Tab");
+        keyboard.Type("1");
+        keyboard.Press("Tab");
+        keyboard.Type("1234");
+        Assert.Equal("1234-01-01", date.Value);
+        Assert.Equal(["input 0001-01-01", "change 0001-01-01", "input 0012-01-01", "change 0012-01-01"], events[..4]);
+        Assert.Equal(["input 1234-01-01", "change 1234-01-01"], events[^2..]);
+        Assert.True(date.Matches(":user-valid"));
+        keyboard.Press("Tab");
+        Assert.Same(document.GetElementById("next"), document.ActiveElement);
+
+        // The digits fill a field and move to the next one; Backspace clears the focused field (the first one after a focus)
+        date.Focus();
+        keyboard.Type("1231");
+        Assert.Equal("1234-12-31", date.Value);
+        keyboard.Press("ArrowUp");
+        Assert.Equal("1235-12-31", date.Value);
+        date.Focus();
+        ((HtmlElement)document.GetElementById("next")!).Focus();
+        date.Focus();
+        keyboard.Press("Backspace");
+        Assert.Equal("", date.Value);
+        Assert.True(date.Matches(":user-invalid"));
+    }
+
+    [Fact]
+    public void Keyboard_TimeControl_EditsTheFields()
+    {
+        var document = Load("<input id=time type=time>");
+        var time = (HtmlInputElement)document.GetElementById("time")!;
+        time.Focus();
+
+        document.BrowsingContext!.Input.Keyboard.Type("0930p");
+
+        Assert.Equal("21:30", time.Value);
+    }
+
+    [Fact]
     public void Keyboard_Tab_MovesTheFocus()
     {
         var document = Load("<input id=a><input id=b>");

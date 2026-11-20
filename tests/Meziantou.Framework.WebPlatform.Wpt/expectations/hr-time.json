@@ -1,10 +1,6 @@
 {
   "hr-time/audioworklet.https.html": {
-    "total": 6,
-    "failures": {
-      "AudioWorkletGlobalScope exposes WorkletPerformance on performance": "FAIL",
-      "Multiple AudioWorklet contexts and Window share the same time origin and monotonic clock": "FAIL"
-    }
+    "total": 6
   },
   "hr-time/basic.any.js": {
     "total": 5

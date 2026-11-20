@@ -89,4 +89,10 @@ internal static class ExperimentalApis
 
     /// <summary><c>WebSocketStream</c> and <c>WebSocketError</c> (https://github.com/whatwg/websockets/pull/48): a WebSocket connection whose messages are read and written with streams.</summary>
     public const string WebSocketStream = "WEBPLATEXP0027";
+
+    /// <summary><c>window.find()</c>, the find-in-page API that the browsers implement but no specification defines.</summary>
+    public const string WindowFind = "WEBPLATEXP0028";
+
+    /// <summary>The legacy <c>fromElement</c> and <c>toElement</c> attributes of <c>MouseEvent</c>, which Blink and WebKit implement but no specification defines.</summary>
+    public const string MouseEventFromToElement = "WEBPLATEXP0029";
 }

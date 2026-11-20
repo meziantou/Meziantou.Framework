@@ -452,6 +452,11 @@ internal static class Editing
             // The listeners may have changed the selection
             if (GetActiveRangeEditingHost(document, composed: true) is not { } host || !ReferenceEquals(host, editingHost))
                 return;
+
+            // The legacy textInput event of the inserted text
+            if (TextEvent.CreateTextInputEvent(inputType, data, view) is { } textInput
+                && (!editingHost.FireEvent(textInput) || GetActiveRangeEditingHost(document, composed: true) is not { } textInputHost || !ReferenceEquals(textInputHost, editingHost)))
+                return;
         }
 
         var transaction = EditingHistory.Begin(document);

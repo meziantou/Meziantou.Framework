@@ -231,12 +231,7 @@
     "total": 3
   },
   "uievents/textInput/basic.html": {
-    "total": 3,
-    "failures": {
-      "textInput: basic, <div contenteditable=\"true\">": "FAIL",
-      "textInput: basic, <input>": "FAIL",
-      "textInput: basic, <textarea>": "FAIL"
-    }
+    "total": 3
   },
   "uievents/textInput/delete-selection.html": {
     "total": 3
@@ -248,11 +243,7 @@
     "total": 1
   },
   "uievents/textInput/enter-textarea-contenteditable.html": {
-    "total": 2,
-    "failures": {
-      "textInput: Enter key for textarea and contenteditable, <div contenteditable=\"true\">": "FAIL",
-      "textInput: Enter key for textarea and contenteditable, <textarea>": "FAIL"
-    }
+    "total": 2
   },
   "uievents/ui_event_pseudo_target.html": {
     "total": 2

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
@@ -474,6 +475,26 @@ public class MouseEvent : UIEvent
     /// <seealso href="https://w3c.github.io/uievents/#dom-mouseevent-relatedtarget"/>
     [IdlMember("relatedTarget", "https://w3c.github.io/uievents/#dom-mouseevent-relatedtarget")]
     public new EventTarget? RelatedTarget => base.RelatedTarget;
+
+    /// <summary>
+    /// Gets the node that the pointer leaves (the legacy attribute of Blink and WebKit): the target of a <c>mouseout</c> or
+    /// <c>mouseleave</c> event, else the related target. It is null for the pointer events.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#attributes-and-default-actions"/>
+    [Experimental(ExperimentalApis.MouseEventFromToElement, UrlFormat = ExperimentalApis.UrlFormat)]
+    [IdlMember("fromElement", "https://w3c.github.io/pointerevents/#attributes-and-default-actions")]
+    public Node? FromElement => this is PointerEvent ? null : (IsLeaveEvent ? Target : RelatedTarget) as Node;
+
+    /// <summary>
+    /// Gets the node that the pointer enters (the legacy attribute of Blink and WebKit): the related target of a
+    /// <c>mouseout</c> or <c>mouseleave</c> event, else the target. It is null for the pointer events.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/pointerevents/#attributes-and-default-actions"/>
+    [Experimental(ExperimentalApis.MouseEventFromToElement, UrlFormat = ExperimentalApis.UrlFormat)]
+    [IdlMember("toElement", "https://w3c.github.io/pointerevents/#attributes-and-default-actions")]
+    public Node? ToElement => this is PointerEvent ? null : (IsLeaveEvent ? RelatedTarget : Target) as Node;
+
+    private bool IsLeaveEvent => Type is "mouseout" or "mouseleave";
 
     /// <summary>Gets the horizontal distance of the pointer movement since the previous event.</summary>
     /// <seealso href="https://w3c.github.io/pointerlock/#dom-mouseevent-movementx"/>
@@ -1014,6 +1035,31 @@ public sealed class TextEvent : UIEvent
     }
 
     internal static TextEvent CreateUninitializedTextEvent() => new();
+
+    /// <summary>
+    /// The legacy <c>textInput</c> event of the text that the user inserts (typed, a line break or a paragraph, pasted), as in
+    /// the browsers: it bubbles and is cancelable, and is fired after the <c>beforeinput</c> event, before the text is
+    /// inserted (canceling it cancels the insertion). Returns null for the edits that do not insert text.
+    /// </summary>
+    internal static TextEvent? CreateTextInputEvent(string inputType, string? data, Window? view)
+    {
+        var text = inputType switch
+        {
+            "insertText" or "insertFromPaste" => data,
+            "insertLineBreak" or "insertParagraph" => "\n",
+            _ => null,
+        };
+
+        if (string.IsNullOrEmpty(text))
+            return null;
+
+        var result = new TextEvent { IsTrusted = true };
+        result.Initialize("textInput", bubbles: true, cancelable: true);
+        result.View = view;
+        result.Data = text;
+        result.ComposedFlag = true;
+        return result;
+    }
 
     /// <summary>Gets the characters of the text input.</summary>
     /// <seealso href="https://w3c.github.io/uievents/#dom-textevent-data"/>

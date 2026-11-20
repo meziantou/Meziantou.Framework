@@ -6,17 +6,10 @@
     "total": 2
   },
   "inert/inert-and-find-flat-tree.html": {
-    "total": 2,
-    "failures": {
-      "Text inside a dialog inside a shadowroot should be findable.": "FAIL",
-      "Text slotted into a dialog which is inside a shadowroot should be findable.": "FAIL"
-    }
+    "total": 2
   },
   "inert/inert-and-find.html": {
-    "total": 1,
-    "failures": {
-      "Basic test for inert and find": "FAIL"
-    }
+    "total": 1
   },
   "inert/inert-canvas-fallback-content.html": {
     "total": 12
@@ -93,12 +86,7 @@
     "total": 3
   },
   "inert/inert-with-modal-dialog-003.html": {
-    "total": 3,
-    "failures": {
-      "If an ancestor of the dialog has the 'inert' attribute, the dialog escapes inertness": "FAIL",
-      "If the modal dialog has the 'inert' attribute, everything becomes inert": "FAIL",
-      "Inner nodes with 'inert' attribute become inert anyways": "FAIL"
-    }
+    "total": 3
   },
   "inert/nested-inert-unfocusable.html": {
     "total": 3

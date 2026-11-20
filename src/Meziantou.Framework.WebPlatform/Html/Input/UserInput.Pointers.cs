@@ -206,8 +206,14 @@ public sealed partial class UserInput
         // The selection can be dragged when the press was in it (a press elsewhere starts a new selection, which the moves extend)
         if (button == 0)
         {
-            pointer.DragsSelection = target is not (HtmlInputElement or HtmlTextAreaElement or HtmlSelectElement or HtmlButtonElement)
-                && target.NodeDocument.SelectionOrNull is { IsCollapsed: false } selection && selection.ContainsNode(target);
+            pointer.DragsSelection = target switch
+            {
+                // The press in the selection of a text control kept it (see PointerSelection)
+                IEditableTextControl { IsTextEditor: true } textControl => textControl.EditSelectionStart < textControl.EditSelectionEnd
+                    && _browsingContext.Document.PointerSelectionState is { InSelection: true } state && ReferenceEquals(state.TextControl, target),
+                HtmlInputElement or HtmlTextAreaElement or HtmlSelectElement or HtmlButtonElement => false,
+                _ => target.NodeDocument.SelectionOrNull is { IsCollapsed: false } selection && selection.ContainsNode(target),
+            };
         }
     }
 

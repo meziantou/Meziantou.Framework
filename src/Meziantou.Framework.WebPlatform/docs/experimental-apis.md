@@ -295,3 +295,22 @@ the worker. No specification defines it yet. Its API and behavior may change.
 web-platform-tests of `websockets/stream`: a WebSocket connection whose messages are read from a `ReadableStream` and written
 to a `WritableStream`, with backpressure, and whose failures are `WebSocketError` exceptions. Chromium ships it. Its API and
 behavior may change while the proposal is under discussion.
+
+<a id="WEBPLATEXP0028"></a>
+
+## WEBPLATEXP0028: window.find()
+
+`Window.Find()` implements [`window.find()`](https://developer.mozilla.org/docs/Web/API/Window/find), the find-in-page API
+that the browsers implement but no specification defines: it searches a text in the rendered text of the document that is
+not [inert](https://html.spec.whatwg.org/multipage/interaction.html#inert-subtrees), from the selection, and selects the
+match. The white space is collapsed and a match does not span blocks. The `searchInFrames` and `showDialog` arguments are
+ignored.
+
+<a id="WEBPLATEXP0029"></a>
+
+## WEBPLATEXP0029: MouseEvent.fromElement and toElement
+
+`MouseEvent.FromElement` and `MouseEvent.ToElement` implement the legacy attributes that Blink and WebKit implement but no
+specification defines: the node that the pointer leaves and the node that it enters (the target or the related target of
+the event, depending on its type). They are null for the pointer events, as
+[Pointer Events](https://w3c.github.io/pointerevents/#attributes-and-default-actions) recommends.

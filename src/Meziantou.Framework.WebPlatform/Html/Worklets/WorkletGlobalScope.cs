@@ -23,6 +23,14 @@ public abstract class WorkletGlobalScope : GlobalScope
         : base(worklet.Document.EnvironmentOptions!, worklet.Document.EnvironmentEventLoop!)
     {
         Worklet = worklet;
+
+        // https://html.spec.whatwg.org/multipage/worklets.html#set-up-a-worklet-environment-settings-object: the time origin
+        // is the one of the outside settings
+        if (worklet.Document.RelevantWindow is { } window)
+        {
+            TimeOriginTimestamp = window.TimeOriginTimestamp;
+            TimeOrigin = window.TimeOrigin;
+        }
     }
 
     /// <summary>The worklet of the global scope.</summary>

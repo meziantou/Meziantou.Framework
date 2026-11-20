@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.WebAudio;
@@ -16,6 +17,14 @@ public sealed class DynamicsCompressorOptions : AudioNodeOptions
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-knee"/>
     [IdlMember("knee", "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-knee")]
     public float Knee { get; init; } = 30;
+
+    /// <summary>
+    /// Gets the initial makeup gain in dB, or <see cref="MakeupGainOptions.Automatic"/> (the default) for a makeup gain
+    /// computed from the threshold, the knee and the ratio.
+    /// </summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-makeupgain"/>
+    [IdlMember("makeupGain", "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-makeupgain")]
+    public FloatOrMakeupGainOptions MakeupGain { get; init; } = MakeupGainOptions.Automatic;
 
     /// <summary>Gets the initial ratio.</summary>
     /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-ratio"/>
@@ -44,6 +53,11 @@ public sealed class DynamicsCompressorNode : AudioNode
     /// <summary>The look-ahead delay in seconds.</summary>
     private const double PreDelay = 0.006;
 
+    /// <summary>The maximum of the makeup gain in dB: 20 log10(FLT_MAX), about 771.</summary>
+    private static readonly float MaxMakeupGain = (float)(20 * Math.Log10(float.MaxValue));
+
+    // [[automatic makeup gain]]
+    private readonly bool _automaticMakeupGain;
     private readonly int _delayFrames;
     private float[][] _delayLines = [];
     private int _delayPosition;
@@ -64,6 +78,11 @@ public sealed class DynamicsCompressorNode : AudioNode
         Ratio = new AudioParam(context, this, "DynamicsCompressorNode.ratio", 12, 1, 20, AutomationRate.KRate, automationRateIsFixed: true);
         Attack = new AudioParam(context, this, "DynamicsCompressorNode.attack", 0.003f, 0, 1, AutomationRate.KRate, automationRateIsFixed: true);
         Release = new AudioParam(context, this, "DynamicsCompressorNode.release", 0.25f, 0, 1, AutomationRate.KRate, automationRateIsFixed: true);
+        _automaticMakeupGain = options?.MakeupGain.Decibels is null;
+        MakeupGain = new AudioParam(context, this, "DynamicsCompressorNode.makeupGain", 0, float.MinValue, MaxMakeupGain, AutomationRate.KRate, automationRateIsFixed: true)
+        {
+            IsComputedByNode = _automaticMakeupGain,
+        };
         ApplyOptions(options);
         if (options is not null)
         {
@@ -72,6 +91,15 @@ public sealed class DynamicsCompressorNode : AudioNode
             Ratio.SetInitialValue(options.Ratio);
             Release.SetInitialValue(options.Release);
             Threshold.SetInitialValue(options.Threshold);
+            if (options.MakeupGain.Decibels is { } makeupGain)
+            {
+                MakeupGain.SetInitialValue(makeupGain);
+            }
+        }
+
+        if (_automaticMakeupGain)
+        {
+            MakeupGain.SetComputedValue((float)LinearToDecibels(ComputeMakeupGain(Threshold.Value, Knee.Value, Ratio.Value)));
         }
 
         _delayFrames = (int)Math.Round(PreDelay * context.SampleRate, MidpointRounding.AwayFromZero);
@@ -107,7 +135,16 @@ public sealed class DynamicsCompressorNode : AudioNode
     [IdlMember("release", "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-release")]
     public AudioParam Release { get; }
 
-    private protected override IEnumerable<AudioParam> NodeParameters => [Threshold, Knee, Ratio, Attack, Release];
+    /// <summary>
+    /// Gets the makeup gain in dB applied to the signal. When the makeup gain is automatic (the default), its value is
+    /// computed from the threshold, the knee and the ratio, and it cannot be modified: setting its value, scheduling or
+    /// canceling automation events, and connecting a node to it throw an <c>InvalidStateError</c>.
+    /// </summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-makeupgain"/>
+    [IdlMember("makeupGain", "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-makeupgain")]
+    public AudioParam MakeupGain { get; }
+
+    private protected override IEnumerable<AudioParam> NodeParameters => [Threshold, Knee, Ratio, Attack, Release, MakeupGain];
 
     private protected override long TailFrames => _delayFrames + (long)Math.Ceiling(Context.SampleRate * 0.25);
 
@@ -166,7 +203,7 @@ public sealed class DynamicsCompressorNode : AudioNode
         var attackRate = 1 - Math.Exp(-1 / attackFrames);
         var releaseRate = Math.Pow(10, 10.0 / 20 / releaseFrames);
         var detectorRate = 1 - Math.Exp(-1 / Math.Max(0.002 * sampleRate, 1));
-        var makeupGain = Math.Pow(1 / CompressionCurve(1, threshold, knee, ratio), 0.6);
+        var makeupGain = _automaticMakeupGain ? ComputeMakeupGain(threshold, knee, ratio) : DecibelsToLinear(MakeupGain.FinalValue);
         for (var i = 0; i < length; i++)
         {
             // The level of the frame is the maximum of the channels
@@ -214,8 +251,23 @@ public sealed class DynamicsCompressorNode : AudioNode
 
         // The metering gain is updated once per render quantum
         Reduction = (float)(_compressorGain <= 0 ? -1000 : 20 * Math.Log10(_compressorGain));
+        if (_automaticMakeupGain)
+        {
+            MakeupGain.SetComputedValue((float)LinearToDecibels(makeupGain));
+        }
+
         output.MarkNonSilent();
     }
+
+    /// <summary>
+    /// https://webaudio.github.io/web-audio-api/#computing-the-makeup-gain: the 0.6 power of the inverse of the compression
+    /// curve applied to 1.
+    /// </summary>
+    private static double ComputeMakeupGain(double threshold, double knee, double ratio) => Math.Pow(1 / CompressionCurve(1, threshold, knee, ratio), 0.6);
+
+    private static double LinearToDecibels(double value) => 20 * Math.Log10(value);
+
+    private static double DecibelsToLinear(double value) => Math.Pow(10, value / 20);
 
     /// <summary>
     /// The compression curve (https://webaudio.github.io/web-audio-api/#compression-curve): the identity up to the threshold,
@@ -241,4 +293,78 @@ public sealed class DynamicsCompressorNode : AudioNode
 
         return Math.Pow(10, outputDb / 20);
     }
+}
+
+/// <summary>The makeup gain options of a <see cref="DynamicsCompressorNode"/> (https://webaudio.github.io/web-audio-api/#enumdef-makeupgainoptions).</summary>
+/// <seealso href="https://webaudio.github.io/web-audio-api/#enumdef-makeupgainoptions"/>
+[IdlInterface("MakeupGainOptions", "https://webaudio.github.io/web-audio-api/#enumdef-makeupgainoptions")]
+public enum MakeupGainOptions
+{
+    /// <summary>The makeup gain is computed from the threshold, the knee and the ratio of the compressor.</summary>
+    /// <seealso href="https://webaudio.github.io/web-audio-api/#dom-makeupgainoptions-automatic"/>
+    [IdlMember("automatic", "https://webaudio.github.io/web-audio-api/#dom-makeupgainoptions-automatic")]
+    Automatic,
+}
+
+/// <summary>
+/// The <c>(float or MakeupGainOptions)</c> union of the makeup gain of a <see cref="DynamicsCompressorOptions"/>
+/// (https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-makeupgain): a gain in dB, or the automatic
+/// makeup gain.
+/// </summary>
+/// <seealso href="https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-makeupgain"/>
+[IdlInterface("(float or MakeupGainOptions)", "https://webaudio.github.io/web-audio-api/#dom-dynamicscompressoroptions-makeupgain")]
+public readonly struct FloatOrMakeupGainOptions : IUnionValue, IEquatable<FloatOrMakeupGainOptions>
+{
+    // Null for the default value of the struct: the automatic makeup gain
+    private readonly object? _value;
+
+    private FloatOrMakeupGainOptions(object value) => _value = value;
+
+    /// <summary>Gets the value: a <see cref="MakeupGainOptions"/> or a <see cref="float"/>.</summary>
+    [NotInIdl]
+    public object Value => _value ?? MakeupGainOptions.Automatic;
+
+    /// <summary>Gets the makeup gain in dB when the value is a number, otherwise null.</summary>
+    [NotInIdl]
+    public float? Decibels => Value as float?;
+
+    /// <summary>Gets the option when the value is a <see cref="MakeupGainOptions"/>, otherwise null.</summary>
+    [NotInIdl]
+    public MakeupGainOptions? Option => Value as MakeupGainOptions?;
+
+    /// <summary>Creates a union value from an option.</summary>
+    [NotInIdl]
+    public static implicit operator FloatOrMakeupGainOptions(MakeupGainOptions value) => new(value);
+
+    /// <summary>Creates a union value from a gain in dB.</summary>
+    [NotInIdl]
+    public static implicit operator FloatOrMakeupGainOptions(float value) => new(value);
+
+    /// <summary>Creates a union value from an option.</summary>
+    [NotInIdl]
+    public static FloatOrMakeupGainOptions FromMakeupGainOptions(MakeupGainOptions value) => value;
+
+    /// <summary>Creates a union value from a gain in dB.</summary>
+    [NotInIdl]
+    public static FloatOrMakeupGainOptions FromSingle(float value) => value;
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public bool Equals(FloatOrMakeupGainOptions other) => Equals(Value, other.Value);
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public override bool Equals([NotNullWhen(true)] object? obj) => obj is FloatOrMakeupGainOptions other && Equals(other);
+
+    /// <inheritdoc/>
+    [NotInIdl]
+    public override int GetHashCode() => Value.GetHashCode();
+
+    /// <summary>Returns whether the two values are equal.</summary>
+    [NotInIdl]
+    public static bool operator ==(FloatOrMakeupGainOptions left, FloatOrMakeupGainOptions right) => left.Equals(right);
+
+    /// <summary>Returns whether the two values are different.</summary>
+    [NotInIdl]
+    public static bool operator !=(FloatOrMakeupGainOptions left, FloatOrMakeupGainOptions right) => !left.Equals(right);
 }

@@ -25,6 +25,59 @@ public sealed class SelectionTests : IDisposable
     }
 
     [Fact]
+    public void WindowFind_SelectsTheNextMatch()
+    {
+#pragma warning disable WEBPLATEXP0028 // window.find() is not specified
+        var document = Load("<p id=a>Find me, then find ME</p><p id=b>a<b>bc</b>d</p><div inert>me inert</div><p id=c>wordy word</p>");
+        var window = document.DefaultView!;
+        var selection = document.GetSelection()!;
+
+        Assert.True(window.Find("me"));
+        Assert.Equal(("Find me, then find ME", 5u, 7u), (selection.AnchorNode!.TextContent, selection.AnchorOffset, selection.FocusOffset));
+
+        // The next search starts after the selection; the case is ignored unless the search is case-sensitive
+        Assert.True(window.Find("me"));
+        Assert.Equal(19u, selection.AnchorOffset);
+        Assert.False(window.Find("me"));
+        Assert.True(window.Find("me", wrapAround: true));
+        Assert.Equal(5u, selection.AnchorOffset);
+        Assert.False(window.Find("ME", caseSensitive: true, backwards: true));
+        Assert.True(window.Find("ME", caseSensitive: true));
+        Assert.Equal(19u, selection.AnchorOffset);
+
+        // A match spans the inline elements, not the blocks; the inert nodes are not searched
+        selection.RemoveAllRanges();
+        Assert.True(window.Find("abcd"));
+        Assert.Equal("abcd", selection.ToString());
+        Assert.False(window.Find("inert"));
+        Assert.False(window.Find(""));
+
+        Assert.True(window.Find("word", wholeWord: true));
+        Assert.Equal(6u, selection.AnchorOffset);
+        Assert.True(window.Find("word", backwards: true));
+        Assert.Equal(0u, selection.AnchorOffset);
+#pragma warning restore WEBPLATEXP0028
+    }
+
+    [Fact]
+    public void WindowFind_InShadowTree_ContinuesAfterTheMatch()
+    {
+#pragma warning disable WEBPLATEXP0028 // window.find() is not specified
+        var document = Load("<div id=host></div><p>shadow</p>");
+        var root = document.GetElementById("host")!.AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
+        root.AppendChild(document.CreateTextNode("shadow"));
+        var window = document.DefaultView!;
+
+        // The selection does not hold a range of a shadow tree: the next search starts after the match anyway
+        Assert.True(window.Find("shadow"));
+        Assert.Equal(0u, document.GetSelection()!.RangeCount);
+        Assert.True(window.Find("shadow"));
+        Assert.Equal(1u, document.GetSelection()!.RangeCount);
+        Assert.False(window.Find("shadow"));
+#pragma warning restore WEBPLATEXP0028
+    }
+
+    [Fact]
     public void RenderedBoundaryPoints_AcrossShadowTrees()
     {
         // The anchor and the focus of setBaseAndExtent() in different trees are kept for the rendering, in shadow-including

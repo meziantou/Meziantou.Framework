@@ -162,6 +162,7 @@ public partial class HtmlElement
     /// </summary>
     internal void CommitUserEdits()
     {
+        (this as HtmlInputElement)?.OnDateTimeControlUnfocused();
         if (RareDataOrNull is not ElementRareData { ValueBeforeUserEdit: { } valueBeforeEdit } rareData)
             return;
 

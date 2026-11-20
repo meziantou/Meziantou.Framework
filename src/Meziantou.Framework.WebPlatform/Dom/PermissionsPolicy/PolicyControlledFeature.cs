@@ -32,6 +32,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://w3c.github.io/ambient-light/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature AmbientLightSensor { get; } = new("ambient-light-sensor", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/aria/#arianotify-permissions-policy: its default allowlist is *.</summary>
+    public static PolicyControlledFeature AriaNotify { get; } = new("aria-notify", isAllowedForAllByDefault: true);
+
     public static PolicyControlledFeature Autoplay { get; } = new("autoplay", isAllowedForAllByDefault: false);
 
     /// <summary>https://w3c.github.io/battery/#permissions-policy-integration: its default allowlist is 'self'.</summary>
@@ -144,6 +147,7 @@ internal sealed partial class PolicyControlledFeature
     [
         Accelerometer,
         AmbientLightSensor,
+        AriaNotify,
         Autoplay,
         Battery,
         new("bluetooth", isAllowedForAllByDefault: false),

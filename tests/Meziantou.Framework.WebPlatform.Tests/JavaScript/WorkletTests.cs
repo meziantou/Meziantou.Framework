@@ -261,6 +261,34 @@ public sealed class WorkletTests : IDisposable
     }
 
     [Fact]
+    public void AudioWorklet_ExposesWorkletPerformance()
+    {
+        AddScript("https://example.com/dir/processor.js", """
+            const moduleNow = performance.now();
+            registerProcessor('timer', class extends AudioWorkletProcessor {
+              constructor() {
+                super();
+                const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'performance');
+                this.port.postMessage([typeof WorkletPerformance, 'Performance' in globalThis, performance instanceof WorkletPerformance, 'timeOrigin' in performance,
+                  typeof descriptor.set, performance.now() >= moduleNow].join());
+              }
+            });
+            """);
+        var document = Load("""
+            <script>
+              const context = new OfflineAudioContext(1, 256, 8000);
+              context.audioWorklet.addModule('processor.js').then(() => {
+                const node = new AudioWorkletNode(context, 'timer');
+                node.port.onmessage = e => document.title = [e.data, typeof WorkletPerformance].join();
+              }).catch(e => document.title = 'error ' + e);
+            </script>
+            """);
+
+        Assert.Equal("function,false,true,false,function,true,undefined", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void AudioWorklet_FiresProcessorErrorWhenTheProcessorThrows()
     {
         AddScript("https://example.com/dir/processor.js", """

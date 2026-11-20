@@ -34,6 +34,32 @@ public sealed class PointerEventTests
     }
 
     [Fact]
+    public void FromElementAndToElement()
+    {
+        var document = new HtmlDocumentParser().Parse("<p id=a></p><p id=b></p>");
+        var a = document.GetElementById("a")!;
+        var b = document.GetElementById("b")!;
+        var events = new List<string>();
+        foreach (var type in new[] { "mouseover", "mouseout", "mousemove", "pointerover" })
+        {
+            a.AddEventListener(type, e =>
+            {
+                var mouseEvent = (MouseEvent)e;
+#pragma warning disable WEBPLATEXP0029 // The legacy attributes of Blink and WebKit
+                events.Add($"{type} {(mouseEvent.FromElement as Element)?.Id ?? "null"} {(mouseEvent.ToElement as Element)?.Id ?? "null"}");
+#pragma warning restore WEBPLATEXP0029
+            });
+        }
+
+        a.DispatchEvent(new MouseEvent("mouseover", new MouseEventInit { RelatedTarget = b }));
+        a.DispatchEvent(new MouseEvent("mouseout", new MouseEventInit { RelatedTarget = b }));
+        a.DispatchEvent(new MouseEvent("mousemove"));
+        a.DispatchEvent(new PointerEvent("pointerover", new PointerEventInit { RelatedTarget = b }));
+
+        Assert.Equal(["mouseover b a", "mouseout a b", "mousemove null a", "pointerover null null"], events);
+    }
+
+    [Fact]
     public void Click_FiresASyntheticPointerEvent()
     {
         var document = new HtmlDocumentParser().Parse("<button id=b>");

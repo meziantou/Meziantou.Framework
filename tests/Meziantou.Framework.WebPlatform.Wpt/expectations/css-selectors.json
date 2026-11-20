@@ -2504,24 +2504,13 @@
     "reftest": "PASS"
   },
   "css/selectors/user-invalid.html": {
-    "total": 8,
-    "failures": {
-      "A required date should match :user-invalid if the user unchecks it and blurs.": "FAIL"
-    }
+    "total": 8
   },
   "css/selectors/user-valid-user-invalid-multifield-inputs.tentative.html": {
-    "total": 3,
-    "failures": {
-      "<input type=date> keyboard behavior for :user-valid/:user-invalid.": "FAIL",
-      "<input type=datetime-local> keyboard behavior for :user-valid/:user-invalid.": "FAIL",
-      "<input type=time> keyboard behavior for :user-valid/:user-invalid.": "FAIL"
-    }
+    "total": 3
   },
   "css/selectors/user-valid.html": {
-    "total": 5,
-    "failures": {
-      "Date inputs should match :user-valid after the user types a value into it.": "FAIL"
-    }
+    "total": 5
   },
   "css/selectors/valid-invalid-form-fieldset.html": {
     "total": 1

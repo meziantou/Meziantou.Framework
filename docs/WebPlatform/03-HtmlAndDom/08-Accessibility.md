@@ -131,6 +131,19 @@ Playwright where the specifications and Playwright disagree:
 - A disabled `fieldset` is disabled itself, not only its form controls.
 - The level of a heading takes `headingoffset` into account.
 
+## Notifications
+
+A page sends notifications to the assistive technologies (a screen reader announces them) with
+[`ariaNotify()`](https://w3c.github.io/aria/#ARIANotifyMixin) on an element or on the document. Set
+[BrowsingContextOptions.AriaNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.AriaNotification) to
+receive them: each [AriaNotification](cref:Meziantou.Framework.WebPlatform.Dom.AriaNotification) has the text to announce, its
+priority and the node that sent it. The notifications of a hidden element (excluded from the accessibility tree), and of a
+document that the `aria-notify` permissions policy feature disables, are not sent. Without the callback, the notifications
+are ignored, as when no assistive technology is running.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Html/AccessibilityTests.cs;region=WebPlatform_AriaNotify;format=md-fenced-code-block;dedent=true -->
+<!-- endref -->
+
 ## With and without a browsing context
 
 The computation uses the computed styles: the generated content of `::before` and `::after`, `display: none` and

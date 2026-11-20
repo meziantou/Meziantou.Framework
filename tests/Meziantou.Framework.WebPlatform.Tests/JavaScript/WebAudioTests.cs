@@ -510,6 +510,64 @@ public sealed class WebAudioTests : IDisposable
     }
 
     [Fact]
+    public void DynamicsCompressorNode_AutomaticMakeupGain_CannotBeModified()
+    {
+        var context = new OfflineAudioContext(1, 256, 8000);
+        var compressor = new DynamicsCompressorNode(context);
+        var source = new ConstantSourceNode(context);
+
+        // The makeup gain of the default threshold, knee and ratio: 0.6 * -(the compression curve of 0 dB)
+        Assert.Equal(5.28f, compressor.MakeupGain.Value, 0.01f);
+        Assert.Equal(0f, compressor.MakeupGain.DefaultValue);
+        Assert.Equal(AutomationRate.KRate, compressor.MakeupGain.AutomationRate);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => compressor.MakeupGain.Value = 2).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => compressor.MakeupGain.SetValueAtTime(2, 0)).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => compressor.MakeupGain.CancelScheduledValues(0)).Name);
+        Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => source.Connect(compressor.MakeupGain)).Name);
+    }
+
+    [Fact]
+    public void DynamicsCompressorNode_FixedMakeupGain_AmplifiesTheSignal()
+    {
+        static float RenderLastSample(float makeupGain)
+        {
+            var context = new OfflineAudioContext(1, 8192, 8000);
+            var source = new ConstantSourceNode(context, new ConstantSourceOptions { Offset = 0.01f });
+            var compressor = new DynamicsCompressorNode(context, new DynamicsCompressorOptions { MakeupGain = makeupGain });
+            source.Connect(compressor).Connect(context.Destination);
+            source.Start();
+            return Render(context).GetChannelData(0)[^1];
+        }
+
+        var context = new OfflineAudioContext(1, 256, 8000);
+        var compressor = new DynamicsCompressorNode(context, new DynamicsCompressorOptions { MakeupGain = 6 });
+        Assert.Equal(6f, compressor.MakeupGain.Value);
+        compressor.MakeupGain.Value = 3;
+        Assert.Equal(3f, compressor.MakeupGain.Value);
+
+        // A quiet signal is not compressed: the makeup gain in dB is applied to it
+        Assert.Equal(0.01f, RenderLastSample(0), 0.0001f);
+        Assert.Equal(0.01f * MathF.Pow(10, 20f / 20), RenderLastSample(20), 0.0001f);
+    }
+
+    [Fact]
+    public void Script_DynamicsCompressorNode_MakeupGain()
+    {
+        var document = Load("""
+            <script>
+              const context = new OfflineAudioContext(1, 256, 8000);
+              const automatic = new DynamicsCompressorNode(context);
+              const fixed = new DynamicsCompressorNode(context, { makeupGain: 4 });
+              let error;
+              try { automatic.makeupGain.value = 1; } catch (e) { error = e.name; }
+              document.title = [automatic.makeupGain.value.toFixed(1), fixed.makeupGain.value, automatic.makeupGain.automationRate, error].join();
+            </script>
+            """);
+
+        Assert.Equal("5.3,4,k-rate,InvalidStateError", document.Title);
+    }
+
+    [Fact]
     public void Script_RendersAnOfflineContext()
     {
         var document = Load("""

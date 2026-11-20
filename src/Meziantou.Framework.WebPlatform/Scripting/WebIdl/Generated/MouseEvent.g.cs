@@ -41,6 +41,12 @@ internal static class Binding_MouseEvent<TAdapter, TValue> where TAdapter : stru
     private static TValue Get_offsetY(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MouseEvent>(t, Binding); return r.FromNumber((double)o.OffsetY); }
     private static TValue Get_movementX(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MouseEvent>(t, Binding); return r.FromNumber((double)o.MovementX); }
     private static TValue Get_movementY(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MouseEvent>(t, Binding); return r.FromNumber((double)o.MovementY); }
+    #pragma warning disable WEBPLATEXP0029 // The binding exposes the experimental Web IDL member
+    private static TValue Get_fromElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MouseEvent>(t, Binding); return r.Wrap(o.FromElement); }
+    #pragma warning restore WEBPLATEXP0029
+    #pragma warning disable WEBPLATEXP0029 // The binding exposes the experimental Web IDL member
+    private static TValue Get_toElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MouseEvent>(t, Binding); return r.Wrap(o.ToElement); }
+    #pragma warning restore WEBPLATEXP0029
     private static TValue Op_getModifierState(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MouseEvent>(t, Binding);
@@ -92,6 +98,8 @@ internal static class Binding_MouseEvent<TAdapter, TValue> where TAdapter : stru
         r.DefineAttribute(instanceTarget, "offsetY", Get_offsetY, null);
         r.DefineAttribute(instanceTarget, "movementX", Get_movementX, null);
         r.DefineAttribute(instanceTarget, "movementY", Get_movementY, null);
+        r.DefineAttribute(instanceTarget, "fromElement", Get_fromElement, null);
+        r.DefineAttribute(instanceTarget, "toElement", Get_toElement, null);
         r.DefineOperation(instanceTarget, "getModifierState", 1, Op_getModifierState);
         r.DefineOperation(instanceTarget, "initMouseEvent", 1, Op_initMouseEvent);
     }

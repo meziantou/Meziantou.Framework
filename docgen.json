@@ -9,7 +9,12 @@
     "homeTitle": "Introduction",
     "logo": "docs/logo.svg",
     "favicon": "docs/logo.svg",
+    "footer": "© Gérald Barré - [meziantou.net](https://www.meziantou.net)",
     "headerLinks": [
+      {
+        "text": "meziantou.net",
+        "url": "https://www.meziantou.net"
+      },
       {
         "text": "Sponsor",
         "url": "https://github.com/sponsors/meziantou"

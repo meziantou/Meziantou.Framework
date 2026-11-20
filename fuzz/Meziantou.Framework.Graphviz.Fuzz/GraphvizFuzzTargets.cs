@@ -63,7 +63,7 @@ public static partial class GraphvizFuzzTargets
         }
 
         FuzzAssert.True(document is not null, "Parse returned no document");
-        foreach (var warning in document!.Warnings)
+        foreach (var warning in document.Warnings)
         {
             CheckPosition(lines, warning.Line, warning.Column, warning.ToString());
         }

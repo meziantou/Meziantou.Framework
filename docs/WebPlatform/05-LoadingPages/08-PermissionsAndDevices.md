@@ -825,6 +825,16 @@ content type that is not valid, a container without a single codec, a codec of t
 apply to the type...), and the backends of the browsing context answer:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapabilities;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new BrowsingContextOptions
+{
+    // Answers navigator.mediaCapabilities.decodingInfo() for the "file" and "media-source" types
+    MediaBackend = new WebMMediaBackend(),
+
+    // Answers the "webrtc" types, and the "record" type (what MediaRecorder records)
+    MediaCodecs = new Vp8OpusCodecs(),
+};
+```
 <!-- endref -->
 
 - `file` asks [CanPlayType](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend.CanPlayType) of the
@@ -843,6 +853,21 @@ apply to the type...), and the backends of the browsing context answer:
   and the bitrate.
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MediaCapabilitiesBackend;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Plays WebM files with VP8 and Opus, and MP3 files
+private sealed class WebMMediaBackend : MediaBackend
+{
+    public override MediaTypeSupport CanPlayType(string mimeType, IReadOnlyList<string> codecs) => mimeType switch
+    {
+        "video/webm" or "audio/webm" when codecs.Count == 0 => MediaTypeSupport.Maybe,
+        "video/webm" or "audio/webm" => codecs.All(codec => codec is "vp8" or "opus" || codec.StartsWith("vp09.", StringComparison.Ordinal)) ? MediaTypeSupport.Probably : MediaTypeSupport.NotSupported,
+        "audio/mpeg" => MediaTypeSupport.Probably,
+        _ => MediaTypeSupport.NotSupported,
+    };
+
+    public override MediaPlayer? CreatePlayer(MediaResource resource) => null;
+}
+```
 <!-- endref -->
 
 Without a backend, nothing is supported. The library has no performance model: a supported configuration is `smooth`,

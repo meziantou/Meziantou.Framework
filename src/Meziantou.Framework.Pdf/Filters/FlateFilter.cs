@@ -9,8 +9,15 @@ namespace Meziantou.Framework.Pdf.Filters;
 /// </remarks>
 internal static class FlateFilter
 {
-    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit)
+    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit) => Decode(input, limit, out _);
+
+    /// <summary>Decodes Flate data.</summary>
+    /// <param name="input">The data.</param>
+    /// <param name="limit">The maximum length of the decoded data.</param>
+    /// <param name="isDamaged">Whether the data is damaged: the bytes decoded before the damage are returned.</param>
+    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit, out bool isDamaged)
     {
+        isDamaged = false;
         var output = new BoundedOutput(limit, (int)Math.Min(Math.Max(256L, input.Length * 4L), int.MaxValue));
 
         // A zlib header (RFC 1950, 2.2): compression method 8 and a check value; some producers write raw deflate data
@@ -46,13 +53,53 @@ internal static class FlateFilter
         catch (InvalidDataException) when (output.Length > 0 || input.Length == 0)
         {
             // Damaged data: keep what was decoded
+            isDamaged = input.Length > 0;
         }
         catch (InvalidDataException ex)
         {
             throw new InvalidPdfContentException("The FlateDecode data is not valid", ex);
         }
 
-        return output.ToArray();
+        var result = output.ToArray();
+
+        // The deflate decoder does not check the Adler-32 checksum of the zlib data (RFC 1950, 2.2): the data is damaged
+        // or truncated when the checksum after it, before the white space some producers add, is another one
+        if (hasZlibHeader && !isDamaged)
+        {
+            var end = span.Length;
+            while (end > 2 && span[end - 1] is (byte)'\r' or (byte)'\n' or (byte)' ' or 0)
+            {
+                end--;
+            }
+
+            isDamaged = end < 6 || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(span[(end - 4)..end]) != Adler32(result);
+        }
+
+        return result;
+    }
+
+    /// <summary>Computes the Adler-32 checksum of data (RFC 1950, 8.2).</summary>
+    private static uint Adler32(ReadOnlySpan<byte> data)
+    {
+        const uint Modulus = 65521;
+        uint a = 1;
+        uint b = 0;
+        while (!data.IsEmpty)
+        {
+            // 5552 bytes keep the sums below 2^32 before the modulo
+            var chunk = data[..Math.Min(data.Length, 5552)];
+            foreach (var value in chunk)
+            {
+                a += value;
+                b += a;
+            }
+
+            a %= Modulus;
+            b %= Modulus;
+            data = data[chunk.Length..];
+        }
+
+        return (b << 16) | a;
     }
 
     public static byte[] Encode(ReadOnlySpan<byte> input, CompressionLevel level = CompressionLevel.Optimal)

@@ -40,7 +40,8 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         _input = input;
         _options = options;
         Objects = objects;
-        DecodeLimits = new PdfDecodeLimits(options.MaxDecodedStreamLength);
+        DecodeLimits = new PdfDecodeLimits(options.MaxDecodedStreamLength) { Diagnostics = Diagnostics };
+        objects.Diagnostics = Diagnostics;
     }
 
     private delegate T ParseFunc<out T>(PdfObjectParser parser);
@@ -58,6 +59,9 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     public PdfIndirectObjectCollection Objects { get; }
 
     public PdfDecodeLimits DecodeLimits { get; }
+
+    /// <summary>Gets the problems found in the file and repaired, as the objects are read.</summary>
+    public PdfDiagnosticCollector Diagnostics { get; } = new();
 
     public PdfVersion HeaderVersion { get; private set; } = PdfVersion.Pdf14;
 
@@ -181,6 +185,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             reader.InitializeSecurity();
             if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary)
             {
+                reader.Diagnostics.Report(PdfDiagnosticKind.MissingCatalog, "The trailer has no catalog: the cross-reference information is rebuilt");
                 reader.Repair(reader.Trailer);
             }
         }
@@ -210,6 +215,10 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             if (value is null && HeaderOffset > 0)
             {
                 value = TryLoadAt(entry.Offset + HeaderOffset, number, entry.Reference.Generation);
+                if (value is not null)
+                {
+                    Diagnostics.Report(PdfDiagnosticKind.WrongObjectOffset, "The offset of the object counts from the header of the file", entry.Offset + HeaderOffset, number);
+                }
             }
 
             if (value is not null)
@@ -222,15 +231,38 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             var value = TryLoadAt(found.Offset, number, generation: null);
             if (value is not null)
+            {
+                Diagnostics.Report(PdfDiagnosticKind.WrongObjectOffset, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The object is not at the offset of its cross-reference entry ({entry.Offset}): it was found by scanning the file"), found.Offset, number);
                 return value;
+            }
         }
 
+        Diagnostics.Report(PdfDiagnosticKind.MissingObject, "The object cannot be found: it is read as null", objectNumber: number);
         return PdfNull.Instance;
     }
 
     public bool AcceptsOtherGeneration(int objectNumber) => IsRepaired && _scanner is not null && _scanner.HasSingleGeneration(objectNumber);
 
-    private PdfRecoveryScanner GetScanner() => _scanner ??= PdfRecoveryScanner.Scan(_input, _options.MaxNestingDepth);
+    /// <summary>Gets an offset of the file for a diagnostic: <see langword="null"/> when it is outside of the file.</summary>
+    private long? InFile(long offset) => offset >= 0 && offset < _input.Length ? offset : null;
+
+    private PdfRecoveryScanner GetScanner()
+    {
+        if (_scanner is null)
+        {
+            CheckFullDownload();
+            _scanner = PdfRecoveryScanner.Scan(_input, _options.MaxNestingDepth);
+        }
+
+        return _scanner;
+    }
+
+    /// <summary>Refuses to read the whole file of a document opened over HTTP when the options do not allow it.</summary>
+    private void CheckFullDownload()
+    {
+        if (_input is HttpRangePdfInput { AllowFullDownload: false })
+            throw new UnsupportedPdfFeatureException($"The file must be scanned to be read, which downloads it whole ({nameof(PdfReadOptions)}.{nameof(PdfReadOptions.AllowFullDownload)} is false)");
+    }
 
     /// <summary>Authenticates the password of an encrypted file (7.6): the encryption dictionary is not encrypted itself.</summary>
     private void InitializeSecurity()
@@ -259,9 +291,18 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             // Some producers prepend garbage beyond 1 KiB, and some files have no header at all: like other readers, the
             // file is read anyway, and it is rejected when no catalog can be found
+            CheckFullDownload();
             index = IndexOf(_input, "%PDF-"u8);
             if (index < 0)
+            {
+                Diagnostics.Report(PdfDiagnosticKind.MissingHeader, "The file has no %PDF- header");
                 return;
+            }
+        }
+
+        if (index > 0)
+        {
+            Diagnostics.Report(PdfDiagnosticKind.HeaderNotAtStart, "Bytes come before the %PDF- header", index);
         }
 
         HeaderOffset = index;
@@ -276,11 +317,17 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     {
         var startxref = LastIndexOfKeyword(_input, "startxref"u8);
         if (startxref < 0)
+        {
+            Diagnostics.Report(PdfDiagnosticKind.InvalidStartXref, "The file has no startxref keyword");
             return false;
+        }
 
         var offsetToken = Parse(startxref + "startxref".Length, _input.Length, static parser => parser.Lexer.Next());
         if (offsetToken.Kind != PdfTokenKind.Integer || offsetToken.IntegerValue < 0 || offsetToken.IntegerValue >= _input.Length)
+        {
+            Diagnostics.Report(PdfDiagnosticKind.InvalidStartXref, "The offset after the startxref keyword is not valid", startxref);
             return false;
+        }
 
         var entries = new Dictionary<int, XrefEntry>();
         PdfDictionary? trailer = null;
@@ -297,9 +344,13 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                 if (section is null || (section.IsTrailerDamaged && trailer is null))
                 {
                     if (trailer is null)
+                    {
+                        Diagnostics.Report(PdfDiagnosticKind.DamagedCrossReferenceSection, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The cross-reference section at offset {offset} cannot be read"), InFile(offset));
                         return false;
+                    }
 
                     // A broken /Prev: keep what the newer sections give, the scan fills the rest when needed
+                    Diagnostics.Report(PdfDiagnosticKind.BrokenCrossReferenceChain, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The /Prev offset {offset} does not lead to a cross-reference section: the older sections are not read"), InFile(offset));
                     break;
                 }
 
@@ -334,6 +385,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
         {
             // A cross-reference stream with a filter that is not supported is read like a damaged one
+            Diagnostics.Report(PdfDiagnosticKind.DamagedCrossReferenceSection, "A cross-reference stream cannot be read: " + ex.Message, InFile(offset));
             if (trailer is null)
                 return false;
         }
@@ -412,6 +464,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                 // A common mistake: a table that starts at 1 with the entry of object 0 ("0000000000 65535 f")
                 if (i == 0 && start == 1 && lexer.IsKeyword(typeToken, "f"u8) && offsetToken.IntegerValue == 0 && generationToken.IntegerValue == 65535)
                 {
+                    Diagnostics.Report(PdfDiagnosticKind.ShiftedCrossReferenceTable, "The cross-reference table starts at object 1 with the entry of object 0: it starts at 0", (parser.Window?.Offset ?? 0) + token.Start);
                     start = 0;
                 }
 
@@ -572,6 +625,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         IsRepaired = true;
         LastXrefOffset = -1;
         var scanner = GetScanner();
+        Diagnostics.Report(PdfDiagnosticKind.CrossReferenceRebuilt, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The cross-reference information was rebuilt by scanning the file: {scanner.Offsets.Count} objects found"));
         foreach (var (number, location) in scanner.Offsets)
         {
             if (number == 0)
@@ -711,6 +765,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             if ((kinds[i] & CandidateKind.Catalog) != CandidateKind.None && Objects.GetEntry(objects[i].Number) is { } entry && Objects.Load(entry) is PdfDictionary dictionary && dictionary.IsType(PdfNames.Catalog))
             {
+                Diagnostics.Report(PdfDiagnosticKind.CatalogFoundByScan, "The file has no trailer with a catalog: the last catalog of the file is the root", objects[i].Offset, objects[i].Number);
                 trailer[PdfNames.Root] = entry.Reference;
                 return trailer;
             }
@@ -814,13 +869,19 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         var limit = _scanner is not null && _scanner.Offsets.TryGetValue(number, out var found) && found.Offset == offset ? _scanner.GetBoundary(offset) : _input.Length;
         try
         {
-            var (value, foundNumber, foundGeneration) = Parse(offset, limit, static parser =>
+            var (value, foundNumber, foundGeneration, notes) = Parse(offset, limit, static parser =>
             {
+                parser.Notes = [];
                 var value = parser.ParseIndirectObject(out var foundNumber, out var foundGeneration);
-                return (value, foundNumber, foundGeneration);
+                return (value, foundNumber, foundGeneration, parser.Notes);
             });
             if (value is null || foundNumber != number || (generation is { } expected && foundGeneration != expected))
                 return null;
+
+            foreach (var note in notes)
+            {
+                Diagnostics.Report(note.Kind, note.Message, note.Offset, number);
+            }
 
             if (Security is not null && number != _encryptObjectNumber)
             {
@@ -847,6 +908,8 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             index = objectStream.IndexOf(number);
             if (index < 0)
                 return null;
+
+            Diagnostics.Report(PdfDiagnosticKind.WrongObjectStreamIndex, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The object is not at the index of its cross-reference entry in object stream {containerNumber}"), objectNumber: number);
         }
 
         var start = (long)objectStream.First + objects[index].Offset;
@@ -854,10 +917,17 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             return null;
 
         var lexer = new PdfLexer(objectStream.Data, (int)start);
-        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits, NameCache = _names };
+        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits, NameCache = _names, Notes = [] };
         try
         {
-            return parser.ParseObject();
+            var value = parser.ParseObject();
+            foreach (var note in parser.Notes)
+            {
+                // The offsets of an object stream are in its decoded data, not in the file
+                Diagnostics.Report(note.Kind, note.Message, offset: null, objectNumber: number);
+            }
+
+            return value;
         }
         catch (InvalidPdfContentException)
         {
@@ -879,12 +949,9 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             data = stream.GetDecodedData();
         }
-        catch (InvalidPdfContentException)
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
         {
-            return null;
-        }
-        catch (UnsupportedPdfFeatureException)
-        {
+            Diagnostics.Report(PdfDiagnosticKind.UndecodableObjectStream, "The object stream cannot be decoded: " + ex.Message, objectNumber: number);
             return null;
         }
 

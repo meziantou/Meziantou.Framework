@@ -65,6 +65,8 @@ public static class PdfFuzzTargets
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
         new("pdf-xfdf", Xfdf) { Seeds = () => GetSeeds(".xfdf"), Dictionary = XfdfTokens },
         new("pdf-round-trip", RoundTrip) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-diagnostics", Diagnostics) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
+        new("pdf-http-range", HttpRange) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-optimizer", Optimizer) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-annotation-appearances", AnnotationAppearances) { Seeds = GetAppearanceSeeds, Dictionary = AppearanceTokens },
         new("pdf-annotation-model", AnnotationModel) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -241,6 +243,114 @@ public static class PdfFuzzTargets
 
         FuzzAssert.True(sanitized.Output.Span.StartsWith(bytes), "The sanitizer did not keep the bytes of the file");
         FuzzAssert.False(PdfSaveSanitizer.Sanitize(sanitized.Output, ReadOptions).HasChanges, "The output of the sanitizer still needs repairs");
+    }
+
+    /// <summary>
+    /// The input is a PDF file, opened with all its objects read. The diagnostics are within their bounds: a repaired file
+    /// reports that its cross-reference information was rebuilt, the offsets are in the file, the object numbers are
+    /// positive, the list is bounded, and reading the file again adds nothing.
+    /// </summary>
+    private static void Diagnostics(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { LoadAllObjects = true, MaxDecodedStreamLength = 1 << 20 });
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        var diagnostics = document.Diagnostics;
+        FuzzAssert.True(diagnostics.Count <= 1000, "The number of diagnostics is not bounded");
+        FuzzAssert.Equal(document.IsRepaired, diagnostics.Any(diagnostic => diagnostic.Kind == PdfDiagnosticKind.CrossReferenceRebuilt), "A repaired file must report that its cross-reference information was rebuilt, and only a repaired file");
+        foreach (var diagnostic in diagnostics)
+        {
+            FuzzAssert.True(diagnostic.Offset is not { } offset || (offset >= 0 && offset <= data.Length), $"The offset of a diagnostic is outside of the file: {diagnostic}");
+            FuzzAssert.True(diagnostic.ObjectNumber is null or >= 0, $"The object number of a diagnostic is negative: {diagnostic}");
+            FuzzAssert.False(string.IsNullOrEmpty(diagnostic.ToString()), "A diagnostic has no text");
+        }
+
+        try
+        {
+            FuzzAssert.Equal(diagnostics.Count, document.ValidateStructure().Count, "Reading the file again reports new problems");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    /// <summary>
+    /// The input is a PDF file, opened from memory and over HTTP with range requests (a server of the bytes of the input).
+    /// Both read the same document: the same pages and the same text of the first page after a prefetch, or both throw a
+    /// documented exception.
+    /// </summary>
+    private static void HttpRange(ReadOnlySpan<byte> data)
+    {
+        var file = data.ToArray();
+        var options = new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 };
+        (int Pages, string Text)? expected;
+        try
+        {
+            var local = PdfDocument.Open(file, options);
+            expected = (local.Pages.Count, local.Pages.Count > 0 ? local.Pages[0].ExtractText() : "");
+        }
+        catch (PdfException)
+        {
+            expected = null;
+        }
+
+        var (actual, servedBytes) = ReadOverHttpAsync(file, options).GetAwaiter().GetResult();
+        FuzzAssert.Equal(expected, actual, "The document read over HTTP is not the document read from memory");
+        FuzzAssert.True(servedBytes <= (2L * file.Length) + (64 * 1024), "The bytes of the file are downloaded more than once");
+    }
+
+    private static async Task<((int Pages, string Text)? Result, long ServedBytes)> ReadOverHttpAsync(byte[] file, PdfReadOptions options)
+    {
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        try
+        {
+            var remote = await PdfDocument.OpenAsync(client, new Uri("https://localhost/file.pdf"), options).ConfigureAwait(false);
+            if (remote.Pages.Count > 0)
+            {
+                await remote.PrefetchPageAsync(0).ConfigureAwait(false);
+            }
+
+            return ((remote.Pages.Count, remote.Pages.Count > 0 ? remote.Pages[0].ExtractText() : ""), handler.ServedBytes);
+        }
+        catch (PdfException)
+        {
+            return (null, handler.ServedBytes);
+        }
+    }
+
+    /// <summary>Serves a file with range requests (RFC 9110, 14).</summary>
+    private sealed class RangeHandler(byte[] file) : HttpMessageHandler
+    {
+        public long ServedBytes { get; private set; }
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) => Serve(request);
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken) => Task.FromResult(Serve(request));
+
+        private HttpResponseMessage Serve(HttpRequestMessage request)
+        {
+            if (file.Length == 0 || request.Headers.Range is not { Ranges.Count: 1 } range || range.Ranges.First() is not { From: { } from, To: { } to } || from >= file.Length)
+            {
+                // An unsatisfiable range gives the length of the file (RFC 9110, 15.5.17)
+                var empty = new ByteArrayContent([]);
+                empty.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(file.Length);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.RequestedRangeNotSatisfiable) { Content = empty };
+            }
+
+            to = Math.Min(to, file.Length - 1);
+            ServedBytes += to - from + 1;
+            var content = new ByteArrayContent(file, (int)from, (int)(to - from + 1));
+            content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(from, to, file.Length);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.PartialContent) { Content = content };
+        }
     }
 
     /// <summary>

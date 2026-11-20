@@ -24,14 +24,16 @@ var text = document.Pages[0].ExtractText();
 - Encrypted documents of the standard security handler, with the user or the owner password.
 - Damaged files: a file whose cross-reference information is wrong is repaired by scanning it, a stream whose length
   is wrong ends where its data ends, and the damaged data of a filter (`FlateDecode`, `ASCII85Decode`, `ASCIIHexDecode`,
-  a truncated row of a predictor) gives the bytes decoded before the damage.
+  a truncated row of a predictor) gives the bytes decoded before the damage. [Diagnostics](cref:Meziantou.Framework.Pdf.PdfDocument.Diagnostics) lists what was
+  repaired.
 
 The objects of a file are parsed when they are first used, not when the document is opened, and the document keeps the
 data of the file it was read from.
 
 ## In this section
 
-- [Opening documents](02-OpeningDocuments.md): files, streams and arrays, passwords, read options and repaired files.
+- [Opening documents](02-OpeningDocuments.md): files, streams and arrays, passwords, read options, repaired files and
+  the list of what was repaired.
 - [Extracting text](03-ExtractingText.md): the text of a page, search a document, and extract ruled tables.
 - [Modifying documents](04-ModifyingDocuments.md): stamp the pages, draw under their content, add watermarks, add and remove pages, full and incremental saves.
 - [The object model](05-ObjectModel.md): read and change the objects of a document directly.

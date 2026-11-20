@@ -80,6 +80,34 @@ var canCopy = read.Permissions.HasFlag(PdfPermissions.CopyContent);
 
 See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwords.
 
+## Open a remote file
+
+[OpenAsync](cref:Meziantou.Framework.Pdf.PdfDocument.OpenAsync) with an `HttpClient` and a URI opens a file over HTTP and downloads only the parts it reads, with range requests:
+
+<!-- ref:../../../samples/Meziantou.Framework.Pdf.Samples/Program.cs;region=Pdf_OpenRemote;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The client sends the range requests: it must stay usable while the document is read
+using var httpClient = new HttpClient();
+
+// Only the parts of the file the document reads are downloaded
+var document = await PdfDocument.OpenAsync(httpClient, uri);
+
+// Download what a page needs before reading it, so that reading it sends no request
+await document.PrefetchPageAsync(0);
+var text = document.Pages[0].ExtractText();
+```
+<!-- endref -->
+
+- The file is downloaded in blocks of 16 KiB, each once. Opening the document downloads its start, its end and its
+  cross-reference sections; the first page of a linearized file comes with the first requests
+  ([Linearize](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Linearize) writes such files).
+- [PrefetchPageAsync](cref:Meziantou.Framework.Pdf.PdfDocument.PrefetchPageAsync) downloads what a page needs: its content, fonts, images and annotations. Without it, an
+  object read for the first time is downloaded synchronously, which the browser does not support.
+- A server that does not support range requests sends the whole file, which is read from memory.
+- A damaged file is repaired by scanning it, which downloads it whole: set
+  [AllowFullDownload](cref:Meziantou.Framework.Pdf.PdfReadOptions.AllowFullDownload) to `false` to refuse such files instead.
+- The `HttpClient` must stay usable, and the file unchanged, while the document is used.
+
 ## Read options
 
 | Option | Default | Limits |
@@ -87,6 +115,8 @@ See [Encryption](../07-Security/02-Encryption.md) to remove or change the passwo
 | [Password](cref:Meziantou.Framework.Pdf.PdfReadOptions.Password) | The empty password | The user or the owner password of an encrypted document |
 | [MaxDecodedStreamLength](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxDecodedStreamLength) | 256 MiB | The length of the decoded data of one stream, checked as it is decoded |
 | [MaxNestingDepth](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxNestingDepth) | 256 | The depth of nested arrays and dictionaries |
+| [AllowFullDownload](cref:Meziantou.Framework.Pdf.PdfReadOptions.AllowFullDownload) | `true` | Whether a file opened over HTTP can be downloaded whole, to be repaired |
+| [LoadAllObjects](cref:Meziantou.Framework.Pdf.PdfReadOptions.LoadAllObjects) | `false` | Read every object and stream when the file is opened, so that [Diagnostics](cref:Meziantou.Framework.Pdf.PdfDocument.Diagnostics) is complete |
 
 A file beyond a limit throws [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException). Lower the limits for the files of untrusted users: see
 [Errors and limits](06-ErrorsAndLimits.md).
@@ -111,3 +141,29 @@ the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is t
   data is read.
 
 A file that cannot be repaired throws [InvalidPdfContentException](cref:Meziantou.Framework.Pdf.InvalidPdfContentException).
+
+## List what was repaired
+
+[Diagnostics](cref:Meziantou.Framework.Pdf.PdfDocument.Diagnostics) lists the problems the reader found and how it read the file anyway, whether or not the
+cross-reference information was rebuilt:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfReaderTests.cs;region=Pdf_Diagnostics;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Read the whole file when it is opened, so that every problem is listed
+var document = PdfDocument.Open(data, new PdfReadOptions { LoadAllObjects = true });
+var problems = document.Diagnostics
+    .Where(diagnostic => diagnostic.Severity >= PdfDiagnosticSeverity.Warning)
+    .Select(diagnostic => diagnostic.ToString())
+    .ToList();
+```
+<!-- endref -->
+
+- Each [PdfDiagnostic](cref:Meziantou.Framework.Pdf.PdfDiagnostic) has a [Kind](cref:Meziantou.Framework.Pdf.PdfDiagnostic.Kind), a [Severity](cref:Meziantou.Framework.Pdf.PdfDiagnostic.Severity), a message, and the offset and the object
+  number where the problem is, when it has them.
+- The severity tells what the repair can change: `Information` when nothing is lost (bytes before the header, a table
+  that starts at 1), `Warning` when the reader made a guess (a wrong offset, a stream that ends at `endstream`), `Error`
+  when something is lost (an object that cannot be found, the end of a damaged stream).
+- The objects are read when they are first used, so the list grows as the document is read. Open the document with
+  [LoadAllObjects](cref:Meziantou.Framework.Pdf.PdfReadOptions.LoadAllObjects), or call [ValidateStructure](cref:Meziantou.Framework.Pdf.PdfDocument.ValidateStructure), to read every object, the page tree and the data of every
+  stream first; a stream that cannot be decoded is then reported instead of thrown.
+- A problem is reported once per object and offset, and the list is limited to 1,000 problems.

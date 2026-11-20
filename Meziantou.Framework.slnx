@@ -44,6 +44,7 @@
     <Project Path="samples/Meziantou.Framework.NodeJs.Samples/Meziantou.Framework.NodeJs.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.NtpClient.Samples/Meziantou.Framework.NtpClient.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.NuGetPackageValidation.Samples/Meziantou.Framework.NuGetPackageValidation.Samples.csproj" />
+    <Project Path="samples/Meziantou.Framework.Pdf.Samples/Meziantou.Framework.Pdf.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.ProcessWrapper.Samples/Meziantou.Framework.ProcessWrapper.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.PublicApiGenerator.Samples/Meziantou.Framework.PublicApiGenerator.Samples.csproj" />
     <Project Path="samples/Meziantou.Framework.Roslyn.Samples/Meziantou.Framework.Roslyn.Samples.csproj" />

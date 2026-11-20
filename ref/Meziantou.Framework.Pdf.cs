@@ -553,10 +553,55 @@ namespace Meziantou.Framework.Pdf
         Cmyk = 2,
     }
 
+    public sealed class PdfDiagnostic
+    {
+        public Meziantou.Framework.Pdf.PdfDiagnosticKind Kind { get => throw null; }
+        public string Message { get => throw null; }
+        public int? ObjectNumber { get => throw null; }
+        public long? Offset { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfDiagnosticSeverity Severity { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfDiagnosticKind
+    {
+        HeaderNotAtStart = 0,
+        MissingHeader = 1,
+        InvalidStartXref = 2,
+        DamagedCrossReferenceSection = 3,
+        BrokenCrossReferenceChain = 4,
+        ShiftedCrossReferenceTable = 5,
+        MissingCatalog = 6,
+        CrossReferenceRebuilt = 7,
+        CatalogFoundByScan = 8,
+        WrongObjectOffset = 9,
+        MissingObject = 10,
+        GenerationMismatch = 11,
+        WrongObjectStreamIndex = 12,
+        UndecodableObjectStream = 13,
+        MissingEndObj = 14,
+        MissingEndStream = 15,
+        InvalidStreamLength = 16,
+        UnknownKeyword = 17,
+        UnclosedContainer = 18,
+        InvalidDictionaryKey = 19,
+        InvalidPageTreeNode = 20,
+        DamagedStreamData = 21,
+        UndecodableStream = 22,
+    }
+
+    public enum PdfDiagnosticSeverity
+    {
+        Information = 0,
+        Warning = 1,
+        Error = 2,
+    }
+
     public sealed class PdfDocument
     {
         public Meziantou.Framework.Pdf.PdfAdditionalActions AdditionalActions { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Catalog { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfDiagnostic> Diagnostics { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEmbeddedFileCollection EmbeddedFiles { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEncryptedPayload? EncryptedPayload { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEncryption? Encryption { get => throw null; set { } }
@@ -599,7 +644,9 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfDocument Open(string path, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(string path, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(System.Net.Http.HttpClient httpClient, System.Uri uri, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Pdf.PdfDocument OpenSeekable(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task PrefetchPageAsync(int pageIndex, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void RemoveXmpMetadata() { }
         public void Save(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public void Save(string path, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
@@ -611,6 +658,7 @@ namespace Meziantou.Framework.Pdf
         public byte[] ToByteArray(Meziantou.Framework.Pdf.PdfSaveOptions? options = null) => throw null;
         public void UpdateXmpMetadata() { }
         public void UpdateXmpMetadata(int padding) { }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfDiagnostic> ValidateStructure() => throw null;
     }
 
     public static class PdfDocumentComparer
@@ -1713,8 +1761,10 @@ namespace Meziantou.Framework.Pdf
 
     public sealed class PdfReadOptions
     {
+        public bool AllowFullDownload { get => throw null; init { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get => throw null; init { } }
         public static Meziantou.Framework.Pdf.PdfReadOptions Default { get => throw null; }
+        public bool LoadAllObjects { get => throw null; init { } }
         public long MaxDecodedStreamLength { get => throw null; init { } }
         public int MaxNestingDepth { get => throw null; init { } }
         public string? Password { get => throw null; init { } }

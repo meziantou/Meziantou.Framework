@@ -33,6 +33,8 @@ description: What the library does not do, so that you can plan around it.
   without a class of their own (threads, sounds, movies, renditions, transitions, 3D views, rich media) are read as
   dictionaries. The library does not run the actions, except the scripts of the form fields
   ([Form scripts](05-ReadingAndModifying/10-FormScripts.md)).
+- A document opened over HTTP reads its whole page tree, so the dictionaries of all its pages are downloaded when the
+  pages are first used; the hint tables of a linearized file are not read.
 - A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
   file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
 - A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and

@@ -91,6 +91,8 @@ public sealed class PdfReaderTests
         var document = PdfDocument.Open(file.ToArray());
 
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.WrongObjectOffset, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
+        Assert.All(document.Diagnostics, diagnostic => Assert.NotNull(diagnostic.ObjectNumber));
     }
 
     [Fact]
@@ -104,6 +106,8 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.DamagedCrossReferenceSection, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
+        Assert.Contains(PdfDiagnosticKind.CrossReferenceRebuilt, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -116,6 +120,7 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Single(document.Pages);
+        Assert.Contains(PdfDiagnosticKind.CatalogFoundByScan, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -128,6 +133,7 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.InvalidStartXref, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -139,6 +145,10 @@ public sealed class PdfReaderTests
         var document = PdfDocument.Open(shifted);
 
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        var header = Assert.Single(document.Diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.HeaderNotAtStart);
+        Assert.Equal(8, header.Offset);
+        Assert.Equal(PdfDiagnosticSeverity.Information, header.Severity);
+        Assert.Contains(PdfDiagnosticKind.WrongObjectOffset, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -163,6 +173,7 @@ public sealed class PdfReaderTests
 
         Assert.False(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Equal([PdfDiagnosticKind.ShiftedCrossReferenceTable], document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -237,6 +248,9 @@ public sealed class PdfReaderTests
         Assert.Equal(new PdfRectangle(0, 0, 100, 100), document.Pages[1].MediaBox);
         Assert.Equal(270, document.Pages[1].Rotation);
         Assert.Equal(document.Pages[0].MediaBox, document.Pages[0].CropBox);
+        var cycle = Assert.Single(document.Diagnostics);
+        Assert.Equal(PdfDiagnosticKind.InvalidPageTreeNode, cycle.Kind);
+        Assert.Equal(2, cycle.ObjectNumber);
     }
 
     [Fact]
@@ -337,6 +351,8 @@ public sealed class PdfReaderTests
             Assert.True(document.Objects.TryGetReference(10 + i, out var reference));
             Assert.Equal(i * 3, Assert.IsType<PdfInteger>(reference.Resolve()).Value);
         }
+
+        Assert.Contains(PdfDiagnosticKind.WrongObjectStreamIndex, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -445,6 +461,7 @@ public sealed class PdfReaderTests
 
         Assert.True(document.IsRepaired);
         Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.Contains(PdfDiagnosticKind.GenerationMismatch, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
     }
 
     [Fact]
@@ -507,6 +524,7 @@ public sealed class PdfReaderTests
         Assert.True(document.Objects.TryGetReference(7, out var second));
         Assert.Equal("abc", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(first.Resolve()).GetDecodedData()));
         Assert.Equal("xyz", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(second.Resolve()).GetDecodedData()));
+        Assert.Contains(document.Diagnostics, diagnostic => diagnostic.ObjectNumber == 6 && diagnostic.Kind is PdfDiagnosticKind.MissingEndStream or PdfDiagnosticKind.InvalidStreamLength);
     }
 
     [Fact]
@@ -519,6 +537,11 @@ public sealed class PdfReaderTests
 
         Assert.True(document.Objects.TryGetReference(6, out var reference));
         Assert.Equal("abc", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(reference.Resolve()).GetDecodedData()));
+        var length = Assert.Single(document.Diagnostics);
+        Assert.Equal(PdfDiagnosticKind.InvalidStreamLength, length.Kind);
+        Assert.Equal(6, length.ObjectNumber);
+        Assert.Equal(PdfDiagnosticSeverity.Warning, length.Severity);
+        Assert.StartsWith("Warning InvalidStreamLength (object 6, offset ", length.ToString());
     }
 
     [Fact]
@@ -618,5 +641,422 @@ public sealed class PdfReaderTests
         Assert.True(document.IsRepaired);
         Assert.Single(document.Pages);
         Assert.Equal(new PdfRectangle(0, 0, 100, 100), document.Pages[0].MediaBox);
+        Assert.Contains(PdfDiagnosticKind.UnclosedContainer, document.Diagnostics.Select(diagnostic => diagnostic.Kind));
+    }
+
+    [Fact]
+    public void AnIntactFileHasNoDiagnostics()
+    {
+        var document = PdfDocument.Open(HandWrittenPdf.CreateSimple().ToArray(), new PdfReadOptions { LoadAllObjects = true });
+
+        Assert.Empty(document.Diagnostics);
+        Assert.Empty(new PdfDocument().Diagnostics);
+        Assert.Empty(new PdfDocument().ValidateStructure());
+    }
+
+    [Fact]
+    public void DiagnosticsGrowAsTheObjectsAreRead()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, "<< /Length 1 >>\nstream\nabc\nendstream");
+
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.Empty(document.Diagnostics);
+        Assert.Equal(PdfDiagnosticKind.InvalidStreamLength, Assert.Single(document.ValidateStructure()).Kind);
+        Assert.Equal(PdfDiagnosticKind.InvalidStreamLength, Assert.Single(PdfDocument.Open(file.ToArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics).Kind);
+    }
+
+    [Fact]
+    public void ValidateStructureReportsTheStreamsThatCannotBeDecoded()
+    {
+        // Flate data whose last block has a reserved type (RFC 1951, 3.2.3): the bytes of the blocks before it are decoded
+        using var compressed = new MemoryStream();
+        var deflate = new System.IO.Compression.DeflateStream(compressed, System.IO.Compression.CompressionLevel.SmallestSize, leaveOpen: true);
+        deflate.Write(Encoding.ASCII.GetBytes(new string('a', 100_000)));
+        deflate.Flush();
+        var truncated = Encoding.Latin1.GetString([.. compressed.ToArray(), 0x07]);
+        deflate.Dispose();
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, "<< /Length 3 /Filter /Unknown >>\nstream\nabc\nendstream");
+        file.Add(7, HandWrittenPdf.Stream(truncated, " /Filter /FlateDecode"));
+        file.Add(8, "<< /A missing 5 /B 1 >>");
+
+        var diagnostics = PdfDocument.Open(file.ToArray()).ValidateStructure();
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.UndecodableStream, ObjectNumber: 6, Severity: PdfDiagnosticSeverity.Error });
+        Assert.Contains(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.DamagedStreamData);
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.UnknownKeyword, ObjectNumber: 8 });
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.InvalidDictionaryKey, ObjectNumber: 8 });
+    }
+
+    [Fact]
+    public void ABrokenPreviousSectionIsReported()
+    {
+        var original = HandWrittenPdf.CreateSimple().ToArray();
+        var updated = HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Prev 3 >>");
+
+        var document = PdfDocument.Open(updated);
+
+        Assert.Equal("T", document.Information.Title);
+        var broken = Assert.Single(document.Diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.BrokenCrossReferenceChain);
+        Assert.Equal(3, broken.Offset);
+        Assert.Null(PdfDocument.Open(HandWrittenPdf.AppendUpdate(original, [(6, "<< /Title (T) >>")], "<< /Size 7 /Root 1 0 R /Info 6 0 R /Prev 99999 >>")).Diagnostics.Single(diagnostic => diagnostic.Kind == PdfDiagnosticKind.BrokenCrossReferenceChain).Offset);
+    }
+
+    [Fact]
+    public void AMissingObjectIsReported()
+    {
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        var file = Encoding.Latin1.GetBytes(text.Replace("4 0 obj", "4 0 xxx", StringComparison.Ordinal));
+
+        var document = PdfDocument.Open(file);
+        _ = document.Pages[0].ExtractText();
+
+        Assert.Contains(document.Diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.MissingObject, ObjectNumber: 4 });
+    }
+
+    [Fact]
+    public void Example_Diagnostics()
+    {
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        var data = Encoding.Latin1.GetBytes(text.Replace("startxref\n", "startxref\n9", StringComparison.Ordinal));
+
+        #region Pdf_Diagnostics
+        // Read the whole file when it is opened, so that every problem is listed
+        var document = PdfDocument.Open(data, new PdfReadOptions { LoadAllObjects = true });
+        var problems = document.Diagnostics
+            .Where(diagnostic => diagnostic.Severity >= PdfDiagnosticSeverity.Warning)
+            .Select(diagnostic => diagnostic.ToString())
+            .ToList();
+        #endregion
+
+        Assert.True(document.IsRepaired);
+        Assert.Contains("Warning CrossReferenceRebuilt: The cross-reference information was rebuilt by scanning the file: 5 objects found", problems);
+    }
+
+    [Fact]
+    public void ValidateStructureReportsTheObjectStreamsBeyondTheLimits()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        for (var i = 0; i < 20; i++)
+        {
+            file.Add(10 + i, "(" + new string('x', 100) + ")");
+        }
+
+        file.Compress([.. Enumerable.Range(10, 20)]);
+        file.UseXrefStream = true;
+        file.CompressObjectStreams = true;
+        var document = PdfDocument.Open(file.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1000 });
+
+        var diagnostics = document.ValidateStructure();
+
+        Assert.Single(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.UndecodableObjectStream);
+    }
+
+    [Fact]
+    public void TheRepairsOfTheObjectsOfObjectStreamsAreReported()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(10, "<< /A missing >>");
+        file.Compress(10);
+        file.UseXrefStream = true;
+
+        var diagnostics = PdfDocument.Open(file.ToArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics;
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.UnknownKeyword, ObjectNumber: 10, Offset: null });
+    }
+
+    [Fact]
+    public void ValidateStructureReportsTheReferencesWithAnotherGeneration()
+    {
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());
+        text = text[..text.IndexOf("xref", StringComparison.Ordinal)] + "6 0 obj\n(six)\nendobj\n7 0 obj\n<< /Ref 6 1 R >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n";
+
+        var diagnostics = PdfDocument.Open(Encoding.Latin1.GetBytes(text)).ValidateStructure();
+
+        Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.GenerationMismatch, ObjectNumber: 6 });
+    }
+
+    [Fact]
+    public void AFlateStreamWithAWrongChecksumIsReported()
+    {
+        using var compressed = new MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+        {
+            zlib.Write("Hello, world"u8);
+        }
+
+        var data = compressed.ToArray();
+        data[^1] ^= 0xFF;
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, HandWrittenPdf.Stream(Encoding.Latin1.GetString(data), " /Filter /FlateDecode"));
+
+        var diagnostics = PdfDocument.Open(file.ToArray()).ValidateStructure();
+
+        Assert.Equal(PdfDiagnosticKind.DamagedStreamData, Assert.Single(diagnostics).Kind);
+
+        // The streams the library writes have the right checksums
+        var written = new PdfDocument();
+        written.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 10, 10);
+        Assert.Empty(PdfDocument.Open(written.ToByteArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics);
+    }
+
+    [Fact]
+    public void TheRepairsOfAnObjectAreBounded()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, "<< " + string.Concat(Enumerable.Repeat("1 ", 5000)) + ">>");
+
+        var diagnostics = PdfDocument.Open(file.ToArray(), new PdfReadOptions { LoadAllObjects = true }).Diagnostics;
+
+        Assert.True(diagnostics.Count <= 1000, diagnostics.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        Assert.Contains(diagnostics, diagnostic => diagnostic.Kind == PdfDiagnosticKind.InvalidDictionaryKey);
+    }
+
+    [Fact]
+    public async Task PrefetchedPagesAreReadWithoutRequests()
+    {
+        var file = CreateLargeDocument(pageCount: 20, linearize: true);
+        using var handler = new RangeHandler(file);
+        using var httpClient = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(httpClient, new Uri("https://example.com/report.pdf"));
+        await document.PrefetchPageAsync(10);
+        var text = document.Pages[10].ExtractText();
+
+        Assert.Equal("Page 11", text.Trim());
+        Assert.Equal(0, handler.SynchronousRequests);
+        Assert.True(handler.ServedBytes < file.Length / 2, $"{handler.ServedBytes} of {file.Length} bytes were downloaded");
+    }
+
+    [Fact]
+    public async Task TheFirstPageOfALinearizedFileIsDownloadedWithTheStartOfTheFile()
+    {
+        var file = CreateLargeDocument(pageCount: 20, linearize: true);
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        // The start of the file, its end, then the rest of the first page section (/E) in one request
+        Assert.Equal(3, handler.Requests);
+        var start = Encoding.Latin1.GetString(file.AsSpan(0, 300));
+        var endOfFirstPage = long.Parse(start[(start.IndexOf("/E ", StringComparison.Ordinal) + 3)..].Split(' ', StringSplitOptions.RemoveEmptyEntries)[0], System.Globalization.CultureInfo.InvariantCulture);
+        Assert.Contains(handler.Ranges, range => range.From == 16 * 1024 && range.From + range.Length >= endOfFirstPage);
+        await document.PrefetchPageAsync(0);
+        Assert.Equal("Page 1", document.Pages[0].ExtractText().Trim());
+        Assert.Equal(20, document.Pages.Count);
+        Assert.Equal(0, handler.SynchronousRequests);
+    }
+
+    [Fact]
+    public async Task AFileThatIsNotLinearizedIsReadOverHttp()
+    {
+        var file = CreateLargeDocument(pageCount: 10, linearize: false);
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        // Without a prefetch, the objects are downloaded synchronously when they are read
+        Assert.Equal("Page 10", document.Pages[9].ExtractText().Trim());
+        Assert.True(handler.SynchronousRequests > 0);
+        Assert.True(handler.ServedBytes < file.Length);
+        Assert.Equal(PdfDocument.Open(file).Pages.Select(page => page.ExtractText()), document.Pages.Select(page => page.ExtractText()));
+    }
+
+    [Fact]
+    public async Task AServerThatIgnoresTheRangesSendsTheWholeFile()
+    {
+        var file = CreateLargeDocument(pageCount: 3, linearize: false);
+        using var handler = new RangeHandler(file) { IgnoreRanges = true };
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        Assert.Equal(1, handler.Requests);
+        Assert.Equal("Page 3", document.Pages[2].ExtractText().Trim());
+        await document.PrefetchPageAsync(1);
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(() => document.PrefetchPageAsync(3));
+    }
+
+    [Fact]
+    public async Task HttpErrorsAndCancellationAreReported()
+    {
+        var file = CreateLargeDocument(pageCount: 3, linearize: false);
+        using var failingHandler = new RangeHandler(file) { StatusCode = System.Net.HttpStatusCode.InternalServerError };
+        using var failing = new HttpClient(failingHandler, disposeHandler: false);
+        await Assert.ThrowsAsync<HttpRequestException>(() => PdfDocument.OpenAsync(failing, new Uri("https://example.com/a.pdf")));
+
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"), cancellationToken: new CancellationToken(canceled: true)));
+    }
+
+    [Fact]
+    public async Task ARepairNeedsTheWholeFileOverHttp()
+    {
+        var text = Encoding.Latin1.GetString(CreateLargeDocument(pageCount: 3, linearize: false));
+        var damaged = Encoding.Latin1.GetBytes(text[..text.LastIndexOf("startxref", StringComparison.Ordinal)]);
+        using var handler = new RangeHandler(damaged);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        await Assert.ThrowsAsync<UnsupportedPdfFeatureException>(() => PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"), new PdfReadOptions { AllowFullDownload = false }));
+
+        // An empty file: its first range is not satisfiable
+        using var emptyHandler = new RangeHandler([]);
+        using var emptyClient = new HttpClient(emptyHandler, disposeHandler: false);
+        await Assert.ThrowsAsync<InvalidPdfContentException>(() => PdfDocument.OpenAsync(emptyClient, new Uri("https://example.com/empty.pdf")));
+        var repaired = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+        Assert.True(repaired.IsRepaired);
+        Assert.Equal("Page 3", repaired.Pages[2].ExtractText().Trim());
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(-100)]
+    public async Task RangesOfAnotherLengthAreRefused(int lengthError)
+    {
+        var file = CreateLargeDocument(pageCount: 10, linearize: false);
+        using var handler = new RangeHandler(file) { LengthError = lengthError };
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        // The ranges after the first ones: those of the objects of the pages
+        await Assert.ThrowsAsync<HttpRequestException>(async () =>
+        {
+            var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+            await document.PrefetchPageAsync(9);
+        });
+    }
+
+    [Fact]
+    public async Task APrefetchedPageWithAFormIsRenderedWithoutRequests()
+    {
+        var document = new PdfDocument();
+        for (var i = 0; i < 6; i++)
+        {
+            var page = document.Pages.Add(PdfSize.A4);
+            page.CreateContentBuilder().AppendRawContent(System.Text.Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("% filler line of the content stream\n", 3000))));
+            document.Form.AddTextField(page, "field" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), new PdfRectangle(72, 700, 300, 720)).Value = "Value";
+        }
+
+        var file = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        var remote = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        await remote.PrefetchPageAsync(4);
+        using var image = Rendering.PdfRenderer.RenderPage(remote.Pages[4], new Rendering.PdfRenderOptions { UseSystemFonts = false, Dpi = 18 });
+
+        Assert.Equal(0, handler.SynchronousRequests);
+    }
+
+    [Fact]
+    public async Task ADeepFirstObjectIsReadWithTheLimitsOfTheOptions()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Deep " + new string('[', 20) + new string(']', 20) + " >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>")
+            .ToArray();
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        Assert.Single(document.Pages);
+    }
+
+    [Fact]
+    public async Task AHeaderBeyondTheFirstKilobyteNeedsTheWholeFile()
+    {
+        var file = new byte[2000].Concat(HandWrittenPdf.CreateSimple().ToArray()).ToArray();
+        file.AsSpan(0, 2000).Fill((byte)' ');
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+
+        await Assert.ThrowsAsync<UnsupportedPdfFeatureException>(() => PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"), new PdfReadOptions { AllowFullDownload = false }));
+    }
+
+    private static byte[] CreateLargeDocument(int pageCount, bool linearize)
+    {
+        var document = new PdfDocument();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var filler = Encoding.ASCII.GetBytes(string.Concat(Enumerable.Repeat("% filler line of the content stream\n", 3000)));
+        for (var i = 0; i < pageCount; i++)
+        {
+            document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+                .DrawText(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"Page {i + 1}"), font, 12, 72, 720)
+                .AppendRawContent(filler);
+        }
+
+        return document.ToByteArray(new PdfSaveOptions { Linearize = linearize, CompressStreams = false });
+    }
+
+    /// <summary>Serves a file with range requests (RFC 9110, 14), synchronously or not, and counts what it serves.</summary>
+    private sealed class RangeHandler(byte[] file) : HttpMessageHandler
+    {
+        public bool IgnoreRanges { get; init; }
+
+        public System.Net.HttpStatusCode? StatusCode { get; init; }
+
+        public int Requests { get; private set; }
+
+        public int SynchronousRequests { get; private set; }
+
+        public long ServedBytes { get; private set; }
+
+        public List<(long From, long Length)> Ranges { get; } = [];
+
+        /// <summary>Gets the bytes the server adds to (positive) or removes from (negative) the ranges it returns after the first one.</summary>
+        public int LengthError { get; init; }
+
+        protected override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            SynchronousRequests++;
+            return Serve(request);
+        }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(Serve(request));
+        }
+
+        private HttpResponseMessage Serve(HttpRequestMessage request)
+        {
+            Requests++;
+            if (StatusCode is { } status)
+                return new HttpResponseMessage(status);
+
+            if (IgnoreRanges || request.Headers.Range is not { } range)
+            {
+                ServedBytes += file.Length;
+                return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(file) };
+            }
+
+            if (file.Length == 0)
+            {
+                var empty = new ByteArrayContent([]);
+                empty.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(0);
+                return new HttpResponseMessage(System.Net.HttpStatusCode.RequestedRangeNotSatisfiable) { Content = empty };
+            }
+
+            var item = Assert.Single(range.Ranges);
+            var from = item.From!.Value;
+            var to = Math.Min(item.To!.Value, file.Length - 1);
+            var length = (int)(to - from + 1);
+            if (Requests > 1)
+            {
+                length = Math.Clamp(length + LengthError, 1, file.Length - (int)from);
+            }
+
+            ServedBytes += length;
+            Ranges.Add((from, length));
+            var content = new ByteArrayContent(file, (int)from, length);
+            content.Headers.ContentRange = new System.Net.Http.Headers.ContentRangeHeaderValue(from, to, file.Length);
+            return new HttpResponseMessage(System.Net.HttpStatusCode.PartialContent) { Content = content };
+        }
     }
 }

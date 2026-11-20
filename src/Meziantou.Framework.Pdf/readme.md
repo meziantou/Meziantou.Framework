@@ -35,7 +35,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, lines, shapes,
   ink, carets, redaction annotations, replies and pop-ups, a class per type, flattening into the content, flags),
   actions (a class per type, open action, additional actions), layers (optional content groups and configurations),
-  the page layout, page mode and viewer preferences, portfolios (schema, sort, folders), the revisions of a file, page
+  the page layout, page mode and viewer preferences, portfolios (schema, sort, folders), the revisions of a file, the
+  diagnostics of a damaged file (`PdfDocument.Diagnostics`: what the reader repaired, with its offset and object),
+  remote files opened over HTTP with range requests (`PdfDocument.OpenAsync(HttpClient, Uri)`, `PrefetchPageAsync`), page
   labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
   (`PdfContentBuilder.DrawTextBox`: Unicode line breaking, soft hyphens and pluggable hyphenation), tables
   (`PdfContentBuilder.DrawTable`: fixed, relative and automatic columns, borders, header rows repeated on each page), pages moved, duplicated, removed and imported from other documents (merging), N-up sheets and

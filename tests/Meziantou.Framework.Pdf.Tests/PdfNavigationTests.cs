@@ -624,6 +624,23 @@ public sealed class PdfNavigationTests
     }
 
     [Fact]
+    public void UpdateAppearanceDrawsTheTextAfterManySpaces()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>")
+            .Add(4, "<< /Subtype /FreeText /Rect [0 0 100 20] /Contents (" + new string(' ', 150) + "Visible) /DA (/Helvetica 12 Tf 0 g) /BS << /W 0 >> >>");
+        var document = PdfDocument.Open(file.ToArray());
+        var item = document.Pages[0].Annotations[0];
+
+        Assert.True(item.UpdateAppearance());
+
+        var appearance = item.Dictionary.Get<PdfDictionary>(PdfName.Create("AP"))!.Get<PdfStream>(PdfNames.N)!;
+        Assert.Contains("(Visible) Tj", Encoding.Latin1.GetString(appearance.GetDecodedData()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void UpdateAppearanceReturnsFalseForTheTypesItDoesNotDraw()
     {
         var document = new PdfDocument();

@@ -755,6 +755,19 @@ public sealed class PdfReaderTests
     }
 
     [Fact]
+    public void ValidateStructureThrowsForAnObjectOfAnObjectStreamNestedTooDeeply()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(10, new string('[', 50) + new string(']', 50));
+        file.Add(11, "(eleven)");
+        file.Compress(10, 11);
+        file.UseXrefStream = true;
+        var document = PdfDocument.Open(file.ToArray(), new PdfReadOptions { MaxNestingDepth = 10 });
+
+        Assert.Throws<PdfResourceLimitException>(() => document.ValidateStructure());
+    }
+
+    [Fact]
     public void TheRepairsOfTheObjectsOfObjectStreamsAreReported()
     {
         var file = HandWrittenPdf.CreateSimple();
@@ -776,6 +789,24 @@ public sealed class PdfReaderTests
         var diagnostics = PdfDocument.Open(Encoding.Latin1.GetBytes(text)).ValidateStructure();
 
         Assert.Contains(diagnostics, diagnostic => diagnostic is { Kind: PdfDiagnosticKind.GenerationMismatch, ObjectNumber: 6 });
+    }
+
+    [Fact]
+    public void AFlateStreamWhoseChecksumEndsWithASpaceIsIntact()
+    {
+        // The Adler-32 checksum of the byte 0x1F is 0x00200020: its last bytes look like padding
+        using var compressed = new MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+        {
+            zlib.Write([0x1F]);
+        }
+
+        var data = compressed.ToArray();
+        Assert.Equal<byte>([0x00, 0x20, 0x00, 0x20], data[^4..]);
+        var file = HandWrittenPdf.CreateSimple();
+        file.Add(6, HandWrittenPdf.Stream(Encoding.Latin1.GetString(data), " /Filter /FlateDecode"));
+
+        Assert.Empty(PdfDocument.Open(file.ToArray()).ValidateStructure());
     }
 
     [Fact]

@@ -10,7 +10,7 @@ they cannot be converted to PDF/A level a. [AutoTag](cref:Meziantou.Framework.Pd
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_AutoTag;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var document = PdfDocument.Open(file);
+var document = PdfDocument.Open("untagged-report.pdf");
 var result = document.AutoTag(new PdfAutoTagOptions
 {
     Language = "en-US",

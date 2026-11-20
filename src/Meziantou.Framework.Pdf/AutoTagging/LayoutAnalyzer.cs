@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.AutoTagging;
 
 /// <summary>
 /// Finds the layout of pages from what they draw: the blocks of text in reading order (the XY-cut of the text
@@ -63,13 +63,23 @@ internal static class LayoutAnalyzer
         var headers = new List<PdfTextLine>();
         var footers = new List<PdfTextLine>();
         var content = new List<PdfLayoutNode>();
+        var tableBounds = page.Tables.Select(GetBounds).ToList();
         foreach (var block in page.Layout.Blocks)
         {
             var lines = new List<PdfTextLine>();
             foreach (var line in block.Lines)
             {
-                if (page.Tables.Any(table => Contains(new PdfRectangle(table.ColumnBoundaries[0], table.RowBoundaries[^1], table.ColumnBoundaries[^1], table.RowBoundaries[0]), Center(line.Bounds))))
+                if (tableBounds.Any(bounds => Contains(bounds, Center(line.Bounds))))
+                {
+                    // The words of the line outside the tables (text beside a table, on the same line) stay in the content
+                    var outside = line.Words.Where(word => !tableBounds.Any(bounds => Contains(bounds, Center(word.Bounds)))).ToList();
+                    if (outside.Count > 0)
+                    {
+                        content.Add(CreateNode(outside));
+                    }
+
                     continue;
+                }
 
                 if (repeated.Contains(GetKey(line)))
                 {
@@ -309,32 +319,39 @@ internal static class LayoutAnalyzer
         return result;
     }
 
+    private static PdfRectangle GetBounds(PdfExtractedTable table) => new(table.ColumnBoundaries[0], table.RowBoundaries[^1], table.ColumnBoundaries[^1], table.RowBoundaries[0]);
+
     private static PdfLayoutNode BuildTable(PdfExtractedTable table, PdfTextLayout layout)
     {
+        // The operations of each cell, in one pass over the glyphs: the cell of a glyph is found by a binary search in the
+        // boundaries, so that the work is proportional to the glyphs and the cells, not to their product
+        var operations = new HashSet<int>?[table.RowCount * table.ColumnCount];
+        foreach (var line in layout.Lines)
+        {
+            foreach (var glyph in line.Glyphs)
+            {
+                if (glyph.OperationIndex < 0)
+                    continue;
+
+                var (x, y) = Center(glyph.Bounds);
+                if (FindInterval(table.ColumnBoundaries, x, ascending: true) is { } column && FindInterval(table.RowBoundaries, y, ascending: false) is { } row)
+                {
+                    (operations[(row * table.ColumnCount) + column] ??= []).Add(glyph.OperationIndex);
+                }
+            }
+        }
+
         var cells = new List<PdfLayoutNode>();
         for (var row = 0; row < table.RowCount; row++)
         {
             for (var column = 0; column < table.ColumnCount; column++)
             {
                 var bounds = new PdfRectangle(table.ColumnBoundaries[column], table.RowBoundaries[row + 1], table.ColumnBoundaries[column + 1], table.RowBoundaries[row]);
-                var operations = new HashSet<int>();
-                foreach (var line in layout.Lines)
-                {
-                    foreach (var glyph in line.Glyphs)
-                    {
-                        if (glyph.OperationIndex >= 0 && Contains(bounds, Center(glyph.Bounds)))
-                        {
-                            operations.Add(glyph.OperationIndex);
-                        }
-                    }
-                }
-
-                cells.Add(new PdfLayoutNode(PdfLayoutNodeKind.TableCell, bounds, table[row, column], []) { Row = row, Column = column, Operations = operations });
+                cells.Add(new PdfLayoutNode(PdfLayoutNodeKind.TableCell, bounds, table[row, column], []) { Row = row, Column = column, Operations = operations[(row * table.ColumnCount) + column] ?? [] });
             }
         }
 
-        var tableBounds = new PdfRectangle(table.ColumnBoundaries[0], table.RowBoundaries[^1], table.ColumnBoundaries[^1], table.RowBoundaries[0]);
-        return new PdfLayoutNode(PdfLayoutNodeKind.Table, tableBounds, string.Join('\n', table.Rows.Select(row => string.Join('\t', row))), cells)
+        return new PdfLayoutNode(PdfLayoutNodeKind.Table, GetBounds(table), string.Join('\n', table.Rows.Select(row => string.Join('\t', row))), cells)
         {
             Operations = [.. cells.SelectMany(cell => cell.Operations)],
         };
@@ -354,20 +371,69 @@ internal static class LayoutAnalyzer
         return new PdfLayoutNode(kind, Union(lines.Select(line => line.Bounds)), string.Join('\n', lines.Select(line => line.Text)), children) { Operations = operations };
     }
 
-    /// <summary>Inserts a node before the first node whose top is below its top and that overlaps it horizontally, or before the end.</summary>
+    /// <summary>
+    /// Inserts a node in its column: before the first node whose top is below its top and that overlaps it horizontally,
+    /// or after the last node that overlaps it horizontally (the end of its column), or at the end.
+    /// </summary>
     private static void Insert(List<PdfLayoutNode> nodes, PdfLayoutNode node)
     {
+        var lastInColumn = -1;
         for (var i = 0; i < nodes.Count; i++)
         {
             var other = nodes[i].Bounds;
-            if (other.Top < node.Bounds.Top - 1 && other.Left < node.Bounds.Right && other.Right > node.Bounds.Left)
+            if (other.Left < node.Bounds.Right && other.Right > node.Bounds.Left)
             {
-                nodes.Insert(i, node);
-                return;
+                if (other.Top < node.Bounds.Top - 1)
+                {
+                    nodes.Insert(i, node);
+                    return;
+                }
+
+                lastInColumn = i;
             }
         }
 
-        nodes.Add(node);
+        nodes.Insert(lastInColumn >= 0 ? lastInColumn + 1 : nodes.Count, node);
+    }
+
+    /// <summary>Finds the interval of a value in sorted boundaries: the index i such that the value is between the boundaries i and i + 1.</summary>
+    private static int? FindInterval(IReadOnlyList<double> boundaries, double value, bool ascending)
+    {
+        var (low, high) = (0, boundaries.Count - 2);
+        while (low <= high)
+        {
+            var middle = low + ((high - low) / 2);
+            var (first, second) = (boundaries[middle], boundaries[middle + 1]);
+            var (min, max) = ascending ? (first, second) : (second, first);
+            if (value < min)
+            {
+                (low, high) = ascending ? (low, middle - 1) : (middle + 1, high);
+            }
+            else if (value > max)
+            {
+                (low, high) = ascending ? (middle + 1, high) : (low, middle - 1);
+            }
+            else
+            {
+                return middle;
+            }
+        }
+
+        return null;
+    }
+
+    private static PdfLayoutNode CreateNode(List<PdfTextWord> words)
+    {
+        var operations = new HashSet<int>();
+        foreach (var glyph in words.SelectMany(word => word.Glyphs))
+        {
+            if (glyph.OperationIndex >= 0)
+            {
+                operations.Add(glyph.OperationIndex);
+            }
+        }
+
+        return new PdfLayoutNode(PdfLayoutNodeKind.Paragraph, Union(words.Select(word => word.Bounds)), string.Join(' ', words.Select(word => word.Text)), []) { Operations = operations };
     }
 
     private static PdfRectangle Union(IEnumerable<PdfRectangle> rectangles)

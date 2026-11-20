@@ -63,7 +63,7 @@ The conversion reports these, and does not set the level:
 - DeviceCMYK without a CMYK output intent: pass the profile of the printing condition in
   [OutputIntentProfile](cref:Meziantou.Framework.Pdf.PdfAConversionOptions.OutputIntentProfile).
 - An annotation without appearance that the library cannot draw, such as a note or a stamp: remove it.
-- For the level u, text whose font gives no Unicode value: convert to the level b.
+- For the levels u and a, text whose font gives no Unicode value: convert to the level b.
 - A stream whose data is in an external file, or encoded with LZW data that cannot be decoded.
 
 The conversion is not a validator: it fixes and checks what the save checks (see [PDF/A](03-PdfA.md#what-the-save-checks)).

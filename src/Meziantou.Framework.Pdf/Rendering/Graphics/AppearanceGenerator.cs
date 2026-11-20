@@ -601,7 +601,24 @@ internal static class AppearanceGenerator
         // wrapping a long word measures its rest for each line
         var maxLines = (int)Math.Clamp(Math.Ceiling(height / (fontSize * 1.2)) + 1, 1, 1024);
         var maxCharacters = (int)Math.Clamp(Math.Ceiling(Math.Max(width, fontSize) / (fontSize * 0.2)) + 1, 1, 4096);
-        var printable = ToLatin1(text.Length > (long)maxLines * maxCharacters ? text[..(maxLines * maxCharacters)] : text);
+        // A run of spaces longer than a line is a line break, as the wrapper drops the spaces at the end and at the start of
+        // its lines: it is shortened to one line, so that the spaces do not take the budget of the visible text
+        var budget = maxLines * maxCharacters;
+        var bounded = new StringBuilder(Math.Min(text.Length, budget));
+        var spaces = 0;
+        foreach (var c in text)
+        {
+            if (bounded.Length >= budget)
+                break;
+
+            spaces = c is ' ' or '\t' ? spaces + 1 : 0;
+            if (spaces <= maxCharacters)
+            {
+                bounded.Append(c);
+            }
+        }
+
+        var printable = ToLatin1(bounded.ToString());
         try
         {
             return [.. PdfTextWrapper.Wrap(printable, font, fontSize, Math.Max(width, fontSize)).Select(line => line.Text)];

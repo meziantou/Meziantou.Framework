@@ -4,8 +4,10 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
+using Meziantou.Framework.Pdf.TestHarness;
 
 namespace Meziantou.Framework.Pdf.Tests;
 
@@ -997,6 +999,53 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void ConvertToPdfA_LevelANeedsTheTextOfTheGlyphs()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().BeginText().SetFont(font, 10).ShowGlyphs([new PdfGlyph(font.Face.MapCodePoint('A'), 0, 0)]).EndText();
+        document = PdfDocument.Open(document.ToByteArray());
+        document.AutoTag();
+
+        var result = document.ConvertToPdfA(PdfAConformance.PdfA2A);
+
+        Assert.False(result.Succeeded);
+        Assert.Contains(result.Violations, violation => violation.Contains("no Unicode text", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ExtractLayout_KeepsTheTextBesideATableAndTheFiguresInTheirColumn()
+    {
+        var content = string.Join('\n',
+            "BT /F1 11 Tf 72 720 Td (Left column text.) Tj ET",
+            "BT /F1 11 Tf 72 706 Td (More left text.) Tj ET",
+            "BT /F1 11 Tf 350 720 Td (Right column text.) Tj ET",
+            "BT /F1 11 Tf 350 706 Td (More right text.) Tj ET",
+            "q 50 0 0 50 72 620 cm BI /W 2 /H 2 /CS /G /BPC 8 ID \u0000\u00ff\u0000\u00ff EI Q",
+            "0.5 w 72 500 m 300 500 l S 72 520 m 300 520 l S 72 540 m 300 540 l S 72 500 m 72 540 l S 186 500 m 186 540 l S 300 500 m 300 540 l S",
+            "BT /F1 11 Tf 80 526 Td (Name) Tj ET BT /F1 11 Tf 194 526 Td (Value) Tj ET",
+            "BT /F1 11 Tf 80 506 Td (A) Tj ET BT /F1 11 Tf 194 506 Td (1) Tj ET",
+            "BT /F1 11 Tf 304 526 Td (Note) Tj ET");
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream(content))
+            .ToArray();
+
+        var nodes = PdfDocument.Open(file).Pages[0].ExtractLayout().Nodes;
+
+        var left = nodes.ToList().FindIndex(node => node.Text.StartsWith("Left", StringComparison.Ordinal));
+        var right = nodes.ToList().FindIndex(node => node.Text.StartsWith("Right", StringComparison.Ordinal));
+        var figure = nodes.ToList().FindIndex(node => node.Kind == PdfLayoutNodeKind.Figure);
+        Assert.True(left < figure && figure < right, string.Join(" | ", nodes.Select(node => node.Kind + ":" + node.Text)));
+        var table = Assert.Single(nodes, node => node.Kind == PdfLayoutNodeKind.Table);
+        Assert.Equal(["Name", "Value", "A", "1"], table.Children.Select(cell => cell.Text));
+        Assert.Contains(nodes, node => node.Kind == PdfLayoutNodeKind.Paragraph && node.Text.Contains("Note", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void ConvertToPdfA_LevelANeedsATaggedDocument()
     {
         var document = new PdfDocument();
@@ -1039,15 +1088,18 @@ public sealed class PdfDocumentTests
     {
         var file = CreateUntaggedReport();
         using var before = PdfDocument.Open(file).Pages[0].Render(new PdfRenderOptions { UseSystemFonts = false });
+        File.WriteAllBytes("untagged-report.pdf", file);
 
         #region Pdf_AutoTag
-        var document = PdfDocument.Open(file);
+        var document = PdfDocument.Open("untagged-report.pdf");
         var result = document.AutoTag(new PdfAutoTagOptions
         {
             Language = "en-US",
             FigureAlternateText = image => "Company logo",
         });
         #endregion
+
+        File.Delete("untagged-report.pdf");
 
         Assert.Equal(1, result.Headings);
         Assert.Equal(2, result.Paragraphs);

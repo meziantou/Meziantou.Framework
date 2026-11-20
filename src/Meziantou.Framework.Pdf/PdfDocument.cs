@@ -176,7 +176,7 @@ public sealed partial class PdfDocument
             {
                 value = Objects.Load(entry);
             }
-            catch (PdfResourceLimitException ex) when (entry.ContainerNumber > 0)
+            catch (PdfResourceLimitException ex) when (entry.ContainerNumber > 0 && !CanDecodeContainer(entry.ContainerNumber))
             {
                 failedContainers.Add(entry.ContainerNumber);
                 reader.Diagnostics.Report(PdfDiagnosticKind.UndecodableObjectStream, "The object stream cannot be decoded: " + ex.Message, objectNumber: entry.ContainerNumber);
@@ -200,6 +200,22 @@ public sealed partial class PdfDocument
 
         _ = Pages.Count;
         return Diagnostics;
+    }
+
+    /// <summary>Gets a value indicating whether an object stream decodes within the limits: a member that exceeds a limit itself (its nesting) is not a failure of its container.</summary>
+    private bool CanDecodeContainer(int objectNumber)
+    {
+        if (Objects.GetEntry(objectNumber) is not { } container)
+            return false;
+
+        try
+        {
+            return Objects.Load(container) is PdfStream stream && stream.GetDecodedData() is not null;
+        }
+        catch (PdfException)
+        {
+            return false;
+        }
     }
 
     /// <summary>Looks up the entries of the references of an object, so that the references with another generation than their object are reported (7.3.10).</summary>

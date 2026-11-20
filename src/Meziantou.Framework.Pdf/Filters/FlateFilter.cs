@@ -66,13 +66,24 @@ internal static class FlateFilter
         // or truncated when the checksum after it, before the white space some producers add, is another one
         if (hasZlibHeader && !isDamaged)
         {
+            // The checksum is tried at the end of the data, then before each byte of white space at the end: the bytes of
+            // a checksum can be those of white space
+            var checksum = Adler32(result);
             var end = span.Length;
-            while (end > 2 && span[end - 1] is (byte)'\r' or (byte)'\n' or (byte)' ' or 0)
+            isDamaged = true;
+            while (end >= 6)
             {
+                if (System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(span[(end - 4)..end]) == checksum)
+                {
+                    isDamaged = false;
+                    break;
+                }
+
+                if (span[end - 1] is not ((byte)'\r' or (byte)'\n' or (byte)' ' or 0))
+                    break;
+
                 end--;
             }
-
-            isDamaged = end < 6 || System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(span[(end - 4)..end]) != Adler32(result);
         }
 
         return result;

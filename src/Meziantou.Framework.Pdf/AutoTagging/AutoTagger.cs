@@ -1,7 +1,7 @@
 using Meziantou.Framework.Pdf.Content;
 using Meziantou.Framework.Pdf.Objects;
 
-namespace Meziantou.Framework.Pdf;
+namespace Meziantou.Framework.Pdf.AutoTagging;
 
 /// <summary>
 /// Tags an untagged document (ISO 32000-2, 14.8): the structure elements of the layout of its pages

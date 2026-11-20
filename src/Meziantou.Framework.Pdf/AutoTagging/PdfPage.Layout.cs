@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.AutoTagging;
+
 namespace Meziantou.Framework.Pdf;
 
 public sealed partial class PdfPage

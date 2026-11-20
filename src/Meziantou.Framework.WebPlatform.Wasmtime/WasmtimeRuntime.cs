@@ -128,7 +128,16 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
         return NativeMethods.wasm_engine_new_with_config(config);
     }
 
-    internal override unsafe bool Validate(ReadOnlySpan<byte> bytes)
+    internal override bool Validate(ReadOnlySpan<byte> bytes)
+    {
+        if (ValidateCore(bytes))
+            return true;
+
+        // Wasmtime does not support the legacy exception handling instructions: the translated module may be valid
+        return LegacyExceptionHandling.Translate(bytes.ToArray()) is { } translated && ValidateCore(translated);
+    }
+
+    private unsafe bool ValidateCore(ReadOnlySpan<byte> bytes)
     {
         using var engine = EnterEngine();
         fixed (byte* data = bytes)
@@ -142,18 +151,110 @@ public sealed class WasmtimeRuntime : WebAssemblyRuntime, IDisposable
         }
     }
 
-    internal override unsafe WasmModule Compile(byte[] bytes)
+    internal override WasmModule Compile(byte[] bytes)
     {
+        if (Options.ModuleCacheDirectory is not { } cacheDirectory)
+            return new WasmtimeModule(this, CompileNative(bytes), bytes);
+
+        var path = Path.Combine(cacheDirectory, Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(bytes)) + ".cwasm");
+        if (TryLoadCompiledModule(path) is { } cached)
+            return new WasmtimeModule(this, cached, bytes);
+
+        var module = CompileNative(bytes);
+        SaveCompiledModule(module, cacheDirectory, path);
+        return new WasmtimeModule(this, module, bytes);
+    }
+
+    /// <summary>Compiles a module, and returns the native module (<c>wasmtime_module_t*</c>).</summary>
+    private unsafe nint CompileNative(byte[] bytes)
+    {
+        // Wasmtime does not support the legacy exception handling instructions (try, catch, rethrow, delegate) that the
+        // toolchains still emit by default (Emscripten, the runtime of .NET): they are translated to the exception references.
+        // The module keeps the original bytes: the translation only changes the code and adds types.
+        var compiledBytes = LegacyExceptionHandling.Translate(bytes) ?? bytes;
         using var engine = EnterEngine();
         nint module;
-        fixed (byte* data = bytes)
+        fixed (byte* data = compiledBytes)
         {
-            var error = NativeMethods.wasmtime_module_new(engine.Value, data, (nuint)bytes.Length, &module);
+            var error = NativeMethods.wasmtime_module_new(engine.Value, data, (nuint)compiledBytes.Length, &module);
             if (error != 0)
                 throw new WasmCompileException(NativeErrors.TakeErrorMessage(error));
         }
 
-        return new WasmtimeModule(this, module, bytes);
+        return module;
+    }
+
+    /// <summary>Loads a module compiled by <see cref="SaveCompiledModule"/>, or returns null when the file does not exist or was compiled by another version or configuration of Wasmtime.</summary>
+    private unsafe nint? TryLoadCompiledModule(string path)
+    {
+        if (!File.Exists(path))
+            return null;
+
+        using var engine = EnterEngine();
+        nint module;
+        var error = NativeMethods.wasmtime_module_deserialize_file(engine.Value, path, &module);
+        if (error != 0)
+        {
+            NativeMethods.wasmtime_error_delete(error);
+            return null;
+        }
+
+        return module;
+    }
+
+    private static unsafe void SaveCompiledModule(nint module, string cacheDirectory, string path)
+    {
+        WasmByteVec serialized;
+        var error = NativeMethods.wasmtime_module_serialize(module, &serialized);
+        if (error != 0)
+        {
+            NativeMethods.wasmtime_error_delete(error);
+            return;
+        }
+
+        try
+        {
+            // Written to a temporary file then renamed, so that the runtimes that compile the same module at the same time
+            // (the tests that run in parallel) never load a partial file
+            var temporaryPath = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
+            try
+            {
+                Directory.CreateDirectory(cacheDirectory);
+                using (var stream = new FileStream(temporaryPath, FileMode.CreateNew, FileAccess.Write, FileShare.None))
+                {
+                    stream.Write(serialized.AsSpan());
+                }
+
+                File.Move(temporaryPath, path, overwrite: true);
+            }
+            catch (IOException)
+            {
+                // Another runtime saved the module, or the file is in use (a mapped file cannot be replaced on Windows)
+                TryDeleteFile(temporaryPath);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                TryDeleteFile(temporaryPath);
+            }
+        }
+        finally
+        {
+            NativeMethods.wasm_byte_vec_delete(&serialized);
+        }
+    }
+
+    private static void TryDeleteFile(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (IOException)
+        {
+        }
+        catch (UnauthorizedAccessException)
+        {
+        }
     }
 
     internal override WasmStore CreateStore(IWasmHost host) => new WasmtimeStore(this, host);

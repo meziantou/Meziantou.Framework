@@ -25,5 +25,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wasmtime.Fuzz" />
   </ItemGroup>
 </Project>

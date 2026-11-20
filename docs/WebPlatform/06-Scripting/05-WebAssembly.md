@@ -42,6 +42,10 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
   supported.
 - The features of WebAssembly 3.0 are enabled (reference types, garbage collection types, exceptions, tail calls, memory64,
   multiple memories, SIMD), and the threads: see [Threads](#threads).
+- The legacy exception handling instructions (`try`, `catch`, `catch_all`, `rethrow`, `delegate`), which Emscripten and
+  the runtime of .NET in the browser (Blazor WebAssembly) still emit by default, are supported: the modules that use
+  them are translated to the exception references of WebAssembly 3.0 (`try_table`, `throw_ref`) before they are
+  compiled, as Wasmtime only supports those.
 - The JS String Builtins are supported: the `builtins: ["js-string"]` compile option provides the functions of the
   `wasm:js-string` module (`length`, `concat`, `charCodeAt`, `fromCharCodeArray`...), and `importedStringConstants`
   turns the globals imported from a module into string constants (the name of the import is the string).
@@ -59,6 +63,13 @@ deeper recursion throws a `RangeError`), the largest size of a memory ([MaxMemor
 shared with the `ArrayBuffer` objects of the scripts), and how often the running code checks whether it must stop
 ([InterruptionCheckInterval](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.InterruptionCheckInterval), 10 ms by default).
 A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1 beyond it.
+
+Compiling a large module takes time: the runtime of .NET in a Blazor WebAssembly application takes from a second to tens
+of seconds. Set [ModuleCacheDirectory](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.ModuleCacheDirectory)
+to save the compiled code of the modules in a folder: the next compilations of the same module, by any runtime that
+uses the folder, load it in milliseconds. The files are native code that the runtime runs without validating it, so use
+a folder that only the current user can write to. They are about ten times as large as the modules, and are never
+deleted.
 
 ## Module scripts
 

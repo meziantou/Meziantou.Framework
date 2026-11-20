@@ -22,4 +22,17 @@ public sealed class WasmtimeRuntimeOptions
     /// value: a shared memory cannot grow beyond.
     /// </summary>
     public long MaxMemorySize { get; init; } = Array.MaxLength;
+
+    /// <summary>
+    /// Gets the folder where the compiled code of the modules is saved, to be loaded instead of compiled again when the same
+    /// module is compiled later, by this runtime or by another one (another test, another run of the tests). The default is
+    /// <see langword="null"/>: the modules are compiled each time. Compiling a large module, such as the runtime of .NET in
+    /// a Blazor WebAssembly application, takes seconds, while loading it from the folder takes milliseconds.
+    /// </summary>
+    /// <remarks>
+    /// The files are native code that the runtime loads and runs without validating it: use a folder that only the current
+    /// user can write to. A file that does not match the version or the configuration of Wasmtime is replaced. The files
+    /// are never deleted: they are about ten times as large as the modules.
+    /// </remarks>
+    public string? ModuleCacheDirectory { get; init; }
 }

@@ -70,5 +70,6 @@ await Expect(page.Locator("output")).ToHaveTextAsync("2 + 3 = 5");
 <!-- endref -->
 
 A Blazor WebAssembly application must also serve the files of its runtime (`_framework/`; for a standalone application,
-the `wwwroot` folder of its published output), and target .NET 11 or later: the runtime of .NET 10 uses the legacy
-exception handling proposal of WebAssembly, which Wasmtime does not support.
+the `wwwroot` folder of its published output, with `TestDocumentLoaders.FromDirectories` and a fallback file for its
+routes). The applications of .NET 10, whose runtime uses the legacy exception handling instructions of WebAssembly, run
+too: the Wasmtime runtime translates these instructions to the ones Wasmtime supports.

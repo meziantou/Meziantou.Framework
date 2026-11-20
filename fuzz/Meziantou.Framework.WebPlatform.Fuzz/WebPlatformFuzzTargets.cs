@@ -127,6 +127,8 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-user-scroll", UserScroll) { Seeds = GetUserScrollSeeds, Dictionary = UserScrollTokens },
         new("webplatform-entries-path", data => EntriesPathResolution(FuzzText.Decode(data))) { Seeds = GetEntriesPathSeeds, Dictionary = EntriesPathTokens },
         new("webplatform-drag-and-drop", DragAndDrop) { Seeds = GetDragAndDropSeeds, Dictionary = DragTokens },
+        new("webplatform-window-find", data => WindowFind(FuzzText.Decode(data.Length > WindowFindMaxLength ? data[..WindowFindMaxLength] : data))) { Seeds = GetWindowFindSeeds, Dictionary = WindowFindTokens },
+        new("webplatform-date-time-fields", DateTimeFields) { Seeds = GetDateTimeFieldsSeeds, Dictionary = DateTimeFieldsTokens },
         new("webplatform-speculation-rules", data => SpeculationRules(FuzzText.Decode(data))) { Seeds = GetSpeculationRulesSeeds, Dictionary = SpeculationRulesTokens },
         new("webplatform-payment-method-manifest", PaymentMethodManifestTarget) { Seeds = GetPaymentMethodManifestSeeds, Dictionary = PaymentMethodManifestTokens },
         new("webplatform-link-header", data => LinkHeaderTarget(FuzzText.Decode(data))) { Seeds = GetLinkHeaderSeeds, Dictionary = LinkHeaderTokens },

@@ -3001,8 +3001,16 @@
     "total": 1
   },
   "fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 10,
+    "failures": {
+      "Does not block EventSource": "FAIL",
+      "Does not block Worker": "FAIL",
+      "Does not block fetch": "FAIL",
+      "Does not block importScripts": "FAIL",
+      "Does not block location.replace(`resources/empty.html?\n<`)": "FAIL",
+      "Does not block window.open(`resources/empty.html?\n<`,'_self')": "FAIL",
+      "Does not block xhr": "FAIL"
+    }
   },
   "fetch/security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html": {
     "total": 14,

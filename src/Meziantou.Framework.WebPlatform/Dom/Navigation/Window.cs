@@ -387,10 +387,10 @@ public sealed partial class Window : GlobalScope
         var hasTransientActivation = sourceDocument.RelevantWindow?.HasTransientActivation ?? false;
 
         // The target (e.g. _self) is chosen from the navigable of this window, which is the opener, as in the browsers: the
-        // entry document (e.g. the page that runs frames[0].open() in a promise job) only resolves the URL and initiates the
-        // navigation
+        // entry document (e.g. the page that runs frames[0].open() in a promise job) resolves the URL, initiates the
+        // navigation and creates the initial about:blank document of a new popup (its origin and its base URL)
         sourceNavigable ??= Document.BrowsingContext;
-        if (sourceNavigable is null || sourceNavigable.ChooseNavigable(target, noopener, out var windowType) is not { } targetNavigable)
+        if (sourceNavigable is null || sourceNavigable.ChooseNavigable(target, noopener, out var windowType, creatorDocument: sourceDocument) is not { } targetNavigable)
             return null;
 
         if (windowType is WindowType.NewAndUnrestricted or WindowType.NewWithNoOpener)

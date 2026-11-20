@@ -642,10 +642,10 @@ public sealed partial class BrowsingContext : IDisposable
     /// (https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context): its
     /// initial about:blank document has the origin of the opener, or an opaque origin without opener.
     /// </summary>
-    internal BrowsingContext CreateAuxiliaryBrowsingContext(string name, Document? opener, SandboxingFlags popupSandboxingFlags = SandboxingFlags.None, BrowsingContext? creator = null)
+    internal BrowsingContext CreateAuxiliaryBrowsingContext(string name, Document? opener, SandboxingFlags popupSandboxingFlags = SandboxingFlags.None, BrowsingContext? creator = null, Document? initialDocumentCreator = null)
     {
         var owner = GroupOwner;
-        var context = new BrowsingContext(Options, parent: null, container: null, owner, opener, name, popupSandboxingFlags)
+        var context = new BrowsingContext(Options, parent: null, container: null, owner, opener is null ? null : initialDocumentCreator ?? opener, name, popupSandboxingFlags)
         {
             Opener = opener?.BrowsingContext,
             CreatorBrowsingContext = creator ?? opener?.BrowsingContext,
@@ -1145,9 +1145,11 @@ public sealed partial class BrowsingContext : IDisposable
     /// https://html.spec.whatwg.org/multipage/document-sequences.html#the-rules-for-choosing-a-navigable: returns the navigable
     /// that a hyperlink, a form or <c>window.open()</c> targeting <paramref name="name"/> navigates. For <c>_blank</c> and the
     /// names that are not found, a new auxiliary browsing context is created (with this browsing context as opener, unless
-    /// <paramref name="noopener"/> is true).
+    /// <paramref name="noopener"/> is true). The initial about:blank document of a new one gets its origin, its base URL and
+    /// its policies from <paramref name="creatorDocument"/> when it is given (e.g. the entry document of <c>window.open()</c>),
+    /// else from the document of the opener.
     /// </summary>
-    internal BrowsingContext? ChooseNavigable(string name, bool noopener, out WindowType windowType)
+    internal BrowsingContext? ChooseNavigable(string name, bool noopener, out WindowType windowType, Document? creatorDocument = null)
     {
         windowType = WindowType.ExistingOrNone;
         if (name.Length == 0 || Infra.InfraAscii.EqualsIgnoreAsciiCase(name, "_self"))
@@ -1190,7 +1192,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the sandboxing
         // flags of the document propagate to the popup, unless it uses allow-popups-to-escape-sandbox
         var popupSandboxingFlags = (currentDocument.ActiveSandboxingFlags & SandboxingFlags.PropagatesToAuxiliaryBrowsingContexts) != SandboxingFlags.None ? currentDocument.ActiveSandboxingFlags : SandboxingFlags.None;
-        var popup = CreateAuxiliaryBrowsingContext(targetName, noopener ? null : Document, popupSandboxingFlags, creator: this);
+        var popup = CreateAuxiliaryBrowsingContext(targetName, noopener ? null : Document, popupSandboxingFlags, creator: this, creatorDocument);
         popup._isNewTopLevelTraversable = true;
 
         // The window of the new top-level browsing context is the active window of the user: it takes the system focus from

@@ -45,6 +45,20 @@ internal static class Binding_HTMLVideoElement<TAdapter, TValue> where TAdapter 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding);
         var result = o.RequestPictureInPicture(); return r.ToPromise(result, static (r, value) => r.Wrap(value));
     }
+    private static TValue Op_requestVideoFrameCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("requestVideoFrameCallback", 1, a.Length);
+        var a0 = r.ToCallbackFunction(a[0], "VideoFrameRequestCallback", false)!;
+        var result = o.RequestVideoFrameCallback(WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_VideoFrameRequestCallback(r, a0)); return r.FromNumber((double)result);
+    }
+    private static TValue Op_cancelVideoFrameCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("cancelVideoFrameCallback", 1, a.Length);
+        var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        o.CancelVideoFrameCallback(a0); return r.Adapter.Undefined;
+    }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "width", Get_width, Set_width);
@@ -58,5 +72,7 @@ internal static class Binding_HTMLVideoElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "disablePictureInPicture", Get_disablePictureInPicture, Set_disablePictureInPicture);
         r.DefineOperation(instanceTarget, "getVideoPlaybackQuality", 0, Op_getVideoPlaybackQuality);
         r.DefineOperation(instanceTarget, "requestPictureInPicture", 0, Op_requestPictureInPicture, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "requestVideoFrameCallback", 1, Op_requestVideoFrameCallback);
+        r.DefineOperation(instanceTarget, "cancelVideoFrameCallback", 1, Op_cancelVideoFrameCallback);
     }
 }

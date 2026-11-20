@@ -80,7 +80,7 @@ public sealed class BlobEventInit : EventInit
     /// <summary>Gets the time of the first data of the blob, in milliseconds since the start of the recording.</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-record/#dom-blobeventinit-timecode"/>
     [IdlMember("timecode", "https://w3c.github.io/mediacapture-record/#dom-blobeventinit-timecode")]
-    public double Timecode { get; init; }
+    public double Timecode { get; init; } = double.NaN;
 }
 
 /// <summary>The event that delivers the data of a <see cref="MediaRecorder"/> (https://w3c.github.io/mediacapture-record/#blobevent-section).</summary>
@@ -135,6 +135,7 @@ public sealed class MediaRecorder : EventTarget
     private readonly GlobalScope _global;
     private readonly Action _tracksChanged;
     private readonly string _constrainedMimeType;
+    private readonly uint? _constrainedBitsPerSecond;
     private Recording? _recording;
 
     /// <summary>Creates a recorder (https://w3c.github.io/mediacapture-record/#dom-mediarecorder-mediarecorder).</summary>
@@ -165,10 +166,11 @@ public sealed class MediaRecorder : EventTarget
         KeyFrameIntervalCount = options.VideoKeyFrameIntervalCount;
 
         // https://w3c.github.io/mediacapture-record/#bitrate-algorithm: a total bitrate is shared by the audio and the video
+        _constrainedBitsPerSecond = options.BitsPerSecond;
         if (options.BitsPerSecond is { } total)
         {
             AudioBitsPerSecond = Math.Max(1, Math.Min(total / 10, DefaultAudioBitsPerSecond));
-            VideoBitsPerSecond = Math.Max(1, total - AudioBitsPerSecond);
+            VideoBitsPerSecond = (uint)Math.Max(1L, (long)total - AudioBitsPerSecond);
         }
         else
         {
@@ -198,12 +200,12 @@ public sealed class MediaRecorder : EventTarget
     /// <summary>Gets the target bitrate of the video, in bits per second.</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-record/#dom-mediarecorder-videobitspersecond"/>
     [IdlMember("videoBitsPerSecond", "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-videobitspersecond")]
-    public uint VideoBitsPerSecond { get; }
+    public uint VideoBitsPerSecond { get; private set; }
 
     /// <summary>Gets the target bitrate of the audio, in bits per second.</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-record/#dom-mediarecorder-audiobitspersecond"/>
     [IdlMember("audioBitsPerSecond", "https://w3c.github.io/mediacapture-record/#dom-mediarecorder-audiobitspersecond")]
-    public uint AudioBitsPerSecond { get; }
+    public uint AudioBitsPerSecond { get; private set; }
 
     /// <summary>Gets how the audio encoder controls its bitrate.</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-record/#dom-mediarecorder-audiobitratemode"/>
@@ -287,7 +289,21 @@ public sealed class MediaRecorder : EventTarget
         var tracks = Stream.GetTracks();
         var videoTrack = tracks.FirstOrDefault(track => track.Kind == "video");
         var audioTrack = tracks.FirstOrDefault(track => track.Kind == "audio");
+        // An audio type cannot record the video tracks
+        if (_constrainedMimeType.Length > 0 && Infra.MimeType.Parse(_constrainedMimeType) is { Type: "audio" } && videoTrack is not null)
+            throw new DomException("An audio type cannot record a video track", "NotSupportedError");
+
         var (container, videoCodec, audioCodec, unknownCodec) = ResolveType(_constrainedMimeType, videoTrack is not null, audioTrack is not null);
+
+        // https://w3c.github.io/mediacapture-record/#bitrate-algorithm: the total bitrate goes to the kinds of tracks of the stream
+        if (_constrainedBitsPerSecond is { } total)
+        {
+            if (videoTrack is null)
+                (AudioBitsPerSecond, VideoBitsPerSecond) = (total, 0);
+            else if (audioTrack is null)
+                (AudioBitsPerSecond, VideoBitsPerSecond) = (0, total);
+        }
+
         State = RecordingState.Recording;
         var recording = new Recording(this, container, videoTrack, audioTrack, videoCodec, audioCodec, timeslice);
         _recording = recording;
@@ -376,10 +392,17 @@ public sealed class MediaRecorder : EventTarget
         if (State == RecordingState.Inactive || _recording is not { } recording)
             throw new DomException("The recorder is inactive", "InvalidStateError");
 
+        // The data of a recording that started is not empty: it has the header of the stream at least
+        var started = recording.HasBegun;
         _global.QueueGlobalTask(() =>
         {
-            if (_recording == recording)
-                FireDataAvailable(recording);
+            if (_recording != recording)
+                return;
+
+            if (started)
+                recording.WriteHeader();
+
+            FireDataAvailable(recording);
         });
     }
 
@@ -462,13 +485,20 @@ public sealed class MediaRecorder : EventTarget
 
     private void OnTracksChanged()
     {
-        // https://w3c.github.io/mediacapture-record/#dom-mediarecorder-start: a track added to or removed from the stream stops the recording
+        // https://w3c.github.io/mediacapture-record/#dom-mediarecorder-start: a track added to or removed from the stream stops
+        // the recording (unless it is stopped before the task runs)
         if (State == RecordingState.Inactive || _recording is not { } recording)
             return;
 
-        State = RecordingState.Inactive;
-        recording.StopGathering();
-        _global.QueueGlobalTask(() => StopRecording(recording, new DomException("A track was added to or removed from the stream", "InvalidModificationError")));
+        _global.QueueGlobalTask(() =>
+        {
+            if (State == RecordingState.Inactive || _recording != recording)
+                return;
+
+            State = RecordingState.Inactive;
+            recording.StopGathering();
+            StopRecording(recording, new DomException("A track was added to or removed from the stream", "InvalidModificationError"));
+        });
     }
 
     /// <summary>All the tracks of the recording ended: the recording stops.</summary>
@@ -556,6 +586,8 @@ public sealed class MediaRecorder : EventTarget
         private long _nextSliceTime;
         private double? _blobTimecode;
         private int _timer;
+        private long _sampleCount;
+        private long _blobCount;
         private bool _gathering;
 
         public Recording(MediaRecorder recorder, string container, MediaStreamTrack? videoTrack, MediaStreamTrack? audioTrack, bool recordVideo, bool recordAudio, uint? timeslice)
@@ -571,6 +603,11 @@ public sealed class MediaRecorder : EventTarget
         }
 
         public bool IsStopping { get; private set; }
+
+        /// <summary>Whether the recording started (its <c>start</c> event was fired).</summary>
+        public bool HasBegun { get; private set; }
+
+        public void WriteHeader() => _writer?.WriteHeader();
 
         /// <summary>The type of the recording, e.g. <c>video/webm;codecs=vp8,opus</c>.</summary>
         public string MimeType
@@ -646,9 +683,12 @@ public sealed class MediaRecorder : EventTarget
         public void Begin()
         {
             _gathering = true;
+            HasBegun = true;
             _startTimestamp = _clock.GetTimestamp();
-            _nextSliceTime = _timeslice is { } slice ? Math.Max(slice, 1) : long.MaxValue;
-            Sample();
+            _nextSliceTime = _timeslice ?? long.MaxValue;
+
+            // The first sample writes the header of the stream (delivered alone with a timeslice); the media is recorded from the next one
+            _timer = _recorder._global.SetTimeout(Sample, 0);
         }
 
         public void Pause() => _pausedAt ??= _clock.GetTimestamp();
@@ -702,8 +742,15 @@ public sealed class MediaRecorder : EventTarget
                 var time = RecordingTime;
                 try
                 {
-                    RecordVideo(time);
-                    RecordAudio(time);
+                    if (_sampleCount++ == 0)
+                    {
+                        _writer?.WriteHeader();
+                    }
+                    else
+                    {
+                        RecordVideo(time);
+                        RecordAudio(time);
+                    }
                 }
 #pragma warning disable CA1031 // A failure of the codecs stops the recording with an error
                 catch (Exception ex)
@@ -715,7 +762,7 @@ public sealed class MediaRecorder : EventTarget
 
                 if (time >= _nextSliceTime && _recorder._recording == this)
                 {
-                    _nextSliceTime = time + Math.Max(_timeslice ?? 1, 1);
+                    _nextSliceTime = time + _timeslice!.Value;
                     _recorder.FireDataAvailable(this);
                     if (!_gathering)
                         return;
@@ -811,6 +858,8 @@ public sealed class MediaRecorder : EventTarget
             if (_writer is null)
                 return;
 
+            _writer.WriteHeader();
+
             try
             {
                 foreach (var output in _videoEncoder?.Flush() ?? [])
@@ -833,7 +882,7 @@ public sealed class MediaRecorder : EventTarget
         /// <summary>Returns the data written since the last blob, and the time of its first frame.</summary>
         public (byte[] Bytes, double Timecode) TakeData()
         {
-            var timecode = _blobTimecode ?? RecordingTime;
+            var timecode = _blobCount++ == 0 ? 0 : _blobTimecode ?? RecordingTime;
             _blobTimecode = null;
             if (_writer is null)
                 return ([], timecode);

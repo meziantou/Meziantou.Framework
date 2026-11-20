@@ -42,7 +42,7 @@ internal sealed class WebMWriter
 
     private readonly string _docType;
 
-    /// <summary>Creates a writer and writes the header of the stream.</summary>
+    /// <summary>Creates a writer: the header of the stream is written with the first frame or by <see cref="WriteHeader"/>.</summary>
     /// <param name="tracks">The tracks of the stream.</param>
     /// <param name="docType">The document type: <c>webm</c>, or <c>matroska</c> for a Matroska stream.</param>
     public WebMWriter(IReadOnlyList<WebMTrack> tracks, string docType = "webm")
@@ -52,7 +52,6 @@ internal sealed class WebMWriter
             throw new ArgumentException("A WebM stream has 1 to 126 tracks", nameof(tracks));
 
         _tracks = tracks;
-        WriteHeader();
     }
 
     /// <summary>The number of bytes written since the last <see cref="TakeBytes"/>.</summary>
@@ -102,7 +101,8 @@ internal sealed class WebMWriter
         _clusterTimecode = timestamp;
     }
 
-    private void WriteHeader()
+    /// <summary>Writes the header of the stream (the EBML header, the segment, the information and the tracks), once.</summary>
+    public void WriteHeader()
     {
         if (_headerWritten)
             return;

@@ -288,6 +288,32 @@ public sealed class SvgAnimationTests : IDisposable
     }
 
     [Fact]
+    public void Seeking_ResolvesTheRepeatValuesOfTheSkippedIterations()
+    {
+        var (document, svg) = LoadPaused("""
+            <rect width=10 height=10>
+              <animate id=source attributeName=x from=0 to=10 dur=1s repeatCount=indefinite />
+              <animate id=dependent attributeName=y from=0 to=10 begin="source.repeat(3)" dur=10s />
+            </rect>
+            """);
+        var events = new List<string>();
+        foreach (var id in (string[])["source", "dependent"])
+        {
+            foreach (var type in (string[])["beginEvent", "repeatEvent"])
+            {
+                document.GetElementById(id)!.AddEventListener(type, e => events.Add(id + ":" + e.Type + ":" + ((TimeEvent)e).Detail.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            }
+        }
+
+        // The seek skips the iterations 1 to 3 of the source: the repeat(3) value begins the dependent at 3s, and the skipped
+        // iterations fire one repeat event
+        svg.SetCurrentTime(3.5f);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["source:repeatEvent:3", "dependent:beginEvent:0"], events);
+        Assert.Equal(3, ((SvgAnimationElement)document.GetElementById("dependent")!).GetStartTime());
+    }
+
+    [Fact]
     public void Begin_SyncbaseEventAndRepeatValues()
     {
         var (document, svg) = LoadPaused("""

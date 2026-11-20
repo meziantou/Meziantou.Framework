@@ -359,6 +359,13 @@ public sealed class SvgAnimatedLength
             new SvgAttributeBinding(element, name, readOnly),
             value =>
             {
+                // A presentation attribute whose value contains a substitution function, e.g. var() (https://github.com/w3c/svgwg/issues/1038)
+                if (value is not null && Css.Cascade.PresentationalHints.IsSvgPresentationAttribute(element, name) && SvgLength.TryParseSubstitution(value, out var substitution))
+                {
+                    length.SetSubstitution(substitution);
+                    return true;
+                }
+
                 // https://svgwg.org/svg2-draft/geometry.html#Sizing, https://svgwg.org/svg2-draft/geometry.html#R: a negative value
                 // of the sizes and of the radii is invalid: it is ignored
                 if (value is null || !SvgLength.TryParse(value, out var number, out var unitType, out var unknownUnit) || (number < 0 && name is "r" or "rx" or "ry" or "width" or "height"))

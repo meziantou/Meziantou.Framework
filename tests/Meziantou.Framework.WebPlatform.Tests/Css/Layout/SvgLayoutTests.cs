@@ -349,6 +349,51 @@ public sealed class SvgLayoutTests : IDisposable
     }
 
     [Fact]
+    public void SvgLength_SubstitutionFunctionOfAPresentationAttribute()
+    {
+        var document = Parse("<style>:root { --w: 100px }</style><svg width=400 height=200><rect id=r width='var(--w)' height=50 /></svg>");
+        var rect = Get<SvgRectElement>(document, "r");
+        var width = rect.Width.BaseVal;
+
+        // https://github.com/w3c/svgwg/issues/1038: the value of a substitution is not resolved
+        Assert.Equal(SvgLength.SvgLengthTypeUnknown, width.UnitType);
+        Assert.Equal(0, width.Value);
+        Assert.Equal(0, width.ValueInSpecifiedUnits);
+        Assert.Equal("var(--w)", width.ValueAsString);
+        Assert.Throws<DomException>(() => width.ConvertToSpecifiedUnits(SvgLength.SvgLengthTypeCm));
+        Assert.Equal("var(--w)", rect.GetAttribute("width"));
+
+        // The substitution is rendered: the rectangle is 100px wide
+        Assert.Equal(100, rect.GetBoundingClientRect().Width);
+
+        // Setting the value in user units replaces the substitution
+        width.Value = 120;
+        Assert.Equal(SvgLength.SvgLengthTypeNumber, width.UnitType);
+        Assert.Equal("120", rect.GetAttribute("width"));
+
+        // A standalone length accepts a substitution too, but not a function whose name ends with var
+        var standalone = rect.OwnerSvgElement!.CreateSvgLength();
+        standalone.ValueAsString = " var(--w) ";
+        Assert.Equal(SvgLength.SvgLengthTypeUnknown, standalone.UnitType);
+        Assert.Equal("var(--w)", standalone.ValueAsString);
+        Assert.Throws<DomException>(() => standalone.ValueAsString = "my-var(--w)");
+    }
+
+    [Fact]
+    public void SvgLength_PercentageOfADetachedLength()
+    {
+        var document = Parse("<svg id=s width=400 height=200></svg>");
+        var length = Get<SvgSvgElement>(document, "s").CreateSvgLength();
+        length.ValueAsString = "2px";
+        length.ConvertToSpecifiedUnits(SvgLength.SvgLengthTypePercentage);
+
+        // https://svgwg.org/svg2-draft/types.html#__svg__SVGLength__value: the percentages of a length without element are
+        // relative to a viewport size of 100
+        Assert.Equal("2%", length.ValueAsString);
+        Assert.Equal(2, length.Value);
+    }
+
+    [Fact]
     public void IntersectionList_PaintedGeometry()
     {
         var document = Parse("<svg id=s width=400 height=200><rect id=a width=50 height=50 /><circle id=b cx=100 cy=100 r=10 /><path id=c d='M 0 100 L 100 200' fill=none stroke=black /></svg>");

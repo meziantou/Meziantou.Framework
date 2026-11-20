@@ -1,7 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <Version>1.0.12</Version>
+    <Version>1.0.13</Version>
     <Description>Fully managed OpenType font reader and text shaper shared by Meziantou.Framework.Imaging and Meziantou.Framework.WebPlatform: TrueType, CFF and CFF2 outlines, WOFF and WOFF2, PostScript Type 1 fonts, variable fonts, color fonts, the shaping of complex scripts, Apple Advanced Typography (morx, kerx), and AFM font metrics files.</Description>
     <PackageTags>font;opentype;truetype;woff;woff2;cff;type1;postscript;shaping;typography;afm;aat</PackageTags>
 

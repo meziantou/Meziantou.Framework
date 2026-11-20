@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Pdf.JavaScript</RootNamespace>
-    <Version>1.0.1</Version>
+    <Version>1.0.2</Version>
     <Description>Runs the scripts of the interactive forms of Meziantou.Framework.Pdf in a sandbox of Meziantou.Framework.JavaScriptEngine: keystroke, validation, calculation and format scripts, the AF functions of the viewers and util.printf/printd/scand, with limits of time, statements and memory.</Description>
     <PackageTags>pdf;acroform;form;javascript;calculation;sandbox</PackageTags>
 

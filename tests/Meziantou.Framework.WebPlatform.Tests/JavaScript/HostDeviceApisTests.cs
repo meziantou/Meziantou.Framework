@@ -4601,6 +4601,30 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.All(Enumerable.Range(jump + 1, samples.Length - jump - 1), i => Assert.Equal(samples[i - 1] + 0.001f, samples[i], 0.0005f));
     }
 
+    [Fact]
+    public async Task MediaRecorder_Pause_EncodingErrorStopsTheRecordingWithoutPausing()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var codecs = new TestMediaCodecBackend();
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = codecs,
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => record(stream, { mimeType: 'audio/webm;codecs=opus' }));");
+
+        // The audio recorded since the last sample (at 40 ms) is encoded when pausing at 50 ms, and the encoder fails
+        Advance(clock, document, 50);
+        codecs.FailAudioEncoding = true;
+        Run(document, "recorder.pause(); log.push('paused ' + recorder.state);");
+        Advance(clock, document, 100);
+        Run(document, "done();");
+
+        Assert.Equal("recording|start audio/webm;codecs=opus|paused inactive|error UnknownError|data audio/webm;codecs=opus true 0|stop inactive", document.Title);
+    }
+
     // MediaStreamTrack Insertable Streams
 
     [Fact]

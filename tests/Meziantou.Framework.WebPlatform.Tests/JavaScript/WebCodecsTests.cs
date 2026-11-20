@@ -1165,6 +1165,9 @@ internal sealed class TestMediaCodecBackend : PcmCodecBackend
     /// <summary>Gets the number of codec implementations that were disposed.</summary>
     public int DisposedCodecs { get; private set; }
 
+    /// <summary>Gets or sets whether the audio encoders fail to encode.</summary>
+    public bool FailAudioEncoding { get; set; }
+
     public override bool IsConfigSupported(AudioDecoderConfig config)
     {
         Configs.Add(config);
@@ -1276,6 +1279,9 @@ internal sealed class TestMediaCodecBackend : PcmCodecBackend
     {
         public override IReadOnlyList<MediaEncodedAudio> Encode(AudioData data)
         {
+            if (backend.FailAudioEncoding)
+                throw new InvalidOperationException("The audio cannot be encoded");
+
             var options = new AudioDataCopyToOptions { PlaneIndex = 0, Format = AudioSampleFormat.F32 };
             var bytes = new byte[data.AllocationSize(options)];
             data.CopyTo(bytes, options);

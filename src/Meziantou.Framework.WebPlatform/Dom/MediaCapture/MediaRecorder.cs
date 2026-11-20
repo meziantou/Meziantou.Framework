@@ -366,6 +366,11 @@ public sealed class MediaRecorder : EventTarget
 
         State = RecordingState.Paused;
         _recording?.Pause();
+
+        // The audio recorded up to the pause can fail to encode: the recording is then stopped, and is not paused
+        if (State == RecordingState.Inactive)
+            return;
+
         _global.QueueGlobalTask(() => FireEvent(new Event("pause")));
     }
 

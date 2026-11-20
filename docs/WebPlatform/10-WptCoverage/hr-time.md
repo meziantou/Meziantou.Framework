@@ -9,24 +9,23 @@ description: "The results of the web-platform-tests of hr-time, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 12 | 14 | 0 | 86% |
+| [Stable](#stable-tests) | 13 | 14 | 0 | 93% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **12** | **14** | **0** | **86%** |
+| **All** | **13** | **14** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`audioworklet.https.html`](https://wpt.fyi/results/hr-time/audioworklet.https.html) | Fail | 4 / 6 | NOT IMPLEMENTED | `performance` (`WorkletPerformance`) in `AudioWorkletGlobalScope` |
+| [`audioworklet.https.html`](https://wpt.fyi/results/hr-time/audioworklet.https.html) | Pass | 6 / 6 |  |  |
 | [`basic.any.js`](https://wpt.fyi/results/hr-time/basic.any.js) | Pass | 10 / 10 |  |  |
 | [`clamped-time-origin-isolated.https.html`](https://wpt.fyi/results/hr-time/clamped-time-origin-isolated.https.html) | Pass | 1 / 1 |  |  |
 | [`clamped-time-origin.html`](https://wpt.fyi/results/hr-time/clamped-time-origin.html) | Pass | 1 / 1 |  |  |

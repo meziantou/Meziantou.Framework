@@ -9,19 +9,19 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 733 | 751 | 0 | 98% |
+| [Stable](#stable-tests) | 740 | 751 | 0 | 99% |
 | [Tentative](#tentative-tests) | 43 | 44 | 0 | 98% |
 | [Reftests](#reftests) | 645 | 693 | 0 | 93% |
 | [Crash tests](#crash-tests) | 55 | 55 | 0 | 100% |
-| **All** | **1,476** | **1,543** | **0** | **96%** |
+| **All** | **1,483** | **1,543** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 4
-- **TEST BUG**: 23
-- **NOT IMPLEMENTED**: 35
+- **TEST BUG**: 27
+- **NOT IMPLEMENTED**: 26
 - **TEST RUNNER**: 5
 
 ## Stable tests
@@ -165,7 +165,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`animations/scripted/paced-value-animation-overwrites-keyTimes.html`](https://wpt.fyi/results/svg/animations/scripted/paced-value-animation-overwrites-keyTimes.html) | Pass | 1 / 1 |  |  |
 | [`animations/scripted/smil-values-empty-segments.html`](https://wpt.fyi/results/svg/animations/scripted/smil-values-empty-segments.html) | Pass | 4 / 4 |  |  |
 | [`animations/scripted/syncbase-after-removal.html`](https://wpt.fyi/results/svg/animations/scripted/syncbase-after-removal.html) | Pass | 1 / 1 |  |  |
-| [`animations/seek-repeat-event-condition.html`](https://wpt.fyi/results/svg/animations/seek-repeat-event-condition.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | resolving the `repeat(n)` event conditions over the iterations that a seek (`setCurrentTime()`) skips: a seek fires no events, so `source.repeat(3)` never resolves and the test times out |
+| [`animations/seek-repeat-event-condition.html`](https://wpt.fyi/results/svg/animations/seek-repeat-event-condition.html) | Fail | 0 / 1 | TEST BUG | the test expects the iterations skipped by `setCurrentTime()` before the timeline starts to fire one `repeatEvent`, but a seek fires no `repeatEvent` (https://www.w3.org/TR/SMIL3/smil-timing.html#q110: the events of the skipped intervals are not raised), as `seeking-events-5.html` and `seeking-events-6.html` (the same seek before the start, with the browsers) require: the `repeat(3)` condition is resolved for the skipped iterations and the dependent begins, but the count of repeat events is 0 |
 | [`animations/seeking-events-1.html`](https://wpt.fyi/results/svg/animations/seeking-events-1.html) | Pass | 1 / 1 |  |  |
 | [`animations/seeking-events-2.html`](https://wpt.fyi/results/svg/animations/seeking-events-2.html) | Pass | 1 / 1 |  |  |
 | [`animations/seeking-events-3.html`](https://wpt.fyi/results/svg/animations/seeking-events-3.html) | Pass | 1 / 1 |  |  |
@@ -305,7 +305,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`coordinate-systems/outer-svg-transform-attribute-scrollable-overflow.html`](https://wpt.fyi/results/svg/coordinate-systems/outer-svg-transform-attribute-scrollable-overflow.html) | Pass | 1 / 1 |  |  |
 | [`coordinate-systems/svgtransformlist-replaceitem.html`](https://wpt.fyi/results/svg/coordinate-systems/svgtransformlist-replaceitem.html) | Pass | 1 / 1 |  |  |
 | [`coordinate-systems/transform-translate-single-parameter.html`](https://wpt.fyi/results/svg/coordinate-systems/transform-translate-single-parameter.html) | Pass | 1 / 1 |  |  |
-| [`embedded/attr-image-fetchpriority.optional.html`](https://wpt.fyi/results/svg/embedded/attr-image-fetchpriority.optional.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `fetchPriority` of SVG `<image>` |
+| [`embedded/attr-image-fetchpriority.optional.html`](https://wpt.fyi/results/svg/embedded/attr-image-fetchpriority.optional.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `fetchPriority` of SVG `<image>`: not in SVG 2 (an open proposal, w3c/svgwg#925; optional test) |
 | [`embedded/image-crossorigin.sub.html`](https://wpt.fyi/results/svg/embedded/image-crossorigin.sub.html) | Pass | 4 / 4 |  |  |
 | [`embedded/image-referrerpolicy-reflection.html`](https://wpt.fyi/results/svg/embedded/image-referrerpolicy-reflection.html) | Pass | 12 / 12 |  |  |
 | [`embedded/image-referrerpolicy.html`](https://wpt.fyi/results/svg/embedded/image-referrerpolicy.html) | Pass | 4 / 4 |  |  |
@@ -378,7 +378,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`geometry/svg-image-intrinsic-size-with-cssstyle-auto.html`](https://wpt.fyi/results/svg/geometry/svg-image-intrinsic-size-with-cssstyle-auto.html) | Pass | 32 / 32 |  |  |
 | [`geometry/svg-length-convert-to-percentage-precision.html`](https://wpt.fyi/results/svg/geometry/svg-length-convert-to-percentage-precision.html) | Pass | 4 / 4 |  |  |
 | [`historical.html`](https://wpt.fyi/results/svg/historical.html) | Pass | 68 / 68 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Fail | 1,678 / 1,685 | NOT IMPLEMENTED | the `ShadowAnimation` interface of SVG 2 (the animations of the elements referenced by a `use` element, mirrored on their instances) is not exposed: the 7 subtests of the interface fail |
+| [`idlharness.window.js`](https://wpt.fyi/results/svg/idlharness.window.js) | Fail | 1,678 / 1,685 | NOT IMPLEMENTED | the `ShadowAnimation` interface of SVG 2 (https://svgwg.org/svg2-draft/struct.html#InterfaceShadowAnimation), the read-only mirrors of the animations of the referenced elements on their element instances: the `use` elements have no shadow tree of element instances (the referenced content is rendered in place), so the 7 subtests of the interface fail (no browser implements it) |
 | [`interact/focus-inside-hidden-svg-containers-01.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-01.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-02.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-02.html) | Pass | 1 / 1 |  |  |
 | [`interact/focus-inside-hidden-svg-containers-03.html`](https://wpt.fyi/results/svg/interact/focus-inside-hidden-svg-containers-03.html) | Pass | 1 / 1 |  |  |
@@ -430,13 +430,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`linking/scripted/a.hreflang-getter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.hreflang-getter-01.svg) | Pass | 2 / 2 |  |  |
 | [`linking/scripted/a.hreflang-setter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.hreflang-setter-01.svg) | Pass | 1 / 1 |  |  |
 | [`linking/scripted/a.hyperlink-getter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.hyperlink-getter-01.svg) | Pass | 3 / 3 |  |  |
-| [`linking/scripted/a.ping-functionality.html`](https://wpt.fyi/results/svg/linking/scripted/a.ping-functionality.html) | Fail | 1 / 3 | NOT IMPLEMENTED | hyperlink auditing (`ping`) of SVG `<a>` |
+| [`linking/scripted/a.ping-functionality.html`](https://wpt.fyi/results/svg/linking/scripted/a.ping-functionality.html) | Pass | 3 / 3 |  |  |
 | [`linking/scripted/a.referrer-invalid-value.html`](https://wpt.fyi/results/svg/linking/scripted/a.referrer-invalid-value.html) | Pass | 1 / 1 |  |  |
 | [`linking/scripted/a.rel-getter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.rel-getter-01.svg) | Pass | 2 / 2 |  |  |
 | [`linking/scripted/a.rel-noopener-policy.html`](https://wpt.fyi/results/svg/linking/scripted/a.rel-noopener-policy.html) | Pass | 8 / 8 |  |  |
 | [`linking/scripted/a.rel-noreferrer-policy.html`](https://wpt.fyi/results/svg/linking/scripted/a.rel-noreferrer-policy.html) | Pass | 1 / 1 |  |  |
 | [`linking/scripted/a.rel-setter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.rel-setter-01.svg) | Pass | 2 / 2 |  |  |
-| [`linking/scripted/a.target-dynamic-update.html`](https://wpt.fyi/results/svg/linking/scripted/a.target-dynamic-update.html) | Timeout | 2 / 4 | NOT IMPLEMENTED | the activation of the `<a>` elements of a `<use>` shadow tree (a click on the instance does not follow the link) |
+| [`linking/scripted/a.target-dynamic-update.html`](https://wpt.fyi/results/svg/linking/scripted/a.target-dynamic-update.html) | Pass | 4 / 4 |  |  |
 | [`linking/scripted/a.type-getter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.type-getter-01.svg) | Pass | 2 / 2 |  |  |
 | [`linking/scripted/a.type-getter-02.svg`](https://wpt.fyi/results/svg/linking/scripted/a.type-getter-02.svg) | Pass | 2 / 2 |  |  |
 | [`linking/scripted/a.type-setter-01.svg`](https://wpt.fyi/results/svg/linking/scripted/a.type-setter-01.svg) | Pass | 1 / 1 |  |  |
@@ -572,7 +572,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`pservers/scripted/stop-color-inheritance-currentcolor.svg`](https://wpt.fyi/results/svg/pservers/scripted/stop-color-inheritance-currentcolor.svg) | Pass | 1 / 1 |  |  |
 | [`pservers/scripted/svg-fill-currentcolor-visited-getcomputedstyle.html`](https://wpt.fyi/results/svg/pservers/scripted/svg-fill-currentcolor-visited-getcomputedstyle.html) | Pass | 1 / 1 |  |  |
 | [`render/foreignObject-in-non-rendered-getComputedStyle.html`](https://wpt.fyi/results/svg/render/foreignObject-in-non-rendered-getComputedStyle.html) | Pass | 1 / 1 |  |  |
-| [`scripted/attr-script-fetchpriority.optional.html`](https://wpt.fyi/results/svg/scripted/attr-script-fetchpriority.optional.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `fetchPriority` of SVG `<script>` |
+| [`scripted/attr-script-fetchpriority.optional.html`](https://wpt.fyi/results/svg/scripted/attr-script-fetchpriority.optional.html) | Fail | 0 / 2 | NOT IMPLEMENTED | `fetchPriority` of SVG `<script>`: not in SVG 2 (an open proposal, w3c/svgwg#916; optional test) |
 | [`scripted/script-ancestor-disconnected-before-end-tag.html`](https://wpt.fyi/results/svg/scripted/script-ancestor-disconnected-before-end-tag.html) | Pass | 1 / 1 |  |  |
 | [`scripted/script-invalid-script-type.html`](https://wpt.fyi/results/svg/scripted/script-invalid-script-type.html) | Pass | 1 / 1 |  |  |
 | [`scripted/script-moved-to-another-document-before-end-tag.html`](https://wpt.fyi/results/svg/scripted/script-moved-to-another-document-before-end-tag.html) | Pass | 1 / 1 |  |  |
@@ -626,21 +626,21 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`styling/attr-style-type.html`](https://wpt.fyi/results/svg/styling/attr-style-type.html) | Pass | 3 / 3 |  |  |
 | [`styling/border-spacing-svg-zoom-computed.html`](https://wpt.fyi/results/svg/styling/border-spacing-svg-zoom-computed.html) | Pass | 8 / 8 |  |  |
 | [`styling/css-selectors-case-sensitivity.html`](https://wpt.fyi/results/svg/styling/css-selectors-case-sensitivity.html) | Pass | 8 / 8 |  |  |
-| [`styling/css-var-dom-interface.html`](https://wpt.fyi/results/svg/styling/css-var-dom-interface.html) | Fail | 1 / 9 | NOT IMPLEMENTED | `SVGLength` of a presentation attribute set by a CSS variable (`var()`) |
+| [`styling/css-var-dom-interface.html`](https://wpt.fyi/results/svg/styling/css-var-dom-interface.html) | Pass | 9 / 9 |  |  |
 | [`styling/glyph-orientation-horizontal.historical.html`](https://wpt.fyi/results/svg/styling/glyph-orientation-horizontal.historical.html) | Pass | 3 / 3 |  |  |
 | [`styling/invalidation/attribute-style-invalidation.html`](https://wpt.fyi/results/svg/styling/invalidation/attribute-style-invalidation.html) | Pass | 5 / 5 |  |  |
 | [`styling/invalidation/opacity-style-invalidation.html`](https://wpt.fyi/results/svg/styling/invalidation/opacity-style-invalidation.html) | Pass | 1 / 1 |  |  |
-| [`styling/presentation-attributes-irrelevant.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-irrelevant.html) | Fail | 58 / 59 | NOT IMPLEMENTED | the `glyph-orientation-vertical` property (presentation attribute) |
-| [`styling/presentation-attributes-relevant.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-relevant.html) | Fail | 69 / 70 | NOT IMPLEMENTED | the `glyph-orientation-vertical` property (presentation attribute) |
+| [`styling/presentation-attributes-irrelevant.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-irrelevant.html) | Pass | 59 / 59 |  |  |
+| [`styling/presentation-attributes-relevant.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-relevant.html) | Pass | 70 / 70 |  |  |
 | [`styling/presentation-attributes-special-cases.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-special-cases.html) | Pass | 26 / 26 |  |  |
-| [`styling/presentation-attributes-unknown.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-unknown.html) | Fail | 58 / 59 | NOT IMPLEMENTED | the `glyph-orientation-vertical` property (presentation attribute) |
+| [`styling/presentation-attributes-unknown.html`](https://wpt.fyi/results/svg/styling/presentation-attributes-unknown.html) | Pass | 59 / 59 |  |  |
 | [`styling/required-properties.svg`](https://wpt.fyi/results/svg/styling/required-properties.svg) | Pass | 82 / 82 |  |  |
 | [`styling/style-sheet-interfaces.svg`](https://wpt.fyi/results/svg/styling/style-sheet-interfaces.svg) | Pass | 6 / 6 |  |  |
 | [`styling/svg-element-attributeStyleMap.html`](https://wpt.fyi/results/svg/styling/svg-element-attributeStyleMap.html) | Pass | 61 / 61 |  |  |
 | [`styling/symbol-g-graphics-element.html`](https://wpt.fyi/results/svg/styling/symbol-g-graphics-element.html) | Pass | 2 / 2 |  |  |
 | [`styling/vector-effect-invalid.html`](https://wpt.fyi/results/svg/styling/vector-effect-invalid.html) | Pass | 10 / 10 |  |  |
 | [`text/dominant-baseline.historical.html`](https://wpt.fyi/results/svg/text/dominant-baseline.historical.html) | Pass | 3 / 3 |  |  |
-| [`text/inheritance.svg`](https://wpt.fyi/results/svg/text/inheritance.svg) | Fail | 8 / 10 | NOT IMPLEMENTED | the `shape-subtract` property |
+| [`text/inheritance.svg`](https://wpt.fyi/results/svg/text/inheritance.svg) | Fail | 8 / 10 | TEST BUG, NOT IMPLEMENTED | the test expects the initial value `auto` of `shape-subtract`; SVG 2 (https://svgwg.org/svg2-draft/text.html#TextShapeSubtract) defines `none \| [ <basic-shape> \| <uri> ]+` with the initial value `none`; `shape-subtract` is not a property of the computed styles (SVG 2 only, no browser implements it): it only excludes the shapes of the wrapping area of `shape-inside` |
 | [`text/parsing/inline-size-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/inline-size-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/inline-size-valid.svg`](https://wpt.fyi/results/svg/text/parsing/inline-size-valid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/shape-inside-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-inside-invalid.svg) | Pass | 4 / 4 |  |  |
@@ -648,7 +648,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`text/parsing/shape-margin-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-margin-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text/parsing/shape-margin-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-margin-valid.svg) | Pass | 4 / 4 |  |  |
 | [`text/parsing/shape-subtract-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-subtract-invalid.svg) | Pass | 4 / 4 |  |  |
-| [`text/parsing/shape-subtract-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-subtract-valid.svg) | Fail | 0 / 6 | NOT IMPLEMENTED | the `shape-subtract` property |
+| [`text/parsing/shape-subtract-valid.svg`](https://wpt.fyi/results/svg/text/parsing/shape-subtract-valid.svg) | Fail | 0 / 6 | TEST BUG, NOT IMPLEMENTED | the test expects the value `auto` of `shape-subtract`; SVG 2 (https://svgwg.org/svg2-draft/text.html#TextShapeSubtract) defines `none \| [ <basic-shape> \| <uri> ]+` (`shape-subtract-invalid.svg` expects `none` to be invalid); `shape-subtract` is not a property of `CSSStyleProperties` (SVG 2 only, no browser implements it), so `e.style['shape-subtract']` does not parse the values |
 | [`text/parsing/text-anchor-computed.svg`](https://wpt.fyi/results/svg/text/parsing/text-anchor-computed.svg) | Pass | 3 / 3 |  |  |
 | [`text/parsing/text-anchor-invalid.svg`](https://wpt.fyi/results/svg/text/parsing/text-anchor-invalid.svg) | Pass | 2 / 2 |  |  |
 | [`text/parsing/text-anchor-valid.svg`](https://wpt.fyi/results/svg/text/parsing/text-anchor-valid.svg) | Pass | 3 / 3 |  |  |
@@ -689,7 +689,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`types/scripted/SVGAnimatedEnumeration-SVGClipPathElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGClipPathElement.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-SVGComponentTransferFunctionElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGComponentTransferFunctionElement.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-SVGFEColorMatrixElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGFEColorMatrixElement.html) | Pass | 1 / 1 |  |  |
-| [`types/scripted/SVGAnimatedEnumeration-SVGFECompositeElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGFECompositeElement.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `lighter` operator of `<feComposite>` (`SVG_FECOMPOSITE_OPERATOR_LIGHTER` is undefined) |
+| [`types/scripted/SVGAnimatedEnumeration-SVGFECompositeElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGFECompositeElement.html) | Fail | 0 / 1 | TEST BUG | `SVG_FECOMPOSITE_OPERATOR_LIGHTER` is not a constant of `SVGFECompositeElement` in Filter Effects (https://drafts.csswg.org/filter-effects-1/#InterfaceSVGFECompositeElement), which only lists `UNKNOWN` to `ARITHMETIC`; the `lighter` operator of the `operator` attribute is rendered (no browser passes the test) |
 | [`types/scripted/SVGAnimatedEnumeration-SVGFEConvolveMatrixElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGFEConvolveMatrixElement.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-SVGFEDisplacementMapElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGFEDisplacementMapElement.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedEnumeration-SVGFEMorphologyElement.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedEnumeration-SVGFEMorphologyElement.html) | Pass | 1 / 1 |  |  |
@@ -734,7 +734,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`types/scripted/SVGGraphicsElement.getBBox-02.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-02.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-03.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-03.html) | Pass | 12 / 12 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-04.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-04.html) | Pass | 1 / 1 |  |  |
-| [`types/scripted/SVGGraphicsElement.getBBox-05.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-05.html) | Fail | 8 / 15 | NOT IMPLEMENTED | the `markers` and `clipped` options of `getBBox()` (the markers are not laid out, the clipping paths are ignored) |
+| [`types/scripted/SVGGraphicsElement.getBBox-05.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-05.html) | Fail | 8 / 15 | NOT IMPLEMENTED | the `markers` and `clipped` options of `getBBox()` (https://svgwg.org/svg2-draft/coords.html#BoundingBoxes): the bounding boxes do not include the content of the markers, and are not intersected with the clip path bounding box (of the `clipPath` elements, with their `clip-path` and their `objectBoundingBox` units, and of the `clip` property of the images) |
 | [`types/scripted/SVGGraphicsElement.getBBox-06.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-06.html) | Pass | 5 / 5 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-07.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-07.html) | Pass | 49 / 49 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-08.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-08.html) | Pass | 20 / 20 |  |  |
@@ -754,7 +754,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`types/scripted/SVGLength-ic.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-ic.html) | Pass | 2 / 2 |  |  |
 | [`types/scripted/SVGLength-lh.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-lh.html) | Pass | 2 / 2 |  |  |
 | [`types/scripted/SVGLength-px-with-context.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-px-with-context.html) | Pass | 11 / 11 |  |  |
-| [`types/scripted/SVGLength-px.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-px.html) | Fail | 9 / 10 | NOT IMPLEMENTED | the percentages of a detached `SVGLength` (no viewport) |
+| [`types/scripted/SVGLength-px.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-px.html) | Pass | 10 / 10 |  |  |
 | [`types/scripted/SVGLength-rem.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-rem.html) | Pass | 2 / 2 |  |  |
 | [`types/scripted/SVGLength-rlh.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-rlh.html) | Pass | 2 / 2 |  |  |
 | [`types/scripted/SVGLength-value-setter-font-change.html`](https://wpt.fyi/results/svg/types/scripted/SVGLength-value-setter-font-change.html) | Pass | 6 / 6 |  |  |

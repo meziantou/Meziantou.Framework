@@ -9,21 +9,21 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 372 | 408 | 1 | 91% |
+| [Stable](#stable-tests) | 377 | 408 | 1 | 93% |
 | [Tentative](#tentative-tests) | 48 | 78 | 0 | 62% |
 | [Reftests](#reftests) | 10 | 11 | 0 | 91% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **434** | **501** | **1** | **87%** |
+| **All** | **439** | **501** | **1** | **88%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 31
-- **NOT IMPLEMENTED**: 32
-- **REQUIRES**: 2
+- **BUG**: 1
+- **TEST BUG**: 32
+- **NOT IMPLEMENTED**: 25
+- **REQUIRES**: 1
   - `layout`: 1
-  - `workers`: 1
 - **TEST RUNNER**: 3
 
 ## Stable tests
@@ -59,9 +59,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/basic/request-headers.any.js`](https://wpt.fyi/results/fetch/api/basic/request-headers.any.js) | Pass | 75 / 75 |  |  |
 | [`api/basic/request-referrer-redirected-worker.html`](https://wpt.fyi/results/fetch/api/basic/request-referrer-redirected-worker.html) | Pass | 2 / 2 |  |  |
 | [`api/basic/request-referrer.any.js`](https://wpt.fyi/results/fetch/api/basic/request-referrer.any.js) | Pass | 6 / 6 |  |  |
-| [`api/basic/request-upload-421.any.js`](https://wpt.fyi/results/fetch/api/basic/request-upload-421.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | the retry of a request that receives a `421` response on a new connection (https://fetch.spec.whatwg.org/#http-network-or-cache-fetch, isNewConnectionFetch): the request is sent once |
+| [`api/basic/request-upload-421.any.js`](https://wpt.fyi/results/fetch/api/basic/request-upload-421.any.js) | Pass | 3 / 3 |  |  |
 | [`api/basic/request-upload.any.js`](https://wpt.fyi/results/fetch/api/basic/request-upload.any.js) | Pass | 54 / 54 |  |  |
-| [`api/basic/request-upload.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/request-upload.h2.any.js) | Timeout | 12 / 36 | NOT IMPLEMENTED | streaming request bodies (`ReadableStream` body with `duplex: 'half'`): the feature detection subtest times out and the other subtests do not run |
+| [`api/basic/request-upload.h2.any.js`](https://wpt.fyi/results/fetch/api/basic/request-upload.h2.any.js) | Pass | 36 / 36 |  |  |
 | [`api/basic/response-null-body.any.js`](https://wpt.fyi/results/fetch/api/basic/response-null-body.any.js) | Pass | 33 / 33 |  |  |
 | [`api/basic/response-url.sub.any.js`](https://wpt.fyi/results/fetch/api/basic/response-url.sub.any.js) | Pass | 8 / 8 |  |  |
 | [`api/basic/scheme-about.any.js`](https://wpt.fyi/results/fetch/api/basic/scheme-about.any.js) | Pass | 21 / 21 |  |  |
@@ -155,7 +155,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/request/destination/fetch-destination-no-load-event.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination-no-load-event.https.html) | Pass | 9 / 9 |  |  |
 | [`api/request/destination/fetch-destination-prefetch.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination-prefetch.https.html) | Pass | 2 / 2 |  |  |
 | [`api/request/destination/fetch-destination-worker.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination-worker.https.html) | Pass | 3 / 3 |  |  |
-| [`api/request/destination/fetch-destination.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination.https.html) | Timeout | 18 / 30 | TEST BUG, NOT IMPLEMENTED | `audioWorklet.addModule('dummy?dest=audioworklet')` fetches the empty `resources/dummy` file, served as `application/octet-stream` (it has no extension): it is not a JavaScript MIME type, so the module script fails and `addModule()` rejects with an `AbortError`; `<link rel=preload as=json>`: `json` is a potential destination (`link.as` reflects it) but not a preload destination of the specification (https://html.spec.whatwg.org/multipage/links.html#preload-destination), so nothing is fetched and no event is fired: `fetch-destination.https.html` times out there, before its next subtests (the browsers preload it); the external resource of the SVG `use` element is not fetched (`fetch-destination-no-load-event.https.html` times out there) |
+| [`api/request/destination/fetch-destination.https.html`](https://wpt.fyi/results/fetch/api/request/destination/fetch-destination.https.html) | Timeout | 18 / 30 | NOT IMPLEMENTED | `<link rel=preload as=json>`: `json` is a potential destination (`link.as` reflects it) but not a preload destination of the specification (https://html.spec.whatwg.org/multipage/links.html#preload-destination), so nothing is fetched and no event is fired: `fetch-destination.https.html` times out there, before its next subtests (the browsers preload it); the external resource of the SVG `use` element is not fetched (`fetch-destination-no-load-event.https.html` times out there) |
 | [`api/request/forbidden-method.any.js`](https://wpt.fyi/results/fetch/api/request/forbidden-method.any.js) | Pass | 18 / 18 |  |  |
 | [`api/request/multi-globals/construct-in-detached-frame.window.js`](https://wpt.fyi/results/fetch/api/request/multi-globals/construct-in-detached-frame.window.js) | Pass | 1 / 1 |  |  |
 | [`api/request/multi-globals/url-parsing.html`](https://wpt.fyi/results/fetch/api/request/multi-globals/url-parsing.html) | Pass | 1 / 1 |  |  |
@@ -315,7 +315,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`http-cache/freshness.any.js`](https://wpt.fyi/results/fetch/http-cache/freshness.any.js) | Pass | 51 / 51 |  |  |
 | [`http-cache/heuristic.any.js`](https://wpt.fyi/results/fetch/http-cache/heuristic.any.js) | Pass | 51 / 51 |  |  |
 | [`http-cache/invalidate.any.js`](https://wpt.fyi/results/fetch/http-cache/invalidate.any.js) | Pass | 45 / 45 |  |  |
-| [`http-cache/partial.any.js`](https://wpt.fyi/results/fetch/http-cache/partial.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | the partial responses (`206`) are not stored by the HTTP cache, which does not serve a range from a stored response |
+| [`http-cache/partial.any.js`](https://wpt.fyi/results/fetch/http-cache/partial.any.js) | Fail | 18 / 27 | TEST BUG | 3 subtests store the partial response `Content-Range: bytes 4-9/10` whose body has 5 bytes (`01234`, the bytes 4 to 8): they expect it to answer `bytes=-5` with `01234`, `bytes=6-` with `234` and `bytes=-1` with `4`, that is the last bytes of a representation of 9 bytes, while the complete length is 10 (https://httpwg.org/specs/rfc9110.html#field.content-range): the stored response does not contain the last byte, so the cache sends these requests to the network (https://httpwg.org/specs/rfc9111.html#incomplete.responses; no browser passes them) |
 | [`http-cache/post-patch.any.js`](https://wpt.fyi/results/fetch/http-cache/post-patch.any.js) | Fail | 0 / 6 | TEST BUG | the response of the POST or PATCH request is stored and reused by the GET request, but the test expects its body to be the default body (the uuid) instead of the `abc` body of the stored response |
 | [`http-cache/pragma-no-cache-with-cache-control.html`](https://wpt.fyi/results/fetch/http-cache/pragma-no-cache-with-cache-control.html) | Pass | 2 / 2 |  |  |
 | [`http-cache/split-cache.html`](https://wpt.fyi/results/fetch/http-cache/split-cache.html) | Pass | 4 / 4 |  |  |
@@ -344,8 +344,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`metadata/generated/element-img.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-img.sub.html) | Pass | 36 / 36 |  |  |
 | [`metadata/generated/element-input-image.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-input-image.https.sub.html) | Fail | 19 / 20 | TEST BUG | the HTTPS downgrade-upgrade subtests redirect the request through an `http:` URL, which is mixed content in an `https:` document: they fail in every browser |
 | [`metadata/generated/element-input-image.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-input-image.sub.html) | Pass | 18 / 18 |  |  |
-| [`metadata/generated/element-link-icon.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-link-icon.https.sub.html) | Timeout | 0 / 22 | NOT IMPLEMENTED | fetching the icons of `<link rel=icon>` |
-| [`metadata/generated/element-link-icon.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-link-icon.sub.html) | Timeout | 0 / 18 | NOT IMPLEMENTED | fetching the icons of `<link rel=icon>` |
+| [`metadata/generated/element-link-icon.https.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-link-icon.https.sub.html) | Fail | 21 / 22 | TEST BUG | `sec-fetch-dest no attributes` expects `Sec-Fetch-Dest: empty`: the destination of the request of an icon is `image` (https://html.spec.whatwg.org/multipage/links.html#rel-icon, the linked resource fetch setup steps; Firefox sends `image` too) |
+| [`metadata/generated/element-link-icon.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-link-icon.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/element-link-prefetch.https.optional.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-link-prefetch.https.optional.sub.html) | Fail | 22 / 34 | TEST BUG | the optional test expects the `Sec-Fetch-Dest` of a prefetch to be the destination of its `as` attribute (Chromium): the specification makes the destination of a prefetch the empty string |
 | [`metadata/generated/element-link-prefetch.optional.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-link-prefetch.optional.sub.html) | Pass | 18 / 18 |  |  |
 | [`metadata/generated/element-meta-refresh.https.optional.sub.html`](https://wpt.fyi/results/fetch/metadata/generated/element-meta-refresh.https.optional.sub.html) | Pass | 20 / 20 |  |  |
@@ -416,17 +416,17 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`range/general.any.js`](https://wpt.fyi/results/fetch/range/general.any.js) | Pass | 21 / 21 |  |  |
 | [`range/general.window.js`](https://wpt.fyi/results/fetch/range/general.window.js) | Pass | 2 / 2 |  |  |
 | [`range/non-matching-range-response.html`](https://wpt.fyi/results/fetch/range/non-matching-range-response.html) | Pass | 3 / 3 |  |  |
-| [`range/sw-416.https.window.js`](https://wpt.fyi/results/fetch/range/sw-416.https.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the range-requested flag of the fetch algorithm: a `416` response given by a service worker to a no-cors request that had no `Range` header when the service worker received it is not turned into a network error |
+| [`range/sw-416.https.window.js`](https://wpt.fyi/results/fetch/range/sw-416.https.window.js) | Pass | 2 / 2 |  |  |
 | [`range/sw-intercept-range.https.window.js`](https://wpt.fyi/results/fetch/range/sw-intercept-range.https.window.js) | Pass | 2 / 2 |  |  |
 | [`range/sw-opaque.https.window.js`](https://wpt.fyi/results/fetch/range/sw-opaque.https.window.js) | Pass | 1 / 1 |  |  |
-| [`range/sw.https.window.js`](https://wpt.fyi/results/fetch/range/sw.https.window.js) | Fail | 8 / 10 | NOT IMPLEMENTED | the range-requested flag of the fetch algorithm: a ranged (`206`) response given by a service worker to a no-cors request without `Range` header is not turned into a network error |
+| [`range/sw.https.window.js`](https://wpt.fyi/results/fetch/range/sw.https.window.js) | Pass | 10 / 10 |  |  |
 | [`redirect-navigate/302-found-post.html`](https://wpt.fyi/results/fetch/redirect-navigate/302-found-post.html) | Pass | 1 / 1 |  |  |
 | [`redirect-navigate/preserve-fragment.html`](https://wpt.fyi/results/fetch/redirect-navigate/preserve-fragment.html) | Pass | 120 / 120 |  |  |
 | [`redirects/data.window.js`](https://wpt.fyi/results/fetch/redirects/data.window.js) | Pass | 3 / 3 |  |  |
 | [`redirects/subresource-fragments.html`](https://wpt.fyi/results/fetch/redirects/subresource-fragments.html) | Pass | 4 / 4 |  |  |
 | [`security/1xx-response.any.js`](https://wpt.fyi/results/fetch/security/1xx-response.any.js) | Pass | 8 / 8 |  |  |
 | [`security/canvas-tainted-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/canvas-tainted-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
-| [`security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html) | Timeout | 0 / 0 | REQUIRES(workers) | the requests are recorded by a service worker (`navigator.serviceWorker`) |
+| [`security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-allowed-apis.https.html) | Fail | 3 / 10 | BUG | 7 of 10 subtests: the dangling markup mitigation (whatwg/fetch#519, not merged) blocks every request whose URL had a newline and a `<`, including the navigations (`window.open()`, `location.replace()`) and the requests of the APIs (XHR, `EventSource`, `fetch()`, `Worker`, `importScripts()`) that the test expects to be allowed: Chromium only blocks the requests of the elements (`Fetching.cs` checks `PotentiallyDanglingMarkup` for all the requests) |
 | [`security/dangling-markup/media.html`](https://wpt.fyi/results/fetch/security/dangling-markup/media.html) | Pass | 4 / 4 |  |  |
 | [`security/dangling-markup/option.html`](https://wpt.fyi/results/fetch/security/dangling-markup/option.html) | Fail | 0 / 6 | TEST BUG | the test waits for an `error` event at the form after the click on the submit button, which no specification defines: the form fires `submit` (the URL of the form is not dangling markup, the text of the dangling element is the data of the form) |
 | [`security/dangling-markup/textarea.html`](https://wpt.fyi/results/fetch/security/dangling-markup/textarea.html) | Fail | 0 / 3 | TEST BUG | the test waits for an `error` event at the form after the click on the submit button, which no specification defines: the form fires `submit` (the URL of the form is not dangling markup, the text of the dangling element is the data of the form) |

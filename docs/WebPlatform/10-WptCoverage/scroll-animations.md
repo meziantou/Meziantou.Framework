@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of scroll-animations, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 145 | 152 | 0 | 95% |
+| [Stable](#stable-tests) | 147 | 152 | 0 | 97% |
 | [Tentative](#tentative-tests) | 41 | 79 | 0 | 52% |
-| [Reftests](#reftests) | 32 | 37 | 0 | 86% |
+| [Reftests](#reftests) | 33 | 37 | 0 | 89% |
 | [Crash tests](#crash-tests) | 20 | 20 | 0 | 100% |
-| **All** | **238** | **288** | **0** | **83%** |
+| **All** | **241** | **288** | **0** | **84%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 46
+- **NOT IMPLEMENTED**: 43
 - **OUT OF SCOPE**: 1
 
 ## Stable tests
@@ -63,7 +63,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/scroll-timeline-nearest-dirty.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-nearest-dirty.html) | Pass | 1 / 1 |  |  |
 | [`css/scroll-timeline-nearest-with-absolute-positioned-element.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-nearest-with-absolute-positioned-element.html) | Pass | 1 / 1 |  |  |
 | [`css/scroll-timeline-on-pseudo-like-part.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-on-pseudo-like-part.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the named scroll progress timelines declared by pseudo-elements (a pseudo-element has no scrolling box) |
-| [`css/scroll-timeline-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-on-pseudo.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the named scroll progress timelines declared by pseudo-elements (a pseudo-element has no scrolling box) |
+| [`css/scroll-timeline-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-on-pseudo.html) | Pass | 1 / 1 |  |  |
 | [`css/scroll-timeline-paused-animations.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-paused-animations.html) | Pass | 2 / 2 |  |  |
 | [`css/scroll-timeline-range-animation.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-range-animation.html) | Pass | 8 / 8 |  |  |
 | [`css/scroll-timeline-responsiveness-from-endpoint.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-responsiveness-from-endpoint.html) | Pass | 1 / 1 |  |  |
@@ -81,7 +81,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/timeline-scope-all.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-all.html) | Pass | 3 / 3 |  |  |
 | [`css/timeline-scope-computed.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-computed.html) | Pass | 12 / 12 |  |  |
 | [`css/timeline-scope-nested-self-declared.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-nested-self-declared.html) | Pass | 2 / 2 |  |  |
-| [`css/timeline-scope-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-on-pseudo.html) | Fail | 2 / 3 | NOT IMPLEMENTED | `timeline-scope` on pseudo-elements: only the declarations of the elements are collected, so the animation of a `::before` that scopes `--t1` still finds the `--t1` timeline of another element |
+| [`css/timeline-scope-on-pseudo.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-on-pseudo.html) | Pass | 3 / 3 |  |  |
 | [`css/timeline-scope-parsing.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope-parsing.html) | Pass | 25 / 25 |  |  |
 | [`css/timeline-scope.html`](https://wpt.fyi/results/scroll-animations/css/timeline-scope.html) | Pass | 12 / 12 |  |  |
 | [`css/view-timeline-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-animation.html) | Fail | 0 / 3 | TEST BUG | the last step expects a `fill: none` animation to apply its effect when its view progress timeline is at 100% (the end of the cover range, `scrollTop` 200 of 250): the scroller is not at its maximum scroll offset, so the active-after boundary is not "at timeline boundary" (https://drafts.csswg.org/web-animations-2/#at-timeline-boundary: the minimum and maximum timeline times are the ones of the minimum and maximum scroll offsets) and it is exclusive, as `view-timelines/block-view-timeline-current-time.tentative.html` and `range-boundary.tentative.html` expect ("Effect is in the after phase at effect end time"); Chromium fails it too |
@@ -286,9 +286,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/scroll-timeline-default.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-default.html) | Pass | 1 / 1 |  |  |
 | [`css/scroll-timeline-frame-size-changed.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-frame-size-changed.html) | Pass | 1 / 1 |  |  |
 | [`css/scroll-timeline-inline-orientation.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-inline-orientation.html) | Pass | 1 / 1 |  |  |
-| [`css/scroll-timeline-on-pseudo-002.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-on-pseudo-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the named scroll progress timelines declared by pseudo-elements (`scroll-timeline: --foo` on `::after`): only the elements are collected, so `animation-timeline: --foo` finds no timeline through `timeline-scope`; only Chrome passes |
+| [`css/scroll-timeline-on-pseudo-002.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-on-pseudo-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | a scroll progress timeline whose source is a pseudo-element (`scroll-timeline: --foo` on an `::after` scroll container): the named timeline of the pseudo-element is found, but a pseudo-element has no scrolling box for the timeline (the source is its originating element, which is not a scroll container), so the timeline is inactive; only Chrome passes |
 | [`css/scroll-timeline-update-reversed-animation.html`](https://wpt.fyi/results/scroll-animations/css/scroll-timeline-update-reversed-animation.html) | Pass | 1 / 1 |  |  |
-| [`css/view-timeline-pseudo-on-scroller-002.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-pseudo-on-scroller-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the named view progress timelines declared by pseudo-elements (`view-timeline: --foo` on `::after`): only the elements are collected, so `animation-timeline: --foo` finds no timeline through `timeline-scope`; Firefox fails too |
+| [`css/view-timeline-pseudo-on-scroller-002.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-pseudo-on-scroller-002.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-range-update-reversed-animation.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-update-reversed-animation.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-range-update.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-range-update.html) | Pass | 1 / 1 |  |  |
 | [`css/view-timeline-subject-bounds-update.html`](https://wpt.fyi/results/scroll-animations/css/view-timeline-subject-bounds-update.html) | Pass | 1 / 1 |  |  |

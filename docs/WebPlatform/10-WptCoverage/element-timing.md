@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of element-timing, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 51 | 53 | 0 | 96% |
+| [Stable](#stable-tests) | 52 | 53 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **51** | **53** | **0** | **96%** |
+| **All** | **52** | **53** | **0** | **98%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -55,7 +54,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`invisible-images.html`](https://wpt.fyi/results/element-timing/invisible-images.html) | Pass | 1 / 1 |  |  |
 | [`list-style-image.html`](https://wpt.fyi/results/element-timing/list-style-image.html) | Pass | 1 / 1 |  |  |
 | [`multiple-background-images.html`](https://wpt.fyi/results/element-timing/multiple-background-images.html) | Pass | 1 / 1 |  |  |
-| [`object.html`](https://wpt.fyi/results/element-timing/object.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | an `object` element that displays an image is painted as a nested image document, not as an image of the element |
+| [`object.html`](https://wpt.fyi/results/element-timing/object.html) | Pass | 1 / 1 |  |  |
 | [`observe-background-image.html`](https://wpt.fyi/results/element-timing/observe-background-image.html) | Pass | 1 / 1 |  |  |
 | [`observe-child-element.html`](https://wpt.fyi/results/element-timing/observe-child-element.html) | Pass | 1 / 1 |  |  |
 | [`observe-elementtiming.html`](https://wpt.fyi/results/element-timing/observe-elementtiming.html) | Pass | 1 / 1 |  |  |

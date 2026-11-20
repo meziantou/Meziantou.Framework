@@ -20,8 +20,10 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 8
-- **NOT IMPLEMENTED**: 24
+- **TEST BUG**: 10
+- **NOT IMPLEMENTED**: 21
+- **REQUIRES**: 1
+  - `hardware`: 1
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
 
@@ -92,7 +94,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`events/Event-subclasses-constructors.html`](https://wpt.fyi/results/dom/events/Event-subclasses-constructors.html) | Pass | 49 / 49 |  |  |
 | [`events/Event-timestamp-cross-realm-getter.html`](https://wpt.fyi/results/dom/events/Event-timestamp-cross-realm-getter.html) | Pass | 1 / 1 |  |  |
 | [`events/Event-timestamp-high-resolution.html`](https://wpt.fyi/results/dom/events/Event-timestamp-high-resolution.html) | Pass | 4 / 4 |  |  |
-| [`events/Event-timestamp-high-resolution.https.html`](https://wpt.fyi/results/dom/events/Event-timestamp-high-resolution.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `GamepadEvent` |
+| [`events/Event-timestamp-high-resolution.https.html`](https://wpt.fyi/results/dom/events/Event-timestamp-high-resolution.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | `GamepadEvent`, an event of the Gamepad API (`gamepad/*`), whose `gamepad` attribute is a `Gamepad` object: exposing the event without the API of the game controllers would break the feature detection |
 | [`events/Event-timestamp-safe-resolution.html`](https://wpt.fyi/results/dom/events/Event-timestamp-safe-resolution.html) | Pass | 1 / 1 |  |  |
 | [`events/Event-type-empty.html`](https://wpt.fyi/results/dom/events/Event-type-empty.html) | Pass | 2 / 2 |  |  |
 | [`events/Event-type.html`](https://wpt.fyi/results/dom/events/Event-type.html) | Pass | 3 / 3 |  |  |
@@ -234,7 +236,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`idlharness.window.js`](https://wpt.fyi/results/dom/idlharness.window.js) | Pass | 1,986 / 1,986 |  |  |
 | [`interface-objects.html`](https://wpt.fyi/results/dom/interface-objects.html) | Pass | 23 / 23 |  |  |
 | [`lists/DOMTokenList-Iterable.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-Iterable.html) | Pass | 6 / 6 |  |  |
-| [`lists/DOMTokenList-coverage-for-attributes.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-coverage-for-attributes.html) | Fail | 174 / 175 | NOT IMPLEMENTED | `relList` on the MathML `<a>` element (`MathMLAnchorElement` only reflects `href`) |
+| [`lists/DOMTokenList-coverage-for-attributes.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-coverage-for-attributes.html) | Fail | 174 / 175 | NOT IMPLEMENTED | `relList` on the MathML `<a>` element: the `MathMLAnchorElement` interface of MathML Core (https://w3c.github.io/mathml-core/#the-a-element) only has `href`, `target` and the members of `HyperlinkElementUtils`; reflecting `rel`, `relList`, `ping` and `referrerPolicy` is only proposed (w3c/mathml-core#325) |
 | [`lists/DOMTokenList-iteration.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-iteration.html) | Pass | 6 / 6 |  |  |
 | [`lists/DOMTokenList-stringifier.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-stringifier.html) | Pass | 1 / 1 |  |  |
 | [`lists/DOMTokenList-value.html`](https://wpt.fyi/results/dom/lists/DOMTokenList-value.html) | Pass | 1 / 1 |  |  |
@@ -550,7 +552,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/insertion-removing-steps/Node-append-meta-referrer-and-script-from-fragment.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-append-meta-referrer-and-script-from-fragment.html) | Pass | 1 / 1 |  |  |
 | [`nodes/insertion-removing-steps/Node-appendChild-script-and-button-from-div.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-button-from-div.html) | Pass | 1 / 1 |  |  |
 | [`nodes/insertion-removing-steps/Node-appendChild-script-and-custom-from-fragment.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-custom-from-fragment.html) | Pass | 1 / 1 |  |  |
-| [`nodes/insertion-removing-steps/Node-appendChild-script-and-default-style-meta-from-fragment.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-default-style-meta-from-fragment.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `<meta http-equiv=default-style>` (selecting the preferred alternate style sheet set) |
+| [`nodes/insertion-removing-steps/Node-appendChild-script-and-default-style-meta-from-fragment.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-default-style-meta-from-fragment.html) | Fail | 0 / 1 | TEST BUG | `<meta http-equiv=default-style>` selects the alternate style sheet set once the style sheet is loaded, but the test reads the style right after the `link` element is parsed: the alternate style sheet of the `data:` URL is fetched asynchronously (it does not block the scripts, https://html.spec.whatwg.org/multipage/semantics.html#contributes-a-script-blocking-style-sheet), so it is not in `document.styleSheets` yet; the test relies on the synchronous loading of `data:` style sheets of Chromium (Firefox and Safari fail it too) |
 | [`nodes/insertion-removing-steps/Node-appendChild-script-and-div-from-fragment.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-div-from-fragment.html) | Pass | 1 / 1 |  |  |
 | [`nodes/insertion-removing-steps/Node-appendChild-script-and-iframe.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-iframe.html) | Pass | 4 / 4 |  |  |
 | [`nodes/insertion-removing-steps/Node-appendChild-script-and-source-from-fragment.html`](https://wpt.fyi/results/dom/nodes/insertion-removing-steps/Node-appendChild-script-and-source-from-fragment.html) | Pass | 1 / 1 |  |  |
@@ -643,7 +645,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`nodes/post-connection-steps-shadow-tree.html`](https://wpt.fyi/results/dom/nodes/post-connection-steps-shadow-tree.html) | Pass | 1 / 1 |  |  |
 | [`nodes/prepend-on-Document.html`](https://wpt.fyi/results/dom/nodes/prepend-on-Document.html) | Pass | 5 / 5 |  |  |
 | [`nodes/processing-instruction-attributes-clone-and-range.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes-clone-and-range.html) | Pass | 136 / 136 |  |  |
-| [`nodes/processing-instruction-attributes.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes.html) | Fail | 169 / 199 | NOT IMPLEMENTED | the attributes of the processing instructions created by the XML parser (`<?target attr="value"?>` in XML documents) |
+| [`nodes/processing-instruction-attributes.html`](https://wpt.fyi/results/dom/nodes/processing-instruction-attributes.html) | Fail | 175 / 199 | TEST BUG | the 24 subtests of the `xml-parser` source parse `<?t data?>` with `DOMParser` as `application/xml`: a document without a root element is not well-formed (https://www.w3.org/TR/xml/#NT-document), so `parseFromString()` returns a document whose only child is a `parsererror` element (https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#dom-domparser-parsefromstring: "Assert: document has no child nodes"), and its first child is not the processing instruction (only Chromium keeps the nodes parsed before the error) |
 | [`nodes/query-target-in-load-event.html`](https://wpt.fyi/results/dom/nodes/query-target-in-load-event.html) | Pass | 1 / 1 |  |  |
 | [`nodes/querySelector-empty-id.html`](https://wpt.fyi/results/dom/nodes/querySelector-empty-id.html) | Pass | 1 / 1 |  |  |
 | [`nodes/querySelector-id-nth-child.html`](https://wpt.fyi/results/dom/nodes/querySelector-id-nth-child.html) | Pass | 2 / 2 |  |  |

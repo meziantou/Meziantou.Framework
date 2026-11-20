@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 92 | 99 | 0 | 93% |
+| [Stable](#stable-tests) | 93 | 99 | 0 | 94% |
 | [Tentative](#tentative-tests) | 12 | 16 | 0 | 75% |
 | [Reftests](#reftests) | 960 | 963 | 0 | 99.6% |
 | [Crash tests](#crash-tests) | 6 | 6 | 0 | 100% |
-| **All** | **1,070** | **1,084** | **0** | **99%** |
+| **All** | **1,071** | **1,084** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 7
   - `layout`: 7
 - **TEST RUNNER**: 4
@@ -68,7 +68,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`interactivity-inert-all.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-all.html) | Pass | 1 / 1 |  |  |
 | [`interactivity-inert-animated.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-animated.html) | Pass | 1 / 1 |  |  |
 | [`interactivity-inert-click.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-click.html) | Pass | 2 / 2 |  |  |
-| [`interactivity-inert-find.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-find.html) | Fail | 0 / 3 | NOT IMPLEMENTED | `window.find()` |
+| [`interactivity-inert-find.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-find.html) | Pass | 3 / 3 |  |  |
 | [`interactivity-inert-focus.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-focus.html) | Pass | 3 / 3 |  |  |
 | [`interactivity-inert-fullscreen-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-fullscreen-ua.html) | Pass | 5 / 5 |  |  |
 | [`interactivity-inert-html-attribute-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-html-attribute-ua.html) | Pass | 4 / 4 |  |  |

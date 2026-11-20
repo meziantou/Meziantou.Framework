@@ -19,8 +19,8 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 10
-- **NOT IMPLEMENTED**: 19
+- **TEST BUG**: 11
+- **NOT IMPLEMENTED**: 18
 - **OUT OF SCOPE**: 7
 
 ## Stable tests
@@ -742,7 +742,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`script-src/worker-set-timeout.sub.html`](https://wpt.fyi/results/content-security-policy/script-src/worker-set-timeout.sub.html) | Pass | 2 / 2 |  |  |
 | [`securitypolicyviolation/blockeduri-eval.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/blockeduri-eval.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/blockeduri-inline.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/blockeduri-inline.html) | Pass | 1 / 1 |  |  |
-| [`securitypolicyviolation/blockeduri-ws-wss-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/blockeduri-ws-wss-scheme.html) | Fail | 3 / 4 | NOT IMPLEMENTED | the redirects of the opening handshake of a `WebSocket` are not followed, so the redirect to a URL blocked by `connect-src` reports no violation |
+| [`securitypolicyviolation/blockeduri-ws-wss-scheme.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/blockeduri-ws-wss-scheme.html) | Fail | 3 / 4 | TEST BUG | the `redirect` subtest expects the opening handshake of a `WebSocket` to follow the redirect of `/common/redirect.py` to a URL that `connect-src` blocks, and to report its violation: the request of the handshake has the redirect mode `error` (https://websockets.spec.whatwg.org/#concept-websocket-establish), so the redirect is a network error and its location is never fetched nor checked (no browser passes the test) |
 | [`securitypolicyviolation/constructor-required-fields.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/constructor-required-fields.html) | Pass | 14 / 14 |  |  |
 | [`securitypolicyviolation/embed-src-multihop-redirect.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/embed-src-multihop-redirect.sub.html) | Pass | 1 / 1 |  |  |
 | [`securitypolicyviolation/embed-src-redirect.sub.html`](https://wpt.fyi/results/content-security-policy/securitypolicyviolation/embed-src-redirect.sub.html) | Pass | 1 / 1 |  |  |
@@ -882,7 +882,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`wasm-unsafe-eval/default-src-blocks-wasm.any.js`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/default-src-blocks-wasm.any.js) | Pass | 9 / 9 |  |  |
 | [`wasm-unsafe-eval/default-src-unsafe-eval-allows-wasm.any.js`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/default-src-unsafe-eval-allows-wasm.any.js) | Pass | 15 / 15 |  |  |
 | [`wasm-unsafe-eval/default-src-wasm-unsafe-eval-allows-wasm.any.js`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/default-src-wasm-unsafe-eval-allows-wasm.any.js) | Pass | 15 / 15 |  |  |
-| [`wasm-unsafe-eval/postMessage-wasm-module.html`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/postMessage-wasm-module.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | a `WebAssembly.Module` deserialized by `postMessage()` in a realm whose policy does not allow `'wasm-unsafe-eval'` is not compiled again, so no `wasm-eval` violation is reported (Chromium reports one; not specified) |
+| [`wasm-unsafe-eval/postMessage-wasm-module.html`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/postMessage-wasm-module.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | a `WebAssembly.Module` deserialized by `postMessage()` in a realm whose policy does not allow `'wasm-unsafe-eval'` is not compiled again, so no `wasm-eval` violation is reported: deserializing a module does not compile it (https://webassembly.github.io/spec/web-api/#serialization) and no specification checks the policy there (only Firefox reports a violation; Chromium and Safari fail it too) |
 | [`wasm-unsafe-eval/script-src-blocks-wasm-streaming.any.js`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm-streaming.any.js) | Pass | 6 / 6 |  |  |
 | [`wasm-unsafe-eval/script-src-blocks-wasm.any.js`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/script-src-blocks-wasm.any.js) | Pass | 9 / 9 |  |  |
 | [`wasm-unsafe-eval/script-src-spv-asynch.any.js`](https://wpt.fyi/results/content-security-policy/wasm-unsafe-eval/script-src-spv-asynch.any.js) | Pass | 6 / 6 |  |  |

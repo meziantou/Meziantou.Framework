@@ -20,8 +20,8 @@ description: "The results of the web-platform-tests of webaudio, and why the tes
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 2
-- **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 6
+- **TEST BUG**: 3
+- **NOT IMPLEMENTED**: 5
 - **REQUIRES**: 3
   - `media`: 3
 - **TEST RUNNER**: 2
@@ -31,7 +31,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`historical.html`](https://wpt.fyi/results/webaudio/historical.html) | Pass | 7 / 7 |  |  |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/webaudio/idlharness.https.window.js) | Fail | 1,166 / 1,168 | NOT IMPLEMENTED | `DynamicsCompressorNode.makeupGain` |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/webaudio/idlharness.https.window.js) | Pass | 1,168 / 1,168 |  |  |
 | [`the-audio-api/processing-model/cycle-without-delay.html`](https://wpt.fyi/results/webaudio/the-audio-api/processing-model/cycle-without-delay.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/processing-model/delay-time-clamping.html`](https://wpt.fyi/results/webaudio/the-audio-api/processing-model/delay-time-clamping.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/processing-model/feedback-delay-time.html`](https://wpt.fyi/results/webaudio/the-audio-api/processing-model/feedback-delay-time.html) | Pass | 1 / 1 |  |  |
@@ -122,7 +122,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`the-audio-api/the-audioparam-interface/audioparam-large-endtime.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-large-endtime.html) | Pass | 11 / 11 |  |  |
 | [`the-audio-api/the-audioparam-interface/audioparam-linearRampToValueAtTime.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-linearRampToValueAtTime.html) | Pass | 6 / 6 |  |  |
 | [`the-audio-api/the-audioparam-interface/audioparam-method-chaining.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-method-chaining.html) | Pass | 3 / 3 |  |  |
-| [`the-audio-api/the-audioparam-interface/audioparam-nominal-range.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html) | Pass | 327 / 327 |  |  |
+| [`the-audio-api/the-audioparam-interface/audioparam-nominal-range.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-nominal-range.html) | Fail | 324 / 325 | TEST BUG | the test has no limits for the `makeupGain` parameter of `DynamicsCompressorNode` (https://webaudio.github.io/web-audio-api/#dom-dynamicscompressornode-makeupgain), which it finds by enumerating the `AudioParam` attributes: its branch for a parameter without limits reads `clippingTested`, which is not defined in its scope, so the subtest of `createDynamicsCompressor` fails with a `ReferenceError` |
 | [`the-audio-api/the-audioparam-interface/audioparam-setTargetAtTime.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-setTargetAtTime.html) | Pass | 6 / 6 |  |  |
 | [`the-audio-api/the-audioparam-interface/audioparam-setValueAtTime.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueAtTime.html) | Pass | 6 / 6 |  |  |
 | [`the-audio-api/the-audioparam-interface/audioparam-setValueCurve-exceptions.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-audioparam-interface/audioparam-setValueCurve-exceptions.html) | Pass | 66 / 66 |  |  |

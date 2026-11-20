@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of inert, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25 | 29 | 0 | 86% |
+| [Stable](#stable-tests) | 28 | 29 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **25** | **29** | **0** | **86%** |
+| **All** | **28** | **29** | **0** | **97%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 4
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -27,8 +27,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`dynamic-inert-on-focused-element.html`](https://wpt.fyi/results/inert/dynamic-inert-on-focused-element.html) | Pass | 6 / 6 |  |  |
 | [`inert-and-contenteditable.html`](https://wpt.fyi/results/inert/inert-and-contenteditable.html) | Pass | 2 / 2 |  |  |
-| [`inert-and-find-flat-tree.html`](https://wpt.fyi/results/inert/inert-and-find-flat-tree.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the non-standard `window.find()` (find-in-page) is not implemented |
-| [`inert-and-find.html`](https://wpt.fyi/results/inert/inert-and-find.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the non-standard `window.find()` (find-in-page) is not implemented |
+| [`inert-and-find-flat-tree.html`](https://wpt.fyi/results/inert/inert-and-find-flat-tree.html) | Pass | 2 / 2 |  |  |
+| [`inert-and-find.html`](https://wpt.fyi/results/inert/inert-and-find.html) | Pass | 1 / 1 |  |  |
 | [`inert-canvas-fallback-content.html`](https://wpt.fyi/results/inert/inert-canvas-fallback-content.html) | Pass | 12 / 12 |  |  |
 | [`inert-computed-style.html`](https://wpt.fyi/results/inert/inert-computed-style.html) | Pass | 1 / 1 |  |  |
 | [`inert-does-not-match-disabled-selector.html`](https://wpt.fyi/results/inert/inert-does-not-match-disabled-selector.html) | Pass | 1 / 1 |  |  |
@@ -49,8 +49,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`inert-resize-handle.html`](https://wpt.fyi/results/inert/inert-resize-handle.html) | Pass | 1 / 1 |  |  |
 | [`inert-scrollbar-hittest.html`](https://wpt.fyi/results/inert/inert-scrollbar-hittest.html) | Pass | 1 / 1 |  |  |
 | [`inert-svg-hittest.html`](https://wpt.fyi/results/inert/inert-svg-hittest.html) | Pass | 2 / 2 |  |  |
-| [`inert-with-fullscreen-element.html`](https://wpt.fyi/results/inert/inert-with-fullscreen-element.html) | Fail | 0 / 3 | NOT IMPLEMENTED | `window.find()` (the find-in-page API, which the test uses to observe the inertness), and the inertness of the nodes outside of the fullscreen element (the HTML Standard only makes the documents that a modal dialog blocks inert) |
+| [`inert-with-fullscreen-element.html`](https://wpt.fyi/results/inert/inert-with-fullscreen-element.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the inertness of the nodes outside of the fullscreen element (the test observes it with `window.find()`): the HTML Standard only makes the nodes that a modal dialog blocks inert, so the text outside of the fullscreen element is found |
 | [`inert-with-modal-dialog-001.html`](https://wpt.fyi/results/inert/inert-with-modal-dialog-001.html) | Pass | 4 / 4 |  |  |
 | [`inert-with-modal-dialog-002.html`](https://wpt.fyi/results/inert/inert-with-modal-dialog-002.html) | Pass | 3 / 3 |  |  |
-| [`inert-with-modal-dialog-003.html`](https://wpt.fyi/results/inert/inert-with-modal-dialog-003.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the non-standard `window.find()` (find-in-page) is not implemented |
+| [`inert-with-modal-dialog-003.html`](https://wpt.fyi/results/inert/inert-with-modal-dialog-003.html) | Pass | 3 / 3 |  |  |
 | [`nested-inert-unfocusable.html`](https://wpt.fyi/results/inert/nested-inert-unfocusable.html) | Pass | 3 / 3 |  |  |

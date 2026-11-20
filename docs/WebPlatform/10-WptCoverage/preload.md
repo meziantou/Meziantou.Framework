@@ -9,18 +9,17 @@ description: "The results of the web-platform-tests of preload, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 68 | 72 | 0 | 94% |
+| [Stable](#stable-tests) | 69 | 72 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **71** | **75** | **0** | **95%** |
+| **All** | **72** | **75** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -46,7 +45,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`link-header-preload-nonce.html`](https://wpt.fyi/results/preload/link-header-preload-nonce.html) | Pass | 2 / 2 |  |  |
 | [`link-header-preload.html`](https://wpt.fyi/results/preload/link-header-preload.html) | Pass | 1 / 1 |  |  |
 | [`link-preload-as-case-insensitive.html`](https://wpt.fyi/results/preload/link-preload-as-case-insensitive.html) | Pass | 7 / 7 |  |  |
-| [`link-url-encoding.html`](https://wpt.fyi/results/preload/link-url-encoding.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the favicons (`<link rel=icon>`) are not fetched: the URL of the favicon is never requested (`stash-url.py` stores nothing) |
+| [`link-url-encoding.html`](https://wpt.fyi/results/preload/link-url-encoding.html) | Pass | 3 / 3 |  |  |
 | [`modulepreload-already-in-module-map.html`](https://wpt.fyi/results/preload/modulepreload-already-in-module-map.html) | Pass | 5 / 5 |  |  |
 | [`modulepreload-as.html`](https://wpt.fyi/results/preload/modulepreload-as.html) | Pass | 28 / 28 |  |  |
 | [`modulepreload-consumed-by-script.html`](https://wpt.fyi/results/preload/modulepreload-consumed-by-script.html) | Pass | 1 / 1 |  |  |

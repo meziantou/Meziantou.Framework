@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 169 | 179 | 0 | 94% |
+| [Stable](#stable-tests) | 170 | 179 | 0 | 95% |
 | [Tentative](#tentative-tests) | 6 | 9 | 0 | 67% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **176** | **189** | **0** | **93%** |
+| **All** | **177** | **189** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 7
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 4
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -65,7 +65,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`pointerevent_after_target_removed.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_removed.html) | Pass | 12 / 12 |  |  |
 | [`pointerevent_after_target_removed_from_slot.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_removed_from_slot.html) | Fail | 4 / 6 | TEST BUG | the `remove-filler` subtests expect the events after the removal of the slotted element at the `<slot>` (`pointerover@slot`, `pointerup@slot`, ...) without the same events at the shadow host: an event dispatched at a node of the shadow tree is at the target phase at the host too (DOM retargeting), so the listener of the host logs it as for the other subtests (`pointerover@parent`, `pointerover@host`). Chrome and Firefox fail these subtests too |
 | [`pointerevent_attributes.html`](https://wpt.fyi/results/pointerevents/pointerevent_attributes.html) | Pass | 468 / 468 |  |  |
-| [`pointerevent_attributes.optional.html`](https://wpt.fyi/results/pointerevents/pointerevent_attributes.optional.html) | Fail | 10 / 150 | NOT IMPLEMENTED | the legacy `fromElement` and `toElement` attributes of `MouseEvent` (the precondition of the optional subtests) |
+| [`pointerevent_attributes.optional.html`](https://wpt.fyi/results/pointerevents/pointerevent_attributes.optional.html) | Pass | 150 / 150 |  |  |
 | [`pointerevent_auxclick_is_a_pointerevent.html`](https://wpt.fyi/results/pointerevents/pointerevent_auxclick_is_a_pointerevent.html) | Pass | 4 / 4 |  |  |
 | [`pointerevent_boundary_events_at_implicit_release_hoverable_pointers.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_at_implicit_release_hoverable_pointers.html) | Pass | 1 / 1 |  |  |
 | [`pointerevent_boundary_events_attributes_during_drag.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_attributes_during_drag.html) | Pass | 2 / 2 |  |  |

@@ -9,28 +9,27 @@ description: "The results of the web-platform-tests of FileAPI, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 69 | 73 | 0 | 95% |
+| [Stable](#stable-tests) | 72 | 73 | 0 | 99% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 2 | 0 | 100% |
-| **All** | **72** | **76** | **0** | **95%** |
+| **All** | **75** | **76** | **0** | **99%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`Blob-methods-from-detached-frame.html`](https://wpt.fyi/results/FileAPI/Blob-methods-from-detached-frame.html) | Pass | 5 / 5 |  |  |
-| [`BlobURL/cross-partition-navigation.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-navigation.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | partitioning the blob URL store by top-level site (cross-site navigations to blob URLs are not forced to noopener/blocked) |
+| [`BlobURL/cross-partition-navigation.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-navigation.https.html) | Pass | 5 / 5 |  |  |
 | [`BlobURL/cross-partition-self-fetch.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-self-fetch.https.html) | Pass | 1 / 1 |  |  |
-| [`BlobURL/cross-partition-worker-creation.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-worker-creation.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | partitioning the blob URL store by top-level site (a cross-site iframe can create a worker from the blob URL) |
-| [`BlobURL/cross-partition.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition.https.html) | Fail | 1 / 8 | NOT IMPLEMENTED | partitioning the blob URL store by top-level site (a cross-partition iframe can revoke the URL) |
+| [`BlobURL/cross-partition-worker-creation.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition-worker-creation.https.html) | Pass | 2 / 2 |  |  |
+| [`BlobURL/cross-partition.https.html`](https://wpt.fyi/results/FileAPI/BlobURL/cross-partition.https.html) | Pass | 8 / 8 |  |  |
 | [`BlobURL/opaque-origin.html`](https://wpt.fyi/results/FileAPI/BlobURL/opaque-origin.html) | Pass | 2 / 2 |  |  |
 | [`FileReader/progress_event_bubbles_cancelable.html`](https://wpt.fyi/results/FileAPI/FileReader/progress_event_bubbles_cancelable.html) | Pass | 1 / 1 |  |  |
 | [`FileReader/workers.html`](https://wpt.fyi/results/FileAPI/FileReader/workers.html) | Pass | 1 / 1 |  |  |

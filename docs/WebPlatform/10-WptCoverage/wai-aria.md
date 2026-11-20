@@ -9,25 +9,25 @@ description: "The results of the web-platform-tests of wai-aria, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 20 | 21 | 0 | 95% |
+| [Stable](#stable-tests) | 21 | 21 | 0 | 100% |
 | [Tentative](#tentative-tests) | 8 | 14 | 0 | 57% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **28** | **35** | **0** | **80%** |
+| **All** | **29** | **35** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`heading/invalid-nesting.html`](https://wpt.fyi/results/wai-aria/heading/invalid-nesting.html) | Pass | 14 / 14 |  |  |
-| [`idlharness.window.js`](https://wpt.fyi/results/wai-aria/idlharness.window.js) | Fail | 117 / 121 | NOT IMPLEMENTED | `ariaNotify()` on `Document` and `Element` |
+| [`idlharness.window.js`](https://wpt.fyi/results/wai-aria/idlharness.window.js) | Pass | 121 / 121 |  |  |
 | [`role/abstract-roles.html`](https://wpt.fyi/results/wai-aria/role/abstract-roles.html) | Pass | 12 / 12 |  |  |
 | [`role/basic.html`](https://wpt.fyi/results/wai-aria/role/basic.html) | Pass | 2 / 2 |  |  |
 | [`role/button-roles.html`](https://wpt.fyi/results/wai-aria/role/button-roles.html) | Pass | 10 / 10 |  |  |

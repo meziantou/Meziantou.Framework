@@ -9,17 +9,11 @@ description: "The results of the web-platform-tests of loading, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 52 | 53 | 0 | 98% |
+| [Stable](#stable-tests) | 53 | 53 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **52** | **53** | **0** | **98%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 1
+| **All** | **53** | **53** | **0** | **100%** |
 
 ## Stable tests
 
@@ -76,5 +70,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`preloader-css-import-no-space.html`](https://wpt.fyi/results/loading/preloader-css-import-no-space.html) | Pass | 1 / 1 |  |  |
 | [`preloader-css-import-single-quote.html`](https://wpt.fyi/results/loading/preloader-css-import-single-quote.html) | Pass | 1 / 1 |  |  |
 | [`preloader-css-import.html`](https://wpt.fyi/results/loading/preloader-css-import.html) | Pass | 1 / 1 |  |  |
-| [`preloader-link-media.html`](https://wpt.fyi/results/loading/preloader-link-media.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the speculative parser does not delay the style sheets whose media does not match: the print style sheet starts loading first |
+| [`preloader-link-media.html`](https://wpt.fyi/results/loading/preloader-link-media.html) | Pass | 1 / 1 |  |  |
 | [`preloader-template.html`](https://wpt.fyi/results/loading/preloader-template.html) | Pass | 1 / 1 |  |  |

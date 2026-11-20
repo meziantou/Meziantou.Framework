@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 43 | 51 | 0 | 84% |
+| [Stable](#stable-tests) | 45 | 51 | 0 | 88% |
 | [Tentative](#tentative-tests) | 10 | 12 | 0 | 83% |
 | [Reftests](#reftests) | 263 | 279 | 0 | 94% |
 | [Crash tests](#crash-tests) | 26 | 26 | 0 | 100% |
-| **All** | **342** | **368** | **0** | **93%** |
+| **All** | **344** | **368** | **0** | **93%** |
 
 ## Failure reasons
 
@@ -21,14 +21,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 9
-- **NOT IMPLEMENTED**: 16
+- **NOT IMPLEMENTED**: 14
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`CSSPseudoElement-identity.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-identity.html) | Pass | 1 / 1 |  |  |
-| [`CSSPseudoElement-scroll-button.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-scroll-button.html) | Fail | 4 / 8 | NOT IMPLEMENTED | a distinct `CSSPseudoElement` for each physical direction of `::scroll-button()` (`up`, `left`...): `pseudo()` returns the object of the logical direction it maps to, so its `selectorText` is the logical direction (the previous behavior of the test) |
+| [`CSSPseudoElement-scroll-button.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-scroll-button.html) | Pass | 8 / 8 |  |  |
 | [`CSSPseudoElement-selectorText.html`](https://wpt.fyi/results/css/css-pseudo/CSSPseudoElement-selectorText.html) | Pass | 4 / 4 |  |  |
 | [`backdrop-animate.html`](https://wpt.fyi/results/css/css-pseudo/backdrop-animate.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/backdrop-pseudo-element-click.html) | Pass | 1 / 1 |  |  |
@@ -75,7 +75,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`placeholder-inherit.html`](https://wpt.fyi/results/css/css-pseudo/placeholder-inherit.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-removal.html`](https://wpt.fyi/results/css/css-pseudo/pseudo-element-removal.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-replaced-elements.html`](https://wpt.fyi/results/css/css-pseudo/pseudo-replaced-elements.html) | Pass | 24 / 24 |  |  |
-| [`scroll-button-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/scroll-button-pseudo-element-click.html) | Fail | 0 / 1 | NOT IMPLEMENTED | a distinct `CSSPseudoElement` for each physical direction of `::scroll-button()` (`up`, `left`...): `pseudo()` returns the object of the logical direction it maps to, so its `selectorText` is the logical direction (the previous behavior of the test) |
+| [`scroll-button-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/scroll-button-pseudo-element-click.html) | Pass | 1 / 1 |  |  |
 | [`selection-universal-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/selection-universal-shadow-dom.html) | Pass | 1 / 1 |  |  |
 | [`text-selection.html`](https://wpt.fyi/results/css/css-pseudo/text-selection.html) | Pass | 6 / 6 |  |  |
 

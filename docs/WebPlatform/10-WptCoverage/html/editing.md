@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of html/editing, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 130 | 139 | 0 | 94% |
+| [Stable](#stable-tests) | 133 | 139 | 0 | 96% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | [Reftests](#reftests) | 26 | 26 | 0 | 100% |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **158** | **167** | **0** | **95%** |
+| **All** | **161** | **167** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 1
-- **NOT IMPLEMENTED**: 6
+- **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 2
   - `layout`: 2
 - **TEST RUNNER**: 2
@@ -52,7 +52,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dnd/dom/events.html`](https://wpt.fyi/results/html/editing/dnd/dom/events.html) | Pass | 7 / 7 |  |  |
 | [`dnd/dom/specials.html`](https://wpt.fyi/results/html/editing/dnd/dom/specials.html) | Pass | 21 / 21 |  |  |
 | [`dnd/drop/001.xhtml`](https://wpt.fyi/results/html/editing/dnd/drop/001.xhtml) | Pass | 3 / 3 |  |  |
-| [`dnd/drop/002.xhtml`](https://wpt.fyi/results/html/editing/dnd/drop/002.xhtml) | Fail | 0 / 3 | NOT IMPLEMENTED | dragging the selected text of a text control (the `<input>` selection is not a document selection, so no drag starts) |
+| [`dnd/drop/002.xhtml`](https://wpt.fyi/results/html/editing/dnd/drop/002.xhtml) | Pass | 3 / 3 |  |  |
 | [`dnd/drop/003.xhtml`](https://wpt.fyi/results/html/editing/dnd/drop/003.xhtml) | Pass | 3 / 3 |  |  |
 | [`dnd/drop/004.xhtml`](https://wpt.fyi/results/html/editing/dnd/drop/004.xhtml) | Pass | 3 / 3 |  |  |
 | [`dnd/drop/005.xhtml`](https://wpt.fyi/results/html/editing/dnd/drop/005.xhtml) | Pass | 3 / 3 |  |  |
@@ -118,7 +118,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dnd/reload/001.html`](https://wpt.fyi/results/html/editing/dnd/reload/001.html) | Pass | 1 / 1 |  |  |
 | [`dnd/reload/002.html`](https://wpt.fyi/results/html/editing/dnd/reload/002.html) | Pass | 1 / 1 |  |  |
 | [`dnd/reload/003.html`](https://wpt.fyi/results/html/editing/dnd/reload/003.html) | Pass | 1 / 1 |  |  |
-| [`dnd/reload/004.html`](https://wpt.fyi/results/html/editing/dnd/reload/004.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | dragging the selected text of a text control (the `<input>` selection is not a document selection, so no drag starts) |
+| [`dnd/reload/004.html`](https://wpt.fyi/results/html/editing/dnd/reload/004.html) | Pass | 1 / 1 |  |  |
 | [`dnd/reload/005.html`](https://wpt.fyi/results/html/editing/dnd/reload/005.html) | Pass | 1 / 1 |  |  |
 | [`dnd/reload/006.html`](https://wpt.fyi/results/html/editing/dnd/reload/006.html) | Pass | 1 / 1 |  |  |
 | [`dnd/reload/007.html`](https://wpt.fyi/results/html/editing/dnd/reload/007.html) | Pass | 1 / 1 |  |  |
@@ -126,7 +126,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`dnd/remove/001.html`](https://wpt.fyi/results/html/editing/dnd/remove/001.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/002.html`](https://wpt.fyi/results/html/editing/dnd/remove/002.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/003.html`](https://wpt.fyi/results/html/editing/dnd/remove/003.html) | Pass | 1 / 1 |  |  |
-| [`dnd/remove/004.html`](https://wpt.fyi/results/html/editing/dnd/remove/004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | dragging the selected text of a text control (the `<input>` selection is not a document selection, so no drag starts) |
+| [`dnd/remove/004.html`](https://wpt.fyi/results/html/editing/dnd/remove/004.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/005.html`](https://wpt.fyi/results/html/editing/dnd/remove/005.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/006.html`](https://wpt.fyi/results/html/editing/dnd/remove/006.html) | Pass | 1 / 1 |  |  |
 | [`dnd/remove/007.html`](https://wpt.fyi/results/html/editing/dnd/remove/007.html) | Pass | 1 / 1 |  |  |

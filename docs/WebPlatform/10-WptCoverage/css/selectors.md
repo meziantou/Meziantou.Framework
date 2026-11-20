@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of css/selectors, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 458 | 460 | 0 | 99.5% |
-| [Tentative](#tentative-tests) | 15 | 17 | 0 | 88% |
+| [Stable](#stable-tests) | 460 | 460 | 0 | 100% |
+| [Tentative](#tentative-tests) | 16 | 17 | 0 | 94% |
 | [Reftests](#reftests) | 343 | 344 | 0 | 99.7% |
 | [Crash tests](#crash-tests) | 19 | 20 | 0 | 95% |
-| **All** | **835** | **841** | **0** | **99%** |
+| **All** | **838** | **841** | **0** | **99.6%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 2
 
 ## Stable tests
 
@@ -479,8 +479,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selectors-case-sensitive-001.html`](https://wpt.fyi/results/css/selectors/selectors-case-sensitive-001.html) | Pass | 3 / 3 |  |  |
 | [`toplayer-transition-001.html`](https://wpt.fyi/results/css/selectors/toplayer-transition-001.html) | Pass | 2 / 2 |  |  |
 | [`user-action-pseudo-top-layer.html`](https://wpt.fyi/results/css/selectors/user-action-pseudo-top-layer.html) | Pass | 4 / 4 |  |  |
-| [`user-invalid.html`](https://wpt.fyi/results/css/selectors/user-invalid.html) | Fail | 7 / 8 | NOT IMPLEMENTED | typing in the fields of `<input type=date/time/datetime-local>`: `test_driver.send_keys()` does not edit their date and time segments |
-| [`user-valid.html`](https://wpt.fyi/results/css/selectors/user-valid.html) | Fail | 4 / 5 | NOT IMPLEMENTED | typing in the fields of `<input type=date/time/datetime-local>`: `test_driver.send_keys()` does not edit their date and time segments |
+| [`user-invalid.html`](https://wpt.fyi/results/css/selectors/user-invalid.html) | Pass | 8 / 8 |  |  |
+| [`user-valid.html`](https://wpt.fyi/results/css/selectors/user-valid.html) | Pass | 5 / 5 |  |  |
 | [`valid-invalid-form-fieldset.html`](https://wpt.fyi/results/css/selectors/valid-invalid-form-fieldset.html) | Pass | 1 / 1 |  |  |
 | [`valid-invalid-pseudo.html`](https://wpt.fyi/results/css/selectors/valid-invalid-pseudo.html) | Pass | 4 / 4 |  |  |
 | [`webkit-pseudo-element.html`](https://wpt.fyi/results/css/selectors/webkit-pseudo-element.html) | Pass | 6 / 6 |  |  |
@@ -507,7 +507,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/parse-class-prefix.tentative.html`](https://wpt.fyi/results/css/selectors/parsing/parse-class-prefix.tentative.html) | Pass | 16 / 16 |  |  |
 | [`parsing/parse-has-class-prefix.tentative.html`](https://wpt.fyi/results/css/selectors/parsing/parse-has-class-prefix.tentative.html) | Pass | 15 / 15 |  |  |
 | [`parsing/parse-has-slotted.tentative.html`](https://wpt.fyi/results/css/selectors/parsing/parse-has-slotted.tentative.html) | Fail | 5 / 23 | NOT IMPLEMENTED | the functional `:has-slotted(<compound-selector>)` form (tentative); only the argument-less `:has-slotted` is parsed |
-| [`user-valid-user-invalid-multifield-inputs.tentative.html`](https://wpt.fyi/results/css/selectors/user-valid-user-invalid-multifield-inputs.tentative.html) | Fail | 0 / 3 | NOT IMPLEMENTED | typing in the fields of `<input type=date/time/datetime-local>`: `test_driver.send_keys()` does not edit their date and time segments |
+| [`user-valid-user-invalid-multifield-inputs.tentative.html`](https://wpt.fyi/results/css/selectors/user-valid-user-invalid-multifield-inputs.tentative.html) | Pass | 3 / 3 |  |  |
 
 ## Reftests
 

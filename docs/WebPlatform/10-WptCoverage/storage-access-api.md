@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of storage-access-api, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 32 | 37 | 0 | 86% |
+| [Stable](#stable-tests) | 34 | 37 | 0 | 92% |
 | [Tentative](#tentative-tests) | 1 | 5 | 0 | 20% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **33** | **42** | **0** | **79%** |
+| **All** | **35** | **42** | **0** | **83%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 6
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
@@ -49,8 +49,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`requestStorageAccess-web-socket.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/requestStorageAccess-web-socket.sub.https.window.js) | Fail | 1 / 2 | TEST BUG | 1 subtest: expects the WebSocket handshake to `wss://{{hosts[alt][]}}:{{ports[wss][0]}}` to send the unpartitioned cookie of the frame that has storage access, but the port of the WebSocket server is not the port of the frame: the request is not same origin with the frame, so it is not eligible for storage access (https://privacycg.github.io/storage-access/#determine-the-initial-storage-access-eligibility) |
 | [`requestStorageAccess.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/requestStorageAccess.sub.https.window.js) | Pass | 4 / 4 |  |  |
 | [`storage-access-beyond-cookies.BroadcastChannel.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.BroadcastChannel.sub.https.window.js) | Pass | 1 / 1 |  |  |
-| [`storage-access-beyond-cookies.SharedWorker.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.SharedWorker.sub.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `sameSiteCookies` option of `SharedWorker` (as `workers/same-site-cookies`): a worker is shared whatever its `sameSiteCookies`, so the relay worker of the top-level document also receives the message of the partitioned worker of the frame, and `StorageAccessHandle.SharedWorker()` does not throw for `sameSiteCookies: 'all'` in a third-party context |
-| [`storage-access-beyond-cookies.blobStorage.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.blobStorage.sub.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | partitioning the blob URL store by storage key (as `FileAPI/BlobURL/cross-partition.https.html`): the cross-site frame fetches the blob URL created by the top-level document, which the test expects to fail |
+| [`storage-access-beyond-cookies.SharedWorker.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.SharedWorker.sub.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `sameSiteCookies` option of `SharedWorker` (https://privacycg.github.io/saa-non-cookie-storage/#shared-workers, an incubation that the HTML Standard does not have): the option is ignored, so `StorageAccessHandle.SharedWorker()` does not throw for `sameSiteCookies: 'all'` in a third-party context, the shared workers are not keyed by it, and the requests of a worker created with `none` send the SameSite cookies; the shared workers are also keyed by the top-level site only, so the partitioned worker of the frame (same site with the top-level document, embedded by a cross-site frame) is the relay worker of the top-level document |
+| [`storage-access-beyond-cookies.blobStorage.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.blobStorage.sub.https.window.js) | Pass | 1 / 1 |  |  |
 | [`storage-access-beyond-cookies.caches.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.caches.sub.https.window.js) | Pass | 1 / 1 |  |  |
 | [`storage-access-beyond-cookies.cookies.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.cookies.sub.https.window.js) | Pass | 1 / 1 |  |  |
 | [`storage-access-beyond-cookies.estimate.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.estimate.sub.https.window.js) | Pass | 1 / 1 |  |  |
@@ -60,7 +60,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`storage-access-beyond-cookies.locks.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.locks.sub.https.window.js) | Pass | 1 / 1 |  |  |
 | [`storage-access-beyond-cookies.none.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.none.sub.https.window.js) | Pass | 1 / 1 |  |  |
 | [`storage-access-beyond-cookies.sessionStorage.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.sessionStorage.sub.https.window.js) | Pass | 1 / 1 |  |  |
-| [`storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | partitioning the blob URL store by storage key (as `FileAPI/BlobURL/cross-partition.https.html`): after storage access is granted, the frame still fetches a blob URL created in another partition, which the test expects to fail |
+| [`storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.thirdPartyBlobStorage.sub.https.window.js) | Pass | 1 / 1 |  |  |
 | [`storage-access-permission.sub.https.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-permission.sub.https.window.js) | Pass | 7 / 7 |  |  |
 | [`storageAccess.testdriver.sub.html`](https://wpt.fyi/results/storage-access-api/storageAccess.testdriver.sub.html) | Pass | 1 / 1 |  |  |
 
@@ -70,6 +70,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 |---|---|--:|---|---|
 | [`requestStorageAccess-service-worker.sub.https.tentative.window.js`](https://wpt.fyi/results/storage-access-api/requestStorageAccess-service-worker.sub.https.tentative.window.js) | Fail | 2 / 3 | TEST BUG | 1 subtest: the control expects the WebSocket handshake of the frame to `wss://{{hosts[alt][]}}:{{ports[wss][0]}}` to send the unpartitioned cookie, but the port of the WebSocket server is not the port of the frame: the request is not same origin with the frame, so it is not eligible for storage access (https://privacycg.github.io/storage-access/#determine-the-initial-storage-access-eligibility) |
 | [`requestStorageAccess-shared-worker.sub.https.tentative.window.js`](https://wpt.fyi/results/storage-access-api/requestStorageAccess-shared-worker.sub.https.tentative.window.js) | Fail | 0 / 3 | TEST BUG, NOT IMPLEMENTED | 1 subtest: the control expects the WebSocket handshake of the frame to `wss://{{hosts[alt][]}}:{{ports[wss][0]}}` to send the unpartitioned cookie, but the port of the WebSocket server is not the port of the frame: the request is not same origin with the frame, so it is not eligible for storage access (https://privacycg.github.io/storage-access/#determine-the-initial-storage-access-eligibility); 2 subtests: the third-party context of a shared worker: the requests of a shared worker created by a cross-site frame are first-party for the cookies, so the cookie jar does not block its unpartitioned cookies |
-| [`storage-access-beyond-cookies.BlobURLDedicatedWorker.sub.https.tentative.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.BlobURLDedicatedWorker.sub.https.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | partitioning the blob URL store by storage key: the dedicated worker of the third-party frame fetches the blob URL that `StorageAccessHandle.createObjectURL()` created before the worker got storage access, which the test expects to fail |
-| [`storage-access-beyond-cookies.BlobURLSharedWorker.sub.https.tentative.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.BlobURLSharedWorker.sub.https.tentative.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED | partitioning the blob URL store by storage key: the test expects the shared worker that the third-party frame creates from the first-party blob URL of `StorageAccessHandle.createObjectURL()` to fail with an `error` event; the worker gets neither an `error` event nor the relayed message, so the test times out |
+| [`storage-access-beyond-cookies.BlobURLDedicatedWorker.sub.https.tentative.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.BlobURLDedicatedWorker.sub.https.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the storage access of the dedicated workers: the blob URLs are partitioned by storage key, and a dedicated worker created by the third-party frame after its storage access was granted does not get it, so it cannot fetch the blob URL that `StorageAccessHandle.createObjectURL()` created in the first-party partition |
+| [`storage-access-beyond-cookies.BlobURLSharedWorker.sub.https.tentative.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-beyond-cookies.BlobURLSharedWorker.sub.https.tentative.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED | the blob URLs of `StorageAccessHandle.createObjectURL()` as the script of a shared worker: the third-party frame cannot fetch the blob URL of the first-party partition, so `new SharedWorker()` fires an `error` event, and the test then waits for the message of a shared worker created by the handle, which is not relayed (the test times out) |
 | [`storage-access-headers.tentative.https.sub.window.js`](https://wpt.fyi/results/storage-access-api/storage-access-headers.tentative.https.sub.window.js) | Pass | 4 / 4 |  |  |

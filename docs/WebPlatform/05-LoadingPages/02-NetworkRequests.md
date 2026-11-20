@@ -343,3 +343,38 @@ Assert.Equal(["https://example.com/export.csv report.csv: id,name\n1,Ada\n", "ht
   rest of the file, or dispose its enumerator to cancel the download.
 - Without a callback, the downloads are ignored: the hyperlinks with a `download` attribute fetch nothing. The documents
   sandboxed without `allow-downloads` do not download, and the listeners of the `navigate` event can cancel a download.
+
+## WebSockets
+
+The `WebSocket` connections of the scripts are opened by [DocumentLoader.ConnectWebSocketAsync](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.ConnectWebSocketAsync): the loader of
+[DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) connects to the server, and a custom loader can filter the connections or return
+an in-memory connection. The scripts can also use `WebSocketStream`, the
+[proposal](https://github.com/whatwg/websockets/pull/48) that Chromium ships, whose connection is opened the same way:
+
+- The `opened` promise gives a `ReadableStream` of the received messages (a string for a text message, a `Uint8Array` for
+  a binary message) and a `WritableStream` that sends a string as a text message and a `BufferSource` as a binary message.
+  A write is fulfilled once the message is sent.
+- The readable stream applies backpressure: the next message is read from the network only when the page has read the
+  previous one, so a server that sends faster than the page reads is slowed down.
+- `close()`, `cancel()` of the readable stream and `abort()` of the writable stream close the connection; the `closed`
+  promise gives the status code and the reason of the closing handshake. A connection that cannot be established or is not
+  closed cleanly rejects the promises with a `WebSocketError`, and the `signal` option aborts the opening handshake.
+- As a `WebSocket`, the connection is closed when its document is unloaded or its worker ends.
+
+The .NET types ([WebSocketStream](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketStream), [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError)) are
+[experimental](../09-Limitations.md#experimental-apis) (`WEBPLATEXP0026`). A [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError) gives the status code and the reason of
+the Close frame:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/WebSocketTests.cs;region=WebPlatform_WebSocketError;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A reason without status code gives the 1000 (normal closure) status code
+var error = new WebSocketError("The chat is closed", new WebSocketCloseInfo { Reason = "maintenance" });
+Assert.Equal("WebSocketError", error.Name);
+Assert.Equal((ushort)1000, error.CloseCode);
+Assert.Equal("maintenance", error.Reason);
+
+// The status code must be 1000 or between 3000 and 4999, and the reason at most 123 bytes in UTF-8
+var invalid = Assert.Throws<DomException>(() => new WebSocketError("", new WebSocketCloseInfo { CloseCode = 1001 }));
+Assert.Equal("InvalidAccessError", invalid.Name);
+```
+<!-- endref -->

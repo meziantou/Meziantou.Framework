@@ -12,7 +12,10 @@ public sealed record WebPlatformFeatures
     /// <summary>Gets the default features: all the features are enabled.</summary>
     public static WebPlatformFeatures Default { get; } = new();
 
-    /// <summary>Gets or sets whether the <c>WebSocket</c> interface is exposed (https://websockets.spec.whatwg.org/). The default is true.</summary>
+    /// <summary>
+    /// Gets or sets whether the <c>WebSocket</c> interface is exposed (https://websockets.spec.whatwg.org/), with
+    /// <c>WebSocketStream</c> and <c>WebSocketError</c>. The default is true.
+    /// </summary>
     public bool WebSocketEnabled { get; init; } = true;
 
     /// <summary>

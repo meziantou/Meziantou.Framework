@@ -3574,6 +3574,84 @@
     return stream.object;
   }
 
+  // ------------------------------------------------------------------------------------------------------------------
+  // WebSocketStream (https://whatpr.org/websockets/48.html#the-websocketstream-interface)
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // The readable and the writable of a WebSocketStream, whose source and sink are the connection of the library:
+  // source.pull() releases the backpressure (the library then calls enqueue() with the next message), source.cancel(reason)
+  // and source.abort(reason) close the connection using the reason, source.write(data) sends a string (a text message) or a
+  // Uint8Array (a binary message) and returns a promise fulfilled once it is sent, and source.close() starts the closing
+  // handshake and returns a promise fulfilled once the connection is closed. The library calls close(writableError) when
+  // the connection is closed cleanly, and error(e) when it is not.
+  function createWebSocketStreams(source) {
+    const readable = createReadableStream(realm, () => undefined, () => {
+      source.pull();
+      return promiseResolvedWith(undefined);
+    }, (reason) => {
+      source.cancel(reason);
+      return promiseResolvedWith(undefined);
+    });
+
+    // https://whatpr.org/websockets/48.html#write-chunk: a BufferSource is a binary message (the resizable and the shared
+    // buffers are not BufferSource values, they are rejected as in Chromium), any other value is converted to a string
+    const writeAlgorithm = (chunk) => {
+      let data;
+      try {
+        data = isObject(chunk) && isBufferSource(chunk) ? copyWebSocketMessageBytes(chunk) : `${chunk}`;
+      } catch (e) {
+        return promiseRejectedWith(e);
+      }
+
+      try {
+        return promiseResolvedWith(source.write(data));
+      } catch (e) {
+        return promiseRejectedWith(e);
+      }
+    };
+    const closeAlgorithm = () => {
+      try {
+        return promiseResolvedWith(source.close());
+      } catch (e) {
+        return promiseRejectedWith(e);
+      }
+    };
+    const abortAlgorithm = (reason) => {
+      source.abort(reason);
+      return promiseResolvedWith(undefined);
+    };
+    const writable = createWritableStream(realm, () => undefined, writeAlgorithm, closeAlgorithm, abortAlgorithm);
+
+    // The writable is errored after the reactions of the writes that the library has just rejected: a write that was not
+    // completed when the connection closed errors the stream with its own error
+    const errorWritable = (e) => {
+      queueMicrotask(() => writableStreamDefaultControllerErrorIfNeeded(writable.controller, e));
+    };
+    const controls = ObjectCreate(null);
+    controls.readable = readable.object;
+    controls.writable = writable.object;
+    controls.enqueue = (chunk) => {
+      if (readableStreamDefaultControllerCanCloseOrEnqueue(readable.controller)) readableStreamDefaultControllerEnqueue(readable.controller, chunk);
+    };
+    controls.close = (writableError) => {
+      readableStreamDefaultControllerClose(readable.controller);
+      errorWritable(writableError);
+    };
+    controls.error = (e) => {
+      errorReadableStream(readable, e);
+      errorWritable(e);
+    };
+    return controls;
+  }
+
+  // A copy of the bytes of a BufferSource (not [AllowShared], not [AllowResizable])
+  function copyWebSocketMessageBytes(value) {
+    if (getViewKind(value) !== undefined) return cloneAsUint8Array(convertArrayBufferView(value, 'The chunk'));
+    if (isSharedArrayBuffer(value)) throw new TypeError_('The chunk is a SharedArrayBuffer');
+    if (apply(arrayBufferResizable, value, [])) throw new TypeError_('The chunk is a resizable ArrayBuffer');
+    return new Uint8Array_(cloneArrayBuffer(value, 0, arrayBufferByteLengthOf(value)));
+  }
+
   // https://w3c.github.io/FileAPI/#dom-blob-textstream
   function createBlobTextStream(bytes) {
     const stream = getRecord(createBlobStream(bytes), 'ReadableStream');
@@ -3945,6 +4023,7 @@
     createPlatformWritableStream,
     FileSystemWritableFileStream,
     createFileSystemWritableFileStream,
+    createWebSocketStreams,
     fetchSupport,
     transferSupport,
   };

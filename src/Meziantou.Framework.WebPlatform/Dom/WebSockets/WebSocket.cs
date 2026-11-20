@@ -67,12 +67,20 @@ public sealed class WebSocket : EventTarget
     private readonly UrlRecord _url;
     private readonly string[] _protocols;
     private readonly Queue<OutgoingMessage> _sendQueue = new();
+
+    // The WebSocket of a WebSocketStream: its messages are received one at a time, when the readable stream asks for one
+    private readonly bool _isStream;
+    private readonly SemaphoreSlim? _receivePermits;
+    private volatile bool _receiveGateOpen;
+    private IWebSocketReceiveFlowControl? _flowControl;
+    private OutgoingMessage? _inFlightMessage;
     private CancellationTokenSource? _fetchController;
     private FetchRequest? _request;
     private ConnectingQueue? _connectingQueue;
     private bool _holdsConnectingSlot;
     private string? _key;
     private NetWebSocket? _connection;
+    private Stream? _rawConnection;
     private WebSocketFrameObserver? _frameObserver;
     private bool _holdsOperation;
 
@@ -111,8 +119,36 @@ public sealed class WebSocket : EventTarget
         _global = RelevantGlobal;
         _eventLoop = _global?.EventLoop;
 
-        // Steps 1 to 7: the URL record
-        var urlRecord = UrlParser.Parse(url, _global?.ApiBaseUrl) ?? throw DomException.Syntax("The URL is not valid: " + url);
+        // Steps 1 to 9: the URL record and the subprotocols
+        _url = ParseUrl(url, _global);
+        _protocols = GetProtocols(protocols);
+
+        // Step 12: the connection is established in parallel
+        Establish();
+    }
+
+    /// <summary>
+    /// Creates the WebSocket of a <see cref="WebSocketStream"/> (https://whatpr.org/websockets/48.html#the-websocketstream-interface):
+    /// its URL and its subprotocols are validated, its messages are received when <see cref="ReleaseBackpressure"/> allows it,
+    /// and a Close frame received while a message is being sent closes the connection abnormally.
+    /// </summary>
+    internal WebSocket(UrlRecord url, string[] protocols)
+    {
+        _global = RelevantGlobal;
+        _eventLoop = _global?.EventLoop;
+        _url = url;
+        _protocols = protocols;
+        _isStream = true;
+        _receivePermits = new SemaphoreSlim(1, 1);
+        BinaryType = BinaryType.ArrayBuffer;
+        Establish();
+    }
+
+    /// <summary>The URL of the constructor (https://websockets.spec.whatwg.org/#dom-websocket-websocket, steps 1 to 7).</summary>
+    /// <exception cref="DomException">A <c>SyntaxError</c> when the URL is not valid, has another scheme or a fragment.</exception>
+    internal static UrlRecord ParseUrl(string url, GlobalScope? global)
+    {
+        var urlRecord = UrlParser.Parse(url, global?.ApiBaseUrl) ?? throw DomException.Syntax("The URL is not valid: " + url);
         if (urlRecord.Scheme == "http")
         {
             urlRecord.Scheme = "ws";
@@ -128,12 +164,7 @@ public sealed class WebSocket : EventTarget
         if (urlRecord.Fragment is not null)
             throw DomException.Syntax("The URL of a WebSocket must not have a fragment: " + url);
 
-        // Steps 8 and 9: the subprotocols
-        _protocols = GetProtocols(protocols);
-        _url = urlRecord;
-
-        // Step 12: the connection is established in parallel
-        Establish();
+        return urlRecord;
     }
 
     /// <summary>Gets the URL of the WebSocket, serialized (https://websockets.spec.whatwg.org/#dom-websocket-url).</summary>
@@ -292,6 +323,54 @@ public sealed class WebSocket : EventTarget
     public void Send(string data) => Send((object)data);
 
     /// <summary>
+    /// Sends a message of a <see cref="WebSocketStream"/>: <paramref name="completed"/> is called on the event loop with true
+    /// once the message is sent (or is not sent because the closing handshake was started), or with false when the connection
+    /// is closed before.
+    /// </summary>
+    internal void SendForStream(byte[] data, WebSocketMessageType type, Action<bool> completed)
+    {
+        if (_isConnectionClosed)
+        {
+            completed(false);
+            return;
+        }
+
+        if (!_isEstablished || _closingHandshakeStarted)
+        {
+            completed(true);
+            return;
+        }
+
+        BufferedAmount += (ulong)data.Length;
+        _sendQueue.Enqueue(new OutgoingMessage(data, type, CloseCode: null, CloseReason: null) { Completed = completed });
+        SendQueuedMessages();
+    }
+
+    /// <summary>
+    /// https://whatpr.org/websockets/48.html#release-backpressure: the next message of the connection of a
+    /// <see cref="WebSocketStream"/> is received from the network.
+    /// </summary>
+    internal void ReleaseBackpressure()
+    {
+        if (_receivePermits is { CurrentCount: 0 } permits)
+        {
+            // The connection is told before the receiving task resumes: the network is read again from now on
+            _flowControl?.SetReceivePaused(paused: false);
+            permits.Release();
+        }
+    }
+
+    /// <summary>The status code and the reason of the Close frame received from the server, if any (the WebSocket connection close code of RFC 6455 when the connection is not closed cleanly).</summary>
+    internal (ushort Code, string Reason)? ReceivedCloseFrame => _closeFrameReceived ? (_receivedCloseCode, _receivedCloseReason) : null;
+
+    /// <summary>The messages are no longer subject to the backpressure of the readable stream (e.g. the closing handshake was started).</summary>
+    private void OpenReceiveGate()
+    {
+        _receiveGateOpen = true;
+        ReleaseBackpressure();
+    }
+
+    /// <summary>
     /// The unloading document cleanup steps (https://html.spec.whatwg.org/multipage/document-lifecycle.html#unloading-document-cleanup-steps)
     /// and the end of a worker: makes the WebSockets of a global object disappear.
     /// </summary>
@@ -326,17 +405,20 @@ public sealed class WebSocket : EventTarget
         // The events are no longer fired, and the connection is closed once its Close frame is sent: the document goes away
         // (its event loop may stop), so the closing handshake is not completed
         var connection = _connection!;
+        var rawConnection = _rawConnection!;
         var sendCloseFrame = !_closingHandshakeStarted || !_closeFrameSent;
         _closingHandshakeStarted = true;
-        _sendQueue.Clear();
+        OpenReceiveGate();
+        ClearSendQueue();
         _connection = null;
+        _rawConnection = null;
         _isConnectionClosed = true;
         ReadyState = Closed;
         RemoveFromActiveWebSockets();
         UpdateOperation();
-        _ = CloseAndDisposeAsync(connection, sendCloseFrame);
+        _ = CloseAndDisposeAsync(connection, rawConnection, sendCloseFrame);
 
-        static async Task CloseAndDisposeAsync(NetWebSocket connection, bool sendCloseFrame)
+        static async Task CloseAndDisposeAsync(NetWebSocket connection, Stream rawConnection, bool sendCloseFrame)
         {
             try
             {
@@ -353,6 +435,7 @@ public sealed class WebSocket : EventTarget
             finally
             {
                 connection.Dispose();
+                await rawConnection.DisposeAsync().ConfigureAwait(false);
             }
         }
     }
@@ -361,7 +444,7 @@ public sealed class WebSocket : EventTarget
     /// The subprotocols of the constructor (https://websockets.spec.whatwg.org/#dom-websocket-websocket, steps 8 and 9): a
     /// <c>SyntaxError</c> is thrown when one of them is not a token or appears twice.
     /// </summary>
-    private static string[] GetProtocols(object? protocols)
+    internal static string[] GetProtocols(object? protocols)
     {
         string[] result = protocols switch
         {
@@ -530,7 +613,7 @@ public sealed class WebSocket : EventTarget
         // The WebSocket connection is established (https://websockets.spec.whatwg.org/#feedback-from-the-protocol)
         NetWebSocket webSocket;
 #pragma warning disable CA2000 // The connection is disposed when it is closed
-        var observer = new WebSocketFrameObserver(connection);
+        var observer = new WebSocketFrameObserver(connection) { OwnsStream = false };
         try
         {
             webSocket = NetWebSocket.CreateFromStream(observer, new WebSocketCreationOptions
@@ -554,7 +637,13 @@ public sealed class WebSocket : EventTarget
         }
 
         _connection = webSocket;
+        _rawConnection = connection;
         _frameObserver = observer;
+        if (_isStream)
+        {
+            _flowControl = connection as IWebSocketReceiveFlowControl;
+        }
+
         _isEstablished = true;
         QueueWebSocketTask(() =>
         {
@@ -581,11 +670,22 @@ public sealed class WebSocket : EventTarget
     {
         var buffer = new byte[ReceiveBufferSize];
         var message = new ArrayBufferWriter<byte>();
+        var isMessageStart = true;
         try
         {
             while (true)
             {
+                // The WebSocket of a WebSocketStream applies backpressure: a message is received when the readable asks for it
+                // (https://whatpr.org/websockets/48.html#apply-backpressure), so the server stops sending when the buffers are full
+                if (isMessageStart && _receivePermits is { } permits && !_receiveGateOpen && !permits.Wait(0))
+                {
+                    _flowControl?.SetReceivePaused(paused: true);
+                    await permits.WaitAsync().ConfigureAwait(false);
+                    _flowControl?.SetReceivePaused(paused: false);
+                }
+
                 var result = await webSocket.ReceiveAsync(buffer.AsMemory(), CancellationToken.None).ConfigureAwait(false);
+                isMessageStart = result.EndOfMessage;
                 if (result.MessageType == WebSocketMessageType.Close)
                 {
                     // A Close frame without status code is reported as a normal closure
@@ -611,7 +711,7 @@ public sealed class WebSocket : EventTarget
         {
             // A connection closed without Close frame (e.g. the server dropped it) is closed abnormally; a protocol error (e.g.
             // an invalid frame, or a text message that is not valid UTF-8) fails the connection
-            var abnormal = ex is WebSocketException { WebSocketErrorCode: WebSocketError.ConnectionClosedPrematurely } || ex.InnerException is IOException || ex is IOException;
+            var abnormal = ex is WebSocketException { WebSocketErrorCode: System.Net.WebSockets.WebSocketError.ConnectionClosedPrematurely } || ex.InnerException is IOException || ex is IOException;
             _eventLoop!.QueueTask(() => OnConnectionError(webSocket, abnormal));
         }
     }
@@ -637,6 +737,14 @@ public sealed class WebSocket : EventTarget
         _closeFrameReceived = true;
         _receivedCloseCode = status is null or WebSocketCloseStatus.Empty ? (ushort)1005 : (ushort)status.Value;
         _receivedCloseReason = description ?? "";
+
+        // The data of a WebSocketStream that is not sent when the server closes the connection is discarded, as in Chromium:
+        // the connection is closed abnormally, with the status code of the server (the write is rejected)
+        if (_isStream && (_inFlightMessage is { Type: not WebSocketMessageType.Close } || _sendQueue.Any(message => message.Type != WebSocketMessageType.Close)))
+        {
+            CloseConnection(_receivedCloseCode, _receivedCloseReason, wasClean: false);
+            return;
+        }
 
         // The closing handshake was started by the server: the Close frame is echoed with its status code and its reason, as in
         // the browsers, after the messages that are being sent (https://www.rfc-editor.org/rfc/rfc6455#section-5.5.1)
@@ -679,6 +787,7 @@ public sealed class WebSocket : EventTarget
     private void StartClosingHandshake(ushort? code, string? reason)
     {
         _closingHandshakeStarted = true;
+        OpenReceiveGate();
         _sendQueue.Enqueue(new OutgoingMessage([], WebSocketMessageType.Close, code, reason));
         SendQueuedMessages();
     }
@@ -750,6 +859,7 @@ public sealed class WebSocket : EventTarget
             }
 
             _isSending = true;
+            _inFlightMessage = message;
             UpdateOperation();
             _ = WaitForTransmissionAsync(connection, message, transmission);
         }
@@ -772,6 +882,7 @@ public sealed class WebSocket : EventTarget
         _eventLoop!.QueueTask(() =>
         {
             _isSending = false;
+            _inFlightMessage = null;
             OnMessageTransmitted(connection, message, succeeded);
             SendQueuedMessages();
             UpdateOperation();
@@ -784,18 +895,37 @@ public sealed class WebSocket : EventTarget
     private void OnMessageTransmitted(NetWebSocket connection, OutgoingMessage message, bool succeeded)
     {
         if (!ReferenceEquals(connection, _connection) || _isConnectionClosed)
+        {
+            message.Complete(false);
             return;
+        }
 
         if (!succeeded)
         {
+            message.Complete(false);
             Fail();
             return;
         }
 
+        message.Complete(true);
         if (message.Type == WebSocketMessageType.Close)
         {
             _closeFrameSent = true;
             CompleteClosingHandshake();
+        }
+    }
+
+    /// <summary>The connection is closed: the messages that are queued or being transmitted are not sent.</summary>
+    private void ClearSendQueue()
+    {
+        var inFlightMessage = _inFlightMessage;
+        _inFlightMessage = null;
+        var messages = _sendQueue.ToArray();
+        _sendQueue.Clear();
+        inFlightMessage?.Complete(false);
+        foreach (var message in messages)
+        {
+            message.Complete(false);
         }
     }
 
@@ -816,7 +946,8 @@ public sealed class WebSocket : EventTarget
     private void CloseConnection(ushort code, string reason, bool wasClean)
     {
         _isConnectionClosed = true;
-        _sendQueue.Clear();
+        OpenReceiveGate();
+        ClearSendQueue();
         _request = null;
         ReleaseConnectingSlot();
         if (_fetchController is { } fetchController)
@@ -859,7 +990,9 @@ public sealed class WebSocket : EventTarget
 
         // The connection is closed once the task is queued
         _connection?.Dispose();
+        _rawConnection?.Dispose();
         _connection = null;
+        _rawConnection = null;
         _frameObserver = null;
     }
 
@@ -977,7 +1110,18 @@ public sealed class WebSocket : EventTarget
     }
 
     /// <summary>A message queued by <see cref="Send(object)"/>, or the Close frame of the closing handshake.</summary>
-    private sealed record OutgoingMessage(byte[] Data, WebSocketMessageType Type, ushort? CloseCode, string? CloseReason);
+    private sealed record OutgoingMessage(byte[] Data, WebSocketMessageType Type, ushort? CloseCode, string? CloseReason)
+    {
+        /// <summary>The callback of a message of a <see cref="WebSocketStream"/>, called once (see <see cref="SendForStream"/>).</summary>
+        public Action<bool>? Completed { get; set; }
+
+        public void Complete(bool succeeded)
+        {
+            var completed = Completed;
+            Completed = null;
+            completed?.Invoke(succeeded);
+        }
+    }
 }
 
 /// <summary>How the binary messages of a <see cref="WebSocket"/> are exposed (https://websockets.spec.whatwg.org/#enumdef-binarytype).</summary>
@@ -994,4 +1138,15 @@ public enum BinaryType
     /// <seealso href="https://websockets.spec.whatwg.org/#dom-binarytype-arraybuffer"/>
     [IdlMember("arraybuffer", "https://websockets.spec.whatwg.org/#dom-binarytype-arraybuffer")]
     ArrayBuffer,
+}
+
+/// <summary>
+/// A connection (<see cref="DocumentResource.Connection"/>) that is told when the WebSocket of a <see cref="WebSocketStream"/>
+/// stops reading it because its readable stream is full (backpressure), e.g. so that a test server knows that the bytes it
+/// sent are not waiting to be processed.
+/// </summary>
+internal interface IWebSocketReceiveFlowControl
+{
+    /// <summary>The WebSocket stops (true) or resumes (false) reading the connection.</summary>
+    void SetReceivePaused(bool paused);
 }

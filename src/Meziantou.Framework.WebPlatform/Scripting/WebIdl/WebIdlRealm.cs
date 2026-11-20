@@ -550,6 +550,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         {
             DefinePartitionedCacheStorageAttribute(prototype, binding.Name);
         }
+        else if (binding.Name == "WebSocketStream")
+        {
+            DefineWebSocketStreamMembers(prototype);
+        }
 
         binding.InterfaceObjectPropertyCount = Math.Max(binding.InterfaceObjectPropertyCount, Adapter.GetPropertyCount(interfaceObject));
         binding.PrototypePropertyCount = Math.Max(binding.PrototypePropertyCount, Adapter.GetPropertyCount(prototype));

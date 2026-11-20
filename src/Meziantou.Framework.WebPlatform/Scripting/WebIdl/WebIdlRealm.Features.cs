@@ -13,6 +13,8 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     private static readonly FrozenDictionary<string, Func<WebPlatformFeatures, bool>> FeatureInterfaces = new Dictionary<string, Func<WebPlatformFeatures, bool>>(StringComparer.Ordinal)
     {
         ["WebSocket"] = static features => features.WebSocketEnabled,
+        ["WebSocketStream"] = static features => features.WebSocketEnabled,
+        ["WebSocketError"] = static features => features.WebSocketEnabled,
         ["EventSource"] = static features => features.EventSourceEnabled,
         ["NavigatorUAData"] = static features => features.ClientHintsEnabled,
         ["Crypto"] = static features => features.WebCryptoEnabled,

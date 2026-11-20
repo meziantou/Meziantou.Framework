@@ -86,4 +86,7 @@ internal static class ExperimentalApis
 
     /// <summary>The <c>initiatorUrl</c> attribute of <c>PerformanceResourceTiming</c> (https://github.com/w3c/resource-timing/issues/263), which the tentative web-platform-tests of <c>resource-timing/tentative/initiator-url</c> test.</summary>
     public const string ResourceTimingInitiatorUrl = "WEBPLATEXP0026";
+
+    /// <summary><c>WebSocketStream</c> and <c>WebSocketError</c> (https://github.com/whatwg/websockets/pull/48): a WebSocket connection whose messages are read and written with streams.</summary>
+    public const string WebSocketStream = "WEBPLATEXP0027";
 }

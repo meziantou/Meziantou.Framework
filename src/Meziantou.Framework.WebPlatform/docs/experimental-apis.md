@@ -285,3 +285,13 @@ web-platform-tests of `resource-timing/tentative/initiator-url`: the URL of the 
 the URL of the script to which the task that started the fetch is attributed (the script that runs, or the script that
 scheduled the timer, the task, the callback or the asynchronous operation that runs), else the URL of the document or of
 the worker. No specification defines it yet. Its API and behavior may change.
+
+<a id="WEBPLATEXP0027"></a>
+
+## WEBPLATEXP0027: WebSocketStream
+
+`WebSocketStream`, `WebSocketError`, `WebSocketOpenInfo`, `WebSocketCloseInfo` and `WebSocketStreamOptions` implement the
+[proposal](https://github.com/whatwg/websockets/pull/48) of the WebSockets Standard, as tested by the tentative
+web-platform-tests of `websockets/stream`: a WebSocket connection whose messages are read from a `ReadableStream` and written
+to a `WritableStream`, with backpressure, and whose failures are `WebSocketError` exceptions. Chromium ships it. Its API and
+behavior may change while the proposal is under discussion.

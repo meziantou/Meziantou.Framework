@@ -16115,6 +16115,47 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Send(string data) { }
     }
 
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketCloseInfo
+    {
+        public ushort? CloseCode { get => throw null; init { } }
+        public string Reason { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketError : Meziantou.Framework.WebPlatform.Dom.DomException
+    {
+        public ushort? CloseCode { get => throw null; }
+        public string Reason { get => throw null; }
+        public WebSocketError(string? message) { }
+        public WebSocketError(string message, Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo? init) { }
+        public WebSocketError(string? message, System.Exception? innerException) { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketOpenInfo
+    {
+        public string Extensions { get => throw null; init { } }
+        public string Protocol { get => throw null; init { } }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketStream
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo> Closed { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WebSocketOpenInfo> Opened { get => throw null; }
+        public string Url { get => throw null; }
+        public WebSocketStream(string url, Meziantou.Framework.WebPlatform.Dom.WebSocketStreamOptions? options = null) { }
+        public void Close(Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo? closeInfo = null) { }
+    }
+
+    [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0026", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+    public sealed class WebSocketStreamOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? Protocols { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
     public abstract class WebStoragePersistence
     {
         public abstract void ClearAll();

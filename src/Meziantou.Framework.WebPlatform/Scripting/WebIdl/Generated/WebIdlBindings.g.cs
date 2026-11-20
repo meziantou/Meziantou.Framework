@@ -34,10 +34,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["AudioBuffer"] = Binding_AudioBuffer<TAdapter, TValue>.Binding,
             ["AudioBufferSourceNode"] = Binding_AudioBufferSourceNode<TAdapter, TValue>.Binding,
             ["AudioContext"] = Binding_AudioContext<TAdapter, TValue>.Binding,
-            ["AudioData"] = Binding_AudioData<TAdapter, TValue>.Binding,
-            ["AudioDecoder"] = Binding_AudioDecoder<TAdapter, TValue>.Binding,
             ["AudioDestinationNode"] = Binding_AudioDestinationNode<TAdapter, TValue>.Binding,
-            ["AudioEncoder"] = Binding_AudioEncoder<TAdapter, TValue>.Binding,
             ["AudioListener"] = Binding_AudioListener<TAdapter, TValue>.Binding,
             ["AudioNode"] = Binding_AudioNode<TAdapter, TValue>.Binding,
             ["AudioParam"] = Binding_AudioParam<TAdapter, TValue>.Binding,
@@ -61,7 +58,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["BeforeUnloadEvent"] = Binding_BeforeUnloadEvent<TAdapter, TValue>.Binding,
             ["BiquadFilterNode"] = Binding_BiquadFilterNode<TAdapter, TValue>.Binding,
             ["Blob"] = Binding_Blob<TAdapter, TValue>.Binding,
-            ["BlobEvent"] = Binding_BlobEvent<TAdapter, TValue>.Binding,
             ["BreakToken"] = Binding_BreakToken<TAdapter, TValue>.Binding,
             ["BroadcastChannel"] = Binding_BroadcastChannel<TAdapter, TValue>.Binding,
             ["BufferedChangeEvent"] = Binding_BufferedChangeEvent<TAdapter, TValue>.Binding,
@@ -234,8 +230,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["ElementGeometryUpdateEvent"] = Binding_ElementGeometryUpdateEvent<TAdapter, TValue>.Binding,
             ["ElementImage"] = Binding_ElementImage<TAdapter, TValue>.Binding,
             ["ElementInternals"] = Binding_ElementInternals<TAdapter, TValue>.Binding,
-            ["EncodedAudioChunk"] = Binding_EncodedAudioChunk<TAdapter, TValue>.Binding,
-            ["EncodedVideoChunk"] = Binding_EncodedVideoChunk<TAdapter, TValue>.Binding,
             ["ErrorEvent"] = Binding_ErrorEvent<TAdapter, TValue>.Binding,
             ["Event"] = Binding_Event<TAdapter, TValue>.Binding,
             ["EventCounts"] = Binding_EventCounts<TAdapter, TValue>.Binding,
@@ -419,18 +413,11 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["MediaDeviceInfo"] = Binding_MediaDeviceInfo<TAdapter, TValue>.Binding,
             ["MediaDevices"] = Binding_MediaDevices<TAdapter, TValue>.Binding,
             ["MediaElementAudioSourceNode"] = Binding_MediaElementAudioSourceNode<TAdapter, TValue>.Binding,
-            ["MediaEncryptedEvent"] = Binding_MediaEncryptedEvent<TAdapter, TValue>.Binding,
             ["MediaError"] = Binding_MediaError<TAdapter, TValue>.Binding,
-            ["MediaKeyMessageEvent"] = Binding_MediaKeyMessageEvent<TAdapter, TValue>.Binding,
-            ["MediaKeySession"] = Binding_MediaKeySession<TAdapter, TValue>.Binding,
-            ["MediaKeyStatusMap"] = Binding_MediaKeyStatusMap<TAdapter, TValue>.Binding,
-            ["MediaKeySystemAccess"] = Binding_MediaKeySystemAccess<TAdapter, TValue>.Binding,
-            ["MediaKeys"] = Binding_MediaKeys<TAdapter, TValue>.Binding,
             ["MediaList"] = Binding_MediaList<TAdapter, TValue>.Binding,
             ["MediaMetadata"] = Binding_MediaMetadata<TAdapter, TValue>.Binding,
             ["MediaQueryList"] = Binding_MediaQueryList<TAdapter, TValue>.Binding,
             ["MediaQueryListEvent"] = Binding_MediaQueryListEvent<TAdapter, TValue>.Binding,
-            ["MediaRecorder"] = Binding_MediaRecorder<TAdapter, TValue>.Binding,
             ["MediaSession"] = Binding_MediaSession<TAdapter, TValue>.Binding,
             ["MediaSource"] = Binding_MediaSource<TAdapter, TValue>.Binding,
             ["MediaSourceHandle"] = Binding_MediaSourceHandle<TAdapter, TValue>.Binding,
@@ -441,9 +428,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["MediaStreamTrackAudioSourceNode"] = Binding_MediaStreamTrackAudioSourceNode<TAdapter, TValue>.Binding,
             ["MediaStreamTrackAudioStats"] = Binding_MediaStreamTrackAudioStats<TAdapter, TValue>.Binding,
             ["MediaStreamTrackEvent"] = Binding_MediaStreamTrackEvent<TAdapter, TValue>.Binding,
-            ["MediaStreamTrackGenerator"] = Binding_MediaStreamTrackGenerator<TAdapter, TValue>.Binding,
-            ["MediaStreamTrackHandle"] = Binding_MediaStreamTrackHandle<TAdapter, TValue>.Binding,
-            ["MediaStreamTrackProcessor"] = Binding_MediaStreamTrackProcessor<TAdapter, TValue>.Binding,
             ["MediaStreamTrackVideoStats"] = Binding_MediaStreamTrackVideoStats<TAdapter, TValue>.Binding,
             ["MessageChannel"] = Binding_MessageChannel<TAdapter, TValue>.Binding,
             ["MessageEvent"] = Binding_MessageEvent<TAdapter, TValue>.Binding,
@@ -710,12 +694,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["VTTRegion"] = Binding_VTTRegion<TAdapter, TValue>.Binding,
             ["ValidityState"] = Binding_ValidityState<TAdapter, TValue>.Binding,
             ["VideoColorSpace"] = Binding_VideoColorSpace<TAdapter, TValue>.Binding,
-            ["VideoDecoder"] = Binding_VideoDecoder<TAdapter, TValue>.Binding,
-            ["VideoEncoder"] = Binding_VideoEncoder<TAdapter, TValue>.Binding,
             ["VideoFrame"] = Binding_VideoFrame<TAdapter, TValue>.Binding,
             ["VideoPlaybackQuality"] = Binding_VideoPlaybackQuality<TAdapter, TValue>.Binding,
             ["VideoTrack"] = Binding_VideoTrack<TAdapter, TValue>.Binding,
-            ["VideoTrackGenerator"] = Binding_VideoTrackGenerator<TAdapter, TValue>.Binding,
             ["VideoTrackList"] = Binding_VideoTrackList<TAdapter, TValue>.Binding,
             ["ViewTimeline"] = Binding_ViewTimeline<TAdapter, TValue>.Binding,
             ["ViewTransition"] = Binding_ViewTransition<TAdapter, TValue>.Binding,
@@ -728,6 +709,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["WakeLockSentinel"] = Binding_WakeLockSentinel<TAdapter, TValue>.Binding,
             ["WaveShaperNode"] = Binding_WaveShaperNode<TAdapter, TValue>.Binding,
             ["WebSocket"] = Binding_WebSocket<TAdapter, TValue>.Binding,
+            ["WebSocketError"] = Binding_WebSocketError<TAdapter, TValue>.Binding,
+            ["WebSocketStream"] = Binding_WebSocketStream<TAdapter, TValue>.Binding,
             ["WheelEvent"] = Binding_WheelEvent<TAdapter, TValue>.Binding,
             ["Window"] = Binding_Window<TAdapter, TValue>.Binding,
             ["WindowClient"] = Binding_WindowClient<TAdapter, TValue>.Binding,
@@ -863,9 +846,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.AddEventListenerOptions dictionaryDom_AddEventListenerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AddEventListenerOptions(r, dictionaryDom_AddEventListenerOptions);
                 return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit dictionaryDom_BlobEventInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BlobEventInit(r, dictionaryDom_BlobEventInit);
-                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BufferedChangeEventInit dictionaryDom_BufferedChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BufferedChangeEventInit(r, dictionaryDom_BufferedChangeEventInit);
                 return true;
@@ -958,12 +938,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MagnetometerSensorOptions dictionaryDom_MagnetometerSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MagnetometerSensorOptions(r, dictionaryDom_MagnetometerSensorOptions);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaEncryptedEventInit dictionaryDom_MediaEncryptedEventInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaEncryptedEventInit(r, dictionaryDom_MediaEncryptedEventInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageEventInit dictionaryDom_MediaKeyMessageEventInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeyMessageEventInit(r, dictionaryDom_MediaKeyMessageEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackEventInit dictionaryDom_MediaStreamTrackEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaStreamTrackEventInit(r, dictionaryDom_MediaStreamTrackEventInit);
@@ -1535,23 +1509,11 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaImage dictionaryDom_MediaImage:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaImage(r, dictionaryDom_MediaImage);
                 return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration dictionaryDom_MediaKeySystemConfiguration:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeySystemConfiguration(r, dictionaryDom_MediaKeySystemConfiguration);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemMediaCapability dictionaryDom_MediaKeySystemMediaCapability:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeySystemMediaCapability(r, dictionaryDom_MediaKeySystemMediaCapability);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeysPolicy dictionaryDom_MediaKeysPolicy:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaKeysPolicy(r, dictionaryDom_MediaKeysPolicy);
-                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaMetadataInit dictionaryDom_MediaMetadataInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaMetadataInit(r, dictionaryDom_MediaMetadataInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaPositionState dictionaryDom_MediaPositionState:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaPositionState(r, dictionaryDom_MediaPositionState);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaRecorderOptions dictionaryDom_MediaRecorderOptions:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaRecorderOptions(r, dictionaryDom_MediaRecorderOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionActionDetails dictionaryDom_MediaSessionActionDetails:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaSessionActionDetails(r, dictionaryDom_MediaSessionActionDetails);
@@ -1561,12 +1523,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamConstraints dictionaryDom_MediaStreamConstraints:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaStreamConstraints(r, dictionaryDom_MediaStreamConstraints);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackGeneratorInit dictionaryDom_MediaStreamTrackGeneratorInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaStreamTrackGeneratorInit(r, dictionaryDom_MediaStreamTrackGeneratorInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackProcessorInit dictionaryDom_MediaStreamTrackProcessorInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaStreamTrackProcessorInit(r, dictionaryDom_MediaStreamTrackProcessorInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaTrackCapabilities dictionaryDom_MediaTrackCapabilities:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaTrackCapabilities(r, dictionaryDom_MediaTrackCapabilities);
@@ -1865,8 +1821,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ValidityStateFlags dictionaryDom_ValidityStateFlags:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ValidityStateFlags(r, dictionaryDom_ValidityStateFlags);
                 return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.VideoFrameCallbackMetadata dictionaryDom_VideoFrameCallbackMetadata:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_VideoFrameCallbackMetadata(r, dictionaryDom_VideoFrameCallbackMetadata);
+            case global::Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo dictionaryDom_WebSocketCloseInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebSocketCloseInfo(r, dictionaryDom_WebSocketCloseInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.WebSocketOpenInfo dictionaryDom_WebSocketOpenInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebSocketOpenInfo(r, dictionaryDom_WebSocketOpenInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.WebSocketStreamOptions dictionaryDom_WebSocketStreamOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebSocketStreamOptions(r, dictionaryDom_WebSocketStreamOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WorkerOptions dictionaryDom_WorkerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WorkerOptions(r, dictionaryDom_WorkerOptions);
@@ -1913,54 +1875,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebAudio.PeriodicWaveConstraints dictionaryWebAudio_PeriodicWaveConstraints:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebAudio_PeriodicWaveConstraints(r, dictionaryWebAudio_PeriodicWaveConstraints);
                 return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AacEncoderConfig dictionaryWebCodecs_AacEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AacEncoderConfig(r, dictionaryWebCodecs_AacEncoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioDataCopyToOptions dictionaryWebCodecs_AudioDataCopyToOptions:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioDataCopyToOptions(r, dictionaryWebCodecs_AudioDataCopyToOptions);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioDataInit dictionaryWebCodecs_AudioDataInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioDataInit(r, dictionaryWebCodecs_AudioDataInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderConfig dictionaryWebCodecs_AudioDecoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioDecoderConfig(r, dictionaryWebCodecs_AudioDecoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderInit dictionaryWebCodecs_AudioDecoderInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioDecoderInit(r, dictionaryWebCodecs_AudioDecoderInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderSupport dictionaryWebCodecs_AudioDecoderSupport:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioDecoderSupport(r, dictionaryWebCodecs_AudioDecoderSupport);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderConfig dictionaryWebCodecs_AudioEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioEncoderConfig(r, dictionaryWebCodecs_AudioEncoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderInit dictionaryWebCodecs_AudioEncoderInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioEncoderInit(r, dictionaryWebCodecs_AudioEncoderInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderSupport dictionaryWebCodecs_AudioEncoderSupport:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioEncoderSupport(r, dictionaryWebCodecs_AudioEncoderSupport);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AvcEncoderConfig dictionaryWebCodecs_AvcEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AvcEncoderConfig(r, dictionaryWebCodecs_AvcEncoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkInit dictionaryWebCodecs_EncodedAudioChunkInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_EncodedAudioChunkInit(r, dictionaryWebCodecs_EncodedAudioChunkInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkMetadata dictionaryWebCodecs_EncodedAudioChunkMetadata:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_EncodedAudioChunkMetadata(r, dictionaryWebCodecs_EncodedAudioChunkMetadata);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkInit dictionaryWebCodecs_EncodedVideoChunkInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_EncodedVideoChunkInit(r, dictionaryWebCodecs_EncodedVideoChunkInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkMetadata dictionaryWebCodecs_EncodedVideoChunkMetadata:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_EncodedVideoChunkMetadata(r, dictionaryWebCodecs_EncodedVideoChunkMetadata);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.FlacEncoderConfig dictionaryWebCodecs_FlacEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_FlacEncoderConfig(r, dictionaryWebCodecs_FlacEncoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.HevcEncoderConfig dictionaryWebCodecs_HevcEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_HevcEncoderConfig(r, dictionaryWebCodecs_HevcEncoderConfig);
-                return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeOptions dictionaryWebCodecs_ImageDecodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecodeOptions(r, dictionaryWebCodecs_ImageDecodeOptions);
                 return true;
@@ -1970,59 +1884,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecoderInit dictionaryWebCodecs_ImageDecoderInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecoderInit(r, dictionaryWebCodecs_ImageDecoderInit);
                 return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.OpusEncoderConfig dictionaryWebCodecs_OpusEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_OpusEncoderConfig(r, dictionaryWebCodecs_OpusEncoderConfig);
-                return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout dictionaryWebCodecs_PlaneLayout:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryWebCodecs_PlaneLayout);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.SvcOutputMetadata dictionaryWebCodecs_SvcOutputMetadata:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_SvcOutputMetadata(r, dictionaryWebCodecs_SvcOutputMetadata);
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorSpaceInit dictionaryWebCodecs_VideoColorSpaceInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoColorSpaceInit(r, dictionaryWebCodecs_VideoColorSpaceInit);
                 return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderConfig dictionaryWebCodecs_VideoDecoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoDecoderConfig(r, dictionaryWebCodecs_VideoDecoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderInit dictionaryWebCodecs_VideoDecoderInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoDecoderInit(r, dictionaryWebCodecs_VideoDecoderInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderSupport dictionaryWebCodecs_VideoDecoderSupport:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoDecoderSupport(r, dictionaryWebCodecs_VideoDecoderSupport);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderConfig dictionaryWebCodecs_VideoEncoderConfig:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderConfig(r, dictionaryWebCodecs_VideoEncoderConfig);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptions dictionaryWebCodecs_VideoEncoderEncodeOptions:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderEncodeOptions(r, dictionaryWebCodecs_VideoEncoderEncodeOptions);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForAv1 dictionaryWebCodecs_VideoEncoderEncodeOptionsForAv1:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderEncodeOptionsForAv1(r, dictionaryWebCodecs_VideoEncoderEncodeOptionsForAv1);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForAvc dictionaryWebCodecs_VideoEncoderEncodeOptionsForAvc:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderEncodeOptionsForAvc(r, dictionaryWebCodecs_VideoEncoderEncodeOptionsForAvc);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForHevc dictionaryWebCodecs_VideoEncoderEncodeOptionsForHevc:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderEncodeOptionsForHevc(r, dictionaryWebCodecs_VideoEncoderEncodeOptionsForHevc);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderEncodeOptionsForVp9 dictionaryWebCodecs_VideoEncoderEncodeOptionsForVp9:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderEncodeOptionsForVp9(r, dictionaryWebCodecs_VideoEncoderEncodeOptionsForVp9);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderInit dictionaryWebCodecs_VideoEncoderInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderInit(r, dictionaryWebCodecs_VideoEncoderInit);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderSupport dictionaryWebCodecs_VideoEncoderSupport:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderSupport(r, dictionaryWebCodecs_VideoEncoderSupport);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameBufferInit dictionaryWebCodecs_VideoFrameBufferInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoFrameBufferInit(r, dictionaryWebCodecs_VideoFrameBufferInit);
-                return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameCopyToOptions dictionaryWebCodecs_VideoFrameCopyToOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoFrameCopyToOptions(r, dictionaryWebCodecs_VideoFrameCopyToOptions);
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameInit dictionaryWebCodecs_VideoFrameInit:
-                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoFrameInit(r, dictionaryWebCodecs_VideoFrameInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameMetadata dictionaryWebCodecs_VideoFrameMetadata:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoFrameMetadata(r, dictionaryWebCodecs_VideoFrameMetadata);
@@ -2234,21 +2103,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceKind enumDom_MediaDeviceKind:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaDeviceKind(enumDom_MediaDeviceKind));
                 return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeyMessageType enumDom_MediaKeyMessageType:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyMessageType(enumDom_MediaKeyMessageType));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason enumDom_MediaKeySessionClosedReason:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionClosedReason(enumDom_MediaKeySessionClosedReason));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionType enumDom_MediaKeySessionType:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionType(enumDom_MediaKeySessionType));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus enumDom_MediaKeyStatus:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyStatus(enumDom_MediaKeyStatus));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.MediaKeysRequirement enumDom_MediaKeysRequirement:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeysRequirement(enumDom_MediaKeysRequirement));
-                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MediaSessionAction enumDom_MediaSessionAction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaSessionAction(enumDom_MediaSessionAction));
                 return true;
@@ -2329,9 +2183,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PressureState enumDom_PressureState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PressureState(enumDom_PressureState));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.Dom.RecordingState enumDom_RecordingState:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RecordingState(enumDom_RecordingState));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.RedEyeReduction enumDom_RedEyeReduction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_RedEyeReduction(enumDom_RedEyeReduction));
@@ -2468,53 +2319,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.WebAudio.PanningModelType enumWebAudio_PanningModelType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebAudio_PanningModelType(enumWebAudio_PanningModelType));
                 return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AacBitstreamFormat enumWebCodecs_AacBitstreamFormat:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_AacBitstreamFormat(enumWebCodecs_AacBitstreamFormat));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AlphaOption enumWebCodecs_AlphaOption:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_AlphaOption(enumWebCodecs_AlphaOption));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AudioSampleFormat enumWebCodecs_AudioSampleFormat:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_AudioSampleFormat(enumWebCodecs_AudioSampleFormat));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.AvcBitstreamFormat enumWebCodecs_AvcBitstreamFormat:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_AvcBitstreamFormat(enumWebCodecs_AvcBitstreamFormat));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.BitrateMode enumWebCodecs_BitrateMode:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_BitrateMode(enumWebCodecs_BitrateMode));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.CodecState enumWebCodecs_CodecState:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_CodecState(enumWebCodecs_CodecState));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.EncodedAudioChunkType enumWebCodecs_EncodedAudioChunkType:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_EncodedAudioChunkType(enumWebCodecs_EncodedAudioChunkType));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.EncodedVideoChunkType enumWebCodecs_EncodedVideoChunkType:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_EncodedVideoChunkType(enumWebCodecs_EncodedVideoChunkType));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.HardwareAcceleration enumWebCodecs_HardwareAcceleration:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_HardwareAcceleration(enumWebCodecs_HardwareAcceleration));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.HevcBitstreamFormat enumWebCodecs_HevcBitstreamFormat:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_HevcBitstreamFormat(enumWebCodecs_HevcBitstreamFormat));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.LatencyMode enumWebCodecs_LatencyMode:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_LatencyMode(enumWebCodecs_LatencyMode));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.OpusApplication enumWebCodecs_OpusApplication:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_OpusApplication(enumWebCodecs_OpusApplication));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.OpusBitstreamFormat enumWebCodecs_OpusBitstreamFormat:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_OpusBitstreamFormat(enumWebCodecs_OpusBitstreamFormat));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.OpusSignal enumWebCodecs_OpusSignal:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_OpusSignal(enumWebCodecs_OpusSignal));
-                return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoColorPrimaries enumWebCodecs_VideoColorPrimaries:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoColorPrimaries(enumWebCodecs_VideoColorPrimaries));
-                return true;
-            case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderBitrateMode enumWebCodecs_VideoEncoderBitrateMode:
-                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoEncoderBitrateMode(enumWebCodecs_VideoEncoderBitrateMode));
                 return true;
             case global::Meziantou.Framework.WebPlatform.WebCodecs.VideoMatrixCoefficients enumWebCodecs_VideoMatrixCoefficients:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_WebCodecs_VideoMatrixCoefficients(enumWebCodecs_VideoMatrixCoefficients));
@@ -2594,18 +2400,6 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.LockManagerSnapshot> taskSystem_Threading_Tasks_Task_Dom_LockManagerSnapshot_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_LockManagerSnapshot_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_LockManagerSnapshot(r, dictionaryValue) : r.Adapter.Null));
                 return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason> taskSystem_Threading_Tasks_Task_Dom_MediaKeySessionClosedReason_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeySessionClosedReason_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionClosedReason(v)));
-                return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus> taskSystem_Threading_Tasks_Task_Dom_MediaKeyStatus_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeyStatus_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeyStatus(v)));
-                return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess> taskSystem_Threading_Tasks_Task_Dom_MediaKeySystemAccess_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeySystemAccess_, static (r, v) => r.Wrap(v));
-                return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeys> taskSystem_Threading_Tasks_Task_Dom_MediaKeys_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeys_, static (r, v) => r.Wrap(v));
-                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaStream> taskSystem_Threading_Tasks_Task_Dom_MediaStream_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaStream_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2654,6 +2448,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WakeLockSentinel> taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_, static (r, v) => r.Wrap(v));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo> taskSystem_Threading_Tasks_Task_Dom_WebSocketCloseInfo_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WebSocketCloseInfo_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebSocketCloseInfo(r, dictionaryValue) : r.Adapter.Null));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.Window> taskSystem_Threading_Tasks_Task_Dom_Window_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_Window_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2663,20 +2460,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebAudio.AudioBuffer> taskSystem_Threading_Tasks_Task_WebAudio_AudioBuffer_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebAudio_AudioBuffer_, static (r, v) => r.Wrap(v));
                 return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebCodecs.AudioDecoderSupport> taskSystem_Threading_Tasks_Task_WebCodecs_AudioDecoderSupport_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebCodecs_AudioDecoderSupport_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioDecoderSupport(r, dictionaryValue) : r.Adapter.Null));
-                return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebCodecs.AudioEncoderSupport> taskSystem_Threading_Tasks_Task_WebCodecs_AudioEncoderSupport_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebCodecs_AudioEncoderSupport_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_AudioEncoderSupport(r, dictionaryValue) : r.Adapter.Null));
-                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebCodecs.ImageDecodeResult> taskSystem_Threading_Tasks_Task_WebCodecs_ImageDecodeResult_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebCodecs_ImageDecodeResult_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_ImageDecodeResult(r, dictionaryValue) : r.Adapter.Null));
-                return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebCodecs.VideoDecoderSupport> taskSystem_Threading_Tasks_Task_WebCodecs_VideoDecoderSupport_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebCodecs_VideoDecoderSupport_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoDecoderSupport(r, dictionaryValue) : r.Adapter.Null));
-                return true;
-            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.WebCodecs.VideoEncoderSupport> taskSystem_Threading_Tasks_Task_WebCodecs_VideoEncoderSupport_:
-                result = r.ToPromise(taskSystem_Threading_Tasks_Task_WebCodecs_VideoEncoderSupport_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_VideoEncoderSupport(r, dictionaryValue) : r.Adapter.Null));
                 return true;
             case global::System.Threading.Tasks.Task<bool> taskSystem_Threading_Tasks_Task_bool_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_bool_, static (r, v) => r.FromBoolean(v));

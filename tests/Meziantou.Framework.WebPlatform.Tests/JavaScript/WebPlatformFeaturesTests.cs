@@ -10,7 +10,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
 {
     private const string ProbeScript = """
         const probes = {
-          WebSocketEnabled: typeof WebSocket,
+          WebSocketEnabled: typeof WebSocket + typeof WebSocketStream + typeof WebSocketError,
           EventSourceEnabled: typeof EventSource,
           BeaconEnabled: typeof navigator.sendBeacon + ('sendBeacon' in navigator),
           ClientHintsEnabled: typeof navigator.userAgentData + typeof NavigatorUAData + ('userAgentData' in navigator),

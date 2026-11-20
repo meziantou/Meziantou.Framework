@@ -14,6 +14,13 @@ internal sealed class WebSocketFrameObserver(Stream stream) : Stream
     private int _headerLength;
     private long _remainingPayload;
 
+    /// <summary>
+    /// Gets whether disposing the observer disposes the connection (the default). The connection of a <see cref="WebSocket"/>
+    /// is disposed by the WebSocket once the task that reports its end is queued: <see cref="System.Net.WebSockets.WebSocket"/>
+    /// disposes its stream when the closing handshake completes or the connection fails, before the WebSocket learns it.
+    /// </summary>
+    public bool OwnsStream { get; init; } = true;
+
     /// <summary>Gets whether the last Close frame that was read has a status code (a payload of at least 2 bytes).</summary>
     public bool LastCloseFrameHasStatusCode { get; private set; }
 
@@ -69,7 +76,7 @@ internal sealed class WebSocketFrameObserver(Stream stream) : Stream
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing)
+        if (disposing && OwnsStream)
         {
             stream.Dispose();
         }

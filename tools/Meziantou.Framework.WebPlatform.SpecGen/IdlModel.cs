@@ -413,6 +413,7 @@ internal sealed partial class IdlModel
         AddHtmlInCanvas(model);
         AddFedCmNonce(model);
         AddInsertableStreamsExtensions(model);
+        AddWebSocketStream(model);
         return model;
     }
 
@@ -530,6 +531,129 @@ internal sealed partial class IdlModel
             Href = Href,
             SpecUrl = Href,
         };
+    }
+
+    /// <summary>
+    /// <c>WebSocketStream</c> and <c>WebSocketError</c>, proposed for the WebSockets Standard
+    /// (https://github.com/whatwg/websockets/pull/48), which the tentative web-platform-tests of <c>websockets/stream</c> test:
+    /// <code>
+    /// dictionary WebSocketOpenInfo { ReadableStream readable; WritableStream writable; DOMString extensions; DOMString protocol; };
+    /// dictionary WebSocketCloseInfo { [EnforceRange] unsigned short closeCode; USVString reason = ""; };
+    /// dictionary WebSocketStreamOptions { sequence&lt;USVString&gt; protocols; AbortSignal signal; };
+    /// [Exposed=(Window,Worker)] interface WebSocketStream {
+    ///   constructor(USVString url, optional WebSocketStreamOptions options = {});
+    ///   readonly attribute USVString url;
+    ///   readonly attribute Promise&lt;WebSocketOpenInfo&gt; opened;
+    ///   readonly attribute Promise&lt;WebSocketCloseInfo&gt; closed;
+    ///   undefined close(optional WebSocketCloseInfo closeInfo = {});
+    /// };
+    /// [Exposed=(Window,Worker)] interface WebSocketError : DOMException {
+    ///   constructor(optional DOMString message = "", optional WebSocketCloseInfo init = {});
+    ///   readonly attribute unsigned short? closeCode;
+    ///   readonly attribute USVString reason;
+    /// };
+    /// </code>
+    /// </summary>
+    private static void AddWebSocketStream(IdlModel model)
+    {
+        const string SpecUrl = "https://whatpr.org/websockets/48.html";
+        const string Experimental = "WebSocketStream";
+        if (!model.Definitions.TryGetValue("WebSocket", out var webSocket) || model.Definitions.ContainsKey("WebSocketStream"))
+            return;
+
+        var source = webSocket.Source;
+        using var emptyDictionary = JsonDocument.Parse("""{"type":"dictionary"}""");
+        using var emptyString = JsonDocument.Parse("""{"type":"string","value":""}""");
+        var emptyDictionaryDefault = emptyDictionary.RootElement.Clone();
+        var emptyStringDefault = emptyString.RootElement.Clone();
+        var exposed = new IdlExtendedAttribute { Name = "Exposed", Values = ["Window", "Worker"] };
+
+        IdlType Type(string name, bool nullable = false, List<IdlExtendedAttribute>? extAttrs = null) => new() { Name = name, Nullable = nullable, ExtAttrs = extAttrs ?? [] };
+        IdlType Promise(string name) => new() { Generic = "Promise", Subtypes = [Type(name)] };
+        IdlMember Field(string declaring, string name, IdlType type, JsonElement? defaultValue = null) => new()
+        {
+            Kind = IdlMemberKind.Field,
+            Name = name,
+            Type = type,
+            Default = defaultValue,
+            Source = source,
+            DeclaringDefinition = declaring,
+            Href = SpecUrl + "#dom-" + declaring.ToLowerInvariant() + "-" + name.ToLowerInvariant(),
+        };
+        IdlMember Attribute(string declaring, string name, IdlType type) => new()
+        {
+            Kind = IdlMemberKind.Attribute,
+            Name = name,
+            Type = type,
+            Readonly = true,
+            Source = source,
+            DeclaringDefinition = declaring,
+            Href = SpecUrl + "#dom-" + declaring.ToLowerInvariant() + "-" + name.ToLowerInvariant(),
+        };
+        IdlMember Constructor(string declaring, List<IdlArgument> arguments) => new()
+        {
+            Kind = IdlMemberKind.Constructor,
+            Arguments = arguments,
+            Source = source,
+            DeclaringDefinition = declaring,
+            Href = SpecUrl + "#dom-" + declaring.ToLowerInvariant() + "-" + declaring.ToLowerInvariant(),
+        };
+        void AddDefinition(string name, IdlDefinitionKind kind, List<IdlMember> members, string? inheritance = null, List<IdlExtendedAttribute>? extAttrs = null)
+        {
+            model.Definitions[name] = new IdlDefinition
+            {
+                Name = name,
+                Kind = kind,
+                Inheritance = inheritance,
+                Members = members,
+                ExtAttrs = extAttrs ?? [],
+                Href = SpecUrl + "#" + (kind == IdlDefinitionKind.Dictionary ? "dictdef-" : "") + name.ToLowerInvariant(),
+                Source = source,
+                SpecUrl = SpecUrl,
+                ExperimentalApi = Experimental,
+            };
+        }
+
+        AddDefinition("WebSocketOpenInfo", IdlDefinitionKind.Dictionary,
+        [
+            Field("WebSocketOpenInfo", "readable", Type("ReadableStream")),
+            Field("WebSocketOpenInfo", "writable", Type("WritableStream")),
+            Field("WebSocketOpenInfo", "extensions", Type("DOMString")),
+            Field("WebSocketOpenInfo", "protocol", Type("DOMString")),
+        ]);
+        AddDefinition("WebSocketCloseInfo", IdlDefinitionKind.Dictionary,
+        [
+            Field("WebSocketCloseInfo", "closeCode", Type("unsigned short", extAttrs: [new IdlExtendedAttribute { Name = "EnforceRange" }])),
+            Field("WebSocketCloseInfo", "reason", Type("USVString"), emptyStringDefault),
+        ]);
+        AddDefinition("WebSocketStreamOptions", IdlDefinitionKind.Dictionary,
+        [
+            Field("WebSocketStreamOptions", "protocols", new IdlType { Generic = "sequence", Subtypes = [Type("USVString")] }),
+            Field("WebSocketStreamOptions", "signal", Type("AbortSignal")),
+        ]);
+        AddDefinition("WebSocketStream", IdlDefinitionKind.Interface,
+        [
+            Constructor("WebSocketStream", [new IdlArgument { Name = "url", Type = Type("USVString") }, new IdlArgument { Name = "options", Type = Type("WebSocketStreamOptions"), Optional = true, Default = emptyDictionaryDefault }]),
+            Attribute("WebSocketStream", "url", Type("USVString")),
+            Attribute("WebSocketStream", "opened", Promise("WebSocketOpenInfo")),
+            Attribute("WebSocketStream", "closed", Promise("WebSocketCloseInfo")),
+            new IdlMember
+            {
+                Kind = IdlMemberKind.Operation,
+                Name = "close",
+                Type = Type("undefined"),
+                Arguments = [new IdlArgument { Name = "closeInfo", Type = Type("WebSocketCloseInfo"), Optional = true, Default = emptyDictionaryDefault }],
+                Source = source,
+                DeclaringDefinition = "WebSocketStream",
+                Href = SpecUrl + "#dom-websocketstream-close",
+            },
+        ], extAttrs: [exposed]);
+        AddDefinition("WebSocketError", IdlDefinitionKind.Interface,
+        [
+            Constructor("WebSocketError", [new IdlArgument { Name = "message", Type = Type("DOMString"), Optional = true, Default = emptyStringDefault }, new IdlArgument { Name = "init", Type = Type("WebSocketCloseInfo"), Optional = true, Default = emptyDictionaryDefault }]),
+            Attribute("WebSocketError", "closeCode", Type("unsigned short", nullable: true)),
+            Attribute("WebSocketError", "reason", Type("USVString")),
+        ], inheritance: "DOMException", extAttrs: [exposed]);
     }
 
     /// <summary>

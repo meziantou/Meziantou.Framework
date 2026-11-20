@@ -302,6 +302,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.Data\Meziantou.Framework.Geo.Maps.Data.Zimbabwe\Meziantou.Framework.Geo.Maps.Data.Zimbabwe.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.GeoPackage\Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Graphviz\Meziantou.Framework.Graphviz.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.HtmlToMarkdown\Meziantou.Framework.HtmlToMarkdown.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
@@ -668,6 +669,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.Data.Zimbabwe" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.GeoPackage" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Graphviz" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Hashing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.HtmlToMarkdown" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />

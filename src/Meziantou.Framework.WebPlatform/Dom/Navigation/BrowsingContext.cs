@@ -1590,6 +1590,18 @@ public sealed partial class BrowsingContext : IDisposable
         // navigation loads the blob even if the URL is revoked before the document is loaded
         var blobUrlEntry = url.Scheme == "blob" ? BlobUrls.Resolve(url) : null;
 
+        // https://fetch.spec.whatwg.org/#concept-scheme-fetch: the navigation of a child navigable obtains the blob in the
+        // partition of its reserved environment (https://w3c.github.io/FileAPI/#check-for-same-partition-blob-url-usage); a
+        // top-level navigation is not checked. A blob of another partition is a network error.
+        if (blobUrlEntry is { Environment.Origin: { IsOpaque: false } blobOrigin } && Parent is not null)
+        {
+            var nonce = IsCredentiallessNavigable && Top.Window is { } topLevelWindow ? topLevelWindow.PageCredentiallessNonce : (Guid?)null;
+            if (blobUrlEntry.StorageKey != StorageKey.Create(blobOrigin, nonce, this, isNavigable: true))
+            {
+                blobUrlEntry = null;
+            }
+        }
+
         // A traversal (e.g. a reload) uses the URL of the session history entry, whose blob URL entry was resolved when the
         // document was loaded: the document is loaded again even if the URL was revoked since
         if (blobUrlEntry is null && url.Scheme == "blob" && traversalEntry?.DocumentState.Document is { UrlBlobEntry: { } documentBlobUrlEntry } traversedDocument && traversedDocument.Url == url.Serialize())

@@ -278,7 +278,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             // https://fetch.spec.whatwg.org/#fetch-method: the requests of a service worker are not handled by service workers
             ServiceWorkersMode = GlobalScope is ServiceWorkerGlobalScope ? ServiceWorkersMode.None : ServiceWorkersMode.All,
             Integrity = Adapter.ToString(Adapter.Get(serialized, Key("integrity"))),
-            BlobUrlEntry = Unwrap(Adapter.Get(serialized, Key("blob"))) is Blob blob ? new BlobUrlEntry(blob, document) : null,
+            BlobUrlEntry = Unwrap(Adapter.Get(serialized, Key("blob"))) is Blob blob ? GetBlobUrlEntry(document, urlList[0], blob) : null,
             RedirectMode = Adapter.ToString(Adapter.Get(serialized, Key("redirect"))) switch
             {
                 "error" => FetchRedirectMode.Error,
@@ -503,6 +503,14 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }));
         return result;
     }
+
+    /// <summary>
+    /// The blob URL entry of the URL of a <c>Request</c> object, resolved when the object was created: the entry of the store
+    /// when the URL still references the blob (its environment and its partition are checked by the fetch), else an entry
+    /// of the client (the URL was revoked after the object was created).
+    /// </summary>
+    private static BlobUrlEntry GetBlobUrlEntry(Document document, UrlRecord url, Blob blob)
+        => BlobUrlStore.Get(document).Resolve(url) is { } entry && ReferenceEquals(entry.Object, blob) ? entry : new BlobUrlEntry(blob, document, StorageKey.Obtain(document));
 
     /// <summary>
     /// Converts a response of the fetch algorithm to the object read by Fetch.js. The chunks of a body that arrives over time

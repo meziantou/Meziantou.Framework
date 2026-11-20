@@ -487,6 +487,29 @@ internal static class Fetching
         return blocked;
     }
 
+    /// <summary>
+    /// https://fetch.spec.whatwg.org/#concept-scheme-fetch, "blob": whether the blob URL entry can be obtained by the environment
+    /// of the request (https://w3c.github.io/FileAPI/#blob-url-obtain-object): the reserved client of a navigation of a child
+    /// navigable (the environment of the origin of the URL in that navigable), or the client of the request.
+    /// </summary>
+    private static bool IsBlobUrlEntryAuthorized(FetchRequest request, FileApi.BlobUrlEntry entry)
+    {
+        if (request.Destination == RequestDestination.Document)
+            return true;
+
+        if (request.Mode == RequestMode.Navigate)
+            return entry.Environment.Origin.IsOpaque || entry.StorageKey == StorageKey.ForRequest(entry.Environment.Origin, request);
+
+        if (request.Client is not { } client)
+            return false;
+
+        // A top-level document that fetches its own URL ("top-level-self-fetch")
+        if (client.BrowsingContext is { Parent: null } && client.WorkerGlobal is null && client.Url == request.CurrentUrl.Serialize())
+            return true;
+
+        return FileApi.BlobUrlStore.IsSamePartition(entry, client);
+    }
+
     /// <summary>https://fetch.spec.whatwg.org/#concept-scheme-fetch</summary>
     private static async Task<FetchResponse> SchemeFetchAsync(FetchRequest request, CancellationToken cancellationToken)
     {
@@ -515,6 +538,12 @@ internal static class Fetching
                 // not authorized for the request of an environment (e.g. a cross-origin blob: URL loaded by a script element).
                 // The navigations are not checked: the environment of their reserved client has no origin yet.
                 if (request.Mode != RequestMode.Navigate && (request.Client is not { } blobRequestClient || !OriginRecord.IsSameOrigin(entry.Environment.Origin, blobRequestClient.Origin)))
+                    return FetchResponse.NetworkError();
+
+                // https://fetch.spec.whatwg.org/#concept-scheme-fetch: the blob URL of another partition is not authorized for the
+                // environment of the request (https://w3c.github.io/FileAPI/#check-for-same-partition-blob-url-usage), except for
+                // a top-level navigation and for the fetch of the URL of a top-level document by itself
+                if (!IsBlobUrlEntryAuthorized(request, entry))
                     return FetchResponse.NetworkError();
 
                 var blob = entry.Object;

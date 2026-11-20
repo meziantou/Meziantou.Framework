@@ -368,6 +368,14 @@ public sealed partial class Window : GlobalScope
         var tokenizedFeatures = WindowFeatures.Tokenize(features);
         var noreferrer = tokenizedFeatures.Remove("noreferrer", out var noreferrerValue) && WindowFeatures.ParseBoolean(noreferrerValue);
         var noopener = tokenizedFeatures.Remove("noopener", out var noopenerValue) && WindowFeatures.ParseBoolean(noopenerValue);
+
+        // https://html.spec.whatwg.org/multipage/nav-history-apis.html#get-noopener-for-window-open: the blob URL of an origin
+        // that is not same site with the top-level origin is opened without opener
+        if (Html.HyperlinkElementUtils.IsCrossSiteBlobUrl(sourceDocument, urlRecord))
+        {
+            noopener = true;
+        }
+
         var referrerPolicy = "";
         if (noreferrer)
         {

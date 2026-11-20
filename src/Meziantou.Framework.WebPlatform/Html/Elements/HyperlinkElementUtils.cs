@@ -136,7 +136,7 @@ internal static class HyperlinkElementUtils
         if (GetUrl(element) is not { } url)
             return;
 
-        if (currentNavigable.ChooseNavigable(target, GetNoopener(element, target), out _) is not { } targetNavigable)
+        if (currentNavigable.ChooseNavigable(target, GetNoopener(element, url, target), out _) is not { } targetNavigable)
             return;
 
         // The ping URLs are parsed before the navigation, which may unload the document of the element
@@ -234,12 +234,28 @@ internal static class HyperlinkElementUtils
     /// https://html.spec.whatwg.org/multipage/links.html#get-an-element's-noopener: the noopener and noreferrer link types,
     /// and the <c>_blank</c> target without the opener link type, do not set the opener of a new browsing context.
     /// </summary>
-    internal static bool GetNoopener(Element element, string target)
+    internal static bool GetNoopener(Element element, Urls.UrlRecord? url, string target)
     {
         if (HasLinkType(element, "noopener") || HasLinkType(element, "noreferrer"))
             return true;
 
-        return !HasLinkType(element, "opener") && Infra.InfraAscii.EqualsIgnoreAsciiCase(target, "_blank");
+        if (!HasLinkType(element, "opener") && Infra.InfraAscii.EqualsIgnoreAsciiCase(target, "_blank"))
+            return true;
+
+        return IsCrossSiteBlobUrl(element.NodeDocument, url);
+    }
+
+    /// <summary>
+    /// Whether <paramref name="url"/> is a blob URL whose entry was created by an origin that is not same site with the
+    /// top-level origin of <paramref name="sourceDocument"/>: it is opened without opener (https://html.spec.whatwg.org/multipage/links.html#get-an-element's-noopener,
+    /// https://html.spec.whatwg.org/multipage/nav-history-apis.html#get-noopener-for-window-open).
+    /// </summary>
+    internal static bool IsCrossSiteBlobUrl(Document sourceDocument, Urls.UrlRecord? url)
+    {
+        if (url is not { Scheme: "blob" } || Dom.FileApi.BlobUrlStore.Get(sourceDocument).Resolve(url) is not { } entry)
+            return false;
+
+        return !OriginRecord.IsSameSite(entry.Environment.Origin, sourceDocument.TopLevelOrigin);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/links.html#get-an-element's-target</summary>

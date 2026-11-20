@@ -151,8 +151,10 @@ Assert.Equal("InvalidStateError", Assert.Throws<DomException>(() => handle.Sessi
   `cookies` is requested. `document.hasUnpartitionedCookieAccess()` is `document.hasStorageAccess()`.
 - A `storage` event of an area of a handle is fired at the window of the frame, with the handle's `Storage` object as
   `storageArea`.
-- The blob URLs are not partitioned: `createObjectURL()` and `revokeObjectURL()` of a handle are the ones of `URL`. The
-  `sameSiteCookies` option of the shared workers is not implemented.
+- `createObjectURL()` and `revokeObjectURL()` of a handle create and revoke the blob URLs of the first-party contexts of
+  the origin. A frame that has storage access, of the top-level site but embedded by a frame of another site, can fetch
+  the blob URLs of the first-party contexts; it revokes them only through the handle. The `sameSiteCookies` option of the
+  shared workers is not implemented.
 
 ## Local storage and session storage
 
@@ -186,6 +188,11 @@ of `https://top.example` does not see the local storage, the session storage, th
 origin private file system, the `BroadcastChannel` messages and the service workers of `https://embed.example` when it is
 the top-level page, nor the ones of the frames of `https://embed.example` in the pages of another site. The storage of a
 frame of the top-level site whose parent frame is of another site is partitioned too.
+
+The blob URLs are partitioned the same way ([FileAPI](https://w3c.github.io/FileAPI/#check-for-same-partition-blob-url-usage)):
+a document or a worker of another partition cannot fetch nor revoke a URL created by `URL.createObjectURL()` (a frame
+navigated to it gets a network error), except for a top-level navigation. A link or `window.open()` opens a blob URL whose
+origin is not same site with the top-level page without opener.
 
 - [StorageShed.GetItems](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetItems), [SetItem](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.SetItem) and [GetOrigins](cref:Meziantou.Framework.WebPlatform.Dom.StorageShed.GetOrigins) only give the items of the top-level pages (the first-party storage).
 - The partitioned items of the local storage, and the partitioned service worker registrations, are kept in memory: they

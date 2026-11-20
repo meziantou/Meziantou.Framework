@@ -4553,6 +4553,54 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.InRange(samples[jump], 148f, 150f);
     }
 
+    [Fact]
+    public async Task MediaRecorder_PauseBetweenTwoSamples_KeepsTheAudioAndTheSourceTogether()
+    {
+        // The samples of the microphone are their position / 1000 (48 per millisecond): the recorded samples tell where the recorder read
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => window.stream = stream);");
+
+        // The tracks are sampled every 34 ms: the recording is paused at 50 ms, between two samples, for 1 s, then records 400 ms more
+        Run(document, "record(stream, { mimeType: 'audio/webm;codecs=opus' });");
+        Advance(clock, document, 50);
+        Run(document, "recorder.pause();");
+        Advance(clock, document, 1000);
+        Run(document, "recorder.resume();");
+        Advance(clock, document, 400);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+              let binary = '';
+              for (const b of bytes) binary += String.fromCharCode(b);
+              document.title = btoa(binary);
+            };
+            recorder.stop();
+            """);
+
+        var samples = WebMReader.ReadBlocks(Convert.FromBase64String(document.Title))
+            .Where(block => block.Track == 2)
+            .SelectMany(block => Enumerable.Range(0, block.Frame.Length / 4).Select(i => BinaryPrimitives.ReadSingleLittleEndian(block.Frame.AsSpan(i * 4))))
+            .ToArray();
+
+        // The audio before the pause is recorded up to the pause (50 ms), and continues from the live position of the source at the resume (1050 ms)
+        var jump = Enumerable.Range(1, samples.Length - 1).Single(i => samples[i] - samples[i - 1] > 1);
+        Assert.Equal(50 * 48, jump);
+        Assert.InRange(samples[jump], 1050 * 48 / 1000f, (1050 * 48 / 1000f) + 0.1f);
+
+        // After the resume, the reads never get ahead of the live position of the source (1450 ms when the recording stops),
+        // and the recorded audio lasts as long as the time recorded, without the pause
+        Assert.True(samples[^1] < 1450 * 48 / 1000f, FormattableString.Invariant($"The last sample is ahead of the source: {samples[^1]}"));
+        Assert.InRange(samples.Length, (50 + 400 - 34) * 48, (50 + 400) * 48);
+        Assert.All(Enumerable.Range(jump + 1, samples.Length - jump - 1), i => Assert.Equal(samples[i - 1] + 0.001f, samples[i], 0.0005f));
+    }
+
     // MediaStreamTrack Insertable Streams
 
     [Fact]

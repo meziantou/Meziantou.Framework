@@ -724,7 +724,29 @@ public sealed class MediaRecorder : EventTarget
             _timer = _recorder._global.SetTimeout(Sample, 0);
         }
 
-        public void Pause() => _pausedAt ??= _clock.GetTimestamp();
+        public void Pause()
+        {
+            if (_pausedAt is not null)
+                return;
+
+            // The audio up to the pause is recorded now: after the pause, the source is read from its live position, and the
+            // timestamps of the recording continue from the time of the pause (the two advance together)
+            if (_gathering && _sampleCount > 0)
+            {
+                try
+                {
+                    RecordAudio(RecordingTime);
+                }
+#pragma warning disable CA1031 // A failure of the codecs stops the recording with an error
+                catch (Exception ex)
+#pragma warning restore CA1031
+                {
+                    _recorder.OnEncodingError(this, ex);
+                }
+            }
+
+            _pausedAt = _clock.GetTimestamp();
+        }
 
         public void Resume()
         {

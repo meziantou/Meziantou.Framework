@@ -7,3 +7,4 @@ f { image-resolution: 2dpcm from-image; image-resolution: snap from-image 0dppx;
 g { cursor: image-set(linear-gradient(red) 1x), pointer; cursor: image-set("a.png" 1x, url(b.png) 2x) 5 6, grab; cursor: -webkit-image-set(url(a.png) 1x), auto; }
 h { filter: drop-shadow(10px 10px -1px red); filter: drop-shadow(red 10px 10px 0); backdrop-filter: drop-shadow(10px 10px calc(-1px) red); --empty:; --space: ; }
 i { width: stretch(10px); max-height: stretch(calc(10% - 0.5em)); flex: 1 stretch(10%); min-inline-size: stretch(50%); height: stretch(-1px); block-size: stretch(); }
+w { white-space: collapse wrap discard-after discard-before; white-space: discard-inner nowrap preserve; white-space: pre discard-before; white-space: discard-before discard-before; text-autospace-size: calc(1 / 4); text-autospace-size: -0.25; }

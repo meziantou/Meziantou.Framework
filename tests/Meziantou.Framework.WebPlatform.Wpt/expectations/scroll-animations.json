@@ -581,10 +581,7 @@
     }
   },
   "scroll-animations/css/scroll-timeline-on-pseudo.html": {
-    "total": 1,
-    "failures": {
-      "timeline.source does not expose pseudo-element": "FAIL"
-    }
+    "total": 1
   },
   "scroll-animations/css/scroll-timeline-paused-animations.html": {
     "total": 2

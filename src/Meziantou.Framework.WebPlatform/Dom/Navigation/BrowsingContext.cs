@@ -410,6 +410,41 @@ public sealed partial class BrowsingContext : IDisposable
     }
 
     /// <summary>
+    /// Whether the top-level browsing context was created by <c>window.open()</c> (with or without opener): the scripts of its
+    /// documents may move and resize its client window (https://drafts.csswg.org/cssom-view/#dom-window-moveto).
+    /// </summary>
+    internal bool IsCreatedByScript { get; set; }
+
+    /// <summary>Moves the client window (<c>window.moveTo()</c>): the position is not negative, the window is not kept inside the screen.</summary>
+    internal void MoveClientWindow(int x, int y)
+    {
+        ClientWindowLeft = Math.Max(0, x);
+        ClientWindowTop = Math.Max(0, y);
+    }
+
+    /// <summary>
+    /// Resizes the client window (<c>window.resizeTo()</c>): the client window has no decoration, so its viewport gets the
+    /// size, not smaller than the one of the popups of the browsers. The media queries are evaluated again, and the
+    /// <c>resize</c> event is fired at its window by the next rendering update.
+    /// </summary>
+    internal void ResizeClientWindow(int width, int height)
+    {
+        width = Math.Max(MinimumPopupViewportSize, width);
+        height = Math.Max(MinimumPopupViewportSize, height);
+        if (IsDestroyed || (ClientWindowViewportWidth == width && ClientWindowViewportHeight == height))
+            return;
+
+        ClientWindowViewportWidth = width;
+        ClientWindowViewportHeight = height;
+        foreach (var navigable in GetInclusiveDescendantNavigables())
+        {
+            navigable.Document.InvalidateLayout();
+        }
+
+        EventLoop.RequestRenderingOpportunity(Document);
+    }
+
+    /// <summary>
     /// The size of the viewport while the documents of the top-level browsing context are displayed fullscreen (the answer of
     /// <see cref="BrowsingContextOptions.EnterFullscreen"/>), or null: the viewport of the options.
     /// </summary>

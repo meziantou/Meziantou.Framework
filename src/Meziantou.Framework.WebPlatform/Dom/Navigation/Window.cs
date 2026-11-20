@@ -387,6 +387,7 @@ public sealed partial class Window : GlobalScope
             // the size and the position of its client window
             targetNavigable.IsPopup = WindowFeatures.IsPopupRequested(tokenizedFeatures);
             targetNavigable.SetUpFeatures(tokenizedFeatures);
+            targetNavigable.IsCreatedByScript = true;
 
             // The client window is sized after its creation: a resize event is fired at the listeners added meanwhile
             var newWindow = targetNavigable.Window;

@@ -116,7 +116,15 @@ the worker or worklet global scope.
 
 The `iframe` elements get nested browsing contexts ([BrowsingContext.Children](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Children), [HtmlIFrameElement.ContentDocument](cref:Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement.ContentDocument)),
 which share the event loop and the options of their page. `window.open()` creates a popup: another top-level browsing
-context of the same group.
+context of the same group. Its `width`, `height`, `left` and `top` features give the size of its viewport and its position
+on the screen, and its scripts can change them with `resizeTo()`, `resizeBy()`, `moveTo()` and `moveBy()` (a popup is
+not smaller than 100 CSS pixels, and its position is not negative). These methods do nothing in the other windows.
+
+The speculation rules of a page can prerender another page in a hidden top-level browsing context, which a navigation to
+its URL activates. Until it is activated, a prerendering page does not move nor resize its window, its workers fetch their
+script but do not start, its media elements do not load their resource, and its `registerProtocolHandler()` and
+`unregisterProtocolHandler()` calls are applied when it is activated. `WindowClient.navigate()` rejects with a `TypeError`
+when a service worker navigates a prerendering page (its frames can be navigated).
 
 ## Dispose the page
 

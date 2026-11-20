@@ -498,6 +498,24 @@ public partial class HtmlMediaElement
 
     private void FetchResource(int generation, UrlRecord? url, object? provider, Action onFailure)
     {
+        // The media of a prerendering document are loaded when it is activated, as in the browsers that prerender
+        // (https://wicg.github.io/nav-speculation/prerendering.html#delay-while-prerendering): the element waits with no
+        // data (its loadstart event is fired, the playback does not start), without delaying the load event of the document
+        var document = NodeDocument;
+        if (document.Prerendering)
+        {
+            SetDelayingTheLoadEvent(false);
+            document.RunAfterPrerendering(() =>
+            {
+                if (generation != _selectionGeneration)
+                    return;
+
+                SetDelayingTheLoadEvent(true);
+                FetchResource(generation, url, provider, onFailure);
+            });
+            return;
+        }
+
         // The lazy loading attribute defers the fetch until the element intersects the viewport (or load() or play() is called)
         if (LazyLoading.WillLazyLoad(this))
         {

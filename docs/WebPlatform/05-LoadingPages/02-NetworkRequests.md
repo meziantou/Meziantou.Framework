@@ -362,7 +362,7 @@ an in-memory connection. The scripts can also use `WebSocketStream`, the
 - As a `WebSocket`, the connection is closed when its document is unloaded or its worker ends.
 
 The .NET types ([WebSocketStream](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketStream), [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError)) are
-[experimental](../09-Limitations.md#experimental-apis) (`WEBPLATEXP0026`). A [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError) gives the status code and the reason of
+[experimental](../09-Limitations.md#experimental-apis) (`WEBPLATEXP0027`). A [WebSocketError](cref:Meziantou.Framework.WebPlatform.Dom.WebSocketError) gives the status code and the reason of
 the Close frame:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/WebSocketTests.cs;region=WebPlatform_WebSocketError;format=md-fenced-code-block;dedent=true -->

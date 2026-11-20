@@ -10,7 +10,7 @@
 #pragma warning disable WEBPLATEXP0023 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0024 // The conversions use the experimental Web IDL interfaces
 #pragma warning disable WEBPLATEXP0025 // The conversions use the experimental Web IDL interfaces
-#pragma warning disable WEBPLATEXP0026 // The conversions use the experimental Web IDL interfaces
+#pragma warning disable WEBPLATEXP0027 // The conversions use the experimental Web IDL interfaces
 
 namespace Meziantou.Framework.WebPlatform.Scripting.Generated;
 

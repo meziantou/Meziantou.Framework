@@ -4,7 +4,7 @@
 // </auto-generated>
 #nullable enable
 
-#pragma warning disable WEBPLATEXP0026 // The binding exposes the experimental Web IDL interface
+#pragma warning disable WEBPLATEXP0027 // The binding exposes the experimental Web IDL interface
 
 namespace Meziantou.Framework.WebPlatform.Scripting.Generated;
 

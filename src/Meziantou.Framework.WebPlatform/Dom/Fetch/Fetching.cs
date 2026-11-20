@@ -615,9 +615,11 @@ internal static class Fetching
 
             // The timing allow check of a cross-origin response that the service worker fetched (its CORS or opaque filtered
             // response, https://fetch.spec.whatwg.org/#concept-response-timing-allow-passed) fails for the request too, as in
-            // the browsers: the worker has the origin of the client
-            if (serviceWorkerResponse.Type is FetchResponseType.Cors or FetchResponseType.Opaque
-                && !(HeaderList.GetDecodeAndSplit(serviceWorkerResponse.Internal.HeaderList, "Timing-Allow-Origin") is { } timingAllowOrigins && (timingAllowOrigins.Contains("*") || timingAllowOrigins.Contains(request.Origin))))
+            // the browsers: the worker has the origin of the client. The response of a navigation to another origin (handled
+            // by the service worker of that origin) is checked as a response of the network: it needs the header too.
+            if ((serviceWorkerResponse.Type is FetchResponseType.Cors or FetchResponseType.Opaque
+                    && !(HeaderList.GetDecodeAndSplit(serviceWorkerResponse.Internal.HeaderList, "Timing-Allow-Origin") is { } timingAllowOrigins && (timingAllowOrigins.Contains("*") || timingAllowOrigins.Contains(request.Origin))))
+                || (request.Mode == RequestMode.Navigate && !TimingAllowCheck(request, serviceWorkerResponse.Internal)))
             {
                 request.TimingAllowFailed = true;
             }

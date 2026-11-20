@@ -507,10 +507,7 @@
     "total": 1
   },
   "speculation-rules/prefetch/prefetch-uses-cache.sub.https.html?same-site": {
-    "total": 1,
-    "failures": {
-      "Test that prefetches use/store responses to/from the HTTP cache.": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prefetch/redirect-middle-of-prefetch.https.html?origin=cross-site-initial": {
     "total": 2

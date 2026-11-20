@@ -2370,6 +2370,7 @@ public sealed partial class BrowsingContext : IDisposable
             timing.WorkerMatchedRouterSource = request.Timing.ServiceWorkerMatchedRouterSource;
             timing.WorkerFinalRouterSource = request.Timing.ServiceWorkerFinalRouterSource;
             timing.IsAnsweredByServiceWorker = request.IsAnsweredByServiceWorker;
+            timing.CacheState = internalResponse.CacheState;
 
             timing.ResponseStart = timing.PrefetchResponseStart != 0 ? timing.PrefetchResponseStart : EventLoop.TimeProvider.GetTimestamp();
             timing.FirstInterimResponseStart = timing.PrefetchResponseStart != 0 ? 0 : request.Timing.FirstInterimNetworkResponseStart;
@@ -3157,6 +3158,7 @@ public sealed partial class BrowsingContext : IDisposable
             EndTime = ToRelativeTime(timing.ResponseEnd),
             FinalConnectionTimingInfo = new ConnectionTimingInfo(fetchStart, fetchStart, fetchStart, fetchStart, isSecure ? fetchStart : 0, isFetched ? "http/1.1" : "") { IsSecure = isSecure },
             TimingAllowPassed = true,
+            CacheState = timing.CacheState,
         };
 
         var bodyInfo = new ResponseBodyInfo(ResourceTiming.GetEncodedBodySize(headers, bodySize ?? 0, timing.IsAnsweredByServiceWorker), bodySize ?? 0, ResourceTiming.MinimizeSupportedMimeType(HeaderList.ExtractMimeType(headers)));

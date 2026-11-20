@@ -248,6 +248,29 @@ public sealed class PerformanceTimelineTests : IDisposable
     }
 
     [Fact]
+    public void NavigationTiming_DocumentOfTheHttpCache_HasTheCacheDeliveryType()
+    {
+        _loader.Resources["https://example.com/cached"] = Html("cached", new("Cache-Control", "max-age=3600"));
+        _loader.Resources["https://example.com/other"] = Html("other");
+        var context = CreateContext();
+        PerformanceNavigationTiming NavigateAndGetEntry(string url)
+        {
+            context.Navigate(url);
+            _contexts.EventLoop.RunUntilIdle();
+            return (PerformanceNavigationTiming)context.Document.DefaultView!.Performance.GetEntriesByType("navigation")[0];
+        }
+
+        var first = NavigateAndGetEntry("https://example.com/cached");
+        Assert.Equal("", first.DeliveryType);
+        Assert.Equal(306ul, first.TransferSize);
+
+        NavigateAndGetEntry("https://example.com/other");
+        var cached = NavigateAndGetEntry("https://example.com/cached");
+        Assert.Equal("cache", cached.DeliveryType);
+        Assert.Equal(0ul, cached.TransferSize);
+    }
+
+    [Fact]
     public void Iframe_SameOrigin_ReportsItsNavigationToTheParent()
     {
         _loader.Resources["https://example.com/dir/frame.html"] = Html("frame");

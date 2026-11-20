@@ -104,16 +104,10 @@
     "total": 1
   },
   "navigation-timing/prefetch-transfer-size-executor.html": {
-    "total": 1,
-    "failures": {
-      "Navigation timing transfer size for a prefetched navigation should be 0.": "FAIL"
-    }
+    "total": 1
   },
   "navigation-timing/prefetch-transfer-size-iframe.html": {
-    "total": 1,
-    "failures": {
-      "Navigation timing transfer size for a prefetched navigation should be 0.": "FAIL"
-    }
+    "total": 1
   },
   "navigation-timing/redirect-tao.html": {
     "total": 8

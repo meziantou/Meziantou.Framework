@@ -101,7 +101,7 @@ internal static class ServiceWorkerFetchHandling
         }
 
         // The navigation preload request is sent in parallel with the fetch event
-        Task<FetchResponse>? preload = null;
+        NavigationPreload? preload = null;
         if (request.Mode == RequestMode.Navigate && request.Method == "GET" && ShouldPreload(registration, out var headerValue))
         {
             // As the request of the fetch event, the preload request has a single URL (the current URL of the navigation
@@ -115,9 +115,13 @@ internal static class ServiceWorkerFetchHandling
 
             // The redirect of the preload request is not followed: the service worker gets an opaque-redirect filtered
             // response (the fetch of a navigation gives the response of the redirect itself)
-            preload = Fetching.StartFetch(preloadRequest, cancellationToken).ContinueWith(
-                static completed =>
+            var navigationPreload = new NavigationPreload(preloadRequest);
+            preload = navigationPreload;
+            navigationPreload.Response = Fetching.StartFetch(preloadRequest, cancellationToken).ContinueWith(
+                completed =>
                 {
+                    // The time the response of the preload ended, for its resource timing entry (reported to the service worker)
+                    navigationPreload.EndTimestamp = eventLoop.TimeProvider.GetTimestamp();
                     var response = Fetching.GetResult(completed);
                     return !response.IsNetworkError && response.Type != FetchResponseType.OpaqueRedirect && response.Internal.Status is 301 or 302 or 303 or 307 or 308 ? response.Internal.ToOpaqueRedirect() : response;
                 },
@@ -420,7 +424,7 @@ internal static class ServiceWorkerFetchHandling
     }
 
     /// <summary>https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch</summary>
-    private static async Task<FetchResponse?> CreateFetchEventAndDispatchAsync(FetchRequest request, ServiceWorkerRegistrationRecord registration, bool isNonSubresource, string clientId, Task<FetchResponse>? preload, Task<FetchResponse>? raceResponse, CancellationToken cancellationToken)
+    private static async Task<FetchResponse?> CreateFetchEventAndDispatchAsync(FetchRequest request, ServiceWorkerRegistrationRecord registration, bool isNonSubresource, string clientId, NavigationPreload? preload, Task<FetchResponse>? raceResponse, CancellationToken cancellationToken)
     {
         var registry = registration.Registry;
         ServiceWorkerRecord? activeWorker;
@@ -514,8 +518,10 @@ internal static class ServiceWorkerFetchHandling
 
         if (!outcome.RespondWithEntered)
         {
-            SettleHandled(networkError: outcome.Canceled);
-            if (outcome.Canceled)
+            // A request whose streamed body was used by the service worker cannot be sent to the network (https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch
+            // sets handleFetchFailed, as in Chromium; the body of the network request is the other branch of the tee of the body)
+            SettleHandled(networkError: outcome.Canceled || outcome.RequestBodyUsed);
+            if (outcome.Canceled || outcome.RequestBodyUsed)
                 return FetchResponse.NetworkError();
 
             // The response of the network request of a race-network-and-fetch-handler router rule is used when the fetch event
@@ -540,7 +546,7 @@ internal static class ServiceWorkerFetchHandling
     }
 
     /// <summary>Dispatches the fetch event at the global object of the service worker (on its thread).</summary>
-    private static void DispatchFetchEvent(ServiceWorkerGlobalScope global, ServiceWorkerRegistry registry, ServiceWorkerRecord worker, FetchRequest request, string clientId, string resultingClientId, string replacesClientId, Task<FetchResponse>? preload, ServiceWorkerWait<FetchEventOutcome> completion, CancellationToken cancellationToken)
+    private static void DispatchFetchEvent(ServiceWorkerGlobalScope global, ServiceWorkerRegistry registry, ServiceWorkerRecord worker, FetchRequest request, string clientId, string resultingClientId, string replacesClientId, NavigationPreload? preload, ServiceWorkerWait<FetchEventOutcome> completion, CancellationToken cancellationToken)
     {
         if (global.ScriptEngine?.GetServiceWorkerFetchOperations(global) is not { } operations)
         {
@@ -572,11 +578,15 @@ internal static class ServiceWorkerFetchHandling
         }
         else
         {
+            // https://w3c.github.io/ServiceWorker/#handle-fetch, step 21.7: the timing of the preload request is reported to the
+            // global object of the active worker, with the "navigation" initiator type
             var preloadCompletion = new TaskCompletionSource<object?>();
-            _ = preload.ContinueWith(
+            var preloadTiming = ResourceTiming.Start(global, preload.Request, "navigation");
+            _ = preload.Response.ContinueWith(
                 completed => global.QueueGlobalTask(() =>
                 {
                     var response = Fetching.GetResult(completed);
+                    preloadTiming?.Report(response, preload.EndTimestamp);
                     if (response.IsNetworkError)
                     {
                         preloadCompletion.TrySetException(new TypeErrorException("The navigation preload request failed"));
@@ -614,6 +624,14 @@ internal static class ServiceWorkerFetchHandling
         var respondWithEntered = @event.RespondWithEntered;
         var canceled = @event.CanceledFlag;
 
+        // https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch: the request was not responded to and its body is a
+        // stream: the body that the service worker used cannot be sent to the network, otherwise it is canceled
+        var bodyUsed = false;
+        if (!respondWithEntered && request is { Body: not null, BodyHasSource: false })
+        {
+            bodyUsed = !operations.CancelRequestBody(requestObject);
+        }
+
         // A worker terminated while the event waits for its response (respondWith) fails the fetch when its registration was
         // cleared (see the dispatch)
         void OnTerminated()
@@ -629,7 +647,7 @@ internal static class ServiceWorkerFetchHandling
             _ =>
             {
                 registry.RemoveTerminationCallback(worker, OnTerminated);
-                completion.Complete(new FetchEventOutcome(respondWithEntered, canceled, @event.RespondWithError, @event.PotentialResponse, handled, global));
+                completion.Complete(new FetchEventOutcome(respondWithEntered, canceled, @event.RespondWithError, @event.PotentialResponse, handled, global) { RequestBodyUsed = bodyUsed });
             },
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
@@ -641,11 +659,30 @@ internal static class ServiceWorkerFetchHandling
 
     private sealed record FetchEventOutcome(bool RespondWithEntered, bool Canceled, bool HandleFetchFailed, FetchResponse? Response, TaskCompletionSource? Handled, ServiceWorkerGlobalScope? Global)
     {
+        /// <summary>Whether the service worker used the stream of the body of a request that it did not respond to: the request cannot fall back to the network.</summary>
+        public bool RequestBodyUsed { get; init; }
+
         public static FetchEventOutcome Failed { get; } = new(RespondWithEntered: false, Canceled: false, HandleFetchFailed: true, Response: null, Handled: null, Global: null);
 
         /// <summary>The service worker was terminated because its registration was cleared: the fetch is a network error.</summary>
         public static FetchEventOutcome Terminated { get; } = new(RespondWithEntered: true, Canceled: false, HandleFetchFailed: true, Response: null, Handled: null, Global: null);
     }
+}
+
+/// <summary>
+/// The navigation preload request of a navigation handled by a service worker (https://w3c.github.io/ServiceWorker/#handle-fetch,
+/// step 21), sent in parallel with the fetch event.
+/// </summary>
+internal sealed class NavigationPreload(FetchRequest request)
+{
+    /// <summary>The preload request.</summary>
+    public FetchRequest Request { get; } = request;
+
+    /// <summary>The response of the preload request (a redirect is an opaque-redirect filtered response).</summary>
+    public Task<FetchResponse> Response { get; set; } = null!;
+
+    /// <summary>The time the response of the preload request ended.</summary>
+    public long EndTimestamp { get; set; }
 }
 
 /// <summary>

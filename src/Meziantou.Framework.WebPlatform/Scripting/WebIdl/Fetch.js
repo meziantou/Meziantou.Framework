@@ -1248,6 +1248,17 @@
     return createRequestObject(realm, request, hooks.createHeaders(serialized.headers, 'immutable'), signal);
   };
 
+  // https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch: the body of the Request object of a fetch event that
+  // was not responded to, whose body was a stream, is canceled (a later clone() throws). Returns false when the body is
+  // unusable (the service worker read it): the request cannot fall back to the network.
+  cacheSupport.cancelFetchEventRequestBody = (requestObject) => {
+    const record = getRecord(requestObject, 'Request');
+    if (record === undefined || record.body === null) return true;
+    if (cacheSupport.isDisturbedOrLocked(record)) return false;
+    streams.cancel(record.body.stream, undefined);
+    return true;
+  };
+
   // The response of the value given to respondWith() (https://w3c.github.io/ServiceWorker/#dom-fetchevent-respondwith): the
   // body of a Response object is read (the bodies are not streamed to the client); null for another value, or a Response
   // object whose body is disturbed or locked or cannot be read

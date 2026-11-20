@@ -278,6 +278,9 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   sheet that fetched a resource (its `@import` rules, fonts and images), the module that imports a module, else the script
   that started the fetch, followed through the timers, the tasks, the callbacks and the asynchronous operations it
   scheduled (an inline script is the page), else the page or the worker.
+- The navigation timing entry of a page served by the HTTP cache has the `cache` delivery type, and its `transferSize`
+  is 0 (300 when the stored response was validated). The navigation preload request of a service worker is reported to
+  the performance timeline of the service worker, with the `navigation` initiator type.
 - [ReportInterimResponse](cref:Meziantou.Framework.WebPlatform.Dom.DocumentRequest.ReportInterimResponse) reports an
   interim response (`100 Continue`, `103 Early Hints`...) before the final response: its time is the
   `firstInterimResponseStart` of the resource timing entry, and the `Link` headers of the first `103` response of the

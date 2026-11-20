@@ -410,6 +410,57 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task NavigationPreload_ReportsItsResourceTimingToTheServiceWorker()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('activate', e => e.waitUntil(self.registration.navigationPreload.enable()));
+            self.addEventListener('fetch', e => {
+              if (e.request.url.endsWith('controlled.html'))
+                e.respondWith(e.preloadResponse.then(r => r.text()).then(() => {
+                  const entries = performance.getEntriesByName(e.request.url);
+                  return new Response('<p>' + entries.length + ' ' + entries[0].initiatorType + ' ' + entries[0].decodedBodySize + '</p>', { headers: { 'Content-Type': 'text/html' } });
+                }));
+            });
+            """);
+        AddPage("https://example.com/dir/controlled.html", "network");
+        var document = Load(RegisterAndReload);
+
+        Assert.Equal("1 navigation 7|true", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
+    public async Task FetchEvent_StreamedRequestBodyUsedWithoutRespondWith_FailsTheFetch()
+    {
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('fetch', e => {
+              if (e.request.url.endsWith('/use'))
+                e.request.text();
+            });
+            """);
+        AddPage("https://example.com/dir/use", "network");
+        AddPage("https://example.com/dir/ignore", "network");
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              const body = () => new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode('a')); c.close(); } });
+              const run = url => fetch(url, { method: 'POST', body: body(), duplex: 'half' }).then(r => r.text(), e => e.name);
+              Promise.all([run('use'), run('ignore')]).then(results => parent.document.title = results.join(' '));
+            </script>
+            """);
+        var document = Load("""
+            <script>
+              const activated = worker => worker.state === 'activated' ? Promise.resolve() : new Promise(resolve => worker.addEventListener('statechange', () => worker.state === 'activated' && resolve()));
+              navigator.serviceWorker.register('sw.js').then(() => navigator.serviceWorker.ready).then(registration => activated(registration.active)).then(() => {
+                const frame = document.createElement('iframe');
+                frame.src = 'controlled.html';
+                document.body.appendChild(frame);
+              }, e => document.title = 'error: ' + e);
+            </script>
+            """);
+
+        Assert.Equal("TypeError network", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
     public async Task Claim_ControlsTheExistingClients()
     {
         AddScript("https://example.com/dir/sw.js", "self.addEventListener('activate', e => e.waitUntil(clients.claim()));");

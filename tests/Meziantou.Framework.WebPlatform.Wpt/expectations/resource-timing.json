@@ -518,10 +518,7 @@
     "total": 1
   },
   "resource-timing/workerStart-tao-protected.https.html": {
-    "total": 3,
-    "failures": {
-      "A resource from a cross-origin service worker must not expose workerStart when there is a TAO failure": "FAIL"
-    }
+    "total": 3
   },
   "resource-timing/worklet-rt-entries.https.html": {
     "total": 1

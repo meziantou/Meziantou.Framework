@@ -483,11 +483,7 @@
     "total": 2
   },
   "service-workers/service-worker/fetch-event.https.h2.html": {
-    "total": 7,
-    "failures": {
-      "Cloning the request after leaving the fetch event unhandled throws because the request body was canceled.": "FAIL",
-      "When the streaming request body is used, network fallback fails.": "FAIL"
-    }
+    "total": 7
   },
   "service-workers/service-worker/fetch-event.https.html": {
     "total": 43,
@@ -682,11 +678,7 @@
     "total": 1
   },
   "service-workers/service-worker/navigation-preload/resource-timing.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Navigation Preload Resource Timing.": "TIMEOUT"
-    }
+    "total": 1
   },
   "service-workers/service-worker/navigation-preload/samesite-cookies.https.html": {
     "total": 5

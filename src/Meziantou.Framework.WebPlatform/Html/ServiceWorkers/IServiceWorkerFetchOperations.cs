@@ -10,6 +10,12 @@ internal interface IServiceWorkerFetchOperations
     /// <summary>Creates the <c>Request</c> object of a request of the fetch algorithm, whose headers are immutable and whose signal is aborted by <paramref name="abortSignal"/>.</summary>
     object CreateRequest(FetchRequest request, AbortSignal abortSignal);
 
+    /// <summary>
+    /// Cancels the body of the <c>Request</c> object of a fetch event that was not responded to (https://w3c.github.io/ServiceWorker/#create-fetch-event-and-dispatch).
+    /// Returns false when the body is unusable (disturbed or locked): the service worker used it.
+    /// </summary>
+    bool CancelRequestBody(object request);
+
     /// <summary>Creates the <c>Response</c> object of a response of the fetch algorithm, whose headers are immutable.</summary>
     object CreateResponse(FetchResponse response);
 

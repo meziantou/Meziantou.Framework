@@ -69,7 +69,7 @@ public class PerformanceResourceTiming : PerformanceEntry
     /// </summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype"/>
     [IdlMember("deliveryType", "https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-deliverytype")]
-    public string DeliveryType => (this as PerformanceNavigationTiming)?.LoadTimingInfo.DeliveryType ?? (_timingInfo.CacheState.Length > 0 ? "cache" : "");
+    public string DeliveryType => (this as PerformanceNavigationTiming)?.LoadTimingInfo.DeliveryType is { Length: > 0 } navigationDeliveryType ? navigationDeliveryType : _timingInfo.CacheState.Length > 0 ? "cache" : "";
 
     /// <summary>Gets the ALPN protocol of the connection (e.g. <c>http/1.1</c>), or the empty string when it is not exposed.</summary>
     /// <seealso href="https://w3c.github.io/resource-timing/#dom-performanceresourcetiming-nexthopprotocol"/>

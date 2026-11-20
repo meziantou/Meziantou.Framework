@@ -95,6 +95,9 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IServiceWorkerFetchO
         return (object)Adapter.Call(Adapter.Get(CacheSupport, Key("createFetchEventRequest")), Adapter.Undefined, [serialized, Wrap(abortSignal)]);
     });
 
+    bool IServiceWorkerFetchOperations.CancelRequestBody(object request) => Adapter.RunInRealm(EngineRealm, () =>
+        Adapter.ToBoolean(Adapter.Call(Adapter.Get(CacheSupport, Key("cancelFetchEventRequestBody")), Adapter.Undefined, [(TValue)request])));
+
     object IServiceWorkerFetchOperations.CreateResponse(FetchResponse response) => Adapter.RunInRealm(EngineRealm, () =>
         (object)Adapter.Call(Adapter.Get(CacheSupport, Key("createResponseObject")), Adapter.Undefined, [FromFetchResponse(response)]));
 

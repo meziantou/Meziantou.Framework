@@ -1,5 +1,8 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
@@ -51,6 +54,26 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The WebAssembly runtime of the tests: the compiled modules are shared by the tests.</summary>
     private static readonly Wasmtime.WasmtimeRuntime WebAssemblyRuntime = new();
+
+    static WptTestRunner()
+    {
+        // The event loop waits for the workers and the operations with Thread.Sleep(1) and SpinWait, whose sleeps last one
+        // period of the system timer: 15.6 ms by default on Windows, 1 ms on Linux and macOS. The virtual clock advances a
+        // little each time the loop reads it while it waits, so on Windows it advanced ~15 times slower than on the other
+        // platforms: e.g. a response that a handler delays by 1 s while a service worker job waits for it took longer
+        // than the maximum duration of a test. A period of 1 ms makes the waits as long as on the other platforms.
+        if (OperatingSystem.IsWindows())
+        {
+            _ = TimeBeginPeriod(1);
+        }
+    }
+
+    /// <summary>https://learn.microsoft.com/windows/win32/api/timeapi/nf-timeapi-timebeginperiod</summary>
+    [DllImport("winmm.dll", EntryPoint = "timeBeginPeriod", ExactSpelling = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [SupportedOSPlatform("windows")]
+    [SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "The generated code of LibraryImport is unsafe code, which the memory-safety rules of the project reject; the function has no marshalling")]
+    private static safe extern uint TimeBeginPeriod(uint period);
 
     /// <summary>The testdriver vendor implementation of the runner (Runner/testdriver-vendor.js).</summary>
     private static readonly Lazy<string> TestDriverVendorScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "testdriver-vendor.js")));
@@ -1749,11 +1772,45 @@ internal sealed partial class WptTestRunner
     // Global object
     // ----------------------------------------------------------------------------------------------------------------
 
+    /// <summary>Defines <c>TestUtils.gc()</c> in a realm (see <see cref="SetupGlobals"/>).</summary>
+    private static void DefineTestUtils<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm)
+        where TAdapter : struct, IJsAdapter<TValue>
+        where TValue : class
+    {
+        var adapter = realm.Adapter;
+        var testUtils = realm.CreateObject();
+        adapter.DefineOwnProperty(testUtils, adapter.FromString("gc"), JsPropertyDescriptor<TValue>.Data(adapter.CreateFunction("gc", 0, (_, _) =>
+        {
+            var collected = new TaskCompletionSource();
+            realm.GlobalScope.QueueGlobalTask(() =>
+            {
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+                collected.SetResult();
+            });
+            return realm.ToPromise(collected.Task);
+        }), writable: true, enumerable: true, configurable: true));
+        adapter.DefineOwnProperty(realm.Global, adapter.FromString("TestUtils"), JsPropertyDescriptor<TValue>.Data(testUtils, writable: true, enumerable: false, configurable: true));
+    }
+
     /// <summary>Initializes the global object of a realm with the functions the test runner provides (it runs in the realm).</summary>
     internal void SetupGlobals<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm)
         where TAdapter : struct, IJsAdapter<TValue>
         where TValue : class
     {
+        // TestUtils.gc() (https://testutils.spec.whatwg.org/#dom-testutils-gc), which /common/gc.js uses when it exists: a full
+        // blocking collection, after which the finalizers ran, so the FinalizationRegistry cleanups of the collected targets
+        // are queued. Without it, gc.js only allocates garbage, and whether .NET collects anything depends on the timing. The
+        // collection runs in a task, once the script that called gc() has returned: the frames of the running script may
+        // still reference the objects it dropped. It is only defined for the tests of the weak references, which depend on
+        // it: a full collection of the process that runs the whole suite (gigabytes of heap) is slow, and other tests call
+        // gc() many times (e.g. 100 times in media-elements/crashtests/no-blocking-loads-gc-crash.html)
+        if (_test.RelativePath.StartsWith("js/builtins/weakrefs/", StringComparison.Ordinal))
+        {
+            DefineTestUtils(realm);
+        }
+
         // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
         if (realm.Window is null)
             return;

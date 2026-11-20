@@ -81,6 +81,36 @@ internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<
         return true;
     }
 
+    /// <summary>Gets whether the object supports no named properties: its properties whose key is not an array index are ordinary.</summary>
+    public bool HasOrdinaryNonIndexProperties => !legacy.SupportsNamedProperties;
+
+    /// <summary>The step 1 of https://webidl.spec.whatwg.org/#LegacyPlatformObjectGetOwnProperty (an array index).</summary>
+    public bool TryGetIndexedProperty(TValue obj, uint index, out JsPropertyDescriptor<TValue> descriptor)
+    {
+        if (legacy.SupportsIndexedProperties)
+            return TryGetIndexedProperty(Target(realm, obj), index, out descriptor);
+
+        descriptor = default;
+        return false;
+    }
+
+    /// <summary>Whether the index is a supported property index of the object (https://webidl.spec.whatwg.org/#dfn-support-indexed-properties).</summary>
+    public bool HasIndexedProperty(TValue obj, uint index)
+        => legacy.SupportsIndexedProperties && index < Invoke((legacy, target: Target(realm, obj)), static state => state.legacy.Length!(state.target));
+
+    private bool TryGetIndexedProperty(object target, uint index, out JsPropertyDescriptor<TValue> descriptor)
+    {
+        if (index < Invoke((legacy, target), static state => state.legacy.Length!(state.target)))
+        {
+            var value = Invoke((legacy, realm, target, index), static state => state.legacy.IndexedGetter!(state.realm, state.target, state.index));
+            descriptor = JsPropertyDescriptor<TValue>.Data(value, writable: legacy.IndexedSetter is not null, enumerable: true, configurable: true);
+            return true;
+        }
+
+        descriptor = default;
+        return false;
+    }
+
     /// <summary>https://webidl.spec.whatwg.org/#LegacyPlatformObjectGetOwnProperty</summary>
     public bool TryGetOwnProperty(TValue obj, TValue key, out JsPropertyDescriptor<TValue> descriptor)
     {
@@ -88,12 +118,8 @@ internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<
         var ignoreNamedProperties = false;
         if (legacy.SupportsIndexedProperties && TryGetArrayIndex(key, out var index))
         {
-            if (index < Invoke((legacy, target), static state => state.legacy.Length!(state.target)))
-            {
-                var value = Invoke((legacy, realm, target, index), static state => state.legacy.IndexedGetter!(state.realm, state.target, state.index));
-                descriptor = JsPropertyDescriptor<TValue>.Data(value, writable: legacy.IndexedSetter is not null, enumerable: true, configurable: true);
+            if (TryGetIndexedProperty(target, index, out descriptor))
                 return true;
-            }
 
             ignoreNamedProperties = true;
         }

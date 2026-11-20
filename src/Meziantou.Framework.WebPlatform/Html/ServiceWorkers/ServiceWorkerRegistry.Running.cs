@@ -106,6 +106,33 @@ internal sealed partial class ServiceWorkerRegistry
     }
 
     /// <summary>
+    /// Calls <paramref name="onTerminated"/> when the service worker stops running (e.g. it is terminated while an event waits
+    /// for an extend lifetime promise), unless <see cref="RemoveTerminationCallback"/> removes it first; it is called at once
+    /// when the worker is not running.
+    /// </summary>
+    internal void AddTerminationCallback(ServiceWorkerRecord worker, Action onTerminated)
+    {
+        lock (_lock)
+        {
+            if (worker.Agent is { IsClosing: false })
+            {
+                worker.PendingTaskDiscards.Add(onTerminated);
+                return;
+            }
+        }
+
+        onTerminated();
+    }
+
+    internal void RemoveTerminationCallback(ServiceWorkerRecord worker, Action onTerminated)
+    {
+        lock (_lock)
+        {
+            worker.PendingTaskDiscards.Remove(onTerminated);
+        }
+    }
+
+    /// <summary>
     /// Queues a task on the event loop of a running service worker. <paramref name="onDiscarded"/> is called when the task
     /// cannot run (the worker is terminated before it runs).
     /// </summary>

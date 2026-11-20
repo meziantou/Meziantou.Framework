@@ -17203,9 +17203,12 @@ namespace Meziantou.Framework.WebPlatform.Scripting
 
     public interface IJsHostObjectHandler<TValue> where TValue : class
     {
+        public bool HasOrdinaryNonIndexProperties { get => throw null; }
         System.Collections.Generic.IReadOnlyList<TValue>? GetOwnKeys(TValue obj);
+        public bool HasIndexedProperty(TValue obj, uint index) => throw null;
         bool TryDefineOwnProperty(TValue obj, TValue key, in Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor, out bool result);
         bool TryDelete(TValue obj, TValue key, out bool result);
+        public bool TryGetIndexedProperty(TValue obj, uint index, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor) => throw null;
         bool TryGetOwnProperty(TValue obj, TValue key, out Meziantou.Framework.WebPlatform.Scripting.JsPropertyDescriptor<TValue> descriptor);
         bool TrySet(TValue obj, TValue key, TValue value, out bool result);
         bool TrySet(TValue obj, TValue key, TValue value, TValue receiver, out bool result);

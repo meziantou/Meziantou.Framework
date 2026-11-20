@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 68 | 69 | 0 | 99% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 304 | 311 | 1 | 98% |
+| [Reftests](#reftests) | 305 | 311 | 0 | 98% |
 | [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
-| **All** | **375** | **383** | **1** | **98%** |
+| **All** | **376** | **383** | **0** | **98%** |
 
 ## Failure reasons
 
@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 6
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -107,7 +106,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`a98rgb-004.html`](https://wpt.fyi/results/css/css-color/a98rgb-004.html) | Pass | 1 / 1 |  |  |
 | [`animation/contrast-color-interpolation.html`](https://wpt.fyi/results/css/css-color/animation/contrast-color-interpolation.html) | Pass | 1 / 1 |  |  |
 | [`animation/opacity-animation-ending-correctly-001.html`](https://wpt.fyi/results/css/css-color/animation/opacity-animation-ending-correctly-001.html) | Pass | 1 / 1 |  |  |
-| [`animation/opacity-animation-ending-correctly-002.html`](https://wpt.fyi/results/css/css-color/animation/opacity-animation-ending-correctly-002.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`animation/opacity-animation-ending-correctly-002.html`](https://wpt.fyi/results/css/css-color/animation/opacity-animation-ending-correctly-002.html) | Pass | 1 / 1 |  |  |
 | [`at-color-profile-001.html`](https://wpt.fyi/results/css/css-color/at-color-profile-001.html) | Pass | 1 / 1 |  |  |
 | [`background-color-hsl-001.html`](https://wpt.fyi/results/css/css-color/background-color-hsl-001.html) | Pass | 1 / 1 |  |  |
 | [`background-color-hsl-002.html`](https://wpt.fyi/results/css/css-color/background-color-hsl-002.html) | Pass | 1 / 1 |  |  |

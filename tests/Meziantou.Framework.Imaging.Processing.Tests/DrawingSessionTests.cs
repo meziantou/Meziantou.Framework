@@ -5480,6 +5480,18 @@ public sealed class DrawingSessionTests
         Assert.Equal(white, pixels[3, 1]);
         Assert.Equal(default, pixels[1, 2]);
 
+        // A chain that reads the drawing is computed within its region only: dilated twice, the pixel is a square of 5
+        // that the region cuts, and the drawing beyond the region is not read
+        pixels = DrawFiltered(new FilterGraph(new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 1, 1), new MorphologyPrimitive(FilterMorphologyOperator.Dilate, 1, 1)) { Region = new RectangleD(0, 0, 3, 4) });
+        Assert.Equal(white, pixels[0, 0]);
+        Assert.Equal(white, pixels[2, 3]);
+        Assert.Equal(default, pixels[3, 1]);
+        Assert.Equal(default, pixels[1, 4]);
+        pixels = DrawFiltered(new FilterGraph(new MorphologyPrimitive(FilterMorphologyOperator.Erode, 1, 1)) { Region = new RectangleD(2, 2, 3, 3) }, white);
+        Assert.Equal(white, pixels[3, 3]);
+        Assert.Equal(default, pixels[2, 3]);
+        Assert.Equal(default, pixels[1, 1]);
+
         // The matrix is turned by a half turn: a weight on the right of the target takes the pixel on the left
         pixels = DrawFiltered(new FilterGraph(new ConvolveMatrixPrimitive(3, 3, [0, 0, 0, 0, 0, 1, 0, 0, 0])));
         Assert.Equal(white, pixels[2, 1]);

@@ -442,6 +442,56 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void SuspendedAsyncFunctionsDoNotKeepTheValuesTheyDropped()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.Execute("""
+                var cleaned = false;
+                var registry = new FinalizationRegistry(() => { cleaned = true; });
+                var resume;
+                (async () => {
+                    { let target = {}; registry.register(target, 0); target = null; }
+                    await new Promise(resolve => resume = resolve);
+                })();
+                """);
+        }
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        using (engine.Enter())
+        {
+            engine.RunJobs();
+            Assert.True(realm.Execute("cleaned").AsBoolean());
+        }
+    }
+
+    [Fact]
+    public void HostObjectsCanBeExoticForArrayIndicesOnly()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var prototype = realm.Execute("({ get length() { return 2; }, describe() { return 'list'; } })").AsObject();
+        var list = new IndexedListHostObject(prototype, ["a", "b", "c"]);
+        Assert.True(list.HasOrdinaryNonIndexProperties);
+        realm.GlobalObject.SetProperty("list", list);
+        realm.Execute("""
+            function read(o) { let s = ''; for (let i = 0; i < o.length; i++) s += o[i]; return s; }
+            function readMany(o) { let s; for (let i = 0; i < 100; i++) s = read(o); return s; }
+            """);
+
+        Assert.Equal("ab,c,undefined,list,true,false", realm.Execute("readMany(list) + ',' + list[2] + ',' + list[3] + ',' + list.describe() + ',' + (1 in list) + ',' + (3 in list)").AsString());
+        Assert.Equal("abc", realm.Execute("Object.setPrototypeOf(list, { get length() { return 3; } }); readMany(list)").AsString());
+        Assert.Equal("a", realm.Execute("Object.defineProperty(list, 'length', { get() { return 1; } }); readMany(list)").AsString());
+        Assert.Equal("5,false,false", realm.Execute("list.extra = 5; list.extra + ',' + Reflect.defineProperty(list, 0, { value: 'z' }) + ',' + (delete list.extra && 'extra' in list)").AsString());
+        Assert.Equal(0, list.NonIndexCalls);
+    }
+
+    [Fact]
     public void HostObjectsCanBeCallable()
     {
         using var engine = new JsEngine();
@@ -3622,6 +3672,56 @@ public sealed class JsEngineTests
             }
 
             return base.GetOwnPropertyCore(key, out descriptor);
+        }
+    }
+
+    private sealed class IndexedListHostObject : JsHostObject
+    {
+        private readonly List<string> _items;
+
+        public IndexedListHostObject(JsObject prototype, List<string> items)
+            : base(prototype)
+        {
+            _items = items;
+            HasOrdinaryNonIndexProperties = true;
+        }
+
+        public int NonIndexCalls { get; private set; }
+
+        protected override bool GetOwnPropertyCore(JsPropertyKey key, out JsPropertyDescriptor descriptor)
+        {
+            if (!key.TryGetArrayIndex(out var index))
+            {
+                NonIndexCalls++;
+                return base.GetOwnPropertyCore(key, out descriptor);
+            }
+
+            if (index < _items.Count)
+            {
+                descriptor = JsPropertyDescriptor.Data(_items[(int)index], writable: false, enumerable: true, configurable: true);
+                return true;
+            }
+
+            descriptor = default;
+            return false;
+        }
+
+        protected override bool DefineOwnPropertyCore(JsPropertyKey key, in JsPropertyDescriptor descriptor)
+        {
+            if (key.TryGetArrayIndex(out _))
+                return false;
+
+            NonIndexCalls++;
+            return base.DefineOwnPropertyCore(key, descriptor);
+        }
+
+        protected override bool DeleteCore(JsPropertyKey key)
+        {
+            if (key.TryGetArrayIndex(out var index))
+                return index >= _items.Count;
+
+            NonIndexCalls++;
+            return base.DeleteCore(key);
         }
     }
 

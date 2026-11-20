@@ -3129,6 +3129,12 @@
   "svg/render/reftests/blending-002.svg": {
     "reftest": "PASS"
   },
+  "svg/render/reftests/blending-svg-foreign-object.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/blending-svg-root.html": {
+    "reftest": "PASS"
+  },
   "svg/render/reftests/change-sync-for-nested-use.html": {
     "reftest": "PASS"
   },

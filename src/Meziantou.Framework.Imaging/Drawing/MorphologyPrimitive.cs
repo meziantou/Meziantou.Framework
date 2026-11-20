@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Drawing;
@@ -74,32 +75,89 @@ public sealed class MorphologyPrimitive : FilterPrimitive
             return;
 
         var bounds = surface.Bounds;
-        var length = horizontal ? bounds.Width : bounds.Height;
-        var lines = horizontal ? bounds.Height : bounds.Width;
+        var padded = (horizontal ? bounds.Width : bounds.Height) + (2 * radius);
+        using var buffer = ResampleWeights.Rent<float>(processor.Scope, 12L * padded);
+        ApplyAxis(surface.Values, bounds.Width, bounds.Height, radius, isDilate, horizontal, unsafe(MemoryMarshal.Cast<byte, Vector128<float>>(buffer.Span)), processor.CancellationToken);
+    }
+
+    /// <summary>
+    /// The morphology of <see cref="Apply"/> on the colors multiplied by their alpha of an image of <paramref name="width"/> by
+    /// <paramref name="height"/> pixels: the four components of a pixel are compared at once. <paramref name="buffer"/> holds
+    /// 3 times the length of a line plus <c>2 r</c> vectors. <see cref="ApplyAxisScalar"/> is its reference.
+    /// </summary>
+    internal static void ApplyAxis(Span<float> values, int width, int height, int radius, bool isDilate, bool horizontal, Span<Vector128<float>> buffer, CancellationToken cancellationToken)
+    {
+        var length = horizontal ? width : height;
+        var lines = horizontal ? height : width;
         var window = (2 * radius) + 1;
         var padded = length + (2 * radius);
-        using var buffer = ResampleWeights.Rent<float>(processor.Scope, 12L * padded);
-        var all = unsafe(MemoryMarshal.Cast<byte, float>(buffer.Span));
-        var line = all[..(4 * padded)];
-        var prefix = all.Slice(4 * padded, 4 * padded);
-        var suffix = all.Slice(8 * padded, 4 * padded);
-        var values = surface.Values;
-        var stride = horizontal ? 4 : 4 * bounds.Width;
+        var line = buffer[..padded];
+        var prefix = buffer.Slice(padded, padded);
+        var suffix = buffer.Slice(2 * padded, padded);
+        var stride = horizontal ? 4 : 4 * width;
         for (var index = 0; index < lines; index++)
         {
             if ((index & 15) == 0)
             {
-                processor.CancellationToken.ThrowIfCancellationRequested();
+                cancellationToken.ThrowIfCancellationRequested();
             }
 
-            var first = horizontal ? 4 * index * bounds.Width : 4 * index;
+            var first = horizontal ? 4 * index * width : 4 * index;
+            line[..radius].Clear();
+            line[(radius + length)..].Clear();
+            for (var i = 0; i < length; i++)
+            {
+                line[i + radius] = Vector128.Create(values.Slice(first + (i * stride), 4));
+            }
+
+            // The value of each block of the window's size from its start, and to its end
+            for (var start = 0; start < padded; start += window)
+            {
+                var end = Math.Min(start + window, padded);
+                prefix[start] = line[start];
+                for (var k = start + 1; k < end; k++)
+                {
+                    prefix[k] = Pick(prefix[k - 1], line[k], isDilate);
+                }
+
+                suffix[end - 1] = line[end - 1];
+                for (var k = end - 2; k >= start; k--)
+                {
+                    suffix[k] = Pick(suffix[k + 1], line[k], isDilate);
+                }
+            }
+
+            // The window of a pixel starts at its index in the padded line, and spans two blocks at most
+            for (var i = 0; i < length; i++)
+            {
+                Pick(suffix[i], prefix[i + window - 1], isDilate).CopyTo(values.Slice(first + (i * stride), 4));
+            }
+        }
+
+        // The same results as Math.Max and Math.Min on each component
+        static Vector128<float> Pick(Vector128<float> a, Vector128<float> b, bool isDilate) => isDilate ? Vector128.Max(a, b) : Vector128.Min(a, b);
+    }
+
+    /// <summary>The scalar reference of <see cref="ApplyAxis"/>: <paramref name="buffer"/> holds 12 times the length of a line plus <c>2 r</c> values.</summary>
+    internal static void ApplyAxisScalar(Span<float> values, int width, int height, int radius, bool isDilate, bool horizontal, Span<float> buffer)
+    {
+        var length = horizontal ? width : height;
+        var lines = horizontal ? height : width;
+        var window = (2 * radius) + 1;
+        var padded = length + (2 * radius);
+        var line = buffer[..(4 * padded)];
+        var prefix = buffer.Slice(4 * padded, 4 * padded);
+        var suffix = buffer.Slice(8 * padded, 4 * padded);
+        var stride = horizontal ? 4 : 4 * width;
+        for (var index = 0; index < lines; index++)
+        {
+            var first = horizontal ? 4 * index * width : 4 * index;
             line.Clear();
             for (var i = 0; i < length; i++)
             {
                 values.Slice(first + (i * stride), 4).CopyTo(line.Slice(4 * (i + radius), 4));
             }
 
-            // The value of each block of the window's size from its start, and to its end
             for (var start = 0; start < padded; start += window)
             {
                 var end = Math.Min(start + window, padded);
@@ -122,7 +180,6 @@ public sealed class MorphologyPrimitive : FilterPrimitive
                 }
             }
 
-            // The window of a pixel starts at its index in the padded line, and spans two blocks at most
             for (var i = 0; i < length; i++)
             {
                 var output = values.Slice(first + (i * stride), 4);

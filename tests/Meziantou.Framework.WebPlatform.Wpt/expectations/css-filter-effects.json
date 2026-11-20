@@ -401,6 +401,9 @@
   "css/filter-effects/crashtests/filter-hw-sw-switch.html": {
     "crashtest": "PASS"
   },
+  "css/filter-effects/crashtests/filter-primitive-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/filter-effects/crashtests/kernelUnitLength-crash.html": {
     "crashtest": "PASS"
   },

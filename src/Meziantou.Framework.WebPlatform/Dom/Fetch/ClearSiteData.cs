@@ -235,18 +235,9 @@ internal static class ClearSiteData
         // The storage buckets (https://wicg.github.io/storage-buckets/) are deleted with their storage
         browsingContext.StorageBuckets.DeleteAll(browsingContext, storageKey);
 
-        // The service worker registrations are unregistered: the controlled clients keep their service worker until they are unloaded
-        var registry = ServiceWorkerRegistry.Get(browsingContext.GroupOwner);
-        var serviceWorkerStorageKey = storageKey;
-        foreach (var registration in registry.GetRegistrations(serviceWorkerStorageKey))
-        {
-            registry.ScheduleJob(new ServiceWorkerJob
-            {
-                Type = ServiceWorkerJobType.Unregister,
-                StorageKey = serviceWorkerStorageKey,
-                ScopeUrl = registration.ScopeUrl,
-            });
-        }
+        // The service worker registrations are unregistered immediately, as in the browsers: the controlled clients lose their
+        // service worker, and the workers are terminated
+        ServiceWorkerRegistry.Get(browsingContext.GroupOwner).UnregisterImmediately(storageKey);
     }
 
     /// <summary>

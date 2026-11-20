@@ -70,6 +70,19 @@ public class JsHostObject : JsObject
     public bool HasImmutablePrototype { get; set; }
 
     /// <summary>
+    /// Gets whether the overridden internal methods only change the properties whose key is an array index (e.g. a legacy
+    /// platform object that supports indexed properties but no named properties, such as a <c>NodeList</c>): the engine
+    /// calls them for these keys only, and reads and writes the other properties with the fast paths of the ordinary
+    /// objects (shapes and inline caches). Set it in the constructor. [[GetPrototypeOf]] and [[IsExtensible]] must be the
+    /// ordinary ones.
+    /// </summary>
+    public bool HasOrdinaryNonIndexProperties
+    {
+        get => (Flags & ObjectFlags.OrdinaryNonIndexProperties) != 0;
+        protected init => Flags = value ? Flags | ObjectFlags.OrdinaryNonIndexProperties : Flags & ~ObjectFlags.OrdinaryNonIndexProperties;
+    }
+
+    /// <summary>
     /// Gets or sets the class name of a module source object ([[ModuleSourceClassName]],
     /// https://tc39.es/proposal-source-phase-imports/), e.g. <c>WebAssembly.Module</c>: the value of the
     /// <c>%AbstractModuleSource%.prototype[@@toStringTag]</c> getter for the object. Null when the object is not a module
@@ -190,6 +203,9 @@ public class JsHostObject : JsObject
 
     internal sealed override bool GetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
     {
+        if (!IsExoticFor(key))
+            return OrdinaryGetOwnProperty(key, out descriptor);
+
         if (GetOwnPropertyCore(new JsPropertyKey(key), out var publicDescriptor))
         {
             descriptor = publicDescriptor.ToInternal();
@@ -200,15 +216,15 @@ public class JsHostObject : JsObject
         return false;
     }
 
-    internal sealed override bool DefineOwnProperty(in PropertyKey key, in PropertyDescriptor descriptor) => DefineOwnPropertyCore(new JsPropertyKey(key), JsPropertyDescriptor.FromInternal(descriptor));
+    internal sealed override bool DefineOwnProperty(in PropertyKey key, in PropertyDescriptor descriptor) => IsExoticFor(key) ? DefineOwnPropertyCore(new JsPropertyKey(key), JsPropertyDescriptor.FromInternal(descriptor)) : OrdinaryDefineOwnProperty(key, descriptor);
 
-    internal sealed override bool HasProperty(in PropertyKey key) => HasPropertyCore(new JsPropertyKey(key));
+    internal sealed override bool HasProperty(in PropertyKey key) => IsExoticFor(key) ? HasPropertyCore(new JsPropertyKey(key)) : OrdinaryHasProperty(key);
 
-    internal sealed override JsValue Get(in PropertyKey key, JsValue receiver) => GetCore(new JsPropertyKey(key), receiver);
+    internal sealed override JsValue Get(in PropertyKey key, JsValue receiver) => IsExoticFor(key) ? GetCore(new JsPropertyKey(key), receiver) : OrdinaryGet(key, receiver);
 
-    internal sealed override bool Set(in PropertyKey key, JsValue value, JsValue receiver) => SetCore(new JsPropertyKey(key), value, receiver);
+    internal sealed override bool Set(in PropertyKey key, JsValue value, JsValue receiver) => IsExoticFor(key) ? SetCore(new JsPropertyKey(key), value, receiver) : OrdinarySet(key, value, receiver);
 
-    internal sealed override bool Delete(in PropertyKey key) => DeleteCore(new JsPropertyKey(key));
+    internal sealed override bool Delete(in PropertyKey key) => IsExoticFor(key) ? DeleteCore(new JsPropertyKey(key)) : OrdinaryDelete(key);
 
     internal sealed override JsValue Call(JsValue thisValue, ReadOnlySpan<JsValue> arguments)
     {

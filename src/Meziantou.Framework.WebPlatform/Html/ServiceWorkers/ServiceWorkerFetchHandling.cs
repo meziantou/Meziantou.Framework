@@ -467,10 +467,12 @@ internal static class ServiceWorkerFetchHandling
                     activeWorker.SetRaceResponse(raceUrl, raceResponse!);
                 }
 
+                // A worker terminated because its registration was cleared (Clear-Site-Data) fails the fetch, as in Chromium,
+                // whether the event was dispatched or not; a worker that stopped otherwise lets the request go to the network
                 registry.QueueTaskOnWorker(
                     activeWorker,
-                    global => DispatchFetchEvent(global, request, clientId, resultingClientId, replacesClientId, preload, wait, cancellationToken),
-                    () => wait.Complete(FetchEventOutcome.Failed));
+                    global => DispatchFetchEvent(global, registry, activeWorker, request, clientId, resultingClientId, replacesClientId, preload, wait, cancellationToken),
+                    () => wait.Complete(registration.IsUnregistered ? FetchEventOutcome.Terminated : FetchEventOutcome.Failed));
                 outcome = await wait.WaitAsync().ConfigureAwait(false);
             }
         }
@@ -538,7 +540,7 @@ internal static class ServiceWorkerFetchHandling
     }
 
     /// <summary>Dispatches the fetch event at the global object of the service worker (on its thread).</summary>
-    private static void DispatchFetchEvent(ServiceWorkerGlobalScope global, FetchRequest request, string clientId, string resultingClientId, string replacesClientId, Task<FetchResponse>? preload, ServiceWorkerWait<FetchEventOutcome> completion, CancellationToken cancellationToken)
+    private static void DispatchFetchEvent(ServiceWorkerGlobalScope global, ServiceWorkerRegistry registry, ServiceWorkerRecord worker, FetchRequest request, string clientId, string resultingClientId, string replacesClientId, Task<FetchResponse>? preload, ServiceWorkerWait<FetchEventOutcome> completion, CancellationToken cancellationToken)
     {
         if (global.ScriptEngine?.GetServiceWorkerFetchOperations(global) is not { } operations)
         {
@@ -611,8 +613,24 @@ internal static class ServiceWorkerFetchHandling
         global.UpdateExtendedEvents(@event);
         var respondWithEntered = @event.RespondWithEntered;
         var canceled = @event.CanceledFlag;
+
+        // A worker terminated while the event waits for its response (respondWith) fails the fetch when its registration was
+        // cleared (see the dispatch)
+        void OnTerminated()
+        {
+            if (worker.Registration.IsUnregistered)
+            {
+                completion.Complete(FetchEventOutcome.Terminated);
+            }
+        }
+
+        registry.AddTerminationCallback(worker, OnTerminated);
         _ = @event.WhenResponded.ContinueWith(
-            _ => completion.Complete(new FetchEventOutcome(respondWithEntered, canceled, @event.RespondWithError, @event.PotentialResponse, handled, global)),
+            _ =>
+            {
+                registry.RemoveTerminationCallback(worker, OnTerminated);
+                completion.Complete(new FetchEventOutcome(respondWithEntered, canceled, @event.RespondWithError, @event.PotentialResponse, handled, global));
+            },
             CancellationToken.None,
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
@@ -624,6 +642,9 @@ internal static class ServiceWorkerFetchHandling
     private sealed record FetchEventOutcome(bool RespondWithEntered, bool Canceled, bool HandleFetchFailed, FetchResponse? Response, TaskCompletionSource? Handled, ServiceWorkerGlobalScope? Global)
     {
         public static FetchEventOutcome Failed { get; } = new(RespondWithEntered: false, Canceled: false, HandleFetchFailed: true, Response: null, Handled: null, Global: null);
+
+        /// <summary>The service worker was terminated because its registration was cleared: the fetch is a network error.</summary>
+        public static FetchEventOutcome Terminated { get; } = new(RespondWithEntered: true, Canceled: false, HandleFetchFailed: true, Response: null, Handled: null, Global: null);
     }
 }
 

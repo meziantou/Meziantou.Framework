@@ -12,8 +12,8 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 363 | 373 | 0 | 97% |
-| [Crash tests](#crash-tests) | 22 | 23 | 1 | 100% |
-| **All** | **423** | **434** | **1** | **98%** |
+| [Crash tests](#crash-tests) | 23 | 23 | 0 | 100% |
+| **All** | **424** | **434** | **0** | **98%** |
 
 ## Failure reasons
 
@@ -22,7 +22,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 2
 - **TEST BUG**: 7
 - **NOT IMPLEMENTED**: 1
-- **PERFORMANCE**: 1
 
 ## Stable tests
 
@@ -459,7 +458,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`crashtests/filter-change.html`](https://wpt.fyi/results/css/filter-effects/crashtests/filter-change.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/filter-empty-element.html`](https://wpt.fyi/results/css/filter-effects/crashtests/filter-empty-element.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/filter-hw-sw-switch.html`](https://wpt.fyi/results/css/filter-effects/crashtests/filter-hw-sw-switch.html) | Pass | 1 / 1 |  |  |
-| [`crashtests/filter-primitive-crash.html`](https://wpt.fyi/results/css/filter-effects/crashtests/filter-primitive-crash.html) | Disabled | – | PERFORMANCE | crash test whose filter has 10,000 `feMorphology` primitives (`innerHTML.repeat(10000)`): the screenshot of the page applies them one after the other and does not complete within 10 minutes |
+| [`crashtests/filter-primitive-crash.html`](https://wpt.fyi/results/css/filter-effects/crashtests/filter-primitive-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/kernelUnitLength-crash.html`](https://wpt.fyi/results/css/filter-effects/crashtests/kernelUnitLength-crash.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/multiple-references-id-crash-001.html`](https://wpt.fyi/results/css/filter-effects/crashtests/multiple-references-id-crash-001.html) | Pass | 1 / 1 |  |  |
 | [`crashtests/multiple-references-id-crash-002.html`](https://wpt.fyi/results/css/filter-effects/crashtests/multiple-references-id-crash-002.html) | Pass | 1 / 1 |  |  |

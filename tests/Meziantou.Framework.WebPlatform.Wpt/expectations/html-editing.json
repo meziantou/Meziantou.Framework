@@ -844,6 +844,9 @@
   "html/editing/the-hidden-attribute/hidden-until-found-004.html": {
     "reftest": "PASS"
   },
+  "html/editing/the-hidden-attribute/hidden-until-found-005.html": {
+    "reftest": "PASS"
+  },
   "html/editing/the-hidden-attribute/hidden-until-found-007.html": {
     "reftest": "PASS"
   },

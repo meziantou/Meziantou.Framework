@@ -848,6 +848,9 @@
   "css/WOFF2/tabledata-non-zero-loca-001.xht": {
     "reftest": "PASS"
   },
+  "css/WOFF2/tabledata-recontruct-loca-001.xht": {
+    "reftest": "PASS"
+  },
   "css/WOFF2/tabledata-transform-bad-flag-001.xht": {
     "reftest": "PASS"
   },

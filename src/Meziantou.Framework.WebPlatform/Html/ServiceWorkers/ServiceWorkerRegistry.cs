@@ -816,12 +816,25 @@ internal sealed partial class ServiceWorkerRegistry
 
         // The installing worker becomes the installed waiting worker in one step: Try Activate, which also runs in parallel
         // when the worker has no pending events anymore, never activates a waiting worker that is not installed yet
-        Task stateTasks;
+        var stateTasks = Task.CompletedTask;
+        bool cleared;
         lock (_lock)
         {
-            UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Waiting, worker);
-            UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Installing, null);
-            stateTasks = UpdateWorkerState(worker, ServiceWorkerState.Installed);
+            // The registration was cleared during the install event (Clear-Site-Data, see UnregisterImmediately): the worker
+            // is redundant, and must not become the waiting worker nor be activated
+            cleared = !ReferenceEquals(registration.Installing, worker);
+            if (!cleared)
+            {
+                UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Waiting, worker);
+                UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Installing, null);
+                stateTasks = UpdateWorkerState(worker, ServiceWorkerState.Installed);
+            }
+        }
+
+        if (cleared)
+        {
+            FinishJob(job);
+            return;
         }
 
         if (redundantWorker is not null)
@@ -935,14 +948,21 @@ internal sealed partial class ServiceWorkerRegistry
                 client.QueueTask(() => client.Global?.ServiceWorkerObjectsOrNull?.Container?.ResolveReadyPromise(registration, snapshot));
             }
 
-            // The clients that use the registration are controlled by the new active worker
+            // The clients that use the registration are controlled by the new active worker, unless the registration was cleared
+            // meanwhile (Clear-Site-Data, see UnregisterImmediately, which removes the controllers under the same lock)
             foreach (var client in GetClients())
             {
-                if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
-                    continue;
+                lock (_lock)
+                {
+                    if (!ReferenceEquals(registration.Active, activeWorker))
+                        break;
 
-                environment.ActiveServiceWorker = activeWorker;
-                NotifyControllerChange(client, activeWorker, ServiceWorkerState.Activating);
+                    if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
+                        continue;
+
+                    environment.ActiveServiceWorker = activeWorker;
+                    NotifyControllerChange(client, activeWorker, ServiceWorkerState.Activating);
+                }
             }
 
             if (!ShouldSkipEvent(activeWorker, "activate") && await RunServiceWorkerAsync(activeWorker).ConfigureAwait(false) != ServiceWorkerStartStatus.Failure)
@@ -1039,6 +1059,52 @@ internal sealed partial class ServiceWorkerRegistry
         if (Interlocked.Decrement(ref worker.PendingFunctionalEvents) == 0)
         {
             TryClearOrActivateInParallel(worker.Registration);
+        }
+    }
+
+    /// <summary>
+    /// Unregisters the registrations of a storage key immediately, as the browsers do for <c>Clear-Site-Data: "storage"</c>
+    /// (https://w3c.github.io/webappsec-clear-site-data/#clear-dom-accessible-storage): the registrations, and the ones that
+    /// are unregistered but still control clients, are removed from the registration map, their clients lose their
+    /// controller (<c>controllerchange</c>), and they are cleared without waiting for the clients to unload or for the
+    /// extended events to end (their workers are terminated and become redundant).
+    /// </summary>
+    internal void UnregisterImmediately(StorageKey storageKey)
+    {
+        var registrations = new HashSet<ServiceWorkerRegistrationRecord>(GetRegistrations(storageKey));
+        foreach (var client in GetClients())
+        {
+            if (client.Environment?.ActiveServiceWorker?.Registration is { } used && used.StorageKey == storageKey)
+            {
+                registrations.Add(used);
+            }
+        }
+
+        foreach (var registration in registrations)
+        {
+            RemoveRegistration(registration);
+
+            // The controllers are removed and the registration is cleared in one step: an activation that runs in parallel
+            // (ActivateAsync) sees the cleared registration and does not give its worker to the clients again
+            lock (_lock)
+            {
+                foreach (var client in GetClients())
+                {
+                    if (client.Environment is not { } environment || environment.ActiveServiceWorker?.Registration != registration)
+                        continue;
+
+                    environment.ActiveServiceWorker = null;
+                    client.QueueTask(() =>
+                    {
+                        if (client.Global is { ServiceWorkerObjectsOrNull.Container: { } container })
+                        {
+                            container.FireEvent(new Event("controllerchange"));
+                        }
+                    });
+                }
+
+                ClearRegistration(registration);
+            }
         }
     }
 

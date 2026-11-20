@@ -1499,6 +1499,9 @@
   "mathml/relations/css-styling/mozilla-393760-1.xml": {
     "reftest": "FAIL"
   },
+  "mathml/relations/css-styling/mozilla-393760-2.xml": {
+    "reftest": "PASS"
+  },
   "mathml/relations/css-styling/multi-column-layout.html": {
     "total": 2
   },

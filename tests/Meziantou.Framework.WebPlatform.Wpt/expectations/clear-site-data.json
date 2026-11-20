@@ -47,11 +47,6 @@
     "total": 1
   },
   "clear-site-data/storage.https.html": {
-    "harness": "TIMEOUT",
-    "total": 9,
-    "failures": {
-      "Service worker no longer responds to requests": "FAIL",
-      "controllerchange event fires and client no longer has controller": "TIMEOUT"
-    }
+    "total": 9
   }
 }

@@ -256,6 +256,16 @@
   as possible. Each read of the clock advances it by 100 µs (the resolution of `performance.now()`), so time passes while a
   script runs, and the times of the performance timeline (the steps of a navigation or of a fetch, see
   [Performance timeline](browsing-context.md#performance-timeline)) differ. `Date` uses the same clock (`JavaScriptScriptEngineOptions.TimeProvider`: each read of `Date.now()` advances it by 1 ms), in UTC. Microtasks of the DOM and promise jobs share the job queue of the engine.
+  While the event loop waits for the workers or for the operations that run in parallel (e.g. a service worker job that
+  waits for a response that a handler delays), the clock only advances through these reads, between waits of
+  `Thread.Sleep(1)` and `SpinWait`: on Windows, the runner sets the period of the system timer to 1 ms (`timeBeginPeriod`),
+  so that these waits last as long as on Linux and macOS (15.6 ms by default, which made a delay of 1 s outlast the
+  maximum duration of a test).
+- `TestUtils.gc()` (https://testutils.spec.whatwg.org/#dom-testutils-gc) is defined for the tests of
+  `js/builtins/weakrefs`, so `/common/gc.js` does not fall back to allocating garbage: it runs a full blocking collection
+  of .NET and waits for the finalizers, in a task once the calling script has returned, so the `FinalizationRegistry`
+  cleanups of the collected targets are queued. The other tests do not get it: a full collection of the process that runs
+  the whole suite is slow, and some tests call `gc()` many times.
 - Content Security Policy is partially implemented: the library applies the fetch, navigation and document directives (see
   [Content security policy](browsing-context.md#content-security-policy)), the `upgrade-insecure-requests` directive, the
   required policies of CSP Embedded Enforcement (see [CSP Embedded Enforcement](browsing-context.md#csp-embedded-enforcement))

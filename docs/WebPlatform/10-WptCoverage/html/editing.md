@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of html/editing, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 130 | 139 | 0 | 94% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
-| [Reftests](#reftests) | 25 | 26 | 1 | 100% |
+| [Reftests](#reftests) | 26 | 26 | 0 | 100% |
 | [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
-| **All** | **157** | **167** | **1** | **95%** |
+| **All** | **158** | **167** | **0** | **95%** |
 
 ## Failure reasons
 
@@ -24,7 +24,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **REQUIRES**: 2
   - `layout`: 2
 - **TEST RUNNER**: 2
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -204,7 +203,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`the-hidden-attribute/hidden-2.svg`](https://wpt.fyi/results/html/editing/the-hidden-attribute/hidden-2.svg) | Pass | 1 / 1 |  |  |
 | [`the-hidden-attribute/hidden-until-found-001.html`](https://wpt.fyi/results/html/editing/the-hidden-attribute/hidden-until-found-001.html) | Pass | 1 / 1 |  |  |
 | [`the-hidden-attribute/hidden-until-found-004.html`](https://wpt.fyi/results/html/editing/the-hidden-attribute/hidden-until-found-004.html) | Pass | 1 / 1 |  |  |
-| [`the-hidden-attribute/hidden-until-found-005.html`](https://wpt.fyi/results/html/editing/the-hidden-attribute/hidden-until-found-005.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`the-hidden-attribute/hidden-until-found-005.html`](https://wpt.fyi/results/html/editing/the-hidden-attribute/hidden-until-found-005.html) | Pass | 1 / 1 |  |  |
 | [`the-hidden-attribute/hidden-until-found-007.html`](https://wpt.fyi/results/html/editing/the-hidden-attribute/hidden-until-found-007.html) | Pass | 1 / 1 |  |  |
 
 ## Crash tests

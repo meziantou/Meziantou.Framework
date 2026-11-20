@@ -11,20 +11,20 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 163 | 172 | 0 | 95% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 363 | 388 | 1 | 94% |
+| [Reftests](#reftests) | 363 | 388 | 0 | 94% |
 | [Crash tests](#crash-tests) | 10 | 10 | 0 | 100% |
-| **All** | **542** | **576** | **1** | **94%** |
+| **All** | **542** | **576** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **TEST BUG**: 21
 - **NOT IMPLEMENTED**: 5
 - **REQUIRES**: 1
   - `layout`: 1
 - **TEST RUNNER**: 6
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -521,7 +521,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`math-script-level-and-math-style/math-script-level-auto-and-math-style-003.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-003.tentative.html) | Pass | 1 / 1 |  |  |
 | [`math-script-level-and-math-style/math-script-level-auto-and-math-style-004.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-004.tentative.html) | Pass | 1 / 1 |  |  |
 | [`math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-auto-and-math-style-005.tentative.html) | Pass | 1 / 1 |  |  |
-| [`math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html`](https://wpt.fyi/results/css/css-fonts/math-script-level-and-math-style/math-script-level-font-size-clamping-001.tentative.html) | Fail | 0 / 1 | BUG | the computed values of the lengths are rounded to 6 decimals: the font size of the element with `math-depth: add(8)` is `0.774904px` instead of 12 × 0.71⁸ = 0.7749042374949131px, so its child with `math-depth: add(-8)` gets 0.774904 / 0.71⁸ = `11.999996px` instead of 12px. Its Ahem square is 11.999996 px high and wide, and its bottom and right edges are antialiased: 24 pixels differ from the 12px square of the reference |
 | [`metrics-override-normal-keyword.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-normal-keyword.html) | Pass | 1 / 1 |  |  |
 | [`metrics-override-small-lineheight.html`](https://wpt.fyi/results/css/css-fonts/metrics-override-small-lineheight.html) | Pass | 1 / 1 |  |  |
 | [`oblique-last-resort-weight-selection.html`](https://wpt.fyi/results/css/css-fonts/oblique-last-resort-weight-selection.html) | Pass | 1 / 1 |  |  |

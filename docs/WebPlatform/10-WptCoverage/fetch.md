@@ -10,22 +10,21 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 372 | 408 | 1 | 91% |
-| [Tentative](#tentative-tests) | 47 | 78 | 1 | 61% |
+| [Tentative](#tentative-tests) | 48 | 78 | 0 | 62% |
 | [Reftests](#reftests) | 10 | 11 | 0 | 91% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **433** | **501** | **2** | **87%** |
+| **All** | **434** | **501** | **1** | **87%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 30
+- **TEST BUG**: 31
 - **NOT IMPLEMENTED**: 32
 - **REQUIRES**: 2
   - `layout`: 1
   - `workers`: 1
 - **TEST RUNNER**: 3
-- **FLAKY**: 2
 
 ## Stable tests
 
@@ -433,7 +432,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`security/dangling-markup/textarea.html`](https://wpt.fyi/results/fetch/security/dangling-markup/textarea.html) | Fail | 0 / 3 | TEST BUG | the test waits for an `error` event at the form after the click on the submit button, which no specification defines: the form fires `submit` (the URL of the form is not dangling markup, the text of the dangling element is the data of the form) |
 | [`security/redirect-to-url-with-credentials.https.html`](https://wpt.fyi/results/fetch/security/redirect-to-url-with-credentials.https.html) | Pass | 7 / 7 |  |  |
 | [`security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html`](https://wpt.fyi/results/fetch/security/stylesheet-cssrules-serviceworker-passthrough-redirect.https.html) | Pass | 1 / 1 |  |  |
-| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Disabled | – | FLAKY | the service worker posts its message for each request after an awaited `clients.matchAll()` (`event.waitUntil(broadcast(...))`), concurrently with `respondWith(fetch(...))`: nothing orders the message before the response. When the stale response comes from the cache and the background revalidation completes quickly, the page checks the count before the message of the second request is delivered (the worker runs on its own thread): `assert_equals(service_worker_count, 2)` fails with 1. It passes locally, and failed on the Linux arm64 CI runners |
+| [`stale-while-revalidate/fetch-sw.https.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch-sw.https.html) | Disabled | – | TEST BUG | the test expects the message that the service worker posts for the second fetch to arrive before the response of a later fetch, which nothing orders: the worker posts it after an awaited `clients.matchAll()` in a `waitUntil()` that runs concurrently with `respondWith(fetch(...))`, and `clients.matchAll()` queues a task on the event loop of each window client to read its window data (https://w3c.github.io/ServiceWorker/#clients-matchall), while the stale response of the second fetch and the revalidation can complete first. When the first revalidation check already sees the 2 requests, the page checks the count before the message: `assert_equals(service_worker_count, 2)` fails with 1 (it passes locally, and failed on the loaded Linux arm64 CI runners) |
 | [`stale-while-revalidate/fetch.any.js`](https://wpt.fyi/results/fetch/stale-while-revalidate/fetch.any.js) | Pass | 3 / 3 |  |  |
 | [`stale-while-revalidate/revalidate-not-blocked-by-csp.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/revalidate-not-blocked-by-csp.html) | Pass | 1 / 1 |  |  |
 | [`stale-while-revalidate/stale-css.html`](https://wpt.fyi/results/fetch/stale-while-revalidate/stale-css.html) | Pass | 1 / 1 |  |  |
@@ -520,7 +519,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`orb/tentative/unknown-mime-type.sub.any.js`](https://wpt.fyi/results/fetch/orb/tentative/unknown-mime-type.sub.any.js) | Pass | 12 / 12 |  |  |
 | [`security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation-data-url.tentative.sub.html) | Fail | 8 / 14 | TEST BUG | the nested subtests expect the newlines of a `data:` URL to be kept (as in Chromium, whose URL parser does not remove the tabs and newlines of the URLs that start with `data:`), so that the `img` of the `data:` document has a URL with a newline and a `<`; the URL Standard removes them, and the URL of the `img` loads |
 | [`security/dangling-markup/dangling-markup-mitigation.tentative.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.html) | Pass | 31 / 31 |  |  |
-| [`security/dangling-markup/dangling-markup-mitigation.tentative.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.https.html) | Disabled | – | FLAKY | the requests are recorded by the service worker of the test, which reads them as soon as there are as many as its resources (11): depending on the timing, the request of the `meta` refresh of the frame without dangling markup is not recorded yet (ERROR) or it is (PASS) |
+| [`security/dangling-markup/dangling-markup-mitigation.tentative.https.html`](https://wpt.fyi/results/fetch/security/dangling-markup/dangling-markup-mitigation.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`security/embedded-credentials.tentative.sub.html`](https://wpt.fyi/results/fetch/security/embedded-credentials.tentative.sub.html) | Fail | 2 / 6 | NOT IMPLEMENTED | treating subresource and frame URLs with embedded credentials (`user:pass@`) as network errors |
 
 ## Reftests

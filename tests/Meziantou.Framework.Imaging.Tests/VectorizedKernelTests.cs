@@ -12102,6 +12102,38 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void MorphologyMatchesScalar()
+    {
+        var random = new Random(42);
+        foreach (var (width, height) in new[] { (1, 1), (3, 2), (5, 7), (17, 4), (33, 9) })
+        {
+            foreach (var radius in new[] { 1, 2, 3, 8, 40 })
+            {
+                foreach (var isDilate in new[] { true, false })
+                {
+                    foreach (var horizontal in new[] { true, false })
+                    {
+                        var input = new float[4 * width * height];
+                        for (var i = 0; i < input.Length; i++)
+                        {
+                            // Equal values and zeros of either sign test the ties of the comparisons
+                            input[i] = random.Next(4) == 0 ? input[Math.Max(0, i - 4)] : NextSingle(random);
+                        }
+
+                        var expected = (float[])input.Clone();
+                        var actual = (float[])input.Clone();
+                        var padded = (horizontal ? width : height) + (2 * radius);
+                        MorphologyPrimitive.ApplyAxisScalar(expected, width, height, radius, isDilate, horizontal, new float[12 * padded]);
+                        MorphologyPrimitive.ApplyAxis(actual, width, height, radius, isDilate, horizontal, new Vector128<float>[3 * padded], CancellationToken.None);
+                        Assert.Equal(ToBits(expected), ToBits(actual));
+                    }
+                }
+            }
+        }
+    }
+
     private static int[] ToBits(float[] values) => Array.ConvertAll(values, BitConverter.SingleToInt32Bits);
 
     /// <summary>A finite single-precision number: an integer, a fraction, a large or a tiny magnitude, or a zero of either sign.</summary>

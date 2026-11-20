@@ -11,9 +11,9 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 733 | 751 | 0 | 98% |
 | [Tentative](#tentative-tests) | 43 | 44 | 0 | 98% |
-| [Reftests](#reftests) | 643 | 693 | 2 | 93% |
+| [Reftests](#reftests) | 645 | 693 | 0 | 93% |
 | [Crash tests](#crash-tests) | 55 | 55 | 0 | 100% |
-| **All** | **1,474** | **1,543** | **2** | **96%** |
+| **All** | **1,476** | **1,543** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -23,7 +23,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **TEST BUG**: 23
 - **NOT IMPLEMENTED**: 35
 - **TEST RUNNER**: 5
-- **FLAKY**: 2
 
 ## Stable tests
 
@@ -1241,8 +1240,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`render/order/z-index.tentative.svg`](https://wpt.fyi/results/svg/render/order/z-index.tentative.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | `z-index` on the SVG elements (the stacking contexts of SVG 2 that no browser implements): the elements are painted in document order |
 | [`render/reftests/blending-001.svg`](https://wpt.fyi/results/svg/render/reftests/blending-001.svg) | Pass | 1 / 1 |  |  |
 | [`render/reftests/blending-002.svg`](https://wpt.fyi/results/svg/render/reftests/blending-002.svg) | Pass | 1 / 1 |  |  |
-| [`render/reftests/blending-svg-foreign-object.html`](https://wpt.fyi/results/svg/render/reftests/blending-svg-foreign-object.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
-| [`render/reftests/blending-svg-root.html`](https://wpt.fyi/results/svg/render/reftests/blending-svg-root.html) | Disabled | – | FLAKY | reftest whose result depends on the platform: the glyphs are antialiased by the font engine of the platform (CoreText, FreeType, DirectWrite), so it passes on Linux and fails on macOS or the reverse |
+| [`render/reftests/blending-svg-foreign-object.html`](https://wpt.fyi/results/svg/render/reftests/blending-svg-foreign-object.html) | Pass | 1 / 1 |  |  |
+| [`render/reftests/blending-svg-root.html`](https://wpt.fyi/results/svg/render/reftests/blending-svg-root.html) | Pass | 1 / 1 |  |  |
 | [`render/reftests/change-sync-for-nested-use.html`](https://wpt.fyi/results/svg/render/reftests/change-sync-for-nested-use.html) | Pass | 1 / 1 |  |  |
 | [`render/reftests/filter-effects-on-pattern.html`](https://wpt.fyi/results/svg/render/reftests/filter-effects-on-pattern.html) | Pass | 1 / 1 |  |  |
 | [`render/reftests/nested-svg-overflow-clip.html`](https://wpt.fyi/results/svg/render/reftests/nested-svg-overflow-clip.html) | Pass | 1 / 1 |  |  |

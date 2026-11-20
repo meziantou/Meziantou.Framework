@@ -68,6 +68,12 @@
       "Cleanup might be prevented with an unregister usage": "FAIL"
     }
   },
+  "js/builtins/weakrefs/finalizationregistry-cleanupCallback-gets-a-microtask.optional.any.js": {
+    "total": 1
+  },
+  "js/builtins/weakrefs/finalizationregistry-cleanupCallback-gets-a-microtask.optional.any.js#dedicatedworker": {
+    "total": 1
+  },
   "js/builtins/weakrefs/finalizationregistry-cleanupCallback-throws-onerror-interaction.optional.window.js": {
     "total": 1
   },

@@ -42,8 +42,18 @@ internal static class UrlParser
         if (BasicParse(input, baseUrl, encoding, url, UrlParserState.None) == ParseResult.Failure)
             return null;
 
-        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input);
+        // A URL resolved against a URL made of dangling markup (e.g. the href of a base element) keeps its flag when it depends
+        // on it (e.g. an empty href is the base URL itself, and "https:" copies its path and query): parsed without the base,
+        // the input fails or gives another URL
+        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input) || (baseUrl is { PotentiallyDanglingMarkup: true } && UsesBaseUrl(input, encoding, url));
         return url;
+    }
+
+    /// <summary>Whether the URL that an input gives with a base URL depends on the base URL.</summary>
+    private static bool UsesBaseUrl(string input, WebEncodingId encoding, UrlRecord url)
+    {
+        var withoutBase = new UrlRecord();
+        return BasicParse(input, baseUrl: null, encoding, withoutBase, UrlParserState.None) == ParseResult.Failure || withoutBase.Serialize() != url.Serialize();
     }
 
     /// <summary>

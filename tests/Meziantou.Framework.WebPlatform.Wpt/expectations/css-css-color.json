@@ -23,6 +23,9 @@
   "css/css-color/animation/opacity-animation-ending-correctly-001.html": {
     "reftest": "PASS"
   },
+  "css/css-color/animation/opacity-animation-ending-correctly-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-color/animation/opacity-interpolation.html": {
     "total": 120
   },

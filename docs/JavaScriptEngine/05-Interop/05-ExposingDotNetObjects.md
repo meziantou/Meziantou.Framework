@@ -341,5 +341,10 @@ Assert.Equal("TypeError", realm.Execute("'use strict'; try { env.REGION = 'us'; 
 - A derived class that overrides none of the methods that read or write properties can pass
   `hasOrdinaryInternalMethods: true` to the protected constructor: the engine then uses the fast paths of the ordinary
   objects for its properties.
+- A derived class whose overrides only change the properties whose key is an array index, such as a list that exposes its
+  items as `list[0]`, `list[1]`..., can set [HasOrdinaryNonIndexProperties](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.HasOrdinaryNonIndexProperties) in its constructor: the engine
+  calls the overrides for the array indices only, and uses the fast paths and the inline caches of the ordinary objects
+  for the other properties (`list.length`, the methods of the prototype...). Its `GetPrototypeOfCore` and
+  `IsExtensibleCore` must be the default ones.
 
 A [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) with a [Target](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.Target) keeps the .NET object alive as long as the scripts reference the JavaScript object.

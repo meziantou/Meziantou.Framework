@@ -1014,11 +1014,13 @@
     "total": 3
   },
   "service-workers/service-worker/unregister-immediately-during-extendable-events.https.html": {
-    "harness": "TIMEOUT",
     "total": 1,
     "failures": {
-      "Clear-Site-Data must fail pending subresource fetch events.": "TIMEOUT"
+      "Clear-Site-Data must fail pending subresource fetch events.": "FAIL"
     }
+  },
+  "service-workers/service-worker/unregister-immediately.https.html": {
+    "total": 4
   },
   "service-workers/service-worker/unregister-then-register-new-script.https.html": {
     "total": 3

@@ -580,11 +580,29 @@ internal class JavaScriptPlatformObject(JsObject? prototype, object target, bool
 /// The JavaScript object of a legacy platform object (https://webidl.spec.whatwg.org/#es-legacy-platform-objects): a host
 /// exotic object whose internal methods call the handler first.
 /// </summary>
-internal class JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler) : JavaScriptPlatformObject(prototype, target, hasOrdinaryInternalMethods: false)
+internal class JavaScriptLegacyPlatformObject : JavaScriptPlatformObject
 {
+    private readonly IJsHostObjectHandler<object> _handler;
+
+    public JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler)
+        : base(prototype, target, hasOrdinaryInternalMethods: false)
+    {
+        _handler = handler;
+
+        // A legacy platform object without named properties is only exotic for the array indices: the engine uses its
+        // inline caches for the other properties (e.g. the length of a NodeList)
+        HasOrdinaryNonIndexProperties = handler.HasOrdinaryNonIndexProperties;
+    }
+
     protected override bool GetOwnPropertyCore(JsPropertyKey key, out JsPropertyDescriptor descriptor)
     {
-        if (handler.TryGetOwnProperty(this, FromKey(key), out var handled))
+        if (key.TryGetArrayIndex(out var index) && _handler.TryGetIndexedProperty(this, index, out var indexed))
+        {
+            descriptor = ToDescriptor(indexed);
+            return true;
+        }
+
+        if (_handler.TryGetOwnProperty(this, FromKey(key), out var handled))
         {
             descriptor = ToDescriptor(handled);
             return true;
@@ -593,11 +611,29 @@ internal class JavaScriptLegacyPlatformObject(JsObject? prototype, object target
         return base.GetOwnPropertyCore(key, out descriptor);
     }
 
+    // [[Get]] and [[HasProperty]] are the ordinary ones: the value of an indexed data property is read without converting the
+    // descriptor (an accessor, which a handler may return, goes through the ordinary [[Get]], which calls its getter)
+    protected override JsValue GetCore(JsPropertyKey key, JsValue receiver)
+    {
+        if (key.TryGetArrayIndex(out var index) && _handler.TryGetIndexedProperty(this, index, out var indexed) && indexed.IsDataDescriptor)
+            return ToJs(indexed.Value ?? UndefinedValue.Instance);
+
+        return base.GetCore(key, receiver);
+    }
+
+    protected override bool HasPropertyCore(JsPropertyKey key)
+    {
+        if (key.TryGetArrayIndex(out var index) && _handler.HasIndexedProperty(this, index))
+            return true;
+
+        return base.HasPropertyCore(key);
+    }
+
     protected override bool SetCore(JsPropertyKey key, JsValue value, JsValue receiver)
     {
         var handled = ReferenceEquals(receiver.TryGetObject(), this)
-            ? handler.TrySet(this, FromKey(key), ToObject(value), out var result)
-            : handler.TrySet(this, FromKey(key), ToObject(value), ToObject(receiver), out result);
+            ? _handler.TrySet(this, FromKey(key), ToObject(value), out var result)
+            : _handler.TrySet(this, FromKey(key), ToObject(value), ToObject(receiver), out result);
         if (handled)
             return result;
 
@@ -606,7 +642,7 @@ internal class JavaScriptLegacyPlatformObject(JsObject? prototype, object target
 
     protected override bool DefineOwnPropertyCore(JsPropertyKey key, in JsPropertyDescriptor descriptor)
     {
-        if (handler.TryDefineOwnProperty(this, FromKey(key), FromDescriptor(descriptor), out var result))
+        if (_handler.TryDefineOwnProperty(this, FromKey(key), FromDescriptor(descriptor), out var result))
             return result;
 
         return base.DefineOwnPropertyCore(key, descriptor);
@@ -614,7 +650,7 @@ internal class JavaScriptLegacyPlatformObject(JsObject? prototype, object target
 
     protected override bool DeleteCore(JsPropertyKey key)
     {
-        if (handler.TryDelete(this, FromKey(key), out var result))
+        if (_handler.TryDelete(this, FromKey(key), out var result))
             return result;
 
         return base.DeleteCore(key);
@@ -622,7 +658,7 @@ internal class JavaScriptLegacyPlatformObject(JsObject? prototype, object target
 
     protected override IReadOnlyList<JsPropertyKey> OwnPropertyKeysCore()
     {
-        var keys = handler.GetOwnKeys(this);
+        var keys = _handler.GetOwnKeys(this);
         if (keys is null)
             return base.OwnPropertyKeysCore();
 

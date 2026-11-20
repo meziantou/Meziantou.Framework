@@ -19,9 +19,8 @@ description: "The results of the web-platform-tests of notifications, and why th
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 1
+- **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 1
-- **FLAKY**: 1
 
 ## Stable tests
 
@@ -42,7 +41,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`lang.https.html`](https://wpt.fyi/results/notifications/lang.https.html) | Pass | 37 / 37 |  |  |
 | [`permission.html`](https://wpt.fyi/results/notifications/permission.html) | Pass | 1 / 1 |  |  |
 | [`permissions-non-secure.html`](https://wpt.fyi/results/notifications/permissions-non-secure.html) | Pass | 3 / 3 |  |  |
-| [`registration-association.https.window.js`](https://wpt.fyi/results/notifications/registration-association.https.window.js) | Disabled | – | FLAKY | the second subtest calls `showNotification()` on the registration that the first one created after awaiting `navigator.serviceWorker.ready`, which was already resolved with the registration of the setup: `showNotification()` rejects with a `TypeError` when the new worker is not activated yet, so the result depends on the timing of the installation |
+| [`registration-association.https.window.js`](https://wpt.fyi/results/notifications/registration-association.https.window.js) | Disabled | – | TEST BUG | `prepareActiveServiceWorker()` awaits `navigator.serviceWorker.ready`, which is resolved once per container (https://w3c.github.io/ServiceWorker/#navigator-service-worker-ready): in the first subtest it is already resolved with the registration of the setup, so it does not wait for the new registration to be activated. The second subtest calls `showNotification()` on the new registration, which rejects with a `TypeError` while its active worker is null (https://notifications.spec.whatwg.org/#dom-serviceworkerregistration-shownotification), so the result depends on whether the activation ended first (it failed 2 runs of 5 locally) |
 | [`shownotification-window.https.html`](https://wpt.fyi/results/notifications/shownotification-window.https.html) | Pass | 1 / 1 |  |  |
 | [`shownotification-without-permission.https.window.js`](https://wpt.fyi/results/notifications/shownotification-without-permission.https.window.js) | Pass | 1 / 1 |  |  |
 | [`shownotification.https.window.js`](https://wpt.fyi/results/notifications/shownotification.https.window.js) | Pass | 11 / 11 |  |  |

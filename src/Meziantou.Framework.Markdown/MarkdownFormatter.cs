@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Text;
 using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
@@ -215,16 +216,16 @@ public static class MarkdownFormatter
         // The results of the parses that check a bullet marker, as the items of a list often have the same content
         private readonly Dictionary<(string Text, SyntaxKind Kind, bool Shallow), bool> _bulletMarkerChecks = [];
 
-        public List<string> WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks, BlankLines blankLines) => WriteBlocks(blocks, blankLines, out _);
+        public List<string> WriteBlocks(ImmutableArray<MarkdownBlockSyntax> blocks, BlankLines blankLines) => WriteBlocks(blocks, blankLines, out _);
 
         // The lines of the blocks, and the number of lines of the first block, which start them
-        private List<string> WriteBlocks(IReadOnlyList<MarkdownBlockSyntax> blocks, BlankLines blankLines, out int firstBlockLineCount)
+        private List<string> WriteBlocks(ImmutableArray<MarkdownBlockSyntax> blocks, BlankLines blankLines, out int firstBlockLineCount)
         {
             firstBlockLineCount = 0;
             var lines = new List<string>();
             char? previousBulletMarker = null;
             var previousStart = 0;
-            for (var i = 0; i < blocks.Count; i++)
+            for (var i = 0; i < blocks.Length; i++)
             {
                 var block = blocks[i];
                 var previous = i > 0 ? blocks[i - 1] : null;
@@ -257,7 +258,7 @@ public static class MarkdownFormatter
                 {
                     previousBulletMarker = null;
                     var start = lines.Count;
-                    WriteBlock(lines, block, previous, i + 1 < blocks.Count ? blocks[i + 1] : null, blankLine, previousStart);
+                    WriteBlock(lines, block, previous, i + 1 < blocks.Length ? blocks[i + 1] : null, blankLine, previousStart);
                     previousStart = start;
                 }
 
@@ -311,13 +312,13 @@ public static class MarkdownFormatter
             {
                 var children = block switch
                 {
-                    MarkdownListSyntax list => list.Items.Count > 0 ? list.Items[^1].Blocks : null,
+                    MarkdownListSyntax list => list.Items.Length > 0 ? list.Items[^1].Blocks : [],
                     MarkdownListItemSyntax item => item.Blocks,
                     MarkdownBlockQuoteSyntax quote => quote.Blocks,
                     MarkdownAlertSyntax alert => alert.Blocks,
                     MarkdownFootnoteDefinitionSyntax footnote => footnote.Blocks,
                     MarkdownFooterSyntax footer => footer.Blocks,
-                    _ => null,
+                    _ => ImmutableArray<MarkdownBlockSyntax>.Empty,
                 };
 
                 if (children is not [.., var last])
@@ -665,7 +666,7 @@ public static class MarkdownFormatter
         private bool IsContinuation(ContinuedBlock continuedBlock, string text, SyntaxKind kind, string? underline)
         {
             var blocks = MarkdownSyntaxTree.ParseText(continuedBlock.Text + "\n" + text + (underline is null ? "" : "\n" + underline), parseOptions).GetRoot().Blocks;
-            return blocks.Count >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
+            return blocks.Length >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
         }
 
         // The blocks tell whether the text is a paragraph, without parsing its inlines and building its tree, except for the pipe
@@ -797,25 +798,25 @@ public static class MarkdownFormatter
 
         // The spaces that start the first line of the block after a list, such as the ones of an HTML block, which are part of it:
         // the content of the items must be indented more, or the line would be in the last item
-        private int GetIndentationOfNextBlock(IReadOnlyList<MarkdownBlockSyntax> blocks, int index)
+        private int GetIndentationOfNextBlock(ImmutableArray<MarkdownBlockSyntax> blocks, int index)
         {
-            if (index + 1 >= blocks.Count || blocks[index + 1] is MarkdownListSyntax)
+            if (index + 1 >= blocks.Length || blocks[index + 1] is MarkdownListSyntax)
             {
                 return 0;
             }
 
             var next = new List<string>();
-            WriteBlock(next, blocks[index + 1], blocks[index], index + 2 < blocks.Count ? blocks[index + 2] : null, blankLine: true, previousStart: 0);
+            WriteBlock(next, blocks[index + 1], blocks[index], index + 2 < blocks.Length ? blocks[index + 2] : null, blankLine: true, previousStart: 0);
             return next.Count == 0 ? 0 : next[0].Length - next[0].TrimStart(' ').Length;
         }
 
         private char? WriteList(List<string> lines, MarkdownListSyntax list, char? previousBulletMarker, int indentationOfNextBlock, string? context)
         {
             var items = list.Items;
-            var contents = new List<string>[items.Count];
-            var firstBlockLineCounts = new int[items.Count];
-            var taskMarkers = new string[items.Count];
-            for (var i = 0; i < items.Count; i++)
+            var contents = new List<string>[items.Length];
+            var firstBlockLineCounts = new int[items.Length];
+            var taskMarkers = new string[items.Length];
+            for (var i = 0; i < items.Length; i++)
             {
                 contents[i] = WriteBlocks(items[i].Blocks, list.IsTight ? BlankLines.Never : BlankLines.Always, out firstBlockLineCounts[i]);
                 taskMarkers[i] = items[i].IsTask ? items[i].TaskListItemMarkerToken.Text + " " : "";
@@ -834,8 +835,8 @@ public static class MarkdownFormatter
                 }
             }
 
-            var renumber = options.RenumberOrderedLists && list.OrderedStyle is MarkdownOrderedListStyle.Numbers && list.StartNumber is { } start && (long)start + items.Count - 1 <= 999_999_999;
-            for (var i = 0; i < items.Count; i++)
+            var renumber = options.RenumberOrderedLists && list.OrderedStyle is MarkdownOrderedListStyle.Numbers && list.StartNumber is { } start && (long)start + items.Length - 1 <= 999_999_999;
+            for (var i = 0; i < items.Length; i++)
             {
                 // The end of a list item closes an HTML block that ends on a marker, such as ?>, which would contain the blank line,
                 // and Markdig counts the blank line after a definition as one of the definition
@@ -867,7 +868,7 @@ public static class MarkdownFormatter
 
                 // The content of an empty item starts after its marker and one space, whatever the width of the other items: the
                 // next block would be its content when it is indented as much. A blank line ends an empty item.
-                if (i == items.Count - 1 && content.Count == 0 && taskMarkers[i].Length == 0 && indentationOfNextBlock >= marker.Length + 1)
+                if (i == items.Length - 1 && content.Count == 0 && taskMarkers[i].Length == 0 && indentationOfNextBlock >= marker.Length + 1)
                 {
                     AddBlankLine(lines);
                 }
@@ -905,14 +906,14 @@ public static class MarkdownFormatter
         // that starts with the same block: "- ---" is a thematic break, "- -|" is a list in a list instead of a table, and
         // "+ ---" is a paragraph when Markdig reads grid tables. It is null when no marker is valid.
         // The formatter writes the code blocks and the headings in another style
-        private static SyntaxKind GetFirstBlockKind(MarkdownListItemSyntax item) => item.Blocks.Count == 0 ? SyntaxKind.None : item.Blocks[0].Kind() switch
+        private static SyntaxKind GetFirstBlockKind(MarkdownListItemSyntax item) => item.Blocks.Length == 0 ? SyntaxKind.None : item.Blocks[0].Kind() switch
         {
             SyntaxKind.IndentedCodeBlock => SyntaxKind.FencedCodeBlock,
             SyntaxKind.SetextHeading => SyntaxKind.AtxHeading,
             var kind => kind,
         };
 
-        private char? ChooseBulletMarker(char preferred, char? previousBulletMarker, IReadOnlyList<MarkdownListItemSyntax> items, List<string>[] contents, int[] firstBlockLineCounts, string[] taskMarkers, string? context)
+        private char? ChooseBulletMarker(char preferred, char? previousBulletMarker, ImmutableArray<MarkdownListItemSyntax> items, List<string>[] contents, int[] firstBlockLineCounts, string[] taskMarkers, string? context)
         {
             foreach (var candidate in (ReadOnlySpan<char>)[preferred, '-', '*', '+'])
             {
@@ -995,9 +996,9 @@ public static class MarkdownFormatter
             return column;
         }
 
-        private void WriteFencedContainer(List<string> lines, MarkdownBlockSyntax container, IReadOnlyList<MarkdownBlockSyntax> blocks, SyntaxToken closingFence, MarkdownFigureCaptionSyntax? caption)
+        private void WriteFencedContainer(List<string> lines, MarkdownBlockSyntax container, ImmutableArray<MarkdownBlockSyntax> blocks, SyntaxToken closingFence, MarkdownFigureCaptionSyntax? caption)
         {
-            var end = Math.Min(blocks.Count > 0 ? blocks[0].SpanStart : int.MaxValue, closingFence.RawKind != 0 ? closingFence.SpanStart : int.MaxValue);
+            var end = Math.Min(blocks.Length > 0 ? blocks[0].SpanStart : int.MaxValue, closingFence.RawKind != 0 ? closingFence.SpanStart : int.MaxValue);
             // The opening fence, with the arguments of a custom container or the caption of a figure
             var opening = container.DescendantTokens().Where(token => token.SpanStart < end);
             lines.AddRange(GetLines(opening));
@@ -1017,7 +1018,7 @@ public static class MarkdownFormatter
         private void WriteDefinitionList(List<string> lines, MarkdownDefinitionListSyntax definitionList)
         {
             var items = definitionList.Items;
-            for (var i = 0; i < items.Count; i++)
+            for (var i = 0; i < items.Length; i++)
             {
                 var item = items[i];
                 if (i > 0 && HasBlankLineBefore(item))
@@ -1030,13 +1031,13 @@ public static class MarkdownFormatter
 
                 if (item.MarkerToken.RawKind != 0)
                 {
-                    if (item.Terms.Count > 0 && HasLineEnding(item.MarkerToken.LeadingTrivia))
+                    if (item.Terms.Length > 0 && HasLineEnding(item.MarkerToken.LeadingTrivia))
                     {
                         AddBlankLine(lines);
                     }
 
                     // A definition without content is its marker and the spaces after it, which make the marker one
-                    if (item.Blocks.Count == 0)
+                    if (item.Blocks.Length == 0)
                     {
                         lines.Add(item.MarkerToken.Text + "   ");
                     }
@@ -1072,7 +1073,7 @@ public static class MarkdownFormatter
             // A cell whose text is on several lines, such as a link of Markdig that spans rows, is kept as it is, and so is a
             // cell next to a pipe when what is next to its text changes what it is
             // An inline extension reads the character before its trigger character too
-            var contextSensitive = (parseOptions.Extensions & ContextSensitiveInlines) != MarkdownExtensions.None || parseOptions.SyntaxExtensions.Count > 0;
+            var contextSensitive = (parseOptions.Extensions & ContextSensitiveInlines) != MarkdownExtensions.None || parseOptions.SyntaxExtensions.Length > 0;
             foreach (var row in table.ChildNodes().OfType<MarkdownTableRowSyntax>())
             {
                 foreach (var cell in row.Cells)
@@ -1113,7 +1114,7 @@ public static class MarkdownFormatter
                 if (row.IsDelimiter)
                 {
                     delimiterIndex = rows.Count;
-                    rows.Add(new string[table.Alignments.Count]);
+                    rows.Add(new string[table.Alignments.Length]);
                     continue;
                 }
 
@@ -1139,7 +1140,7 @@ public static class MarkdownFormatter
             for (var i = 0; i < delimiterCells.Length; i++)
             {
                 var width = widths[i];
-                delimiterCells[i] = (i < alignments.Count ? alignments[i] : MarkdownTableAlignment.None) switch
+                delimiterCells[i] = (i < alignments.Length ? alignments[i] : MarkdownTableAlignment.None) switch
                 {
                     MarkdownTableAlignment.Left => ":" + new string('-', width - 1),
                     MarkdownTableAlignment.Right => new string('-', width - 1) + ":",

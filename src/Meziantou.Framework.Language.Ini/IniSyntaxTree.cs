@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Green = Meziantou.Framework.Language.Ini.Syntax.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Ini;
@@ -18,7 +19,7 @@ public sealed class IniSyntaxTree : SyntaxTree
 {
     private readonly SourceText _text;
     private readonly IniDocumentSyntax _root;
-    private IReadOnlyList<Diagnostic>? _diagnostics;
+    private ImmutableArray<Diagnostic> _diagnostics;
 
     private IniSyntaxTree(SourceText text, Green.IniDocumentSyntax green, string? path)
     {
@@ -103,7 +104,15 @@ public sealed class IniSyntaxTree : SyntaxTree
     }
 
     /// <summary>Gets every diagnostic in the tree, in source order.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics ??= base.GetDiagnostics();
+    public override ImmutableArray<Diagnostic> GetDiagnostics()
+    {
+        if (_diagnostics.IsDefault)
+        {
+            _diagnostics = base.GetDiagnostics();
+        }
+
+        return _diagnostics;
+    }
 
     /// <summary>Returns a tree over <paramref name="newText"/>, parsed with the same options.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="newText"/> is <see langword="null"/>.</exception>
@@ -128,7 +137,7 @@ public sealed class IniSyntaxTree : SyntaxTree
 
     /// <summary>Describes how <paramref name="oldTree"/> would have to change to become this one.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public IReadOnlyList<TextChange> GetChanges(IniSyntaxTree oldTree) => base.GetChanges(oldTree);
+    public ImmutableArray<TextChange> GetChanges(IniSyntaxTree oldTree) => base.GetChanges(oldTree);
 
     /// <summary>Determines whether the two trees have the same structure and text, and are read with equal options.</summary>
     /// <remarks>Trees read with different options can have the same text and structure, but not the same values.</remarks>

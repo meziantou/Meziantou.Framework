@@ -95,7 +95,7 @@ public static partial class JavaScriptEngineFuzzTargets
             return (false, diagnostic.Id == "REGEX0200", diagnostic.Message, []);
         }
 
-        var groupNames = new string?[tree.Captures.Count + 1];
+        var groupNames = new string?[tree.Captures.Length + 1];
         foreach (var node in tree.GetRoot().DescendantNodes())
         {
             if (node is RegexNamedGroupSyntax named && named.Number < groupNames.Length)

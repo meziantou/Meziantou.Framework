@@ -9,7 +9,7 @@ public sealed class ShellParseCommandTests
 
         var command = Assert.IsType<ShellCommandSyntax>(statement);
         Assert.Equal("git", command.NameValue);
-        Assert.Equal(3, command.Arguments.Count);
+        Assert.HasCount(3, command.Arguments);
         Assert.Equal("-m", command.Arguments[1].Value);
         Assert.Equal("wip", command.Arguments[2].Value);
     }

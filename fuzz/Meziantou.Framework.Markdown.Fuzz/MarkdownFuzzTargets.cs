@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Fuzzing;
@@ -54,7 +55,7 @@ public static class MarkdownFuzzTargets
     // Inline extensions whose content is text, markers or inlines, and a delimiter extension, with GFM or with every extension
     // whose characters they do not use
     private static readonly GlossaryExtension Glossary = new();
-    private static readonly MarkdownSyntaxExtension[] SampleSyntaxExtensions =
+    private static readonly ImmutableArray<MarkdownSyntaxExtension> SampleSyntaxExtensions =
     [
         new MentionExtension(), new SpanExtension(), new GlossaryTermExtension(Glossary), new WikiLinkExtension(), new MarkdownDelimiterExtension("highlight", '%'), new MarkdownDelimiterExtension("spoiler", '|', minimumCount: 1, maximumCount: 3),
         Glossary, new FenceExtension("admonition", "!!!", MarkdownFencedBlockContent.Blocks) { ParseInfoAsInlines = true }, new FenceExtension("raw", "%%%", MarkdownFencedBlockContent.RawLines) { CanInterruptParagraph = false }, new TranscriptExtension(),
@@ -88,7 +89,7 @@ public static class MarkdownFuzzTargets
     // With AllowedUrlSchemes, the HTML is the one without it, where the href and the src of each tag whose URL has a scheme that
     // is not allowed are empty: a URL with such a scheme never comes out, and the other URLs are kept. The scheme is read as a
     // browser reads it, independently of the renderer. Raw HTML is disabled: the filter does not apply to it.
-    private static readonly string[] AllowedUrlSchemes = ["http", "https", "mailto"];
+    private static readonly ImmutableArray<string> AllowedUrlSchemes = ["http", "https", "mailto"];
     private static readonly MarkdownParseOptions[] UrlFilterParseOptions = [MarkdownParseOptions.GitHubFlavored with { DisableHtml = true }, AllExtensionsWithoutHtml];
     private static readonly MarkdownHtmlRendererOptions UnfilteredUrlOptions = new() { LinkRel = "nofollow", PragmaLines = true };
     private static readonly MarkdownHtmlRendererOptions FilteredUrlOptions = UnfilteredUrlOptions with { AllowedUrlSchemes = AllowedUrlSchemes };
@@ -250,16 +251,16 @@ public static class MarkdownFuzzTargets
         var tree = MarkdownSyntaxTree.ParseText(text, options);
         foreach (var node in tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionBlockSyntax>())
         {
-            FuzzAssert.True(Array.Exists(SampleSyntaxExtensions, extension => extension.Name == node.Name), $"The block at {node.Span} has the name {FuzzAssert.Format(node.Name)}: {FuzzAssert.Format(text)}");
-            FuzzAssert.True(node.Markers.Count > 0 || node.Texts.Count > 0, $"The block {node.Name} at {node.Span} has no marker and no text: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(SampleSyntaxExtensions.Any(extension => extension.Name == node.Name), $"The block at {node.Span} has the name {FuzzAssert.Format(node.Name)}: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(node.Markers.Length > 0 || node.Texts.Length > 0, $"The block {node.Name} at {node.Span} has no marker and no text: {FuzzAssert.Format(text)}");
             FuzzAssert.True(node.IsFenced == node.Name is "admonition" or "raw" or "glossary", $"The block {node.Name} at {node.Span} is fenced: {node.IsFenced}: {FuzzAssert.Format(text)}");
             _ = (node.Info, node.Content, node.Lines, node.Blocks, node.Texts, node.GetPlainText());
         }
 
         foreach (var node in tree.GetRoot().DescendantNodes().OfType<MarkdownExtensionInlineSyntax>())
         {
-            FuzzAssert.True(Array.Exists(SampleSyntaxExtensions, extension => extension.Name == node.Name), $"The construct at {node.Span} has the name {FuzzAssert.Format(node.Name)}: {FuzzAssert.Format(text)}");
-            FuzzAssert.True(node.Markers.Count > 0, $"The construct {node.Name} at {node.Span} has no marker: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(SampleSyntaxExtensions.Any(extension => extension.Name == node.Name), $"The construct at {node.Span} has the name {FuzzAssert.Format(node.Name)}: {FuzzAssert.Format(text)}");
+            FuzzAssert.True(node.Markers.Length > 0, $"The construct {node.Name} at {node.Span} has no marker: {FuzzAssert.Format(text)}");
             _ = (node.Texts, node.Text, node.GetPlainText());
         }
 
@@ -482,7 +483,7 @@ public static class MarkdownFuzzTargets
                     break;
                 case MarkdownListSyntax list:
                     _ = (list.IsTight, list.StartNumber, list.MarkerCharacter);
-                    FuzzAssert.True(list.Items.Count > 0, $"The list at {list.Span} has no item: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(list.Items.Length > 0, $"The list at {list.Span} has no item: {FuzzAssert.Format(text)}");
                     break;
                 case MarkdownListItemSyntax item:
                     _ = (item.IsTask, item.IsChecked, item.MarkerToken);
@@ -498,10 +499,10 @@ public static class MarkdownFuzzTargets
                     break;
                 case MarkdownGridTableSyntax grid:
                     // The cells are in the columns of the table, and their content is a document of its own
-                    FuzzAssert.True(grid.Columns.Count > 0, $"The grid table at {grid.Span} has no column: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(grid.Columns.Length > 0, $"The grid table at {grid.Span} has no column: {FuzzAssert.Format(text)}");
                     foreach (var cell in grid.Rows.SelectMany(row => row.Cells))
                     {
-                        FuzzAssert.True(cell.ColumnIndex >= 0 && cell.ColumnSpan > 0 && cell.ColumnIndex + cell.ColumnSpan <= grid.Columns.Count && cell.RowSpan > 0, $"The cell of the grid table at {grid.Span} has the columns {cell.ColumnIndex} to {cell.ColumnIndex + cell.ColumnSpan} and {cell.RowSpan} rows: {FuzzAssert.Format(text)}");
+                        FuzzAssert.True(cell.ColumnIndex >= 0 && cell.ColumnSpan > 0 && cell.ColumnIndex + cell.ColumnSpan <= grid.Columns.Length && cell.RowSpan > 0, $"The cell of the grid table at {grid.Span} has the columns {cell.ColumnIndex} to {cell.ColumnIndex + cell.ColumnSpan} and {cell.RowSpan} rows: {FuzzAssert.Format(text)}");
                         FuzzAssert.True(cell.Content.GetRoot().ToFullString() == cell.Text, $"The content of the cell of the grid table at {grid.Span} does not reproduce its text: {FuzzAssert.Format(text)}");
                         CheckCellContent(tree, grid, cell, text);
                     }
@@ -509,16 +510,16 @@ public static class MarkdownFuzzTargets
                     break;
                 case MarkdownTableSyntax { IsPipeTable: true, DelimiterRow: { } delimiterRow } pipeTable:
                     // A pipe table has a header cell and a delimiter row, whose columns are read from its text
-                    FuzzAssert.True(pipeTable.Alignments.Count > 0 && pipeTable.Alignments.Count >= delimiterRow.DelimiterTokens.Count, $"The pipe table at {pipeTable.Span} has {pipeTable.Alignments.Count} columns for {delimiterRow.DelimiterTokens.Count} delimiters: {FuzzAssert.Format(text)}");
-                    FuzzAssert.True(pipeTable.HeaderRow is { Cells.Count: > 0 }, $"The pipe table at {pipeTable.Span} has no header cell: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(pipeTable.Alignments.Length > 0 && pipeTable.Alignments.Length >= delimiterRow.DelimiterTokens.Length, $"The pipe table at {pipeTable.Span} has {pipeTable.Alignments.Length} columns for {delimiterRow.DelimiterTokens.Length} delimiters: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(pipeTable.HeaderRow is { Cells.Length: > 0 }, $"The pipe table at {pipeTable.Span} has no header cell: {FuzzAssert.Format(text)}");
                     _ = pipeTable.Rows;
                     break;
                 case MarkdownTableSyntax { IsPipeTable: true } pipeTable:
                     // A pipe table without a delimiter row is allowed by the options, and has only rows
-                    FuzzAssert.True(!tree.Options.PipeTableOptions.RequireHeaderSeparator && pipeTable.HeaderRow is null && pipeTable.Rows.Count > 0 && pipeTable.Alignments.Count == 0, $"The pipe table at {pipeTable.Span} has no delimiter row: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(!tree.Options.PipeTableOptions.RequireHeaderSeparator && pipeTable.HeaderRow is null && pipeTable.Rows.Length > 0 && pipeTable.Alignments.Length == 0, $"The pipe table at {pipeTable.Span} has no delimiter row: {FuzzAssert.Format(text)}");
                     break;
                 case MarkdownTableSyntax table:
-                    FuzzAssert.True(table.HeaderRow is not null && table.Alignments.Count == table.HeaderRow.Cells.Count, $"The table at {table.Span} has {table.Alignments.Count} columns and {table.HeaderRow?.Cells.Count} header cells: {FuzzAssert.Format(text)}");
+                    FuzzAssert.True(table.HeaderRow is not null && table.Alignments.Length == table.HeaderRow.Cells.Length, $"The table at {table.Span} has {table.Alignments.Length} columns and {table.HeaderRow?.Cells.Length} header cells: {FuzzAssert.Format(text)}");
                     _ = table.Rows;
                     break;
                 case MarkdownCodeSpanSyntax codeSpan:

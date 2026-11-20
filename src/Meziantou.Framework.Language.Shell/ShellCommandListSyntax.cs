@@ -1,19 +1,20 @@
+using System.Collections.Immutable;
 namespace Meziantou.Framework.Language.Shell;
 
 public sealed partial class ShellCommandListSyntax
 {
     /// <summary>The operators joining the pipelines.</summary>
-    public IReadOnlyList<SyntaxToken> OperatorTokens
+    public ImmutableArray<SyntaxToken> OperatorTokens
     {
         get
         {
-            var separators = new List<SyntaxToken>(Pipelines.SeparatorCount);
+            var separators = ImmutableArray.CreateBuilder<SyntaxToken>(Pipelines.SeparatorCount);
             for (var index = 0; index < Pipelines.SeparatorCount; index++)
             {
                 separators.Add(Pipelines.GetSeparator(index));
             }
 
-            return separators;
+            return separators.MoveToImmutable();
         }
     }
 }

@@ -256,7 +256,7 @@ internal static class SyntaxTreeInvariants
         }
 
         var line = sourceText.GetLine(position);
-        FuzzAssert.True(line.Start <= position && line.Start <= line.End && line.LineNumber >= 0 && line.LineNumber < sourceText.Lines.Count, $"GetLine({position}) returns the line {line.LineNumber} at [{line.Start}..{line.End})");
+        FuzzAssert.True(line.Start <= position && line.Start <= line.End && line.LineNumber >= 0 && line.LineNumber < sourceText.Lines.Length, $"GetLine({position}) returns the line {line.LineNumber} at [{line.Start}..{line.End})");
     }
 
     private static void CheckDiagnostics(SyntaxTree tree, string text, string diagnosticPrefix, bool diagnosticsOnNodes, bool diagnosticsInSourceOrder)
@@ -284,7 +284,7 @@ internal static class SyntaxTreeInvariants
 
         if (diagnosticsOnNodes)
         {
-            FuzzAssert.Equal(diagnostics.Count > 0, tree.GetRoot().ContainsDiagnostics, "ContainsDiagnostics of the root does not tell whether the tree has diagnostics");
+            FuzzAssert.Equal(diagnostics.Length > 0, tree.GetRoot().ContainsDiagnostics, "ContainsDiagnostics of the root does not tell whether the tree has diagnostics");
         }
     }
 

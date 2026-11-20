@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.Syntax;
 
 namespace Meziantou.Framework.Language;
@@ -56,7 +57,7 @@ public abstract class SyntaxTree
     /// A language that keeps its diagnostics in a list of its own rather than on the nodes overrides this, so that a
     /// caller holding the tree through this type still sees them.
     /// </remarks>
-    public virtual IReadOnlyList<Diagnostic> GetDiagnostics()
+    public virtual ImmutableArray<Diagnostic> GetDiagnostics()
     {
         var root = GetRoot();
 
@@ -88,7 +89,7 @@ public abstract class SyntaxTree
 
     /// <summary>Describes how <paramref name="oldTree"/> would have to change to become this one.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public virtual IReadOnlyList<TextChange> GetChanges(SyntaxTree oldTree)
+    public virtual ImmutableArray<TextChange> GetChanges(SyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
 
@@ -97,7 +98,7 @@ public abstract class SyntaxTree
 
     /// <summary>Gets the ranges of this tree that differ from <paramref name="oldTree"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public virtual IReadOnlyList<TextSpan> GetChangedSpans(SyntaxTree oldTree) => [.. GetChanges(oldTree).Select(change => change.Span)];
+    public virtual ImmutableArray<TextSpan> GetChangedSpans(SyntaxTree oldTree) => GetChanges(oldTree).Select(change => change.Span).ToImmutableArray();
 
     /// <summary>Determines whether the two trees have the same structure and text.</summary>
     public virtual bool IsEquivalentTo([NotNullWhen(true)] SyntaxTree? other) => other is not null && GetRoot().IsEquivalentTo(other.GetRoot());

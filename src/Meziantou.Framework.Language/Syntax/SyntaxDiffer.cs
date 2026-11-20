@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Meziantou.Framework.Language.Syntax;
 
 /// <summary>Works out what changed between two trees by comparing the immutable nodes behind them.</summary>
@@ -8,7 +10,7 @@ namespace Meziantou.Framework.Language.Syntax;
 /// </remarks>
 internal static class SyntaxDiffer
 {
-    public static IReadOnlyList<TextChange> GetChanges(SyntaxNode oldRoot, SyntaxNode newRoot)
+    public static ImmutableArray<TextChange> GetChanges(SyntaxNode oldRoot, SyntaxNode newRoot)
     {
         var changes = new List<TextChange>();
         Compare(oldRoot, newRoot, changes);
@@ -52,12 +54,12 @@ internal static class SyntaxDiffer
         }
     }
 
-    private static List<TextChange> Coalesce(List<TextChange> changes)
+    private static ImmutableArray<TextChange> Coalesce(List<TextChange> changes)
     {
         if (changes.Count < 2)
-            return changes;
+            return [.. changes];
 
-        var result = new List<TextChange>(changes.Count);
+        var result = ImmutableArray.CreateBuilder<TextChange>(changes.Count);
         var current = changes[0];
         for (var i = 1; i < changes.Count; i++)
         {
@@ -74,6 +76,6 @@ internal static class SyntaxDiffer
 
         result.Add(current);
 
-        return result;
+        return result.DrainToImmutable();
     }
 }

@@ -866,7 +866,7 @@ public sealed class TomlSyntaxTreeTests
 
         var diagnostics = TomlSyntaxTree.ParseText(text).GetDiagnostics();
 
-        Assert.Equal(2_000, diagnostics.Count);
+        Assert.HasCount(2_000, diagnostics);
         Assert.All(diagnostics, diagnostic => Assert.HasCountLessThan(300, diagnostic.Message));
         Assert.StartsWith("The key 'a.a.", diagnostics[0].Message, StringComparison.Ordinal);
         Assert.EndsWith(".a.a.x' is already defined.", diagnostics[0].Message, StringComparison.Ordinal);

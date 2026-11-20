@@ -48,7 +48,7 @@ public sealed class RegexConformanceTests
 
             var expectedNames = record.GetProperty("names").EnumerateArray().Select(name => name.GetString()!).ToArray();
             var actualNames = tree.Captures.Select(capture => capture.Name).Where(name => !char.IsAsciiDigit(name[0])).Distinct(StringComparer.Ordinal).ToArray();
-            CheckCaptures(tree.Captures.Count, record, label, failures);
+            CheckCaptures(tree.Captures.Length, record, label, failures);
             if (!expectedNames.SequenceEqual(actualNames, StringComparer.Ordinal))
             {
                 failures.Add($"{label}: names [{string.Join(", ", actualNames)}], V8 has [{string.Join(", ", expectedNames)}]");
@@ -80,7 +80,7 @@ public sealed class RegexConformanceTests
                 continue;
 
             // PCRE reports the highest group number, which a branch reset group makes smaller than the group count.
-            CheckCaptures(tree.Captures.Count == 0 ? 0 : tree.Captures.Max(capture => capture.Number), record, label, failures);
+            CheckCaptures(tree.Captures.Length == 0 ? 0 : tree.Captures.Max(capture => capture.Number), record, label, failures);
 
             // Every name with every number it is given, which duplicate names allowed by "(?J)" make more than one.
             var expectedNames = record.GetProperty("names").EnumerateArray()
@@ -118,7 +118,7 @@ public sealed class RegexConformanceTests
             var label = $"{dialect.Name} [{pattern}]";
             if (CheckValidity(tree, record, label, failures))
             {
-                CheckCaptures(tree.Captures.Count, record, label, failures);
+                CheckCaptures(tree.Captures.Length, record, label, failures);
             }
         }
 
@@ -131,16 +131,16 @@ public sealed class RegexConformanceTests
     {
         var expectedValid = record.GetProperty("valid").GetBoolean();
         var diagnostics = tree.GetDiagnostics();
-        if (expectedValid && diagnostics.Count > 0)
+        if (expectedValid && diagnostics.Length > 0)
         {
             failures.Add($"{label}: the engine accepts it, the parser reported {string.Join(", ", diagnostics.Select(diagnostic => $"{diagnostic.Id} {diagnostic.Message}"))}");
         }
-        else if (!expectedValid && diagnostics.Count == 0)
+        else if (!expectedValid && diagnostics.Length == 0)
         {
             failures.Add($"{label}: the engine rejects it, the parser reported nothing");
         }
 
-        return expectedValid && diagnostics.Count == 0;
+        return expectedValid && diagnostics.Length == 0;
     }
 
     private static void CheckCaptures(int actual, JsonElement record, string label, List<string> failures)

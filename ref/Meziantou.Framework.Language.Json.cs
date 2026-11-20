@@ -176,8 +176,8 @@ namespace Meziantou.Framework.Language.Json
     {
         public override string? FilePath { get => throw null; }
         public static Meziantou.Framework.Language.Json.JsonSyntaxTree Create(Meziantou.Framework.Language.Json.JsonDocumentSyntax root, string? path = null) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Json.JsonSyntaxTree oldTree) => throw null;
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Json.JsonSyntaxTree oldTree) => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public new Meziantou.Framework.Language.Json.JsonDocumentSyntax GetRoot() => throw null;
         protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;

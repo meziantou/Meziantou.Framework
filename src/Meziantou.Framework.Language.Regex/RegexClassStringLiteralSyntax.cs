@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Language.Regex;
 
 /// <summary>Represents a JavaScript <c>v</c>-mode string disjunction inside a class, <c>\q{abc|def}</c>.</summary>
@@ -11,5 +13,5 @@ public sealed partial class RegexClassStringLiteralSyntax : RegexSyntaxNode
     public string Value => TextToken.Text;
 
     /// <summary>The alternatives the disjunction lists.</summary>
-    public IReadOnlyList<string> Alternatives => Value.Length == 0 ? [] : Value.Split('|');
+    public ImmutableArray<string> Alternatives => Value.Length == 0 ? [] : ImmutableCollectionsMarshal.AsImmutableArray(Value.Split('|'));
 }

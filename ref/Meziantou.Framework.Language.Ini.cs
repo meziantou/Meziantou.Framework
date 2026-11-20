@@ -16,9 +16,9 @@ namespace Meziantou.Framework.Language.Ini
     {
         public Meziantou.Framework.Language.SyntaxToken EndOfFileToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxList<Meziantou.Framework.Language.Ini.IniEntrySyntax> Entries { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Ini.IniPropertySyntax> GlobalProperties { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Ini.IniPropertySyntax> GlobalProperties { get => throw null; }
         public Meziantou.Framework.Language.Ini.IniParseOptions Options { get => throw null; }
-        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Language.Ini.IniSectionSyntax> Sections { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Ini.IniSectionSyntax> Sections { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public Meziantou.Framework.Language.Ini.IniDocumentSyntax AddEntries(params Meziantou.Framework.Language.Ini.IniEntrySyntax[] items) => throw null;
@@ -103,7 +103,7 @@ namespace Meziantou.Framework.Language.Ini
         public string Name { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken NameToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken OpenBracketToken { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Ini.IniPropertySyntax> Properties { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Ini.IniPropertySyntax> Properties { get => throw null; }
         public override void Accept(Meziantou.Framework.Language.Ini.IniSyntaxVisitor visitor) { }
         public override TResult? Accept<TResult>(Meziantou.Framework.Language.Ini.IniSyntaxVisitor<TResult> visitor) where TResult : default => throw null;
         public Meziantou.Framework.Language.Ini.IniSectionSyntax Update(Meziantou.Framework.Language.SyntaxToken openBracketToken, Meziantou.Framework.Language.SyntaxToken nameToken, Meziantou.Framework.Language.SyntaxToken closeBracketToken) => throw null;
@@ -150,8 +150,8 @@ namespace Meziantou.Framework.Language.Ini
         public Meziantou.Framework.Language.Ini.IniParseOptions Options { get => throw null; }
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree Create(Meziantou.Framework.Language.Ini.IniDocumentSyntax root, string? path = null) => throw null;
         public static Meziantou.Framework.Language.Ini.IniSyntaxTree Create(Meziantou.Framework.Language.Ini.IniDocumentSyntax root, Meziantou.Framework.Language.Ini.IniParseOptions? options, string? path = null) => throw null;
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Ini.IniSyntaxTree oldTree) => throw null;
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.Ini.IniSyntaxTree oldTree) => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public new Meziantou.Framework.Language.Ini.IniDocumentSyntax GetRoot() => throw null;
         protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;

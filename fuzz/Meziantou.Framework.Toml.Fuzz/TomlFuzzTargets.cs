@@ -596,7 +596,7 @@ public static class TomlFuzzTargets
         if (oracleDiagnostics.Any(diagnostic => diagnostic.Id is "TOML0012"))
             return;
 
-        var expected = oracleDiagnostics.Count == 0;
+        var expected = oracleDiagnostics.Length == 0;
         var doc = SyntaxParser.Parse(toml);
         if (doc.Diagnostics.Any(diagnostic => IsLimitError(diagnostic.Message)))
             return;

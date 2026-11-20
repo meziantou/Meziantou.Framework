@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
@@ -11,13 +12,13 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownListItemSyntax>? _items;
+    private ImmutableArray<MarkdownListItemSyntax> _items;
 
     // 0 when not computed yet, 1 when the list is tight, 2 when it is loose
     private int _tight;
 
     /// <summary>Gets the items of the list.</summary>
-    public IReadOnlyList<MarkdownListItemSyntax> Items => GetNodes(ref _items);
+    public ImmutableArray<MarkdownListItemSyntax> Items => GetNodes(ref _items);
 
     /// <summary>Gets a value indicating whether the items are numbered.</summary>
     public bool IsOrdered => FirstMarker is { Length: > 0 } marker && marker[0] is not ('-' or '+' or '*');
@@ -62,7 +63,7 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
         }
     }
 
-    private string FirstMarker => Items.Count == 0 ? "" : Items[0].MarkerToken.Text;
+    private string FirstMarker => Items.Length == 0 ? "" : Items[0].MarkerToken.Text;
 
     private bool ComputeIsTight()
     {
@@ -73,10 +74,10 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
             return false;
         }
 
-        for (var i = 0; i < items.Count; i++)
+        for (var i = 0; i < items.Length; i++)
         {
             var item = items[i];
-            if (HasBlankLineBetween(item.Blocks, quoteDepth) || HasBlankLineInCustomContainers(item.Blocks, quoteDepth, lastIsExempt: i == items.Count - 1))
+            if (HasBlankLineBetween(item.Blocks, quoteDepth) || HasBlankLineInCustomContainers(item.Blocks, quoteDepth, lastIsExempt: i == items.Length - 1))
             {
                 return false;
             }
@@ -88,16 +89,16 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
     // As in Markdig, a blank line in a custom container of an item, between its fences and its blocks, makes the list loose. Markdig
     // counts it after the container, at the level of the item, and ignores the blank lines at the end of the last item: the
     // blank lines of the last block of the last item do not count.
-    private static bool HasBlankLineInCustomContainers(IReadOnlyList<MarkdownBlockSyntax> blocks, int quoteDepth, bool lastIsExempt)
+    private static bool HasBlankLineInCustomContainers(ImmutableArray<MarkdownBlockSyntax> blocks, int quoteDepth, bool lastIsExempt)
     {
-        for (var index = 0; index < blocks.Count; index++)
+        for (var index = 0; index < blocks.Length; index++)
         {
             if (blocks[index] is not MarkdownCustomContainerSyntax container)
             {
                 continue;
             }
 
-            var exempt = lastIsExempt && index == blocks.Count - 1;
+            var exempt = lastIsExempt && index == blocks.Length - 1;
             var children = container.Blocks;
             var openingLineEnd = container.OpeningFenceToken;
             foreach (var child in container.ChildNodesAndTokens())
@@ -116,7 +117,7 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
                 continue;
             }
 
-            if (children.Count == 0
+            if (children.Length == 0
                 ? closing.RawKind != 0 && IsBlankLineBetween(openingLineEnd, closing, quoteDepth)
                 : IsBlankLineBetween(openingLineEnd, children[0].GetFirstToken(), quoteDepth) || HasBlankLineBetween(children, quoteDepth) || (closing.RawKind != 0 && IsBlankLineBetween(children[^1].GetLastToken(), closing, quoteDepth)) || HasBlankLineInCustomContainers(children, quoteDepth, lastIsExempt: false))
             {
@@ -127,10 +128,10 @@ public sealed class MarkdownListSyntax : MarkdownBlockSyntax
         return false;
     }
 
-    private static bool HasBlankLineBetween<T>(IReadOnlyList<T> nodes, int quoteDepth)
+    private static bool HasBlankLineBetween<T>(ImmutableArray<T> nodes, int quoteDepth)
         where T : MarkdownSyntaxNode
     {
-        for (var i = 1; i < nodes.Count; i++)
+        for (var i = 1; i < nodes.Length; i++)
         {
             if (IsBlankLineBetween(nodes[i - 1].GetLastToken(), nodes[i].GetFirstToken(), quoteDepth))
             {

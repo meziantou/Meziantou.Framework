@@ -129,7 +129,7 @@ internal static class XmlFuzzTargets
             return;
         }
 
-        if (diagnostics.Count > 0)
+        if (diagnostics.Length > 0)
             return;
 
         // The parser reads the document type declaration just far enough to find its end and the names of its entities, so

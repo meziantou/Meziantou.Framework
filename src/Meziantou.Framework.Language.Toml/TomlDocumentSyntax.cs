@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Language.Toml;
@@ -22,7 +24,7 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
     public SyntaxToken EndOfFileToken => new(this, Green.GetSlot(1), GetChildPosition(1), GetChildIndex(1));
 
     /// <summary>Gets the key/value pairs of the root table: the ones before the first table header.</summary>
-    public IReadOnlyList<TomlPropertySyntax> RootProperties => GetProperties(Entries, 0);
+    public ImmutableArray<TomlPropertySyntax> RootProperties => GetProperties(Entries, 0);
 
     /// <summary>Gets the table and array-of-tables headers, in source order.</summary>
     public IEnumerable<TomlTableSyntax> Tables => Entries.OfType<TomlTableSyntax>();
@@ -109,9 +111,9 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
     public IEnumerable<TomlKeyValue> GetKeyValues()
     {
         TomlTableSyntax? table = null;
-        IReadOnlyList<string> headerNames = [];
-        IReadOnlyList<SyntaxToken> headerParts = [];
-        var pending = new Stack<(TomlPropertySyntax Property, IReadOnlyList<string> Names, IReadOnlyList<SyntaxToken> Parts)>();
+        ImmutableArray<string> headerNames = [];
+        ImmutableArray<SyntaxToken> headerParts = [];
+        var pending = new Stack<(TomlPropertySyntax Property, ImmutableArray<string> Names, ImmutableArray<SyntaxToken> Parts)>();
         foreach (var entry in Entries)
         {
             switch (entry)
@@ -128,8 +130,8 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
                     pending.Push((property, headerNames, headerParts));
                     while (pending.TryPop(out var item))
                     {
-                        var names = new TomlKeyValue.Concatenation<string>(item.Names, item.Property.Key.Names);
-                        var parts = new TomlKeyValue.Concatenation<SyntaxToken>(item.Parts, item.Property.Key.Parts);
+                        var names = item.Names.AddRange(item.Property.Key.Names);
+                        var parts = item.Parts.AddRange(item.Property.Key.Parts);
                         yield return new TomlKeyValue(table, names, parts, item.Property);
 
                         if (item.Property.Value is TomlInlineTableSyntax inlineTable)
@@ -171,22 +173,33 @@ public sealed class TomlDocumentSyntax : TomlSyntaxNode
         return GetKeyValues().FirstOrDefault(pair => pair.Names.SequenceEqual(names, StringComparer.Ordinal))?.Value;
     }
 
-    internal static IReadOnlyList<TomlPropertySyntax> GetProperties(SyntaxList<TomlEntrySyntax> entries, int start)
+    internal static ImmutableArray<TomlPropertySyntax> GetProperties(SyntaxList<TomlEntrySyntax> entries, int start)
     {
-        var result = new List<TomlPropertySyntax>();
-        for (var i = start; i < entries.Count; i++)
+        // The properties are counted first, so the array has their number and is not copied
+        var end = start;
+        var count = 0;
+        for (; end < entries.Count && entries[end] is not TomlTableSyntax; end++)
         {
-            switch (entries[i])
+            if (entries[end] is TomlPropertySyntax)
             {
-                case TomlTableSyntax:
-                    return result;
-                case TomlPropertySyntax property:
-                    result.Add(property);
-                    break;
+                count++;
             }
         }
 
-        return result;
+        if (count == 0)
+            return [];
+
+        var result = new TomlPropertySyntax[count];
+        var index = 0;
+        for (var i = start; i < end; i++)
+        {
+            if (entries[i] is TomlPropertySyntax property)
+            {
+                result[index++] = property;
+            }
+        }
+
+        return ImmutableCollectionsMarshal.AsImmutableArray(result);
     }
 
     internal override SyntaxNode? GetNodeSlot(int index) => index == 0 ? GetRedAtZero(ref _entries) : null;

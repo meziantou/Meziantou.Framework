@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.Regex.Internals;
 using Green = Meziantou.Framework.Language.Regex.Syntax.InternalSyntax;
 
@@ -12,9 +13,9 @@ public sealed class RegexSyntaxTree : SyntaxTree
 {
     private readonly SourceText _text;
     private readonly RegexPatternSyntax _root;
-    private readonly IReadOnlyList<Diagnostic> _diagnostics;
+    private readonly ImmutableArray<Diagnostic> _diagnostics;
 
-    private RegexSyntaxTree(SourceText sourceText, RegexParseOptions options, Green.RegexPatternSyntax green, IReadOnlyList<Diagnostic> diagnostics, IReadOnlyList<RegexCaptureInfo> captures, RegexPatternOptions patternOptions)
+    private RegexSyntaxTree(SourceText sourceText, RegexParseOptions options, Green.RegexPatternSyntax green, ImmutableArray<Diagnostic> diagnostics, ImmutableArray<RegexCaptureInfo> captures, RegexPatternOptions patternOptions)
     {
         _text = sourceText;
         _diagnostics = diagnostics;
@@ -34,7 +35,7 @@ public sealed class RegexSyntaxTree : SyntaxTree
     public RegexPatternOptions PatternOptions { get; }
 
     /// <summary>Gets the capture groups the pattern declares, in the order the engine numbers them.</summary>
-    public IReadOnlyList<RegexCaptureInfo> Captures { get; }
+    public ImmutableArray<RegexCaptureInfo> Captures { get; }
 
     public override string? FilePath => null;
 
@@ -44,7 +45,7 @@ public sealed class RegexSyntaxTree : SyntaxTree
     public new RegexPatternSyntax GetRoot() => _root;
 
     /// <summary>Gets everything the parser had to report, in source order.</summary>
-    public override IReadOnlyList<Diagnostic> GetDiagnostics() => _diagnostics;
+    public override ImmutableArray<Diagnostic> GetDiagnostics() => _diagnostics;
 
     /// <summary>Parses <paramref name="pattern"/>. Never throws; problems are reported as diagnostics.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="dialect"/> is <see langword="null"/>.</exception>
@@ -108,7 +109,7 @@ public sealed class RegexSyntaxTree : SyntaxTree
     /// share nodes and a structural comparison would report the whole pattern as replaced.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="oldTree"/> is <see langword="null"/>.</exception>
-    public override IReadOnlyList<TextChange> GetChanges(SyntaxTree oldTree)
+    public override ImmutableArray<TextChange> GetChanges(SyntaxTree oldTree)
     {
         ArgumentNullException.ThrowIfNull(oldTree);
 
@@ -157,7 +158,7 @@ public sealed class RegexSyntaxTree : SyntaxTree
         // The parser reports a construct's problems as it finishes reading it, so a diagnostic about the whole of an
         // unterminated group comes after those about its contents. The sort is stable, which keeps the order of the
         // diagnostics that start at the same position.
-        var diagnostics = parser.Diagnostics.OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start).ToArray();
+        var diagnostics = parser.Diagnostics.OrderBy(diagnostic => diagnostic.Location.SourceSpan.Start).ToImmutableArray();
 
         return new RegexSyntaxTree(source, options, root, diagnostics, parser.Captures, options.PatternOptions);
     }

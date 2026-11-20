@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 namespace Meziantou.Framework.Language.Shell;
 
 /// <summary>Represents a simple command: optional assignments, a command name, arguments, and redirections.</summary>
@@ -12,12 +13,12 @@ public sealed partial class ShellCommandSyntax
     public ShellWordSyntax? Name => Elements.OfType<ShellWordSyntax>().FirstOrDefault();
 
     /// <summary>Every word after the command name.</summary>
-    public IReadOnlyList<ShellWordSyntax> Arguments => [.. Elements.OfType<ShellWordSyntax>().Skip(1)];
+    public ImmutableArray<ShellWordSyntax> Arguments => [.. Elements.OfType<ShellWordSyntax>().Skip(1)];
 
     /// <summary>The assignments that prefix the command, as in <c>FOO=bar cmd</c>.</summary>
-    public IReadOnlyList<ShellAssignmentSyntax> Assignments => [.. Elements.OfType<ShellAssignmentSyntax>()];
+    public ImmutableArray<ShellAssignmentSyntax> Assignments => [.. Elements.OfType<ShellAssignmentSyntax>()];
 
-    public IReadOnlyList<ShellRedirectionSyntax> Redirections => [.. Elements.OfType<ShellRedirectionSyntax>()];
+    public ImmutableArray<ShellRedirectionSyntax> Redirections => [.. Elements.OfType<ShellRedirectionSyntax>()];
 
     /// <summary>Replaces the arguments while keeping the command name, assignments, and redirections in place.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="arguments"/> is <see langword="null"/>.</exception>

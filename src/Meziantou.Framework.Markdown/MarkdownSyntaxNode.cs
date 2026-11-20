@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
@@ -121,23 +123,65 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
         return default;
     }
 
-    private protected IReadOnlyList<SyntaxToken> GetTokens(SyntaxKind kind)
+    private protected ImmutableArray<SyntaxToken> GetTokens(SyntaxKind kind) => GetTokens(kind, kind);
+
+    // The tokens are counted first, so the array has their number and is not copied
+    private protected ImmutableArray<SyntaxToken> GetTokens(SyntaxKind kind, SyntaxKind otherKind)
     {
-        var tokens = new List<SyntaxToken>();
+        var count = 0;
         foreach (var child in ChildNodesAndTokens())
         {
-            if (child.AsToken(out var token) && token.RawKind == (int)kind)
+            if (IsToken(child, kind, otherKind))
             {
-                tokens.Add(token);
+                count++;
             }
         }
 
-        return tokens;
+        if (count == 0)
+        {
+            return [];
+        }
+
+        var tokens = new SyntaxToken[count];
+        var index = 0;
+        foreach (var child in ChildNodesAndTokens())
+        {
+            if (IsToken(child, kind, otherKind))
+            {
+                tokens[index++] = child.AsToken();
+            }
+        }
+
+        return ImmutableCollectionsMarshal.AsImmutableArray(tokens);
+
+        static bool IsToken(SyntaxNodeOrToken child, SyntaxKind kind, SyntaxKind otherKind)
+            => child.IsToken && (child.RawKind == (int)kind || child.RawKind == (int)otherKind);
     }
 
-    private protected IReadOnlyList<T> GetNodes<T>(ref IReadOnlyList<T>? field)
+    // The caches are ImmutableArray fields, whose default is "not computed yet": two threads may both compute the
+    // list, they compute the same one, and writing the field is atomic, as the array is its only field
+    private protected ImmutableArray<SyntaxToken> GetTokens(ref ImmutableArray<SyntaxToken> field, SyntaxKind kind) => GetTokens(ref field, kind, kind);
+
+    private protected ImmutableArray<SyntaxToken> GetTokens(ref ImmutableArray<SyntaxToken> field, SyntaxKind kind, SyntaxKind otherKind)
+    {
+        if (field.IsDefault)
+        {
+            field = GetTokens(kind, otherKind);
+        }
+
+        return field;
+    }
+
+    private protected ImmutableArray<T> GetNodes<T>(ref ImmutableArray<T> field)
         where T : MarkdownSyntaxNode
-        => field ??= [.. ChildNodes().OfType<T>()];
+    {
+        if (field.IsDefault)
+        {
+            field = [.. ChildNodes().OfType<T>()];
+        }
+
+        return field;
+    }
 
     /// <summary>Gets the text of the tokens of <paramref name="kind"/>, with the line breaks between them.</summary>
     private protected string GetTokensText(SyntaxKind kind)

@@ -284,7 +284,7 @@ public sealed class ShellSyntaxTreeTests
         Assert.Empty(tree.GetDiagnostics());
         var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal("echo", command.NameValue);
-        Assert.Equal(2, command.Arguments.Count);
+        Assert.HasCount(2, command.Arguments);
         Assert.Equal("hello", command.Arguments[0].Value);
         Assert.Equal("world", command.Arguments[1].Value);
     }
@@ -296,7 +296,7 @@ public sealed class ShellSyntaxTreeTests
 
         var pipeline = Assert.IsType<ShellPipelineSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
         Assert.Equal(3, pipeline.Commands.Count);
-        Assert.Equal(2, pipeline.OperatorTokens.Count);
+        Assert.HasCount(2, pipeline.OperatorTokens);
         Assert.All(pipeline.OperatorTokens, token => Assert.Equal(SyntaxKind.PipeToken, token.Kind()));
     }
 
@@ -317,7 +317,7 @@ public sealed class ShellSyntaxTreeTests
         var tree = ShellSyntaxTree.ParseText("cd /tmp; ls; pwd", ShellDialect.Bash);
 
         Assert.Equal(3, tree.GetRoot().Statements.Statements.Count);
-        Assert.Equal(2, tree.GetRoot().Statements.SeparatorTokens.Count);
+        Assert.HasCount(2, tree.GetRoot().Statements.SeparatorTokens);
     }
 
     [Fact]
@@ -364,7 +364,7 @@ public sealed class ShellSyntaxTreeTests
         var tree = ShellSyntaxTree.ParseText("FOO=bar BAZ=qux run --now", ShellDialect.Bash);
 
         var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
-        Assert.Equal(2, command.Assignments.Count);
+        Assert.HasCount(2, command.Assignments);
         Assert.Equal("FOO", command.Assignments[0].Name);
         Assert.Equal("bar", command.Assignments[0].Value?.Value);
         Assert.Equal("run", command.NameValue);
@@ -376,7 +376,7 @@ public sealed class ShellSyntaxTreeTests
         var tree = ShellSyntaxTree.ParseText("run 2> errors.log >> out.log", ShellDialect.Bash);
 
         var command = Assert.IsType<ShellCommandSyntax>(Assert.Single(tree.GetRoot().Statements.Statements));
-        Assert.Equal(2, command.Redirections.Count);
+        Assert.HasCount(2, command.Redirections);
         Assert.Equal("2", command.Redirections[0].IoNumberToken.Text);
         Assert.Equal("errors.log", command.Redirections[0].Target?.Value);
         Assert.Equal(SyntaxKind.GreaterThanGreaterThanToken, command.Redirections[1].OperatorToken.Kind());
@@ -589,7 +589,7 @@ public sealed class ShellSyntaxTreeTests
     {
         var tree = ShellSyntaxTree.ParseText("a\nb\nc", ShellDialect.Bash);
 
-        Assert.Equal(3, tree.GetText().Lines.Count);
+        Assert.HasCount(3, tree.GetText().Lines);
         Assert.Equal("b", tree.GetText().Lines[1].Text);
         Assert.Equal(1, tree.GetText().GetLine(2).LineNumber);
     }

@@ -247,7 +247,7 @@ namespace Meziantou.Framework.Language.Regex
 
     public sealed class RegexClassStringLiteralSyntax : Meziantou.Framework.Language.Regex.RegexSyntaxNode
     {
-        public System.Collections.Generic.IReadOnlyList<string> Alternatives { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<string> Alternatives { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken CloseBraceToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken StartToken { get => throw null; }
         public Meziantou.Framework.Language.SyntaxToken TextToken { get => throw null; }
@@ -771,13 +771,13 @@ namespace Meziantou.Framework.Language.Regex
 
     public sealed class RegexSyntaxTree : Meziantou.Framework.Language.SyntaxTree
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Regex.RegexCaptureInfo> Captures { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Regex.RegexCaptureInfo> Captures { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexDialect Dialect { get => throw null; }
         public override string? FilePath { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexParseOptions Options { get => throw null; }
         public Meziantou.Framework.Language.Regex.RegexPatternOptions PatternOptions { get => throw null; }
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
-        public override System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.TextChange> GetChanges(Meziantou.Framework.Language.SyntaxTree oldTree) => throw null;
+        public override System.Collections.Immutable.ImmutableArray<Meziantou.Framework.Language.Diagnostic> GetDiagnostics() => throw null;
         public new Meziantou.Framework.Language.Regex.RegexPatternSyntax GetRoot() => throw null;
         protected override Meziantou.Framework.Language.SyntaxNode GetRootCore() => throw null;
         public override Meziantou.Framework.Language.SourceText GetText() => throw null;

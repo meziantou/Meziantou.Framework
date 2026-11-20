@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Globalization;
 
 using Meziantou.Framework.Language.InternalSyntax;
@@ -61,7 +62,7 @@ internal abstract class RegexParser
 
     public IReadOnlyList<Diagnostic> Diagnostics => _diagnostics;
 
-    public IReadOnlyList<RegexCaptureInfo> Captures { get; private set; } = [];
+    public ImmutableArray<RegexCaptureInfo> Captures { get; private set; } = [];
 
     /// <summary>The builder that collects capture slots, non-null only during the numbering pass.</summary>
     protected RegexCaptureTable.Builder? CaptureBuilder { get; private set; }
@@ -739,12 +740,12 @@ internal abstract class RegexParser
         return new RegexSkippedTextSyntax(token, Options);
     }
 
-    private List<RegexCaptureInfo> BuildCaptures()
+    private ImmutableArray<RegexCaptureInfo> BuildCaptures()
     {
         if (CaptureTable.Numbers.Count == 0)
             return [];
 
-        var captures = new List<RegexCaptureInfo>(CaptureTable.Numbers.Count);
+        var captures = ImmutableArray.CreateBuilder<RegexCaptureInfo>(CaptureTable.Numbers.Count);
         foreach (var number in CaptureTable.Numbers)
         {
             var span = _captureSpans.TryGetValue(number, out var recorded)
@@ -754,6 +755,6 @@ internal abstract class RegexParser
             captures.Add(new RegexCaptureInfo(number, CaptureTable.GetName(number), span));
         }
 
-        return captures;
+        return captures.MoveToImmutable();
     }
 }

@@ -52,6 +52,14 @@ Assert.Equal("Logo", links[1].Title);
 ```
 <!-- endref -->
 
+The properties that give several values, such as the
+[Blocks](cref:Meziantou.Framework.Markdown.MarkdownDocumentSyntax.Blocks) of a document, the
+[Items](cref:Meziantou.Framework.Markdown.MarkdownListSyntax.Items) of a list or the
+[Classes](cref:Meziantou.Framework.Markdown.MarkdownGenericAttributes.Classes) of generic attributes, return an
+`ImmutableArray<T>`, like the collections of the options, such as
+[NodeRenderers](cref:Meziantou.Framework.Markdown.MarkdownHtmlRendererOptions.NodeRenderers): what a tree gives never
+changes once it is made.
+
 [MarkdownSyntaxWalker](cref:Meziantou.Framework.Markdown.MarkdownSyntaxWalker) visits every node of a tree, with
 a method for each type of node.
 

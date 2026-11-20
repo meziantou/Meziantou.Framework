@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
@@ -11,17 +12,28 @@ public sealed class MarkdownDefinitionItemSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownDefinitionTermSyntax>? _terms;
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownDefinitionTermSyntax> _terms;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
 
     /// <summary>Gets the terms of the definition, one per line, or none when the definition follows another one.</summary>
-    public IReadOnlyList<MarkdownDefinitionTermSyntax> Terms => GetNodes(ref _terms);
+    public ImmutableArray<MarkdownDefinitionTermSyntax> Terms => GetNodes(ref _terms);
 
     /// <summary>Gets the marker of the definition: <c>:</c> or <c>~</c>.</summary>
     public SyntaxToken MarkerToken => GetToken(SyntaxKind.DefinitionMarkerToken);
 
     /// <summary>Gets the blocks of the definition, without its terms.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => _blocks ??= [.. ChildNodes().OfType<MarkdownBlockSyntax>().Where(block => block is not MarkdownDefinitionTermSyntax)];
+    public ImmutableArray<MarkdownBlockSyntax> Blocks
+    {
+        get
+        {
+            if (_blocks.IsDefault)
+            {
+                _blocks = [.. ChildNodes().OfType<MarkdownBlockSyntax>().Where(block => block is not MarkdownDefinitionTermSyntax)];
+            }
+
+            return _blocks;
+        }
+    }
 
     // The blank lines that Markdig leaves in the definition, which decide whether its paragraph is written in <p>
     internal int BlankLineCount => MarkerToken.Value is int count ? count : 0;

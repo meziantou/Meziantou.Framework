@@ -157,7 +157,7 @@ public sealed class PowerShellParserTests
         var command = Assert.IsType<ShellCommandSyntax>(ShellSyntaxTree.ParseCommand("Get-ChildItem -Path C:\\temp -Recurse", ShellDialect.PowerShellCore));
 
         Assert.Equal("Get-ChildItem", command.NameValue);
-        Assert.Equal(3, command.Arguments.Count);
+        Assert.HasCount(3, command.Arguments);
         Assert.Equal("-Path", command.Arguments[0].Value);
     }
 

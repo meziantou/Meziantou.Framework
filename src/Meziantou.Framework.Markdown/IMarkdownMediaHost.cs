@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Meziantou.Framework.Markdown;
@@ -6,7 +7,7 @@ namespace Meziantou.Framework.Markdown;
 public interface IMarkdownMediaHost
 {
     /// <summary>Gets the hosts of Markdig: YouTube (and its shorts), youtu.be, Vimeo, Yandex Music and Odnoklassniki.</summary>
-    static IReadOnlyList<IMarkdownMediaHost> KnownHosts { get; } = MarkdownMediaHost.KnownHosts;
+    static ImmutableArray<IMarkdownMediaHost> KnownHosts { get; } = [.. MarkdownMediaHost.KnownHosts];
 
     /// <summary>Gets the class of the <c>&lt;iframe&gt;</c>, or <see langword="null"/> for none.</summary>
     string? Class { get; }

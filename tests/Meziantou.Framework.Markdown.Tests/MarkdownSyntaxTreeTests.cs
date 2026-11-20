@@ -1344,7 +1344,7 @@ public sealed class MarkdownSyntaxTreeTests
         // The delimiter row of a table, whose attributes can span lines, has a column for each delimiter
         foreach (var table in tree.GetRoot().Blocks.OfType<MarkdownTableSyntax>())
         {
-            Assert.HasCount(table.DelimiterRow!.DelimiterTokens.Count, table.Alignments);
+            Assert.HasCount(table.DelimiterRow!.DelimiterTokens.Length, table.Alignments);
         }
     }
 
@@ -1357,8 +1357,8 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.True(table.IsPipeTable);
         Assert.Equal(SyntaxKind.PipeTable, table.Kind());
         Assert.Equal([MarkdownTableAlignment.Center, MarkdownTableAlignment.None, MarkdownTableAlignment.None], table.Alignments);
-        Assert.Equal(2, table.DelimiterRow!.DelimiterTokens.Count);
-        Assert.Equal(4, table.DelimiterRow!.PipeTokens.Count);
+        Assert.HasCount(2, table.DelimiterRow!.DelimiterTokens);
+        Assert.HasCount(4, table.DelimiterRow!.PipeTokens);
         Assert.Equal(["a", "b", "c"], table.HeaderRow!.Cells.Select(cell => cell.GetPlainText()));
 
         // A backslash escapes a pipe as anywhere else
@@ -3574,7 +3574,7 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(3, ordered.StartNumber);
         Assert.Equal(')', ordered.MarkerCharacter);
         Assert.True(ordered.IsTight);
-        Assert.Equal(2, ordered.Items.Count);
+        Assert.HasCount(2, ordered.Items);
         Assert.False(bullet.IsOrdered);
         Assert.Null(bullet.StartNumber);
         Assert.Equal('-', bullet.MarkerCharacter);
@@ -3681,7 +3681,7 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal([MarkdownTableAlignment.None, MarkdownTableAlignment.Left, MarkdownTableAlignment.Center, MarkdownTableAlignment.Right], table.Alignments.ToArray());
         Assert.True(table.HeaderRow!.IsHeader);
         Assert.True(table.DelimiterRow!.IsDelimiter);
-        Assert.Equal(4, table.DelimiterRow.DelimiterTokens.Count);
+        Assert.HasCount(4, table.DelimiterRow.DelimiterTokens);
         Assert.Equal(["a", "b", "c", "d"], table.HeaderRow.Cells.Select(cell => cell.GetPlainText()).ToArray());
 
         // In a cell, \| is a pipe, even in a code span and a link destination
@@ -4100,7 +4100,7 @@ public sealed class MarkdownSyntaxTreeTests
     public void WithGenericAttributes(string text, string expected)
     {
         var tree = MarkdownSyntaxTree.ParseText(text, AttributeOptions);
-        var block = tree.GetRoot().Blocks.Single(block => block is not MarkdownParagraphSyntax || tree.GetRoot().Blocks.Count == 1);
+        var block = tree.GetRoot().Blocks.Single(block => block is not MarkdownParagraphSyntax || tree.GetRoot().Blocks.Length == 1);
         var attributes = new MarkdownGenericAttributes("x", ["c"], [new("data-a", "1"), new("title", "a b"), new("hidden", null)]);
 
         var updated = tree.WithGenericAttributes(block, attributes);

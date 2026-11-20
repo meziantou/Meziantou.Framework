@@ -1,3 +1,6 @@
+using System.Collections.Immutable;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Markdown;
 
 /// <summary>Configures how <see cref="MarkdownSyntaxTree"/> parses text.</summary>
@@ -73,15 +76,10 @@ public sealed record MarkdownParseOptions
     /// The list contains <see langword="null"/>, an extension twice, two extensions of the same name, two delimiter extensions
     /// of the same character, or an extension of another kind.
     /// </exception>
-    /// <exception cref="ArgumentNullException">The list is <see langword="null"/>.</exception>
-    public IReadOnlyList<MarkdownSyntaxExtension> SyntaxExtensions
+    public ImmutableArray<MarkdownSyntaxExtension> SyntaxExtensions
     {
-        get => _syntaxExtensions?.Extensions ?? [];
-        init
-        {
-            ArgumentNullException.ThrowIfNull(value);
-            _syntaxExtensions = value.Count == 0 ? null : new Parsing.SyntaxExtensionSet([.. value], nameof(value));
-        }
+        get => _syntaxExtensions is { } syntaxExtensions ? ImmutableCollectionsMarshal.AsImmutableArray(syntaxExtensions.Extensions) : [];
+        init => _syntaxExtensions = value.IsDefaultOrEmpty ? null : new Parsing.SyntaxExtensionSet([.. value], nameof(value));
     }
 
     // The syntax extensions indexed for the parser, or null when there is none

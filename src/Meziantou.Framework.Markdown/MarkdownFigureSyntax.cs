@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
 
@@ -11,7 +12,7 @@ public sealed class MarkdownFigureSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
 
     /// <summary>Gets the carets that open the figure.</summary>
     public SyntaxToken OpeningFenceToken => GetFirstChildToken();
@@ -20,7 +21,7 @@ public sealed class MarkdownFigureSyntax : MarkdownBlockSyntax
     public SyntaxToken ClosingFenceToken => ChildTokens().Skip(1).LastOrDefault(token => token.RawKind == (int)SyntaxKind.FigureFenceToken);
 
     /// <summary>Gets the blocks of the figure, with its captions, which are the text after its fences.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 
@@ -14,7 +15,7 @@ public sealed class MarkdownTableSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownTableRowSyntax>? _allRows;
+    private ImmutableArray<MarkdownTableRowSyntax> _allRows;
 
     /// <summary>Gets the header row, or <see langword="null"/> when the table has no delimiter row.</summary>
     public MarkdownTableRowSyntax? HeaderRow => AllRows is [{ IsHeader: true } header, ..] ? header : null;
@@ -23,7 +24,7 @@ public sealed class MarkdownTableSyntax : MarkdownBlockSyntax
     public MarkdownTableRowSyntax? DelimiterRow => AllRows is [_, { IsDelimiter: true } delimiter, ..] ? delimiter : null;
 
     /// <summary>Gets the rows after the delimiter row, or all the rows when the table has no delimiter row.</summary>
-    public IReadOnlyList<MarkdownTableRowSyntax> Rows => [.. AllRows.Where(row => !row.IsHeader && !row.IsDelimiter)];
+    public ImmutableArray<MarkdownTableRowSyntax> Rows => [.. AllRows.Where(row => !row.IsHeader && !row.IsDelimiter)];
 
     /// <summary>Gets a value indicating whether this is a pipe table of Markdig, read with <see cref="MarkdownExtensions.PipeTables"/>, and not a table of GitHub Flavored Markdown.</summary>
     public bool IsPipeTable => Kind() == SyntaxKind.PipeTable;
@@ -34,7 +35,7 @@ public sealed class MarkdownTableSyntax : MarkdownBlockSyntax
     /// its longest row has cells, and the columns after the last cell of the delimiter row have its alignment. A cell of the
     /// delimiter row of a pipe table can be empty, which is a column without alignment.
     /// </remarks>
-    public IReadOnlyList<MarkdownTableAlignment> Alignments => DelimiterRow is not { } delimiterRow ? [] : IsPipeTable ? [.. GetPipeTableColumns(delimiterRow).Select(column => column.Alignment)] : [.. delimiterRow.DelimiterTokens.Select(token => (token.Text[0] == ':', token.Text[^1] == ':') switch
+    public ImmutableArray<MarkdownTableAlignment> Alignments => DelimiterRow is not { } delimiterRow ? [] : IsPipeTable ? [.. GetPipeTableColumns(delimiterRow).Select(column => column.Alignment)] : [.. delimiterRow.DelimiterTokens.Select(token => (token.Text[0] == ':', token.Text[^1] == ':') switch
     {
         (true, true) => MarkdownTableAlignment.Center,
         (true, false) => MarkdownTableAlignment.Left,
@@ -64,7 +65,7 @@ public sealed class MarkdownTableSyntax : MarkdownBlockSyntax
         return PipeTableScanner.ReadColumns(text, 0, text.Length, pipes, hasLineEnd: true) ?? [];
     }
 
-    private IReadOnlyList<MarkdownTableRowSyntax> AllRows => GetNodes(ref _allRows);
+    private ImmutableArray<MarkdownTableRowSyntax> AllRows => GetNodes(ref _allRows);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

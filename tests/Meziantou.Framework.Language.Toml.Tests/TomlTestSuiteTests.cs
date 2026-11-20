@@ -123,7 +123,7 @@ public sealed class TomlTestSuiteTests
             {
                 case TomlTableSyntax { IsArrayOfTables: true } table:
                     var names = table.Key.Names;
-                    var parent = GetTable(root, names.Take(names.Count - 1));
+                    var parent = GetTable(root, names.Take(names.Length - 1));
                     if (!parent.TryGetValue(names[^1], out var existing))
                     {
                         existing = new List<object>();
@@ -154,7 +154,7 @@ public sealed class TomlTestSuiteTests
     private static void Assign(Dictionary<string, object> table, TomlPropertySyntax property)
     {
         var names = property.Key.Names;
-        GetTable(table, names.Take(names.Count - 1)).Add(names[^1], BuildValue(property.Value));
+        GetTable(table, names.Take(names.Length - 1)).Add(names[^1], BuildValue(property.Value));
     }
 
     private static Dictionary<string, object> GetTable(Dictionary<string, object> root, IEnumerable<string> names)

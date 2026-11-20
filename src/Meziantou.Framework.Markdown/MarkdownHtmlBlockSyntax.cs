@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
@@ -13,7 +14,7 @@ public sealed class MarkdownHtmlBlockSyntax : MarkdownBlockSyntax
     }
 
     /// <summary>Gets the tokens of the lines of the block, with their line endings.</summary>
-    public IReadOnlyList<SyntaxToken> LineTokens => GetTokens(SyntaxKind.HtmlLineToken);
+    public ImmutableArray<SyntaxToken> LineTokens => GetTokens(SyntaxKind.HtmlLineToken);
 
     /// <summary>Gets the HTML: the lines of the block joined by <c>\n</c>, without the line ending of the last one.</summary>
     public string Html

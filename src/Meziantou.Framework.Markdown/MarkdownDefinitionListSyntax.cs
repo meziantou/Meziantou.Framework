@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 
 namespace Meziantou.Framework.Markdown;
@@ -10,10 +11,10 @@ public sealed class MarkdownDefinitionListSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownDefinitionItemSyntax>? _items;
+    private ImmutableArray<MarkdownDefinitionItemSyntax> _items;
 
     /// <summary>Gets the definitions of the list. A definition that follows another one has no terms.</summary>
-    public IReadOnlyList<MarkdownDefinitionItemSyntax> Items => GetNodes(ref _items);
+    public ImmutableArray<MarkdownDefinitionItemSyntax> Items => GetNodes(ref _items);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

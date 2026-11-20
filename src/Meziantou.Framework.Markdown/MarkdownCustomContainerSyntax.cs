@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Meziantou.Framework.Language.InternalSyntax;
 using Meziantou.Framework.Markdown.Parsing;
 using SyntaxToken = Meziantou.Framework.Language.SyntaxToken;
@@ -13,7 +14,7 @@ public sealed class MarkdownCustomContainerSyntax : MarkdownBlockSyntax
     {
     }
 
-    private IReadOnlyList<MarkdownBlockSyntax>? _blocks;
+    private ImmutableArray<MarkdownBlockSyntax> _blocks;
 
     /// <summary>Gets the colons that open the container.</summary>
     public SyntaxToken OpeningFenceToken => GetFirstChildToken();
@@ -28,7 +29,7 @@ public sealed class MarkdownCustomContainerSyntax : MarkdownBlockSyntax
     public string Arguments => GetToken(SyntaxKind.CustomContainerArgumentsToken) is { RawKind: not 0 } token ? MarkdownText.Unescape(token.Text) : "";
 
     /// <summary>Gets the blocks of the container.</summary>
-    public IReadOnlyList<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
+    public ImmutableArray<MarkdownBlockSyntax> Blocks => GetNodes(ref _blocks);
 
     public override void Accept(MarkdownSyntaxVisitor visitor)
     {

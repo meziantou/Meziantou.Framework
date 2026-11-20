@@ -239,7 +239,7 @@ public static class StandardTests
 
     private static string? CompareWithLanguageToml(string toml)
     {
-        var expected = LanguageToml.TomlSyntaxTree.ParseText(toml, new LanguageToml.TomlParseOptions { Version = LanguageToml.TomlVersion.V1_1 }).GetDiagnostics().Count == 0;
+        var expected = LanguageToml.TomlSyntaxTree.ParseText(toml, new LanguageToml.TomlParseOptions { Version = LanguageToml.TomlVersion.V1_1 }).GetDiagnostics().Length == 0;
 
         var doc = SyntaxParser.Parse(toml);
         if (doc.HasErrors == expected)

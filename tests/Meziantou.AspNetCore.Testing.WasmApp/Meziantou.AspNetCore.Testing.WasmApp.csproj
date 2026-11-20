@@ -1,0 +1,26 @@
+<Project Sdk="Meziantou.NET.Sdk.BlazorWebAssembly">
+  <!-- The Blazor WebAssembly application that the end-to-end tests of Meziantou.AspNetCore.Testing publish and open in the
+       browser engine: the runtime of .NET runs in the page, on Wasmtime -->
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <IsPackable>false</IsPackable>
+    <!-- The runtime of .NET in the browser (Mono) does not run the runtime async methods: Main fails before it starts -->
+    <MeziantouRuntimeAsync>false</MeziantouRuntimeAsync>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="11.0.0" />
+  </ItemGroup>
+
+  <!-- Directory.Build.targets enables runtime async for .NET 11 -->
+  <Target Name="DisableRuntimeAsync" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <Features>$(Features.Replace(';runtime-async=on', ''))</Features>
+    </PropertyGroup>
+  </Target>
+</Project>

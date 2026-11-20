@@ -18,5 +18,6 @@ namespace Meziantou.Framework.WebPlatform.Wasmtime
         public System.TimeSpan InterruptionCheckInterval { get => throw null; init { } }
         public long MaxMemorySize { get => throw null; init { } }
         public int MaxStackSize { get => throw null; init { } }
+        public string? ModuleCacheDirectory { get => throw null; init { } }
     }
 }

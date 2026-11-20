@@ -12,6 +12,8 @@
     <OutputType>Exe</OutputType>
     <!-- The test components let the errors of the JavaScript calls fail the tests -->
     <NoWarn>$(NoWarn);BL0016</NoWarn>
+    <WasmAppProject>$(MSBuildThisFileDirectory)../Meziantou.AspNetCore.Testing.WasmApp/Meziantou.AspNetCore.Testing.WasmApp.csproj</WasmAppProject>
+    <WasmAppPublishDir>$(ArtifactsPath)/publish/Meziantou.AspNetCore.Testing.WasmApp/$(Configuration)_$(TargetFramework)/</WasmAppPublishDir>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,11 +25,22 @@
     <ProjectReference Include="../../src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
     <!-- The application of the end-to-end tests, opened with WebApplicationFactory<Program> -->
     <ProjectReference Include="../Meziantou.AspNetCore.Testing.TestApp/Meziantou.AspNetCore.Testing.TestApp.csproj" />
+    <!-- The Blazor WebAssembly application of the end-to-end tests: its published files are served to the pages, and its
+         runtime runs on Wasmtime. The reference only orders the builds. -->
+    <ProjectReference Include="$(WasmAppProject)" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="WasmAppPath" Value="$(WasmAppPublishDir)wwwroot" />
+  </ItemGroup>
+
+  <Target Name="PublishWasmApp" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true' AND '$(TargetFramework)' != ''">
+    <MSBuild Projects="$(WasmAppProject)" Targets="Publish" Properties="Configuration=$(Configuration);TargetFramework=$(TargetFramework);PublishDir=$(WasmAppPublishDir)" />
+  </Target>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.14" />

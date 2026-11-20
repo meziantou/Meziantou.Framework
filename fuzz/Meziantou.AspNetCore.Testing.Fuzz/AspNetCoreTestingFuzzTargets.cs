@@ -5,16 +5,16 @@ namespace Meziantou.AspNetCore.Testing.Fuzz;
 
 /// <summary>
 /// The loader of the static files maps the path of a URL to a file of a folder: whatever the URL (encoded separators, dot
-/// segments, other hosts...), it serves only the files of the folder, and the file of the URL path when it exists. The
-/// detection of the long-lived requests accepts any request.
+/// segments, other hosts...), it serves only the files of the folder, the file of the URL path when it exists, and the
+/// fallback file for the routes of an application. The detection of the long-lived requests accepts any request.
 /// </summary>
 public static class AspNetCoreTestingFuzzTargets
 {
-    private static readonly Lazy<(string Root, DocumentLoader Loader)> Folder = new(CreateFolder);
+    private static readonly Lazy<(string Root, DocumentLoader Loader, DocumentLoader FallbackLoader)> Folder = new(CreateFolder);
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
-        new("aspnetcore-testing-static-files", StaticFiles) { Seeds = GetSeeds, Dictionary = ["/", "..", "%2e", "%2f", "%5c", "\\", "?", "#", "//", "%00", "secret.txt", "public.txt", "sub/", "static-secret/", "https://localhost", "https://example.com", ":", "@"] },
+        new("aspnetcore-testing-static-files", StaticFiles) { Seeds = GetSeeds, Dictionary = ["/", "..", "%2e", "%2f", "%5c", "\\", "?", "#", "//", "%00", "secret.txt", "public.txt", "index.html", "sub/", "static-secret/", "https://localhost", "https://example.com", ":", "@"] },
         new("aspnetcore-testing-long-lived-requests", LongLivedRequests) { Seeds = GetSeeds, Dictionary = ["?", "&", "id=", "_=", "=", "#", "https://localhost/_blazor"] },
         .. LocatorFuzzTargets.All,
         .. Components.ComponentFuzzTargets.All,
@@ -24,6 +24,8 @@ public static class AspNetCoreTestingFuzzTargets
     {
         yield return FuzzSeed.FromText("public", "/static/public.txt");
         yield return FuzzSeed.FromText("subfolder", "/static/sub/public.txt");
+        yield return FuzzSeed.FromText("index", "/static/");
+        yield return FuzzSeed.FromText("route", "/static/accounts/42");
         yield return FuzzSeed.FromText("dot-segments", "/static/../secret.txt");
         yield return FuzzSeed.FromText("encoded-dot-segments", "/static/%2e%2e/secret.txt");
         yield return FuzzSeed.FromText("encoded-separator", "/static/..%2fsecret.txt");
@@ -32,7 +34,7 @@ public static class AspNetCoreTestingFuzzTargets
         yield return FuzzSeed.FromText("long-polling", "/_blazor?id=abc&_=123");
     }
 
-    private static (string Root, DocumentLoader Loader) CreateFolder()
+    private static (string Root, DocumentLoader Loader, DocumentLoader FallbackLoader) CreateFolder()
     {
         // root/secret.txt and root/static-secret/secret.txt are outside of the served folder root/static (the name of the
         // second folder starts with the name of the served folder)
@@ -43,15 +45,23 @@ public static class AspNetCoreTestingFuzzTargets
         File.WriteAllText(Path.Combine(root, "static-secret", "secret.txt"), "secret");
         File.WriteAllText(Path.Combine(root, "static", "public.txt"), "public");
         File.WriteAllText(Path.Combine(root, "static", "sub", "public.txt"), "public");
+        File.WriteAllText(Path.Combine(root, "static", "index.html"), "public");
         var loader = TestDocumentLoaders.FromDirectories(new Uri("https://localhost/"), [new("/static", Path.Combine(root, "static"))]);
-        return (root, loader);
+        var fallbackLoader = TestDocumentLoaders.FromDirectories(new Uri("https://localhost/"), [new("/static", Path.Combine(root, "static"))], fallbackPath: "/static/index.html");
+        return (root, loader, fallbackLoader);
     }
 
     private static void StaticFiles(ReadOnlySpan<byte> data)
     {
         var path = FuzzText.Decode(data);
         var url = path.StartsWith("http", StringComparison.Ordinal) ? path : "https://localhost" + (path.StartsWith('/', StringComparison.Ordinal) ? path : "/" + path);
-        var (_, loader) = Folder.Value;
+        var (_, loader, fallbackLoader) = Folder.Value;
+        CheckStaticFile(loader, url);
+        CheckStaticFile(fallbackLoader, url);
+    }
+
+    private static void CheckStaticFile(DocumentLoader loader, string url)
+    {
         var resource = loader.LoadAsync(new DocumentRequest(url), CancellationToken.None).AsTask().GetAwaiter().GetResult();
         if (resource is null || resource.StatusCode == 404)
             return;

@@ -1,0 +1,11 @@
+@page "/accounts/{Id:int}"
+
+<PageTitle>Account @Id</PageTitle>
+
+<h1>Account @Id</h1>
+<a href="">Home</a>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+}

@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.AspNetCore.Testing.TestApp;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -338,5 +340,107 @@ public sealed class WebAppBrowserTests
               - /url: /sign-in
             """, page.GetAccessibilitySnapshot());
         Assert.Equal([0x89, (byte)'P', (byte)'N', (byte)'G'], page.TakeScreenshotAsPng().Take(4));
+    }
+
+    [Fact]
+    public async Task FromDirectories_ServesTheIndexFilesAndTheFallbackFile()
+    {
+        var directory = Directory.CreateTempSubdirectory("meziantou-aspnetcore-testing-");
+        try
+        {
+            File.WriteAllText(Path.Combine(directory.FullName, "index.html"), "<title>Index</title>");
+            File.WriteAllText(Path.Combine(directory.FullName, "app.css"), "body {}");
+            Directory.CreateDirectory(Path.Combine(directory.FullName, "docs"));
+            File.WriteAllText(Path.Combine(directory.FullName, "docs", "index.html"), "<title>Docs</title>");
+            var origin = new Uri("https://localhost/");
+            var loader = TestDocumentLoaders.FromDirectories(origin, [new("/", directory.FullName)], fallbackPath: "/index.html");
+            var loaderWithoutFallback = TestDocumentLoaders.FromDirectories(origin, [new("/", directory.FullName)]);
+
+            Assert.Equal("<title>Index</title>", await LoadAsync(loader, "https://localhost/"));
+            Assert.Equal("<title>Docs</title>", await LoadAsync(loader, "https://localhost/docs/"));
+            Assert.Equal("body {}", await LoadAsync(loader, "https://localhost/app.css"));
+            Assert.Equal("<title>Index</title>", await LoadAsync(loader, "https://localhost/accounts/42?tab=1"));
+            Assert.Equal("404", await LoadAsync(loader, "https://localhost/missing.css"));
+            Assert.Null(await loader.LoadAsync(new DocumentRequest("https://example.com/accounts"), TestContext.Current.CancellationToken));
+            Assert.Equal("<title>Index</title>", await LoadAsync(loaderWithoutFallback, "https://localhost/"));
+            Assert.Equal("404", await LoadAsync(loaderWithoutFallback, "https://localhost/accounts/42"));
+
+            // The URL of a folder without its trailing slash redirects to the folder, so that the relative URLs of its page
+            // resolve in the folder
+            var redirect = await loader.LoadAsync(new DocumentRequest("https://localhost/docs?a=1") { FollowRedirects = false }, TestContext.Current.CancellationToken);
+            Assert.NotNull(redirect);
+            Assert.Equal(301, redirect.StatusCode);
+            Assert.Equal("https://localhost/docs/?a=1", Assert.Single(redirect.Headers, header => header.Key == "Location").Value);
+            var followed = await loader.LoadAsync(new DocumentRequest("https://localhost/docs"), TestContext.Current.CancellationToken);
+            Assert.NotNull(followed);
+            Assert.Equal("https://localhost/docs/", followed.Url);
+            Assert.Equal("<title>Docs</title>", Encoding.UTF8.GetString(followed.ContentBytes!.Value.Span));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+
+        static async Task<string> LoadAsync(DocumentLoader loader, string url)
+        {
+            var resource = await loader.LoadAsync(new DocumentRequest(url), TestContext.Current.CancellationToken);
+            Assert.NotNull(resource);
+            return resource.StatusCode is 404 ? "404" : Encoding.UTF8.GetString(resource.ContentBytes!.Value.Span);
+        }
+    }
+
+    [Fact]
+    public async Task FromDirectories_RedirectsAFolderWithoutItsTrailingSlash()
+    {
+        var directory = Directory.CreateTempSubdirectory("meziantou-aspnetcore-testing-");
+        try
+        {
+            File.WriteAllText(Path.Combine(directory.FullName, "index.html"), "<script src=\"main.js\"></script>");
+            File.WriteAllText(Path.Combine(directory.FullName, "main.js"), "document.title = 'loaded';");
+            var origin = new Uri("https://localhost/");
+            await using var browser = new WebAppBrowser(origin, TestDocumentLoaders.FromDirectories(origin, [new("/app", directory.FullName)]));
+
+            var page = await browser.OpenAsync("/app");
+
+            await Expect(page).ToHaveTitleAsync("loaded");
+            Assert.Equal("https://localhost/app/", page.Url);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task BlazorWebAssemblyApplication()
+    {
+        #region WebAppBrowser_BlazorWebAssembly
+        // The wwwroot folder of the published application (dotnet publish)
+        var wwwroot = typeof(WebAppBrowserTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "WasmAppPath").Value!;
+
+        // The runtime of .NET runs in the page, on Wasmtime. Share the runtime between the tests, and keep the compiled code
+        // of the modules in a folder of the tests: the first start compiles the runtime of .NET, the next ones load it.
+        using var wasmtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { ModuleCacheDirectory = Path.Combine(AppContext.BaseDirectory, "wasmtime-cache") });
+
+        // The fallback file serves the routes of the application (/accounts/42), as MapFallbackToFile does
+        var origin = new Uri("https://localhost/");
+        var loader = TestDocumentLoaders.FromDirectories(origin, [new("/", wwwroot)], fallbackPath: "/index.html");
+        await using var browser = new WebAppBrowser(origin, loader, new WebAppBrowserOptions
+        {
+            DefaultTimeout = TimeSpan.FromSeconds(30),
+            WebAssemblyRuntime = wasmtime,
+        });
+
+        var page = await browser.OpenAsync("/accounts/42");
+        await Expect(page.GetByRole("heading", "Account 42")).ToBeVisibleAsync();
+
+        // The router of Blazor handles the navigation in the page
+        await page.GetByRole("link", "Home").ClickAsync();
+        await page.GetByRole("button", "Click me").ClickAsync();
+        await Expect(page.GetByRole("status")).ToHaveTextAsync("Current count: 1");
+        await Expect(page).ToHaveUrlAsync("/");
+        #endregion
+
+        Assert.Empty(page.ScriptErrors);
     }
 }

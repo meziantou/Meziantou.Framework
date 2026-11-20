@@ -744,14 +744,14 @@ internal static partial class PresentationalHints
     /// </summary>
     private static void AppendBackgroundImage(StringBuilder css, Element element)
     {
-        if (element.GetAttributeValue("background") is { Length: > 0 } background && Html.Reflection.EncodingParseAndSerializeUrl(element.NodeDocument, background) is { } url)
+        if (element.GetAttributeValue("background") is { Length: > 0 } background && Html.Reflection.EncodingParseUrl(element.NodeDocument, background) is { } record)
         {
             // The dangling markup mitigation (https://github.com/whatwg/fetch/pull/519) blocks the fetch of the image, whose URL
-            // loses the flag once it is a CSS value
-            if (Urls.UrlParser.IsPotentiallyDanglingMarkup(background) && (url.StartsWith("http:", StringComparison.Ordinal) || url.StartsWith("https:", StringComparison.Ordinal)))
+            // loses the flag once it is a CSS value (the flag of the attribute, or of the base URL it depends on)
+            if (record.PotentiallyDanglingMarkup && record.Scheme is "http" or "https")
                 return;
 
-            css.Append("background-image: ").Append(CssSerializer.SerializeUrl(url)).Append(';');
+            css.Append("background-image: ").Append(CssSerializer.SerializeUrl(record.Serialize())).Append(';');
         }
     }
 

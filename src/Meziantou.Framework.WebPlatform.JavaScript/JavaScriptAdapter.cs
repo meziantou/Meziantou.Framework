@@ -611,11 +611,11 @@ internal class JavaScriptLegacyPlatformObject : JavaScriptPlatformObject
         return base.GetOwnPropertyCore(key, out descriptor);
     }
 
-    // [[Get]] and [[HasProperty]] are the ordinary ones: an indexed property is a data property of the object, so its value
-    // is read without building its descriptor
+    // [[Get]] and [[HasProperty]] are the ordinary ones: the value of an indexed data property is read without converting the
+    // descriptor (an accessor, which a handler may return, goes through the ordinary [[Get]], which calls its getter)
     protected override JsValue GetCore(JsPropertyKey key, JsValue receiver)
     {
-        if (key.TryGetArrayIndex(out var index) && _handler.TryGetIndexedProperty(this, index, out var indexed))
+        if (key.TryGetArrayIndex(out var index) && _handler.TryGetIndexedProperty(this, index, out var indexed) && indexed.IsDataDescriptor)
             return ToJs(indexed.Value ?? UndefinedValue.Instance);
 
         return base.GetCore(key, receiver);

@@ -816,12 +816,25 @@ internal sealed partial class ServiceWorkerRegistry
 
         // The installing worker becomes the installed waiting worker in one step: Try Activate, which also runs in parallel
         // when the worker has no pending events anymore, never activates a waiting worker that is not installed yet
-        Task stateTasks;
+        var stateTasks = Task.CompletedTask;
+        bool cleared;
         lock (_lock)
         {
-            UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Waiting, worker);
-            UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Installing, null);
-            stateTasks = UpdateWorkerState(worker, ServiceWorkerState.Installed);
+            // The registration was cleared during the install event (Clear-Site-Data, see UnregisterImmediately): the worker
+            // is redundant, and must not become the waiting worker nor be activated
+            cleared = !ReferenceEquals(registration.Installing, worker);
+            if (!cleared)
+            {
+                UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Waiting, worker);
+                UpdateRegistrationState(registration, ServiceWorkerRegistrationSlot.Installing, null);
+                stateTasks = UpdateWorkerState(worker, ServiceWorkerState.Installed);
+            }
+        }
+
+        if (cleared)
+        {
+            FinishJob(job);
+            return;
         }
 
         if (redundantWorker is not null)

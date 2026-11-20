@@ -42,29 +42,18 @@ internal static class UrlParser
         if (BasicParse(input, baseUrl, encoding, url, UrlParserState.None) == ParseResult.Failure)
             return null;
 
-        // A relative URL resolved against a URL made of dangling markup (e.g. the href of a base element) keeps its flag: an
-        // empty href is the base URL itself
-        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input) || (baseUrl is { PotentiallyDanglingMarkup: true } && !HasScheme(input));
+        // A URL resolved against a URL made of dangling markup (e.g. the href of a base element) keeps its flag when it depends
+        // on it (e.g. an empty href is the base URL itself, and "https:" copies its path and query): parsed without the base,
+        // the input fails or gives another URL
+        url.PotentiallyDanglingMarkup = IsPotentiallyDanglingMarkup(input) || (baseUrl is { PotentiallyDanglingMarkup: true } && UsesBaseUrl(input, encoding, url));
         return url;
     }
 
-    /// <summary>Whether an input starts with a scheme (an absolute URL, which does not use the base URL), once its leading C0 controls and spaces are trimmed.</summary>
-    private static bool HasScheme(string input)
+    /// <summary>Whether the URL that an input gives with a base URL depends on the base URL.</summary>
+    private static bool UsesBaseUrl(string input, WebEncodingId encoding, UrlRecord url)
     {
-        var span = input.AsSpan().TrimStart("\0\u0001\u0002\u0003\u0004\u0005\u0006\u0007\b\t\n\v\f\r\u000E\u000F\u0010\u0011\u0012\u0013\u0014\u0015\u0016\u0017\u0018\u0019\u001A\u001B\u001C\u001D\u001E\u001F ");
-        if (span.IsEmpty || !char.IsAsciiLetter(span[0]))
-            return false;
-
-        foreach (var c in span[1..])
-        {
-            if (c == ':')
-                return true;
-
-            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.' or '\t' or '\n' or '\r'))
-                return false;
-        }
-
-        return false;
+        var withoutBase = new UrlRecord();
+        return BasicParse(input, baseUrl: null, encoding, withoutBase, UrlParserState.None) == ParseResult.Failure || withoutBase.Serialize() != url.Serialize();
     }
 
     /// <summary>

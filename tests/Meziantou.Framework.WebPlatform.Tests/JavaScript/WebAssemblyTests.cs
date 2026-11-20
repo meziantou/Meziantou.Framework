@@ -1261,7 +1261,21 @@ public sealed class WebAssemblyTests : IDisposable
         }
         finally
         {
-            directory.Delete(recursive: true);
+            // A module loaded from the folder maps its file until the module is collected, and Windows does not delete a
+            // mapped file: the folder is in the temporary folder, so it may stay there
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+            GC.Collect();
+            try
+            {
+                directory.Delete(recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
+            }
         }
     }
 

@@ -175,6 +175,16 @@ public sealed partial record BrowsingContextOptions
     public Media.MediaCaptureBackend? MediaCapture { get; init; }
 
     /// <summary>
+    /// Gets or sets the audio and video codecs of the browsing contexts and their workers (see
+    /// <see cref="Media.MediaCodecBackend"/>): the decoders and the encoders of WebCodecs (<c>AudioDecoder</c>,
+    /// <c>VideoDecoder</c>, <c>AudioEncoder</c>, <c>VideoEncoder</c>) and of <c>MediaRecorder</c>. The library implements
+    /// the processing model of the codecs; the backend decodes and encodes. The default is null: there is no codec
+    /// (<c>isConfigSupported()</c> resolves with <c>supported: false</c> and <c>configure()</c> closes the codec with a
+    /// <c>NotSupportedError</c>).
+    /// </summary>
+    public Media.MediaCodecBackend? MediaCodecs { get; init; }
+
+    /// <summary>
     /// Gets or sets whether the media elements are allowed to play without a user gesture
     /// (https://html.spec.whatwg.org/multipage/media.html#allowed-to-play): <c>play()</c> and the <c>autoplay</c> attribute.
     /// The default is <see cref="Media.MediaAutoplayPolicy.Allowed"/>.

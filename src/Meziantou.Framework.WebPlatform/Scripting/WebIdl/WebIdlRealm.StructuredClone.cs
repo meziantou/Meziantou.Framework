@@ -607,6 +607,27 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (target is not IStructuredSerializable serializable)
                 throw adapter.CreateException(ToJsError(new DomException($"The {WebIdlBindings<TAdapter, TValue>.GetInterface(target.GetType())?.Name ?? target.GetType().Name} object could not be cloned", "DataCloneError")));
 
+            // The media resources of WebCodecs cannot be stored, and stay in their agent cluster
+            if (target is IAgentClusterSerializable agentClusterSerializable)
+            {
+                if (adapter.ToBoolean(args[1]))
+                    throw adapter.CreateException(ToJsError(new DomException($"The {WebIdlBindings<TAdapter, TValue>.GetInterface(target.GetType())?.Name ?? target.GetType().Name} object could not be stored", "DataCloneError")));
+
+                object serializedValue;
+                try
+                {
+                    serializedValue = agentClusterSerializable.CloneForStructuredSerialization();
+                }
+                catch (DomException ex)
+                {
+                    throw adapter.CreateException(ToJsError(ex));
+                }
+
+                var agentClusterHandle = CreateObject();
+                Agent.SerializedPlatformObjects.AddOrUpdate(agentClusterHandle, new AgentClusterSerializedObject(serializedValue, GlobalScope.AgentClusterKey));
+                return agentClusterHandle;
+            }
+
             // The serialized form is the clone taken now, held by an empty object of the record
             var handle = CreateObject();
             Agent.SerializedPlatformObjects.AddOrUpdate(handle, serializable.CloneForStructuredSerialization());
@@ -640,9 +661,26 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (serializedObject is Dom.SerializedFileSystemHandle fileSystemHandle)
                 return DeserializeFileSystemHandle(fileSystemHandle);
 
+            if (serializedObject is AgentClusterSerializedObject agentClusterObject)
+            {
+                if (agentClusterObject.AgentCluster is null || !ReferenceEquals(agentClusterObject.AgentCluster, GlobalScope.AgentClusterKey))
+                    throw adapter.CreateException(ToJsError(new DomException("The object cannot be deserialized in another agent cluster", "DataCloneError")));
+
+                serializedObject = agentClusterObject.Value;
+            }
+
             // https://html.spec.whatwg.org/multipage/structured-data.html#structureddeserialize: a platform object whose
             // interface is not exposed in the realm (e.g. a Blob in a worklet) cannot be deserialized
-            var deserialized = StructuredClone.Deserialize(serializedObject);
+            object? deserialized;
+            try
+            {
+                deserialized = StructuredClone.Deserialize(serializedObject);
+            }
+            catch (DomException ex)
+            {
+                throw adapter.CreateException(ToJsError(ex));
+            }
+
             if (deserialized is not null && WebIdlBindings<TAdapter, TValue>.GetInterface(deserialized.GetType()) is { } binding && !IsInterfaceExposed(binding))
                 throw adapter.CreateException(ToJsError(new DomException($"The {binding.Name} object cannot be deserialized: its interface is not exposed in the realm", "DataCloneError")));
 

@@ -14,7 +14,8 @@ internal static class Binding_VideoFrame<TAdapter, TValue> where TAdapter : stru
         ClrType = typeof(global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame),
         Flags = global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBindingFlags.None,
         Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.DedicatedWorker,
-        ConstructorLength = 0,
+        ConstructorLength = 1,
+        Constructor = Construct,
         DefineMembers = DefineMembers,
     };
 
@@ -78,5 +79,29 @@ internal static class Binding_VideoFrame<TAdapter, TValue> where TAdapter : stru
         r.DefineOperation(instanceTarget, "copyTo", 1, Op_copyTo, returnsPromise: true);
         r.DefineOperation(instanceTarget, "clone", 0, Op_clone);
         r.DefineOperation(instanceTarget, "close", 0, Op_close);
+    }
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Construct_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("((HTMLImageElement or SVGImageElement) or HTMLVideoElement or HTMLCanvasElement or ImageBitmap or OffscreenCanvas or VideoFrame or CSSImageValue)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Interface, new global::System.Type[] { typeof(global::Meziantou.Framework.WebPlatform.Dom.HtmlImageElement), typeof(global::Meziantou.Framework.WebPlatform.Dom.SvgImageElement), typeof(global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement), typeof(global::Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement), typeof(global::Meziantou.Framework.WebPlatform.Dom.ImageBitmap), typeof(global::Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas), typeof(global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame), typeof(global::Meziantou.Framework.WebPlatform.Css.TypedOm.CssImageValue) }, false, false), new("VideoFrameInit", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(ArrayBuffer or SharedArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.BufferSource, new global::System.Type[] {  }, false, false), new("VideoFrameBufferInit", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, false, false) })];
+    private static object Construct(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::System.ReadOnlySpan<TValue> a)
+    {
+        switch (r.SelectOverload("constructor", Construct_Overloads, a))
+        {
+            case 0:
+            {
+                if (a.Length < 1) throw r.NotEnoughArguments("VideoFrame", 1, a.Length);
+                var a0 = WebIdlHelpers<TAdapter, TValue>.ToUnion_b083e7a4(r, a[0]);
+                var a1 = r.IsMissing(a, 1) ? (global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrameInit)WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebCodecs_VideoFrameInit(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebCodecs_VideoFrameInit(r, a[1]);
+                return new global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame(a0, a1);
+            }
+            case 1:
+            {
+                if (a.Length < 2) throw r.NotEnoughArguments("VideoFrame", 2, a.Length);
+                var a0 = r.ToBufferSource(a[0], 32767u, true, "(ArrayBuffer or SharedArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))");
+                var a1 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_WebCodecs_VideoFrameBufferInit(r, a[1]);
+                return new global::Meziantou.Framework.WebPlatform.WebCodecs.VideoFrame(a0, a1);
+            }
+            default:
+                throw new global::System.InvalidOperationException("Unexpected overload");
+        }
     }
 }

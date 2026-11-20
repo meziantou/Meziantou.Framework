@@ -329,6 +329,7 @@ internal sealed partial class WptTestRunner
 
                 // The fake capture devices: a camera, a microphone and the display surfaces of getDisplayMedia()
                 MediaCapture = new WptMediaCaptureBackend(),
+                MediaCodecs = new WptMediaCodecBackend(),
 
                 // The values of the client hints: a desktop user agent on Linux, with the memory and the network of a
                 // recent machine (the library sends no device memory nor network hint by default)

@@ -378,6 +378,12 @@ public sealed class WptTests
 
     public static TheoryData<string> MediaCaptureRegionTests => GetTests("mediacapture-region");
 
+    public static TheoryData<string> MediaCaptureRecordTests => GetTests("mediacapture-record");
+
+    public static TheoryData<string> VideoRvfcTests => GetTests("video-rvfc");
+
+    public static TheoryData<string> MediaCapabilitiesTests => GetTests("media-capabilities");
+
     public static TheoryData<string> ScreenCaptureTests => GetTests("screen-capture");
 
     public static TheoryData<string> MstContentHintTests => GetTests("mst-content-hint");
@@ -1530,6 +1536,18 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(MediaCaptureRegionTests))]
     public void MediaCaptureRegion(string test) => Run("mediacapture-region", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCaptureRecordTests))]
+    public void MediaCaptureRecord(string test) => Run("mediacapture-record", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(VideoRvfcTests))]
+    public void VideoRvfc(string test) => Run("video-rvfc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(MediaCapabilitiesTests))]
+    public void MediaCapabilities(string test) => Run("media-capabilities", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(ScreenCaptureTests))]

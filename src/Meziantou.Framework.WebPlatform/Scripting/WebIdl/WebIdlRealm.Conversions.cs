@@ -185,6 +185,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue> : IJsBufferOwner
 
         x = Math.Truncate(x);
         var modulo = Math.Pow(2, bitLength);
+
+        // A value in the range of the type is its own result: adding 2^64 to a small negative value of a 64-bit type
+        // would round it to 2^64 (a double has 53 bits of precision)
+        if (signed ? x >= -modulo / 2 && x < modulo / 2 : x >= 0 && x < modulo)
+            return x;
+
         x %= modulo;
         if (x < 0)
         {

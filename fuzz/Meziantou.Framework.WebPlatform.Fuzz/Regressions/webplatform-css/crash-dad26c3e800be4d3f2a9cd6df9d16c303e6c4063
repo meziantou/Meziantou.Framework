@@ -1,0 +1,2 @@
+@mixin --m(--x type(<length>): 1em, --y) { color: green !important; & { --b: 2; } .a { @layer ü; color: red; } @layer a; @result { color: blue; } resulç≈ﬂçed; @coftents { color: red; } }
+@mixin --n { @private { --a: 1; --b <color>: red; --c; } @media (width) { > div { @apply --m(1px, { a, bports (display: grid) and (not (selec

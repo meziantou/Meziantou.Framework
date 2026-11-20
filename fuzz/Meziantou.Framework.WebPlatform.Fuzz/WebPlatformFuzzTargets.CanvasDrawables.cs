@@ -100,8 +100,11 @@ public static partial class WebPlatformFuzzTargets
             var transform = canvas.GetElementTransform(element);
             FuzzAssert.True(transform.Is2D && transform.B == 0 && transform.C == 0, "the canvas transform of an element drawn without rotation is a 2D scale and translation");
 
+            // The client rects of an inline box split around block-level boxes include the blocks split out of it, which the
+            // snapshot does not cover (and a drawable block is placed by its own canvas transform): its geometry is not checked
             var style = document.DefaultView!.GetComputedStyle(element);
-            if (!IsTransformed(style) && checksGeometry)
+            var isSplitInline = document.GetLayoutEngine().BoxTree?.GetPrincipalBox(element) is Css.Layout.ContainerBox { Continuation: not null };
+            if (!IsTransformed(style) && checksGeometry && !isSplitInline)
             {
                 var rect = element.GetBoundingClientRect();
                 var (x, y) = (contentLeft + (scaleX * offset), contentTop + (scaleY * (offset + 1)));

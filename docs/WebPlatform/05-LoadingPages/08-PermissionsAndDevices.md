@@ -745,7 +745,8 @@ are the authenticator configuration of WebDriver:
 The credentials of an authenticator can be listed with
 [GetCredentials](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.GetCredentials), added with
 [AddCredential](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.AddCredential) (for instance a passkey
-whose private key is a PKCS #8 package), and removed with
+whose private key is a PKCS #8 package; an ECDSA key whose public key is not the one of its private key is rejected on
+every platform), and removed with
 [RemoveCredential](cref:Meziantou.Framework.WebPlatform.Dom.VirtualAuthenticator.RemoveCredential). The environment can be
 shared by several browsing contexts, and used from any thread.
 

@@ -263,7 +263,8 @@ internal static class ImageMetadata
                     return loops == 0 ? -1 : loops - 1;
                 }
 
-                if (length > int.MaxValue - 9)
+                // A chunk that extends past the end of the bytes is the last one (and the offset does not overflow)
+                if (length >= (uint)(bytes.Length - offset - 8))
                     break;
 
                 offset += 8 + (int)length + (int)(length & 1);
@@ -497,7 +498,8 @@ internal static class ImageMetadata
                 return true;
             }
 
-            if (length > int.MaxValue - 9)
+            // A chunk that extends past the end of the bytes is the last one (and the offset does not overflow)
+            if (length >= (uint)(bytes.Length - offset - 8))
                 break;
 
             offset += 8 + (int)length + (int)(length & 1);

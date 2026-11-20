@@ -254,7 +254,7 @@ internal sealed record CanvasTextLayout(
     /// </summary>
     public (int Run, double Left, double Right) GetFragment(CanvasTextCluster cluster)
     {
-        if (cluster.Width == 0 && Clusters.FindIndex(c => c.Start == cluster.End && c.Width != 0) is var index and >= 0)
+        if (GetFragmentOwner(cluster) is var index and >= 0)
         {
             var next = Clusters[index];
             return (next.Run, next.StartEdge, next.StartEdge);
@@ -262,6 +262,9 @@ internal sealed record CanvasTextLayout(
 
         return (cluster.Run, cluster.Low, cluster.High);
     }
+
+    /// <summary>Returns the index of the cluster whose fragment contains a cluster without advance (see <see cref="GetFragment"/>), or -1 when the cluster is in its own fragment.</summary>
+    public int GetFragmentOwner(CanvasTextCluster cluster) => cluster.Width == 0 ? Clusters.FindIndex(c => c.Start == cluster.End && c.Width != 0) : -1;
 
     /// <summary>
     /// Returns the caret position (a UTF-16 index) closest to a distance from the left of the text: in the cluster under the

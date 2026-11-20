@@ -140,13 +140,14 @@ internal static class CanvasDrawables
     /// <summary>
     /// Returns the canvas transform of a fragment of the principal box of a drawable element as a 4x4 matrix in column-major order,
     /// mapping the coordinates of the fragment (zoomed) to the coordinates of the contents box of its canvas (zoomed), and the
-    /// fragment of the contents box; or false when the fragment is not the one of a drawable element.
+    /// fragment of the contents box; or false when the fragment is not the one of a drawable element. The fragments of the parts of
+    /// a drawable inline box split around block-level boxes, and of the blocks split out of it, are placed by its canvas transform.
     /// </summary>
     public static bool TryGetCanvasTransform(Fragment fragment, out double[] matrix, out BoxFragment contents)
     {
         matrix = [];
         contents = null!;
-        if (fragment is not BoxFragment { Box: { IsCanvasDrawable: true, Element: { } element } box })
+        if (fragment is not BoxFragment { Box: ContainerBox fragmentBox } || GetDrawableOwner(fragmentBox) is not { Element: { } element } box)
             return false;
 
         // The nearest contents box of a canvas, whose fragment is an ancestor of the fragment
@@ -201,11 +202,12 @@ internal static class CanvasDrawables
 
         // The canvas clip is in the coordinates of the canvas transform: the border box of the element before its CSS transforms,
         // in CSS pixels (the union of the fragments of an inline box)
-        var element = fragment.Box.Element!;
+        var owner = GetDrawableOwner((ContainerBox)fragment.Box)!;
+        var element = owner.Element!;
         if (contents.Box.Parent?.Element is HtmlCanvasElement canvas && canvas.GetCanvasClip(element) is { } clip)
         {
-            var zoom = fragment.Box.Style.Layout.EffectiveZoom;
-            var origin = fragment.GetOffsetInRoot() - GetBounds((ContainerBox)fragment.Box).Offset;
+            var zoom = owner.Style.Layout.EffectiveZoom;
+            var origin = fragment.GetOffsetInRoot() - GetBounds(owner).Offset;
             var x = (local.X + origin.X) / zoom;
             var y = (local.Y + origin.Y) / zoom;
             if (x < clip.Left || x >= clip.Right || y < clip.Top || y >= clip.Bottom)
@@ -235,6 +237,42 @@ internal static class CanvasDrawables
             }
 
             return false;
+        }
+    }
+
+    /// <summary>
+    /// Returns the principal box of the drawable element that places a box by its canvas transform, or null: the box of a drawable
+    /// element, a part of a drawable inline box split around block-level boxes (https://drafts.csswg.org/css2/#anonymous-block-level),
+    /// or a block-level box split out of it (it is in the inline box), also when a non-drawable inline box nested in the drawable one
+    /// is the one split.
+    /// </summary>
+    private static ContainerBox? GetDrawableOwner(ContainerBox box)
+    {
+        if (box.IsCanvasDrawable)
+            return box;
+
+        if (box.PreviousContinuation is not null)
+            return GetFirstPart(box) is { IsCanvasDrawable: true } first ? first : null;
+
+        if (box.SplitInlineParent is null || box.IsOutOfFlow)
+            return null;
+
+        for (var current = box.SplitInlineParent; current is { IsInlineBox: true }; current = GetFirstPart(current).Parent)
+        {
+            if (GetFirstPart(current) is { IsCanvasDrawable: true } first)
+                return first;
+        }
+
+        return null;
+
+        static ContainerBox GetFirstPart(ContainerBox part)
+        {
+            while (part.PreviousContinuation is { } previous)
+            {
+                part = previous;
+            }
+
+            return part;
         }
     }
 

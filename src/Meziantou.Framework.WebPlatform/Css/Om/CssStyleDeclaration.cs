@@ -819,6 +819,25 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             if (children.Count == 0 || children[^1].End < source.Length)
             {
                 var tailStart = children.Count > 0 ? children[^1].End : GetContentStart(source, value);
+
+                // The content of a block deeper than the maximum nesting depth is skipped by the parser: it is parsed again from
+                // its start, so that its unclosed functions, blocks and strings are closed before the closers of this block
+                if (children.Count == 0 && tailStart < source.Length)
+                {
+                    var tail = source[tailStart..];
+                    var tailComponents = CssParser.ParseListOfComponentValues(tail);
+                    if (tailComponents.Count > 0 && tailComponents[^1].End >= tail.Length)
+                    {
+                        var fixedText = FixupEndOfFile(text, tailComponents[^1], tail, closeBlocks);
+                        return closeBlocks ? fixedText + closers : fixedText;
+                    }
+
+                    if (tailComponents.Count > 0)
+                    {
+                        tailStart += tailComponents[^1].End;
+                    }
+                }
+
                 if (EndsInUnclosedComment(source, tailStart))
                 {
                     closers.Insert(0, "*/");

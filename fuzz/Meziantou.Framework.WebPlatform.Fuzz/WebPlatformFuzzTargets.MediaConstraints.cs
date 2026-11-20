@@ -68,6 +68,11 @@ public static partial class WebPlatformFuzzTargets
         {
             return;
         }
+        catch (InvalidOperationException ex) when (ex.InnerException is DecoderFallbackException)
+        {
+            // JsonDocument validates the UTF-8 of a string only when it is read: the bindings reject the document
+            return;
+        }
 
         foreach (var device in (ReadOnlySpan<MediaCaptureDevice>)[FuzzCamera, FuzzMicrophone])
         {

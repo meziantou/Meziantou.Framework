@@ -56,6 +56,10 @@ public static partial class WebPlatformFuzzTargets
     // The cost of an expression grows with its nesting (see XPathDocumentMarkup): the longer inputs are truncated
     private const int XPathMaxLength = 256;
 
+    // The cost is exponential in the nesting of the predicates (each one may evaluate a path from the root for each node): the
+    // expressions nested deeper are not evaluated (6 levels of //.//*[...] take seconds, which libFuzzer reports as slow units)
+    private const int XPathMaxPredicateDepth = 4;
+
     // The number of round trips (parse, serialize) after which the serialization of an HTML document is the same markup
     private const int HtmlMaxRoundTrips = 16;
 
@@ -549,6 +553,9 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>Evaluates an XPath expression against a document.</summary>
     public static void XPath(string input)
     {
+        if (GetXPathPredicateDepth(input) > XPathMaxPredicateDepth)
+            return;
+
         var document = XPathDocument.Value;
         try
         {
@@ -582,6 +589,38 @@ public static partial class WebPlatformFuzzTargets
         {
             // The result cannot be converted to the requested type
         }
+    }
+
+    /// <summary>Returns the maximum nesting of the predicates ([...]) of an XPath expression, outside of its string literals.</summary>
+    private static int GetXPathPredicateDepth(string expression)
+    {
+        var depth = 0;
+        var maxDepth = 0;
+        var quote = '\0';
+        foreach (var c in expression)
+        {
+            if (quote != '\0')
+            {
+                if (c == quote)
+                {
+                    quote = '\0';
+                }
+            }
+            else if (c is '\'' or '"')
+            {
+                quote = c;
+            }
+            else if (c == '[')
+            {
+                maxDepth = Math.Max(maxDepth, ++depth);
+            }
+            else if (c == ']')
+            {
+                depth = Math.Max(0, depth - 1);
+            }
+        }
+
+        return maxDepth;
     }
 
     /// <summary>Parses a URL, and checks that parsing its serialization returns the same URL.</summary>

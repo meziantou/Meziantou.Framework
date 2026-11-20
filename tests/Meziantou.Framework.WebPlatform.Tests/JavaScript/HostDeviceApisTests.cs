@@ -1560,6 +1560,47 @@ public sealed class HostDeviceApisTests : IDisposable
     }
 
     [Fact]
+    public void WebAuthentication_AddCredential_RejectsEcdsaKeyWhosePublicKeyIsAnotherOne()
+    {
+        // The public key of the ECPrivateKey (RFC 5915) is the one of another private key (fuzzing, issue 5107: OpenSSL imports
+        // it, and the credential would sign with a key that its public key does not verify)
+        using var key = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        using var otherKey = System.Security.Cryptography.ECDsa.Create(System.Security.Cryptography.ECCurve.NamedCurves.nistP256);
+        var otherPublicKey = otherKey.ExportParameters(includePrivateParameters: false).Q;
+        var ecPrivateKey = new System.Formats.Asn1.AsnWriter(System.Formats.Asn1.AsnEncodingRules.DER);
+        using (ecPrivateKey.PushSequence())
+        {
+            ecPrivateKey.WriteInteger(1);
+            ecPrivateKey.WriteOctetString(key.ExportParameters(includePrivateParameters: true).D!);
+            using (ecPrivateKey.PushSequence(new System.Formats.Asn1.Asn1Tag(System.Formats.Asn1.TagClass.ContextSpecific, 1, isConstructed: true)))
+            {
+                ecPrivateKey.WriteBitString([0x04, .. otherPublicKey.X!, .. otherPublicKey.Y!]);
+            }
+        }
+
+        var pkcs8 = new System.Formats.Asn1.AsnWriter(System.Formats.Asn1.AsnEncodingRules.DER);
+        using (pkcs8.PushSequence())
+        {
+            pkcs8.WriteInteger(0);
+            using (pkcs8.PushSequence())
+            {
+                pkcs8.WriteObjectIdentifier("1.2.840.10045.2.1");
+                pkcs8.WriteObjectIdentifier("1.2.840.10045.3.1.7");
+            }
+
+            pkcs8.WriteOctetString(ecPrivateKey.Encode());
+        }
+
+        var authenticator = new VirtualAuthenticatorEnvironment().AddAuthenticator(new VirtualAuthenticatorOptions());
+        Assert.Throws<ArgumentException>(() => authenticator.AddCredential(new VirtualCredential { CredentialId = new byte[] { 1 }, RpId = "example.com", PrivateKey = pkcs8.Encode(), SignCount = 0 }));
+        Assert.Empty(authenticator.GetCredentials());
+
+        // The key package of the private key, with its own public key, is imported
+        authenticator.AddCredential(new VirtualCredential { CredentialId = new byte[] { 2 }, RpId = "example.com", PrivateKey = key.ExportPkcs8PrivateKey(), SignCount = 0 });
+        Assert.Single(authenticator.GetCredentials());
+    }
+
+    [Fact]
     public void WebAuthentication_ParseCreationOptionsFromJson_RejectsInvalidBase64Url()
     {
         var document = Load("<script></script>");

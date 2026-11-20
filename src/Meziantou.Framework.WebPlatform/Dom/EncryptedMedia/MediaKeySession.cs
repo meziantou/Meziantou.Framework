@@ -297,7 +297,15 @@ public sealed class MediaKeySession : EventTarget
                         return;
                     }
 
-                    storage.Backend.Save(storage.Origin, _mediaKeys.KeySystem, SessionId, PersistedSession.Serialize(merged, releasedKeyIds: null));
+                    // The record must be read back by load(): a record larger than the limit of the storage is not saved
+                    var record = PersistedSession.Serialize(merged, releasedKeyIds: null);
+                    if (record.Length > ClearKey.MaxStoredSessionLength)
+                    {
+                        promise.TrySetException(new QuotaExceededError("The keys of the session cannot be stored"));
+                        return;
+                    }
+
+                    storage.Backend.Save(storage.Origin, _mediaKeys.KeySystem, SessionId, record);
                     _releasedKeyIds = null;
 
                     // The stored session is open: another document cannot load it until it is closed
@@ -527,47 +535,10 @@ public sealed class MediaKeySession : EventTarget
     /// <summary>The data of a persistent Clear Key session in the <see cref="MediaKeysStorageBackend"/>: its keys, or its record of license destruction.</summary>
     private sealed record PersistedSession(List<ClearKeyKey> Keys, List<byte[]>? ReleasedKeyIds)
     {
-        public static byte[] Serialize(IReadOnlyList<ClearKeyKey>? keys, IReadOnlyList<byte[]>? releasedKeyIds)
-        {
-            var buffer = new ArrayBufferWriter<byte>();
-            using (var writer = new Utf8JsonWriter(buffer))
-            {
-                writer.WriteStartObject();
-                writer.WriteString("type", "persistent-license");
-                if (keys is not null)
-                {
-                    writer.WriteStartArray("keys");
-                    foreach (var key in keys)
-                    {
-                        writer.WriteStartObject();
-                        writer.WriteString("kty", "oct");
-                        writer.WriteString("kid", Base64Url.EncodeToString(key.KeyId));
-                        writer.WriteString("k", Base64Url.EncodeToString(key.Key));
-                        writer.WriteEndObject();
-                    }
-
-                    writer.WriteEndArray();
-                }
-
-                if (releasedKeyIds is not null)
-                {
-                    writer.WriteStartArray("kids");
-                    foreach (var keyId in releasedKeyIds)
-                    {
-                        writer.WriteStringValue(Base64Url.EncodeToString(keyId));
-                    }
-
-                    writer.WriteEndArray();
-                }
-
-                writer.WriteEndObject();
-            }
-
-            return buffer.WrittenSpan.ToArray();
-        }
+        public static byte[] Serialize(IReadOnlyList<ClearKeyKey>? keys, IReadOnlyList<byte[]>? releasedKeyIds) => ClearKey.SerializeStoredSession(keys, releasedKeyIds);
 
         /// <summary>Parses the stored data with the parser of the responses (the backend is not trusted), or returns null.</summary>
-        public static PersistedSession? Parse(byte[] data) => ClearKey.ParseResponse(data) switch
+        public static PersistedSession? Parse(byte[] data) => ClearKey.ParseStoredSession(data) switch
         {
             { Keys: { } keys, SessionType: MediaKeySessionType.PersistentLicense } => new PersistedSession([.. keys], ReleasedKeyIds: null),
             { ReleasedKeyIds: { } released } => new PersistedSession([], [.. released]),

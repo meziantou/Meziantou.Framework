@@ -113,6 +113,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-clearkey-initdata", ClearKeyInitData) { Seeds = GetClearKeyInitDataSeeds, Dictionary = ClearKeyTokens },
         new("webplatform-clearkey-response", ClearKeyResponse) { Seeds = GetClearKeyResponseSeeds, Dictionary = ClearKeyTokens },
         new("webplatform-cenc-decrypt", CencDecrypt) { Seeds = GetCencDecryptSeeds },
+        new("webplatform-clearkey-stored-session", ClearKeyStoredSession) { Seeds = GetClearKeyStoredSessionSeeds, Dictionary = ClearKeyTokens },
         new("webplatform-use-as-dictionary", data => UseAsDictionary(FuzzText.Decode(data))) { Seeds = GetUseAsDictionarySeeds, Dictionary = StructuredFieldTokens },
         new("webplatform-dictionary-decompression", DictionaryDecompression) { Seeds = GetDictionaryDecompressionSeeds },
         new("webplatform-integrity-signatures", data => IntegritySignatureVerification(FuzzText.Decode(data))) { Seeds = GetIntegritySignatureSeeds, Dictionary = StructuredFieldTokens },

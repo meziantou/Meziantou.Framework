@@ -32,6 +32,12 @@ internal static class ClearKey
     /// <summary>The most key IDs of an Initialization Data, and the most keys of a license.</summary>
     public const int MaxKeyCount = 1024;
 
+    /// <summary>
+    /// The largest record of a persistent session in the storage: the keys that several <c>update()</c> calls add (at most
+    /// <see cref="MaxKeyCount"/> keys whose IDs have <see cref="MaxKeyIdLength"/> bytes) do not fit in a response.
+    /// </summary>
+    public const int MaxStoredSessionLength = 1024 * 1024;
+
     private const int MaxJsonDepth = 8;
 
     /// <summary>The SystemID of the Common PSSH box (https://www.w3.org/TR/eme-initdata-cenc/#common-system), whose version 1 lists the key IDs.</summary>
@@ -204,9 +210,54 @@ internal static class ClearKey
     /// a JSON Web Key Set with at least one valid symmetric key) or the acknowledgement of a license release
     /// (https://w3c.github.io/encrypted-media/#clear-key-release-ack-format). Returns null when the response is invalid.
     /// </summary>
-    public static ClearKeyResponse? ParseResponse(ReadOnlySpan<byte> response)
+    public static ClearKeyResponse? ParseResponse(ReadOnlySpan<byte> response) => ParseResponse(response, MaxResponseLength);
+
+    /// <summary>
+    /// Serializes the record of a persistent session: its keys (a <c>persistent-license</c> license), or its record of license
+    /// destruction (the key IDs of a license release).
+    /// </summary>
+    public static byte[] SerializeStoredSession(IReadOnlyList<ClearKeyKey>? keys, IReadOnlyList<byte[]>? releasedKeyIds)
     {
-        if (response.IsEmpty || response.Length > MaxResponseLength || !TryParseJsonObject(response, out var document))
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteString("type", "persistent-license");
+            if (keys is not null)
+            {
+                writer.WriteStartArray("keys");
+                foreach (var key in keys)
+                {
+                    writer.WriteStartObject();
+                    writer.WriteString("kty", "oct");
+                    writer.WriteString("kid", Base64Url.EncodeToString(key.KeyId));
+                    writer.WriteString("k", Base64Url.EncodeToString(key.Key));
+                    writer.WriteEndObject();
+                }
+
+                writer.WriteEndArray();
+            }
+
+            if (releasedKeyIds is not null)
+            {
+                WriteKeyIds(writer, releasedKeyIds);
+            }
+
+            writer.WriteEndObject();
+        }
+
+        return buffer.WrittenSpan.ToArray();
+    }
+
+    /// <summary>
+    /// Parses the record of a persistent session (written by <see cref="SerializeStoredSession"/>; the storage is not trusted):
+    /// it has the format of a response, up to <see cref="MaxStoredSessionLength"/> bytes. Returns null when it is invalid.
+    /// </summary>
+    public static ClearKeyResponse? ParseStoredSession(ReadOnlySpan<byte> record) => ParseResponse(record, MaxStoredSessionLength);
+
+    private static ClearKeyResponse? ParseResponse(ReadOnlySpan<byte> response, int maxLength)
+    {
+        if (response.IsEmpty || response.Length > maxLength || !TryParseJsonObject(response, out var document))
             return null;
 
         using (document)

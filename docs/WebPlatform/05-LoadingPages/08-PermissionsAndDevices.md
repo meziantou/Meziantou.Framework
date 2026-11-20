@@ -845,7 +845,8 @@ var options = new BrowsingContextOptions
   the same-origin frames by default); a document whose origin is opaque gets a `NotSupportedError`. A prerendering page
   waits for its activation.
 - The Initialization Data and the responses of `update()` are limited to 64 KiB, a key ID to 512 bytes, and the keys to
-  16 bytes (AES-128). The keys never leave the library: the page only sees the key IDs and their statuses.
+  16 bytes (AES-128). A session has at most 1,024 keys: the keys that several `update()` calls add to a persistent session
+  are stored in a record of up to 1 MiB, which `load()` reads back. The keys never leave the library: the page only sees the key IDs and their statuses.
 - The media resources played by URL (without Media Source Extensions) are not decrypted: the backend that plays them has
   no access to the keys.
 

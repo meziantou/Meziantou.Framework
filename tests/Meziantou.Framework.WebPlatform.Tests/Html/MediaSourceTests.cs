@@ -482,6 +482,55 @@ public sealed class MediaSourceTests : IDisposable
         Assert.Equal("durationchange|loadedmetadata|error|code=3", document.Title);
     }
 
+    [Fact]
+    public void EncryptedMedia_PersistentLicense_LoadsTheKeysOfSeveralUpdates()
+    {
+        const string PersistentPrelude = EncryptedMediaPrelude + """
+            const persistentConfiguration = { ...configuration, persistentState: 'required', sessionTypes: ['persistent-license'] };
+            const keys = await (await navigator.requestMediaKeySystemAccess('org.w3.clearkey', [persistentConfiguration])).createMediaKeys();
+            """;
+        var storage = new InMemoryMediaKeysStorageBackend();
+
+        // Two licenses of 80 keys whose IDs have 512 bytes: each one is smaller than 64 KiB, the stored record of the 160 keys is not
+        var first = Load(PersistentPrelude + """
+            const licenseOf = (from, count) => encode(JSON.stringify({ type: 'persistent-license', keys: Array.from({ length: count }, (_, i) => {
+              const id = new Uint8Array(512).fill(7);
+              id[0] = (from + i) & 255;
+              id[1] = (from + i) >> 8;
+              return { kty: 'oct', kid: base64url(id), k: base64url(key) };
+            }) }));
+            const session = keys.createSession('persistent-license');
+            session.generateRequest('keyids', keyIdsInitData);
+            await event(session, 'message');
+            const licenses = [licenseOf(0, 80), licenseOf(80, 80)];
+            log.push(licenses.every(l => l.byteLength < 65536));
+            await session.update(licenses[0]);
+            await session.update(licenses[1]);
+            log.push(session.keyStatuses.size);
+            await session.close();
+            log.push(session.sessionId);
+            done();
+            """, mediaKeysStorage: storage);
+        var parts = first.Title.Split('|');
+        Assert.Equal("true|160", string.Join('|', parts[..^1]));
+
+        var second = Load(PersistentPrelude + "const session = keys.createSession('persistent-license'); log.push(await session.load('" + parts[^1] + "'), session.keyStatuses.size); done();", mediaKeysStorage: storage);
+        Assert.Equal("true|160", second.Title);
+
+        // The largest session (1024 keys whose IDs have 512 bytes) fits in the limit of the stored records
+        var largest = Enumerable.Range(0, ClearKey.MaxKeyCount).Select(i =>
+        {
+            var keyId = new byte[ClearKey.MaxKeyIdLength];
+            keyId[0] = (byte)i;
+            keyId[1] = (byte)(i >> 8);
+            return new ClearKeyKey(keyId, new byte[ClearKey.KeyLength]);
+        }).ToList();
+        var record = ClearKey.SerializeStoredSession(largest, releasedKeyIds: null);
+        Assert.InRange(record.Length, ClearKey.MaxResponseLength + 1, ClearKey.MaxStoredSessionLength);
+        Assert.Equal(ClearKey.MaxKeyCount, ClearKey.ParseStoredSession(record)?.Keys?.Count);
+        Assert.Null(ClearKey.ParseResponse(record));
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

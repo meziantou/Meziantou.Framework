@@ -102,6 +102,45 @@ public static partial class WebPlatformFuzzTargets
     }
 
     /// <summary>
+    /// Parses the record of a persistent session in the storage (not trusted): the record of a session is at most
+    /// <see cref="ClearKey.MaxStoredSessionLength"/> bytes, and the keys or the released key IDs it has, stored again, are read
+    /// back the same (load() reads what update() saves, also beyond the limit of a response).
+    /// </summary>
+    public static void ClearKeyStoredSession(ReadOnlySpan<byte> data)
+    {
+        if (ClearKey.ParseStoredSession(data) is not { } session)
+            return;
+
+        FuzzAssert.True(data.Length <= ClearKey.MaxStoredSessionLength, "A record longer than the limit is accepted");
+        var record = ClearKey.SerializeStoredSession(session.Keys, session.Keys is null ? session.ReleasedKeyIds : null);
+        FuzzAssert.True(record.Length <= ClearKey.MaxStoredSessionLength, "A stored record cannot be read back");
+        var parsed = ClearKey.ParseStoredSession(record);
+        if (session.Keys is { } keys)
+        {
+            FuzzAssert.True(parsed?.Keys is { } parsedKeys && parsedKeys.Count == keys.Count && parsedKeys.Zip(keys).All(pair => pair.First.KeyId.AsSpan().SequenceEqual(pair.Second.KeyId) && pair.First.Key.AsSpan().SequenceEqual(pair.Second.Key)), "The keys of a stored session do not round-trip");
+        }
+        else
+        {
+            FuzzAssert.True(parsed?.ReleasedKeyIds is { } parsedKeyIds && session.ReleasedKeyIds is { } released && parsedKeyIds.Count == released.Count, "The record of license destruction does not round-trip");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetClearKeyStoredSessionSeeds()
+    {
+        // The records that update() and remove() save: a session of 1024 keys whose IDs have 512 bytes (larger than a response), a small one, and a record of license destruction
+        var largest = Enumerable.Range(0, ClearKey.MaxKeyCount).Select(i =>
+        {
+            var keyId = new byte[ClearKey.MaxKeyIdLength];
+            keyId[0] = (byte)i;
+            keyId[1] = (byte)(i >> 8);
+            return new ClearKeyKey(keyId, new byte[ClearKey.KeyLength]);
+        }).ToList();
+        yield return new FuzzSeed("clearkey-stored-session-largest", ClearKey.SerializeStoredSession(largest, releasedKeyIds: null));
+        yield return new FuzzSeed("clearkey-stored-session-small", ClearKey.SerializeStoredSession([new ClearKeyKey(new byte[16], new byte[16])], releasedKeyIds: null));
+        yield return new FuzzSeed("clearkey-stored-session-released", ClearKey.SerializeStoredSession(keys: null, [new byte[16], [1, 2, 3]]));
+    }
+
+    /// <summary>
     /// Decrypts a sample. The input is the scheme and the pattern (1 byte), the IV size (1 byte), the subsample count (1 byte),
     /// the IV, the subsamples (2 bytes of clear bytes, 2 bytes of protected bytes), then the sample. The decryption fails only
     /// when the subsamples do not cover the sample; the clear bytes are kept; cenc decrypts with a key stream, so decrypting

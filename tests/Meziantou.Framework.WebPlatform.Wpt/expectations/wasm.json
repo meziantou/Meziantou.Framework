@@ -1042,25 +1042,13 @@
     }
   },
   "wasm/jsapi/exception/basic.tentative.any.js": {
-    "total": 5,
-    "failures": {
-      "Imported JS function throws": "FAIL",
-      "Imported JS function throws, Wasm catches and rethrows": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/exception/basic.tentative.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "Imported JS function throws": "FAIL",
-      "Imported JS function throws, Wasm catches and rethrows": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/exception/basic.tentative.any.js#sharedworker": {
-    "total": 5,
-    "failures": {
-      "Imported JS function throws": "FAIL",
-      "Imported JS function throws, Wasm catches and rethrows": "FAIL"
-    }
+    "total": 5
   },
   "wasm/jsapi/exception/constructor.tentative.any.js": {
     "total": 6
@@ -1081,7 +1069,6 @@
     }
   },
   "wasm/jsapi/exception/identity.tentative.any.js": {
-    "harness": "ERROR",
     "total": 1
   },
   "wasm/jsapi/exception/identity.tentative.any.js#dedicatedworker": {

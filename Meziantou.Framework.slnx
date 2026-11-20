@@ -521,6 +521,7 @@
     <Project Path="tests/Meziantou.AspNetCore.ServiceDefaults.Tests/Meziantou.AspNetCore.ServiceDefaults.Tests.csproj" Id="a1514aa2-f75e-4dcc-bf6b-1860a8c44fcb" />
     <Project Path="tests/Meziantou.AspNetCore.Testing.TestApp/Meziantou.AspNetCore.Testing.TestApp.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Testing.Tests/Meziantou.AspNetCore.Testing.Tests.csproj" />
+    <Project Path="tests/Meziantou.AspNetCore.Testing.WasmApp/Meziantou.AspNetCore.Testing.WasmApp.csproj" />
     <Project Path="tests/Meziantou.AspNetCore.Tests/Meziantou.AspNetCore.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.FileLogger.Tests/Meziantou.Extensions.Logging.FileLogger.Tests.csproj" />
     <Project Path="tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
@@ -807,6 +808,7 @@
     <Project Path="fuzz/Meziantou.Framework.Versioning.Fuzz/Meziantou.Framework.Versioning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.WebPlatform.Wasmtime.Fuzz/Meziantou.Framework.WebPlatform.Wasmtime.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
 </Solution>

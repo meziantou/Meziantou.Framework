@@ -50,10 +50,10 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 27,030 | 30,126 | 1,919 | 96% |
-| [Tentative](#tentative-tests) | 1,658 | 3,223 | 662 | 65% |
+| [Tentative](#tentative-tests) | 1,660 | 3,223 | 662 | 65% |
 | [Reftests](#reftests) | 28,854 | 29,840 | 149 | 97% |
 | [Crash tests](#crash-tests) | 2,054 | 2,128 | 62 | 99% |
-| **All** | **59,596** | **65,317** | **2,792** | **95%** |
+| **All** | **59,598** | **65,317** | **2,792** | **95%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 102
 - **TEST BUG**: 1,140
-- **NOT IMPLEMENTED**: 3,514
+- **NOT IMPLEMENTED**: 3,512
 - **REQUIRES**: 766
   - `hardware`: 579
   - `layout`: 23
@@ -572,7 +572,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`uievents`](uievents.md#tentative-tests) | 1 | 3 | 0 | 33% |
 | [`urlpattern`](urlpattern.md#tentative-tests) | 3 | 3 | 0 | 100% |
 | [`wai-aria`](wai-aria.md#tentative-tests) | 8 | 14 | 0 | 57% |
-| [`wasm`](wasm.md#tentative-tests) | 20 | 70 | 0 | 29% |
+| [`wasm`](wasm.md#tentative-tests) | 22 | 70 | 0 | 31% |
 | [`web-animations`](web-animations.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`web-bundle`](web-bundle.md#tentative-tests) | 0 | 29 | 29 | – |
 | [`web-install`](web-install.md#tentative-tests) | 0 | 5 | 5 | – |
@@ -591,7 +591,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (165 sections)** | **1,658** | **3,223** | **662** | **65%** |
+| **Total (165 sections)** | **1,660** | **3,223** | **662** | **65%** |
 
 ## Reftests
 

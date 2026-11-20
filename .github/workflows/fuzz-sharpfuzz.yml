@@ -66,6 +66,7 @@ on:
           - versioning
           - webplatform-devtools
           - webplatform
+          - webplatform-wasmtime
           - yaml
       duration_seconds:
         description: Time budget of each target, in seconds
@@ -157,6 +158,7 @@ env:
       { "project": "Meziantou.Framework.Versioning.Fuzz",          "component": "versioning",            "day": 4 },
       { "project": "Meziantou.Framework.WebPlatform.DevTools.Fuzz", "component": "webplatform-devtools",  "day": 3 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
+      { "project": "Meziantou.Framework.WebPlatform.Wasmtime.Fuzz", "component": "webplatform-wasmtime", "day": 6 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]
 

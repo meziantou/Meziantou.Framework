@@ -44,12 +44,12 @@ public sealed class WebAssemblyTests : IDisposable
     private static string Wasm(string text) => "new Uint8Array([" + string.Join(',', WasmtimeRuntime.WatToWasm(text)) + "])";
 
     // Runs a script whose promise sets the title of the document
-    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false, bool waitForTitle = false)
+    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false, bool waitForTitle = false, WasmtimeRuntime? runtime = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
             ScriptEngine = _engine,
-            WebAssemblyRuntime = withRuntime ? Runtime : null,
+            WebAssemblyRuntime = withRuntime ? runtime ?? Runtime : null,
             Features = features,
             UnhandledScriptError = (_, error) =>
             {
@@ -856,6 +856,257 @@ public sealed class WebAssemblyTests : IDisposable
         }
 
         public WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity) => throw new WasmAllocationException("The host cannot create a shared memory");
+    }
+
+    // The legacy exception handling instructions, which the toolchains still emit (Emscripten, the runtime of .NET in the
+    // browser), are translated to the exception references that Wasmtime supports
+    private const string LegacyExceptionHandlingModule = """
+        (module
+          (type $s (struct (field i32)))
+          (tag $e (export "e") (param i32))
+          (tag $f (param i64 i64))
+          (import "env" "fail" (func $fail))
+          (func (export "catchValue") (result i32)
+            try (result i32)
+              i32.const 41
+              throw $e
+            catch $e
+              i32.const 1
+              i32.add
+            end)
+          (func (export "catchClauses") (result i64)
+            try (result i64)
+              i64.const 2
+              i64.const 40
+              throw $f
+            catch $e
+              drop
+              i64.const -1
+            catch $f
+              i64.add
+            catch_all
+              i64.const -2
+            end)
+          (func (export "catchJavaScript") (result i32)
+            try (result i32)
+              call $fail
+              i32.const 0
+            catch $e
+            catch_all
+              i32.const 42
+            end)
+          (func (export "rethrowJavaScript")
+            try
+              call $fail
+            catch_all
+              rethrow 0
+            end)
+          (func (export "rethrowOuter")
+            try
+              i32.const 1
+              throw $e
+            catch $e
+              drop
+              try
+                i32.const 2
+                throw $e
+              catch $e
+                drop
+                rethrow 1
+              end
+            end)
+          (func (export "delegateOuter") (result i32)
+            try (result i32)
+              try (result i32)
+                try (result i32)
+                  i32.const 7
+                  throw $e
+                delegate 1
+              catch $e
+                drop
+                i32.const -1
+              end
+            catch $e
+              i32.const 100
+              i32.add
+            end)
+          (func (export "delegateToCaller") (result i32)
+            try (result i32)
+              try (result i32)
+                i32.const 3
+                throw $e
+              delegate 1
+            catch $e
+              drop
+              i32.const -1
+            end)
+          (func (export "delegateFromHandler") (result i32)
+            try (result i32)
+              try (result i32)
+                i32.const 1
+                throw $e
+              catch $e
+                drop
+                try (result i32)
+                  i32.const 2
+                  throw $e
+                delegate 0
+              end
+            catch $e
+              i32.const 10
+              i32.mul
+            end)
+          (func (export "delegateFromLoop") (result i32) (local i32)
+            try (result i32)
+              loop
+                local.get 0
+                i32.const 1
+                i32.add
+                local.tee 0
+                i32.const 3
+                i32.lt_u
+                br_if 0
+                try
+                  local.get 0
+                  throw $e
+                delegate 0
+              end
+              i32.const -1
+            catch $e
+            end)
+          (func (export "delegateFromElse") (param i32) (result i32)
+            try (result i32)
+              local.get 0
+              if (result i32)
+                i32.const 1
+              else
+                try (result i32)
+                  i32.const 5
+                  throw $e
+                delegate 0
+              end
+            catch $e
+              i32.const 1000
+              i32.add
+            end)
+          (func (export "branches") (param i32) (result i32)
+            local.get 0
+            try (param i32) (result i32)
+              i32.const 1
+              i32.add
+              local.get 0
+              i32.eqz
+              br_if 0
+              throw $e
+            catch $e
+              i32.const 100
+              i32.add
+              br 0
+            end)
+          (func (export "noHandler") (result i32)
+            try (result i32)
+              i32.const 9
+            end)
+          (func (export "otherInstructions") (param i32) (result i32)
+            try (result i32)
+              block $b1
+                block $b0
+                  local.get 0
+                  br_table $b0 $b1 $b1
+                end
+                block $h (result i32)
+                  try_table (catch $e $h)
+                    i32.const 10
+                    throw $e
+                  end
+                  unreachable
+                end
+                v128.const i32x4 1 2 3 4
+                i32x4.extract_lane 2
+                i32.add
+                throw $e
+              end
+              block $cast (result (ref $s))
+                i32.const 20
+                struct.new $s
+                br_on_cast $cast (ref $s) (ref $s)
+                unreachable
+              end
+              struct.get $s 0
+              throw $e
+            catch $e
+              i32.const 100
+              i32.add
+            end))
+        """;
+
+    [Fact]
+    public async Task LegacyExceptionHandling_IsSupported()
+    {
+        var bytes = Wasm(LegacyExceptionHandlingModule);
+        var result = await RunAsync($$"""
+            async () => {
+              const failure = new Error('failure');
+              const { instance } = await WebAssembly.instantiate({{bytes}}, { env: { fail: () => { throw failure; } } });
+              const x = instance.exports;
+              const thrown = f => {
+                try { f(); return 'none'; }
+                catch (e) { return e === failure ? 'failure' : e instanceof WebAssembly.Exception && e.is(x.e) ? 'e:' + e.getArg(x.e, 0) : String(e); }
+              };
+              return [x.catchValue(), x.catchClauses(), x.catchJavaScript(), thrown(x.rethrowJavaScript), thrown(x.rethrowOuter),
+                x.delegateOuter(), thrown(x.delegateToCaller), x.delegateFromHandler(), x.delegateFromLoop(), x.delegateFromElse(0),
+                x.delegateFromElse(1), x.branches(0), x.branches(5), x.noHandler(), x.otherInstructions(0), x.otherInstructions(1),
+                WebAssembly.validate({{bytes}})].join();
+            }
+            """);
+
+        Assert.Equal("42,42,42,failure,e:1,107,e:3,20,3,1005,1,1,106,9,113,120,true", result);
+    }
+
+    [Fact]
+    public void LegacyExceptionHandling_ModulesWithoutLegacyInstructionsAreNotTranslated()
+    {
+        Assert.Null(LegacyExceptionHandling.Translate(WasmtimeRuntime.WatToWasm("""(module (tag $e) (func (try_table (catch_all 0) (throw $e))))""")));
+        Assert.Null(LegacyExceptionHandling.Translate([0, 97, 115, 109, 1, 0, 0, 0, 10, 4, 1, 2, 0]));
+        Assert.Null(LegacyExceptionHandling.Translate([1, 2, 3]));
+        Assert.NotNull(LegacyExceptionHandling.Translate(WasmtimeRuntime.WatToWasm(LegacyExceptionHandlingModule)));
+    }
+
+    [Fact]
+    public async Task ModuleCacheDirectory_LoadsTheCompiledModules()
+    {
+        var directory = Directory.CreateTempSubdirectory("meziantou-webplatform-wasm-cache-");
+        try
+        {
+            var bytes = Wasm("""(module (func (export "add") (param i32 i32) (result i32) (i32.add (local.get 0) (local.get 1))))""");
+            var results = new List<string>();
+            for (var i = 0; i < 2; i++)
+            {
+                // The second runtime loads the module compiled by the first one
+                results.Add(await RunWithModuleCacheAsync(directory.FullName, bytes));
+                Assert.Single(directory.GetFiles("*.cwasm"));
+            }
+
+            Assert.Equal(["42", "42"], results);
+            Assert.Empty(directory.GetFiles("*.tmp"));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    // A script engine keeps the store of the first runtime that runs its modules: each runtime gets its own engine
+    private static async Task<string> RunWithModuleCacheAsync(string cacheDirectory, string bytes)
+    {
+        using var tests = new WebAssemblyTests();
+        using var runtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { ModuleCacheDirectory = cacheDirectory });
+        return await tests.RunAsync($$"""
+            async () => {
+              const { instance } = await WebAssembly.instantiate({{bytes}});
+              return instance.exports.add(40, 2);
+            }
+            """, runtime: runtime);
     }
 
     [Fact]

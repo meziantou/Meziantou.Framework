@@ -10,17 +10,17 @@ description: "The results of the web-platform-tests of wasm, and why the tests t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 334 | 342 | 0 | 98% |
-| [Tentative](#tentative-tests) | 20 | 70 | 0 | 29% |
+| [Tentative](#tentative-tests) | 22 | 70 | 0 | 31% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **354** | **412** | **0** | **86%** |
+| **All** | **356** | **412** | **0** | **86%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 4
-- **NOT IMPLEMENTED**: 54
+- **NOT IMPLEMENTED**: 52
 
 ## Stable tests
 
@@ -309,9 +309,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/js-string/basic.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/basic.any.js) | Pass | 10 / 10 |  |  |
 | [`jsapi/js-string/constants.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/constants.any.js) | Pass | 80 / 80 |  |  |
 | [`jsapi/js-string/imports.any.js`](https://wpt.fyi/results/wasm/jsapi/js-string/imports.any.js) | Pass | 2 / 2 |  |  |
-| [`jsapi/jspi/js-promise-integration.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/js-promise-integration.any.js) | Fail | 2 / 26 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run, and some subtests also use the legacy exception handling instructions (`try`, `catch`) that Wasmtime does not support |
-| [`jsapi/jspi/notraps.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/notraps.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run, and some subtests also use the legacy exception handling instructions (`try`, `catch`) that Wasmtime does not support |
-| [`jsapi/jspi/rejects.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/rejects.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run, and some subtests also use the legacy exception handling instructions (`try`, `catch`) that Wasmtime does not support |
+| [`jsapi/jspi/js-promise-integration.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/js-promise-integration.any.js) | Fail | 2 / 26 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run |
+| [`jsapi/jspi/notraps.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/notraps.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run |
+| [`jsapi/jspi/rejects.any.js`](https://wpt.fyi/results/wasm/jsapi/jspi/rejects.any.js) | Fail | 0 / 10 | NOT IMPLEMENTED | JavaScript Promise Integration (`WebAssembly.Suspending`, `WebAssembly.promising`): Wasmtime suspends a call only in its asynchronous API, which runs the WebAssembly code and its host functions on a separate stack (a fiber) where the .NET code of the imported JavaScript functions cannot run |
 | [`jsapi/memory/buffer.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/buffer.any.js) | Pass | 8 / 8 |  |  |
 | [`jsapi/memory/constructor.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/constructor.any.js) | Pass | 48 / 48 |  |  |
 | [`jsapi/memory/grow.any.js`](https://wpt.fyi/results/wasm/jsapi/memory/grow.any.js) | Pass | 38 / 38 |  |  |
@@ -388,10 +388,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`jsapi/esm-integration/string-constants.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/string-constants.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
 | [`jsapi/esm-integration/v128-tdz.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/v128-tdz.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
 | [`jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/esm-integration/wasm-import-wasm-export.tentative.any.js) | Fail | 0 / 2 | NOT IMPLEMENTED | the ESM integration of WebAssembly (importing a WebAssembly module, the source phase imports) |
-| [`jsapi/exception/basic.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/basic.tentative.any.js) | Fail | 9 / 15 | NOT IMPLEMENTED | the legacy exception handling instructions (`try`, `catch`, `rethrow`): Wasmtime only supports the exception references (`try_table`, `throw_ref`) |
+| [`jsapi/exception/basic.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/basic.tentative.any.js) | Pass | 15 / 15 |  |  |
 | [`jsapi/exception/constructor.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/constructor.tentative.any.js) | Pass | 12 / 12 |  |  |
 | [`jsapi/exception/getArg.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/getArg.tentative.any.js) | Fail | 8 / 10 | TEST BUG | expects a `RangeError` for the indices that are not finite or out of the range of `unsigned long`, while `getArg()` converts the index with `[EnforceRange] unsigned long` (a `TypeError`) |
-| [`jsapi/exception/identity.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/identity.tentative.any.js) | Error | 2 / 2 | NOT IMPLEMENTED | the legacy exception handling instructions (`try`, `catch`, `rethrow`): Wasmtime only supports the exception references (`try_table`, `throw_ref`) |
+| [`jsapi/exception/identity.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/identity.tentative.any.js) | Pass | 2 / 2 |  |  |
 | [`jsapi/exception/is.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/is.tentative.any.js) | Pass | 6 / 6 |  |  |
 | [`jsapi/exception/toString.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/exception/toString.tentative.any.js) | Pass | 4 / 4 |  |  |
 | [`jsapi/function/call.tentative.any.js`](https://wpt.fyi/results/wasm/jsapi/function/call.tentative.any.js) | Fail | 0 / 4 | NOT IMPLEMENTED | `WebAssembly.Function` (the type reflection of WebAssembly) |

@@ -287,6 +287,7 @@ namespace Meziantou.AspNetCore.Testing
     public static class TestDocumentLoaders
     {
         public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader FromDirectories(System.Uri origin, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> folders) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader FromDirectories(System.Uri origin, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> folders, string? fallbackPath) => throw null;
         public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader FromHttpMessageHandler(System.Net.Http.HttpMessageHandler handler) => throw null;
         public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader FromTestServer(Microsoft.AspNetCore.TestHost.TestServer server) => throw null;
     }

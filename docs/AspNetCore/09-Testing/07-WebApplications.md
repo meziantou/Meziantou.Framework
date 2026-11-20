@@ -34,6 +34,11 @@ await Expect(page.Locator("#greeting")).ToHaveTextAsync("Hello Ada");
 | `WebAppBrowser.Create(uri)` | A server on the network (Kestrel, a development server...) |
 | `new WebAppBrowser(baseAddress, loader)` | Any [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader), for instance one of [TestDocumentLoaders](cref:Meziantou.AspNetCore.Testing.TestDocumentLoaders) |
 
+[TestDocumentLoaders.FromDirectories](cref:Meziantou.AspNetCore.Testing.TestDocumentLoaders.FromDirectories(System.Uri,System.Collections.Generic.IEnumerable{System.Collections.Generic.KeyValuePair{System.String,System.String}},System.String))
+serves the files of folders, such as the output of `dotnet publish`: the URL of a folder serves its `index.html` file,
+and the fallback file serves the routes of a single-page application, as `MapFallbackToFile` does. See
+[Blazor WebAssembly applications](08-BlazorApplications.md#blazor-webassembly-applications).
+
 The pages handle the cookies and the redirects, as a browser does: the pages of a
 [WebAppBrowser](cref:Meziantou.AspNetCore.Testing.WebAppBrowser) share their cookies
 ([Cookies](cref:Meziantou.AspNetCore.Testing.WebAppBrowser.Cookies)), and two browsers are two users.

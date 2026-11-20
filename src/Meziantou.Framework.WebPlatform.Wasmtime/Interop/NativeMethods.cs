@@ -314,6 +314,12 @@ internal static unsafe partial class NativeMethods
     public static partial nint wasmtime_module_validate(nint engine, byte* wasm, nuint length);
 
     [LibraryImport(LibraryName)]
+    public static partial nint wasmtime_module_serialize(nint module, WasmByteVec* result);
+
+    [LibraryImport(LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+    public static partial nint wasmtime_module_deserialize_file(nint engine, string path, nint* result);
+
+    [LibraryImport(LibraryName)]
     public static partial void wasmtime_module_delete(nint module);
 
     [LibraryImport(LibraryName)]

@@ -366,16 +366,26 @@ internal static class QRCodeLocator
             return null;
 
         // The modules of a smaller symbol are a corner of a larger one, which can decode as a valid symbol: try the largest
-        // size first, among the sizes whose timing patterns run to the edge of the symbol (the quiet zone ends them)
+        // size first, among the sizes whose timing patterns run to the edge of the symbol (the quiet zone ends them), then
+        // the other sizes, whose timing patterns may be damaged (the decoder does not read them)
+        Span<bool> timingMatches = stackalloc bool[4];
         for (var size = 17; size >= 11; size -= 2)
         {
             var mismatches = (2 * (size - 11)) - CountTimingMatches(image, transform, 11, size, row: true) - CountTimingMatches(image, transform, 11, size, row: false);
-            if (mismatches > 1)
-                continue;
+            timingMatches[(size - 11) / 2] = mismatches <= 1;
+        }
 
-            var modules = Sample(image, transform, size, size);
-            if (QRCodeDecoder.TryDecode(modules, out var result) && result.Type is QRCodeType.MicroQR && result.Version == (size - 9) / 2)
-                return new QRCodeImageResult(result, GetCorners(transform, size, size));
+        foreach (var matchingTiming in (ReadOnlySpan<bool>)[true, false])
+        {
+            for (var size = 17; size >= 11; size -= 2)
+            {
+                if (timingMatches[(size - 11) / 2] != matchingTiming)
+                    continue;
+
+                var modules = Sample(image, transform, size, size);
+                if (QRCodeDecoder.TryDecode(modules, out var result) && result.Type is QRCodeType.MicroQR && result.Version == (size - 9) / 2)
+                    return new QRCodeImageResult(result, GetCorners(transform, size, size));
+            }
         }
 
         return null;

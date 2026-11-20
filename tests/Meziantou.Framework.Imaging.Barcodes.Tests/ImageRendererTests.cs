@@ -991,6 +991,34 @@ public sealed class ImageRendererTests
     }
 
     [Theory]
+    [InlineData("MICRO QR")]
+    [InlineData("hello micro")]
+    public void ReadQRCodes_MicroQRWithDamagedTimingPattern(string text)
+    {
+        var qrCode = QRCode.CreateMicroQR(text);
+        Assert.True(qrCode.Width >= 13);
+        const int ModuleSize = 4;
+        using var image = qrCode.ToImage(new QRCodeRenderOptions { ModuleSize = ModuleSize });
+
+        // The modules 11 and 12 of the top timing pattern, which hold no data, are flipped
+        var quietZone = 4 * ModuleSize;
+        foreach (var column in (int[])[11, 12])
+        {
+            var color = qrCode[0, column] ? Colors.White : Colors.Black;
+            for (var y = 0; y < ModuleSize; y++)
+            {
+                for (var x = 0; x < ModuleSize; x++)
+                {
+                    image.Frames[0][quietZone + (column * ModuleSize) + x, quietZone + y] = color;
+                }
+            }
+        }
+
+        var result = Assert.Single(image.ReadQRCodes());
+        Assert.Equal((text, QRCodeType.MicroQR, qrCode.Version), (result.Text, result.Result.Type, result.Result.Version));
+    }
+
+    [Theory]
     [InlineData(QRCodeType.Standard, 15)]
     [InlineData(QRCodeType.Standard, 33)]
     [InlineData(QRCodeType.Standard, 90)]

@@ -424,6 +424,10 @@ public sealed class MediaRecorder : EventTarget
 
     private static bool CanEncode(GlobalScope global, ParsedType parsed)
     {
+        // A type without codecs records the tracks with the default codecs: one of them must be available
+        if (!parsed.Video && !parsed.Audio)
+            return CanEncodeVideo(global) || CanEncodeAudio(global);
+
         if (parsed.Video && !CanEncodeVideo(global))
             return false;
 

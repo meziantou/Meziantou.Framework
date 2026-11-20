@@ -130,7 +130,7 @@ public sealed class AudioData : IStructuredSerializable, IStructuredTransferable
     internal const long MaxSampleCount = 1L << 28;
 
     private byte[]? _resource;
-    private AudioSampleFormat _resourceFormat;
+    private readonly AudioSampleFormat _resourceFormat;
     private AudioSampleFormat? _format;
     private float _sampleRate;
     private uint _numberOfFrames;

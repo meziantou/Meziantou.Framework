@@ -235,8 +235,9 @@ captures the frames of a media element, and `AudioContext.createMediaStreamDesti
 with the channel count of the node. `createMediaStreamSource()` and `createMediaStreamTrackSource()` play the audio of a
 track in a Web Audio graph. The media elements play a stream assigned to `srcObject` as a live timeline that cannot be
 seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBackend) enables their processing model.
-`MediaRecorder` is not implemented, and the audio of the media elements is not decoded (the media backend gives no
-audio), so `createMediaElementSource()` outputs silence.
+`MediaRecorder` records the streams with the codecs of a codec backend (see
+[Audio and video codecs](10-AudioAndVideoCodecs.md#record-a-stream)). The audio of the media elements is not decoded (the
+media backend gives no audio), so `createMediaElementSource()` outputs silence.
 
 ## Notifications
 

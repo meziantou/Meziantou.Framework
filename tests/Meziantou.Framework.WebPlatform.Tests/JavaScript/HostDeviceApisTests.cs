@@ -49,6 +49,7 @@ public sealed class HostDeviceApisTests : IDisposable
             Geolocation = options.Geolocation,
             MediaCapture = options.MediaCapture,
             MediaBackend = options.MediaBackend,
+            MediaCodecs = options.MediaCodecs,
             ShowNotification = options.ShowNotification,
             CloseNotification = options.CloseNotification,
             Badging = options.Badging,
@@ -4015,6 +4016,178 @@ public sealed class HostDeviceApisTests : IDisposable
         var document = Load("<canvas width=40 height=30></canvas><script>const c = document.querySelector('canvas'); const t = c.captureStream(10).getVideoTracks()[0]; c.width = 80; document.title = [t instanceof CanvasCaptureMediaStreamTrack, t.canvas === c, t.getSettings().width, t.getSettings().height, t.getSettings().frameRate].join();</script>");
 
         Assert.Equal("true,true,80,30,10", Run(document));
+    }
+
+    // MediaStream Recording
+
+    private const string RecorderScript = """
+        window.log = [];
+        window.blobs = [];
+        window.record = (stream, options, timeslice) => {
+          window.recorder = new MediaRecorder(stream, options);
+          recorder.onstart = () => log.push('start ' + recorder.mimeType);
+          recorder.onpause = () => log.push('pause');
+          recorder.onresume = () => log.push('resume');
+          recorder.onerror = e => log.push('error ' + e.error.name);
+          recorder.ondataavailable = e => { blobs.push(e.data); log.push('data ' + e.data.type + ' ' + (e.data.size > 0) + ' ' + e.timecode); };
+          recorder.onstop = () => log.push('stop ' + recorder.state);
+          recorder.start(timeslice);
+          log.push(recorder.state);
+        };
+        window.done = () => document.title = log.join('|');
+        """;
+
+    /// <summary>Advances the clock of the recording by steps of 10 ms, running the tasks of each step.</summary>
+    private void Advance(FakeTimeProvider clock, Document document, int milliseconds)
+    {
+        for (var elapsed = 0; elapsed < milliseconds; elapsed += 10)
+        {
+            clock.Advance(TimeSpan.FromMilliseconds(10));
+            Run(document);
+        }
+    }
+
+    [Fact]
+    public void MediaRecorder_IsTypeSupported_DependsOnTheCodecs()
+    {
+        const string Script = """
+            document.title = ['', 'video/webm', 'audio/webm', 'video/webm;codecs=vp8', 'video/webm;codecs="vp8,opus"', 'audio/webm;codecs=opus', 'video/x-matroska;codecs=vp8.0,opus',
+              'video/webm;codecs=vp9', 'audio/webm;codecs=vp8', 'video/webm;codecs=unknown', 'video/mp4', 'text/plain', 'video/webm;'].map(type => MediaRecorder.isTypeSupported(type)).join();
+            """;
+
+        Assert.Equal("true,true,true,true,true,true,true,false,false,false,false,false,true", Run(Load("<script>" + Script + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend() })));
+
+        // Without codecs, only the empty type is supported
+        Assert.Equal("true,false,false,false,false,false,false,false,false,false,false,false,false", Run(Load("<script>" + Script + "</script>")));
+    }
+
+    [Fact]
+    public void MediaRecorder_Constructor()
+    {
+        var document = Load("""
+            <script>
+              const results = [];
+              const stream = new MediaStream();
+              const recorder = new MediaRecorder(stream);
+              results.push(recorder.stream === stream, recorder.state, recorder.mimeType, recorder.audioBitsPerSecond, recorder.videoBitsPerSecond, recorder.audioBitrateMode);
+              const shared = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp8', bitsPerSecond: 1000000, audioBitrateMode: 'constant' });
+              results.push(shared.mimeType, shared.audioBitsPerSecond, shared.videoBitsPerSecond, shared.audioBitrateMode);
+              for (const options of [{ mimeType: 'video/mp4' }, { mimeType: 'video/webm;codecs=vp9' }, { videoKeyFrameIntervalDuration: 100, videoKeyFrameIntervalCount: 10 }]) {
+                try { new MediaRecorder(stream, options); results.push('created'); } catch (e) { results.push(e.name); }
+              }
+
+              // A type whose codecs the recorder does not know is checked when the recording starts
+              results.push(new MediaRecorder(stream, { mimeType: 'video/webm;codecs=unknown' }).mimeType);
+              try { recorder.start(); } catch (e) { results.push(e.name); }
+              for (const method of ['pause', 'resume', 'requestData']) {
+                try { recorder[method](); } catch (e) { results.push(e.name); }
+              }
+
+              recorder.stop();
+              const event = new BlobEvent('dataavailable', { data: new Blob(['abc']), timecode: 5 });
+              results.push(event.data.size, event.timecode);
+              try { new BlobEvent('dataavailable', {}); } catch (e) { results.push(e.name); }
+              document.title = results.join();
+            </script>
+            """, new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend() });
+
+        Assert.Equal("true,inactive,,128000,2500000,variable,video/webm;codecs=vp8,100000,900000,constant,NotSupportedError,NotSupportedError,NotSupportedError,video/webm;codecs=unknown,NotSupportedError,InvalidStateError,InvalidStateError,InvalidStateError,3,5,TypeError", Run(document));
+    }
+
+    [Fact]
+    public void MediaRecorder_StateTransitions()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<canvas width=4 height=2></canvas><script>" + RecorderScript + "</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+
+        Run(document, "window.stream = document.querySelector('canvas').captureStream(); stream.getVideoTracks()[0].requestFrame(); record(stream);");
+        Run(document, """
+            try { recorder.start(); } catch (e) { log.push(e.name); }
+            recorder.pause();
+            recorder.pause();
+            log.push(recorder.state);
+            recorder.resume();
+            log.push(recorder.state);
+            recorder.requestData();
+            """);
+        Advance(clock, document, 50);
+        Run(document, "recorder.stop(); log.push(recorder.state); recorder.stop();");
+
+        Assert.Equal("recording|start video/webm;codecs=vp8|InvalidStateError|paused|recording|pause|resume|data video/webm;codecs=vp8 true 0|inactive|data video/webm;codecs=vp8 true 40|stop inactive", Run(document, "done()"));
+    }
+
+    [Fact]
+    public void MediaRecorder_Errors()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+
+        // Without codecs, the recording fails when it starts
+        var withoutCodecs = Load("<canvas></canvas><script>" + RecorderScript + "record(document.querySelector('canvas').captureStream());</script>", new BrowsingContextOptions { TimeProvider = clock });
+        Assert.Equal("recording|error NotSupportedError|inactive", Run(withoutCodecs, "log.push(recorder.state); done()"));
+
+        // A track added to the stream stops the recording
+        var document = Load("<canvas></canvas><script>" + RecorderScript + "window.stream = document.querySelector('canvas').captureStream(); record(stream);</script>", new BrowsingContextOptions { MediaCodecs = new TestMediaCodecBackend(), TimeProvider = clock });
+        Run(document, "stream.addTrack(document.createElement('canvas').captureStream().getVideoTracks()[0]); log.push(recorder.state);");
+        Assert.Equal("recording|start video/webm;codecs=vp8|inactive|error InvalidModificationError|data video/webm;codecs=vp8 true 0|stop inactive", Run(document, "done()"));
+    }
+
+    [Fact]
+    public async Task MediaRecorder_RecordsTheVideoOfACamera()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new SolidColorCamera(),
+            Permissions = GrantedPermissions("camera"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ video: { width: 320 } }).then(stream => { window.stream = stream; record(stream, {}, 100); });");
+        Advance(clock, document, 250);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await new Blob(blobs).arrayBuffer());
+              const second = new Uint8Array(await blobs[1].arrayBuffer());
+              log.push('stop', bytes.slice(0, 4).join(' '), second.slice(0, 4).join(' '), new TextDecoder().decode(bytes.slice(0, 200)).includes('V_VP8'));
+              done();
+            };
+            stream.getTracks()[0].stop();
+            """);
+
+        // The first blob starts with the header of the stream, the next ones with a cluster
+        Assert.Equal("recording|start video/webm;codecs=vp8|data video/webm;codecs=vp8 true 0|data video/webm;codecs=vp8 true 160|data video/webm;codecs=vp8 false 250|stop|26 69 223 163|31 67 182 117|true", document.Title);
+    }
+
+    [Fact]
+    public async Task MediaRecorder_RecordsTheAudioOfAMicrophone()
+    {
+        var clock = new FakeTimeProvider(DateTimeOffset.UnixEpoch);
+        var document = Load("<script>" + RecorderScript + "</script>", new BrowsingContextOptions
+        {
+            MediaCapture = new RampMicrophone(),
+            Permissions = GrantedPermissions("microphone"),
+            MediaCodecs = new TestMediaCodecBackend(),
+            TimeProvider = clock,
+        });
+        await RunAsync(document, "navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { window.stream = stream; record(stream, { mimeType: 'audio/webm;codecs=opus' }); });");
+        Advance(clock, document, 100);
+        await RunAsync(document, """
+            recorder.onstop = async () => {
+              const bytes = new Uint8Array(await blobs[0].arrayBuffer());
+              let binary = '';
+              for (const b of bytes) binary += String.fromCharCode(b);
+              document.title = log.join('|') + '|' + btoa(binary);
+            };
+            recorder.stop();
+            """);
+
+        var parts = document.Title.Split('|');
+        Assert.Equal(["recording", "start audio/webm;codecs=opus", "data audio/webm;codecs=opus true 0"], parts[..^1]);
+        var elements = WebMReader.ReadElements(Convert.FromBase64String(parts[^1]));
+        Assert.Contains("CodecID:A_OPUS", elements);
+        Assert.Contains("Cluster(unknown)", elements);
+        Assert.Contains("SimpleBlock:2@0+key", elements);
+        Assert.DoesNotContain("CodecID:V_VP8", elements);
     }
 }
 

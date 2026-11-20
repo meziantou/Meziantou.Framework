@@ -74,6 +74,28 @@ public static partial class WebPlatformFuzzTargets
                 FuzzAssert.Equal(url.PotentiallyDanglingMarkup, url.Clone().PotentiallyDanglingMarkup, $"The dangling markup flag of the clone of the URL {FuzzAssert.Format(input)}");
             }
         }
+
+        // A URL resolved against a base URL made of dangling markup keeps the flag when it depends on the base: a URL without
+        // the flag is the one of the input alone, and the base URL itself (e.g. an empty input) has it
+        var danglingBase = UrlParser.Parse("https://example.com/a/b?x=\n<secret>", baseUrl: null)!;
+        FuzzAssert.True(danglingBase.PotentiallyDanglingMarkup, "The base URL made of dangling markup is not flagged");
+        if (UrlParser.Parse(input, danglingBase) is { } relative)
+        {
+            if (UrlParser.IsPotentiallyDanglingMarkup(input))
+            {
+                FuzzAssert.True(relative.PotentiallyDanglingMarkup, $"The URL {FuzzAssert.Format(input)} made of dangling markup is not flagged");
+            }
+
+            if (!relative.PotentiallyDanglingMarkup)
+            {
+                FuzzAssert.Equal(UrlParser.Parse(input, baseUrl: null)?.Serialize(), relative.Serialize(), $"The URL {FuzzAssert.Format(input)} depends on the dangling base URL but is not flagged");
+            }
+
+            if (relative.Serialize(excludeFragment: true) == danglingBase.Serialize(excludeFragment: true))
+            {
+                FuzzAssert.True(relative.PotentiallyDanglingMarkup, $"The URL {FuzzAssert.Format(input)} is the dangling base URL but is not flagged");
+            }
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetIntegritySeeds()
@@ -88,6 +110,10 @@ public static partial class WebPlatformFuzzTargets
             "?-=",
             "-hash",
             "sha256-",
+            "https:",
+            "#bg",
+            "?q",
+            "https://evil.example/absolute",
             "foobar-AAAAAAAAAAAAAAAAAAAa",
             "sha256-Bu681KMnQ15RYHFvsYdWumweeFAw0hJDTFt9seErghA=?foo=bar sha512-deadbeef",
             "sha-256=:uU0nuZNNPgilLlLX2n2r+sSE7+N6U4DukIj3rOLvzek=:",

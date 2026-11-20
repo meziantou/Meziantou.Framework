@@ -135,8 +135,22 @@ public static partial class WebPlatformFuzzTargets
         var key = Encoding.ASCII.GetBytes("0123456789abcdef");
         var decrypted = new byte[sample.Length];
         var coversSample = subsamples.Count == 0 || subsamples.Sum(subsample => (long)subsample.ClearBytes + subsample.ProtectedBytes) == sample.Length;
-        var result = MediaSampleDecryptor.TryDecrypt(encryption, key, sample, decrypted);
-        FuzzAssert.Equal(coversSample, result, "The decryption fails if and only if the subsamples do not cover the sample");
+
+        // A cbcs pattern without encrypted blocks (0:N) is invalid
+        var validPattern = scheme == MediaEncryptionScheme.Cenc || crypt != 0 || skip == 0;
+        bool result;
+        try
+        {
+            result = MediaSampleDecryptor.TryDecrypt(encryption, key, sample, decrypted);
+        }
+        catch (Exception ex)
+        {
+            // Malformed media is reported by the result: no exception escapes
+            FuzzAssert.True(false, "TryDecrypt threw " + ex.GetType().Name + ": " + ex.Message);
+            return;
+        }
+
+        FuzzAssert.Equal(coversSample && validPattern, result, "The decryption fails if and only if the subsamples do not cover the sample or the pattern is invalid");
         if (!result)
             return;
 
@@ -221,6 +235,7 @@ public static partial class WebPlatformFuzzTargets
             [0x13, 0, 0, .. iv, .. cbc, 1, 2, 3],
             [0x93, 0, 1, .. iv, 0, 3, 0, 32, 9, 9, 9, .. cbc],
             [0x01, 0, 0, .. iv, .. cbc],
+            [0x11, 0, 0, .. iv, .. cbc],
         ];
         for (var i = 0; i < seeds.Length; i++)
         {

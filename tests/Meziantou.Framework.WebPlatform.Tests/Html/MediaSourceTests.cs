@@ -558,6 +558,17 @@ public sealed class MediaSourceTests : IDisposable
         Assert.Throws<ArgumentException>(() => new MediaSampleEncryption(MediaEncryptionScheme.Cbcs, keyId, initializationVector));
     }
 
+    [Theory]
+    [InlineData(0, 1, 32)]
+    [InlineData(0, 9, 16)]
+    [InlineData(0, 15, 160)]
+    public void EncryptedMedia_SampleDecryptor_RejectsAPatternWithoutEncryptedBlocks(int crypt, int skip, int length)
+    {
+        var encryption = new MediaSampleEncryption(MediaEncryptionScheme.Cbcs, new byte[16], new byte[16]) { CryptByteBlock = crypt, SkipByteBlock = skip };
+        var sample = new byte[length];
+        Assert.False(MediaSampleDecryptor.TryDecrypt(encryption, new byte[16], sample, sample));
+    }
+
     [Fact]
     public void EncryptedMedia_SampleDecryptor_DecryptsCencAndCbcs()
     {

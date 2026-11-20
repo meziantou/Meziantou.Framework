@@ -27,6 +27,11 @@ internal static class MediaSampleDecryptor
         if (encryption.CryptByteBlock is < 0 or > 15 || encryption.SkipByteBlock is < 0 or > 15)
             return false;
 
+        // ISO/IEC 23001-7, 9.6: a pattern encrypts at least one block of each run, except the 0:0 pattern (every block is
+        // encrypted); a pattern without encrypted blocks (0:N) is invalid
+        if (encryption.Scheme == MediaEncryptionScheme.Cbcs && encryption.CryptByteBlock == 0 && encryption.SkipByteBlock != 0)
+            return false;
+
         // The subsamples cover the sample exactly
         long total = 0;
         foreach (var subsample in encryption.Subsamples)

@@ -51,6 +51,10 @@ internal static partial class CssPropertyRegistry
     {
         ["d"] = "none | path( <string> )",
 
+        // https://drafts.csswg.org/css-writing-modes-4/#glyph-orientation: the angles and the integers are restricted to 0 and
+        // 90 by a validation rule (the matcher of the grammars does not have the numeric literals of "auto | 0deg | 90deg | 0 | 90")
+        ["glyph-orientation-vertical"] = "auto | <angle> | <integer>",
+
         // https://drafts.csswg.org/css-images-3/#the-image-orientation: the <angle> and flip values are deprecated ("UAs must
         // not support them", as the browsers: WPT css/css-images/parsing/image-orientation-invalid.html)
         ["image-orientation"] = "from-image | none",
@@ -279,6 +283,10 @@ internal static partial class CssPropertyRegistry
         ["page-break-before"] = ["break-before"],
         ["page-break-after"] = ["break-after"],
         ["page-break-inside"] = ["break-inside"],
+
+        // https://drafts.csswg.org/css-writing-modes-4/#glyph-orientation: the obsolete SVG 1.1 property is a legacy shorthand of
+        // text-orientation
+        ["glyph-orientation-vertical"] = ["text-orientation"],
 
         // https://drafts.csswg.org/css-animations-2/#animation-shorthand: animation also resets animation-timeline and the
         // longhands of animation-range, like the browsers (they do not reset animation-composition and animation-trigger)

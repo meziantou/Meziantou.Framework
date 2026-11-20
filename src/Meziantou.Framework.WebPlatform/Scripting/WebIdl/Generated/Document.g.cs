@@ -91,6 +91,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static void Set_onresume(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "resume", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_wasDiscarded(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.FromBoolean(o.WasDiscarded); }
     private static TValue Get_permissionsPolicy(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.PermissionsPolicy); }
+    private static TValue Get_pictureInPictureEnabled(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.FromBoolean(o.PictureInPictureEnabled); }
     private static TValue Get_onpointerlockchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "pointerlockchange");
     private static void Set_onpointerlockchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "pointerlockchange", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onpointerlockerror(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "pointerlockerror");
@@ -108,6 +109,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
     private static void Set_adoptedStyleSheets(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); o.AdoptedStyleSheets = r.ToSequence<global::Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet>(v, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet>(e, "CSSStyleSheet")); }
     private static TValue Get_fullscreenElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.FullscreenElement); }
     private static TValue Get_activeElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.ActiveElement); }
+    private static TValue Get_pictureInPictureElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.PictureInPictureElement); }
     private static TValue Get_pointerLockElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.PointerLockElement); }
     private static TValue Get_children(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.Children); }
     private static TValue Get_firstElementChild(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding); return r.Wrap(o.FirstElementChild); }
@@ -616,6 +618,11 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
         o.ReleaseEvents(); return r.Adapter.Undefined;
     }
+    private static TValue Op_exitPictureInPicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
+        var result = o.ExitPictureInPicture(); return r.ToPromise(result);
+    }
     private static TValue Op_exitPointerLock(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Document>(t, Binding);
@@ -820,6 +827,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "onresume", Get_onresume, Set_onresume);
         r.DefineAttribute(instanceTarget, "wasDiscarded", Get_wasDiscarded, null);
         r.DefineAttribute(instanceTarget, "permissionsPolicy", Get_permissionsPolicy, null);
+        r.DefineAttribute(instanceTarget, "pictureInPictureEnabled", Get_pictureInPictureEnabled, null);
         r.DefineAttribute(instanceTarget, "onpointerlockchange", Get_onpointerlockchange, Set_onpointerlockchange);
         r.DefineAttribute(instanceTarget, "onpointerlockerror", Get_onpointerlockerror, Set_onpointerlockerror);
         r.DefineAttribute(instanceTarget, "prerendering", Get_prerendering, null);
@@ -833,6 +841,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "adoptedStyleSheets", Get_adoptedStyleSheets, Set_adoptedStyleSheets);
         r.DefineLenientSetterAttribute(instanceTarget, "fullscreenElement", Get_fullscreenElement);
         r.DefineAttribute(instanceTarget, "activeElement", Get_activeElement, null);
+        r.DefineAttribute(instanceTarget, "pictureInPictureElement", Get_pictureInPictureElement, null);
         r.DefineAttribute(instanceTarget, "pointerLockElement", Get_pointerLockElement, null);
         r.DefineAttribute(instanceTarget, "children", Get_children, null);
         r.DefineAttribute(instanceTarget, "firstElementChild", Get_firstElementChild, null);
@@ -979,6 +988,7 @@ internal static class Binding_Document<TAdapter, TValue> where TAdapter : struct
         r.DefineOperation(instanceTarget, "clear", 0, Op_clear);
         r.DefineOperation(instanceTarget, "captureEvents", 0, Op_captureEvents);
         r.DefineOperation(instanceTarget, "releaseEvents", 0, Op_releaseEvents);
+        r.DefineOperation(instanceTarget, "exitPictureInPicture", 0, Op_exitPictureInPicture, returnsPromise: true);
         r.DefineOperation(instanceTarget, "exitPointerLock", 0, Op_exitPointerLock);
         r.DefineOperation(instanceTarget, "hasUnpartitionedCookieAccess", 0, Op_hasUnpartitionedCookieAccess, returnsPromise: true);
         r.DefineOperation(instanceTarget, "getSelection", 0, Op_getSelection);

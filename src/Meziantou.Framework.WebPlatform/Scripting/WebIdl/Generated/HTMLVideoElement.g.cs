@@ -29,24 +29,21 @@ internal static class Binding_HTMLVideoElement<TAdapter, TValue> where TAdapter 
     private static void Set_poster(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding); var x = r.ToUsvString(v); o.Poster = x; }
     private static TValue Get_playsInline(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding); return r.FromBoolean(o.PlaysInline); }
     private static void Set_playsInline(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding); var x = r.ToBoolean(v); o.PlaysInline = x; }
+    private static TValue Get_onenterpictureinpicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "enterpictureinpicture");
+    private static void Set_onenterpictureinpicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "enterpictureinpicture", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_onleavepictureinpicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "leavepictureinpicture");
+    private static void Set_onleavepictureinpicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "leavepictureinpicture", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_disablePictureInPicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding); return r.FromBoolean(o.DisablePictureInPicture); }
+    private static void Set_disablePictureInPicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding); var x = r.ToBoolean(v); o.DisablePictureInPicture = x; }
     private static TValue Op_getVideoPlaybackQuality(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding);
         var result = o.GetVideoPlaybackQuality(); return r.Wrap(result);
     }
-    private static TValue Op_requestVideoFrameCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    private static TValue Op_requestPictureInPicture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding);
-        if (a.Length < 1) throw r.NotEnoughArguments("requestVideoFrameCallback", 1, a.Length);
-        var a0 = r.ToCallbackFunction(a[0], "VideoFrameRequestCallback", false)!;
-        var result = o.RequestVideoFrameCallback(WebIdlHelpers<TAdapter, TValue>.ToDelegate_Dom_VideoFrameRequestCallback(r, a0)); return r.FromNumber((double)result);
-    }
-    private static TValue Op_cancelVideoFrameCallback(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
-    {
-        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement>(t, Binding);
-        if (a.Length < 1) throw r.NotEnoughArguments("cancelVideoFrameCallback", 1, a.Length);
-        var a0 = r.ToUnsignedLong(a[0], global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
-        o.CancelVideoFrameCallback(a0); return r.Adapter.Undefined;
+        var result = o.RequestPictureInPicture(); return r.ToPromise(result, static (r, value) => r.Wrap(value));
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
@@ -56,8 +53,10 @@ internal static class Binding_HTMLVideoElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "videoHeight", Get_videoHeight, null);
         r.DefineAttribute(instanceTarget, "poster", Get_poster, Set_poster);
         r.DefineAttribute(instanceTarget, "playsInline", Get_playsInline, Set_playsInline);
+        r.DefineAttribute(instanceTarget, "onenterpictureinpicture", Get_onenterpictureinpicture, Set_onenterpictureinpicture);
+        r.DefineAttribute(instanceTarget, "onleavepictureinpicture", Get_onleavepictureinpicture, Set_onleavepictureinpicture);
+        r.DefineAttribute(instanceTarget, "disablePictureInPicture", Get_disablePictureInPicture, Set_disablePictureInPicture);
         r.DefineOperation(instanceTarget, "getVideoPlaybackQuality", 0, Op_getVideoPlaybackQuality);
-        r.DefineOperation(instanceTarget, "requestVideoFrameCallback", 1, Op_requestVideoFrameCallback);
-        r.DefineOperation(instanceTarget, "cancelVideoFrameCallback", 1, Op_cancelVideoFrameCallback);
+        r.DefineOperation(instanceTarget, "requestPictureInPicture", 0, Op_requestPictureInPicture, returnsPromise: true);
     }
 }

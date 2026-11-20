@@ -269,42 +269,19 @@
     }
   },
   "permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "permissions policy allow=\"picture-in-picture\" allows same-origin navigation in an iframe.": "FAIL",
-      "permissions policy allow=\"picture-in-picture\" disallows cross-origin navigation in an iframe.": "FAIL"
-    }
+    "total": 2
   },
   "permissions-policy/picture-in-picture-allowed-by-permissions-policy-attribute.https.sub.html": {
-    "total": 2,
-    "failures": {
-      "permissions policy \"picture-in-picture\" can be enabled in cross-origin iframe using allow=\"picture-in-picture\" attribute": "FAIL",
-      "permissions policy \"picture-in-picture\" can be enabled in same-origin iframe using allow=\"picture-in-picture\" attribute": "FAIL"
-    }
+    "total": 2
   },
   "permissions-policy/picture-in-picture-allowed-by-permissions-policy.https.sub.html": {
-    "total": 3,
-    "failures": {
-      "permissions policy header: picture-in-picture * allows cross-origin iframes.": "FAIL",
-      "permissions policy header: picture-in-picture * allows same-origin iframes.": "FAIL",
-      "permissions policy header: picture-in-picture * allows the top-level document.": "FAIL"
-    }
+    "total": 3
   },
   "permissions-policy/picture-in-picture-default-permissions-policy.https.sub.html": {
-    "total": 3,
-    "failures": {
-      "Default \"picture-in-picture\" permissions policy [*] allows cross-origin iframes.": "FAIL",
-      "Default \"picture-in-picture\" permissions policy [*] allows same-origin iframes.": "FAIL",
-      "Default \"picture-in-picture\" permissions policy [*] allows the top-level document.": "FAIL"
-    }
+    "total": 3
   },
   "permissions-policy/picture-in-picture-disabled-by-permissions-policy.https.sub.html": {
-    "total": 3,
-    "failures": {
-      "permissions policy header: picture-in-picture \"none\" disallows cross-origin iframes.": "FAIL",
-      "permissions policy header: picture-in-picture \"none\" disallows same-origin iframes.": "FAIL",
-      "permissions policy header: picture-in-picture \"none\" disallows the top-level document.": "FAIL"
-    }
+    "total": 3
   },
   "permissions-policy/picture-in-picture-supported-by-permissions-policy.html": {
     "total": 1
@@ -423,16 +400,10 @@
     "total": 1
   },
   "permissions-policy/reporting/picture-in-picture-report-only.html": {
-    "total": 1,
-    "failures": {
-      "Picture-in-Picture report only mode": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/picture-in-picture-reporting.html": {
-    "total": 1,
-    "failures": {
-      "Picture-in-Picture Report Format": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/report-only-and-enforce.https.sub.html": {
     "total": 1

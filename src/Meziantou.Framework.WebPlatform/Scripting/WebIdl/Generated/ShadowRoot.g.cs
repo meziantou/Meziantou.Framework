@@ -35,6 +35,7 @@ internal static class Binding_ShadowRoot<TAdapter, TValue> where TAdapter : stru
     private static void Set_adoptedStyleSheets(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding); o.AdoptedStyleSheets = r.ToSequence<global::Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet>(v, static (r, e) => r.ToInterface<global::Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet>(e, "CSSStyleSheet")); }
     private static TValue Get_fullscreenElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding); return r.Wrap(o.FullscreenElement); }
     private static TValue Get_activeElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding); return r.Wrap(o.ActiveElement); }
+    private static TValue Get_pictureInPictureElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding); return r.Wrap(o.PictureInPictureElement); }
     private static TValue Get_pointerLockElement(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding); return r.Wrap(o.PointerLockElement); }
     private static TValue Op_setHTML(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -143,6 +144,7 @@ internal static class Binding_ShadowRoot<TAdapter, TValue> where TAdapter : stru
         r.DefineAttribute(instanceTarget, "adoptedStyleSheets", Get_adoptedStyleSheets, Set_adoptedStyleSheets);
         r.DefineLenientSetterAttribute(instanceTarget, "fullscreenElement", Get_fullscreenElement);
         r.DefineAttribute(instanceTarget, "activeElement", Get_activeElement, null);
+        r.DefineAttribute(instanceTarget, "pictureInPictureElement", Get_pictureInPictureElement, null);
         r.DefineAttribute(instanceTarget, "pointerLockElement", Get_pointerLockElement, null);
         r.DefineOperation(instanceTarget, "setHTML", 1, Op_setHTML, ceReactions: true);
         r.DefineOperation(instanceTarget, "appendHTML", 1, Op_appendHTML, ceReactions: true);

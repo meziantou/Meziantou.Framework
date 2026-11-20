@@ -519,6 +519,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PermissionStatus"] = Binding_PermissionStatus<TAdapter, TValue>.Binding,
             ["Permissions"] = Binding_Permissions<TAdapter, TValue>.Binding,
             ["PermissionsPolicy"] = Binding_PermissionsPolicy<TAdapter, TValue>.Binding,
+            ["PictureInPictureEvent"] = Binding_PictureInPictureEvent<TAdapter, TValue>.Binding,
+            ["PictureInPictureWindow"] = Binding_PictureInPictureWindow<TAdapter, TValue>.Binding,
             ["Plugin"] = Binding_Plugin<TAdapter, TValue>.Binding,
             ["PluginArray"] = Binding_PluginArray<TAdapter, TValue>.Binding,
             ["PointerEvent"] = Binding_PointerEvent<TAdapter, TValue>.Binding,
@@ -1005,6 +1007,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PermissionsPolicyViolationReportBody dictionaryDom_PermissionsPolicyViolationReportBody:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PermissionsPolicyViolationReportBody(r, dictionaryDom_PermissionsPolicyViolationReportBody);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureEventInit dictionaryDom_PictureInPictureEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PictureInPictureEventInit(r, dictionaryDom_PictureInPictureEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PopStateEventInit dictionaryDom_PopStateEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PopStateEventInit(r, dictionaryDom_PopStateEventInit);
@@ -2622,6 +2627,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PhotoSettings> taskSystem_Threading_Tasks_Task_Dom_PhotoSettings_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PhotoSettings_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PhotoSettings(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow> taskSystem_Threading_Tasks_Task_Dom_PictureInPictureWindow_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PictureInPictureWindow_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationAvailability> taskSystem_Threading_Tasks_Task_Dom_SecurePaymentConfirmationAvailability_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_SecurePaymentConfirmationAvailability_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SecurePaymentConfirmationAvailability(v)));

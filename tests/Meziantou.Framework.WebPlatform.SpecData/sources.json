@@ -229,6 +229,7 @@
       "media-source",
       "media-playback-quality",
       "encrypted-media",
+      "picture-in-picture",
       "html/dom",
       "html/syntax",
       "html/semantics",

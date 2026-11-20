@@ -35,6 +35,11 @@ public partial class HtmlVideoElement
         {
             FetchPosterFrame();
         }
+        else if (@namespace is null && localName == "disablepictureinpicture" && oldValue is null && value is not null)
+        {
+            // https://w3c.github.io/picture-in-picture/#disable-pip
+            PictureInPictureModel.OnDisabled(this);
+        }
     }
 
     /// <summary>

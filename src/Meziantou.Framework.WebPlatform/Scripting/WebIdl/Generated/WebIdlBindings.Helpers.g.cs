@@ -3499,6 +3499,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_PictureInPictureEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "pictureInPictureWindow", r.Wrap(value.PictureInPictureWindow));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_Point2D(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.Point2D value)
     {
         var result = r.CreateObject();
@@ -11803,6 +11813,27 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             ImageHeight = m1_present ? m1 : Defaults_Dom_PhotoSettings.ImageHeight,
             ImageWidth = m2_present ? m2 : Defaults_Dom_PhotoSettings.ImageWidth,
             RedEyeReduction = m3_present ? m3 : Defaults_Dom_PhotoSettings.RedEyeReduction,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureEventInit ToDictionary_Dom_PictureInPictureEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "PictureInPictureEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "pictureInPictureWindow");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("PictureInPictureEventInit", "pictureInPictureWindow");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow>(m3_value, "PictureInPictureWindow");
+        return new global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            PictureInPictureWindow = m3,
         };
     }
 

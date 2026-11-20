@@ -334,6 +334,10 @@ public sealed class WptTests
 
     public static TheoryData<string> IntersectionObserverTests => GetTests("intersection-observer");
 
+    public static TheoryData<string> PictureInPictureTests => GetTests("picture-in-picture");
+
+    public static TheoryData<string> DocumentPictureInPictureTests => GetTests("document-picture-in-picture");
+
     public static TheoryData<string> LoadingTests => GetTests("loading");
 
     public static TheoryData<string> LayoutInstabilityTests => GetTests("layout-instability");
@@ -1450,6 +1454,14 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(IntersectionObserverTests))]
     public void IntersectionObserver(string test) => Run("intersection-observer", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PictureInPictureTests))]
+    public void PictureInPicture(string test) => Run("picture-in-picture", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DocumentPictureInPictureTests))]
+    public void DocumentPictureInPicture(string test) => Run("document-picture-in-picture", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(LoadingTests))]

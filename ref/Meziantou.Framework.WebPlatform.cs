@@ -5355,6 +5355,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnWheel { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.Worklet PaintWorklet { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PermissionsPolicy PermissionsPolicy { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Element? PictureInPictureElement { get => throw null; }
+        public bool PictureInPictureEnabled { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.HtmlCollection Plugins { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? PointerLockElement { get => throw null; }
         public bool Prerendering { get => throw null; }
@@ -5406,6 +5408,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ExecCommand(string commandId, bool showUI, Meziantou.Framework.WebPlatform.Dom.TrustedHtml value) => throw null;
         public bool ExecCommand(string commandId, bool showUI = false, string value = "") => throw null;
         public System.Threading.Tasks.Task ExitFullscreen() => throw null;
+        public System.Threading.Tasks.Task ExitPictureInPicture() => throw null;
         public void ExitPointerLock() { }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Animations.Animation> GetAnimations() => throw null;
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DomQuad> GetBoxQuads(Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions? options = null) => throw null;
@@ -8275,13 +8278,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class HtmlVideoElement : Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement
     {
+        public bool DisablePictureInPicture { get => throw null; set { } }
         public uint Height { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnEnterPictureInPicture { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLeavePictureInPicture { get => throw null; set { } }
         public bool PlaysInline { get => throw null; set { } }
         public string Poster { get => throw null; set { } }
         public uint VideoHeight { get => throw null; }
         public uint VideoWidth { get => throw null; }
         public uint Width { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.VideoPlaybackQuality GetVideoPlaybackQuality() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow> RequestPictureInPicture() => throw null;
     }
 
     public interface IChildNode
@@ -11896,6 +11903,58 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool? RedEyeReduction { get => throw null; init { } }
     }
 
+    public sealed class PictureInPictureEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow PictureInPictureWindow { get => throw null; }
+        public PictureInPictureEvent(string type, Meziantou.Framework.WebPlatform.Dom.PictureInPictureEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class PictureInPictureEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow PictureInPictureWindow { get => throw null; init { } }
+    }
+
+    public sealed class PictureInPictureWindow : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public int Height { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnResize { get => throw null; set { } }
+        public int Width { get => throw null; }
+    }
+
+    public sealed class PictureInPictureWindowHandle
+    {
+        public System.Threading.Tasks.Task Closed { get => throw null; }
+        public bool IsClosed { get => throw null; }
+        public void Close() { }
+        public void Resize(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize size) { }
+    }
+
+    public sealed class PictureInPictureWindowRequest : Meziantou.Framework.WebPlatform.Dom.UserAgentPrompt
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize DefaultSize { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowHandle Handle { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize? RequestedSize { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.HtmlVideoElement? Video { get => throw null; }
+    }
+
+    public readonly struct PictureInPictureWindowSize : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize>
+    {
+        public int Height { get => throw null; init { } }
+        public int Width { get => throw null; init { } }
+        public PictureInPictureWindowSize(int Width, int Height) { }
+        public void Deconstruct(out int Width, out int Height) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize left, Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize left, Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize right) => throw null;
+    }
+
     public sealed class Plugin
     {
         public string Description { get => throw null; }
@@ -13222,6 +13281,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string InnerHtml { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.ShadowRootMode Mode { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnSlotChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.Element? PictureInPictureElement { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Element? PointerLockElement { get => throw null; }
         public bool Serializable { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.SlotAssignmentMode SlotAssignment { get => throw null; }
@@ -15494,6 +15554,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public virtual System.Threading.Tasks.ValueTask<bool> ConfirmIdentityProviderLoginAsync(Meziantou.Framework.WebPlatform.Dom.IdentityProviderLoginPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<bool> HasPaymentHandlerAsync(Meziantou.Framework.WebPlatform.Dom.PaymentHandlerQuery query, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask IngestPaymentMethodManifestAsync(Meziantou.Framework.WebPlatform.Dom.PaymentMethodManifestRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowSize?> OpenPictureInPictureWindowAsync(Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindowRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DigitalCredentialResponse?> RequestDigitalCredentialAsync(Meziantou.Framework.WebPlatform.Dom.DigitalCredentialPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.PaymentSheetResponse?> RetryPaymentAsync(Meziantou.Framework.WebPlatform.Dom.PaymentSheetPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;
         public virtual System.Threading.Tasks.ValueTask<bool> ShowIdentityAutoReauthenticationAsync(Meziantou.Framework.WebPlatform.Dom.IdentityAutoReauthenticationPrompt prompt, System.Threading.CancellationToken cancellationToken) => throw null;

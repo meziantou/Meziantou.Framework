@@ -631,7 +631,9 @@ public partial class HtmlMediaElement
 
         AwaitStableState(() =>
         {
-            if (IsInDocument)
+            // As in the browsers, a video shown in Picture-in-Picture keeps playing (the Picture-in-Picture specification does
+            // not define the removal of the video)
+            if (IsInDocument || this is HtmlVideoElement { IsPictureInPictureElement: true })
                 return;
 
             InternalPauseSteps();

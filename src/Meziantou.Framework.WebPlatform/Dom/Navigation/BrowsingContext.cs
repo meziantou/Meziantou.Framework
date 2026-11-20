@@ -3572,7 +3572,9 @@ public sealed partial class BrowsingContext : IDisposable
             // (https://fullscreen.spec.whatwg.org/#unloading-document-cleanup-steps: the document fully exits fullscreen; the
             // pointer lock of one of its elements is exited; https://w3c.github.io/web-locks/#lock-termination: its locks are
             // released and its lock requests are aborted)
+            // (https://w3c.github.io/picture-in-picture/#exit-pip: its video leaves Picture-in-Picture)
             FullscreenModel.FullyExit(document);
+            PictureInPictureModel.OnDocumentUnloaded(document);
             PointerLockModel.OnDocumentUnloaded(document);
             ReleaseDeviceLocks(document);
             ModelContext.RunUnloadingDocumentCleanupSteps(document);
@@ -3630,6 +3632,7 @@ public sealed partial class BrowsingContext : IDisposable
         // https://webmachinelearning.github.io/webmcp/#unloading-document-cleanup-steps (the documents that are destroyed without being unloaded, e.g. an initial about:blank document)
         ModelContext.RunUnloadingDocumentCleanupSteps(document);
         PaymentRequest.RunUnloadingDocumentCleanupSteps(document);
+        PictureInPictureModel.OnDocumentUnloaded(document);
 
         // The pointer lock of an element of the document is exited (https://w3c.github.io/pointerlock/#requirements), and
         // the locks of its window are released (https://w3c.github.io/web-locks/#lock-termination)

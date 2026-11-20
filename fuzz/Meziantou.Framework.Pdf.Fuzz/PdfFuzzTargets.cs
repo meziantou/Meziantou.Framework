@@ -78,6 +78,7 @@ public static class PdfFuzzTargets
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
         new("pdf-flow-layout", FlowLayout) { Seeds = GetFlowLayoutSeeds, Dictionary = FlowLayoutTokens },
+        new("pdf-auto-tag", AutoTag) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-imposition", Imposition) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-script-extraction", ScriptExtraction) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -974,6 +975,98 @@ public static class PdfFuzzTargets
                 FuzzAssert.True(line.Bounds.Bottom >= 0 && line.Bounds.Top <= size.Height, $"A line is outside of the page: {line.Text} {line.Bounds}");
             }
         }
+    }
+
+    /// <summary>
+    /// The input is a PDF file. The layout of its pages has nodes in bounds, and tagging the document does not change what
+    /// its first page shows (only marked-content operators are added): the rendering is the same, the document reads back
+    /// with a structure tree, and it cannot be tagged twice.
+    /// </summary>
+    private static void AutoTag(ReadOnlySpan<byte> data)
+    {
+        PdfDocument document;
+        try
+        {
+            document = PdfDocument.Open(data.ToArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+            if (document.Pages.Count is 0 or > 8 || document.StructureTree.Exists)
+                return;
+
+            foreach (var page in document.ExtractLayout())
+            {
+                foreach (var node in page.Nodes)
+                {
+                    FuzzAssert.True(double.IsFinite(node.Bounds.Width) && node.Bounds.Width >= 0, $"The bounds of a {node.Kind} are not valid");
+                    FuzzAssert.True(node.Kind != PdfLayoutNodeKind.Heading || node.Level is >= 1 and <= 6, "The level of a heading is out of range");
+                }
+            }
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        byte[] before;
+        try
+        {
+            using var image = Rendering.PdfRenderer.RenderPage(document.Pages[0], RenderOptions);
+            before = Pixels(image);
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+
+        try
+        {
+            document.AutoTag();
+        }
+        catch (PdfException)
+        {
+            return;
+        }
+        catch (InvalidOperationException)
+        {
+            // Already marked as tagged
+            return;
+        }
+
+        var read = PdfDocument.Open(document.ToByteArray(), new PdfReadOptions { MaxDecodedStreamLength = 1 << 20 });
+        FuzzAssert.True(read.StructureTree.Exists, "The tagged document has no structure tree");
+        using (var image = Rendering.PdfRenderer.RenderPage(read.Pages[0], RenderOptions))
+        {
+            FuzzAssert.True(Pixels(image).AsSpan().SequenceEqual(before), "Tagging the document changed what its first page shows");
+        }
+
+        var tagged = false;
+        try
+        {
+            read.AutoTag();
+        }
+        catch (InvalidOperationException)
+        {
+            tagged = true;
+        }
+
+        FuzzAssert.True(tagged, "A tagged document was tagged again");
+    }
+
+    private static byte[] Pixels(Imaging.Image<Imaging.Rgba32> image)
+    {
+        var result = new byte[image.Width * image.Height * 4];
+        var index = 0;
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                result[index++] = pixel.R;
+                result[index++] = pixel.G;
+                result[index++] = pixel.B;
+                result[index++] = pixel.A;
+            }
+        }
+
+        return result;
     }
 
     private static IEnumerable<FuzzSeed> GetFlowLayoutSeeds()

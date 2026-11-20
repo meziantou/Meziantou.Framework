@@ -61,8 +61,11 @@ description: What the library does not do, so that you can plan around it.
 
 ## Converting to PDF/A
 
-- [ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) converts to PDF/A-2 and PDF/A-3, levels b and u. It does not tag documents
-  (level a), and does not convert to PDF/A-1, which has no transparency, or to PDF/A-4.
+- [ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) converts to PDF/A-2 and PDF/A-3, levels b and u, and level a for a document
+  that is tagged ([AutoTag](cref:Meziantou.Framework.Pdf.PdfDocument.AutoTag) tags one, from a guess of its layout). It does not convert to PDF/A-1, which
+  has no transparency, or to PDF/A-4.
+- [AutoTag](cref:Meziantou.Framework.Pdf.PdfDocument.AutoTag) puts a text operator in one element, does not reorder the content, and finds the tables from their
+  rules only: see [Tagging existing documents](08-AccessibilityAndArchiving/06-AutoTagging.md#limits).
 - It embeds substitutes for the Latin standard fonts only, and has no CMYK profile: see
   [What it cannot fix](08-AccessibilityAndArchiving/04-ConvertingToPdfA.md#what-it-cannot-fix).
 

@@ -167,4 +167,13 @@ public sealed class PdfImageOccurrence
         var dictionary = ExpandInlineDictionary(inline);
         return new PdfImageOccurrence(page, matrix, dictionary, data, resources, stream: null, inline);
     }
+
+    /// <summary>Gets the index of the operator of the content of the page that paints the image: its <c>Do</c> or <c>BI</c>, or the <c>Do</c> of the form that contains it.</summary>
+    internal int OperationIndex { get; private set; } = -1;
+
+    internal PdfImageOccurrence WithOperation(int operation)
+    {
+        OperationIndex = operation;
+        return this;
+    }
 }

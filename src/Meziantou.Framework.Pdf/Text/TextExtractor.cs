@@ -32,6 +32,9 @@ internal sealed partial class TextExtractor
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
     private long _operations;
     private long _textLength;
+
+    // The index of the operator of the content of the page being run: the glyphs of a form get the index of its Do
+    private int _operationIndex = -1;
     private readonly Dictionary<PdfString, string> _actualTexts = new(ReferenceEqualityComparer.Instance);
 
     // The replacement text of the marked-content sequence being read (14.9.4): its glyphs are replaced by it
@@ -143,6 +146,11 @@ internal sealed partial class TextExtractor
         while (reader.TryRead(operands, out var name))
         {
             Charge(1);
+            if (depth == 0)
+            {
+                _operationIndex++;
+            }
+
             switch (name)
             {
                 case "q":
@@ -305,7 +313,7 @@ internal sealed partial class TextExtractor
         var (x, y) = matrix.Transform(0, state.Rise);
         var (sizeX, sizeY) = matrix.TransformVector(0, state.FontSize);
         var (directionX, directionY) = matrix.TransformVector(1, 0);
-        AddGlyph(new TextGlyph(text, x, y, x, y, Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY)), Math.Atan2(directionY, directionX), state.Font), new PdfRectangle(x, y, x, y));
+        AddGlyph(new TextGlyph(text, x, y, x, y, Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY)), Math.Atan2(directionY, directionX), state.Font, _operationIndex), new PdfRectangle(x, y, x, y));
     }
 
     private void RunForm(PdfDictionary? resources, PdfName name, TextGraphicsState state, int depth)
@@ -408,7 +416,7 @@ internal sealed partial class TextExtractor
 
             var (startX, startY) = matrix.Transform(x, y + state.Rise);
             var (endX, endY) = matrix.Transform(x + advanceX, y + advanceY);
-            var glyph = new TextGlyph(ExpandLigatures(font.GetText(code)), startX, startY, endX, endY, size, angle, font);
+            var glyph = new TextGlyph(ExpandLigatures(font.GetText(code)), startX, startY, endX, endY, size, angle, font, _operationIndex);
             if (_bounds is null)
             {
                 AddGlyph(glyph, default);
@@ -610,7 +618,7 @@ internal sealed partial class TextExtractor
             }
 
             var glyph = _glyphs[index];
-            var item = new PdfTextGlyph(text, new PdfPoint(glyph.X, glyph.Y), new PdfPoint(glyph.EndX, glyph.EndY), _bounds![index], glyph.Size, glyph.Font?.FontName, glyph.Angle * 180 / Math.PI, glyph.Font?.IsVertical ?? false);
+            var item = new PdfTextGlyph(text, new PdfPoint(glyph.X, glyph.Y), new PdfPoint(glyph.EndX, glyph.EndY), _bounds![index], glyph.Size, glyph.Font?.FontName, glyph.Angle * 180 / Math.PI, glyph.Font?.IsVertical ?? false) { OperationIndex = glyph.Operation };
             lineGlyphs.Add(item);
             if (string.IsNullOrWhiteSpace(text))
             {
@@ -749,5 +757,5 @@ internal sealed partial class TextExtractor
 
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct TextGlyph(string? Text, double X, double Y, double EndX, double EndY, double Size, double Angle, PdfFontDecoder? Font);
+    private readonly record struct TextGlyph(string? Text, double X, double Y, double EndX, double EndY, double Size, double Angle, PdfFontDecoder? Font, int Operation);
 }

@@ -4,7 +4,8 @@ description: Turn an existing PDF document into a PDF/A-2 or PDF/A-3 document, s
 ---
 
 [PdfDocument.ConvertToPdfA](cref:Meziantou.Framework.Pdf.PdfDocument.ConvertToPdfA) changes an existing document, such as a file a user sends, so that it can be saved as
-PDF/A-2b, PDF/A-2u, PDF/A-3b or PDF/A-3u. It removes what PDF/A does not allow and completes what it needs, without
+PDF/A-2b, PDF/A-2u, PDF/A-3b or PDF/A-3u, and PDF/A-2a or PDF/A-3a when it is tagged ([Tagging existing documents](06-AutoTagging.md)
+tags one). It removes what PDF/A does not allow and completes what it needs, without
 moving anything on the pages, then checks the document as the save does:
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_ConvertToPdfA;format=md-fenced-code-block;dedent=true -->

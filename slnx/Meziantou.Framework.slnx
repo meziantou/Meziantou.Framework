@@ -6,6 +6,7 @@
     <Project Path="../src/Meziantou.Extensions.Logging.Xunit.v3/Meziantou.Extensions.Logging.Xunit.v3.csproj" />
     <Project Path="../src/Meziantou.Framework.CodeDom/Meziantou.Framework.CodeDom.csproj" />
     <Project Path="../src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />
+    <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
     <Project Path="../src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
     <Project Path="../src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="../src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
@@ -43,6 +44,7 @@
     <Project Path="../tests/Meziantou.Extensions.Logging.InMemory.Tests/Meziantou.Extensions.Logging.InMemory.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.CodeDom.Tests/Meziantou.Framework.CodeDom.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.Compression.Tests/Meziantou.Framework.Compression.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />

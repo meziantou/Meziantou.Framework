@@ -92,7 +92,7 @@ public sealed class RarReaderTests
     public void MissingVolume_Throws()
     {
         var bytes = File.ReadAllBytes(GetPath("libarchive-rar5-multiarchive-solid.part01.rar"));
-        using var reader = RarArchive.CreateForwardReader(new NonSeekableStream(bytes), options: null, leaveOpen: false);
+        using var reader = RarArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(bytes, 1000), options: null, leaveOpen: false);
         Assert.Throws<InvalidDataException>(() =>
         {
             while (reader.MoveToNextEntry())
@@ -161,10 +161,10 @@ public sealed class RarReaderTests
         var options = new ArchiveReaderOptions
         {
             Password = password,
-            VolumeResolver = index => index < volumes.Count ? new NonSeekableStream(File.ReadAllBytes(volumes[index])) : null,
+            VolumeResolver = index => index < volumes.Count ? ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(volumes[index]), 1000) : null,
         };
 
-        return RarArchive.CreateForwardReader(new NonSeekableStream(File.ReadAllBytes(volumes[0])), options, leaveOpen: false);
+        return RarArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(volumes[0]), 1000), options, leaveOpen: false);
     }
 
     internal static List<string> GetVolumePaths(string fileName)

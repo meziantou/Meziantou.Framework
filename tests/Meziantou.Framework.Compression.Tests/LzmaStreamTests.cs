@@ -21,6 +21,20 @@ public sealed class LzmaStreamTests
         return output.ToArray();
     }
 
+    [Fact]
+    public void RoundTrip_NonSeekableStreams()
+    {
+        var data = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "BZip2", "sample.txt"));
+        using var output = new MemoryStream();
+        using (var stream = new LzmaStream(ZipTestData.CreateNonSeekableWriteStream(output), new LzmaCompressionOptions { Preset = 1 }))
+        {
+            stream.Write(data);
+        }
+
+        using var decompress = new LzmaStream(ZipTestData.CreateForwardOnlyStream(output.ToArray(), 1), CompressionMode.Decompress);
+        Assert.Equal(data, LzmaCodecTests.ReadAll(decompress, 1000));
+    }
+
     [Theory]
     [InlineData("lzma-unknown-size.lzma")]
     [InlineData("lzma-known-size.lzma")]

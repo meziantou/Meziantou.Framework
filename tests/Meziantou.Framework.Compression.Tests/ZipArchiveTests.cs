@@ -96,7 +96,7 @@ public sealed class ZipArchiveTests
         // The streams check the length and the CRC-32 of each entry; the forward-only reader returns the same contents
         var data = File.ReadAllBytes(ZipTestData.GetLegacyPath(fileName));
         using var archive = new ZipArchive(new MemoryStream(data));
-        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(data, 7), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(data, 7), options: null, leaveOpen: false);
         Assert.NotEmpty(archive.Entries);
         foreach (var entry in archive.Entries)
         {
@@ -445,7 +445,7 @@ public sealed class ZipArchiveTests
     [Fact]
     public void NonSeekableStream()
     {
-        Assert.Throws<ArgumentException>(() => new ZipArchive(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("stored.zip"), 100)));
+        Assert.Throws<ArgumentException>(() => new ZipArchive(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes("stored.zip"), 100)));
     }
 
     [Fact]

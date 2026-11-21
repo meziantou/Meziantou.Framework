@@ -299,6 +299,9 @@ public sealed class SevenZipArchiveTests
 
             Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, ZipTestData.LargeEntryMaxAllocatedBytes);
 
+            // The compressed entry does not fit in the allowance either
+            Assert.True(new FileInfo(path).Length > ZipTestData.LargeEntryMaxAllocatedBytes);
+
             var buffer = new byte[81920];
             before = GC.GetAllocatedBytesForCurrentThread();
             using (var archive = new SevenZipArchive(File.OpenRead(path)))

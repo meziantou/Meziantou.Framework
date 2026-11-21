@@ -129,6 +129,9 @@ public sealed class ZipArchiveWriteTests
 
             Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, ZipTestData.LargeEntryMaxAllocatedBytes);
 
+            // The compressed entry does not fit in the allowance either
+            Assert.True(new FileInfo(path).Length > ZipTestData.LargeEntryMaxAllocatedBytes);
+
             var buffer = new byte[81920];
             before = GC.GetAllocatedBytesForCurrentThread();
             using (var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(File.OpenRead(path), maxRead: 0), new ArchiveReaderOptions { Password = Password }))

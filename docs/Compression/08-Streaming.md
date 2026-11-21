@@ -51,7 +51,8 @@ from start to end, from a stream whose `CanSeek` is `false`, such as a network s
 | Create a zip archive (`ZipArchiveMode.Create`) | Yes | No |
 | Create a 7z archive ([SevenZipArchiveMode.Create](cref:Meziantou.Framework.Compression.SevenZipArchiveMode.Create)) | No | No |
 | Update a zip or 7z archive | No | The new entries, and the rewritten archive |
-| Compress or decompress with [XzStream](cref:Meziantou.Framework.Compression.XzStream), [LzmaStream](cref:Meziantou.Framework.Compression.LzmaStream), [LZipStream](cref:Meziantou.Framework.Compression.LZipStream), [BZip2Stream](cref:Meziantou.Framework.Compression.BZip2Stream) or [UnixCompressStream](cref:Meziantou.Framework.Compression.UnixCompressStream) | Yes | No |
+| Compress or decompress with [XzStream](cref:Meziantou.Framework.Compression.XzStream), [LzmaStream](cref:Meziantou.Framework.Compression.LzmaStream), [LZipStream](cref:Meziantou.Framework.Compression.LZipStream), [BZip2Stream](cref:Meziantou.Framework.Compression.BZip2Stream) | Yes | No |
+| Decompress with [UnixCompressStream](cref:Meziantou.Framework.Compression.UnixCompressStream), which cannot compress | Yes | No |
 
 The types that need a seekable stream throw an `ArgumentException` when it is not, and
 [ArchiveReader.Create](cref:Meziantou.Framework.Compression.ArchiveReader.Create) throws a `NotSupportedException` for a
@@ -77,7 +78,8 @@ The memory does not grow with the size of the entries. The library keeps in memo
   them: see [Untrusted archives](07-Security.md);
 - the list of the entries of an archive opened for random access, and the headers of a 7z archive;
 - before .NET 11, which has a streaming Zstandard decoder, the Zstandard data: a zip entry compressed with Zstandard and
-  a `.tar.zst` archive are decoded whole in memory, within `MaxMemoryUsage`.
+  a `.tar.zst` archive are decoded whole in memory, within
+  [MaxMemoryUsage](cref:Meziantou.Framework.Compression.ArchiveReaderOptions.MaxMemoryUsage).
 
 The content of the entries of a solid 7z or RAR block is decoded once when they are read in the order of the archive.
 Opening an entry before the last one read decodes the block again from its start: it takes time, not memory.

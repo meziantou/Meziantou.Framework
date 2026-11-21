@@ -165,16 +165,12 @@ internal static class ZipTestData
     /// </summary>
     public const long LargeEntryMaxAllocatedBytes = 8 * 1024 * 1024;
 
-    public static byte[] CreateLargeEntryChunk()
-    {
-        var chunk = new byte[LargeEntryChunkLength];
-        for (var i = 0; i < chunk.Length; i++)
-        {
-            chunk[i] = (byte)(i % 251);
-        }
-
-        return chunk;
-    }
+    /// <summary>
+    /// Creates pseudo-random data, which do not compress: a chunk is larger than the window of Deflate, so its repetitions
+    /// do not compress either, and the compressed entry is larger than <see cref="LargeEntryMaxAllocatedBytes"/>. A test
+    /// that buffers the compressed data fails too.
+    /// </summary>
+    public static byte[] CreateLargeEntryChunk() => Ppmd7Tests.CreateRandomData(LargeEntryChunkLength, seed: 42);
 
     public static uint GetLargeEntryCrc(byte[] chunk)
     {

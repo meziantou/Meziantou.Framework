@@ -806,6 +806,155 @@ public sealed class PdfPageTests
         Assert.Equal(20, glyph.FontSize, 0.01);
     }
 
+    [Fact]
+    public void Example_WatermarkInACorner()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+
+        #region Pdf_WatermarkInACorner
+        // Horizontal, in the upper-right corner of every page, half an inch from its edges
+        document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+        {
+            Position = PdfWatermarkPosition.TopRight,
+            Margin = 36,
+            FontSize = 24,
+        });
+        #endregion
+
+        // The box of the text ends at the margin: its advance on the right, the ascender of Helvetica Bold (AFM: 718) at the top
+        var line = Assert.Single(PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines);
+        Assert.Equal("CONFIDENTIAL", line.Text);
+        Assert.Equal(0, line.Glyphs[0].Angle, 0.01);
+        Assert.Equal(595.28 - 36, line.Glyphs[^1].End.X, 0.01);
+        Assert.Equal(841.89 - 36 - (0.718 * 24), line.Glyphs[0].Origin.Y, 0.01);
+    }
+
+    [Fact]
+    public void AddWatermark_AnchorsTheTextOnTheDisplayOfARotatedPage()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 400));
+        page.Rotation = 90;
+
+        page.AddWatermark("COPY", new PdfWatermarkOptions { Position = PdfWatermarkPosition.BottomLeft, Margin = 20, FontSize = 20 });
+
+        // The page is displayed turned by 90 degrees clockwise: the lower-left corner of the display is the lower-right
+        // corner of the user space, and the text goes up from it. The baseline is above the descender of Helvetica Bold
+        // (AFM: -207), at the margin
+        var line = Assert.Single(PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines);
+        Assert.Equal("COPY", line.Text);
+        Assert.Equal(90, line.Glyphs[0].Angle, 0.01);
+        Assert.Equal(200 - 20 - (0.207 * 20), line.Glyphs[0].Origin.X, 0.01);
+        Assert.Equal(20, line.Glyphs[0].Origin.Y, 0.01);
+    }
+
+    [Theory]
+    [InlineData(1, 2, new[] { false, true, true, false })]
+    [InlineData(2, 100, new[] { false, false, true, true })]
+    [InlineData(0, null, new[] { true, true, true, true })]
+    [InlineData(5, null, new[] { false, false, false, false })]
+    public void AddWatermark_PaintsThePagesOfTheRange(int first, int? last, bool[] expected)
+    {
+        var document = new PdfDocument();
+        for (var i = 0; i < 4; i++)
+        {
+            document.Pages.Add(PdfSize.A5);
+        }
+
+        document.AddWatermark("DRAFT", new PdfWatermarkOptions { FirstPageIndex = first, LastPageIndex = last });
+
+        // The pages of the range paint the same form; the others are not changed
+        var read = PdfDocument.Open(document.ToByteArray());
+        var forms = read.Pages.Select(page => page.Resources?.Get<PdfDictionary>(PdfNames.XObject)?.Select(entry => entry.Value).SingleOrDefault()).ToArray();
+        Assert.Equal(expected, forms.Select(form => form is not null));
+        Assert.HasCountLessThanOrEqual(1, forms.Where(form => form is not null).Distinct());
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.Equal(expected[i], read.Pages[i].GetContentData().Length > 0);
+        }
+    }
+
+    [Fact]
+    public void Example_TiledWatermark()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 200));
+        document.Pages.Add(new PdfSize(300, 200));
+
+        #region Pdf_TiledWatermark
+        // Repeated over the whole page, along its diagonal, the rows offset by half a copy
+        document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+        {
+            IsTiled = true,
+            FontSize = 18,
+            TileSpacing = 12,
+        });
+        #endregion
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var patterns = read.Pages.Select(page => Assert.Single(page.Resources!.Get<PdfDictionary>(PdfName.Create("Pattern"))!).Value).ToArray();
+        Assert.Equal(patterns[0], patterns[1]); // the pages of the same size share the pattern
+        Assert.Contains("/Artifact", Encoding.Latin1.GetString(read.Pages[0].GetContentData()));
+
+        using var image = read.Pages[0].Render(new PdfRenderOptions { Dpi = 72, UseSystemFonts = false });
+        foreach (var (x, y) in new[] { (0, 0), (250, 0), (0, 150), (250, 150) })
+        {
+            Assert.True(HasTintedPixel(image, x, y, 50, 50), $"No text in the corner at ({x}, {y})");
+        }
+
+        static bool HasTintedPixel(Image<Rgba32> image, int left, int bottom, int width, int height)
+        {
+            for (var x = left; x < left + width; x++)
+            {
+                for (var y = bottom; y < bottom + height; y++)
+                {
+                    if (Pixel(image, x, y).R < 245)
+                        return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
+    [Fact]
+    public void AddWatermark_TilesTheTextOnARotatedPage()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 300));
+        page.Rotation = 90;
+
+        page.AddWatermark("DRAFT", new PdfWatermarkOptions { IsTiled = true, Rotation = 0, Opacity = 1, Color = PdfColor.Black });
+
+        // The rows are horizontal on the display, which is 300 x 200: some lines of pixels are between two rows of text,
+        // and every corner has text
+        using var image = PdfDocument.Open(document.ToByteArray()).Pages[0].Render(new PdfRenderOptions { Dpi = 72, UseSystemFonts = false });
+        Assert.Equal(300, image.Width);
+        Assert.Equal(200, image.Height);
+        Assert.Contains(Enumerable.Range(0, 200), y => Enumerable.Range(0, 300).All(x => Pixel(image, x, y).R > 250));
+        foreach (var (x, y) in new[] { (0, 0), (270, 0), (0, 170), (270, 170) })
+        {
+            Assert.Contains(Enumerable.Range(x, 30), i => Enumerable.Range(y, 30).Any(j => Pixel(image, i, j).R < 128));
+        }
+    }
+
+    [Fact]
+    public void WatermarkOptions_RejectInvalidValues()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { Margin = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { Margin = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { FirstPageIndex = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { LastPageIndex = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { TileSpacing = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { TileSpacing = double.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfWatermarkOptions { Position = (PdfWatermarkPosition)9 });
+
+        var page = new PdfDocument().Pages.Add(PdfSize.A4);
+        Assert.Throws<ArgumentOutOfRangeException>(() => page.AddWatermark("DRAFT", new PdfWatermarkOptions { Rotation = double.NaN }));
+        Assert.Null(page.Resources?.Get<PdfDictionary>(PdfNames.XObject));
+    }
+
     [Theory]
     [InlineData(-0.1)]
     [InlineData(1.5)]

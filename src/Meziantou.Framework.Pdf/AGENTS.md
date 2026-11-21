@@ -187,7 +187,7 @@ Signs and verifies the signatures of documents, with `System.Security.Cryptograp
 dotnet test --project tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj
 dotnet test --project tests/Meziantou.Framework.Pdf.InteropTests/Meziantou.Framework.Pdf.InteropTests.csproj
 dotnet run eng/pdf/fetch-tests.cs
-dotnet run eng/pdf/fetch-tests.cs -- --publish # after a change of corpus.json: publishes the snapshots and writes corpus.mirror.json
+dotnet run eng/pdf/fetch-tests.cs -- --publish # after a change of corpus.json: publishes the snapshots and writes corpus.mirror.json (tools/Meziantou.Framework.TestCorpus/readme.md)
 dotnet test --project tests/Meziantou.Framework.Pdf.Corpus/Meziantou.Framework.Pdf.Corpus.csproj
 dotnet test --project fuzz/Meziantou.Framework.Pdf.FuzzTests/Meziantou.Framework.Pdf.FuzzTests.csproj
 ```

@@ -1,0 +1,19 @@
+{
+  "repository": "meziantou/test-corpus-imaging",
+  "snapshots": {
+    "jpegls-conformance": {
+      "pin": [
+        "team-charls/charls@e682efabdf5f55bb6758b56902dd741958db0e70",
+        "corpus.json sha256:f2d068722778b9e788d06a6df725085e9ee51cb07d52ba5a571a7d2e75c6c809"
+      ],
+      "snapshot": "d85c7d72c4a259ba6cb256a79f09294df60a6b4b"
+    },
+    "jxl-conformance": {
+      "pin": [
+        "libjxl/conformance@b1d0f990b03e57bf6d137c365cd5dc8b470b9191",
+        "corpus.json sha256:8af5702a21d98f9ba831c8e56ed19ac03892a8ce5d77da427ae0281e4ad75916"
+      ],
+      "snapshot": "01a6392b081841001aa2301c9e96fcc0dbf4748f"
+    }
+  }
+}

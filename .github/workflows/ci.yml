@@ -606,7 +606,10 @@ jobs:
             uses: $/.github/actions/setup-wslc
 
       # The WebPlatform tests read the external test suites (html5lib-tests, web-platform-tests...) at the revisions
-      # pinned in tests/Meziantou.Framework.WebPlatform.SpecData: they are fetched, not committed
+      # pinned in tests/Meziantou.Framework.WebPlatform.SpecData: they are fetched, not committed. The external test
+      # suites of all the libraries come from the snapshots of their mirror repositories (eng/*/corpus.mirror.json,
+      # tools/Meziantou.Framework.TestCorpus/readme.md), else from upstream: the files are the same, so the cache keys
+      # do not depend on the mirrors
       - name: Restore the WebPlatform external test suites
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -665,9 +668,7 @@ jobs:
         run: dotnet run eng/javascriptengine/fetch-tests.cs -- npm-packages
 
       # The PDF corpus tests read the test files of pdf.js, PDFium, qpdf, the PDF Association and Apache PDFBox at the
-      # commits pinned in tests/Meziantou.Framework.Pdf.Corpus/corpus.json: they are fetched, not committed. They come
-      # from the snapshots of the mirror of corpus.mirror.json, else from upstream: the files are the same, so the key
-      # does not depend on the mirror
+      # commits pinned in tests/Meziantou.Framework.Pdf.Corpus/corpus.json: they are fetched, not committed
       - name: Restore the PDF corpora
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
@@ -680,16 +681,21 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
         run: dotnet run eng/pdf/fetch-tests.cs
 
-      # The Imaging interop tests download the JPEG XL conformance corpus (about 430 MB) at the commit pinned in
-      # tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json the first time they need a file:
-      # it is cached, not committed
-      - name: Restore the JPEG XL conformance corpus
+      # The Imaging interop tests read the JPEG XL and JPEG-LS conformance corpora pinned in
+      # tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json and JpegLsConformance/corpus.json:
+      # they are cached, not committed. The fetch script checks them out from the snapshots of the mirror of
+      # eng/imaging/corpus.mirror.json; without them, the tests download the files they need from upstream
+      - name: Restore the conformance corpora of the Imaging interop tests
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Imaging.InteropTests')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: tests/Meziantou.Framework.Imaging.External
-          key: imaging-jxl-conformance-${{ hashFiles('tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json') }}
-          restore-keys: imaging-jxl-conformance-
+          key: imaging-conformance-${{ hashFiles('tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json', 'tests/Meziantou.Framework.Imaging.InteropTests/JpegLsConformance/corpus.json') }}
+          restore-keys: imaging-conformance-
+
+      - name: Fetch the conformance corpora of the Imaging interop tests
+        if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Imaging.InteropTests')
+        run: dotnet run eng/imaging/fetch-tests.cs
 
       # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
@@ -921,6 +927,7 @@ jobs:
             '^docs/WebPlatform/10-WptCoverage/'
             '^tests/Meziantou\.Framework\.WebPlatform\.(SpecData|Wpt)/'
             '^tools/Meziantou\.Framework\.WebPlatform\.'
+            '^tools/Meziantou\.Framework\.TestCorpus/'
             '^eng/webplatform/'
             '^\.github/workflows/ci\.yml$'
             '^global\.json$'

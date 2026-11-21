@@ -1,0 +1,14 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!--
+    The mirror of the external test corpora (readme.md): the snapshots of the pinned corpora in the mirror repositories,
+    used by eng/pdf/fetch-tests.cs, eng/javascriptengine/fetch-tests.cs, eng/imaging/fetch-tests.cs and
+    tools/Meziantou.Framework.WebPlatform.SpecUpdate.
+  -->
+  <PropertyGroup>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <ValidateProjectTargets>false</ValidateProjectTargets>
+    <!-- CA1054, CA1055, CA1056: the URLs of the repositories are what git accepts, which includes local paths -->
+    <NoWarn>$(NoWarn);CA1303;CA1515;CA2007;CA1031;CA1054;CA1055;CA1056</NoWarn>
+  </PropertyGroup>
+</Project>

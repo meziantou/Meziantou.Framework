@@ -2,16 +2,16 @@
   "repository": "meziantou/test-corpus-pdf",
   "snapshots": {
     "pdf20examples": {
-      "commit": "c20f2c17bfcc4baab7cfe62e70fae64caf14d5fa",
-      "paths": [
+      "pin": [
+        "pdf-association/pdf20examples@c20f2c17bfcc4baab7cfe62e70fae64caf14d5fa",
         "LICENSE.md",
         "*.pdf"
       ],
       "snapshot": "6c227f01f8e70091e5911d24c509270f5a0f86ce"
     },
     "pdfbox": {
-      "commit": "99c16b1752d0b24e2c26788ff68686211b0bcef0",
-      "paths": [
+      "pin": [
+        "apache/pdfbox@99c16b1752d0b24e2c26788ff68686211b0bcef0",
         "LICENSE.txt",
         "NOTICE.txt",
         "pdfbox/src/test/resources",
@@ -20,16 +20,16 @@
       "snapshot": "2606247a3a52ea42b41d7972907b584a36ffa5d3"
     },
     "pdfium": {
-      "commit": "a84323421e94f484faca52dd9d027934eba42ab8",
-      "paths": [
+      "pin": [
+        "chromium/pdfium@a84323421e94f484faca52dd9d027934eba42ab8",
         "LICENSE",
         "testing/resources"
       ],
       "snapshot": "0ae402b452db8d6bf7cb23c06a9853263c41dea4"
     },
     "pdfjs": {
-      "commit": "cfab9b7c8bf494f3b92ff822094b839f0ee530f2",
-      "paths": [
+      "pin": [
+        "mozilla/pdf.js@cfab9b7c8bf494f3b92ff822094b839f0ee530f2",
         "LICENSE",
         "test/pdfs",
         "test/test_manifest.json"
@@ -37,16 +37,16 @@
       "snapshot": "048bd2cc7acc50b836f7ecc280844bafdec00a53"
     },
     "qpdf": {
-      "commit": "4eba95899886e851cc41d76886483b347612f2a8",
-      "paths": [
+      "pin": [
+        "qpdf/qpdf@4eba95899886e851cc41d76886483b347612f2a8",
         "LICENSE.txt",
         "qpdf/qtest/qpdf"
       ],
       "snapshot": "4adba7467392b4121fb7f2a741c32faf701ed7c7"
     },
     "verapdf": {
-      "commit": "bb75f4f0073d9350dfd058c0162a367e6fadf25e",
-      "paths": [
+      "pin": [
+        "veraPDF/veraPDF-corpus@bb75f4f0073d9350dfd058c0162a367e6fadf25e",
         "README.md",
         "ISO 32000-1",
         "ISO 32000-2",

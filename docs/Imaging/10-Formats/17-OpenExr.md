@@ -24,7 +24,8 @@ source-pixel round-trip guarantee.
 
 A file of half samples without an alpha channel loads as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), any other as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), in linear light.
 A luminance file (a `Y` channel) loads in the gray format of the same precision: [GrayHalf](cref:Meziantou.Framework.Imaging.GrayHalf), [GrayFloat](cref:Meziantou.Framework.Imaging.GrayFloat), or
-[LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) with an alpha channel.
+[LaFloat](cref:Meziantou.Framework.Imaging.LaFloat) with an alpha channel. A luminance file whose data window does not cover the image loads
+with alpha, [LaHalf](cref:Meziantou.Framework.Imaging.LaHalf) or [LaFloat](cref:Meziantou.Framework.Imaging.LaFloat), since the pixels the data window leaves are transparent black.
 The extra precision is used when dividing colors by alpha. Infinities and samples that are not numbers are kept,
 subject to the alpha conversion. The lossy compressions (PXR24, B44, DWAA, DWAB) decode to the same samples as OpenEXR, bit
 for bit: what they lose is lost when the file is written. HTJ2K256 and HTJ2K32 store each chunk as a high-throughput JPEG

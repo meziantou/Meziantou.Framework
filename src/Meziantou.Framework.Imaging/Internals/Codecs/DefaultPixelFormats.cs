@@ -83,17 +83,22 @@ internal static class DefaultPixelFormats
     /// <summary>Selects the default pixel format of an OpenEXR image.</summary>
     /// <param name="halfOnly">Whether the image is decoded in half precision: every channel holds HALF samples and there is no alpha.</param>
     /// <param name="isLuminance">Whether the image has a luminance channel (<c>Y</c>) rather than red, green and blue.</param>
-    /// <param name="hasAlpha">Whether the image has an alpha channel.</param>
+    /// <param name="hasTransparency">
+    /// Whether the image may have pixels that are not opaque: it has an alpha channel, or its data window does not cover it
+    /// (the pixels it leaves are transparent black).
+    /// </param>
     /// <returns>
     /// <see cref="PixelFormat.RgbaHalf"/> for HALF samples, otherwise <see cref="PixelFormat.RgbaFloat"/> (FLOAT and UINT
     /// samples, which a half cannot hold); for a luminance image, the gray format of the same precision:
-    /// <see cref="PixelFormat.GrayHalf"/>, <see cref="PixelFormat.GrayFloat"/>, or <see cref="PixelFormat.LaFloat"/> with alpha.
+    /// <see cref="PixelFormat.GrayHalf"/> or <see cref="PixelFormat.GrayFloat"/>, or <see cref="PixelFormat.LaHalf"/> or
+    /// <see cref="PixelFormat.LaFloat"/> with transparency.
     /// </returns>
-    public static PixelFormat ForOpenExr(bool halfOnly, bool isLuminance, bool hasAlpha) => (isLuminance, halfOnly, hasAlpha) switch
+    public static PixelFormat ForOpenExr(bool halfOnly, bool isLuminance, bool hasTransparency) => (isLuminance, halfOnly, hasTransparency) switch
     {
         (false, true, _) => PixelFormat.RgbaHalf,
         (false, false, _) => PixelFormat.RgbaFloat,
-        (true, true, _) => PixelFormat.GrayHalf,
+        (true, true, false) => PixelFormat.GrayHalf,
+        (true, true, true) => PixelFormat.LaHalf,
         (true, false, false) => PixelFormat.GrayFloat,
         (true, false, true) => PixelFormat.LaFloat,
     };

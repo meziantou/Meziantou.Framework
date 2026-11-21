@@ -21,6 +21,8 @@ Reads and writes email files, without native dependencies. It does not send emai
 - Offline address books of Exchange and Outlook (`udetails.oab`, version 4 Full Details, [MS-OXOAB]).
 - `EmailMessage`, a model to convert a message from one format to another.
 - `EmailFormatDetector`, which detects the format of a file from its content.
+- S/MIME: the signatures of signed messages are checked, and encrypted messages decrypted with the certificate of a
+  recipient.
 
 Outlook data files:
 

@@ -25,6 +25,14 @@ internal static class MimeParser
         return message;
     }
 
+    /// <summary>Parses an entity: its headers, then its content, such as the content of an S/MIME signature or encryption.</summary>
+    public static MimeEntity ParseEntity(ReadOnlyMemory<byte> data, MimeReadOptions options)
+    {
+        var position = 0;
+        var headers = ReadHeaders(data, ref position, allowMboxFromLine: false);
+        return ParseEntity(headers, data[position..], new MimeContentType("text", "plain"), options, depth: 1);
+    }
+
     private static MimeEntity ParseEntity(List<MimeHeader> headers, ReadOnlyMemory<byte> content, MimeContentType defaultContentType, MimeReadOptions options, int depth)
     {
         var contentTypeHeader = headers.Find(header => header.Name.Equals("Content-Type", StringComparison.OrdinalIgnoreCase));

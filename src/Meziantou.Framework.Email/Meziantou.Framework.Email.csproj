@@ -12,6 +12,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- S/MIME: the signatures and the encryption of CMS -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- The formats share the item model and convert to one another -->
     <Using Include="Meziantou.Framework.Email.Calendar" />
     <Using Include="Meziantou.Framework.Email.Contacts" />

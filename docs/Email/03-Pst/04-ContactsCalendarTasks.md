@@ -11,7 +11,7 @@ from their message class:
 | `IPM.Contact` | [MapiContact](cref:Meziantou.Framework.Email.Mapi.MapiContact) |
 | `IPM.DistList` | [MapiDistributionList](cref:Meziantou.Framework.Email.Mapi.MapiDistributionList) |
 | `IPM.Appointment` | [MapiAppointment](cref:Meziantou.Framework.Email.Mapi.MapiAppointment) |
-| `IPM.Schedule.Meeting.Request`, `.Canceled`, `.Resp.Pos`, `.Resp.Tent`, `.Resp.Neg` | [MapiMeetingMessage](cref:Meziantou.Framework.Email.Mapi.MapiMeetingMessage), an appointment: see [meeting invitations](../08-ContactsAndCalendars/02-ICalendar.md) |
+| `IPM.Schedule.Meeting.Request`, `.Canceled`, `.Resp.Pos`, `.Resp.Tent`, `.Resp.Neg` | [MapiMeetingMessage](cref:Meziantou.Framework.Email.Mapi.MapiMeetingMessage), an appointment: see [meeting invitations](../08-ContactsAndCalendars/03-ICalendar.md) |
 | `IPM.Task` | [MapiTask](cref:Meziantou.Framework.Email.Mapi.MapiTask) |
 | `IPM.StickyNote` | [MapiNote](cref:Meziantou.Framework.Email.Mapi.MapiNote) |
 | `IPM.Activity` | [MapiJournal](cref:Meziantou.Framework.Email.Mapi.MapiJournal) |

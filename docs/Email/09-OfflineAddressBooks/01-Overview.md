@@ -52,7 +52,7 @@ Assert.Equal("Alice Martin", card.FormattedName);
 - The reader checks the checksum of the file (a CRC-32); `verifyChecksum: false` reads a file whose checksum is wrong. The
   writer computes it. The format does not store the empty values: the writer does not write the empty strings, binaries
   and lists, nor the values of the object properties.
-- [VCard.FromOab](cref:Meziantou.Framework.Email.Contacts.VCard.FromOab) converts a record to a [vCard](../08-ContactsAndCalendars/01-VCard.md),
+- [VCard.FromOab](cref:Meziantou.Framework.Email.Contacts.VCard.FromOab) converts a record to a [vCard](../08-ContactsAndCalendars/02-VCard.md),
   which [ToMapiContactBuilder](cref:Meziantou.Framework.Email.Contacts.VCard.ToMapiContactBuilder) converts to a contact of Outlook.
 
 The files Exchange sends to Outlook are compressed with LZX, and Outlook updates its copy with differential patches:

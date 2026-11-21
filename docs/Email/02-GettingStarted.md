@@ -13,11 +13,11 @@ The package does not send email: it reads and writes files. Its types are in the
 
 | Namespace | Types |
 | --- | --- |
-| `Meziantou.Framework.Email` | The common model ([EmailMessage](cref:Meziantou.Framework.Email.EmailMessage)), email messages ([MimeMessage](cref:Meziantou.Framework.Email.MimeMessage)), the exceptions |
-| `Meziantou.Framework.Email.Mapi` | The Outlook items and their MAPI properties ([MapiMessage](cref:Meziantou.Framework.Email.Mapi.MapiMessage), [MapiContact](cref:Meziantou.Framework.Email.Mapi.MapiContact)...), `.msg` files ([MsgFile](cref:Meziantou.Framework.Email.Mapi.MsgFile)), TNEF streams ([TnefFile](cref:Meziantou.Framework.Email.Mapi.TnefFile)) |
-| `Meziantou.Framework.Email.Storage` | The files that store items: Outlook data files ([PstFile](cref:Meziantou.Framework.Email.Storage.PstFile)), mbox, Maildir, Apple Mail, Thunderbird, offline address books |
-| `Meziantou.Framework.Email.Contacts` | vCard ([VCard](cref:Meziantou.Framework.Email.Contacts.VCard)) |
-| `Meziantou.Framework.Email.Calendar` | iCalendar ([VCalendar](cref:Meziantou.Framework.Email.Calendar.VCalendar)) |
+| [Meziantou.Framework.Email](cref:Meziantou.Framework.Email) | The common model ([EmailMessage](cref:Meziantou.Framework.Email.EmailMessage)), email messages ([MimeMessage](cref:Meziantou.Framework.Email.MimeMessage)), the exceptions |
+| [Meziantou.Framework.Email.Mapi](cref:Meziantou.Framework.Email.Mapi) | The Outlook items and their MAPI properties ([MapiMessage](cref:Meziantou.Framework.Email.Mapi.MapiMessage), [MapiContact](cref:Meziantou.Framework.Email.Mapi.MapiContact)...), `.msg` files ([MsgFile](cref:Meziantou.Framework.Email.Mapi.MsgFile)), TNEF streams ([TnefFile](cref:Meziantou.Framework.Email.Mapi.TnefFile)) |
+| [Meziantou.Framework.Email.Storage](cref:Meziantou.Framework.Email.Storage) | The files that store items: Outlook data files ([PstFile](cref:Meziantou.Framework.Email.Storage.PstFile)), mbox, Maildir, Apple Mail, Thunderbird, offline address books |
+| [Meziantou.Framework.Email.Contacts](cref:Meziantou.Framework.Email.Contacts) | vCard ([VCard](cref:Meziantou.Framework.Email.Contacts.VCard)) |
+| [Meziantou.Framework.Email.Calendar](cref:Meziantou.Framework.Email.Calendar) | iCalendar ([VCalendar](cref:Meziantou.Framework.Email.Calendar.VCalendar)) |
 
 The examples of this documentation omit the `using` directives of these namespaces.
 

@@ -447,6 +447,85 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Theory]
+    [InlineData("", 0)]
+    [InlineData("border-top: 10px solid; padding-top: 5px; padding-bottom: 7px", 15)]
+    public void Pages_MultiColumnContainerContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string style, double edges)
+    {
+        // The first page is 200px wide, the next one 400px wide: the columns of the container in the second page are 200px wide,
+        // and continue with the content after the first page (balanced), without repeating or skipping a box
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px {{300 + edges}}px }</style>
+            <div id=m style='columns: 2; column-gap: 0; {{style}}'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        for (var i = 0; i < 6; i++)
+        {
+            Assert.Equal([(0, new PhysicalRect(i / 3 * 100, edges + (i % 3 * 100), 100, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        for (var i = 6; i < 10; i++)
+        {
+            Assert.Equal([(1, new PhysicalRect((i - 6) / 2 * 200, (i - 6) % 2 * 100, 200, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        Assert.Equal(400, GetPageRects(pages, document.GetElementById("m")!)[1].Rect.Width);
+    }
+
+    [Fact]
+    public void Pages_MultiColumnContainerContinuedOnPagesOfSeveralInlineSizesIsLaidOutInThem()
+    {
+        // The pages are 200px, 300px and 400px wide: the columns of each page continue the columns of the previous one in its
+        // own inline size, and the content after the container follows its last row of columns
+        var items = string.Concat(Enumerable.Range(0, 14).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :left { size: 300px 300px } @page :first { size: 200px 300px }</style>
+            <div style='height: 100px'></div>
+            <div id=m style='columns: 2; column-gap: 0'>{{items}}</div>
+            <div id=after style='height: 20px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        for (var i = 0; i < 4; i++)
+        {
+            Assert.Equal([(0, new PhysicalRect(i / 2 * 100, 100 + (i % 2 * 100), 100, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        for (var i = 4; i < 10; i++)
+        {
+            Assert.Equal([(1, new PhysicalRect((i - 4) / 3 * 150, (i - 4) % 3 * 100, 150, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        for (var i = 10; i < 14; i++)
+        {
+            Assert.Equal([(2, new PhysicalRect((i - 10) / 2 * 200, (i - 10) % 2 * 100, 200, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        Assert.Equal([(2, new PhysicalRect(0, 200, 400, 20))], GetPageRects(pages, document.GetElementById("after")!));
+    }
+
+    [Fact]
+    public void Pages_TextOfAMultiColumnContainerContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
+    {
+        // The break is between two line boxes of the columns: the line boxes after it are laid out again in the columns of the
+        // second page (190px wide instead of 90px, balanced), without repeating or skipping a word
+        var words = string.Join(' ', Enumerable.Repeat("XXXXXXXXX", 120));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div id=m style='columns: 2; column-gap: 20px'><p style='margin: 0'>{{words}}</p></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 200, 300)), (1, new PhysicalRect(0, 0, 400, 150))], GetPageRects(pages, document.GetElementById("m")!));
+        Assert.Equal(60, CountWords(pages[0].Content));
+        Assert.Equal(60, CountWords(pages[1].Content));
+    }
+
+    [Theory]
     [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr'><div style='break-inside: avoid'>{0}</div><div>{1}</div><div>{2}</div><div style='height: 42px'></div></div>", 36, 3, 37)] // the first item continues after the end of its row
     [InlineData("<div style='display: flex; flex-direction: column'><div>{0}</div><div>{1}</div><div style='break-inside: avoid'>{2}</div></div>", 19, 34, 7)] // the break of the second item is before the break of the page
     [InlineData("<table style='width: 100%; border-spacing: 0'><thead><tr style='height: 15px'><td></td></tr></thead><tbody><tr><td>{0}</td></tr><tr style='height: 56px'><td></td></tr><tr><td>{1}</td></tr><tr style='height: 171px'><td></td></tr><tr><td>{2}</td></tr></tbody></table>", 20, 26, 5)] // the cell of the third row continues after the end of its row

@@ -1,5 +1,6 @@
 using Meziantou.Framework.WebPlatform.Infra;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.WebPlatform.Css.Om;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -92,6 +93,21 @@ internal sealed class LayoutContext
     /// break does not depend on the block size of the row. Null otherwise.
     /// </summary>
     internal HashSet<ContainerBox>? ResumedRowItems { get; set; }
+
+    /// <summary>
+    /// Returns the content after the break of the strip of a page of another inline size (<see cref="InlineResumes"/>,
+    /// <see cref="RowResumes"/>, <see cref="AnchorPushes"/>, <see cref="ResumedRowItems"/>): the nested multi-column containers
+    /// of the strip lay out their content again with it, once the strip is laid out (see <see cref="MultiColumnState"/>).
+    /// </summary>
+    internal SegmentResumes GetSegmentResumes() => new(InlineResumes, RowResumes, AnchorPushes, ResumedRowItems);
+
+    /// <summary>Sets the content after the break of the strip of a page of another inline size (see <see cref="GetSegmentResumes"/>) and returns the previous one.</summary>
+    internal SegmentResumes SetSegmentResumes(SegmentResumes resumes)
+    {
+        var previous = GetSegmentResumes();
+        (InlineResumes, RowResumes, AnchorPushes, ResumedRowItems) = resumes;
+        return previous;
+    }
 
     /// <summary>
     /// The inputs of the layout of the strip that is being laid out that depend on its fragmentation, and the records of the
@@ -335,3 +351,7 @@ internal sealed class LayoutContext
         Engine.RecordGridTrackSizes(box, columns, rows);
     }
 }
+
+/// <summary>The content after the break of the strip of a page of another inline size (see <see cref="LayoutContext.GetSegmentResumes"/>).</summary>
+[StructLayout(LayoutKind.Auto)]
+internal readonly record struct SegmentResumes(Dictionary<ContainerBox, InlineResume>? InlineResumes, Dictionary<ContainerBox, RowResume>? RowResumes, Dictionary<ContainerBox, double>? AnchorPushes, HashSet<ContainerBox>? ResumedRowItems);

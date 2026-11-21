@@ -361,6 +361,19 @@ internal sealed partial class LayoutEngine
 
                 segmentStart = sliced.Top + segment.Anchor.SliceOffset.GetValueOrDefault();
             }
+            else if (segment?.Anchor.ColumnContent is { } columnContent)
+            {
+                // (the columns of the multi-column container continue from the content that starts the first column of the page: it
+                // must be found in this strip, else the previous segment is laid out again without ending at the break, see LayoutPages)
+                if (FindColumnsStart(flow, children, stripSize, writingDirection, segment.Anchor, columnContent) is not { } columnsStart)
+                {
+                    isRejected = true;
+                    ClearNestedColumnStates(context);
+                    return null;
+                }
+
+                segmentStart = columnsStart;
+            }
             else if (segment is not null)
             {
                 segmentStart = FindSegmentStart(children, stripSize, writingDirection, segment.Anchor) is { } anchorStart ? Math.Max(0, anchorStart) : 0;
@@ -565,7 +578,8 @@ internal sealed partial class LayoutEngine
                 if (contentIndex > 0 && contentIndex <= breaks.Count && Math.Abs(writingDirection.ToLogical(areaSize).Inline - icbLogical.Inline) > 0.01
                     && rejectedBreaks?.Contains(breaks[contentIndex - 1].Position) != true
                     && !ContinuesBeforeBreak(flow, breaks[contentIndex - 1].Position, baseIndex + contentIndex)
-                    && FindSegmentAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position) is { } anchor)
+                    && FindSegmentAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position) is { } found
+                    && (found.IsInColumns ? ResolveColumnAnchor(found, flow, children, stripSize, writingDirection, baseIndex + contentIndex) : found) is { } anchor)
                 {
                     (segmentEnds ??= []).Add((i, baseIndex + contentIndex, anchor, areaSize, breaks[contentIndex - 1].Position));
                     if (!anchor.IsInRows)
@@ -760,6 +774,9 @@ internal sealed partial class LayoutEngine
         if (anchor.Resume is { } resume)
             return new() { [anchor.Box] = resume };
 
+        if (anchor.ColumnContent is { } content)
+            return GetInlineResumes(content);
+
         Dictionary<ContainerBox, InlineResume>? resumes = null;
         if (anchor.Items is { } items)
         {
@@ -945,6 +962,20 @@ internal sealed partial class LayoutEngine
         /// <see cref="ResolveAnchorOfPage"/>, <see cref="SliceOffset"/>).
         /// </summary>
         public double? SlicedLineOffset { get; init; }
+
+        /// <summary>
+        /// Whether the break crosses <see cref="Box"/>, a multi-column container whose rows of columns are placed in the pages (see
+        /// <see cref="NestedColumns"/>): the page after the break starts with the content of its first column, found in the strip of
+        /// the columns of the container (see <see cref="ColumnContent"/>).
+        /// </summary>
+        public bool IsInColumns { get; init; }
+
+        /// <summary>
+        /// For a break inside a multi-column container (see <see cref="IsInColumns"/>): the content after the break in the strip of
+        /// its columns (a box, or a block container resumed at a line box), laid out again in the columns of the inline size of the
+        /// page, or null.
+        /// </summary>
+        public BreakAnchor? ColumnContent { get; init; }
     }
 
     /// <summary>
@@ -1054,6 +1085,100 @@ internal sealed partial class LayoutEngine
             return anchor;
 
         return MeasureSlicedContent(children, stripSize, writingDirection, anchor) is { } slice ? anchor with { Slice = slice } : null;
+    }
+
+    /// <summary>
+    /// Returns the anchor of a break inside a multi-column container (see <see cref="BreakAnchor.IsInColumns"/>) with the content
+    /// that starts the first column of the page after the break (see <see cref="BreakAnchor.ColumnContent"/>), or null: the
+    /// columns of the page continue the columns of the previous page, and that content can be found again in columns of another
+    /// inline size (a box, or a block container resumed at a line box).
+    /// </summary>
+    /// <param name="index">The index of the fragmentainer of the page after the break.</param>
+    private static BreakAnchor? ResolveColumnAnchor(BreakAnchor anchor, FragmentationFlow flow, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, int index)
+    {
+        if (FindBoxFragment(children, stripSize, writingDirection, anchor.Box, parentTop: 0) is not var (fragment, _)
+            || flow.GetNestedColumns(fragment) is not { Nested: { } nested } || !IsResumableColumns(nested))
+        {
+            return null;
+        }
+
+        // (the first column of the page, which continues the last column of the previous page)
+        var columns = nested.Columns;
+        var first = -1;
+        for (var i = 0; i < columns.Count; i++)
+        {
+            if (columns[i].OuterIndex == index && !double.IsInfinity(columns[i].Start))
+            {
+                first = i;
+                break;
+            }
+        }
+
+        if (first <= 0 || columns[first - 1].OuterIndex != index - 1 || Math.Abs(columns[first - 1].End - columns[first].Start) > BreakAnchorEpsilon)
+            return null;
+
+        var position = columns[first].Start;
+        if (position <= BreakAnchorEpsilon || ContinuesBeforeBreak(nested.Flow, position, first) || CrossesParallelFlow(nested.Flow, position)
+            || FindBreakAnchor(nested.Children, nested.StripSize, nested.WritingDirection, position, parentTop: 0) is not { Container: null, Items: null, SliceOffset: null, IsInRows: false, IsInColumns: false } content)
+        {
+            return null;
+        }
+
+        return anchor with { ColumnContent = content };
+    }
+
+    /// <summary>
+    /// Returns the position in the strip where the content of a segment that starts inside a multi-column container starts (see
+    /// <see cref="BreakAnchor.ColumnContent"/>), or null: the rows of columns of the container are placed from the content of
+    /// the anchor in its strip (see <see cref="NestedColumns.ResumeStart"/>), and the content of the strip starts inside the
+    /// container, after its block-start edges (which are in the previous page).
+    /// </summary>
+    private static double? FindColumnsStart(FragmentationFlow flow, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, BreakAnchor anchor, BreakAnchor content)
+    {
+        if (FindBoxFragment(children, stripSize, writingDirection, anchor.Box, parentTop: 0) is not var (fragment, top)
+            || flow.GetNestedColumns(fragment) is not { Nested: { } nested } item || !IsResumableColumns(nested)
+            || FindSegmentStart(nested.Children, nested.StripSize, nested.WritingDirection, content) is not { } contentStart)
+        {
+            return null;
+        }
+
+        // (a block container resumed at a line box starts with that line box: its content before it is not laid out again)
+        var position = Math.Max(0, contentStart);
+        if (CrossesParallelFlow(nested.Flow, position))
+            return null;
+
+        // (the strip starts inside the border box of the container: its block-start edges are in the previous page)
+        var start = top + Math.Max(writingDirection.ToLogical(fragment.Border.Add(fragment.Padding).Add(fragment.Scrollbars)).BlockStart, 2 * BreakAnchorEpsilon);
+        if (start >= item.End - BreakAnchorEpsilon)
+            return null;
+
+        nested.ResumeStart = position;
+        return start;
+    }
+
+    /// <summary>
+    /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
+    /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its content is in one row of columns of the block size of
+    /// the page (no column spanner, no <c>column-height</c>, no definite or maximum block size), without absolutely positioned
+    /// boxes or nested multi-column containers.
+    /// </summary>
+    private static bool IsResumableColumns(NestedColumns nested)
+        => nested.Flow.Spanners.Count == 0 && nested.RowBlockSize is null && nested.BlockSize is null && nested.MaxBlockSize is null
+            && nested.Flow.OutOfFlowItems is null && !nested.Flow.HasNestedColumns;
+
+    /// <summary>Returns whether a parallel flow of a flow (the items of a grid, of a flex container, the cells of a table) starts before a position and ends after it.</summary>
+    private static bool CrossesParallelFlow(FragmentationFlow flow, double position)
+    {
+        if (flow.Groups is not { } groups)
+            return false;
+
+        foreach (var group in groups)
+        {
+            if (group.Start < position - BreakAnchorEpsilon && group.TrackEnds[^1] > position + BreakAnchorEpsilon)
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Returns the geometry in a strip of the content that the break of an anchor slices (see <see cref="SlicedContent"/>), or null.</summary>
@@ -1193,8 +1318,13 @@ internal sealed partial class LayoutEngine
     {
         if (box.WritingDirection.BlockStart != writingDirection.BlockStart || FragmentationFlow.IsMonolithic(box, writingDirection, scrollContainersAreMonolithic: false))
         {
+            // (a multi-column container whose rows of columns are placed in the pages: the page starts in its columns, see
+            // BreakAnchor.IsInColumns; not in an item of a row, whose content after the break must start at the same position)
+            if (box.Box.Kind == ContainerBoxKind.Normal && box.Box.Style.Layout.IsMultiColumnContainer)
+                return !isParallelFlow && box.Box.Style.Layout.WritingMode == writingDirection.WritingMode ? new BreakAnchor(box.Box, position - top) { IsInColumns = true } : null;
+
             // (a monolithic block-level box, such as an image, taller than the page, which the break slices: the page starts inside
-            // it, see SlicedContent; not a multi-column container, whose columns are fragmented)
+            // it, see SlicedContent)
             if (box.Box.IsInlineBox || box.Box.IsAtomicInline || box.Box.Style.Layout.IsMultiColumnContainer)
                 return null;
 
@@ -1330,7 +1460,7 @@ internal sealed partial class LayoutEngine
 
         // A break inside the only row that it crosses, when the rows are stacked: the content after it in that row starts the
         // content (the rows before it end before it, the rows after it start after it)
-        if (crossedCount != 1 || FindBreakAnchorIn(crossed!, writingDirection, position, crossedTop, isParallelFlow) is not { SliceOffset: null } inner)
+        if (crossedCount != 1 || FindBreakAnchorIn(crossed!, writingDirection, position, crossedTop, isParallelFlow) is not { SliceOffset: null, IsInColumns: false } inner)
             return null;
 
         if (preceding is not null && inner.Preceding is not null)

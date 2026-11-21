@@ -13,7 +13,8 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// with a fixed or an automatic number of columns, a row flex container that wraps, a block, a table row whose rows are its cells,
 /// a single-line row flex container whose rows are its items) and its rows (their block sizes,
 /// whether they avoid breaks, a paragraph); the second target has rows whose items are aligned in them or span the next rows, whose first pages may not follow their order, and the
-/// fourth one rows whose layout depends on the inline size (see <see cref="PagedInlineSizeReflowedRows"/>). Each row is in a page, the first pages of the rows follow their order, each word of
+/// fourth one rows whose layout depends on the inline size (see <see cref="PagedInlineSizeReflowedRows"/>), the fifth one a
+/// multi-column container (see <see cref="PagedInlineSizeColumns"/>). Each row is in a page, the first pages of the rows follow their order, each word of
 /// the paragraphs is laid out once, and the rectangles of the fragments are finite. The third target has monolithic content that
 /// the breaks slice (see <see cref="PagedInlineSizeSliced"/>).
 /// </summary>
@@ -76,6 +77,26 @@ public static partial class WebPlatformFuzzTargets
         ("<style>#c > :nth-child(2n) > table { display: flex }</style><div id=c style='display: flex; align-items: flex-start'>", "<div id={0} style='flex: 1 1 0; min-width: 0; {1}'><table style='width: 100%; border-spacing: 0'><tr><td style='padding: 0'>{2}</td><td style='padding: 0; width: 30%'><div style='height: 40px'></div></td></tr></table></div>", "</div>"),
     ];
 
+    /// <summary>
+    /// The containers of the target of the multi-column containers: the columns of a page of another inline size continue the
+    /// columns of the previous page in its inline size (a fixed number of columns, with edges or not, after other content or
+    /// not, columns of a fixed width, filled sequentially), whose content is blocks, a column flex container, the rows of a
+    /// table or of a grid; and containers whose columns keep the inline size of the previous page (a column spanner, a definite
+    /// block size).
+    /// </summary>
+    private static readonly (string Start, string Row, string End)[] PagedInlineSizeColumnContainers =
+    [
+        ("<div style='columns: 2; column-gap: 10px'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='height: 30px'></div><div style='columns: 3; column-gap: 0; border-top: 5px solid; padding: 3px 0 7px'>", "<div id={0} style='{1}'>{2}</div>", "</div><div style='height: 20px'></div>"),
+        ("<div style='column-width: 60px; column-gap: 5px'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='columns: 2; column-fill: auto'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='padding: 5px; border: 1px solid'><div style='columns: 2'><div style='display: flex; flex-direction: column'>", "<div id={0} style='{1}'>{2}</div>", "</div></div></div>"),
+        ("<div style='columns: 2'><table style='width: 100%; border-spacing: 0'>", "<tr id={0} style='{1}'><td>{2}</td></tr>", "</table></div>"),
+        ("<div style='columns: 2'><div style='display: grid; grid-template-columns: 1fr 1fr'>", "<div id={0} style='{1}'>{2}</div>", "</div></div>"),
+        ("<style>#c > :nth-child(4n) { column-span: all }</style><div id=c style='columns: 2'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<div style='columns: 2; height: 400px'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+    ];
+
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>
     public static void PagedInlineSize(ReadOnlySpan<byte> data) => PagedInlineSize(data, PagedInlineSizeContainers, rowsFollowTheirOrder: true);
 
@@ -84,6 +105,9 @@ public static partial class WebPlatformFuzzTargets
 
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, with rows whose layout depends on the inline size, and checks its pages.</summary>
     public static void PagedInlineSizeReflowedRows(ReadOnlySpan<byte> data) => PagedInlineSize(data, PagedInlineSizeReflowedRowContainers, rowsFollowTheirOrder: false);
+
+    /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, with a multi-column container, and checks its pages.</summary>
+    public static void PagedInlineSizeColumns(ReadOnlySpan<byte> data) => PagedInlineSize(data, PagedInlineSizeColumnContainers, rowsFollowTheirOrder: true);
 
     private static void PagedInlineSize(ReadOnlySpan<byte> data, (string Start, string Row, string End)[] containers, bool rowsFollowTheirOrder)
     {
@@ -263,6 +287,23 @@ public static partial class WebPlatformFuzzTargets
         {
             yield return new FuzzSeed("paged-inline-size-reflowed-rows-" + i.ToString(CultureInfo.InvariantCulture), scenarios[i]);
         }
+    }
+
+    /// <summary>
+    /// The seeds of the target of the multi-column containers: the scenarios of the unit tests (rows of 100px that avoid breaks,
+    /// a paragraph, on a first page of 200x300 then pages of 400x300) in each container.
+    /// </summary>
+    private static IEnumerable<FuzzSeed> GetPagedInlineSizeColumnSeeds()
+    {
+        for (var i = 0; i < PagedInlineSizeColumnContainers.Length; i++)
+        {
+            var container = (byte)i;
+            yield return new FuzzSeed("paged-inline-size-columns-rows-" + i.ToString(CultureInfo.InvariantCulture), new byte[] { 35, 75, 55, container, 9, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100 });
+            yield return new FuzzSeed("paged-inline-size-columns-paragraph-" + i.ToString(CultureInfo.InvariantCulture), new byte[] { 35, 75, 55, container, 2, 2, 0, 39, 0, 50, 2, 0, 39 });
+        }
+
+        // (pages of 200px, 300px and 400px: a page of 400x300 then pages of 300x300, rows of 100px and a paragraph)
+        yield return new FuzzSeed("paged-inline-size-columns-several-sizes", new byte[] { 75, 55, 55, 0, 11, 1, 100, 1, 100, 1, 100, 1, 100, 2, 0, 39, 1, 100, 1, 100, 1, 100, 1, 100, 2, 0, 39, 1, 100, 1, 100 });
     }
 
     /// <summary>

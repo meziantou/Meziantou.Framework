@@ -79,6 +79,12 @@ var pages = context.RenderPages();
   an image that is the item): the content of the other cells or items continues beside its rest, from the same height.
   There, the content only needs the same size and content, as it moves with its column; otherwise the page keeps the width
   of the previous one.
+- A page of another width may also start in the middle of a multi-column container: its columns in the new page have the
+  width of the new page, and continue with the content of the last column of the previous page (a paragraph continues from
+  its next line); its last columns are balanced as usual. This needs columns that fill the height of the pages: without
+  column spanner (`column-span: all`), `column-height`, height or maximum height, and with no absolutely positioned box or
+  multi-column container in the columns. The break at the end of the last column must be between two boxes or two lines,
+  outside of a table, a grid or a flex container; otherwise the page keeps the width of the previous one.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

@@ -420,15 +420,14 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
     /// Lays out the content of a multi-column container nested in another fragmentation context in a new strip, for the
     /// fragmentation of the outer context (see <see cref="NestedColumns"/>).
     /// </summary>
-    private static NestedColumns CreateNestedColumns(LayoutContext context, ContainerBox box, ContentArea content)
+    private static NestedColumns CreateNestedColumns(LayoutContext context, ContainerBox box, ContentArea content, SegmentResumes resumes)
     {
         var layout = box.Style.Layout;
         var fragmentation = layout.Fragmentation;
         var gap = GetColumnGap(layout, content.InlineSize);
         var (columnCount, exactColumnWidth) = GetColumns(fragmentation, content.InlineSize, gap);
         var columnWidth = FloorToLayoutUnit(exactColumnWidth);
-        // (as in a container that is not nested, the absolutely positioned boxes of the strip are fragmented apart)
-        var strip = LayoutStrip(context, box, content, columnWidth, separatesOutOfFlow: true);
+        var strip = LayoutNestedStrip(context, box, content, columnWidth, resumes);
         var wraps = fragmentation.ColumnWrap == ColumnWrap.Wrap;
         return new NestedColumns
         {
@@ -452,8 +451,23 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
             MaxBlockSize = content.BlockSize is null && GetContainedBlockSize(content) is null ? content.MaxBlockSize : null,
             ContentOffset = content.Offset,
             ContentInlineSize = content.InlineSize,
-            CreateTrialFlow = () => LayoutStrip(context, box, content, columnWidth, separatesOutOfFlow: true).Flow,
+            CreateTrialFlow = () => LayoutNestedStrip(context, box, content, columnWidth, resumes).Flow,
         };
+    }
+
+    /// <summary>Lays out the strip of a multi-column container nested in another fragmentation context (see <see cref="CreateNestedColumns"/>), with the content after the break of the strip of the outer context.</summary>
+    private static ColumnStrip LayoutNestedStrip(LayoutContext context, ContainerBox box, in ContentArea content, double columnWidth, SegmentResumes resumes)
+    {
+        var outer = context.SetSegmentResumes(resumes);
+        try
+        {
+            // (as in a container that is not nested, the absolutely positioned boxes of the strip are fragmented apart)
+            return LayoutStrip(context, box, content, columnWidth, separatesOutOfFlow: true);
+        }
+        finally
+        {
+            context.SetSegmentResumes(outer);
+        }
     }
 
     protected override ContentLayoutResult LayoutContents(LayoutContext context, ContainerBox box, FragmentBuilder builder, in ContentArea content)
@@ -472,8 +486,11 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
         MultiColumnState? ownState = null;
         if (context.MultiColumnDepth > 0)
         {
+            // (the content is laid out again once the strip is: with the content after the break of the strip of a page of
+            // another inline size, see LayoutContext.GetSegmentResumes)
             var nestedContent = content;
-            var state = new MultiColumnState(() => CreateNestedColumns(context, box, nestedContent));
+            var resumes = context.GetSegmentResumes();
+            var state = new MultiColumnState(() => CreateNestedColumns(context, box, nestedContent, resumes));
             box.LayoutState = state;
             context.NestedColumnStates.Add(state);
             ownState = state;

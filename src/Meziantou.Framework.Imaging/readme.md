@@ -884,7 +884,8 @@ width on each side), `ExtendCanvas` (a larger canvas, with the image at one of n
 permutations, or any angle), `Skew` and `Transform` (an affine or a perspective transformation), `Flip`, `AutoOrient` (all eight EXIF orientations), `Grayscale` (Rec. 709 at storage precision, ties upward; keeps the storage format and
 alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the storage), `ApplyColorMatrix` (a new
 color for each pixel from its own one: brightness, contrast, saturation, a tint, photo presets, a color blindness
-preview), `ReplaceColor` (a new color for the pixels of one color), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
+preview), `ReplaceColor` (a new color for the pixels of one color; `PixelMask.FromSimilarColors` selects them instead, see
+[Selecting pixels by color](#selecting-pixels-by-color)), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
 `Flatten` (see [Effects](#effects)), `Convolve` (a convolution
 matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `PercentileFilter`, `Sharpen` (an unsharp mask), `DetectEdges`,
 `BilateralFilter`, `GuidedFilter` and `RadialBlur` (see [Edge-preserving smoothing and radial blurs](#edge-preserving-smoothing-and-radial-blurs)), `Erode`, `Dilate`,
@@ -1487,6 +1488,45 @@ public static void RemoveScratches(string photoPath, string maskPath, string out
     // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
     photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Selecting pixels by color
+
+`PixelMask.FromSimilarColors(frame, seed, options)` is the magic wand of image editors: a `PixelMask` of the pixels of a
+frame whose 16-bit color is within `ColorSelectionOptions.Tolerance` (0 to 1, default 0) of the color of the seed pixel,
+sample by sample and alpha included, the comparison of `ReplaceColor`. With `Contiguous` (the default), only the pixels
+connected to the seed through such pixels are selected, by their sides (`PixelConnectivity.Four`, the default) or also
+by their corners (`PixelConnectivity.Eight`); otherwise, every such pixel of the frame. The seed is always selected, the
+frame is not changed, floating-point samples must be in [0, 1], CMYK frames are rejected, and the result is the same on
+every platform. Masks of the same size combine in place (`UnionWith`, `IntersectWith`, `ExceptWith`,
+`SymmetricExceptWith`, `Invert`, `Clone`). `PixelMask.ToImage()` gives an `A8` image of the mask (255 for its pixels, 0
+for the others), which the drawing layers apply to an image (`CompositeMode.DestinationIn` keeps the selection,
+`DestinationOut` erases it, `DrawingCanvas.Mask` draws inside it); blur it to soften the edges. A mask holds one bit per
+pixel and a contiguous selection a second mask and the runs it has yet to visit, in memory of their own, not charged to
+an image.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_RemoveBackground;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveBackground(string photoPath, string outputPath)
+{
+    using var photo = Image.Load(photoPath);
+    var frame = photo.Frames[0];
+
+    // The magic wand: the pixels connected to a corner whose samples are within 8% of the color of that corner
+    var options = new ColorSelectionOptions { Tolerance = 0.08 };
+    var background = PixelMask.FromSimilarColors(frame, new Point(0, 0), options);
+    background.UnionWith(PixelMask.FromSimilarColors(frame, new Point(photo.Width - 1, photo.Height - 1), options));
+
+    // The selection as an alpha image, blurred to soften its edges
+    using var mask = background.ToImage();
+    mask.GaussianBlur(1);
+
+    // A copy with alpha, where the mask erases what it covers
+    using var cutout = photo.CloneAs<Rgba32>();
+    cutout.Draw(canvas => canvas.Layer(1, layer => layer.DrawImage(mask.Frames[0], new PointD(0, 0)), CompositeMode.DestinationOut));
+    cutout.Save(outputPath);
 }
 ```
 <!-- endref -->

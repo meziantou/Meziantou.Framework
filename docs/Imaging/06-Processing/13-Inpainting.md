@@ -10,8 +10,9 @@ a date printed on a picture, a caption, a watermark or a small object. The pixel
 ## Remove what a mask covers
 
 Paint the mask in white on black, at the size of the photo, and read it with
-[PixelMask.FromFrame](cref:Meziantou.Framework.Imaging.PixelMask.FromFrame), or set its pixels with the indexer and
-[Fill](cref:Meziantou.Framework.Imaging.PixelMask.Fill):
+[PixelMask.FromFrame](cref:Meziantou.Framework.Imaging.PixelMask.FromFrame), set its pixels with the indexer and
+[Fill](cref:Meziantou.Framework.Imaging.PixelMask.Fill), or select them by color (see
+[Select pixels by color](15-SelectingByColor.md)):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_Inpaint;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -429,8 +429,7 @@ public abstract partial class Image
         Owner.EnsureCanModify("replace a color");
         cancellationToken.ThrowIfCancellationRequested();
 
-        // The tolerance in 16-bit steps, rounded to nearest with ties upward
-        var steps = (int)Math.Floor((tolerance * ushort.MaxValue) + 0.5 + (1.0 / 1048576));
+        var steps = ProcessingKernels.GetToleranceSteps(tolerance);
         _metadata.RemoveStaleThumbnail();
         foreach (var frame in frames ?? GetAllFrames())
         {

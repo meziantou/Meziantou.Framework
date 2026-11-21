@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -2557,6 +2558,218 @@ public sealed class ResizeTests
 
         using var cmyk = new Image<Cmyk32>(1, 1);
         Assert.Throws<UnsupportedImageFeatureException>(() => PixelMask.FromFrame(cmyk.Frames[0]));
+    }
+
+    #region PixelMask_RemoveBackground
+    [Fact]
+    public void PixelMask_RemoveBackground()
+    {
+        // A blue square on a white background, with a slightly darker white pixel in the background
+        using var image = new Image<Rgba32>(6, 4, new Rgba32(255, 255, 255, 255));
+        image.Frames[0][5, 3] = new Rgba32(250, 250, 250, 255);
+        for (var y = 1; y < 3; y++)
+        {
+            for (var x = 2; x < 4; x++)
+            {
+                image.Frames[0][x, y] = new Rgba32(30, 60, 200, 255);
+            }
+        }
+
+        // The magic wand: the pixels connected to the top-left corner whose samples are within 5% of its color
+        var background = PixelMask.FromSimilarColors(image.Frames[0], new Point(0, 0), new ColorSelectionOptions { Tolerance = 0.05 });
+        Assert.Equal((6 * 4) - 4, background.Count);
+
+        // The selection is erased: drawn as an alpha image in a layer that removes what it covers
+        using var mask = background.ToImage();
+        image.Draw(canvas => canvas.Layer(1, layer => layer.DrawImage(mask.Frames[0], new PointD(0, 0)), CompositeMode.DestinationOut));
+
+        Assert.Equal(0, image.Frames[0][0, 0].A);
+        Assert.Equal(0, image.Frames[0][5, 3].A);
+        Assert.Equal(new Rgba32(30, 60, 200, 255), image.Frames[0][2, 1]);
+    }
+    #endregion
+
+    [Fact]
+    public void PixelMasksSelectTheConnectedPixelsOfTheColorOfTheSeed()
+    {
+        // The 10s of the left column and of the bottom row reach the seed by their sides; the 10 at (2, 1), surrounded by
+        // 90s, and the 10s on its right only by diagonals; 12 is 2 levels (514 16-bit steps) away
+        using var image = CreateGray(
+        [
+            [10, 10, 90, 10, 10],
+            [10, 90, 10, 90, 10],
+            [10, 10, 90, 10, 12],
+        ]);
+        var frame = image.Frames[0];
+
+        var sides = PixelMask.FromSimilarColors(frame, new Point(0, 0), cancellationToken: Ct);
+        Assert.Equal(["11000", "10000", "11000"], Rows(sides));
+
+        var diagonals = PixelMask.FromSimilarColors(frame, new Point(0, 0), new ColorSelectionOptions { Connectivity = PixelConnectivity.Eight }, Ct);
+        Assert.Equal(["11011", "10101", "11010"], Rows(diagonals));
+
+        // 2 / 255 is 514 steps: 12 matches; 1 / 255 is 257 steps: it does not
+        var twoLevels = PixelMask.FromSimilarColors(frame, new Point(0, 0), new ColorSelectionOptions { Connectivity = PixelConnectivity.Eight, Tolerance = 2.0 / 255 }, Ct);
+        Assert.Equal(["11011", "10101", "11011"], Rows(twoLevels));
+        var oneLevel = PixelMask.FromSimilarColors(frame, new Point(0, 0), new ColorSelectionOptions { Connectivity = PixelConnectivity.Eight, Tolerance = 1.0 / 255 }, Ct);
+        Assert.Equal(["11011", "10101", "11010"], Rows(oneLevel));
+
+        // Every pixel of the color, connected or not
+        var everywhere = PixelMask.FromSimilarColors(frame, new Point(0, 0), new ColorSelectionOptions { Contiguous = false }, Ct);
+        Assert.Equal(["11011", "10101", "11010"], Rows(everywhere));
+
+        // A seed of another color selects its own region
+        var ring = PixelMask.FromSimilarColors(frame, new Point(1, 1), new ColorSelectionOptions { Connectivity = PixelConnectivity.Eight }, Ct);
+        Assert.Equal(["00100", "01010", "00100"], Rows(ring));
+        var dot = PixelMask.FromSimilarColors(frame, new Point(1, 1), cancellationToken: Ct);
+        Assert.Equal(["00000", "01000", "00000"], Rows(dot));
+    }
+
+    [Fact]
+    public void PixelMasksSelectTheSimilarColorsOfEveryFormat()
+    {
+        // Alpha is compared too: two transparent pixels of different colors differ
+        using var rgba = new Image<Rgba32>(4, 1);
+        rgba.Frames[0][0, 0] = new Rgba32(255, 0, 0, 0);
+        rgba.Frames[0][2, 0] = new Rgba32(0, 0, 0, 10);
+        rgba.Frames[0][3, 0] = new Rgba32(0, 0, 0, 0);
+        Assert.Equal(["0101"], Rows(PixelMask.FromSimilarColors(rgba.Frames[0], new Point(1, 0), new ColorSelectionOptions { Contiguous = false }, Ct)));
+        Assert.Equal(["0100"], Rows(PixelMask.FromSimilarColors(rgba.Frames[0], new Point(1, 0), cancellationToken: Ct)));
+        Assert.Equal(["0111"], Rows(PixelMask.FromSimilarColors(rgba.Frames[0], new Point(1, 0), new ColorSelectionOptions { Tolerance = 10.0 / 255 }, Ct)));
+
+        // 16-bit samples are compared at full precision: 1000 and 1100 are 100 steps apart
+        using var gray16 = new Image<Gray16>(3, 1);
+        gray16.Frames[0][0, 0] = new Gray16(1000);
+        gray16.Frames[0][1, 0] = new Gray16(1100);
+        gray16.Frames[0][2, 0] = new Gray16(1000);
+        Assert.Equal(["100"], Rows(PixelMask.FromSimilarColors(gray16.Frames[0], new Point(0, 0), new ColorSelectionOptions { Tolerance = 99.0 / 65535 }, Ct)));
+        Assert.Equal(["111"], Rows(PixelMask.FromSimilarColors(gray16.Frames[0], new Point(0, 0), new ColorSelectionOptions { Tolerance = 100.0 / 65535 }, Ct)));
+
+        // Floating-point samples go through their 16-bit color, so they must be in [0, 1]
+        using var floats = new Image<RgbaFloat>(2, 1);
+        floats.Frames[0][0, 0] = new RgbaFloat(0.5f, 0.5f, 0.5f, 1);
+        floats.Frames[0][1, 0] = new RgbaFloat(0.5f, 0.5f, 0.5f, 1);
+        Assert.Equal(2, PixelMask.FromSimilarColors(floats.Frames[0], new Point(1, 0), cancellationToken: Ct).Count);
+        floats.Frames[0][0, 0] = new RgbaFloat(2, 0.5f, 0.5f, 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelMask.FromSimilarColors(floats.Frames[0], new Point(1, 0), cancellationToken: Ct));
+
+        // A selection reaches the far end of a long winding path
+        using var maze = new Image<Gray8>(65, 9);
+        for (var y = 0; y < 9; y += 2)
+        {
+            for (var x = 0; x < 65; x++)
+            {
+                maze.Frames[0][x, y] = new Gray8(200);
+            }
+
+            if (y + 1 < 9)
+            {
+                maze.Frames[0][(y / 2) % 2 == 0 ? 64 : 0, y + 1] = new Gray8(200);
+            }
+        }
+
+        var path = PixelMask.FromSimilarColors(maze.Frames[0], new Point(0, 0), cancellationToken: Ct);
+        Assert.Equal((5 * 65) + 4, path.Count);
+        Assert.True(path[64, 8]);
+    }
+
+    [Fact]
+    public void PixelMasksSelectionValidatesItsArguments()
+    {
+        using var image = new Image<Rgba32>(3, 2);
+        Assert.Throws<ArgumentNullException>(() => PixelMask.FromSimilarColors(null!, new Point(0, 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PixelMask.FromSimilarColors(image.Frames[0], new Point(3, 0)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PixelMask.FromSimilarColors(image.Frames[0], new Point(0, -1)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ColorSelectionOptions { Tolerance = -0.01 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ColorSelectionOptions { Tolerance = 1.01 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ColorSelectionOptions { Tolerance = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ColorSelectionOptions { Connectivity = (PixelConnectivity)2 });
+        Assert.Equal(0, ColorSelectionOptions.Default.Tolerance);
+        Assert.Equal(PixelConnectivity.Four, ColorSelectionOptions.Default.Connectivity);
+        Assert.True(ColorSelectionOptions.Default.Contiguous);
+
+        using var cmyk = new Image<Cmyk32>(1, 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => PixelMask.FromSimilarColors(cmyk.Frames[0], new Point(0, 0)));
+
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => PixelMask.FromSimilarColors(image.Frames[0], new Point(0, 0), cancellationToken: canceled.Token));
+
+        image.Frames[0].ProcessPixelBytes(_ => Assert.Throws<InvalidOperationException>(() => PixelMask.FromSimilarColors(image.Frames[0], new Point(0, 0))));
+    }
+
+    [Fact]
+    public void PixelMasksCombineWithOtherMasks()
+    {
+        var left = new PixelMask(5, 1);
+        left.Fill(new Rectangle(0, 0, 3, 1));
+        var right = new PixelMask(5, 1);
+        right.Fill(new Rectangle(2, 0, 3, 1));
+
+        var union = left.Clone();
+        union.UnionWith(right);
+        Assert.Equal(["11111"], Rows(union));
+        var intersection = left.Clone();
+        intersection.IntersectWith(right);
+        Assert.Equal(["00100"], Rows(intersection));
+        var difference = left.Clone();
+        difference.ExceptWith(right);
+        Assert.Equal(["11000"], Rows(difference));
+        var symmetric = left.Clone();
+        symmetric.SymmetricExceptWith(right);
+        Assert.Equal(["11011"], Rows(symmetric));
+
+        // The clones are copies: the original is unchanged
+        Assert.Equal(["11100"], Rows(left));
+
+        // An inverted mask keeps the bits after its last pixel clear: 210 pixels are not a whole number of 64-bit words
+        var mask = new PixelMask(70, 3);
+        mask.Fill(new Rectangle(0, 0, 10, 2));
+        mask.Invert();
+        Assert.Equal(210 - 20, mask.Count);
+        Assert.False(mask[0, 0]);
+        Assert.True(mask[69, 2]);
+        mask.Invert();
+        Assert.Equal(20, mask.Count);
+
+        Assert.Throws<ArgumentNullException>(() => left.UnionWith(null!));
+        Assert.Throws<ArgumentException>(() => left.IntersectWith(new PixelMask(5, 2)));
+        Assert.Throws<ArgumentException>(() => left.ExceptWith(new PixelMask(4, 1)));
+        Assert.Throws<ArgumentException>(() => left.SymmetricExceptWith(new PixelMask(1, 5)));
+    }
+
+    [Fact]
+    public void PixelMasksBecomeAlphaImages()
+    {
+        var mask = new PixelMask(3, 2);
+        mask[0, 0] = true;
+        mask[2, 1] = true;
+        using var image = mask.ToImage();
+        Assert.Equal(new Size(3, 2), image.Size);
+        Assert.Equal(255, image.Frames[0][0, 0].A);
+        Assert.Equal(0, image.Frames[0][1, 0].A);
+        Assert.Equal(0, image.Frames[0][0, 1].A);
+        Assert.Equal(255, image.Frames[0][2, 1].A);
+
+        // The image is read back as the same mask
+        Assert.Equal(Rows(mask), Rows(PixelMask.FromFrame(image.Frames[0])));
+    }
+
+    private static string[] Rows(PixelMask mask)
+    {
+        var rows = new string[mask.Height];
+        for (var y = 0; y < mask.Height; y++)
+        {
+            var row = new char[mask.Width];
+            for (var x = 0; x < mask.Width; x++)
+            {
+                row[x] = mask[x, y] ? '1' : '0';
+            }
+
+            rows[y] = new string(row);
+        }
+
+        return rows;
     }
 
     private static Image<Gray8> CreateGray(int[][] rows)

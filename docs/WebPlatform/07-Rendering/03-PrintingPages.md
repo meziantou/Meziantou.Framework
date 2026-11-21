@@ -57,19 +57,20 @@ var pages = context.RenderPages();
   each cell or item continues in the width of the new page, from the line or the box where its own break is, and the
   content of all of them starts at the top of the page. As in Chromium, the cells of such a row are not aligned
   (`vertical-align`) in the new page; neither are the flex and grid items (`align-self`): an item centered or aligned at
-  the end of the row continues at the top of the page too. A table cell that spans the rows after its row continues beside
-  them. The items must stay side by side in the new width, and an aligned item must start before the break; otherwise the
-  page keeps the width of the previous one.
+  the end of the row continues at the top of the page too, and an aligned item that starts after the break starts the new
+  page whole, beside the content of the others. A table cell that spans the rows after its row continues beside them, and
+  so does a grid item that spans the rows before the broken row (in a grid whose number of columns does not depend on its
+  width). The items must stay side by side in the new width; otherwise the page keeps the width of the previous one.
 - A page of another width may also start in the middle of content taller than a page, which the break slices: an image, a
   box with size containment, or a line box (an inline-block taller than the page). The rest of the content continues at
   the top of the new page, and the content after it is laid out in the width of the new page. The content must be laid out
   the same way in the new width (the same size and position, and for a line box the same content), so that its rest
   continues the part printed in the previous page: an image as wide as its container, a centered image, or a line that would
   hold more words in the new width keeps the width of the previous page.
-- The same applies to an image or a box with size containment in a table cell, a flex item or a grid item (or that is the
-  item): the content of the other cells or items continues beside its rest, from the same height. There, the image only
-  needs the same size, as it moves with its column. The other items must be able to start at the height of its cut,
-  since the image itself cannot move down; otherwise the page keeps the width of the previous one.
+- The same applies to an image, a box with size containment or a line box in a table cell, a flex item or a grid item (or
+  an image that is the item): the content of the other cells or items continues beside its rest, from the same height.
+  There, the content only needs the same size and content, as it moves with its column; otherwise the page keeps the width
+  of the previous one.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

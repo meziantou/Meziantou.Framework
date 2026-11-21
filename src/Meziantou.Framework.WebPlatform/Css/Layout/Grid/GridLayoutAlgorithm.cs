@@ -1214,7 +1214,18 @@ internal sealed partial class GridLayoutAlgorithm
 
     /// <summary>Returns the margins of an item in the axes of the grid (the <c>auto</c> margins are 0), whose percentages resolve against the inline size of its grid area.</summary>
     private LogicalSides<double> GetMargins(GridItem item, double percentageBasis)
-        => _writingDirection.ToLogical(FormattingContext.ResolveMargins(item.Style.Box, percentageBasis));
+    {
+        var margins = _writingDirection.ToLogical(FormattingContext.ResolveMargins(item.Style.Box, percentageBasis));
+
+        // (an item of a grid row broken by a page of another inline size whose content after the break starts below the one of
+        // the other items is moved down, see LayoutContext.AnchorPushes)
+        if (!item.IsOrthogonal && _context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
+        {
+            margins = margins with { BlockStart = margins.BlockStart + push };
+        }
+
+        return margins;
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // Absolutely positioned children

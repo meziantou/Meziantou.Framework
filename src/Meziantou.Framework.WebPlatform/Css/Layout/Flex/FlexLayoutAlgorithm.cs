@@ -464,6 +464,13 @@ internal sealed partial class FlexLayoutAlgorithm
         item.AutoMarginCrossStart = autoCrossStart;
         item.AutoMarginCrossEnd = autoCrossEnd;
 
+        // (an item of a flex line broken by a page of another inline size whose content after the break starts below the one of
+        // the other items is moved down, see LayoutContext.AnchorPushes)
+        if (_isRow && !_properties.IsCrossReverse && _context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
+        {
+            item.MarginCrossStart += push;
+        }
+
         var paddingAndBorder = FormattingContext.ResolvePadding(boxModel, _content.InlineSize).Add(boxModel.BorderWidth);
         var gutters = IntrinsicSizing.GetScrollbarGutters(_context, item.Box, item.WritingDirection);
         item.MainPaddingBorder = _mainIsHorizontal ? paddingAndBorder.HorizontalSum() : paddingAndBorder.VerticalSum();

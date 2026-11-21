@@ -213,7 +213,8 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>
     /// Decodes the input to a document whose first page has another inline size than the next ones, with monolithic content
     /// that the breaks may slice (a box with size containment of a fixed or percentage width, centered or not, an SVG image, an
-    /// inline-block in a paragraph, between words; a monolithic item beside a paragraph in a grid row, a flex row, a table row)
+    /// inline-block in a paragraph, between words; a box with size containment or an inline-block in a line box, followed by a
+    /// word or not, beside a paragraph in a grid row, a flex row, a table row)
     /// between paragraphs, and checks its pages: each item is in a page, the first pages of the items follow their order, each
     /// word is laid out once, and the parts of a sliced item continue each other (the same size, and the same inline position
     /// out of a row, from the end of the previous page).
@@ -242,6 +243,13 @@ public static partial class WebPlatformFuzzTargets
             words += wordCount;
             isMonolithic[i] = (kind % 8) != 0;
             isInRow[i] = (kind % 8) >= 5;
+
+            // (in a row: a box with size containment, or an inline-block in a line box, followed by a word or not)
+            var lineWord = (kind & 48) == 48 && (kind % 8) >= 5;
+            words += lineWord ? 1 : 0;
+            var monolithic = (kind & 32) != 0
+                ? string.Create(CultureInfo.InvariantCulture, $"<div style='{((kind % 8) == 6 ? "flex: none" : "")}'><span id={id} style='display: inline-block; width: {size}px; height: {extent}px; vertical-align: top'></span>{(lineWord ? " XXXX" : "")}</div>")
+                : string.Create(CultureInfo.InvariantCulture, $"<div id={id} style='{((kind % 8) == 6 ? "flex: none; " : "")}contain: size; width: {size}px; height: {extent}px'></div>");
             markup.Append((kind % 8) switch
             {
                 0 => string.Create(CultureInfo.InvariantCulture, $"<p id={id} style='margin: {size % 30}px 0'>{text}</p>"),
@@ -249,9 +257,9 @@ public static partial class WebPlatformFuzzTargets
                 2 => string.Create(CultureInfo.InvariantCulture, $"<div id={id} style='contain: size; width: {size % 101}%; height: {extent}px'></div><p style='margin: 0'>{text}</p>"),
                 3 => string.Create(CultureInfo.InvariantCulture, $"<svg id={id} width={size} height={extent} style='display: block'></svg><p style='margin: 0'>{text}</p>"),
                 4 => string.Create(CultureInfo.InvariantCulture, $"<p style='margin: 0{((kind & 8) != 0 ? "; text-align: center" : "")}'>{((kind & 16) != 0 ? text : "")}<span id={id} style='display: inline-block; width: {size}px; height: {extent}px; vertical-align: top'></span>{((kind & 16) != 0 ? "" : text)}</p>"),
-                5 => string.Create(CultureInfo.InvariantCulture, $"<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{text}</div><div id={id} style='contain: size; width: {size}px; height: {extent}px'></div></div>"),
-                6 => string.Create(CultureInfo.InvariantCulture, $"<div style='display: flex; align-items: flex-start'><div style='flex: 1 1 0; min-width: 0'>{text}</div><div id={id} style='flex: none; contain: size; width: {size}px; height: {extent}px'></div></div>"),
-                _ => string.Create(CultureInfo.InvariantCulture, $"<table style='width: 100%; border-spacing: 0'><tr><td style='padding: 0'>{text}</td><td style='padding: {size % 30}px 0 0'><div id={id} style='contain: size; width: {size}px; height: {extent}px'></div></td></tr></table>"),
+                5 => string.Create(CultureInfo.InvariantCulture, $"<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{text}</div>{monolithic}</div>"),
+                6 => string.Create(CultureInfo.InvariantCulture, $"<div style='display: flex; align-items: flex-start'><div style='flex: 1 1 0; min-width: 0'>{text}</div>{monolithic}</div>"),
+                _ => string.Create(CultureInfo.InvariantCulture, $"<table style='width: 100%; border-spacing: 0'><tr><td style='padding: 0'>{text}</td><td style='padding: {size % 30}px 0 0'>{monolithic}</td></tr></table>"),
             });
         }
 
@@ -338,10 +346,15 @@ public static partial class WebPlatformFuzzTargets
             [35, 75, 55, 0, 4, 170, 133, 2],
             [35, 75, 55, 0, 20, 150, 133, 2],
 
-            // A monolithic item beside a paragraph in a grid row, a flex row, a table row
+            // A monolithic item beside a paragraph in a grid row, a flex row, a table row; an inline-block in a line box there,
+            // followed by a word in the grid row
             [35, 75, 55, 0, 5, 80, 133, 19],
             [35, 75, 55, 0, 6, 80, 133, 19],
             [35, 75, 55, 0, 7, 80, 133, 19],
+            [35, 75, 55, 0, 37, 80, 133, 19],
+            [35, 75, 55, 0, 38, 80, 133, 19],
+            [35, 75, 55, 0, 39, 80, 133, 19],
+            [35, 75, 55, 0, 53, 80, 133, 19],
 
             // Paragraphs around a sliced box
             [35, 75, 55, 2, 0, 0, 0, 19, 1, 150, 133, 19, 0, 10, 0, 19],

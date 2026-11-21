@@ -150,6 +150,39 @@ public abstract partial class Image
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether every pixel of frames of this image (every displayed frame and the poster when
+    /// <paramref name="frames"/> is <see langword="null"/>) is fully opaque. The pixels are read in place: nothing is
+    /// allocated, and the scan stops at the first pixel that is not opaque.
+    /// </summary>
+    internal bool IsOpaqueCore(ImageFrame[]? frames, CancellationToken cancellationToken)
+    {
+        ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
+        frames ??= GetAllFrames();
+        var format = PixelFormat;
+        if (!PixelFormats.HasAlpha(format))
+            return true;
+
+        var rowLength = _size.Width * PixelFormats.GetBytesPerPixel(format);
+        foreach (var frame in frames)
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            for (var y = 0; y < _size.Height; y++)
+            {
+                if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                if (!PixelConverter.IsOpaque(format, lease.GetRowBytes(y)[..rowLength]))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>Gets the groups of frames that share their histograms: all of them together, or each frame alone.</summary>
     private static IEnumerable<ImageFrame[]> GetToneGroups(ImageFrame[] frames, bool shared)
     {

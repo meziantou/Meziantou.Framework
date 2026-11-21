@@ -791,9 +791,9 @@ public sealed class PagedMediaTests : IDisposable
     [InlineData(100, 200)]
     public void Pages_RowWithAMonolithicItemIsLaidOutInAPageOfAnotherInlineSizeWhenItEndsBeforeTheBreak(int height, double secondPageWidth)
     {
-        // The second item is monolithic (size containment, as an image): when the break crosses it, it is sliced and cannot
-        // continue in another inline size, so the row keeps the layout of the first page; when it ends before the break, the
-        // paragraph of the first item continues in the 400px wide page area of the second page
+        // The second item is monolithic (size containment, as an image): when the break crosses it, it is sliced, and as wide as
+        // its column it is not the same in another inline size, so the row keeps the layout of the first page; when it ends
+        // before the break, the paragraph of the first item continues in the 400px wide page area of the second page
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
             <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='contain: size; height: {{height}}px'></div></div>
@@ -802,6 +802,32 @@ public sealed class PagedMediaTests : IDisposable
         var pages = session.GetPages();
         Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
         Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Theory]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id=m style='contain: size; width: 80px; height: 400px'></div>", "</div>", 200)]
+    [InlineData("<div style='display: flex; align-items: flex-start'>", "<div id=m style='flex: none; contain: size; width: 80px; height: 400px'></div>", "</div>", 320)]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div style='padding-top: 20px'><div id=m style='contain: size; width: 80px; height: 400px'></div><div style='height: 20px'></div></div>", "</div>", 200)]
+    [InlineData("<table style='width: 100%; border-spacing: 0'><tr>", "<td style='padding: 0; width: 80px'><div id=m style='contain: size; width: 80px; height: 400px'></div></td>", "</tr></table>", 320)]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id=m style='contain: size; width: 80%; height: 400px'></div>", "</div>", 100)]
+    public void Pages_RowWithAMonolithicItemSlicedByTheBreakIsLaidOutInAPageOfAnotherInlineSize(string start, string item, string end, double secondPageWidth)
+    {
+        // The monolithic content of the second item (a box with size containment, as an image) is taller than the 300px tall
+        // pages: the break slices it. When it has the same size in the 400px wide page area of the second page, its rest
+        // continues there, the paragraph of the first item continues beside it in that inline size, from the same position;
+        // else (80% of its column) the row keeps the layout of the first page
+        var tag = start.StartsWith("<table", StringComparison.Ordinal) ? "td style='padding: 0'" : "div";
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            {{start}}<{{tag}} id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</{{tag.Split(' ')[0]}}>{{item}}{{end}}
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect), ..] ? (page, rect.Width) : default);
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+        var sliced = GetPageRects(pages, document.GetElementById("m")!);
+        Assert.Equal(2, sliced.Count);
+        Assert.Equal((1, sliced[0].Rect.Y - 300, sliced[0].Rect.Width, sliced[0].Rect.Height), (sliced[1].Page, sliced[1].Rect.Y, sliced[1].Rect.Width, sliced[1].Rect.Height));
     }
 
     [Fact]
@@ -817,6 +843,46 @@ public sealed class PagedMediaTests : IDisposable
         var pages = session.GetPages();
         Assert.Equal([(1, new PhysicalRect(0, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i6")!));
         Assert.Equal([(1, new PhysicalRect(100, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i7")!));
+    }
+
+    [Theory]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 400px'></div>", 200)]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 700px'></div>", 200)]
+    [InlineData("<svg id=m width=150 height=400 style='display: block'></svg>", 200)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 200)]
+    [InlineData("<div id=m style='contain: size; width: 50%; height: 400px'></div>", 100)]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 400px; margin: 0 auto'></div>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0; text-align: center'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 170px; height: 400px; vertical-align: top'></span> XXXX XXXX</p>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 25%; height: 400px; vertical-align: top'></span><span style='display: inline-block; width: calc(150px - 25%); height: 400px; vertical-align: top'></span></p>", 100)]
+    [InlineData("<div id=m style='contain: size; box-sizing: border-box; width: 150px; height: 400px; padding-left: 10%'><div style='height: 10px'></div></div>", 100)]
+    public void Pages_ContentSlicedByTheBreakContinuesInAPageOfAnotherInlineSize(string content, double width)
+    {
+        // The monolithic content (a box with size containment, an SVG image, an inline-block in a line box) is taller than the 300px
+        // tall pages: the break slices it. The rest of it continues in the 400px wide pages after the first one when it is laid
+        // out the same way in them (the same size and inline position, the same line box), and the content after it is laid out
+        // in them (50%: 200px); else the pages keep the layout of the first page (100px), also when only the content of the line
+        // box or of the box changes (inline-blocks whose widths change, a child moved by a percentage padding)
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            {{content}}
+            <div id=b style='width: 50%; height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        var sliced = GetPageRects(pages, document.GetElementById("m")!);
+        Assert.Equal((0, 0d), (sliced[0].Page, sliced[0].Rect.Y));
+        Assert.Equal((pages.Count - 1, width), GetPageRects(pages, document.GetElementById("b")!) is [var (page, rect)] ? (page, rect.Width) : default);
+        for (var i = 1; i < sliced.Count; i++)
+        {
+            // (the rest of the content continues where the previous page ends)
+            Assert.Equal(i, sliced[i].Page);
+            Assert.Equal(sliced[0].Rect.Height, sliced[i].Rect.Height);
+            Assert.Equal(sliced[0].Rect.X, sliced[i].Rect.X);
+            Assert.Equal(-300 * i, sliced[i].Rect.Y);
+        }
+
+        Assert.Equal(content.Contains("XXXX", StringComparison.Ordinal) ? 2 : 0, pages.Sum(page => CountWords(page.Content)));
     }
 
     [Fact]

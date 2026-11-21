@@ -3266,7 +3266,14 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   the contents of the cells of a table, as in Blink, and the items of a flex line or of a grid row that are not stretched
   start at the start of the row), so that their content after the break does not depend on the block size of the row. A
   cell that spans the rows after its row continues beside them: the rows after the row are in `BreakAnchor.Following`,
-  and must start after the content after the break. Monolithic content at the break leaves the break without anchor. In the next
+  and must start after the content after the break. Monolithic content of an item that the break slices (the item, or a
+  monolithic block-level box of its block flow) is the anchor of the item (`BreakAnchor.SliceOffset`): it must have the same
+  size in the strip of the segment (`SlicedContent.HasSameSize`: its position follows the item, whose position depends on the
+  inline size, e.g. a column of a grid), and its rest must start the next page (`IsAnchorOfPage`: it is in both pages, at the
+  offset of the break in the page); a monolithic item cannot be moved down by `LayoutContext.AnchorPushes`, so the segment
+  is rejected when the content after the break of another item starts below its break. The content of a finished monolithic
+  item is the item itself (its block-end edge, not the end of its children). A line box of an item that the break slices
+  leaves the break without anchor. In the next
   segment, the items of a flex line and of a grid with `auto-fill` columns start a new line or row
   (`RowResume.Crossed`), and the content after the break of each item starts at the same position: the lowest of them, not
   before the end of the content of the finished items (`MeasureRowBreak`), by new layouts of the strip that add space before
@@ -3284,8 +3291,19 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   page where the table starts (not when they are taller than a quarter of it): the segment keeps the decisions of the tables
   that start in a previous segment (`PageSegmentStart.RepeatedSectionsDisabled`). The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
-  the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
-  multi-column container, a grid whose columns depend on its inline size and whose items are not placed in their order, a
+  the initial containing block of the first page, as in Blink.
+  A page whose content before the break continues in it does not start a segment (`ContinuesBeforeBreak`: a parallel flow of
+  the strip that ends before the break, such as the cells of a table row whose lines do not fill the pages, ends in the page
+  or after it; the breaks of the strip are then at the same position, and the next page starts the content after it).
+  A segment also starts inside the content that the break slices (`BreakAnchor.SliceOffset`, see above for the items of a row): a
+  monolithic block-level box of that block flow (a replaced element, a box with size containment, not a multi-column
+  container), or a line box of a block container (its line boxes are laid out from its start, as at a break between line
+  boxes). The rest of the content continues the part in the previous page only when it is laid out the same way in the strip
+  of the segment (`SlicedContent`, measured in both strips by `MeasureSlicedContent`: the extent of the box or of the content
+  of the line box in the inline axis, its block size, and the start of the next line box); the segment then starts at the
+  same offset in it (the block-start edge of the content in the strip plus the offset of the break), else it is rejected as
+  a row that does not reach the same position (`rejectedBreaks`). A page of another inline size that starts inside a line
+  laid out another way, a multi-column container, a grid whose columns depend on its inline size and whose items are not placed in their order, a
   row whose items cannot continue side by side in another inline size... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the

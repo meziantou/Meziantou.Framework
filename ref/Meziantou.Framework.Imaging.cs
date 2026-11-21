@@ -1472,6 +1472,8 @@ namespace Meziantou.Framework.Imaging
 
     public static class ImageProcessingExtensions
     {
+        public static void AddWatermark(this Meziantou.Framework.Imaging.Image image, string text, Meziantou.Framework.Imaging.ImageWatermarkOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void AddWatermark(this Meziantou.Framework.Imaging.ImageFrame frame, string text, Meziantou.Framework.Imaging.ImageWatermarkOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static Meziantou.Framework.Imaging.AutoCropAnalysis AnalyzeAutoCrop(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.AutoCropAnalysis<TPixel> AnalyzeAutoCrop<TPixel>(this Meziantou.Framework.Imaging.Image<TPixel> image, Meziantou.Framework.Imaging.AutoCropOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
         public static void ApplyColorMatrix(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ColorMatrix matrix, System.Threading.CancellationToken cancellationToken = default) { }
@@ -1679,6 +1681,22 @@ namespace Meziantou.Framework.Imaging
     {
         public double DataRange { get => throw null; init { } }
         public Meziantou.Framework.Imaging.SimilarityPrecision Precision { get => throw null; init { } }
+    }
+
+    public sealed class ImageWatermarkOptions
+    {
+        public const double MaxFontSize = 65536d;
+        public const double MaxLength = 16777216d;
+        public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; init { } }
+        public double? FontSize { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.FontStack Fonts { get => throw null; }
+        public bool IsTiled { get => throw null; init { } }
+        public double? Margin { get => throw null; init { } }
+        public double Opacity { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.WatermarkPosition Position { get => throw null; init { } }
+        public double? Rotation { get => throw null; init { } }
+        public double? TileSpacing { get => throw null; init { } }
+        public ImageWatermarkOptions(Meziantou.Framework.Imaging.Typography.FontStack fonts) { }
     }
 
     public sealed class ImageWriterOptions
@@ -2584,6 +2602,19 @@ namespace Meziantou.Framework.Imaging
         public UnsupportedImageFeatureException(string? message) { }
         public UnsupportedImageFeatureException(string? message, System.Exception? innerException) { }
         public UnsupportedImageFeatureException(string? message, Meziantou.Framework.Imaging.ImageFormat format, string? feature) { }
+    }
+
+    public enum WatermarkPosition
+    {
+        Center = 0,
+        TopLeft = 1,
+        Top = 2,
+        TopRight = 3,
+        Left = 4,
+        Right = 5,
+        BottomLeft = 6,
+        Bottom = 7,
+        BottomRight = 8,
     }
 }
 namespace Meziantou.Framework.Imaging.Drawing

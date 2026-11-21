@@ -1,0 +1,21 @@
+From: old@example.com
+To: bob@example.com
+Subject: uuencode
+Date: Sun, 13 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="u"
+
+--u
+Content-Type: text/plain
+
+Old client.
+--u
+Content-Type: application/octet-stream; name="hello.txt"
+Content-Transfer-Encoding: x-uuencode
+Content-Disposition: attachment; filename="hello.txt"
+
+begin 644 hello.txt
+,:&5L;&\@=V]R;&0*
+`
+end
+--u--

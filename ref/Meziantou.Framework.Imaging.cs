@@ -1534,6 +1534,8 @@ namespace Meziantou.Framework.Imaging
         public static void GuidedFilter(this Meziantou.Framework.Imaging.Image image, int radius, double epsilon, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void GuidedFilter(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, double epsilon, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Inpaint(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.PixelMask mask, Meziantou.Framework.Imaging.InpaintingOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static bool IsOpaque(this Meziantou.Framework.Imaging.Image image, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static bool IsOpaque(this Meziantou.Framework.Imaging.ImageFrame frame, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static void MedianBlur(this Meziantou.Framework.Imaging.Image image, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MedianBlur(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
         public static void MorphologicalClose(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.StructuringElement element, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
@@ -2506,10 +2508,12 @@ namespace Meziantou.Framework.Imaging
         Fixed = 1,
         Mean = 2,
         Sauvola = 3,
+        Bradley = 4,
     }
 
     public sealed class ThresholdOptions
     {
+        public double BradleyT { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ThresholdOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.ConvolutionEdgeMode EdgeMode { get => throw null; init { } }
         public double Level { get => throw null; init { } }

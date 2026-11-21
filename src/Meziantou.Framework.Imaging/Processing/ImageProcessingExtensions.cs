@@ -942,6 +942,75 @@ public static partial class ImageProcessingExtensions
     }
 
     /// <summary>
+    /// Gets a value indicating whether every pixel of every frame of the image (including the poster frame) is fully
+    /// opaque. The image is not changed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A pixel is fully opaque when its alpha is the largest value of its pixel format: 255 for 8-bit alpha, 65,535 for
+    /// 16-bit alpha, 3 for <see cref="Rgba1010102"/>, and exactly 1 for floating-point alpha (an alpha above 1 or that is
+    /// not a number is not opaque). A pixel format without alpha (including <see cref="Cmyk32"/> and <see cref="Cmyk64"/>)
+    /// is always opaque: the pixels are not read.
+    /// </para>
+    /// <para>
+    /// Unlike <see cref="ImageInfo.MayHaveTransparency"/>, which the header of a file declares, this reads the pixels: use it
+    /// to know whether the alpha channel can be dropped, for example before saving to a format without alpha, or with
+    /// <see cref="PixelConversionOptions"/> that flatten the image, without changing a pixel. The scan stops at the first
+    /// pixel that is not opaque, and nothing is allocated.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/HistogramTests.cs" ref:region="IsOpaque_DropAlpha" ref:dedent="true">
+    /// [Fact]
+    /// public void IsOpaque_DropAlpha()
+    /// {
+    ///     // An RGBA image whose pixels are all opaque: its alpha channel holds no information
+    ///     using var image = new Image&lt;Rgba32&gt;(4, 4, new Rgba32(200, 100, 50, 255));
+    ///     Assert.True(image.IsOpaque());
+    ///
+    ///     // So it converts to RGB without losing anything
+    ///     using var rgb = image.CloneAs&lt;Rgb24&gt;();
+    ///     Assert.Equal(new Rgb24(200, 100, 50), rgb.Frames[0][3, 3]);
+    ///
+    ///     // One translucent pixel is enough: the alpha channel can no longer be dropped without flattening the image
+    ///     image.Frames[0][3, 3] = new Rgba32(200, 100, 50, 254);
+    ///     Assert.False(image.IsOpaque());
+    ///     Assert.Throws&lt;UnsupportedImageFeatureException&gt;(() =&gt; image.CloneAs&lt;Rgb24&gt;());
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="image">The image.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns><see langword="true"/> if no pixel has an alpha below the largest value of the pixel format.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static bool IsOpaque(this Image image, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        return image.IsOpaqueCore(frames: null, cancellationToken);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether every pixel of one frame is fully opaque. See
+    /// <see cref="IsOpaque(Image, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns><see langword="true"/> if no pixel of the frame has an alpha below the largest value of the pixel format.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static bool IsOpaque(this ImageFrame frame, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        _ = frame.GetStorage();
+        return frame.OwnerImage.IsOpaqueCore([frame], cancellationToken);
+    }
+
+    /// <summary>
     /// Equalizes the histogram of every frame of the image (including the poster frame) in place, which spreads its levels
     /// over the whole sample range: globally, or by tiles with a contrast limit (CLAHE). The pixel format and alpha are kept.
     /// </summary>
@@ -1103,7 +1172,7 @@ public static partial class ImageProcessingExtensions
     /// <para>
     /// See <see cref="ThresholdMethod"/> for how the thresholds are chosen: one level for the whole frame, given or chosen by
     /// Otsu's method, or a level per pixel from its neighborhood (<see cref="ThresholdMethod.Mean"/>,
-    /// <see cref="ThresholdMethod.Sauvola"/>) for uneven lighting. The luminance is the Rec. 709 luma of the stored (encoded)
+    /// <see cref="ThresholdMethod.Sauvola"/>, <see cref="ThresholdMethod.Bradley"/>) for uneven lighting. The luminance is the Rec. 709 luma of the stored (encoded)
     /// samples at the storage precision, which <see cref="Grayscale(Image, CancellationToken)"/> stores; alpha is ignored.
     /// No color profile is applied. Floating-point pixel formats have no discrete levels: convert the image to
     /// <see cref="Rgba64"/> with <see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/> first.

@@ -31,6 +31,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Geo.GeoParquet.Fuzz\Meziantou.Framework.Geo.GeoParquet.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Geo.Maps.Fuzz\Meziantou.Framework.Geo.Maps.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Globbing.Fuzz\Meziantou.Framework.Globbing.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Graphviz.Fuzz\Meziantou.Framework.Graphviz.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Hashing.Fuzz\Meziantou.Framework.Hashing.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HtmlSanitizer.Fuzz\Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.HtmlToMarkdown.Fuzz\Meziantou.Framework.HtmlToMarkdown.Fuzz.csproj" />

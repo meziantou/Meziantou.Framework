@@ -6,7 +6,8 @@ diagrams, Gantt charts, timelines, git graphs, kanban boards, packet diagrams, u
 diagrams, mind maps, tree views, Ishikawa diagrams, Venn diagrams, Wardley maps and Cynefin diagrams, with styles and
 classes, in the themes of Mermaid. [Meziantou.Framework.Mermaid](https://www.nuget.org/packages/Meziantou.Framework.Mermaid)
 reads and writes the Mermaid text format, and draws the charts of Mermaid with Meziantou.Framework.Charts, and [Meziantou.Framework.Imaging.VectorGraphics](https://www.nuget.org/packages/Meziantou.Framework.Imaging.VectorGraphics)
-renders the diagrams as images.
+renders the diagrams as images. [Meziantou.Framework.Graphviz](https://www.nuget.org/packages/Meziantou.Framework.Graphviz) reads and
+writes the DOT language of Graphviz.
 
 ## Usage
 

@@ -55,6 +55,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Geo.Maps'">https://framework.meziantou.net/geo-maps/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Geo.Maps.GeoPackage'">https://framework.meziantou.net/geo-maps/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Globbing'">https://framework.meziantou.net/globbing/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Graphviz'">https://framework.meziantou.net/graphviz/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Hashing'">https://framework.meziantou.net/hashing/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Html.Tool'">https://framework.meziantou.net/html-tool/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.HtmlSanitizer'">https://framework.meziantou.net/htmlsanitizer/</PackageProjectUrl>

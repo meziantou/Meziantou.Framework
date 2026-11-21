@@ -1,0 +1,27 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Graphviz</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads the DOT language of Graphviz into the flowcharts of Meziantou.Framework.Diagrams, drawn as deterministic SVG without Graphviz, and writes flowcharts as DOT: nodes, edges, clusters, shapes, styles, colors, record and HTML-like labels.</Description>
+    <PackageTags>graphviz;dot;gv;diagram;diagrams;graph;svg;flowchart;parser</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Diagrams/Meziantou.Framework.Diagrams.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Diagrams" />
+    <Using Include="Meziantou.Framework.VectorGraphics" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Graphviz.Tests" />
+  </ItemGroup>
+
+</Project>

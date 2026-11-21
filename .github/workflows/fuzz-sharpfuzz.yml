@@ -37,6 +37,7 @@ on:
           - geo-geoparquet
           - geo-maps
           - globbing
+          - graphviz
           - hashing
           - html-sanitizer
           - html-to-markdown
@@ -129,6 +130,7 @@ env:
       { "project": "Meziantou.Framework.Geo.GeoParquet.Fuzz",      "component": "geo-geoparquet",        "day": 6 },
       { "project": "Meziantou.Framework.Geo.Maps.Fuzz",            "component": "geo-maps",              "day": 5 },
       { "project": "Meziantou.Framework.Globbing.Fuzz",            "component": "globbing",              "day": 0 },
+      { "project": "Meziantou.Framework.Graphviz.Fuzz",            "component": "graphviz",              "day": 3 },
       { "project": "Meziantou.Framework.Hashing.Fuzz",             "component": "hashing",               "day": 0 },
       { "project": "Meziantou.Framework.HtmlSanitizer.Fuzz",       "component": "html-sanitizer",        "day": 1 },
       { "project": "Meziantou.Framework.HtmlToMarkdown.Fuzz",      "component": "html-to-markdown",      "day": 1 },

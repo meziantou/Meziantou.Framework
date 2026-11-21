@@ -1,0 +1,24 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Graphviz. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The DOT texts of the unit tests seed the targets -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Graphviz.Tests\GraphvizDocumentTests.cs" LogicalName="GraphvizDocumentTests.cs" Link="Seeds\GraphvizDocumentTests.cs" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Graphviz.Tests\GraphvizWriterTests.cs" LogicalName="GraphvizWriterTests.cs" Link="Seeds\GraphvizWriterTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Graphviz\Meziantou.Framework.Graphviz.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Diagrams" />
+    <Using Include="Meziantou.Framework.VectorGraphics" />
+  </ItemGroup>
+</Project>

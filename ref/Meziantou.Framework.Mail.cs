@@ -48,6 +48,42 @@ namespace Meziantou.Framework.Mail
         public Meziantou.Framework.Mail.PstMessageBuilder ToPstBuilder() => throw null;
     }
 
+    public static class EmlxFile
+    {
+        public static Meziantou.Framework.Mail.EmlxMessage Load(System.IO.Stream stream, Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.EmlxMessage Load(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.EmlxMessage Load(string path, Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public static void Save(Meziantou.Framework.Mail.MimeMessage message, System.IO.Stream stream, Meziantou.Framework.Mail.EmlxFlags flags = Meziantou.Framework.Mail.EmlxFlags.None, System.DateTimeOffset? dateReceived = null) { }
+        public static void Save(Meziantou.Framework.Mail.MimeMessage message, string path, Meziantou.Framework.Mail.EmlxFlags flags = Meziantou.Framework.Mail.EmlxFlags.None, System.DateTimeOffset? dateReceived = null) { }
+    }
+
+    [System.Flags]
+    public enum EmlxFlags
+    {
+        None = 0,
+        Read = 1,
+        Deleted = 2,
+        Answered = 4,
+        Encrypted = 8,
+        Flagged = 16,
+        Recent = 32,
+        Draft = 64,
+        Initial = 128,
+        Forwarded = 256,
+        Redirected = 512,
+    }
+
+    public sealed class EmlxMessage
+    {
+        public int AttachmentCount { get => throw null; }
+        public System.DateTimeOffset? DateReceived { get => throw null; }
+        public Meziantou.Framework.Mail.EmlxFlags Flags { get => throw null; }
+        public bool IsPartial { get => throw null; }
+        public Meziantou.Framework.Mail.MimeMessage Message { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, object?> Properties { get => throw null; }
+        public long RawFlags { get => throw null; }
+    }
+
     public sealed class InvalidMailDataException : Meziantou.Framework.Mail.MailException
     {
         public InvalidMailDataException(string? message) { }
@@ -85,6 +121,87 @@ namespace Meziantou.Framework.Mail
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MailboxAddress> ParseList(string? value) => throw null;
         public string ToHeaderValue() => throw null;
         public override string ToString() => throw null;
+    }
+
+    [System.Flags]
+    public enum MaildirFlags
+    {
+        None = 0,
+        Draft = 1,
+        Flagged = 2,
+        Passed = 4,
+        Replied = 8,
+        Seen = 16,
+        Trashed = 32,
+    }
+
+    public sealed class MaildirFolder
+    {
+        public string FullPath { get => throw null; }
+        public static char InfoSeparator { get => throw null; }
+        public Meziantou.Framework.Mail.MaildirMessage AddMessage(Meziantou.Framework.Mail.MimeMessage message, Meziantou.Framework.Mail.MaildirFlags flags = Meziantou.Framework.Mail.MaildirFlags.None) => throw null;
+        public Meziantou.Framework.Mail.MaildirMessage AddMessage(System.ReadOnlySpan<byte> content, Meziantou.Framework.Mail.MaildirFlags flags = Meziantou.Framework.Mail.MaildirFlags.None) => throw null;
+        public static Meziantou.Framework.Mail.MaildirFolder Create(string path) => throw null;
+        public Meziantou.Framework.Mail.MaildirFolder CreateFolder(string name) => throw null;
+        public void Delete(Meziantou.Framework.Mail.MaildirMessage message) { }
+        public System.Collections.Generic.IEnumerable<(string Name, Meziantou.Framework.Mail.MaildirFolder Folder)> EnumerateFolders() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MaildirMessage> EnumerateMessages() => throw null;
+        public static Meziantou.Framework.Mail.MaildirFolder Open(string path) => throw null;
+        public Meziantou.Framework.Mail.MaildirMessage SetFlags(Meziantou.Framework.Mail.MaildirMessage message, Meziantou.Framework.Mail.MaildirFlags flags) => throw null;
+    }
+
+    public sealed class MaildirMessage
+    {
+        public Meziantou.Framework.Mail.MaildirFlags Flags { get => throw null; }
+        public Meziantou.Framework.Mail.MaildirFolder Folder { get => throw null; }
+        public string FullPath { get => throw null; }
+        public string? Info { get => throw null; }
+        public bool IsNew { get => throw null; }
+        public string Key { get => throw null; }
+        public Meziantou.Framework.Mail.MimeMessage Load(Meziantou.Framework.Mail.MimeReadOptions? options = null) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public enum MboxFormat
+    {
+        Mboxo = 0,
+        Mboxrd = 1,
+        Mboxcl = 2,
+        Mboxcl2 = 3,
+    }
+
+    public sealed class MboxMessage
+    {
+        public System.ReadOnlyMemory<byte> Content { get => throw null; }
+        public System.DateTimeOffset? Date { get => throw null; }
+        public string FromLine { get => throw null; }
+        public Meziantou.Framework.Mail.MimeMessage Message { get => throw null; }
+        public long Offset { get => throw null; }
+        public string? Sender { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MboxReadOptions
+    {
+        public Meziantou.Framework.Mail.MboxFormat Format { get => throw null; set { } }
+        public Meziantou.Framework.Mail.MimeReadOptions MessageOptions { get => throw null; set { } }
+    }
+
+    public static class MboxReader
+    {
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MboxMessage> ReadMessages(System.IO.Stream stream, Meziantou.Framework.Mail.MboxReadOptions? options = null) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.MboxMessage> ReadMessages(string path, Meziantou.Framework.Mail.MboxReadOptions? options = null) => throw null;
+    }
+
+    public sealed class MboxWriter : System.IDisposable
+    {
+        public Meziantou.Framework.Mail.MboxFormat Format { get => throw null; }
+        public MboxWriter(System.IO.Stream stream, Meziantou.Framework.Mail.MboxFormat format = Meziantou.Framework.Mail.MboxFormat.Mboxrd, bool leaveOpen = false) { }
+        public static Meziantou.Framework.Mail.MboxWriter Create(string path, Meziantou.Framework.Mail.MboxFormat format = Meziantou.Framework.Mail.MboxFormat.Mboxrd, bool append = false) => throw null;
+        public void Dispose() { }
+        public void Flush() { }
+        public void Write(Meziantou.Framework.Mail.MimeMessage message, string? sender = null, System.DateTimeOffset? date = null) { }
+        public void Write(System.ReadOnlySpan<byte> content, string? sender, System.DateTimeOffset date) { }
     }
 
     public sealed class MimeContentDisposition
@@ -206,6 +323,38 @@ namespace Meziantou.Framework.Mail
         public int MaxDepth { get => throw null; set { } }
         public int MaxParts { get => throw null; set { } }
         public long MaxSize { get => throw null; set { } }
+    }
+
+    public sealed class MorkDocument
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MorkRow> Rows { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.MorkTable> Tables { get => throw null; }
+        public Meziantou.Framework.Mail.MorkTable? FindTable(string kind) => throw null;
+        public Meziantou.Framework.Mail.MorkRow GetOrAddRow(string scope, string id) => throw null;
+        public Meziantou.Framework.Mail.MorkTable GetOrAddTable(string scope, string id, string? kind = null) => throw null;
+        public static Meziantou.Framework.Mail.MorkDocument Load(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.Mail.MorkDocument Load(System.ReadOnlySpan<byte> data) => throw null;
+        public static Meziantou.Framework.Mail.MorkDocument Load(string path) => throw null;
+        public void Save(System.IO.Stream stream) { }
+        public void Save(string path) { }
+    }
+
+    public sealed class MorkRow
+    {
+        public System.Collections.Generic.IDictionary<string, string> Cells { get => throw null; }
+        public string Id { get => throw null; }
+        public string? this[string column] { get => throw null; set { } }
+        public string Scope { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class MorkTable
+    {
+        public string Id { get => throw null; }
+        public string? Kind { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.MorkRow> Rows { get => throw null; }
+        public string Scope { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public static class MsgFile
@@ -896,6 +1045,54 @@ namespace Meziantou.Framework.Mail
         public System.DateTime? Now { get => throw null; set { } }
         public string RootFolderName { get => throw null; set { } }
         public System.Guid? StoreId { get => throw null; set { } }
+    }
+
+    [System.Flags]
+    public enum ThunderbirdMessageFlags
+    {
+        None = 0,
+        Read = 1,
+        Replied = 2,
+        Marked = 4,
+        Expunged = 8,
+        HasRe = 16,
+        Offline = 128,
+        Watched = 256,
+        Partial = 1024,
+        Queued = 2048,
+        Forwarded = 4096,
+        New = 65536,
+        Ignored = 262144,
+        ImapDeleted = 2097152,
+        Template = 16777216,
+        Attachment = 268435456,
+    }
+
+    public sealed class ThunderbirdMessageSummary
+    {
+        public string? CcList { get => throw null; set { } }
+        public System.DateTimeOffset? Date { get => throw null; set { } }
+        public System.DateTimeOffset? DateReceived { get => throw null; set { } }
+        public Meziantou.Framework.Mail.ThunderbirdMessageFlags Flags { get => throw null; set { } }
+        public long Key { get => throw null; set { } }
+        public long? LineCount { get => throw null; set { } }
+        public string? MessageId { get => throw null; set { } }
+        public long? Offset { get => throw null; set { } }
+        public string? Recipients { get => throw null; set { } }
+        public string? References { get => throw null; set { } }
+        public string? Sender { get => throw null; set { } }
+        public long? Size { get => throw null; set { } }
+        public string? Subject { get => throw null; set { } }
+        public override string ToString() => throw null;
+    }
+
+    public static class ThunderbirdSummary
+    {
+        public const string MessagesRowScope = "ns:msg:db:row:scope:msgs:all";
+        public const string MessagesTableKind = "ns:msg:db:table:kind:msgs";
+        public static Meziantou.Framework.Mail.MorkDocument Create(System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.ThunderbirdMessageSummary> messages) => throw null;
+        public static System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.ThunderbirdMessageSummary> ReadMessages(Meziantou.Framework.Mail.MorkDocument document) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.ThunderbirdMessageSummary> ReadMessages(string path) => throw null;
     }
 
     public static class TnefFile

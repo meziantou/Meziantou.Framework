@@ -9,6 +9,8 @@ Reads and writes email files, without native dependencies:
 - Outlook items (`.msg`, [MS-OXMSG]), read and written with the types of the items of Outlook data files.
 - TNEF streams (`winmail.dat`, [MS-OXTNEF]), read and written with the same types; the `winmail.dat` attachments of
   MIME messages are expanded when they are converted to `EmailMessage`.
+- Mailboxes: mbox files (mboxo, mboxrd, mboxcl, mboxcl2), Maildir folders, Apple Mail `.emlx` files, and the Mork
+  databases of Thunderbird (`.msf` summaries).
 - `EmailMessage`, a model to convert a message from one format to another.
 
 Outlook data files:

@@ -125,35 +125,88 @@ internal static class ZipTestData
         }
     }
 
-    /// <summary>A stream that is not seekable, whose reads return at most a number of bytes.</summary>
-    internal sealed class ForwardOnlyStream(byte[] data, int maxRead) : Stream
+    /// <summary>Creates a read-only stream that cannot seek, like a network stream, whose reads return at most <paramref name="maxRead"/> bytes.</summary>
+    public static RestrictedStream CreateForwardOnlyStream(byte[] data, int maxRead) => CreateForwardOnlyStream(new MemoryStream(data, writable: false), maxRead);
+
+    /// <summary>
+    /// Creates a read-only stream that cannot seek over <paramref name="stream"/>, whose reads return at most
+    /// <paramref name="maxRead"/> bytes (0: no limit). Disposing it disposes <paramref name="stream"/>.
+    /// </summary>
+    public static RestrictedStream CreateForwardOnlyStream(Stream stream, int maxRead)
     {
-        private readonly MemoryStream _inner = new(data, writable: false);
-
-        public override bool CanRead => true;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => false;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
+        return new RestrictedStream(stream, new RestrictedStreamOptions
         {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
+            AllowReading = true,
+            AllowSynchronousCalls = true,
+            AllowAsynchronousCalls = true,
+            MaxReadLength = maxRead,
+        });
+    }
+
+    /// <summary>Creates a write-only stream that cannot seek, like a pipe. Disposing it disposes <paramref name="output"/>.</summary>
+    public static RestrictedStream CreateNonSeekableWriteStream(Stream output)
+    {
+        return new RestrictedStream(output, new RestrictedStreamOptions
+        {
+            AllowWriting = true,
+            AllowSynchronousCalls = true,
+            AllowAsynchronousCalls = true,
+        });
+    }
+
+    /// <summary>The content of the large entries is this chunk, repeated <see cref="LargeEntryChunkCount"/> times (64 MiB).</summary>
+    public const int LargeEntryChunkLength = 1024 * 1024;
+
+    public const int LargeEntryChunkCount = 64;
+
+    /// <summary>
+    /// The managed memory that writing or reading a large entry may allocate: a fraction of its length, so that the test fails
+    /// when the content is buffered in memory.
+    /// </summary>
+    public const long LargeEntryMaxAllocatedBytes = 8 * 1024 * 1024;
+
+    public static byte[] CreateLargeEntryChunk()
+    {
+        var chunk = new byte[LargeEntryChunkLength];
+        for (var i = 0; i < chunk.Length; i++)
+        {
+            chunk[i] = (byte)(i % 251);
         }
 
-        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, Math.Min(count, maxRead));
+        return chunk;
+    }
 
-        public override void Flush()
+    public static uint GetLargeEntryCrc(byte[] chunk)
+    {
+        var crc = new System.IO.Hashing.Crc32();
+        for (var i = 0; i < LargeEntryChunkCount; i++)
         {
+            crc.Append(chunk);
         }
 
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        return crc.GetCurrentHashAsUInt32();
+    }
 
-        public override void SetLength(long value) => throw new NotSupportedException();
+    public static void WriteLargeEntry(Stream stream, byte[] chunk)
+    {
+        for (var i = 0; i < LargeEntryChunkCount; i++)
+        {
+            stream.Write(chunk);
+        }
+    }
 
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    /// <summary>Reads a stream to its end through <paramref name="buffer"/>, and returns its length and its CRC-32.</summary>
+    public static (long Length, uint Crc) ReadLargeEntry(Stream stream, byte[] buffer)
+    {
+        var crc = new System.IO.Hashing.Crc32();
+        long length = 0;
+        int read;
+        while ((read = stream.Read(buffer)) > 0)
+        {
+            crc.Append(buffer.AsSpan(0, read));
+            length += read;
+        }
+
+        return (length, crc.GetCurrentHashAsUInt32());
     }
 }

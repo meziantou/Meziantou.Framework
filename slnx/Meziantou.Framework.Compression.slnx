@@ -5,6 +5,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
+    <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.Compression.InteropTests/Meziantou.Framework.Compression.InteropTests.csproj" />

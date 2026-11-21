@@ -1,3 +1,5 @@
+using System.IO.Compression;
+using System.IO.Pipes;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework.Compression.Tests;
@@ -60,7 +62,7 @@ public sealed class ArchiveFileTests
     [Fact]
     public void DetectFormat_RequiresSeekableStream()
     {
-        using var stream = new ZipTestData.ForwardOnlyStream(File.ReadAllBytes(GetPath("Archive/sample.tar")), 512);
+        using var stream = ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetPath("Archive/sample.tar")), 512);
         Assert.Throws<ArgumentException>("stream", () => ArchiveFile.DetectFormat(stream));
     }
 
@@ -77,7 +79,7 @@ public sealed class ArchiveFileTests
     [MemberData(nameof(CompressedTars))]
     public void ArchiveReader_Tar_NonSeekable(string name)
     {
-        using var reader = ArchiveReader.Create(new ZipTestData.ForwardOnlyStream(File.ReadAllBytes(GetPath(name)), 7));
+        using var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetPath(name)), 7));
         Assert.Equal(ArchiveFormat.Tar, reader.Format);
         var entries = new List<ArchiveEntry>();
         var contents = new Dictionary<string, byte[]>(StringComparer.Ordinal);
@@ -102,7 +104,7 @@ public sealed class ArchiveFileTests
     [Fact]
     public async Task ArchiveReader_Tar_Async_SkipsUnreadContent()
     {
-        await using var reader = ArchiveReader.Create(new ZipTestData.ForwardOnlyStream(File.ReadAllBytes(GetPath("Archive/sample.tar.gz")), 100));
+        await using var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetPath("Archive/sample.tar.gz")), 100));
         var names = new List<string>();
         while (await reader.MoveToNextEntryAsync(TestContext.Current.CancellationToken))
         {
@@ -140,7 +142,7 @@ public sealed class ArchiveFileTests
         Assert.Equal(format, archive.Format);
         var expected = archive.Entries.Select(entry => (entry.FullName, entry.IsDirectory ? "" : Hash(entry))).ToList();
 
-        using var reader = ArchiveReader.Create(new ZipTestData.ForwardOnlyStream(bytes, 333));
+        using var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(bytes, 333));
         Assert.Equal(format, reader.Format);
         var actual = new List<(string, string)>();
         while (reader.MoveToNextEntry())
@@ -149,6 +151,56 @@ public sealed class ArchiveFileTests
         }
 
         Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [MemberData(nameof(CompressedTars))]
+    [InlineData("Zip/deflate.zip")]
+    [InlineData("Zip/descriptor-python.zip")]
+    [InlineData("Zip/streamed-infozip.zip")]
+    [InlineData("Rar/libarchive-rar5-compressed.rar")]
+    [InlineData("Rar/libarchive-rar.rar")]
+    public async Task ArchiveReader_NonSeekableStream_Async(string name)
+    {
+        var bytes = File.ReadAllBytes(GetPath(name));
+        using var archive = ArchiveFile.Open(new MemoryStream(bytes, writable: false));
+        var expected = archive.Entries.Select(entry => (entry.FullName, entry.IsDirectory ? "" : Hash(entry))).ToList();
+
+        // Every read returns one byte, as a slow network stream may
+        await using var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(bytes, 1));
+        var actual = new List<(string, string)>();
+        while (await reader.MoveToNextEntryAsync(TestContext.Current.CancellationToken))
+        {
+            var entry = reader.Entry!;
+            var hash = "";
+            if (!entry.IsDirectory)
+            {
+                var stream = await entry.OpenAsync(TestContext.Current.CancellationToken);
+                await using (stream)
+                {
+                    using var content = new MemoryStream();
+                    await stream.CopyToAsync(content, TestContext.Current.CancellationToken);
+                    hash = Convert.ToHexString(SHA256.HashData(content.ToArray()));
+                }
+            }
+
+            actual.Add((entry.FullName, hash));
+        }
+
+        Assert.Equal(expected, actual);
+    }
+
+    [Theory]
+    [InlineData("Archive/sample.tar")]
+    [InlineData("Archive/sample.tar.xz")]
+    [InlineData("Zip/deflate.zip")]
+    [InlineData("SevenZip/lzma2.7z")]
+    [InlineData("Rar/libarchive-rar5-compressed.rar")]
+    public void Open_NonSeekableStream_Throws(string name)
+    {
+        // Random access needs a seekable stream: ArchiveReader reads the stream forward only
+        using var stream = ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetPath(name)), 1000);
+        Assert.Throws<ArgumentException>("stream", () => ArchiveFile.Open(stream, leaveOpen: true));
     }
 
     [Fact]
@@ -435,6 +487,39 @@ public sealed class ArchiveFileTests
         {
             directory.Delete(recursive: true);
         }
+    }
+
+    [Fact]
+    public async Task Documentation_Pipe()
+    {
+        #region ArchiveReader_Pipe
+        // A pipe is not seekable, like the body of an HTTP request or the standard output of a process
+        using var output = new AnonymousPipeServerStream(PipeDirection.Out);
+        using var input = new AnonymousPipeClientStream(PipeDirection.In, output.ClientSafePipeHandle);
+        var writer = Task.Run(() =>
+        {
+            // Each entry is compressed into the pipe as it is written
+            using var archive = new ZipArchive(output, ZipArchiveMode.Create);
+            foreach (var name in new[] { "a.txt", "b.txt" })
+            {
+                using var stream = new StreamWriter(archive.CreateEntry(name).Open());
+                stream.Write($"Content of {name}");
+            }
+        });
+
+        // The entries are read while the archive is being written
+        using var reader = ArchiveReader.Create(input);
+        var contents = new Dictionary<string, string>(StringComparer.Ordinal);
+        while (reader.MoveToNextEntry())
+        {
+            using var content = new StreamReader(reader.OpenEntryStream());
+            contents[reader.Entry!.FullName] = content.ReadToEnd();
+        }
+
+        await writer;
+        Assert.Equal("Content of b.txt", contents["b.txt"]);
+        #endregion
+        Assert.HasCount(2, contents);
     }
 
     private static void AssertSample(IReadOnlyList<ArchiveEntry> entries, bool readTwice)

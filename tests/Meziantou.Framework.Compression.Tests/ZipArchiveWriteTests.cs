@@ -86,7 +86,7 @@ public sealed class ZipArchiveWriteTests
     {
         var files = CreateFiles();
         using var output = new MemoryStream();
-        Stream stream = seekable ? output : new NonSeekableWriteStream(output);
+        Stream stream = seekable ? output : ZipTestData.CreateNonSeekableWriteStream(output);
         var archive = new ZipArchive(stream, ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, new ZipCompressionOptions { Password = Password });
         await using (archive)
         {
@@ -101,6 +101,55 @@ public sealed class ZipArchiveWriteTests
         }
 
         AssertForwardReader(output.ToArray(), files, new ArchiveReaderOptions { Password = Password });
+    }
+
+    [Theory]
+    [InlineData(ZipCompressionMethod.Stored, ZipEncryption.None)]
+    [InlineData(ZipCompressionMethod.Deflate, ZipEncryption.None)]
+    [InlineData(ZipCompressionMethod.Deflate, ZipEncryption.Aes256)]
+    public void LargeEntry_NonSeekableStreams_ContentIsNotBuffered(ZipCompressionMethod method, ZipEncryption encryption)
+    {
+        var chunk = ZipTestData.CreateLargeEntryChunk();
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.zip");
+        try
+        {
+            var options = new ZipCompressionOptions
+            {
+                CompressionMethod = method,
+                CompressionLevel = CompressionLevel.Fastest,
+                Password = encryption is ZipEncryption.None ? null : Password,
+                Encryption = encryption,
+            };
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            using (var archive = new ZipArchive(ZipTestData.CreateNonSeekableWriteStream(File.Create(path)), ZipArchiveMode.Create, leaveOpen: false, readerOptions: null, options))
+            {
+                using var stream = archive.CreateEntry("large.bin").Open();
+                ZipTestData.WriteLargeEntry(stream, chunk);
+            }
+
+            Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, ZipTestData.LargeEntryMaxAllocatedBytes);
+
+            var buffer = new byte[81920];
+            before = GC.GetAllocatedBytesForCurrentThread();
+            using (var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(File.OpenRead(path), maxRead: 0), new ArchiveReaderOptions { Password = Password }))
+            {
+                Assert.True(reader.MoveToNextEntry());
+                using (var stream = reader.OpenEntryStream())
+                {
+                    var (length, crc) = ZipTestData.ReadLargeEntry(stream, buffer);
+                    Assert.Equal((long)ZipTestData.LargeEntryChunkLength * ZipTestData.LargeEntryChunkCount, length);
+                    Assert.Equal(ZipTestData.GetLargeEntryCrc(chunk), crc);
+                }
+
+                Assert.False(reader.MoveToNextEntry());
+            }
+
+            Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, ZipTestData.LargeEntryMaxAllocatedBytes);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Theory]
@@ -240,7 +289,7 @@ public sealed class ZipArchiveWriteTests
     public void Entries_NotOpenedAreEmptyFiles()
     {
         using var output = new MemoryStream();
-        using (var archive = new ZipArchive(new NonSeekableWriteStream(output), ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, new ZipCompressionOptions { Password = Password }))
+        using (var archive = new ZipArchive(ZipTestData.CreateNonSeekableWriteStream(output), ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, new ZipCompressionOptions { Password = Password }))
         {
             archive.CreateEntry("a.txt");
             archive.CreateEntry("b.txt");
@@ -604,7 +653,7 @@ public sealed class ZipArchiveWriteTests
     internal static byte[] Write(Dictionary<string, byte[]> files, ZipCompressionOptions options, bool seekable)
     {
         using var output = new MemoryStream();
-        using (var archive = new ZipArchive(seekable ? output : new NonSeekableWriteStream(output) as Stream, ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, options))
+        using (var archive = new ZipArchive(seekable ? output : ZipTestData.CreateNonSeekableWriteStream(output), ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, options))
         {
             foreach (var (name, content) in files)
             {
@@ -633,7 +682,7 @@ public sealed class ZipArchiveWriteTests
 
     internal static void AssertForwardReader(byte[] data, Dictionary<string, byte[]> files, ArchiveReaderOptions options)
     {
-        using var reader = ArchiveReader.Create(new ZipTestData.ForwardOnlyStream(data, 13), options);
+        using var reader = ArchiveReader.Create(ZipTestData.CreateForwardOnlyStream(data, 13), options);
         Assert.Equal(ArchiveFormat.Zip, reader.Format);
         var found = 0;
         while (reader.MoveToNextEntry())
@@ -680,33 +729,6 @@ public sealed class ZipArchiveWriteTests
     }
 
     /// <summary>A write-only stream that is not seekable, over a memory stream.</summary>
-    internal sealed class NonSeekableWriteStream(Stream inner) : Stream
-    {
-        public override bool CanRead => false;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => true;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override void Flush() => inner.Flush();
-
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
-    }
-
     private sealed class WriteCountingStream : MemoryStream
     {
         public WriteCountingStream(byte[] data)

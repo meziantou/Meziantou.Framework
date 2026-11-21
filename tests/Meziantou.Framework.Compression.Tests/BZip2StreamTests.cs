@@ -58,6 +58,20 @@ public sealed class BZip2StreamTests
         return data;
     }
 
+    [Fact]
+    public void RoundTrip_NonSeekableStreams()
+    {
+        var data = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "BZip2", "sample.txt"));
+        using var output = new MemoryStream();
+        using (var stream = new BZip2Stream(ZipTestData.CreateNonSeekableWriteStream(output), new BZip2CompressionOptions { BlockSize = 1 }))
+        {
+            stream.Write(data);
+        }
+
+        using var decompress = new BZip2Stream(ZipTestData.CreateForwardOnlyStream(output.ToArray(), 1), CompressionMode.Decompress);
+        Assert.Equal(data, LzmaCodecTests.ReadAll(decompress, 1000));
+    }
+
     [Theory]
     [InlineData("sample.txt.bz2")]
     [InlineData("multistream.bz2")]

@@ -111,7 +111,7 @@ public sealed class RarArchiveTests
     [Fact]
     public void Constructor_NonSeekableStream_Throws()
     {
-        using var stream = new NonSeekableStream(File.ReadAllBytes(GetPath("libarchive-rar.rar")));
+        using var stream = ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetPath("libarchive-rar.rar")), 1000);
         Assert.Throws<ArgumentException>("stream", () => new RarArchive(stream));
     }
 
@@ -558,46 +558,4 @@ public sealed class RarArchiveTests
     internal sealed record ExpectedArchive(string? Comment, ExpectedEntry[] Entries);
 
     internal sealed record ExpectedEntry(string Name, string Type, long Size, string? MTime, string? CTime, string? ATime, string? Attributes, string? Crc32, string? Blake2, string? HostOS, string? Compression, string? Target, string? Sha256);
-
-    /// <summary>A stream that cannot seek, like a network stream, and whose reads return few bytes.</summary>
-    internal sealed class NonSeekableStream(byte[] data) : Stream
-    {
-        private readonly MemoryStream _inner = new(data, writable: false);
-
-        public override bool CanRead => true;
-
-        public override bool CanSeek => false;
-
-        public override bool CanWrite => false;
-
-        public override long Length => throw new NotSupportedException();
-
-        public override long Position
-        {
-            get => throw new NotSupportedException();
-            set => throw new NotSupportedException();
-        }
-
-        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, Math.Min(count, 1000));
-
-        public override void Flush()
-        {
-        }
-
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-
-        public override void SetLength(long value) => throw new NotSupportedException();
-
-        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-
-        protected override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                _inner.Dispose();
-            }
-
-            base.Dispose(disposing);
-        }
-    }
 }

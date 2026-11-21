@@ -270,6 +270,54 @@ public sealed class SevenZipArchiveTests
     }
 
     [Fact]
+    public void NonSeekableStream_Throws()
+    {
+        // The headers of a 7z archive are at its end, and its start header gives their position
+        using var read = ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetPath("lzma2.7z")), 1000);
+        Assert.Throws<ArgumentException>("stream", () => new SevenZipArchive(read));
+
+        using var write = ZipTestData.CreateNonSeekableWriteStream(new MemoryStream());
+        Assert.Throws<ArgumentException>("stream", () => new SevenZipArchive(write, SevenZipArchiveMode.Create, leaveOpen: true));
+    }
+
+    [Theory]
+    [InlineData(SevenZipCompressionMethod.Copy)]
+    [InlineData(SevenZipCompressionMethod.Deflate)]
+    public void LargeEntry_ContentIsNotBuffered(SevenZipCompressionMethod method)
+    {
+        var chunk = ZipTestData.CreateLargeEntryChunk();
+        var path = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid():N}.7z");
+        try
+        {
+            var options = new SevenZipCompressionOptions { Method = method, Level = 1 };
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            using (var archive = new SevenZipArchive(File.Create(path), SevenZipArchiveMode.Create, leaveOpen: false, readerOptions: null, options))
+            {
+                using var stream = archive.CreateEntry("large.bin").Open();
+                ZipTestData.WriteLargeEntry(stream, chunk);
+            }
+
+            Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, ZipTestData.LargeEntryMaxAllocatedBytes);
+
+            var buffer = new byte[81920];
+            before = GC.GetAllocatedBytesForCurrentThread();
+            using (var archive = new SevenZipArchive(File.OpenRead(path)))
+            {
+                using var stream = Assert.Single(archive.Entries).Open();
+                var (length, crc) = ZipTestData.ReadLargeEntry(stream, buffer);
+                Assert.Equal((long)ZipTestData.LargeEntryChunkLength * ZipTestData.LargeEntryChunkCount, length);
+                Assert.Equal(ZipTestData.GetLargeEntryCrc(chunk), crc);
+            }
+
+            Assert.InRange(GC.GetAllocatedBytesForCurrentThread() - before, 0, ZipTestData.LargeEntryMaxAllocatedBytes);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void Read_NotAnArchive()
     {
         Assert.Throws<InvalidDataException>(() => new SevenZipArchive(new MemoryStream(new byte[100])));

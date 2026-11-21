@@ -13,6 +13,7 @@ Reads and writes email files, without native dependencies:
   databases of Thunderbird (`.msf` summaries).
 - Contacts and calendars: vCard 2.1, 3.0 and 4.0, iCalendar with its time zones and the occurrences of its recurrence
   rules, converted to and from the contacts, appointments and tasks of Outlook.
+- Offline address books of Exchange and Outlook (`udetails.oab`, version 4 Full Details, [MS-OXOAB]).
 - `EmailMessage`, a model to convert a message from one format to another.
 
 Outlook data files:
@@ -164,4 +165,5 @@ Assert.HasCount(11, email.Attachments);
 [MS-PST]: https://learn.microsoft.com/openspecs/office_file_formats/ms-pst/141923d5-15ab-4ef1-a524-6dce75aae546
 [MS-OXMSG]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxmsg/b046868c-9fbf-41ae-9ffb-8de2bd4eec82
 [MS-OXTNEF]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxtnef/1f0544d7-30b7-4194-b58f-adc82f3763bb
+[MS-OXOAB]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxoab
 [MS-OXRTFCP]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxrtfcp/65dfe2df-1b69-43fc-8ebd-21819a7463fb

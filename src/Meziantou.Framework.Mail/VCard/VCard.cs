@@ -100,6 +100,50 @@ public sealed class VCard
         return CalendarConverter.ToVCard(contact);
     }
 
+    /// <summary>Creates the card of a record of an offline address book: its names, SMTP address, telephone numbers, postal address, organization and title.</summary>
+    /// <param name="record">The record.</param>
+    /// <returns>The card.</returns>
+    public static VCard FromOab(OabRecord record)
+    {
+        ArgumentNullException.ThrowIfNull(record);
+        var card = new VCard
+        {
+            FormattedName = record.DisplayName,
+            FamilyName = record.Surname,
+            GivenName = record.GivenName,
+            Organization = record.CompanyName,
+            Title = record.Title,
+            Note = record.GetString(0x3004),
+        };
+
+        if (record.DepartmentName is { } department)
+        {
+            card.OrganizationUnits.Add(department);
+        }
+
+        if (record.SmtpAddress is { } smtp)
+        {
+            card.Emails.Add(new VCardValue(smtp, "work", "pref"));
+        }
+
+        foreach (var (id, types) in new (ushort, string[])[] { (0x3A08, ["work", "voice"]), (0x3A09, ["home", "voice"]), (0x3A1C, ["cell"]), (0x3A23, ["work", "fax"]), (0x3A21, ["pager"]) })
+        {
+            if (record.GetString(id) is { Length: > 0 } number)
+            {
+                card.Phones.Add(new VCardValue(number, types));
+            }
+        }
+
+        var address = new VCardAddress { Street = record.GetString(0x3A29), Locality = record.GetString(0x3A27), Region = record.GetString(0x3A28), PostalCode = record.GetString(0x3A2A), Country = record.GetString(0x3A26) };
+        if (address.Street is not null || address.Locality is not null || address.Region is not null || address.PostalCode is not null || address.Country is not null)
+        {
+            address.Types.Add("work");
+            card.Addresses.Add(address);
+        }
+
+        return card;
+    }
+
     /// <summary>Creates the builder of a contact of Outlook from the card. Outlook has two postal addresses (business and home), three email addresses, and a business, home, mobile and fax telephone number: the other values are not converted.</summary>
     /// <returns>The builder.</returns>
     public PstContactBuilder ToPstContactBuilder() => CalendarConverter.ToContact(this);

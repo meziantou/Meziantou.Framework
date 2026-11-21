@@ -17,6 +17,7 @@ description: The email, contact and calendar formats Meziantou.Framework.Mail re
 | Thunderbird summaries, Mork databases | `.msf`, `.mab` | Yes | Yes | [Thunderbird](07-Mailboxes/04-Thunderbird.md) |
 | Contacts (vCard 2.1, 3.0, 4.0) | `.vcf` | Yes | Yes | [vCard](08-ContactsAndCalendars/01-VCard.md) |
 | Calendars (iCalendar), with time zones and recurrences | `.ics` | Yes | Yes | [iCalendar](08-ContactsAndCalendars/02-ICalendar.md) |
+| Offline address books (version 4 Full Details) | `udetails.oab` | Yes | Yes | [Offline address books](09-OfflineAddressBooks/01-Overview.md) |
 
 Each format has its own objects, which give access to everything the format stores: the MAPI properties of an Outlook
 item, the headers and the MIME parts of a message. [EmailMessage](cref:Meziantou.Framework.Mail.EmailMessage) is the

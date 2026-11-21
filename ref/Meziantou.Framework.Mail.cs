@@ -450,6 +450,73 @@ namespace Meziantou.Framework.Mail
         public static byte[] ToByteArray(Meziantou.Framework.Mail.PstMessageBuilder item) => throw null;
     }
 
+    public sealed class OabFile
+    {
+        public uint Checksum { get => throw null; }
+        public Meziantou.Framework.Mail.OabRecord Header { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.OabPropertyDefinition> HeaderProperties { get => throw null; }
+        public string? Name { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.OabPropertyDefinition> RecordProperties { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.OabRecord> Records { get => throw null; }
+        public int? Sequence { get => throw null; }
+        public static Meziantou.Framework.Mail.OabFile Create() => throw null;
+        public static Meziantou.Framework.Mail.OabFile Load(System.IO.Stream stream, bool verifyChecksum = true) => throw null;
+        public static Meziantou.Framework.Mail.OabFile Load(System.ReadOnlySpan<byte> data, bool verifyChecksum = true) => throw null;
+        public static Meziantou.Framework.Mail.OabFile Load(string path, bool verifyChecksum = true) => throw null;
+        public void Save(System.IO.Stream stream) { }
+        public void Save(string path) { }
+        public byte[] ToByteArray() => throw null;
+    }
+
+    public readonly struct OabPropertyDefinition : System.IEquatable<Meziantou.Framework.Mail.OabPropertyDefinition>
+    {
+        public Meziantou.Framework.Mail.OabPropertyFlags Flags { get => throw null; init { } }
+        public Meziantou.Framework.Mail.PstPropertyTag Tag { get => throw null; init { } }
+        public OabPropertyDefinition(Meziantou.Framework.Mail.PstPropertyTag Tag, Meziantou.Framework.Mail.OabPropertyFlags Flags = Meziantou.Framework.Mail.OabPropertyFlags.None) { }
+        public void Deconstruct(out Meziantou.Framework.Mail.PstPropertyTag Tag, out Meziantou.Framework.Mail.OabPropertyFlags Flags) => throw null;
+        public bool Equals(Meziantou.Framework.Mail.OabPropertyDefinition other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.Mail.OabPropertyDefinition left, Meziantou.Framework.Mail.OabPropertyDefinition right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Mail.OabPropertyDefinition left, Meziantou.Framework.Mail.OabPropertyDefinition right) => throw null;
+    }
+
+    [System.Flags]
+    public enum OabPropertyFlags
+    {
+        None = 0,
+        AnrIndex = 1,
+        PrimaryKey = 2,
+    }
+
+    public sealed class OabRecord
+    {
+        public string? Account { get => throw null; }
+        public string? BusinessTelephoneNumber { get => throw null; }
+        public string? CompanyName { get => throw null; }
+        public string? DepartmentName { get => throw null; }
+        public string? DisplayName { get => throw null; }
+        public int? DisplayType { get => throw null; }
+        public string? EmailAddress { get => throw null; }
+        public string? GivenName { get => throw null; }
+        public string? MobileTelephoneNumber { get => throw null; }
+        public int? ObjectType { get => throw null; }
+        public string? OfficeLocation { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> ProxyAddresses { get => throw null; }
+        public string? SmtpAddress { get => throw null; }
+        public string? Surname { get => throw null; }
+        public string? Title { get => throw null; }
+        public System.Collections.Generic.IDictionary<Meziantou.Framework.Mail.PstPropertyTag, object> Values { get => throw null; }
+        public object? Find(ushort id) => throw null;
+        public string? GetString(ushort id) => throw null;
+        public override string ToString() => throw null;
+    }
+
     public sealed class PstAppointment : Meziantou.Framework.Mail.PstMessage
     {
         public string? AllAttendees { get => throw null; }
@@ -1283,6 +1350,7 @@ namespace Meziantou.Framework.Mail
         public string? Uid { get => throw null; set { } }
         public System.Collections.Generic.IList<Meziantou.Framework.Mail.VCardValue> Urls { get => throw null; }
         public Meziantou.Framework.Mail.VCardVersion Version { get => throw null; set { } }
+        public static Meziantou.Framework.Mail.VCard FromOab(Meziantou.Framework.Mail.OabRecord record) => throw null;
         public static Meziantou.Framework.Mail.VCard FromPst(Meziantou.Framework.Mail.PstContact contact) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCard> Load(System.IO.Stream stream) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCard> Load(System.ReadOnlySpan<byte> data) => throw null;

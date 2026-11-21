@@ -1570,6 +1570,8 @@ namespace Meziantou.Framework.Imaging
         public static void Vignette(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void WienerDeconvolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.WienerDeconvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
         public static void WienerDeconvolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.WienerDeconvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerFilter(this Meziantou.Framework.Imaging.Image image, int radius, double? noiseVariance = null, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerFilter(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, double? noiseVariance = null, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions

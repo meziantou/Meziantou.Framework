@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// tiles, levels and compressions), the image data of PNG files (inflation and
 /// reconstruction), the lossy compression of its GIF encoder, the separate planes of its TIFF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing
 /// operations that read pixels or points
-/// they do not control: custom processors, seam carving, inpainting, Wiener deconvolution, line and corner detection, skew estimation,
+/// they do not control: custom processors, seam carving, inpainting, Wiener filtering and deconvolution, line and corner detection, skew estimation,
 /// homography estimation and resizing; the conversions between the pixel formats (and from CMYK inks with the device
 /// formulas, with the clones and vertical flips of the inks); the merging of the pieces of strokes;
 /// the optimal line breaking of text layouts; the texts drawn from glyph masks; the ICC profiles that the color conversions read (named colors, the
@@ -56,6 +56,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-processor", ProcessorTarget) { Seeds = GetProcessorSeeds, Dictionary = Tokens },
         new("imaging-seam-carving", SeamCarvingTarget) { Seeds = GetSeamCarvingSeeds, Dictionary = Tokens },
         new("imaging-inpainting", InpaintingTarget) { Seeds = GetInpaintingSeeds, Dictionary = Tokens },
+        new("imaging-wiener-filter", WienerFilterTarget) { Seeds = GetWienerFilterSeeds, Dictionary = Tokens },
         new("imaging-wiener-deconvolution", WienerDeconvolutionTarget) { Seeds = GetWienerDeconvolutionSeeds, Dictionary = Tokens },
         new("imaging-hough-lines", LinesTarget) { Seeds = GetLinesSeeds, Dictionary = Tokens },
         new("imaging-corners", CornersTarget) { Seeds = GetCornersSeeds, Dictionary = Tokens },

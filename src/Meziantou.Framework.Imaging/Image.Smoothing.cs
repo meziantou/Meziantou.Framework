@@ -2,7 +2,7 @@ using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging;
 
-// Internal entry points of the edge-preserving filters (bilateral, guided) and the radial blur of
+// Internal entry points of the edge-preserving filters (bilateral, guided, adaptive Wiener) and the radial blur of
 // ImageProcessingExtensions, called after argument validation
 public abstract partial class Image
 {
@@ -83,6 +83,28 @@ public abstract partial class Image
         finally
         {
             coefficients.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Applies an adaptive Wiener filter to frames of this image, in place (every displayed frame and the poster when
+    /// <paramref name="frames"/> is <see langword="null"/>). The working copy and the scratch are charged to the image and
+    /// rented before any pixel changes; afterward, on failure, some frames or rows may already be filtered.
+    /// </summary>
+    internal void WienerFilterFrames(ImageFrame[]? frames, int radius, double? noiseVariance, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    {
+        Owner.EnsureCanModify("filter the image");
+        cancellationToken.ThrowIfCancellationRequested();
+        frames ??= GetAllFrames();
+        var format = KernelPixelFormat;
+        using var copy = new WorkingFrameCopy(format, _size, edgeMode, workers: 1, transfer: 0, rowDoublesPerWorker: 0);
+        copy.Prepare(Owner);
+        using var scratch = ResampleWeights.Rent<double>(Owner.Scope, AdaptiveWienerFilterer.GetScratchDoubles(format, _size, radius));
+        _metadata.RemoveStaleThumbnail();
+        foreach (var frame in frames)
+        {
+            using var lease = frame.GetStorage().AcquireLease();
+            RunWorkingCopyKernel(lease, storage => AdaptiveWienerFilterer.Apply(storage, copy, unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, double>(scratch.Span)), radius, noiseVariance, cancellationToken));
         }
     }
 

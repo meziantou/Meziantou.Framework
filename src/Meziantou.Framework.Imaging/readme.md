@@ -610,7 +610,7 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Equalize`,
   `AutoLevels`, `Draw`, row callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows
   or frames updated, but the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`,
-  `MedianBlur`, `PercentileFilter`, `BilateralFilter`, `GuidedFilter`, `RadialBlur`, `WienerDeconvolve`, the morphological filters, `Sharpen`,
+  `MedianBlur`, `PercentileFilter`, `BilateralFilter`, `GuidedFilter`, `WienerFilter`, `RadialBlur`, `WienerDeconvolve`, the morphological filters, `Sharpen`,
   `Equalize`, `AutoLevels`, `ApplyToneCurve` and `ApplyLut` rent their working memory first: exceeding the allocation limit
   leaves the image unchanged. `Flip`
   moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
@@ -887,7 +887,7 @@ color for each pixel from its own one: brightness, contrast, saturation, a tint,
 preview), `ReplaceColor` (a new color for the pixels of one color), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
 `Flatten` (see [Effects](#effects)), `Convolve` (a convolution
 matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `PercentileFilter`, `Sharpen` (an unsharp mask), `DetectEdges`,
-`BilateralFilter`, `GuidedFilter` and `RadialBlur` (see [Edge-preserving smoothing and radial blurs](#edge-preserving-smoothing-and-radial-blurs)), `WienerDeconvolve`
+`BilateralFilter`, `GuidedFilter`, `WienerFilter` and `RadialBlur` (see [Edge-preserving smoothing and radial blurs](#edge-preserving-smoothing-and-radial-blurs)), `WienerDeconvolve`
 (a known blur undone, see [Deconvolution](#deconvolution)), `Erode`, `Dilate`,
 `MorphologicalOpen`, `MorphologicalClose`, `TopHat` and `BlackHat` (see [Morphology](#morphology)), `CorrectPerspective` (a
 quadrilateral straightened into the whole image), `ApplyToneCurve`, `ApplyToneCurves` and `ApplyLut` (gamma, levels,
@@ -1618,7 +1618,8 @@ public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
 
 #### Edge-preserving smoothing and radial blurs
 
-`BilateralFilter(radius, spatialSigma, rangeSigma)` and `GuidedFilter(radius, epsilon)` smooth noise and fine texture
+`BilateralFilter(radius, spatialSigma, rangeSigma)`, `GuidedFilter(radius, epsilon)` and
+`WienerFilter(radius, noiseVariance)` smooth noise and fine texture
 and keep the edges, where a blur would soften them:
 
 - the bilateral filter (Tomasi and Manduchi) replaces every pixel by a mean of the disk of `radius` around it
@@ -1635,6 +1636,14 @@ and keep the edges, where a blur would soften them:
   whatever the radius, and gives OpenCV's `cv2.ximgproc.guidedFilter(image, image, radius, epsilon × 255²)` on 8-bit
   samples with the `Mirror` edge mode (OpenCV reflects). The result can overshoot a little at edges: integer samples are
   clamped, floating-point colors are not.
+- the adaptive Wiener filter `WienerFilter(radius, noiseVariance)` (Lim, 1990) moves every sample `x` toward the mean `μ`
+  of its window of `(2 radius + 1)²` pixels: it becomes `x - min(ν² / σ², 1) (x - μ)`, where `σ²` is the variance of the
+  window and `ν²` that of the noise, a squared fraction of the range (`(4 / 255)²` for a deviation of 4 levels of 255).
+  Without `noiseVariance`, the noise of each sample of each frame is estimated as the mean variance of its windows (the
+  finite ones). Each sample is filtered alone, every result lies between the sample and its window mean, and a noise of
+  0 changes nothing. With the `Zero` edge mode it gives MATLAB's `wiener2(image, [2 radius + 1, 2 radius + 1], noise)`
+  and SciPy's `scipy.signal.wiener`, which pad with zeros. It takes a constant time per pixel whatever the radius (at
+  most 1000), with a second pass to estimate the noise.
 
 `RadialBlur(options)` blurs along lines through a center (`RadialBlurKind.Zoom`: the streaks of a zoom during the
 exposure) or circles around it (`RadialBlurKind.Spin`: a rotation): every pixel becomes the mean of bilinear samples,
@@ -1642,13 +1651,13 @@ evenly spaced at most one pixel apart (up to `MaxSampleCount`, 64 by default), a
 pixel, whose length is `Amount` times its distance to the center (zoom) or `Amount` degrees (spin). The center, in
 stored-pixel coordinates, may be outside the image, and the center pixel keeps its value.
 
-The three filters work like the convolutions: colors premultiplied by alpha, alpha filtered too (the hidden color of a
+The four filters work like the convolutions: colors premultiplied by alpha, alpha filtered too (the hidden color of a
 transparent pixel never spreads), the edge modes of the convolutions, 16-bit precision kept, floating-point samples not
 clipped, and `RadialBlurOptions.WorkingSpace` can average linear light. Each frame is copied as single-precision working
 samples (4 bytes per sample; the guided filter also keeps up to 64 bytes of coefficients per pixel and `2 radius + 3`
 rows of window sums), charged to the image before any pixel changes. The bilateral filter and the radial blur split
-frames of at least 65,536 pixels between up to `MaxDegreeOfParallelism` workers, with the same result; the guided filter
-runs on the calling thread.
+frames of at least 65,536 pixels between up to `MaxDegreeOfParallelism` workers, with the same result; the guided and the
+adaptive Wiener filters run on the calling thread.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_EdgePreservingSmoothing;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -1664,6 +1673,26 @@ public static void DenoisePhoto(string inputPath, string outputPath)
     // time per pixel whatever the radius
     photo.GuidedFilter(radius: 8, epsilon: 0.0025);
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_WienerFilter;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveSensorNoise(string inputPath, string outputPath, string scanPath, string cleanScanPath)
+{
+    // Without a noise variance, the filter estimates it as the mean variance of the 5x5 windows, then smooths the
+    // windows that vary no more than the noise and keeps those that vary more: edges and texture
+    using (var photo = Image.Load(inputPath))
+    {
+        photo.WienerFilter(radius: 2);
+        photo.Save(outputPath);
+    }
+
+    // A known noise: a standard deviation of 4 levels of 255 is a variance of (4 / 255)², as a squared fraction of the range
+    using var scan = Image.Load(scanPath);
+    scan.WienerFilter(radius: 3, noiseVariance: (4 / 255.0) * (4 / 255.0));
+    scan.Save(cleanScanPath);
 }
 ```
 <!-- endref -->

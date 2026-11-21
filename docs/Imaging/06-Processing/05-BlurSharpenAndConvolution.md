@@ -1,6 +1,6 @@
 ---
 title: Blur, sharpen and convolution
-description: Blur, remove specks, smooth noise and keep edges, sharpen with an unsharp mask, add or undo a motion blur, add a zoom or spin blur, apply your own convolution matrix and detect edges.
+description: Blur, remove specks, smooth noise and keep edges with bilateral, guided and adaptive Wiener filters, sharpen with an unsharp mask, add or undo a motion blur, add a zoom or spin blur, apply your own convolution matrix and detect edges.
 ---
 
 These operations compute each pixel from its neighbors. They keep the size, the pixel format, the frames and the
@@ -129,10 +129,40 @@ public static void DenoisePhoto(string inputPath, string outputPath)
 | --- | --- |
 | [BilateralFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BilateralFilter)`(radius, spatialSigma, rangeSigma)` | Every pixel becomes a mean of the disk of `radius` around it, where each neighbor weighs less the farther it is (`spatialSigma`, in pixels) and the more its color differs (`rangeSigma`, a fraction of the range: 0.1 is about 25 levels of 255). The cost grows with the area of the disk |
 | [GuidedFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GuidedFilter)`(radius, epsilon)` | In every window of `2 radius + 1` pixels, the colors that vary less than `√epsilon` (0.01 for about 25 levels of 255) are flattened to their mean, the others are kept. The cost does not depend on the radius |
+| [WienerFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.WienerFilter)`(radius, noiseVariance)` | In every window of `2 radius + 1` pixels, each sample moves toward the mean of the window: all the way where the window varies no more than the noise, and less the more it varies. `noiseVariance` is a squared fraction of the range (`(4 / 255)²` for 4 levels of 255); without it, the noise is estimated from the image. The cost does not depend on the radius |
 
-On gray images, the bilateral filter gives the result of OpenCV's `cv2.bilateralFilter`, and the guided filter the
-result of `cv2.ximgproc.guidedFilter` with the edge mode [Mirror](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Mirror). Colors are filtered
-premultiplied by alpha, so the hidden color of a transparent pixel does not spread.
+On gray images, the bilateral filter gives the result of OpenCV's `cv2.bilateralFilter`, the guided filter the
+result of `cv2.ximgproc.guidedFilter` with the edge mode [Mirror](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Mirror), and the adaptive Wiener filter
+the result of MATLAB's `wiener2` and SciPy's `scipy.signal.wiener` with the edge mode [Zero](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Zero). Colors are
+filtered premultiplied by alpha, so the hidden color of a transparent pixel does not spread.
+
+The adaptive Wiener filter needs no tuning: it estimates the noise as the mean variance of the windows of the image,
+for each color of each frame. That estimate assumes the noise is the same everywhere; on an image with large flat areas
+and a few strong edges, it is close to the noise, while an image full of texture gives a larger estimate and a smoother
+result. Pass the variance when you know the noise of the camera or the scanner:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_WienerFilter;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveSensorNoise(string inputPath, string outputPath, string scanPath, string cleanScanPath)
+{
+    // Without a noise variance, the filter estimates it as the mean variance of the 5x5 windows, then smooths the
+    // windows that vary no more than the noise and keeps those that vary more: edges and texture
+    using (var photo = Image.Load(inputPath))
+    {
+        photo.WienerFilter(radius: 2);
+        photo.Save(outputPath);
+    }
+
+    // A known noise: a standard deviation of 4 levels of 255 is a variance of (4 / 255)², as a squared fraction of the range
+    using var scan = Image.Load(scanPath);
+    scan.WienerFilter(radius: 3, noiseVariance: (4 / 255.0) * (4 / 255.0));
+    scan.Save(cleanScanPath);
+}
+```
+<!-- endref -->
+
+A [WienerFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.WienerFilter) removes noise; to undo a blur, use
+[WienerDeconvolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.WienerDeconvolve) (see [Undo a known blur](#undo-a-known-blur)).
 
 ## Add a zoom or a spin blur
 

@@ -1123,6 +1123,25 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>The noise of a sensor removed by an adaptive Wiener filter.</summary>
+    #region Imaging_WienerFilter
+    public static void RemoveSensorNoise(string inputPath, string outputPath, string scanPath, string cleanScanPath)
+    {
+        // Without a noise variance, the filter estimates it as the mean variance of the 5x5 windows, then smooths the
+        // windows that vary no more than the noise and keeps those that vary more: edges and texture
+        using (var photo = Image.Load(inputPath))
+        {
+            photo.WienerFilter(radius: 2);
+            photo.Save(outputPath);
+        }
+
+        // A known noise: a standard deviation of 4 levels of 255 is a variance of (4 / 255)², as a squared fraction of the range
+        using var scan = Image.Load(scanPath);
+        scan.WienerFilter(radius: 3, noiseVariance: (4 / 255.0) * (4 / 255.0));
+        scan.Save(cleanScanPath);
+    }
+    #endregion
+
     /// <summary>The streaks of a zoom during the exposure, sharp at the center.</summary>
     #region Imaging_RadialBlur
     public static void ZoomBurst(string inputPath, string outputPath)

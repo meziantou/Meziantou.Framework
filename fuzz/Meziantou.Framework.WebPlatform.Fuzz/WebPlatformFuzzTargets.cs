@@ -107,6 +107,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-paged-inline-size", PagedInlineSize) { Seeds = GetPagedInlineSizeSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-paged-inline-size-rows", PagedInlineSizeRows) { Seeds = GetPagedInlineSizeRowSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-paged-inline-size-sliced", PagedInlineSizeSliced) { Seeds = GetPagedInlineSizeSlicedSeeds, Dictionary = PagedInlineSizeTokens },
+        new("webplatform-paged-inline-size-reflowed-rows", PagedInlineSizeReflowedRows) { Seeds = GetPagedInlineSizeReflowedRowSeeds, Dictionary = PagedInlineSizeTokens },
         new("webplatform-videoframe-copyto", VideoFrameCopyTo) { Seeds = GetVideoFrameCopyToSeeds },
         new("webplatform-videoframe-buffer", VideoFrameBuffer) { Seeds = GetVideoFrameBufferSeeds },
         new("webplatform-audiodata", AudioDataTarget) { Seeds = GetAudioDataSeeds },

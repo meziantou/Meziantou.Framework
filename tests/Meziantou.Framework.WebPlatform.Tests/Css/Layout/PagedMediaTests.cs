@@ -537,6 +537,32 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Theory]
+    [InlineData("flex: 0 1 100px", 50)]
+    [InlineData("flex: 0 0 100px", 100)]
+    public void Pages_WrappingFlexContainerBrokenInsideALineThatNoLongerFitsKeepsTheLineInAPageOfAnotherInlineSize(string itemStyle, double secondPageItemWidth)
+    {
+        // The break crosses a flex line of 4 items (80 words each, 2 words of 40px per line, 60 on the first page) in the 400px
+        // wide first page: the items do not fit in one line of the 200px wide page area of the second page. As the content of
+        // each item continues beside the others, they stay in one line there, shrunk (or overflowing the container)
+        var items = string.Concat(Enumerable.Range(0, 4).Select(i => $"<div id=i{i}>{string.Join(' ', Enumerable.Repeat("XXXX", 80))}</div>"));
+        var document = Parse($$"""
+            <style>@page { size: 200px 300px; margin: 0 } @page :first { size: 400px 300px } #c > div { {{itemStyle}} }</style>
+            <div id=c style='display: flex; flex-wrap: wrap'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        for (var i = 0; i < 4; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal((0, new PhysicalRect(i * 100, 0, 100, 300)), rects[0]);
+            Assert.Equal((1, i * secondPageItemWidth, 0d, secondPageItemWidth), (rects[1].Page, rects[1].Rect.X, rects[1].Rect.Y, rects[1].Rect.Width));
+        }
+
+        Assert.Equal(240, CountWords(pages[0].Content));
+        Assert.Equal(320, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Theory]
     [InlineData("auto-fill")]
     [InlineData("auto-fit")]
     public void Pages_AutoRepeatGridContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string repeat)
@@ -559,6 +585,29 @@ public sealed class PagedMediaTests : IDisposable
         var rects = Enumerable.Range(6, 4).Select(i => Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!))).ToList();
         Assert.All(rects, rect => Assert.Equal((1, 0d, 100d, 100d), (rect.Page, rect.Rect.Y, rect.Rect.Width, rect.Rect.Height)));
         Assert.Equal([0d, 100d, 200d, 300d], rects.Select(rect => rect.Rect.X));
+    }
+
+    [Fact]
+    public void Pages_AutoRepeatGridWithAnItemInADefiniteColumnContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
+    {
+        // The ninth item is in the second column: it is placed by the auto-placement cursor, so the items after the break between
+        // two rows start a new row in the page area of the 400px wide second page (4 columns of 100px, 2 in the 200px wide first
+        // page). The ninth item, before the cursor after the eighth one, starts the next row, and the tenth one follows it
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=i{i}{(i == 8 ? " style='grid-column: 2'" : "")}></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { height: 100px }</style>
+            <div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 100px)'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        for (var i = 0; i < 6; i++)
+        {
+            Assert.Equal(0, Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!)).Page);
+        }
+
+        var rects = Enumerable.Range(6, 4).Select(i => Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!))).ToList();
+        Assert.Equal([(1, new PhysicalRect(0, 0, 100, 100)), (1, new PhysicalRect(100, 0, 100, 100)), (1, new PhysicalRect(100, 100, 100, 100)), (1, new PhysicalRect(200, 100, 100, 100))], rects);
     }
 
     [Theory]
@@ -734,6 +783,61 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal((1, 0d, 200d, 10d), (c.Page, c.Rect.X, c.Rect.Width, c.Rect.Height));
         Assert.True(c.Rect.Y >= 50);
         Assert.Equal([120, 64], pages.Select(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Fact]
+    public void Pages_AutoRepeatGridRowWithAnItemThatSpansTheNextRowIsLaidOutInAPageOfAnotherInlineSize()
+    {
+        // The columns are repeated (2 in the 200px wide first page, 4 in the 400px wide page area of the second page): the second
+        // item spans the two rows (100 words, 50 lines), the break crosses the first row (40 lines). In the second page, the
+        // content after the break of both items starts at the start of the page (10 and 20 lines in the 100px wide columns), and
+        // the items after the row start the row after it, beside the second item (in the first and the third columns)
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: grid; grid-template-columns: repeat(auto-fill, 100px); align-items: start'>
+              <div id=a>{{Words(80)}}</div><div id=b style='grid-row: span 2'>{{Words(100)}}</div><div id=c>{{Words(4)}}</div><div id=d>{{Words(4)}}</div>
+            </div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal((1, new PhysicalRect(0, 0, 100, 100)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal((1, new PhysicalRect(100, 0, 100, 200)), GetPageRects(pages, document.GetElementById("b")!)[^1]);
+        var c = Assert.Single(GetPageRects(pages, document.GetElementById("c")!));
+        var d = Assert.Single(GetPageRects(pages, document.GetElementById("d")!));
+        Assert.Equal((1, 0d, 100d, 20d), (c.Page, c.Rect.X, c.Rect.Width, c.Rect.Height));
+        Assert.Equal((1, 200d, c.Rect.Y), (d.Page, d.Rect.X, d.Rect.Y));
+        Assert.True(c.Rect.Y >= 100);
+        Assert.Equal([120, 68], pages.Select(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Fact]
+    public void Pages_GridRowWithASubgridIsLaidOutInAPageOfAnotherInlineSize()
+    {
+        // The second item of the grid is a subgrid of its two rows: its items are in the rows of the grid. The break crosses the
+        // first row (40 lines of the first item, 35 of the first item of the subgrid in the 100px wide columns of the 200px wide
+        // first page): in the 400px wide page area of the second page, the content after the break of both items starts at the
+        // start of the page (5 and 3 lines), and the item of the second row of the subgrid follows the first row
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>
+              <div id=a>{{Words(80)}}</div>
+              <div style='grid-row: span 2; display: grid; grid-template-rows: subgrid; align-items: start'><div id=b>{{Words(70)}}</div><div id=c>{{Words(4)}}</div></div>
+            </div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal((1, new PhysicalRect(0, 0, 200, 50)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal((1, new PhysicalRect(200, 0, 200, 30)), GetPageRects(pages, document.GetElementById("b")!)[^1]);
+        var c = Assert.Single(GetPageRects(pages, document.GetElementById("c")!));
+        Assert.Equal((1, 200d, 200d, 10d), (c.Page, c.Rect.X, c.Rect.Width, c.Rect.Height));
+        Assert.True(c.Rect.Y >= 50);
+        Assert.Equal([120, 34], pages.Select(page => CountWords(page.Content)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }

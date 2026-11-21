@@ -432,7 +432,9 @@ internal sealed partial class GridLayoutAlgorithm
 
         // The content of a page of another inline size that starts between two rows (see LayoutContext.RowResumes): the items after
         // the break start a new row, the items before it are in the rows before (in the previous pages)
+        // (the items after the broken row start the row after it, beside its items that span the rows after it)
         List<int>? newRows = null;
+        HashSet<int>? rowsAfterBrokenRow = null;
         if (_context.RowResumes is { } resumes && resumes.TryGetValue(_box, out var resume))
         {
             for (var i = 1; i < count; i++)
@@ -440,11 +442,15 @@ internal sealed partial class GridLayoutAlgorithm
                 if (resume.StartsRow(_items[i].Box, _items[i - 1].Box))
                 {
                     (newRows ??= []).Add(i);
+                    if (resume.Crossed is { } crossed && crossed.Contains(_items[i - 1].Box) && resume.Following.Contains(_items[i].Box))
+                    {
+                        (rowsAfterBrokenRow ??= []).Add(i);
+                    }
                 }
             }
         }
 
-        GridPlacement.PlaceItems(columns, rows, _explicitColumns.TrackCount, _explicitRows.TrackCount, grid.AutoFlow, columnsInput?.Span, rowsInput?.Span, newRows);
+        GridPlacement.PlaceItems(columns, rows, _explicitColumns.TrackCount, _explicitRows.TrackCount, grid.AutoFlow, columnsInput?.Span, rowsInput?.Span, newRows, rowsAfterBrokenRow);
 
         // A subgridded axis has no implicit tracks: the areas of the items are clamped to the explicit grid
         for (var i = 0; i < count; i++)

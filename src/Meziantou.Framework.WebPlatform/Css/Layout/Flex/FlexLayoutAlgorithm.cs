@@ -984,7 +984,9 @@ internal sealed partial class FlexLayoutAlgorithm
                     // "If the very first uncollected item wouldn't fit, collect just it into the line". The computed percentages
                     // are rounded: the items fit with the tolerance of the layout unit of the browsers, 1/64px (the columns of
                     // 16.66666667% and 8.33333333% of a row of Bootstrap fill it)
-                    if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance)
+                    // (the items of the flex line that the break crosses stay in one line, as the content of each one continues
+                    // beside the others: they are flexed in the new inline size)
+                    if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance && resumed?.ContinuesLine(item.Box, _items[end - 1].Box) != true)
                         break;
 
                     if (resumed is not null && end > start && resumed.StartsRow(item.Box, _items[end - 1].Box))

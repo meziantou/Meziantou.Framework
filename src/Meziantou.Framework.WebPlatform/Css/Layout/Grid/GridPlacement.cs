@@ -233,7 +233,12 @@ internal static class GridPlacement
     /// The indexes of the items that start a new row (in the major axis), after the tracks of the items before them, or null: the
     /// first items of a row broken by a page of another inline size and after its break (see <c>LayoutContext.RowResumes</c>).
     /// </param>
-    public static void PlaceItems(GridAxisPlacement[] columns, GridAxisPlacement[] rows, int explicitColumns, int explicitRows, GridAutoFlow flow, int? columnLimit = null, int? rowLimit = null, List<int>? newRows = null)
+    /// <param name="rowsAfterBrokenRow">
+    /// The indexes of <paramref name="newRows"/> whose item starts the row after the row of the items before it, from the previous
+    /// index of <paramref name="newRows"/> (the items of the broken row), and not after all their rows: beside the items of the
+    /// broken row that span the rows after it. Null when there are none.
+    /// </param>
+    public static void PlaceItems(GridAxisPlacement[] columns, GridAxisPlacement[] rows, int explicitColumns, int explicitRows, GridAutoFlow flow, int? columnLimit = null, int? rowLimit = null, List<int>? newRows = null, HashSet<int>? rowsAfterBrokenRow = null)
     {
         // The algorithm is written for grid-auto-flow: row; with column, the axes are swapped: the "major" axis is the axis in
         // which new tracks are created (the rows for row), the "minor" axis is the other one
@@ -330,10 +335,27 @@ internal static class GridPlacement
         {
             if (i > 0 && newRows is not null && newRows.Contains(i))
             {
-                // (the item starts a new row, after the rows of the items before it)
+                // (the item starts a new row, after the rows of the items before it, or after the row of the items of the broken
+                // row: the auto-placement skips the cells of the ones that span the rows after it)
+                var brokenRowStart = 0;
+                if (rowsAfterBrokenRow?.Contains(i) == true)
+                {
+                    foreach (var newRow in newRows)
+                    {
+                        if (newRow < i)
+                        {
+                            brokenRowStart = Math.Max(brokenRowStart, newRow);
+                        }
+                    }
+                }
+                else
+                {
+                    brokenRowStart = i;
+                }
+
                 for (var j = 0; j < i; j++)
                 {
-                    cursorMajor = Math.Max(cursorMajor, major[j].End);
+                    cursorMajor = Math.Max(cursorMajor, j < brokenRowStart ? major[j].End : major[j].Start + 1);
                 }
 
                 cursorMinor = -minorOffset;

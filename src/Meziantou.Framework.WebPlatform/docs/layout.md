@@ -3235,16 +3235,18 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   (`IsRowContainer`: a table wrapper box, a table grid box and its row groups, a single-line column flex container, a grid
   whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid, a grid whose columns have such a
   repetition and whose items are placed in their order: `grid-auto-flow: row`, not dense, not a subgrid, no item with a
-  definite row or column position, `IsAutoRepeatGridContainer`, a multi-line row flex container whose
+  definite row position (an item with a definite column is placed by the auto-placement cursor), `IsAutoRepeatGridContainer`, a multi-line row flex container whose
   lines are stacked in the order of the items: `flex-wrap: wrap`, not balanced, not a `-webkit-box`, `IsFlexLineContainer`),
   or inside the only row that the break crosses when the rows are stacked (not in a grid nor in a flex line: their items are
   side by side). The flex lines and the rows of such a grid depend on the inline size: in the next segment, the items after
   a break between two flex lines or rows start a new flex line or row (`LayoutContext.RowResumes`, used by
   `FlexLayoutAlgorithm.CollectLines`: the first of them in the order of the items ends the line before it; and by
   `GridPlacement.PlaceItems`: the auto-placement cursor of the first of them moves to the row after the rows of the items
-  before it), so that the items before it are in the lines or rows before the break. The anchor is then the container and its
+  before it, or, after the items of a broken row, to the row after that row, `rowsAfterBrokenRow`: the auto-placement skips
+  the cells of its items that span the rows after it), so that the items before it are in the lines or rows before the break. The anchor is then the container and its
   children after the break (`BreakAnchor.Following`): the next segment starts at the first of them, offset by the break,
-  but not before the end of the other children (which may end later in another inline size, e.g. with another alignment).
+  but not before the end of the other children (which may end later in another inline size, e.g. with another alignment; the
+  items of a subgrid of the rows of the grid are children of the grid, not the subgrid, which ends with its last row).
   The rows are parallel flows that break apart from the flow of their container (a row may continue after the break of the
   strip: a grid item that avoids breaks, the cells of a row, an item whose own break is before the one of the strip), so
   such a page ends the segment only when its content starts with the anchor (`ResolveAnchorOfPage`, checked on the fragments
@@ -3259,7 +3261,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   when `widows` moved a line), and the items whose content ends before the break (`BreakAnchor.Finished`: they must have no
   content in the page after the break, nor be pushed to it, e.g. an item that avoids breaks). The items of a grid row and of a
   flex line are the items of the track that the break crosses (`GetItemTracks`, from the `ParallelStructure` of the
-  container: an item of the row may end before the break or start after it; an item that spans that row and the rows
+  container: an item of the row may end before the break or start after it; an item that starts in that row and spans the
+  rows after it is an item of the row, also in a grid with `auto-fill` columns; the items of a subgrid whose rows are the
+  rows of the grid, `grid-template-rows: subgrid`, are classified by the rows of the subgrid, as items of the grid, when the
+  columns of the grid do not depend on its inline size, `IsRowSubgrid`; an item that spans that row and the rows
   before it, or the two rows that a break between rows separates, is an item of the row in a grid whose columns do not
   depend on its inline size, `BreakAnchor.SpanningItems`: it starts before the others, and the content after the break
   starts after the end of the items of the rows before, `BreakAnchor.Preceding`, which its content may start in; else it
@@ -3282,12 +3287,13 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   both pages, and its rest starts the page at the offset of the break; the anchor of the item then has a `SliceOffset`, and
   the line box must have the same size and content in the strip of the segment). In the next
   segment, the items of a flex line and of a grid with `auto-fill` columns start a new line or row
-  (`RowResume.Crossed`), and the content after the break of each item starts at the same position: the lowest of them, not
+  (`RowResume.Crossed`; the items of the flex line stay in one line, `RowResume.ContinuesLine`, and are flexed in the new
+  inline size), and the content after the break of each item starts at the same position: the lowest of them, not
   before the end of the content of the finished items (`MeasureRowBreak`), by new layouts of the strip that add space before
   the content of the others (`LayoutContext.AnchorPushes`: before the first line box of a block container resumed at a line,
   in `InlineLayoutAlgorithm`; before a block-level box, separating its margins from the margins before it, in
-  `BlockFormattingContext`), at most `MaxRowAlignmentPasses` times. When the items are not in one row in the strip (the items
-  of a flex line that do not fit in one line in another inline size), do not reach the same position, or when an item after
+  `BlockFormattingContext`), at most `MaxRowAlignmentPasses` times. When the items are not in one row in the strip (e.g. the
+  items of a subgrid with block-start padding), do not reach the same position, or when an item after
   the break starts before that position (an item aligned in the row in the strip without the tracks of its items), the segment is
   rejected: `LayoutPages` lays out the previous segment again without ending at that break (`rejectedBreaks`, by the index of
   the first page of the segment), so the page keeps the inline size of the previous one.
@@ -3310,8 +3316,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   of the line box in the inline axis, its block size, and the start of the next line box); the segment then starts at the
   same offset in it (the block-start edge of the content in the strip plus the offset of the break), else it is rejected as
   a row that does not reach the same position (`rejectedBreaks`). A page of another inline size that starts inside a line
-  laid out another way, a multi-column container, a grid whose columns depend on its inline size and whose items are not placed in their order, a
-  row whose items cannot continue side by side in another inline size... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  laid out another way, a multi-column container, a grid whose columns depend on its inline size and whose items are not placed
+  in their order (an item with a definite row, `grid-auto-flow: column` or `dense`), a subgrid whose columns are the columns of
+  its grid (its rows are rows of its own, nested in the row of the grid), a row whose items cannot continue side by side in
+  another inline size... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.

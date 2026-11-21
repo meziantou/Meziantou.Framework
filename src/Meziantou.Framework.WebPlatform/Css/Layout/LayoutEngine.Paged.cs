@@ -771,24 +771,34 @@ internal sealed partial class LayoutEngine
 
         var firstTop = double.PositiveInfinity;
         var previousEnd = double.NegativeInfinity;
-        var containerChildren = container.ChildrenSpan;
-        for (var i = 0; i < container.InFlowChildCount && i < containerChildren.Length; i++)
-        {
-            if (containerChildren[i] is not BoxFragment child || child.Box.IsOutOfFlow || child.Box.IsOutsideMarker)
-                continue;
+        Visit(container, containerTop);
+        return double.IsPositiveInfinity(firstTop) ? null : Math.Max(previousEnd, firstTop + anchor.Offset);
 
-            var (top, bottom, _) = FragmentationFlow.GetBlockRange(child, container.Size, writingDirection, containerTop);
-            if (anchor.Following.Contains(child.Box))
+        // (the items of a subgrid of the rows of a grid are the children of the grid, see FindBreakAnchorIn: the subgrid spans the
+        // rows of the break)
+        void Visit(BoxFragment parent, double parentTop)
+        {
+            var parentChildren = parent.ChildrenSpan;
+            for (var i = 0; i < parent.InFlowChildCount && i < parentChildren.Length; i++)
             {
-                firstTop = Math.Min(firstTop, top);
-            }
-            else
-            {
-                previousEnd = Math.Max(previousEnd, bottom);
+                if (parentChildren[i] is not BoxFragment child || child.Box.IsOutOfFlow || child.Box.IsOutsideMarker)
+                    continue;
+
+                var (top, bottom, _) = FragmentationFlow.GetBlockRange(child, parent.Size, writingDirection, parentTop);
+                if (anchor.Following!.Contains(child.Box))
+                {
+                    firstTop = Math.Min(firstTop, top);
+                }
+                else if (parent.Box.Display.Inside == DisplayInside.Grid && !IsAutoRepeatGridContainer(parent.Box) && IsRowSubgrid(child))
+                {
+                    Visit(child, top);
+                }
+                else
+                {
+                    previousEnd = Math.Max(previousEnd, bottom);
+                }
             }
         }
-
-        return double.IsPositiveInfinity(firstTop) ? null : Math.Max(previousEnd, firstTop + anchor.Offset);
     }
 
     /// <summary>Returns whether a box precedes another box in the tree order of their elements.</summary>
@@ -1169,45 +1179,8 @@ internal sealed partial class LayoutEngine
             }
             else if (itemTracks is { } tracks)
             {
-                if (!tracks.Items.TryGetValue(child, out var itemTrack))
+                if (!ClassifyTrackItem(child, childTop, tracks, box))
                     return null;
-
-                if (itemTrack.End < tracks.Crossed || (tracks.Crossed < 0 && itemTrack.End < tracks.After))
-                {
-                    (preceding ??= []).Add(child.Box);
-                }
-                else if (itemTrack.Start > tracks.Crossed && itemTrack.Start >= tracks.After)
-                {
-                    (following ??= []).Add(child.Box);
-                    if (childTop < firstTop)
-                    {
-                        first = child;
-                        firstTop = childTop;
-                    }
-                }
-                else if (itemTrack.Start == tracks.Crossed && (itemTrack.End == tracks.Crossed || !IsAutoRepeatGridContainer(box.Box)))
-                {
-                    // (an item of a grid whose rows do not depend on its inline size that spans the rows after the row continues
-                    // beside them, as a table cell that spans rows)
-                    crossedCount++;
-                    (crossedItems ??= []).Add((child, childTop));
-                }
-                else if (box.Box.Display.Inside == DisplayInside.Grid && !IsAutoRepeatGridContainer(box.Box)
-                    && itemTrack.Start < (tracks.Crossed >= 0 ? tracks.Crossed : tracks.After) && itemTrack.End >= (tracks.Crossed >= 0 ? tracks.Crossed : tracks.After))
-                {
-                    // (an item of a grid whose rows do not depend on its inline size that spans the rows before the row that the break
-                    // crosses, or the two rows that the break separates, continues beside them: it starts at the start of its first
-                    // row, before the start of the others)
-                    crossedCount++;
-                    (crossedItems ??= []).Add((child, childTop));
-                    (spanning ??= []).Add(child.Box);
-                }
-                else
-                {
-                    // (an item that spans the row that the break crosses and the rows before it in a grid whose rows depend on its
-                    // inline size)
-                    return null;
-                }
             }
             else if (childTop >= position - BreakAnchorEpsilon)
             {
@@ -1282,6 +1255,80 @@ internal sealed partial class LayoutEngine
         }
 
         return inner with { Preceding = preceding ?? inner.Preceding, IsInRows = true, Following = innerFollowing };
+
+        // Classifies an item of a grid or of a multi-line flex container in the rows before the break, after it, or of the row
+        // that the break crosses, by its tracks (see GetItemTracks); false when it cannot be found again after the break
+        bool ClassifyTrackItem(BoxFragment child, double childTop, (Dictionary<BoxFragment, (int Start, int End)> Items, int Crossed, int After) tracks, BoxFragment grid)
+        {
+            if (!tracks.Items.TryGetValue(child, out var itemTrack))
+                return false;
+
+            var isAutoRepeat = IsAutoRepeatGridContainer(grid.Box);
+            if (itemTrack.End < tracks.Crossed || (tracks.Crossed < 0 && itemTrack.End < tracks.After))
+            {
+                (preceding ??= []).Add(child.Box);
+                return true;
+            }
+
+            if (itemTrack.Start > tracks.Crossed && itemTrack.Start >= tracks.After)
+            {
+                (following ??= []).Add(child.Box);
+                if (childTop < firstTop)
+                {
+                    first = child;
+                    firstTop = childTop;
+                }
+
+                return true;
+            }
+
+            // (the items of a subgrid whose rows are the rows of a grid whose rows do not depend on its inline size are in the
+            // rows of the grid: they are classified by the rows of the subgrid, the subgrid itself continues with them)
+            if (grid.Box.Display.Inside == DisplayInside.Grid && !isAutoRepeat && IsRowSubgrid(child))
+            {
+                if (GetItemTracks(child, position - childTop) is not { } subgridTracks)
+                    return false;
+
+                var subgridChildren = child.ChildrenSpan;
+                for (var k = 0; k < child.InFlowChildCount && k < subgridChildren.Length; k++)
+                {
+                    if (subgridChildren[k] is not BoxFragment subgridItem || subgridItem.Box.IsOutOfFlow)
+                        continue;
+
+                    var (subgridItemTop, _, _) = FragmentationFlow.GetBlockRange(subgridItem, child.Size, writingDirection, childTop);
+                    if (!ClassifyTrackItem(subgridItem, subgridItemTop, subgridTracks, child))
+                        return false;
+                }
+
+                return true;
+            }
+
+            if (itemTrack.Start == tracks.Crossed)
+            {
+                // (an item that spans the rows after the row continues beside them, as a table cell that spans rows; in a grid
+                // whose rows depend on its inline size, the items after the row start the row after it, beside the item, see
+                // GridPlacement.PlaceItems)
+                crossedCount++;
+                (crossedItems ??= []).Add((child, childTop));
+                return true;
+            }
+
+            if (grid.Box.Display.Inside == DisplayInside.Grid && !isAutoRepeat
+                && itemTrack.Start < (tracks.Crossed >= 0 ? tracks.Crossed : tracks.After) && itemTrack.End >= (tracks.Crossed >= 0 ? tracks.Crossed : tracks.After))
+            {
+                // (an item of a grid whose rows do not depend on its inline size that spans the rows before the row that the break
+                // crosses, or the two rows that the break separates, continues beside them: it starts at the start of its first
+                // row, before the start of the others)
+                crossedCount++;
+                (crossedItems ??= []).Add((child, childTop));
+                (spanning ??= []).Add(child.Box);
+                return true;
+            }
+
+            // (an item that spans the row that the break crosses and the rows before it in a grid whose rows depend on its inline
+            // size)
+            return false;
+        }
     }
 
     /// <summary>
@@ -1791,9 +1838,15 @@ internal sealed partial class LayoutEngine
     }
 
     /// <summary>
+    /// Returns whether a grid item is a subgrid whose rows are the rows of its grid (<c>grid-template-rows: subgrid</c>): its items
+    /// are in the rows of the grid.
+    /// </summary>
+    private static bool IsRowSubgrid(BoxFragment item) => item.Box.LayoutState is GridContainerState { Subgrid: { Rows: not null } input } subgrid && input.Pass == subgrid.Pass;
+
+    /// <summary>
     /// Returns whether a box is a grid container whose number of columns depends on its inline size (an <c>auto-fill</c> or
     /// <c>auto-fit</c> repetition of its columns, not a subgrid) and whose items are placed in rows in the order of the items
-    /// (<c>grid-auto-flow: row</c>, not dense, no item with a definite row or column position): the items after a break between
+    /// (<c>grid-auto-flow: row</c>, not dense, no item with a definite row position): the items after a break between
     /// two of its rows start a new row in the strip of another inline size (see <see cref="LayoutContext.RowResumes"/>).
     /// </summary>
     private static bool IsAutoRepeatGridContainer(ContainerBox box)
@@ -1810,8 +1863,10 @@ internal sealed partial class LayoutEngine
             if (child is not ContainerBox item || item.IsOutOfFlow)
                 continue;
 
+            // (an item with a definite column is placed by the auto-placement cursor, in the order of the items; not an item with a
+            // definite row)
             var itemGrid = item.Style.Layout.Grid;
-            if (!IsAutomatic(itemGrid.ColumnStart) || !IsAutomatic(itemGrid.ColumnEnd) || !IsAutomatic(itemGrid.RowStart) || !IsAutomatic(itemGrid.RowEnd))
+            if (!IsAutomatic(itemGrid.RowStart) || !IsAutomatic(itemGrid.RowEnd))
                 return false;
         }
 

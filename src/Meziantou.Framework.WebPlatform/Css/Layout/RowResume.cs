@@ -15,4 +15,7 @@ internal sealed record RowResume(HashSet<ContainerBox> Following, HashSet<Contai
         return (Following.Contains(item) && (previous is null || !Following.Contains(previous)))
             || (Crossed is not null && Crossed.Contains(item) && (previous is null || !Crossed.Contains(previous)));
     }
+
+    /// <summary>Returns whether an item is in the flex line or the grid row that the break crosses, after another item of it.</summary>
+    public bool ContinuesLine(ContainerBox item, ContainerBox previous) => Crossed is not null && Crossed.Contains(item) && Crossed.Contains(previous);
 }

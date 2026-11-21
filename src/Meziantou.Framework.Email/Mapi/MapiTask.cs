@@ -53,7 +53,7 @@ public sealed class MapiTask : MapiMessage
 
     /// <summary>Returns the recurrence of the task.</summary>
     /// <returns>The recurrence, or <see langword="null"/> when the task is not recurring.</returns>
-    /// <exception cref="InvalidPstException">The recurrence is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The recurrence is malformed.</exception>
     public MapiRecurrencePattern? GetRecurrence()
     {
         var data = Properties.GetBinary(NamedProperties.TaskRecurrence.Name);

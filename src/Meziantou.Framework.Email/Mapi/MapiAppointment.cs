@@ -79,7 +79,7 @@ public sealed class MapiAppointment : MapiMessage
 
     /// <summary>Returns the recurrence of the appointment.</summary>
     /// <returns>The recurrence, or <see langword="null"/> when the appointment is not recurring.</returns>
-    /// <exception cref="InvalidPstException">The recurrence is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The recurrence is malformed.</exception>
     public MapiRecurrencePattern? GetRecurrence()
     {
         var data = Properties.GetBinary(NamedProperties.AppointmentRecur.Name);

@@ -19,12 +19,12 @@ internal static class Lzfu
         "{\\rtf1\\ansi\\mac\\deff0\\deftab720{\\fonttbl;}{\\f0\\fnil \\froman \\fswiss \\fmodern \\fscript \\fdecor MS Sans SerifSymbolArialTimes New RomanCourier{\\colortbl\\red0\\green0\\blue0\r\n\\par \\pard\\plain\\f0\\fs20\\b\\i\\u\\tab\\tx");
 
     /// <summary>Decompresses a compressed RTF stream.</summary>
-    /// <exception cref="InvalidPstException">The data is not a valid compressed RTF stream.</exception>
+    /// <exception cref="InvalidEmailDataException">The data is not a valid compressed RTF stream.</exception>
     public static byte[] Decompress(ReadOnlySpan<byte> data, long maxSize, bool verifyCrc = true)
     {
         if (data.Length < HeaderSize)
         {
-            throw new InvalidPstException("The compressed RTF is shorter than its header.");
+            throw new InvalidEmailDataException("The compressed RTF is shorter than its header.");
         }
 
         var compressedSize = BinaryPrimitives.ReadUInt32LittleEndian(data);
@@ -33,14 +33,14 @@ internal static class Lzfu
         var crc = BinaryPrimitives.ReadUInt32LittleEndian(data[12..]);
         if (rawSize > maxSize)
         {
-            throw new PstResourceLimitException($"The compressed RTF has {rawSize} bytes, more than the limit of {maxSize} bytes.");
+            throw new EmailResourceLimitException($"The compressed RTF has {rawSize} bytes, more than the limit of {maxSize} bytes.");
         }
 
         // COMPSIZE counts the bytes after itself
         var payloadLength = (int)Math.Min((long)compressedSize - 12, data.Length - HeaderSize);
         if (compressedSize < 12 || payloadLength < 0)
         {
-            throw new InvalidPstException("The compressed RTF has an invalid size.");
+            throw new InvalidEmailDataException("The compressed RTF has an invalid size.");
         }
 
         var payload = data.Slice(HeaderSize, payloadLength);
@@ -52,12 +52,12 @@ internal static class Lzfu
 
         if (type != CompressedType)
         {
-            throw new InvalidPstException($"The compressed RTF has an unknown type 0x{type:X8}.");
+            throw new InvalidEmailDataException($"The compressed RTF has an unknown type 0x{type:X8}.");
         }
 
         if (verifyCrc && PstCrc.Compute(payload) != crc)
         {
-            throw new InvalidPstException("The CRC of the compressed RTF does not match its content.");
+            throw new InvalidEmailDataException("The CRC of the compressed RTF does not match its content.");
         }
 
         var dictionary = new byte[DictionarySize];
@@ -91,7 +91,7 @@ internal static class Lzfu
                 {
                     if (position + 2 > payload.Length)
                     {
-                        throw new InvalidPstException("The compressed RTF is truncated.");
+                        throw new InvalidEmailDataException("The compressed RTF is truncated.");
                     }
 
                     var reference = BinaryPrimitives.ReadUInt16BigEndian(payload[position..]);

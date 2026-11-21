@@ -199,9 +199,9 @@ public sealed class PstFileTests
             using var file = PstFile.Open(path, options);
             Assert.NotEmpty(file.RootFolder.Folders);
         }
-        catch (PstException)
+        catch (EmailException)
         {
-            // InvalidPstException, PstResourceLimitException or UnsupportedPstFeatureException
+            // InvalidEmailDataException, EmailResourceLimitException or UnsupportedEmailFeatureException
         }
         #endregion
     }
@@ -249,8 +249,8 @@ public sealed class PstFileTests
     [Fact]
     public void Open_NotAPstFile()
     {
-        Assert.Throws<InvalidPstException>(() => PstFile.Open(new byte[1024]));
-        Assert.Throws<InvalidPstException>(() => PstFile.Open("!BDN"u8.ToArray()));
+        Assert.Throws<InvalidEmailDataException>(() => PstFile.Open(new byte[1024]));
+        Assert.Throws<InvalidEmailDataException>(() => PstFile.Open("!BDN"u8.ToArray()));
     }
 
     [Fact]
@@ -258,7 +258,7 @@ public sealed class PstFileTests
     {
         var data = File.ReadAllBytes(GetPath("outlook-pst-rs-Empty.pst"));
         data[10] = 99;
-        Assert.Throws<UnsupportedPstFeatureException>(() => PstFile.Open(data));
+        Assert.Throws<UnsupportedEmailFeatureException>(() => PstFile.Open(data));
     }
 
     [Fact]
@@ -266,7 +266,7 @@ public sealed class PstFileTests
     {
         var data = File.ReadAllBytes(GetPath("outlook-pst-rs-Empty.pst"));
         data[40]++;
-        Assert.Throws<InvalidPstException>(() => PstFile.Open(data));
+        Assert.Throws<InvalidEmailDataException>(() => PstFile.Open(data));
         using var file = PstFile.Open(data, new PstReadOptions { VerifyChecksums = false });
         Assert.Equal("Empty", file.Store.DisplayName);
     }
@@ -275,7 +275,7 @@ public sealed class PstFileTests
     public void Read_TruncatedFile()
     {
         var data = File.ReadAllBytes(GetPath("tika-variousBodyTypes.pst"))[..40000];
-        Assert.Throws<InvalidPstException>(() =>
+        Assert.Throws<InvalidEmailDataException>(() =>
         {
             using var file = PstFile.Open(data);
             _ = file.Store;
@@ -308,7 +308,7 @@ public sealed class PstFileTests
         var data = PstWriterTests.WriteSample(PstFormat.Unicode, PstEncryption.Permute);
         using var file = PstFile.Open(data, new PstReadOptions { MaxPropertySize = 50_000 });
         var message = file.GetFolder("Inbox")!.EnumerateItems().First();
-        Assert.Throws<PstResourceLimitException>(() => message.Attachments[1].GetContent());
+        Assert.Throws<EmailResourceLimitException>(() => message.Attachments[1].GetContent());
 
         // Streams are not limited
         using var stream = message.Attachments[1].OpenRead();

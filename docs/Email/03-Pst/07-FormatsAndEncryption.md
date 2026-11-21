@@ -27,4 +27,4 @@ does: the file stores a CRC of the password, and its content is not encrypted wi
 like any other one. Do not rely on the password of a PST file to protect its content.
 
 The files that Windows Information Protection encrypts are not supported: an
-[UnsupportedPstFeatureException](cref:Meziantou.Framework.Email.UnsupportedPstFeatureException) reports them.
+[UnsupportedEmailFeatureException](cref:Meziantou.Framework.Email.UnsupportedEmailFeatureException) reports them.

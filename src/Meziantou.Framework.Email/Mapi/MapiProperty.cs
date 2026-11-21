@@ -41,8 +41,8 @@ public sealed class MapiProperty
     public MapiNamedProperty? NamedProperty { get; }
 
     /// <summary>Gets the value of the property, as the .NET type documented by <see cref="MapiPropertyType"/>, or the raw bytes for the types that have no .NET equivalent.</summary>
-    /// <exception cref="InvalidPstException">The value is malformed.</exception>
-    /// <exception cref="PstResourceLimitException">The value is larger than <see cref="PstReadOptions.MaxPropertySize"/>.</exception>
+    /// <exception cref="InvalidEmailDataException">The value is malformed.</exception>
+    /// <exception cref="EmailResourceLimitException">The value is larger than <see cref="PstReadOptions.MaxPropertySize"/>.</exception>
     public object? Value
     {
         get
@@ -63,7 +63,7 @@ public sealed class MapiProperty
 
     /// <summary>Returns the bytes of the value, as stored in the file (UTF-16 for <see cref="MapiPropertyType.Unicode"/>).</summary>
     /// <returns>The bytes of the value.</returns>
-    /// <exception cref="PstResourceLimitException">The value is larger than <see cref="PstReadOptions.MaxPropertySize"/>.</exception>
+    /// <exception cref="EmailResourceLimitException">The value is larger than <see cref="PstReadOptions.MaxPropertySize"/>.</exception>
     public byte[] GetBytes() => _source.ReadBytes(_raw);
 
     /// <summary>Opens a stream on the bytes of the value. Large values are read block by block.</summary>

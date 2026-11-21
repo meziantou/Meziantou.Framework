@@ -41,19 +41,19 @@ public sealed class PstFile : IDisposable
     public bool IsOfflineFile => _reader.Header.MagicClient == NdbHeader.MagicClientOst;
 
     /// <summary>Gets the message store: the display name of the file and its root folder.</summary>
-    /// <exception cref="InvalidPstException">The file is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The file is malformed.</exception>
     public PstStore Store => _store ??= new PstStore(this);
 
     /// <summary>Gets the root folder of the file, which contains the top of the folder hierarchy and the search folders.</summary>
-    /// <exception cref="InvalidPstException">The file is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The file is malformed.</exception>
     public PstFolder RootFolder => Store.RootFolder;
 
     /// <summary>Opens a file.</summary>
     /// <param name="path">The path of the file.</param>
     /// <param name="options">The options of the reader, or <see langword="null"/> for the default options.</param>
     /// <returns>The opened file.</returns>
-    /// <exception cref="InvalidPstException">The file is not an Outlook data file or is malformed.</exception>
-    /// <exception cref="UnsupportedPstFeatureException">The file uses a format version or an encryption method the library does not support.</exception>
+    /// <exception cref="InvalidEmailDataException">The file is not an Outlook data file or is malformed.</exception>
+    /// <exception cref="UnsupportedEmailFeatureException">The file uses a format version or an encryption method the library does not support.</exception>
     public static PstFile Open(string path, PstReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(path);
@@ -67,8 +67,8 @@ public sealed class PstFile : IDisposable
     /// <param name="leaveOpen"><see langword="true"/> to leave the stream open when the file is disposed.</param>
     /// <returns>The opened file.</returns>
     /// <exception cref="ArgumentException">The stream is not readable or not seekable.</exception>
-    /// <exception cref="InvalidPstException">The stream does not contain an Outlook data file or the file is malformed.</exception>
-    /// <exception cref="UnsupportedPstFeatureException">The file uses a format version or an encryption method the library does not support.</exception>
+    /// <exception cref="InvalidEmailDataException">The stream does not contain an Outlook data file or the file is malformed.</exception>
+    /// <exception cref="UnsupportedEmailFeatureException">The file uses a format version or an encryption method the library does not support.</exception>
     public static PstFile Open(Stream stream, PstReadOptions? options = null, bool leaveOpen = false)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -79,8 +79,8 @@ public sealed class PstFile : IDisposable
     /// <param name="data">The content of the file.</param>
     /// <param name="options">The options of the reader, or <see langword="null"/> for the default options.</param>
     /// <returns>The opened file.</returns>
-    /// <exception cref="InvalidPstException">The data is not an Outlook data file or the file is malformed.</exception>
-    /// <exception cref="UnsupportedPstFeatureException">The file uses a format version or an encryption method the library does not support.</exception>
+    /// <exception cref="InvalidEmailDataException">The data is not an Outlook data file or the file is malformed.</exception>
+    /// <exception cref="UnsupportedEmailFeatureException">The file uses a format version or an encryption method the library does not support.</exception>
     public static PstFile Open(byte[] data, PstReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(data);

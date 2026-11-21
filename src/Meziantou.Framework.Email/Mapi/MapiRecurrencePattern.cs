@@ -75,7 +75,7 @@ public sealed class MapiRecurrencePattern
     internal uint WriterVersion2Value { get; set; } = WriterVersion2;
 
     /// <summary>Parses an AppointmentRecurrencePattern, or only a RecurrencePattern when the data stops after it (such as the recurrence of a task).</summary>
-    /// <exception cref="InvalidPstException">The data is not a valid recurrence pattern.</exception>
+    /// <exception cref="InvalidEmailDataException">The data is not a valid recurrence pattern.</exception>
     internal static MapiRecurrencePattern Parse(ReadOnlySpan<byte> data)
     {
         var reader = new Reader(data);
@@ -84,7 +84,7 @@ public sealed class MapiRecurrencePattern
         var writerVersion = reader.ReadUInt16();
         if (readerVersion != ReaderVersion || writerVersion != WriterVersion)
         {
-            throw new InvalidPstException($"The recurrence pattern has the versions 0x{readerVersion:X4} and 0x{writerVersion:X4} instead of 0x3004.");
+            throw new InvalidEmailDataException($"The recurrence pattern has the versions 0x{readerVersion:X4} and 0x{writerVersion:X4} instead of 0x3004.");
         }
 
         pattern.Frequency = (MapiRecurrenceFrequency)reader.ReadUInt16();
@@ -108,7 +108,7 @@ public sealed class MapiRecurrencePattern
                 pattern.WeekOfMonth = reader.ReadInt32();
                 break;
             default:
-                throw new InvalidPstException($"The recurrence pattern has an unknown type 0x{(int)pattern.PatternType:X4}.");
+                throw new InvalidEmailDataException($"The recurrence pattern has an unknown type 0x{(int)pattern.PatternType:X4}.");
         }
 
         var endType = reader.ReadUInt32();
@@ -139,7 +139,7 @@ public sealed class MapiRecurrencePattern
         pattern.WriterVersion2Value = reader.ReadUInt32();
         if (readerVersion2 != ReaderVersion2)
         {
-            throw new InvalidPstException($"The appointment recurrence pattern has the version 0x{readerVersion2:X8} instead of 0x3006.");
+            throw new InvalidEmailDataException($"The appointment recurrence pattern has the version 0x{readerVersion2:X8} instead of 0x3006.");
         }
 
         pattern.StartTimeOffset = TimeSpan.FromMinutes(reader.ReadUInt32());
@@ -503,7 +503,7 @@ public sealed class MapiRecurrencePattern
         {
             if (length < 0 || length > Remaining)
             {
-                throw new InvalidPstException("The recurrence pattern is truncated.");
+                throw new InvalidEmailDataException("The recurrence pattern is truncated.");
             }
 
             var result = _data.Slice(_position, length);
@@ -527,7 +527,7 @@ public sealed class MapiRecurrencePattern
             var count = ReadUInt32();
             if (count > (uint)(Remaining / elementSize))
             {
-                throw new InvalidPstException("The recurrence pattern is truncated.");
+                throw new InvalidEmailDataException("The recurrence pattern is truncated.");
             }
 
             return (int)count;

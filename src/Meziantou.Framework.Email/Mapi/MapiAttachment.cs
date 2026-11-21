@@ -75,7 +75,7 @@ public sealed class MapiAttachment
 
     /// <summary>Opens a stream on the content of the attachment. Large contents are read block by block.</summary>
     /// <returns>A read-only stream; an empty stream when the attachment has no binary content (such as an embedded message).</returns>
-    /// <exception cref="InvalidPstException">The content is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The content is malformed.</exception>
     public Stream OpenRead()
     {
         var property = Properties.Find(new MapiPropertyTag(PropertyIds.AttachDataBinary, MapiPropertyType.Binary));
@@ -84,8 +84,8 @@ public sealed class MapiAttachment
 
     /// <summary>Returns the content of the attachment.</summary>
     /// <returns>The content; an empty array when the attachment has no binary content.</returns>
-    /// <exception cref="InvalidPstException">The content is malformed.</exception>
-    /// <exception cref="PstResourceLimitException">The content is larger than <see cref="PstReadOptions.MaxPropertySize"/>.</exception>
+    /// <exception cref="InvalidEmailDataException">The content is malformed.</exception>
+    /// <exception cref="EmailResourceLimitException">The content is larger than <see cref="PstReadOptions.MaxPropertySize"/>.</exception>
     public byte[] GetContent()
     {
         var property = Properties.Find(new MapiPropertyTag(PropertyIds.AttachDataBinary, MapiPropertyType.Binary));
@@ -94,8 +94,8 @@ public sealed class MapiAttachment
 
     /// <summary>Returns the embedded message of an attachment whose method is <see cref="MapiAttachmentMethod.EmbeddedMessage"/>.</summary>
     /// <returns>The embedded message, or <see langword="null"/> when the attachment is not an embedded message.</returns>
-    /// <exception cref="InvalidPstException">The embedded message is malformed.</exception>
-    /// <exception cref="PstResourceLimitException">The embedded messages are nested deeper than <see cref="PstReadOptions.MaxEmbeddedMessageDepth"/>.</exception>
+    /// <exception cref="InvalidEmailDataException">The embedded message is malformed.</exception>
+    /// <exception cref="EmailResourceLimitException">The embedded messages are nested deeper than <see cref="PstReadOptions.MaxEmbeddedMessageDepth"/>.</exception>
     public MapiMessage? GetEmbeddedMessage()
     {
         var property = Properties.Find(new MapiPropertyTag(PropertyIds.AttachDataBinary, MapiPropertyType.ObjectReference));

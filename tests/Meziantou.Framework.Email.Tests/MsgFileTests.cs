@@ -175,7 +175,7 @@ public sealed class MsgFileTests
         var item = MsgFile.Load(MsgFile.ToByteArray(message), new PstReadOptions { MaxEmbeddedMessageDepth = 3 });
         var embedded = item.Attachments[0].GetEmbeddedMessage()!.Attachments[0].GetEmbeddedMessage()!.Attachments[0].GetEmbeddedMessage()!;
         Assert.Equal("3", embedded.Subject);
-        Assert.Throws<PstResourceLimitException>(() => embedded.Attachments[0].GetEmbeddedMessage());
+        Assert.Throws<EmailResourceLimitException>(() => embedded.Attachments[0].GetEmbeddedMessage());
     }
 
     [Fact]

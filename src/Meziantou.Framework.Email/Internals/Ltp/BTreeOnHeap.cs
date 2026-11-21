@@ -17,7 +17,7 @@ internal sealed class BTreeOnHeap
         var header = heap.GetItem(hidHeader);
         if (header.Length < 8 || header[0] != Signature)
         {
-            throw new InvalidPstException($"The B-tree-on-heap header 0x{hidHeader:X} of node 0x{heap.Node.Nid:X} is invalid.");
+            throw new InvalidEmailDataException($"The B-tree-on-heap header 0x{hidHeader:X} of node 0x{heap.Node.Nid:X} is invalid.");
         }
 
         KeySize = header[1];
@@ -26,7 +26,7 @@ internal sealed class BTreeOnHeap
         Root = BinaryPrimitives.ReadUInt32LittleEndian(header[4..]);
         if (KeySize is not (2 or 4 or 8 or 16) || DataSize is 0 || Levels > maxDepth)
         {
-            throw new InvalidPstException($"The B-tree-on-heap header 0x{hidHeader:X} of node 0x{heap.Node.Nid:X} is invalid.");
+            throw new InvalidEmailDataException($"The B-tree-on-heap header 0x{hidHeader:X} of node 0x{heap.Node.Nid:X} is invalid.");
         }
     }
 
@@ -56,7 +56,7 @@ internal sealed class BTreeOnHeap
         // In a valid tree, each allocation is referenced once: a repeated reference would make the walk exponential
         if (!visited.Add(hid))
         {
-            throw new InvalidPstException($"The allocation 0x{hid:X} is referenced twice in a B-tree-on-heap of node 0x{_heap.Node.Nid:X}.");
+            throw new InvalidEmailDataException($"The allocation 0x{hid:X} is referenced twice in a B-tree-on-heap of node 0x{_heap.Node.Nid:X}.");
         }
 
         var records = _heap.GetItem(hid);
@@ -65,7 +65,7 @@ internal sealed class BTreeOnHeap
             var recordSize = KeySize + DataSize;
             if (records.Length % recordSize != 0)
             {
-                throw new InvalidPstException($"The leaf 0x{hid:X} of a B-tree-on-heap of node 0x{_heap.Node.Nid:X} has a size that is not a multiple of its records.");
+                throw new InvalidEmailDataException($"The leaf 0x{hid:X} of a B-tree-on-heap of node 0x{_heap.Node.Nid:X} has a size that is not a multiple of its records.");
             }
 
             for (var offset = 0; offset < records.Length; offset += recordSize)
@@ -79,7 +79,7 @@ internal sealed class BTreeOnHeap
         var entrySize = KeySize + 4;
         if (records.Length % entrySize != 0)
         {
-            throw new InvalidPstException($"The index 0x{hid:X} of a B-tree-on-heap of node 0x{_heap.Node.Nid:X} has a size that is not a multiple of its records.");
+            throw new InvalidEmailDataException($"The index 0x{hid:X} of a B-tree-on-heap of node 0x{_heap.Node.Nid:X} has a size that is not a multiple of its records.");
         }
 
         // Copy the children first: the span of the heap stays valid, but the recursion is easier to read this way

@@ -19,13 +19,13 @@ internal sealed class PropertyContext
         Heap = heap;
         if (Heap.ClientSignature != Signature)
         {
-            throw new InvalidPstException($"Node 0x{node.Nid:X} is not a property context (signature 0x{Heap.ClientSignature:X2}).");
+            throw new InvalidEmailDataException($"Node 0x{node.Nid:X} is not a property context (signature 0x{Heap.ClientSignature:X2}).");
         }
 
         var tree = new BTreeOnHeap(Heap, Heap.UserRoot, node.Reader.Options.MaxTreeDepth);
         if (tree.KeySize != 2 || tree.DataSize != 6)
         {
-            throw new InvalidPstException($"The property context of node 0x{node.Nid:X} has records of an invalid size.");
+            throw new InvalidEmailDataException($"The property context of node 0x{node.Nid:X} has records of an invalid size.");
         }
 
         var properties = new List<RawProperty>();

@@ -80,7 +80,7 @@ internal static class PstValidator
                 result.Add(entry);
             }
         }
-        catch (PstException ex)
+        catch (EmailException ex)
         {
             issues.Add(new PstValidationIssue($"The {name} is invalid: {ex.Message}"));
         }
@@ -180,7 +180,7 @@ internal static class PstValidator
                     {
                         map = reader.ReadPage(new Bref(mapOffset, mapOffset), 0x84);
                     }
-                    catch (PstException ex)
+                    catch (EmailException ex)
                     {
                         issues.Add(new PstValidationIssue($"The AMap at offset 0x{mapOffset:X} is invalid: {ex.Message}", mapOffset));
                         map = [];
@@ -210,7 +210,7 @@ internal static class PstValidator
         {
             action();
         }
-        catch (PstException ex)
+        catch (EmailException ex)
         {
             issues.Add(new PstValidationIssue(ex.Message, nodeId: nodeId, blockId: blockId));
         }

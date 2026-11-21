@@ -145,7 +145,7 @@ internal sealed class NameToIdMap
             return pc.Heap.GetItem(hnid).ToArray();
         }
 
-        var subnode = node.GetSubnode(hnid) ?? throw new InvalidPstException($"The subnode 0x{hnid:X} of the name-to-ID map does not exist.");
+        var subnode = node.GetSubnode(hnid) ?? throw new InvalidEmailDataException($"The subnode 0x{hnid:X} of the name-to-ID map does not exist.");
         return subnode.ReadData(maxSize);
     }
 }

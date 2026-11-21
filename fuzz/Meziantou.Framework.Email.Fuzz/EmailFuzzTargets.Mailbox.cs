@@ -4,7 +4,7 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Email.Fuzz;
 
 /// <summary>
-/// The mbox reader reads any input or throws a <see cref="EmailException"/>; the messages it reads, written in an mboxrd file
+/// The mbox reader reads any input or throws an <see cref="EmailException"/>; the messages it reads, written in an mboxrd file
 /// and read back, have the same bytes (with LF line breaks). The .emlx reader reads any input or throws a
 /// <see cref="EmailException"/>, and a message it writes reads back. The Mork reader reads any database that starts with its
 /// header, and a database written and read back has the same tables and rows.

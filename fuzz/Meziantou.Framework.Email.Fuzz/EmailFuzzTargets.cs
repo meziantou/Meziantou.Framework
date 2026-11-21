@@ -5,7 +5,7 @@ using Meziantou.Framework.Email.Internals;
 namespace Meziantou.Framework.Email.Fuzz;
 
 /// <summary>
-/// <see cref="PstFile"/> rejects an invalid file with a <see cref="PstException"/> and never throws anything else, and
+/// <see cref="PstFile"/> rejects an invalid file with an <see cref="EmailException"/> and never throws anything else, and
 /// <see cref="PstFile.Validate"/> reports problems instead of throwing. The writer writes files that read back with the content it
 /// was given and that <see cref="PstFile.Validate"/> accepts, and copying a file that reads gives a file with the same content.
 /// </summary>
@@ -53,7 +53,7 @@ public static partial class EmailFuzzTargets
             using var file = PstFile.Open(bytes, ReadOptions);
             Describe(file.RootFolder, [], readContents: true);
         }
-        catch (PstException)
+        catch (EmailException)
         {
         }
 
@@ -65,7 +65,7 @@ public static partial class EmailFuzzTargets
                 FuzzAssert.False(string.IsNullOrEmpty(issue.Message), "An issue has no message");
             }
         }
-        catch (PstException)
+        catch (EmailException)
         {
         }
     }
@@ -90,7 +90,7 @@ public static partial class EmailFuzzTargets
             FuzzAssert.True(issues.Count == 0, "The copy is not valid: " + string.Join("; ", issues));
             FuzzAssert.Equal(string.Join('\n', expected), string.Join('\n', Describe(copy.Store.IpmSubtree!, [], readContents: true)), "The copy differs from the source");
         }
-        catch (PstException)
+        catch (EmailException)
         {
         }
         catch (InvalidOperationException)
@@ -166,7 +166,7 @@ public static partial class EmailFuzzTargets
         {
             Lzfu.Decompress(data, 1024 * 1024);
         }
-        catch (PstException)
+        catch (EmailException)
         {
         }
 
@@ -182,7 +182,7 @@ public static partial class EmailFuzzTargets
         {
             pattern = MapiRecurrencePattern.Parse(data);
         }
-        catch (PstException)
+        catch (EmailException)
         {
             return;
         }

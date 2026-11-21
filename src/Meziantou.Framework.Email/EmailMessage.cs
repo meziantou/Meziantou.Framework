@@ -282,7 +282,7 @@ public sealed class EmailMessage
     /// <summary>Creates the model of an item of an Outlook data file.</summary>
     /// <param name="message">The item.</param>
     /// <returns>The model.</returns>
-    /// <exception cref="PstException">The item is malformed.</exception>
+    /// <exception cref="EmailException">The item is malformed.</exception>
     public static EmailMessage FromMapi(MapiMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);

@@ -89,7 +89,7 @@ public sealed class PstFolder
     }
 
     /// <summary>Gets the subfolders.</summary>
-    /// <exception cref="InvalidPstException">The hierarchy table of the folder is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The hierarchy table of the folder is malformed.</exception>
     public IReadOnlyList<PstFolder> Folders => _folders ??= LoadFolders();
 
     /// <summary>Returns a subfolder from its display name, ignoring case.</summary>
@@ -126,12 +126,12 @@ public sealed class PstFolder
 
     /// <summary>Enumerates the items of the folder (messages, contacts, appointments...). Each item is read when the enumeration reaches it. A search folder has no items when Outlook stores its results in a structure that [MS-PST] does not document.</summary>
     /// <returns>The items, as <see cref="MapiMessage"/> or one of its derived classes for the items Outlook types (<see cref="MapiContact"/>, <see cref="MapiAppointment"/>, <see cref="MapiTask"/>, <see cref="MapiDistributionList"/>).</returns>
-    /// <exception cref="InvalidPstException">The contents table of the folder or an item is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The contents table of the folder or an item is malformed.</exception>
     public IEnumerable<MapiMessage> EnumerateItems() => EnumerateItems(IsSearchFolder ? NidType.SearchContentsTable : NidType.ContentsTable);
 
     /// <summary>Enumerates the associated items of the folder: the hidden items that store views, rules or settings.</summary>
     /// <returns>The associated items.</returns>
-    /// <exception cref="InvalidPstException">The associated contents table of the folder or an item is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The associated contents table of the folder or an item is malformed.</exception>
     public IEnumerable<MapiMessage> EnumerateAssociatedItems() => EnumerateItems(NidType.AssociatedContentsTable);
 
     /// <summary>Returns the display name of the folder.</summary>

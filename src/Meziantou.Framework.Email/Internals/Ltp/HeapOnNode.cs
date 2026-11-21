@@ -23,13 +23,13 @@ internal sealed class HeapOnNode
         _blocks = blocks;
         if (_blocks.Length == 0)
         {
-            throw new InvalidPstException($"The heap of node 0x{node.Nid:X} has no data.");
+            throw new InvalidEmailDataException($"The heap of node 0x{node.Nid:X} has no data.");
         }
 
         var first = _blocks[0];
         if (first.Length < 12 || first[2] != Signature)
         {
-            throw new InvalidPstException($"The heap of node 0x{node.Nid:X} has an invalid header.");
+            throw new InvalidEmailDataException($"The heap of node 0x{node.Nid:X} has an invalid header.");
         }
 
         ClientSignature = first[3];
@@ -58,20 +58,20 @@ internal sealed class HeapOnNode
 
         if (!IsHid(hid))
         {
-            throw new InvalidPstException($"0x{hid:X} is not a heap identifier (node 0x{Node.Nid:X}).");
+            throw new InvalidEmailDataException($"0x{hid:X} is not a heap identifier (node 0x{Node.Nid:X}).");
         }
 
         var index = (int)((hid >> 5) & 0x7FF);
         var blockIndex = (int)(hid >> 16);
         if (blockIndex >= _blocks.Length)
         {
-            throw new InvalidPstException($"The heap identifier 0x{hid:X} refers to block {blockIndex} of node 0x{Node.Nid:X}, which has {_blocks.Length} blocks.");
+            throw new InvalidEmailDataException($"The heap identifier 0x{hid:X} refers to block {blockIndex} of node 0x{Node.Nid:X}, which has {_blocks.Length} blocks.");
         }
 
         var map = _pageMaps[blockIndex];
         if (index < 1 || index >= map.Length)
         {
-            throw new InvalidPstException($"The heap identifier 0x{hid:X} refers to allocation {index} of a block that has {map.Length - 1} allocations (node 0x{Node.Nid:X}).");
+            throw new InvalidEmailDataException($"The heap identifier 0x{hid:X} refers to allocation {index} of a block that has {map.Length - 1} allocations (node 0x{Node.Nid:X}).");
         }
 
         var start = map[index - 1];
@@ -95,19 +95,19 @@ internal sealed class HeapOnNode
     {
         if (block.Length < 2)
         {
-            throw new InvalidPstException($"Block {blockIndex} of the heap of node 0x{nid:X} is too small.");
+            throw new InvalidEmailDataException($"Block {blockIndex} of the heap of node 0x{nid:X} is too small.");
         }
 
         int pageMapOffset = BinaryPrimitives.ReadUInt16LittleEndian(block);
         if (pageMapOffset + 4 > block.Length)
         {
-            throw new InvalidPstException($"The page map of block {blockIndex} of the heap of node 0x{nid:X} is outside the block.");
+            throw new InvalidEmailDataException($"The page map of block {blockIndex} of the heap of node 0x{nid:X} is outside the block.");
         }
 
         var count = BinaryPrimitives.ReadUInt16LittleEndian(block.AsSpan(pageMapOffset));
         if (pageMapOffset + 4 + ((count + 1) * 2) > block.Length)
         {
-            throw new InvalidPstException($"The page map of block {blockIndex} of the heap of node 0x{nid:X} is outside the block.");
+            throw new InvalidEmailDataException($"The page map of block {blockIndex} of the heap of node 0x{nid:X} is outside the block.");
         }
 
         var offsets = new int[count + 1];
@@ -117,7 +117,7 @@ internal sealed class HeapOnNode
             int offset = BinaryPrimitives.ReadUInt16LittleEndian(block.AsSpan(pageMapOffset + 4 + (i * 2)));
             if (offset < previous || offset > pageMapOffset)
             {
-                throw new InvalidPstException($"The allocation {i} of block {blockIndex} of the heap of node 0x{nid:X} is outside the block.");
+                throw new InvalidEmailDataException($"The allocation {i} of block {blockIndex} of the heap of node 0x{nid:X} is outside the block.");
             }
 
             offsets[i] = offset;

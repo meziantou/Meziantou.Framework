@@ -5,15 +5,15 @@ description: Read untrusted files safely with the limits of the reader, and chec
 
 The reader checks every structure it reads: the checksums of the pages and the blocks, the bounds of the references and the
 levels of the trees. It reports a malformed file with an
-[InvalidPstException](cref:Meziantou.Framework.Email.InvalidPstException), and a feature it does not support with an
-[UnsupportedPstFeatureException](cref:Meziantou.Framework.Email.UnsupportedPstFeatureException). Both derive from
-[PstException](cref:Meziantou.Framework.Email.PstException).
+[InvalidEmailDataException](cref:Meziantou.Framework.Email.InvalidEmailDataException), and a feature it does not support with an
+[UnsupportedEmailFeatureException](cref:Meziantou.Framework.Email.UnsupportedEmailFeatureException). Both derive from
+[EmailException](cref:Meziantou.Framework.Email.EmailException).
 
 ## Limits
 
 [PstReadOptions](cref:Meziantou.Framework.Email.Storage.PstReadOptions) limits the memory and the time a file can use: the size of a
 value loaded in memory, the depth of the trees and of the embedded messages, and the number of pages and blocks kept in a
-cache. A file that exceeds them throws a [PstResourceLimitException](cref:Meziantou.Framework.Email.PstResourceLimitException):
+cache. A file that exceeds them throws an [EmailResourceLimitException](cref:Meziantou.Framework.Email.EmailResourceLimitException):
 
 <!-- ref:../../../tests/Meziantou.Framework.Email.Tests/PstFileTests.cs;region=PstReadOptions_Limits;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -28,9 +28,9 @@ try
     using var file = PstFile.Open(path, options);
     Assert.NotEmpty(file.RootFolder.Folders);
 }
-catch (PstException)
+catch (EmailException)
 {
-    // InvalidPstException, PstResourceLimitException or UnsupportedPstFeatureException
+    // InvalidEmailDataException, EmailResourceLimitException or UnsupportedEmailFeatureException
 }
 ```
 <!-- endref -->

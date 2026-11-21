@@ -78,7 +78,7 @@ internal sealed class PstPropertySource : PropertySource
 
     public NdbNode GetSubnode(uint nid)
     {
-        return Node.GetSubnode(nid) ?? throw new InvalidPstException($"The subnode 0x{nid:X} of node 0x{Node.Nid:X} does not exist.");
+        return Node.GetSubnode(nid) ?? throw new InvalidEmailDataException($"The subnode 0x{nid:X} of node 0x{Node.Nid:X} does not exist.");
     }
 
 }

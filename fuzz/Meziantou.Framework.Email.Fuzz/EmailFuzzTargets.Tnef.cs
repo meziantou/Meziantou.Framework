@@ -3,7 +3,7 @@ using Meziantou.Framework.Fuzzing;
 namespace Meziantou.Framework.Email.Fuzz;
 
 /// <summary>
-/// The TNEF reader reads any input or throws a <see cref="EmailException"/>. Writing an item that was read and reading it
+/// The TNEF reader reads any input or throws an <see cref="EmailException"/>. Writing an item that was read and reading it
 /// back is stable: the first copy can lose what the writer does not write (the attributes of the old versions of Microsoft
 /// Mail become properties), the next ones change nothing. A MIME message with the stream as a winmail.dat attachment converts
 /// to the model without throwing.

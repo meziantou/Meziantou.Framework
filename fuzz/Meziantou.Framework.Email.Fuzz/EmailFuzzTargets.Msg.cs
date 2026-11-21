@@ -5,7 +5,7 @@ using Meziantou.Framework.Email.Internals.Cfb;
 namespace Meziantou.Framework.Email.Fuzz;
 
 /// <summary>
-/// The .msg reader reads any input or throws a <see cref="EmailException"/>. Writing an item that was read and reading it
+/// The .msg reader reads any input or throws an <see cref="EmailException"/>. Writing an item that was read and reading it
 /// back is stable: the first copy can lose what an .msg file of the writer cannot express, the next ones change nothing.
 /// A compound file the writer writes reads back with the same storages and streams.
 /// </summary>

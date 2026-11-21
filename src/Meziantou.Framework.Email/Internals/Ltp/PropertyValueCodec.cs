@@ -19,7 +19,7 @@ internal static class PropertyValueCodec
         var fixedSize = PropertyTypes.GetFixedSize(type);
         if (fixedSize > 0 && data.Length < fixedSize)
         {
-            throw new InvalidPstException($"A value of type {type} has {data.Length} bytes instead of {fixedSize}.");
+            throw new InvalidEmailDataException($"A value of type {type} has {data.Length} bytes instead of {fixedSize}.");
         }
 
         return type switch
@@ -236,13 +236,13 @@ internal static class PropertyValueCodec
 
         if (data.Length < 4)
         {
-            throw new InvalidPstException("A multi-valued property is truncated.");
+            throw new InvalidEmailDataException("A multi-valued property is truncated.");
         }
 
         var count = BinaryPrimitives.ReadUInt32LittleEndian(data);
         if (count > (uint)(data.Length - 4) / 4)
         {
-            throw new InvalidPstException("A multi-valued property has more values than it has bytes.");
+            throw new InvalidEmailDataException("A multi-valued property has more values than it has bytes.");
         }
 
         var result = new List<byte[]>((int)count);
@@ -252,7 +252,7 @@ internal static class PropertyValueCodec
             var end = i + 1 < count ? BinaryPrimitives.ReadUInt32LittleEndian(data[(4 + ((i + 1) * 4))..]) : (uint)data.Length;
             if (start < 4 + (count * 4) || end < start || end > data.Length)
             {
-                throw new InvalidPstException("A value of a multi-valued property is outside the property.");
+                throw new InvalidEmailDataException("A value of a multi-valued property is outside the property.");
             }
 
             result.Add(data[(int)start..(int)end].ToArray());

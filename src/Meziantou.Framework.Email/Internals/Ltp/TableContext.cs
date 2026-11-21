@@ -22,19 +22,19 @@ internal sealed class TableContext
         Heap = heap;
         if (Heap.ClientSignature != Signature)
         {
-            throw new InvalidPstException($"Node 0x{node.Nid:X} is not a table context (signature 0x{Heap.ClientSignature:X2}).");
+            throw new InvalidEmailDataException($"Node 0x{node.Nid:X} is not a table context (signature 0x{Heap.ClientSignature:X2}).");
         }
 
         var info = Heap.GetItem(Heap.UserRoot);
         if (info.Length < 22 || info[0] != Signature)
         {
-            throw new InvalidPstException($"The table context of node 0x{node.Nid:X} has an invalid header.");
+            throw new InvalidEmailDataException($"The table context of node 0x{node.Nid:X} has an invalid header.");
         }
 
         int columnCount = info[1];
         if (info.Length < 22 + (columnCount * 8))
         {
-            throw new InvalidPstException($"The table context of node 0x{node.Nid:X} has an invalid header.");
+            throw new InvalidEmailDataException($"The table context of node 0x{node.Nid:X} has an invalid header.");
         }
 
         End4Bytes = BinaryPrimitives.ReadUInt16LittleEndian(info[2..]);
@@ -45,7 +45,7 @@ internal sealed class TableContext
         var hnidRows = BinaryPrimitives.ReadUInt32LittleEndian(info[14..]);
         if (End4Bytes > End2Bytes || End2Bytes > End1Byte || End1Byte > RowSize || RowSize < 4)
         {
-            throw new InvalidPstException($"The table context of node 0x{node.Nid:X} has an invalid row layout.");
+            throw new InvalidEmailDataException($"The table context of node 0x{node.Nid:X} has an invalid row layout.");
         }
 
         var columns = new TableColumn[columnCount];
@@ -59,7 +59,7 @@ internal sealed class TableContext
                 descriptor[7]);
             if (column.Offset + column.Size > End1Byte || End1Byte + (column.CellExistenceBit / 8) >= RowSize)
             {
-                throw new InvalidPstException($"The column {column.Tag} of the table context of node 0x{node.Nid:X} is outside the row.");
+                throw new InvalidEmailDataException($"The column {column.Tag} of the table context of node 0x{node.Nid:X} is outside the row.");
             }
 
             columns[i] = column;
@@ -74,7 +74,7 @@ internal sealed class TableContext
             var tree = new BTreeOnHeap(Heap, hidRowIndex, node.Reader.Options.MaxTreeDepth);
             if (tree.KeySize != 4 || tree.DataSize is not (2 or 4))
             {
-                throw new InvalidPstException($"The row index of the table context of node 0x{node.Nid:X} has records of an invalid size.");
+                throw new InvalidEmailDataException($"The row index of the table context of node 0x{node.Nid:X} has records of an invalid size.");
             }
 
             tree.ForEach((key, data) =>
@@ -98,7 +98,7 @@ internal sealed class TableContext
         }
         else
         {
-            var subnode = node.GetSubnode(hnidRows) ?? throw new InvalidPstException($"The row matrix 0x{hnidRows:X} of the table context of node 0x{node.Nid:X} does not exist.");
+            var subnode = node.GetSubnode(hnidRows) ?? throw new InvalidEmailDataException($"The row matrix 0x{hnidRows:X} of the table context of node 0x{node.Nid:X} does not exist.");
             _rowBlocks = subnode.ReadDataBlocks();
         }
 
@@ -112,7 +112,7 @@ internal sealed class TableContext
         {
             if (index < 0 || index >= _rowBlockStarts[^1])
             {
-                throw new InvalidPstException($"The row 0x{rowId:X} of the table context of node 0x{node.Nid:X} is outside the row matrix.");
+                throw new InvalidEmailDataException($"The row 0x{rowId:X} of the table context of node 0x{node.Nid:X} is outside the row matrix.");
             }
         }
     }
@@ -161,7 +161,7 @@ internal sealed class TableContext
             }
             else
             {
-                throw new InvalidPstException($"The column {column.Tag} of the table context of node 0x{Heap.Node.Nid:X} has an invalid size ({column.Size}).");
+                throw new InvalidEmailDataException($"The column {column.Tag} of the table context of node 0x{Heap.Node.Nid:X} has an invalid size ({column.Size}).");
             }
         }
 

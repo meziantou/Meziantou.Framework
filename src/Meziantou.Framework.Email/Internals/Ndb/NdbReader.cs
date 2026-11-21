@@ -119,12 +119,12 @@ internal sealed class NdbReader : IDisposable
             return cached;
         }
 
-        var entry = FindBlockEntry(bid) ?? throw new InvalidPstException($"The block 0x{bid:X} does not exist.");
+        var entry = FindBlockEntry(bid) ?? throw new InvalidEmailDataException($"The block 0x{bid:X} does not exist.");
         var layout = Layout;
         var alignedSize = layout.GetAlignedBlockSize(entry.Size);
         if (alignedSize > layout.MaxBlockSize || entry.Ib > (ulong)_length || (ulong)alignedSize > (ulong)_length - entry.Ib)
         {
-            throw new InvalidPstException($"The block 0x{bid:X} is outside the file.");
+            throw new InvalidEmailDataException($"The block 0x{bid:X} is outside the file.");
         }
 
         var raw = new byte[alignedSize];
@@ -147,19 +147,19 @@ internal sealed class NdbReader : IDisposable
 
         if (trailerSize != entry.Size || (trailerBid & ~1UL) != bid)
         {
-            throw new InvalidPstException($"The trailer of the block 0x{bid:X} does not match the block B-tree.");
+            throw new InvalidEmailDataException($"The trailer of the block 0x{bid:X} does not match the block B-tree.");
         }
 
         if (Options.VerifyChecksums)
         {
             if (PstCrc.Compute(raw.AsSpan(0, entry.Size)) != crc)
             {
-                throw new InvalidPstException($"The CRC of the block 0x{bid:X} does not match its content.");
+                throw new InvalidEmailDataException($"The CRC of the block 0x{bid:X} does not match its content.");
             }
 
             if (signature != ComputeSignature(entry.Ib, trailerBid))
             {
-                throw new InvalidPstException($"The signature of the block 0x{bid:X} does not match its position.");
+                throw new InvalidEmailDataException($"The signature of the block 0x{bid:X} does not match its position.");
             }
         }
 
@@ -189,7 +189,7 @@ internal sealed class NdbReader : IDisposable
             total += block.Length;
             if (total > Options.MaxPropertySize)
             {
-                throw new PstResourceLimitException($"The data of the block 0x{bid:X} is larger than the limit of {Options.MaxPropertySize} bytes.");
+                throw new EmailResourceLimitException($"The data of the block 0x{bid:X} is larger than the limit of {Options.MaxPropertySize} bytes.");
             }
 
             result.Add(block);
@@ -203,7 +203,7 @@ internal sealed class NdbReader : IDisposable
         var size = GetDataSize(bid);
         if (size > maxSize)
         {
-            throw new PstResourceLimitException($"The data of the block 0x{bid:X} has {size} bytes, more than the limit of {maxSize} bytes.");
+            throw new EmailResourceLimitException($"The data of the block 0x{bid:X} has {size} bytes, more than the limit of {maxSize} bytes.");
         }
 
         if (!IsInternal(bid))
@@ -218,7 +218,7 @@ internal sealed class NdbReader : IDisposable
             var block = ReadBlock(leaf);
             if (block.Length > result.Length - offset)
             {
-                throw new InvalidPstException($"The data tree 0x{bid:X} has more data than its declared size.");
+                throw new InvalidEmailDataException($"The data tree 0x{bid:X} has more data than its declared size.");
             }
 
             block.CopyTo(result, offset);
@@ -227,7 +227,7 @@ internal sealed class NdbReader : IDisposable
 
         if (offset != result.Length)
         {
-            throw new InvalidPstException($"The data tree 0x{bid:X} has less data than its declared size.");
+            throw new InvalidEmailDataException($"The data tree 0x{bid:X} has less data than its declared size.");
         }
 
         return result;
@@ -238,14 +238,14 @@ internal sealed class NdbReader : IDisposable
     {
         if (!IsInternal(bid))
         {
-            var entry = FindBlockEntry(bid) ?? throw new InvalidPstException($"The block 0x{bid:X} does not exist.");
+            var entry = FindBlockEntry(bid) ?? throw new InvalidEmailDataException($"The block 0x{bid:X} does not exist.");
             return Layout.Is4K ? entry.InflatedSize : entry.Size;
         }
 
         var block = ReadBlock(bid);
         if (block.Length < 8 || block[0] != BlockTypeData)
         {
-            throw new InvalidPstException($"The block 0x{bid:X} is not a data tree.");
+            throw new InvalidEmailDataException($"The block 0x{bid:X} is not a data tree.");
         }
 
         return BinaryPrimitives.ReadUInt32LittleEndian(block.AsSpan(4));
@@ -268,26 +268,26 @@ internal sealed class NdbReader : IDisposable
     {
         if (!visited.Add(bid & ~1UL))
         {
-            throw new InvalidPstException($"The data tree block 0x{bid:X} is referenced twice.");
+            throw new InvalidEmailDataException($"The data tree block 0x{bid:X} is referenced twice.");
         }
 
         var block = ReadBlock(bid);
         if (block.Length < 8 || block[0] != BlockTypeData)
         {
-            throw new InvalidPstException($"The block 0x{bid:X} is not a data tree.");
+            throw new InvalidEmailDataException($"The block 0x{bid:X} is not a data tree.");
         }
 
         int level = block[1];
         if (level is < 1 or > 2 || (expectedLevel >= 0 && level != expectedLevel))
         {
-            throw new InvalidPstException($"The data tree block 0x{bid:X} has an invalid level ({level}).");
+            throw new InvalidEmailDataException($"The data tree block 0x{bid:X} has an invalid level ({level}).");
         }
 
         int count = BinaryPrimitives.ReadUInt16LittleEndian(block.AsSpan(2));
         var size = Layout.IdSize;
         if (8 + (count * size) > block.Length)
         {
-            throw new InvalidPstException($"The data tree block 0x{bid:X} has more entries than it has bytes.");
+            throw new InvalidEmailDataException($"The data tree block 0x{bid:X} has more entries than it has bytes.");
         }
 
         for (var i = 0; i < count; i++)
@@ -297,7 +297,7 @@ internal sealed class NdbReader : IDisposable
             {
                 if (IsInternal(child))
                 {
-                    throw new InvalidPstException($"The data tree block 0x{bid:X} refers to an internal block as data.");
+                    throw new InvalidEmailDataException($"The data tree block 0x{bid:X} refers to an internal block as data.");
                 }
 
                 result.Add(child);
@@ -321,37 +321,37 @@ internal sealed class NdbReader : IDisposable
     {
         if (depth > Options.MaxTreeDepth)
         {
-            throw new PstResourceLimitException($"The subnode tree of node 0x{parentNid:X} is deeper than the limit of {Options.MaxTreeDepth} levels.");
+            throw new EmailResourceLimitException($"The subnode tree of node 0x{parentNid:X} is deeper than the limit of {Options.MaxTreeDepth} levels.");
         }
 
         if (!visited.Add(bid & ~1UL))
         {
-            throw new InvalidPstException($"The subnode block 0x{bid:X} is referenced twice.");
+            throw new InvalidEmailDataException($"The subnode block 0x{bid:X} is referenced twice.");
         }
 
         if (!IsInternal(bid))
         {
-            throw new InvalidPstException($"The subnode tree of node 0x{parentNid:X} refers to a data block (0x{bid:X}).");
+            throw new InvalidEmailDataException($"The subnode tree of node 0x{parentNid:X} refers to a data block (0x{bid:X}).");
         }
 
         var block = ReadBlock(bid);
         var headerSize = Layout.IsAnsi ? 4 : 8;
         if (block.Length < headerSize || block[0] != BlockTypeSubnode)
         {
-            throw new InvalidPstException($"The block 0x{bid:X} is not a subnode tree.");
+            throw new InvalidEmailDataException($"The block 0x{bid:X} is not a subnode tree.");
         }
 
         int level = block[1];
         if (level > 1 || (expectedLevel >= 0 && level != expectedLevel))
         {
-            throw new InvalidPstException($"The subnode block 0x{bid:X} has an invalid level ({level}).");
+            throw new InvalidEmailDataException($"The subnode block 0x{bid:X} has an invalid level ({level}).");
         }
 
         int count = BinaryPrimitives.ReadUInt16LittleEndian(block.AsSpan(2));
         var entrySize = level == 0 ? Layout.SubnodeLeafEntrySize : Layout.SubnodeIntermediateEntrySize;
         if (headerSize + (count * entrySize) > block.Length)
         {
-            throw new InvalidPstException($"The subnode block 0x{bid:X} has more entries than it has bytes.");
+            throw new InvalidEmailDataException($"The subnode block 0x{bid:X} has more entries than it has bytes.");
         }
 
         var size = Layout.IdSize;
@@ -389,14 +389,14 @@ internal sealed class NdbReader : IDisposable
             zlib.ReadExactly(result);
             if (zlib.ReadByte() >= 0)
             {
-                throw new InvalidPstException($"The compressed block 0x{bid:X} has more data than its inflated size.");
+                throw new InvalidEmailDataException($"The compressed block 0x{bid:X} has more data than its inflated size.");
             }
 
             return result;
         }
         catch (Exception ex) when (ex is InvalidDataException or EndOfStreamException)
         {
-            throw new InvalidPstException($"The compressed block 0x{bid:X} is invalid.", ex);
+            throw new InvalidEmailDataException($"The compressed block 0x{bid:X} is invalid.", ex);
         }
     }
 
@@ -411,7 +411,7 @@ internal sealed class NdbReader : IDisposable
         var layout = Layout;
         if (bref.Ib > (ulong)_length || (ulong)layout.PageSize > (ulong)_length - bref.Ib)
         {
-            throw new InvalidPstException($"The page 0x{bref.Bid:X} is outside the file.");
+            throw new InvalidEmailDataException($"The page 0x{bref.Bid:X} is outside the file.");
         }
 
         var page = new byte[layout.PageSize];
@@ -433,24 +433,24 @@ internal sealed class NdbReader : IDisposable
 
         if (trailer[0] != pageType || trailer[1] != pageType)
         {
-            throw new InvalidPstException($"The page 0x{bref.Bid:X} has the type 0x{trailer[0]:X2} instead of 0x{pageType:X2}.");
+            throw new InvalidEmailDataException($"The page 0x{bref.Bid:X} has the type 0x{trailer[0]:X2} instead of 0x{pageType:X2}.");
         }
 
         if (bid != bref.Bid)
         {
-            throw new InvalidPstException($"The page at offset 0x{bref.Ib:X} has the identifier 0x{bid:X} instead of 0x{bref.Bid:X}.");
+            throw new InvalidEmailDataException($"The page at offset 0x{bref.Ib:X} has the identifier 0x{bid:X} instead of 0x{bref.Bid:X}.");
         }
 
         if (Options.VerifyChecksums)
         {
             if (PstCrc.Compute(page.AsSpan(0, layout.PageDataSize)) != crc)
             {
-                throw new InvalidPstException($"The CRC of the page 0x{bref.Bid:X} does not match its content.");
+                throw new InvalidEmailDataException($"The CRC of the page 0x{bref.Bid:X} does not match its content.");
             }
 
             if (signature != ComputeSignature(bref.Ib, bref.Bid))
             {
-                throw new InvalidPstException($"The signature of the page 0x{bref.Bid:X} does not match its position.");
+                throw new InvalidEmailDataException($"The signature of the page 0x{bref.Bid:X} does not match its position.");
             }
         }
 
@@ -487,18 +487,18 @@ internal sealed class NdbReader : IDisposable
 
         if (expectedLevel >= 0 && level != expectedLevel)
         {
-            throw new InvalidPstException($"The B-tree page 0x{bref.Bid:X} has the level {level} instead of {expectedLevel}.");
+            throw new InvalidEmailDataException($"The B-tree page 0x{bref.Bid:X} has the level {level} instead of {expectedLevel}.");
         }
 
         if (level > Options.MaxTreeDepth)
         {
-            throw new PstResourceLimitException($"The B-tree is deeper than the limit of {Options.MaxTreeDepth} levels.");
+            throw new EmailResourceLimitException($"The B-tree is deeper than the limit of {Options.MaxTreeDepth} levels.");
         }
 
         var expectedEntrySize = level > 0 ? layout.BTreeEntrySize : pageType == PageTypeNodeBTree ? layout.NodeBTreeEntrySize : layout.BlockBTreeEntrySize;
         if (entrySize < expectedEntrySize || count * entrySize > layout.BTreeEntriesSize)
         {
-            throw new InvalidPstException($"The B-tree page 0x{bref.Bid:X} has invalid entries.");
+            throw new InvalidEmailDataException($"The B-tree page 0x{bref.Bid:X} has invalid entries.");
         }
 
         return new BTreePageInfo(page, count, entrySize, level);
@@ -513,7 +513,7 @@ internal sealed class NdbReader : IDisposable
         {
             if (depth > Options.MaxTreeDepth)
             {
-                throw new PstResourceLimitException($"The B-tree is deeper than the limit of {Options.MaxTreeDepth} levels.");
+                throw new EmailResourceLimitException($"The B-tree is deeper than the limit of {Options.MaxTreeDepth} levels.");
             }
 
             var info = ReadBTreePage(bref, pageType, expectedLevel);
@@ -573,7 +573,7 @@ internal sealed class NdbReader : IDisposable
             var (bref, level) = stack.Pop();
             if (!visited.Add(bref.Ib))
             {
-                throw new InvalidPstException($"The B-tree page 0x{bref.Bid:X} is referenced twice.");
+                throw new InvalidEmailDataException($"The B-tree page 0x{bref.Bid:X} is referenced twice.");
             }
 
             var info = ReadBTreePage(bref, pageType, level);
@@ -628,7 +628,7 @@ internal sealed class NdbReader : IDisposable
         {
             if (offset < 0 || offset > _length - buffer.Length)
             {
-                throw new InvalidPstException($"The structure at offset 0x{offset:X} is outside the file.");
+                throw new InvalidEmailDataException($"The structure at offset 0x{offset:X} is outside the file.");
             }
 
             _stream.Position = offset;

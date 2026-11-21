@@ -148,7 +148,7 @@ public sealed class TnefFileTests
         Assert.Equal("Inner", embedded.Subject);
         Assert.Equal("inner"u8.ToArray(), embedded.Attachments.Single().GetContent());
         Assert.HasCount(10_001, message.Attachments[1].GetContent());
-        Assert.Throws<PstResourceLimitException>(() => TnefFile.Load(bytes, new PstReadOptions { MaxEmbeddedMessageDepth = 0 }).Attachments[0].GetEmbeddedMessage());
+        Assert.Throws<EmailResourceLimitException>(() => TnefFile.Load(bytes, new PstReadOptions { MaxEmbeddedMessageDepth = 0 }).Attachments[0].GetEmbeddedMessage());
     }
 
     [Fact]

@@ -33,13 +33,13 @@ internal sealed class PstAttachmentSource : AttachmentSource
             var value = reference.GetBytes();
             if (value.Length < 4)
             {
-                throw new InvalidPstException("The reference to an embedded message is truncated.");
+                throw new InvalidEmailDataException("The reference to an embedded message is truncated.");
             }
 
             nid = BinaryPrimitives.ReadUInt32LittleEndian(value);
         }
 
-        var node = _node.GetSubnode(nid) ?? throw new InvalidPstException($"The embedded message 0x{nid:X} of attachment 0x{_node.Nid:X} does not exist.");
+        var node = _node.GetSubnode(nid) ?? throw new InvalidEmailDataException($"The embedded message 0x{nid:X} of attachment 0x{_node.Nid:X} does not exist.");
         return PstMessageSource.Load(_context, node, embeddingDepth);
     }
 }

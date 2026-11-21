@@ -48,7 +48,7 @@ internal static class PstCopier
                 {
                     value = property.Value;
                 }
-                catch (PstException)
+                catch (EmailException)
                 {
                     value = null;
                 }

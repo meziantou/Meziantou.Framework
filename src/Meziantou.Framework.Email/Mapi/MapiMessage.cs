@@ -164,16 +164,16 @@ public class MapiMessage
     public bool HasAttachments => Attachments.Count > 0;
 
     /// <summary>Gets the recipients of the message.</summary>
-    /// <exception cref="InvalidPstException">The recipient table is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The recipient table is malformed.</exception>
     public IReadOnlyList<MapiRecipient> Recipients => _recipients ??= LoadRecipients();
 
     /// <summary>Gets the attachments of the item.</summary>
-    /// <exception cref="InvalidPstException">The attachment table is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The attachment table is malformed.</exception>
     public IReadOnlyList<MapiAttachment> Attachments => _attachments ??= LoadAttachments();
 
     /// <summary>Returns the RTF body, decompressed from the compressed RTF property.</summary>
     /// <returns>The RTF, or <see langword="null"/> when the message has no RTF body.</returns>
-    /// <exception cref="InvalidPstException">The compressed RTF is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The compressed RTF is malformed.</exception>
     public byte[]? GetRtfBody()
     {
         var property = Properties.Find(PropertyIds.RtfCompressed);
@@ -193,7 +193,7 @@ public class MapiMessage
     {
         if (embeddingDepth > options.MaxEmbeddedMessageDepth)
         {
-            throw new PstResourceLimitException($"The embedded messages are nested deeper than the limit of {options.MaxEmbeddedMessageDepth} levels.");
+            throw new EmailResourceLimitException($"The embedded messages are nested deeper than the limit of {options.MaxEmbeddedMessageDepth} levels.");
         }
     }
 

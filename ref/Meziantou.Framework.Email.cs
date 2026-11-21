@@ -93,12 +93,6 @@ namespace Meziantou.Framework.Email
         public InvalidEmailDataException(string? message, System.Exception? innerException) { }
     }
 
-    public sealed class InvalidPstException : Meziantou.Framework.Email.PstException
-    {
-        public InvalidPstException(string? message) { }
-        public InvalidPstException(string? message, System.Exception? innerException) { }
-    }
-
     public sealed class MailboxAddress : System.IEquatable<Meziantou.Framework.Email.MailboxAddress>
     {
         public string Address { get => throw null; }
@@ -235,22 +229,10 @@ namespace Meziantou.Framework.Email
         public long MaxSize { get => throw null; set { } }
     }
 
-    public class PstException : Meziantou.Framework.Email.EmailException
+    public sealed class UnsupportedEmailFeatureException : Meziantou.Framework.Email.EmailException
     {
-        public PstException(string? message) { }
-        public PstException(string? message, System.Exception? innerException) { }
-    }
-
-    public sealed class PstResourceLimitException : Meziantou.Framework.Email.PstException
-    {
-        public PstResourceLimitException(string? message) { }
-        public PstResourceLimitException(string? message, System.Exception? innerException) { }
-    }
-
-    public sealed class UnsupportedPstFeatureException : Meziantou.Framework.Email.PstException
-    {
-        public UnsupportedPstFeatureException(string? message) { }
-        public UnsupportedPstFeatureException(string? message, System.Exception? innerException) { }
+        public UnsupportedEmailFeatureException(string? message) { }
+        public UnsupportedEmailFeatureException(string? message, System.Exception? innerException) { }
     }
 }
 namespace Meziantou.Framework.Email.Calendar

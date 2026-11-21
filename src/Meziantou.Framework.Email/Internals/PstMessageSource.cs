@@ -62,7 +62,7 @@ internal sealed class PstMessageSource : MessageSource
         for (var i = 0; i < table.RowCount; i++)
         {
             var nid = table.GetRowId(i);
-            var attachmentNode = Node.GetSubnode(nid) ?? throw new InvalidPstException($"The attachment 0x{nid:X} of message 0x{Node.Nid:X} does not exist.");
+            var attachmentNode = Node.GetSubnode(nid) ?? throw new InvalidEmailDataException($"The attachment 0x{nid:X} of message 0x{Node.Nid:X} does not exist.");
             result.Add(new MapiAttachment(message, new PstAttachmentSource(Context, attachmentNode)));
         }
 

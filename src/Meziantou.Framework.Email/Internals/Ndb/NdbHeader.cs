@@ -45,7 +45,7 @@ internal sealed class NdbHeader
     {
         if (data.Length < 512 || BinaryPrimitives.ReadUInt32LittleEndian(data) != Magic)
         {
-            throw new InvalidPstException("The file is not an Outlook data file: the signature '!BDN' is missing.");
+            throw new InvalidEmailDataException("The file is not an Outlook data file: the signature '!BDN' is missing.");
         }
 
         var magicClient = BinaryPrimitives.ReadUInt16LittleEndian(data[8..]);
@@ -56,12 +56,12 @@ internal sealed class NdbHeader
             14 or 15 => NdbLayout.Ansi,
             23 => NdbLayout.Unicode,
             36 => NdbLayout.Unicode4K,
-            _ => throw new UnsupportedPstFeatureException($"The version {version} of the file format is not supported."),
+            _ => throw new UnsupportedEmailFeatureException($"The version {version} of the file format is not supported."),
         };
 
         if (data.Length < layout.HeaderSize)
         {
-            throw new InvalidPstException("The header of the file is truncated.");
+            throw new InvalidEmailDataException("The header of the file is truncated.");
         }
 
         if (options.VerifyChecksums)
@@ -69,12 +69,12 @@ internal sealed class NdbHeader
             var partial = PstCrc.Compute(data.Slice(8, 471));
             if (partial != BinaryPrimitives.ReadUInt32LittleEndian(data[4..]))
             {
-                throw new InvalidPstException("The CRC of the header does not match its content.");
+                throw new InvalidEmailDataException("The CRC of the header does not match its content.");
             }
 
             if (!layout.IsAnsi && PstCrc.Compute(data.Slice(8, 516)) != BinaryPrimitives.ReadUInt32LittleEndian(data[524..]))
             {
-                throw new InvalidPstException("The CRC of the header does not match its content.");
+                throw new InvalidEmailDataException("The CRC of the header does not match its content.");
             }
         }
 
@@ -108,7 +108,7 @@ internal sealed class NdbHeader
             0 => PstEncryption.None,
             1 => PstEncryption.Permute,
             2 => PstEncryption.Cyclic,
-            var value => throw new UnsupportedPstFeatureException($"The encryption method 0x{value:X2} is not supported."),
+            var value => throw new UnsupportedEmailFeatureException($"The encryption method 0x{value:X2} is not supported."),
         };
 
         var nids = new uint[32];

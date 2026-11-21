@@ -232,7 +232,7 @@ public class MapiMessageBuilder
     /// <summary>Creates a builder that copies an item read from a file: its properties, recipients and attachments, including embedded messages.</summary>
     /// <param name="message">The item to copy.</param>
     /// <returns>The builder of the matching type (<see cref="MapiContactBuilder"/> for a <see cref="MapiContact"/>...).</returns>
-    /// <exception cref="InvalidPstException">The item is malformed.</exception>
+    /// <exception cref="InvalidEmailDataException">The item is malformed.</exception>
     public static MapiMessageBuilder FromMessage(MapiMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);

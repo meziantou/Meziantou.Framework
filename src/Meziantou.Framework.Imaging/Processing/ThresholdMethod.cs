@@ -31,4 +31,13 @@ public enum ThresholdMethod
     /// a blank background stays blank.
     /// </summary>
     Sauvola = 3,
+
+    /// <summary>
+    /// An adaptive threshold (Bradley and Roth, 2007): <c>m * (1 - t)</c>, where <c>m</c> is the mean luminance of the
+    /// <see cref="ThresholdOptions.WindowSize"/> square centered on the pixel and <c>t</c> is
+    /// <see cref="ThresholdOptions.BradleyT"/>. A pixel must be darker than its surroundings by that fraction of their mean
+    /// to get <see cref="ThresholdOptions.LowerColor"/>, so the margin grows with the brightness of the area: the noise of
+    /// a light background stays in the upper class, and the strokes in a shadow still reach the lower one.
+    /// </summary>
+    Bradley = 4,
 }

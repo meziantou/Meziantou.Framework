@@ -4,7 +4,7 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
-/// Histograms, global and adaptive histogram equalization, and auto-levels. The expectations are hand-computed from the
+/// Histograms, global and adaptive histogram equalization, auto-levels, and the opacity check. The expectations are hand-computed from the
 /// definitions of the mappings, or come from independent implementations: the outputs of OpenCV 4.10.0
 /// (<c>cv2.equalizeHist</c>, <c>cv2.createCLAHE</c>) and scikit-image 0.24.0 (<c>exposure.equalize_adapthist</c>) on
 /// <see cref="CreatePattern8"/> and <see cref="CreatePattern16"/>, kept as literals (little-endian samples for 16 bits). They were
@@ -714,6 +714,125 @@ public sealed class HistogramTests
         Assert.Equal(0, twoLevels.Frames[0][0, 0].R);
         Assert.Equal(1, twoLevels.Frames[0][1, 0].G);
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Opacity
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void IsOpaqueComparesEveryAlphaWithTheLargestValueOfThePixelFormat()
+    {
+        AssertOpaque(new Rgba32(1, 2, 3, 255), new Rgba32(1, 2, 3, 254));
+        AssertOpaque(new Bgra32(1, 2, 3, 255), new Bgra32(1, 2, 3, 0));
+        AssertOpaque(new Argb32(1, 2, 3, 255), new Argb32(1, 2, 3, 254));
+        AssertOpaque(new Abgr32(1, 2, 3, 255), new Abgr32(1, 2, 3, 128));
+        AssertOpaque(new Rgba64(1, 2, 3, 65535), new Rgba64(1, 2, 3, 65534));
+        AssertOpaque(new La16(10, 255), new La16(10, 254));
+        AssertOpaque(new La32(10, 65535), new La32(10, 65534));
+        AssertOpaque(new A8(255), new A8(254));
+        AssertOpaque(new Rgba1010102(1, 2, 3, 3), new Rgba1010102(1, 2, 3, 2));
+
+        // Floating-point alpha is opaque when it is exactly 1: above 1 or not a number, it is not
+        AssertOpaque(new RgbaFloat(4, -1, 0.5f, 1), new RgbaFloat(0, 0, 0, 0.999f));
+        AssertOpaque(new RgbaFloat(0, 0, 0, 1), new RgbaFloat(0, 0, 0, 1.5f));
+        AssertOpaque(new RgbaFloat(0, 0, 0, 1), new RgbaFloat(0, 0, 0, float.NaN));
+        AssertOpaque(new RgbaHalf((Half)0.5f, (Half)0.5f, (Half)0.5f, Half.One), new RgbaHalf((Half)0.5f, (Half)0.5f, (Half)0.5f, (Half)0.5f));
+        AssertOpaque(new LaFloat(0.5f, 1), new LaFloat(0.5f, 0));
+        AssertOpaque(new LaHalf((Half)0.5f, Half.One), new LaHalf((Half)0.5f, Half.NaN));
+
+        static void AssertOpaque<TPixel>(TPixel opaque, TPixel translucent)
+            where TPixel : unmanaged
+        {
+            // The vector paths and their tails: the translucent pixel is the last one of rows of every width up to 40
+            for (var width = 1; width <= 40; width++)
+            {
+                using var image = new Image<TPixel>(width, 2, opaque);
+                Assert.True(image.IsOpaque(Ct));
+                Assert.True(image.Frames[0].IsOpaque(Ct));
+
+                image.Frames[0][width - 1, 1] = translucent;
+                Assert.False(image.IsOpaque(Ct));
+                Assert.False(image.Frames[0].IsOpaque(Ct));
+            }
+        }
+    }
+
+    [Fact]
+    public void PixelFormatsWithoutAlphaAreAlwaysOpaque()
+    {
+        using var rgb = new Image<Rgb24>(3, 2, new Rgb24(10, 20, 30));
+        Assert.True(rgb.IsOpaque(Ct));
+        using var gray = new Image<Gray16>(3, 2);
+        Assert.True(gray.Frames[0].IsOpaque(Ct));
+        using var cmyk = new Image<Cmyk32>(3, 2, new Cmyk32(10, 20, 30, 40));
+        Assert.True(cmyk.IsOpaque(Ct));
+        using var floats = new Image<GrayFloat>(3, 2);
+        Assert.True(floats.IsOpaque(Ct));
+    }
+
+    [Fact]
+    public void IsOpaqueOfAnImageReadsEveryFrameAndThePoster()
+    {
+        using var image = new Image<Rgba32>(2, 1, new Rgba32(1, 2, 3, 255));
+        var second = (ImageFrame<Rgba32>)image.InsertFrame(1, image.Frames[0]);
+        Assert.True(image.IsOpaque(Ct));
+
+        second[1, 0] = new Rgba32(1, 2, 3, 0);
+        Assert.False(image.IsOpaque(Ct));
+        Assert.True(image.Frames[0].IsOpaque(Ct));
+        Assert.False(second.IsOpaque(Ct));
+
+        second[1, 0] = new Rgba32(1, 2, 3, 255);
+        var poster = (ImageFrame<Rgba32>)image.SetPosterFrame(image.Frames[0]);
+        Assert.True(image.IsOpaque(Ct));
+        poster[0, 0] = new Rgba32(1, 2, 3, 200);
+        Assert.False(image.IsOpaque(Ct));
+        Assert.False(poster.IsOpaque(Ct));
+        Assert.True(image.Frames[0].IsOpaque(Ct));
+    }
+
+    [Fact]
+    public void IsOpaqueValidatesItsArgumentsAndState()
+    {
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).IsOpaque());
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).IsOpaque());
+
+        using var image = new Image<Rgba32>(2, 2, new Rgba32(1, 2, 3, 255));
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.Throws<OperationCanceledException>(() => image.IsOpaque(canceled.Token));
+        Assert.Throws<OperationCanceledException>(() => image.Frames[0].IsOpaque(canceled.Token));
+        image.Frames[0].ProcessPixelRows(_ => Assert.Throws<InvalidOperationException>(() => image.IsOpaque()));
+
+        // Nothing is allocated
+        Assert.True(image.IsOpaque(Ct));
+        Assert.Equal(0, image.Owner.Scope.GetLiveBytes(AllocationKind.Temporary));
+
+        var disposed = new Image<Rgb24>(2, 2);
+        var frame = disposed.Frames[0];
+        disposed.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => disposed.IsOpaque());
+        Assert.Throws<ObjectDisposedException>(() => frame.IsOpaque());
+    }
+
+    #region IsOpaque_DropAlpha
+    [Fact]
+    public void IsOpaque_DropAlpha()
+    {
+        // An RGBA image whose pixels are all opaque: its alpha channel holds no information
+        using var image = new Image<Rgba32>(4, 4, new Rgba32(200, 100, 50, 255));
+        Assert.True(image.IsOpaque());
+
+        // So it converts to RGB without losing anything
+        using var rgb = image.CloneAs<Rgb24>();
+        Assert.Equal(new Rgb24(200, 100, 50), rgb.Frames[0][3, 3]);
+
+        // One translucent pixel is enough: the alpha channel can no longer be dropped without flattening the image
+        image.Frames[0][3, 3] = new Rgba32(200, 100, 50, 254);
+        Assert.False(image.IsOpaque());
+        Assert.Throws<UnsupportedImageFeatureException>(() => image.CloneAs<Rgb24>());
+    }
+    #endregion
 
     #region Histogram_Clahe
     [Fact]

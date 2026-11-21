@@ -1,0 +1,12 @@
+From alice@example.com Tue Jul  1 08:52:37 2025
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: First
+Date: Tue, 1 Jul 2025 10:52:37 +0200
+Message-ID: <first@example.com>
+
+Hello Bob,
+>From the start of a line.
+>>From a quoted line.
+>>>From a line quoted twice.
+The word From in the middle: no escape.

@@ -4,8 +4,9 @@ using Meziantou.Framework.Imaging.Internals;
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
-/// Binarization: Otsu's threshold, fixed thresholds and the adaptive Mean and Sauvola methods. The expectations are
-/// hand-computed, or come from scikit-image 0.25.2 (numpy 2.5.4, scipy 1.18.1, in a <c>python:3.13-slim</c> container):
+/// Binarization: Otsu's threshold, fixed thresholds and the adaptive Mean, Sauvola and Bradley methods. The expectations
+/// are hand-computed (the Bradley masks by the integer rule of the paper, <see cref="BradleyReference"/>), or come from
+/// scikit-image 0.25.2 (numpy 2.5.4, scipy 1.18.1, in a <c>python:3.13-slim</c> container):
 /// <c>threshold_otsu</c> on <see cref="Pattern"/>, <see cref="Textured"/> and <see cref="OtsuFamily8"/>, and the masks
 /// <c>image &gt; threshold_local(image, w, method='mean', offset, mode)</c> and <c>image &gt; threshold_sauvola(image, w, k, r)</c>
 /// of <see cref="Textured"/>, packed by <c>np.packbits</c> (most significant bit first) and kept as literals. The scipy
@@ -320,11 +321,90 @@ public sealed class ThresholdTests
         Assert.Equal([0, 0, 0], ReadGray8(black.Frames[0]));
     }
 
+    [Fact]
+    public void BradleyThresholdIsAFractionBelowTheMeanOfTheWindow()
+    {
+        // Windows of 3 pixels, mirrored at the edges: the means are 100, 90, 90, 90, 100, and 85% of 90 is 76.5. A uniform
+        // area is above 85% of its mean, so only the dark pixel gets the lower color
+        using var image = Gray8Row(100, 100, 70, 100, 100);
+        image.Threshold(new ThresholdOptions { Method = ThresholdMethod.Bradley, WindowSize = 3 }, Ct);
+        Assert.Equal([255, 255, 0, 255, 255], ReadGray8(image.Frames[0]));
+
+        // The mean method puts the uniform areas, at their mean, in the lower class
+        using var mean = Gray8Row(100, 100, 70, 100, 100);
+        mean.Threshold(new ThresholdOptions { Method = ThresholdMethod.Mean, WindowSize = 3 }, Ct);
+        Assert.Equal([0, 255, 0, 255, 0], ReadGray8(mean.Frames[0]));
+
+        // A pixel 14% darker than the mean of its window stays above a threshold 25% below it: 80 > 0.75 * 93.3
+        using var tolerant = Gray8Row(100, 80, 100);
+        tolerant.Threshold(new ThresholdOptions { Method = ThresholdMethod.Bradley, WindowSize = 3, BradleyT = 0.25 }, Ct);
+        Assert.Equal([255, 255, 255], ReadGray8(tolerant.Frames[0]));
+
+        // With 1, the threshold is 0: every pixel but black gets the upper color
+        using var extremes = Gray8Row(0, 1, 255);
+        extremes.Threshold(new ThresholdOptions { Method = ThresholdMethod.Bradley, WindowSize = 3, BradleyT = 1 }, Ct);
+        Assert.Equal([0, 255, 255], ReadGray8(extremes.Frames[0]));
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Mirror, 15, 15)]
+    [InlineData(ConvolutionEdgeMode.Clamp, 15, 15)]
+    [InlineData(ConvolutionEdgeMode.Wrap, 9, 10)]
+    [InlineData(ConvolutionEdgeMode.Zero, 31, 25)]
+    [InlineData(ConvolutionEdgeMode.Mirror, 101, 5)]
+    public void BradleyThresholdIsTheIntegerRuleOfThePaper(ConvolutionEdgeMode edgeMode, int windowSize, int percent)
+    {
+        // Bradley and Roth (2007): a pixel is dark when I * count <= sum * (100 - t) / 100, evaluated here with integers
+        using var image8 = CreateGray8(Textured);
+        using var image16 = CreateGray16(Textured);
+        var options = new ThresholdOptions { Method = ThresholdMethod.Bradley, EdgeMode = edgeMode, WindowSize = windowSize, BradleyT = percent / 100.0 };
+        image8.Threshold(options, Ct);
+        image16.Threshold(options, Ct);
+
+        var pixels8 = ReadGray8(image8.Frames[0]);
+        var pixels16 = new Gray16[Width * Height];
+        image16.Frames[0].CopyPixelDataTo(pixels16);
+        var source16 = new int[Width * Height];
+        using (var original16 = CreateGray16(Textured))
+        {
+            var values = new Gray16[Width * Height];
+            original16.Frames[0].CopyPixelDataTo(values);
+            for (var i = 0; i < values.Length; i++)
+            {
+                source16[i] = values[i].Value;
+            }
+        }
+
+        var expected8 = BradleyReference((x, y) => Textured(x, y), edgeMode, windowSize, percent);
+        var expected16 = BradleyReference((x, y) => source16[(y * Width) + x], edgeMode, windowSize, percent);
+        Assert.Contains(true, expected8);
+        Assert.Contains(false, expected8);
+        Assert.Equal(expected8, [.. pixels8.Select(value => value == 255)]);
+        Assert.All(pixels16, pixel => Assert.True(pixel.Value is 0 or 65535));
+        Assert.Equal(expected16, [.. pixels16.Select(pixel => pixel.Value == 65535)]);
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Mirror)]
+    [InlineData(ConvolutionEdgeMode.Clamp)]
+    [InlineData(ConvolutionEdgeMode.Wrap)]
+    [InlineData(ConvolutionEdgeMode.Zero)]
+    public void BradleyThresholdWithoutFractionIsTheMeanThreshold(ConvolutionEdgeMode edgeMode)
+    {
+        using var bradley = CreateGray8(Textured);
+        bradley.Threshold(new ThresholdOptions { Method = ThresholdMethod.Bradley, EdgeMode = edgeMode, BradleyT = 0, Offset = 0.5 }, Ct);
+        using var mean = CreateGray8(Textured);
+        mean.Threshold(new ThresholdOptions { Method = ThresholdMethod.Mean, EdgeMode = edgeMode, BradleyT = 0.5 }, Ct);
+        Assert.Equal(ReadGray8(mean.Frames[0]), ReadGray8(bradley.Frames[0]));
+    }
+
     [Theory]
     [InlineData(ThresholdMethod.Mean, ConvolutionEdgeMode.Mirror)]
     [InlineData(ThresholdMethod.Mean, ConvolutionEdgeMode.Wrap)]
     [InlineData(ThresholdMethod.Sauvola, ConvolutionEdgeMode.Clamp)]
     [InlineData(ThresholdMethod.Sauvola, ConvolutionEdgeMode.Zero)]
+    [InlineData(ThresholdMethod.Bradley, ConvolutionEdgeMode.Mirror)]
+    [InlineData(ThresholdMethod.Bradley, ConvolutionEdgeMode.Zero)]
     public void AdaptiveThresholdOfAMirroredFrameIsTheMirroredResult(ThresholdMethod method, ConvolutionEdgeMode edgeMode)
     {
         var options = new ThresholdOptions { Method = method, EdgeMode = edgeMode, WindowSize = 9 };
@@ -513,6 +593,57 @@ public sealed class ThresholdTests
         }
 
         return Math.Clamp(value, 0, 255);
+    }
+
+    /// <summary>
+    /// The masks of the Bradley and Roth rule, with integers: <c>true</c> (upper class) when
+    /// <c>I * count * 100 &gt; sum * (100 - percent)</c>, where the window reads the pixels outside the frame as scipy's modes do.
+    /// </summary>
+    private static bool[] BradleyReference(Func<int, int, int> value, ConvolutionEdgeMode edgeMode, int windowSize, int percent)
+    {
+        var radius = windowSize / 2;
+        var count = (long)windowSize * windowSize;
+        var result = new bool[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                long sum = 0;
+                for (var dy = -radius; dy <= radius; dy++)
+                {
+                    var sy = MapOutside(y + dy, Height, edgeMode);
+                    for (var dx = -radius; dx <= radius; dx++)
+                    {
+                        var sx = MapOutside(x + dx, Width, edgeMode);
+                        if (sx >= 0 && sy >= 0)
+                        {
+                            sum += value(sx, sy);
+                        }
+                    }
+                }
+
+                result[(y * Width) + x] = value(x, y) * count * 100 > sum * (100 - percent);
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>The scipy modes: <c>reflect</c> (d c b a | a b c d | d c b a), <c>nearest</c>, <c>wrap</c>, and -1 for <c>constant</c> (zero).</summary>
+    private static int MapOutside(int index, int length, ConvolutionEdgeMode edgeMode)
+    {
+        if (index >= 0 && index < length)
+            return index;
+
+        var period = 2 * length;
+        var reflected = ((index % period) + period) % period;
+        return edgeMode switch
+        {
+            ConvolutionEdgeMode.Clamp => Math.Clamp(index, 0, length - 1),
+            ConvolutionEdgeMode.Wrap => ((index % length) + length) % length,
+            ConvolutionEdgeMode.Mirror => reflected < length ? reflected : period - 1 - reflected,
+            _ => -1,
+        };
     }
 
     private static int Textured(int x, int y) => Math.Min(60 + (2 * x) + (((x * x * 7) + (y * y * 3) + (x * y * 5)) % 97), 254);

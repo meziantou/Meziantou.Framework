@@ -1,0 +1,28 @@
+// <!-- <mdb:mork:z v="1.4"/> -->
+< <(a=c)> // (f=iso-8859-1)
+  (B8=Ns:msg:db:row:scope:dbfolderinfo:all)(B9=ns:msg:db:table:kind:dbfolderinfo)
+  (BA=numMsgs)(80=ns:msg:db:row:scope:msgs:all)(81=subject)(82=sender)
+  (83=message-id)(84=references)(85=recipients)(86=date)(87=size)(88=flags)
+  (89=priority)(8A=label)(8B=statusOfset)(8C=numLines)(8D=ccList)
+  (8E=msgThreadId)(8F=threadId)(90=threadFlags)(91=threadNewestMsgDate)
+  (92=children)(93=unreadChildren)(94=threadSubject)(95=storeToken)
+  (96=dateReceived)(97=ns:msg:db:table:kind:msgs)>
+
+<(A0=First)(A1=Alice <alice@example.com>)(A2=first@example.com)
+  (A3=Bob <bob@example.com>)(A4=6863a1d5)(A5=1)(A6=0)>
+
+{1:^80 {(k^97:c)(s=9)}
+  [1(^81^A0)(^82^A1)(^83^A2)(^85^A3)(^86^A4)(^88=10001)(^87=1a5)(^8C=5)(^95=0)]
+  [2(^81=Caf$C3$A9)(^82=Bob <bob@example.com>)(^83=second@example.com)(^85=Alice <alice@example.com>)(^86=6864e700)(^88=10000)(^87=1f0)(^95=421)]
+  [3(^81=Last, without a final line \
+break)(^82=Carol <carol@example.com>)(^83=third@example.com)(^86=68671aff)(^88=0)(^95=999)(^8D=Dave \(work\) <dave@example.com>)]}
+
+[1:^B8(^BA=3)]
+
+@$${1{@
+[1:^80(^88=10011)]
+@$$}1}@
+
+@$${2{@
+[1:^80(^88=ffff)]
+@$$}~~}@

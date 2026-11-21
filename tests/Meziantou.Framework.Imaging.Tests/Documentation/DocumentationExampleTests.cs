@@ -3528,6 +3528,63 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void AddWatermarkExamplesPlaceTheTextOverTheImage()
+    {
+        var fontPath = FixtureRoot.GetDirectory() / "fonts" / "noto-sans" / "NotoSans-Regular.subset.ttf";
+        var background = new Rgba32(20, 60, 120);
+        var input = GetPath("photo.png");
+        using (var photo = new Image<Rgba32>(300, 200, background))
+        {
+            photo.Save(input);
+        }
+
+        // Along the diagonal, inside 80% of the image (30 to 270, 20 to 180), rising from the left
+        var centered = Watermarked(output => GuideExamples.AddWatermark(fontPath, input, output));
+        Assert.NotEmpty(centered);
+        Assert.InRange(centered.Min(p => p.X), 29, 150);
+        Assert.InRange(centered.Max(p => p.X), 150, 270);
+        Assert.InRange(centered.Min(p => p.Y), 19, 100);
+        Assert.InRange(centered.Max(p => p.Y), 100, 180);
+        var (left, right) = (centered.Min(p => p.X) + 20, centered.Max(p => p.X) - 20);
+        Assert.True(centered.Where(p => p.X < left).Average(p => p.Y) > centered.Where(p => p.X > right).Average(p => p.Y));
+
+        // Tiled: every quarter of the image has copies of the text
+        var tiled = Watermarked(output => GuideExamples.AddTiledWatermark(fontPath, input, output));
+        Assert.Contains(tiled, p => p.X < 150 && p.Y < 100);
+        Assert.Contains(tiled, p => p.X >= 150 && p.Y < 100);
+        Assert.Contains(tiled, p => p.X < 150 && p.Y >= 100);
+        Assert.Contains(tiled, p => p.X >= 150 && p.Y >= 100);
+
+        // In the bottom-right corner, 5 pixels (200 / 40) from the right and bottom edges
+        var corner = Watermarked(output => GuideExamples.AddCornerWatermark(fontPath, input, output));
+        Assert.NotEmpty(corner);
+        Assert.All(corner, p => Assert.True(p.X > 150 && p.Y > 150 && p.X < 296 && p.Y < 196, $"({p.X}, {p.Y})"));
+        Assert.InRange(corner.Max(p => p.X), 290, 295);
+        Assert.InRange(corner.Max(p => p.Y), 190, 195);
+
+        List<(int X, int Y)> Watermarked(Action<string> example)
+        {
+            var output = GetPath("watermarked.png");
+            example(output);
+            using var image = Image.Load<Rgba32>(output);
+            Assert.Equal(new Size(300, 200), image.Size);
+            var changed = new List<(int X, int Y)>();
+            for (var y = 0; y < 200; y++)
+            {
+                for (var x = 0; x < 300; x++)
+                {
+                    if (image.Frames[0][x, y] != background)
+                    {
+                        changed.Add((x, y));
+                    }
+                }
+            }
+
+            return changed;
+        }
+    }
+
+    [Fact]
     public void AddLogoWatermarkDrawsTheLogoInTheCornerOfEveryFrame()
     {
         var photo = GetPath("photo.png");

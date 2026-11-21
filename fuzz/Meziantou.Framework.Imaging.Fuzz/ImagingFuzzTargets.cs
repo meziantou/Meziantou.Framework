@@ -12,7 +12,7 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// they do not control: custom processors, seam carving, inpainting, color selections and their masks, line and corner detection, skew estimation,
 /// homography estimation and resizing; the conversions between the pixel formats (and from CMYK inks with the device
 /// formulas, with the clones and vertical flips of the inks); the merging of the pieces of strokes;
-/// the optimal line breaking of text layouts; the texts drawn from glyph masks; the ICC profiles that the color conversions read (named colors, the
+/// the optimal line breaking of text layouts; the texts drawn from glyph masks; the text watermarks; the ICC profiles that the color conversions read (named colors, the
 /// processing elements of iccMAX profiles); the options of the WebP encoder that change its pixels or its output
 /// (bit-depth dithering, sharp YUV, non-seekable animations); and the layers of JPEG XL images and the regions of its
 /// optimized animations. The inputs of the processing targets are small images whose pixel format, size, frames and
@@ -70,6 +70,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-device-cmyk", DeviceCmykTarget) { Seeds = GetDeviceCmykSeeds, Dictionary = Tokens },
         new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-glyph-masks", GlyphMasksTarget) { Seeds = GetGlyphMaskSeeds, Dictionary = GlyphMaskTokens },
+        new("imaging-watermark", WatermarkTarget) { Seeds = GetWatermarkSeeds, Dictionary = WatermarkTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
         new("imaging-tiff-planes", TiffPlanesTarget) { Seeds = GetTiffPlanesSeeds, Dictionary = Tokens },

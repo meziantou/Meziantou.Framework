@@ -177,6 +177,27 @@ public sealed class DocumentationImageTests : IDisposable
     public void DrawTextOnPath() => AssertImage(Text, nameof(Examples.DrawTextOnPath), output => Examples.DrawTextOnPath(RegularFont, output));
 
     [Fact]
+    public void AddWatermark()
+    {
+        var photo = CreatePhoto();
+        AssertImage(Text, nameof(GuideExamples.AddWatermark), output => GuideExamples.AddWatermark(RegularFont, photo, output));
+    }
+
+    [Fact]
+    public void AddTiledWatermark()
+    {
+        var photo = CreatePhoto();
+        AssertImage(Text, nameof(GuideExamples.AddTiledWatermark), output => GuideExamples.AddTiledWatermark(RegularFont, photo, output));
+    }
+
+    [Fact]
+    public void AddCornerWatermark()
+    {
+        var photo = CreatePhoto();
+        AssertImage(Text, nameof(GuideExamples.AddCornerWatermark), output => GuideExamples.AddCornerWatermark(RegularFont, photo, output));
+    }
+
+    [Fact]
     public void AddLogoWatermark()
     {
         // The sticker of the drawing examples is the logo: a shape with a transparent background

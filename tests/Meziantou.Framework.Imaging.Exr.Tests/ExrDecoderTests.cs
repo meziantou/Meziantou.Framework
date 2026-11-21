@@ -140,6 +140,33 @@ public sealed class ExrDecoderTests
         Assert.Equal(default, image.Frames[0][3, 2]);
         Assert.Equal(true, Image.Identify(data).MayHaveTransparency);
 
+        // A luminance image has alpha for the transparent black pixels the data window leaves, in the precision of its samples
+        var halfLuminance = ExrFileBuilder.ScanLines(2, 1, None, HalfChannel("Y"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(-1, -1, 2, 1))
+            .AddScanLineChunk(0, ExrFileBuilder.Halves(0.5f, 4f))
+            .Build();
+        Assert.Equal(PixelFormat.LaHalf, Image.Identify(halfLuminance).PixelFormat);
+        using (var gray = Image.Load(halfLuminance))
+        {
+            var pixels = Assert.IsType<Image<LaHalf>>(gray);
+            Assert.Equal(new LaHalf((Half)0.5f, (Half)1f), pixels.Frames[0][1, 1]);
+            Assert.Equal(new LaHalf((Half)4f, (Half)1f), pixels.Frames[0][2, 1]);
+            Assert.Equal(default, pixels.Frames[0][0, 0]);
+        }
+
+        var uintLuminance = ExrFileBuilder.ScanLines(2, 1, None, ExrChannelDescription.UnsignedInt("Y"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(0, 0, 2, 0))
+            .AddScanLineChunk(0, ExrFileBuilder.UInts(7, 9))
+            .Build();
+        Assert.Equal(PixelFormat.LaFloat, Image.Identify(uintLuminance).PixelFormat);
+        using (var gray = Image.Load(uintLuminance))
+        {
+            var pixels = Assert.IsType<Image<LaFloat>>(gray);
+            Assert.Equal(new LaFloat(7f, 1f), pixels.Frames[0][0, 0]);
+            Assert.Equal(new LaFloat(9f, 1f), pixels.Frames[0][1, 0]);
+            Assert.Equal(default, pixels.Frames[0][2, 0]);
+        }
+
         // Pixels outside the display window would be lost
         var outside = ExrFileBuilder.ScanLines(2, 1, None, HalfChannel("R")).Set("displayWindow", "box2i", ExrFileBuilder.Box(0, 0, 0, 0)).AddScanLineChunk(0, ExrFileBuilder.Halves(5f, 6f)).Build();
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(outside));

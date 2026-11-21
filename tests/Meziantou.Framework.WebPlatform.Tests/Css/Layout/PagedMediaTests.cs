@@ -628,20 +628,162 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([60, 0], pages.Select(page => CountWords(page.Content)));
     }
 
-    [Fact]
-    public void Pages_RowWithAnItemAlignedInItKeepsItsLayout()
+    [Theory]
+    [InlineData("display: flex", "center", 110, 30)]
+    [InlineData("display: flex", "end", 100, 50)]
+    [InlineData("display: flex; flex-wrap: wrap", "flex-end", 100, 50)]
+    [InlineData("display: grid; grid-template-columns: 1fr 1fr", "center", 110, 30)]
+    [InlineData("display: grid; grid-template-columns: 1fr 1fr", "end", 100, 50)]
+    public void Pages_RowWithAnItemAlignedInItIsLaidOutInAPageOfAnotherInlineSize(string display, string alignment, int firstPageWords, double secondItemHeight)
     {
-        // The second item is centered in the row: its position depends on the block size of the row, so the row keeps the layout
-        // of the first page
+        // The second item (60 words, 30 lines in the 200px wide first page) is aligned in the row of 40 lines: it starts 5 or 10
+        // lines lower, and the break crosses it. In the 400px wide page area of the second page, its content after the break
+        // continues at the start of the page, as the one of the first item: as the cells of a table, the items of such a row are
+        // not aligned in the next page
         var document = Parse($$"""
-            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 1 1 0 }</style>
-            <div id=c style='display: flex'><div id=a>{{Words(80)}}</div><div id=b style='align-self: center'>{{Words(60)}}</div></div>
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 1 1 0; min-width: 0 }</style>
+            <div id=c style='{{display}}'><div id=a>{{Words(80)}}</div><div id=b style='align-self: {{alignment}}'>{{Words(60)}}</div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal((1, new PhysicalRect(0, 0, 200, 50)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal((1, new PhysicalRect(200, 0, 200, secondItemHeight)), GetPageRects(pages, document.GetElementById("b")!)[^1]);
+        Assert.Equal([firstPageWords, 140 - firstPageWords], pages.Select(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Theory]
+    [InlineData("display: grid; grid-template-columns: 1fr 1fr; align-items: start", "")]
+    [InlineData("display: flex; flex-wrap: wrap; align-items: flex-start", "width: 50%")]
+    public void Pages_RowWithAnItemThatEndsBeforeTheBreakIsPrintedOnce(string display, string itemStyle)
+    {
+        // The second item is not stretched and ends before the break (10 words, 5 lines): it is an item of the row that the break
+        // crosses, whose content is in the first page, not a row before the break. In the 400px wide page area of the second
+        // page, the content of the first item after the break starts after the end of the second item
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { {{itemStyle}} }</style>
+            <div id=c style='{{display}}'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b>{{string.Join(' ', Enumerable.Repeat("XXXX", 10))}}</div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal((1, 200d), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
+        Assert.Equal([(0, new PhysicalRect(100, 0, 100, 50))], GetPageRects(pages, document.GetElementById("b")!));
+        Assert.Equal([70, 20], pages.Select(page => CountWords(page.Content)));
+    }
+
+    [Fact]
+    public void Pages_RowWithAnAlignedItemPushedToTheNextPageKeepsItsLayout()
+    {
+        // The second item is centered in the row and avoids breaks: it does not fit in the rest of the first page, and is pushed to
+        // the second one, so the row keeps the layout of the first page
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 1 1 0; min-width: 0 }</style>
+            <div id=c style='display: flex'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='align-self: center; height: 250px; break-inside: avoid'></div></div>
             """);
         using var session = document.BeginPrint(Options);
         var pages = session.GetPages();
         Assert.Equal((1, 100d), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
+        Assert.Equal([(1, new PhysicalRect(100, 0, 100, 250))], GetPageRects(pages, document.GetElementById("b")!));
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Fact]
+    public void Pages_GridItemAlignedAfterThePageInTheNextRowItSpansDoesNotPushTheNextRow()
+    {
+        // The first item spans the two rows and is aligned at their end, after the first page: it is placed in the second page,
+        // while the item of the second row, which starts in the first page, starts there (each word is on its own line)
+        var document = Parse($$"""
+            <style>@page { size: 145px 155px; margin: 0 }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr'>
+              <div id=a style='align-self: end; grid-area: 1 / 1 / span 2'>{{Words(13)}}</div>
+              <div id=b style='grid-area: 1 / 2'>{{Words(3)}}</div>
+              <div id=c style='grid-area: 2 / 2'>{{Words(39)}}</div>
+            </div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        Assert.Equal((0, new PhysicalRect(72.5, 30, 72.5, 125)), GetPageRects(pages, document.GetElementById("c")!)[0]);
+        Assert.Equal((1, new PhysicalRect(0, 135, 72.5, 20)), GetPageRects(pages, document.GetElementById("a")!)[0]);
+        Assert.Equal([15, 17, 23], pages.Select(page => CountWords(page.Content)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Fact]
+    public void Pages_GridRowWithAnItemThatSpansTheNextRowIsLaidOutInAPageOfAnotherInlineSize()
+    {
+        // The second item spans the two rows (100 words, 50 lines in the 200px wide first page), the break crosses the first row
+        // (40 lines): in the 400px wide page area of the second page, the content after the break of both items starts at the
+        // start of the page (5 and 10 lines), and the item of the second row follows the first row
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>
+              <div id=a>{{Words(80)}}</div><div id=b style='grid-row: span 2'>{{Words(100)}}</div><div id=c>{{Words(4)}}</div>
+            </div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal((1, new PhysicalRect(0, 0, 200, 50)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal((1, new PhysicalRect(200, 0, 200, 100)), GetPageRects(pages, document.GetElementById("b")!)[^1]);
+        var c = Assert.Single(GetPageRects(pages, document.GetElementById("c")!));
+        Assert.Equal((1, 0d, 200d, 10d), (c.Page, c.Rect.X, c.Rect.Width, c.Rect.Height));
+        Assert.True(c.Rect.Y >= 50);
+        Assert.Equal([120, 64], pages.Select(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Fact]
+    public void Pages_RowWithACellThatSpansTheNextRowIsLaidOutInAPageOfAnotherInlineSize()
+    {
+        // The second cell spans the two rows (100 words, 50 lines in the 200px wide first page), the break crosses the first row
+        // (40 lines): in the 400px wide page area of the second page, the content after the break of both cells starts at the
+        // start of the page (5 and 10 lines), and the second row follows the first one. The rows share the block size of the
+        // second cell (25 lines), which ends with the second row
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } td { padding: 0; vertical-align: top }</style>
+            <table style='width: 100%; border-spacing: 0; table-layout: fixed'>
+              <tr><td id=a>{{Words(80)}}</td><td id=b rowspan=2>{{Words(100)}}</td></tr>
+              <tr><td id=c>{{Words(4)}}</td></tr>
+            </table>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        var a = GetPageRects(pages, document.GetElementById("a")!)[^1];
+        var b = GetPageRects(pages, document.GetElementById("b")!)[^1];
+        var c = Assert.Single(GetPageRects(pages, document.GetElementById("c")!));
+        Assert.Equal((1, 0d, 0d, 200d), (a.Page, a.Rect.X, a.Rect.Y, a.Rect.Width));
+        Assert.Equal((1, 200d, 0d, 200d, 100d), (b.Page, b.Rect.X, b.Rect.Y, b.Rect.Width, Round(b.Rect.Height)));
+        Assert.Equal((1, 0d, 200d, 100d), (c.Page, c.Rect.X, c.Rect.Width, Round(c.Rect.Bottom)));
+        Assert.Equal(Round(a.Rect.Bottom), Round(c.Rect.Y));
+        Assert.Equal([120, 64], pages.Select(page => CountWords(page.Content)));
+
+        static double Round(double value) => Math.Round(value, 6, MidpointRounding.AwayFromZero);
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Theory]
+    [InlineData("display: flex")]
+    [InlineData("display: grid; grid-template-columns: 1fr 1fr")]
+    public void Pages_RowWithAnItemAlignedAfterTheBreakKeepsItsLayout(string display)
+    {
+        // The second item is aligned at the end of the row, after the break: its position depends on the block size of the row,
+        // so the row keeps the layout of the first page
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 1 1 0; min-width: 0 }</style>
+            <div id=c style='{{display}}'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='align-self: end; height: 100px'></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, 100d), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
+        Assert.Equal([(1, new PhysicalRect(100, 0, 100, 100))], GetPageRects(pages, document.GetElementById("b")!));
     }
 
     [Theory]

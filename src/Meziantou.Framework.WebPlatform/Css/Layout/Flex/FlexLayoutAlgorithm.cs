@@ -477,6 +477,12 @@ internal sealed partial class FlexLayoutAlgorithm
         item.Safe = alignSelf.Overflow == OverflowAlignment.Safe;
         item.Align = autoCrossStart || autoCrossEnd ? AxisAlignment.Start : ResolveSelfAlignment(item, alignSelf.Keyword);
 
+        // (the items of a flex line broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowItems)
+        if (item.Align != AxisAlignment.Stretch && _context.ResumedRowItems is { } resumedItems && resumedItems.Contains(item.Box))
+        {
+            item.Align = AxisAlignment.Start;
+        }
+
         // https://drafts.csswg.org/css-flexbox-1/#valdef-align-items-stretch: "If the cross size property of the flex item
         // computes to auto, and neither of the cross-axis margins are auto, the flex item is stretched"; otherwise it is
         // aligned as flex-start

@@ -12,7 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// (a table without a header, with a repeated header or with a header too tall to be repeated, a column flex container, a grid
 /// with a fixed or an automatic number of columns, a row flex container that wraps, a block, a table row whose rows are its cells,
 /// a single-line row flex container whose rows are its items) and its rows (their block sizes,
-/// whether they avoid breaks, a paragraph). Each row is in a page, the first pages of the rows follow their order, each word of
+/// whether they avoid breaks, a paragraph); the second target has rows whose items are aligned in them or span the next rows, whose first pages may not follow their order. Each row is in a page, the first pages of the rows follow their order, each word of
 /// the paragraphs is laid out once, and the rectangles of the fragments are finite.
 /// </summary>
 public static partial class WebPlatformFuzzTargets
@@ -39,8 +39,27 @@ public static partial class WebPlatformFuzzTargets
         ("<div style='display: flex'>", "<div id={0} style='flex: 1 1 0; {1}'>{2}</div>", "</div>"),
     ];
 
+    /// <summary>
+    /// The containers of the target of the rows whose items are aligned in them or span the next rows: the items of a flex
+    /// container or of a grid aligned in their row (every second or third item), the items of a grid that span two rows (every
+    /// third item), and the cells of a table that span two rows.
+    /// </summary>
+    private static readonly (string Start, string Row, string End)[] PagedInlineSizeRowContainers =
+    [
+        ("<style>#c > :nth-child(2n) { align-self: center }</style><div id=c style='display: flex'>", "<div id={0} style='flex: 1 1 0; min-width: 0; {1}'>{2}</div>", "</div>"),
+        ("<style>#c > :nth-child(2n) { align-self: end } #c > :nth-child(3n) { grid-row: span 2 }</style><div id=c style='display: grid; grid-template-columns: 1fr 1fr'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<style>#c > :nth-child(3n) { align-self: flex-end }</style><div id=c style='display: flex; flex-wrap: wrap'>", "<div id={0} style='width: 90px; {1}'>{2}</div>", "</div>"),
+        ("<style>#c > * { align-self: center }</style><div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 90px)'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<table style='width: 100%; border-spacing: 0'>", "<tr><td id={0} rowspan=2 style='{1}'>{2}</td><td></td></tr>", "</table>"),
+    ];
+
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>
-    public static void PagedInlineSize(ReadOnlySpan<byte> data)
+    public static void PagedInlineSize(ReadOnlySpan<byte> data) => PagedInlineSize(data, PagedInlineSizeContainers, rowsFollowTheirOrder: true);
+
+    /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, with rows whose items are aligned in them or span the next rows, and checks its pages.</summary>
+    public static void PagedInlineSizeRows(ReadOnlySpan<byte> data) => PagedInlineSize(data, PagedInlineSizeRowContainers, rowsFollowTheirOrder: false);
+
+    private static void PagedInlineSize(ReadOnlySpan<byte> data, (string Start, string Row, string End)[] containers, bool rowsFollowTheirOrder)
     {
         var position = 0;
         byte Next(ReadOnlySpan<byte> input) => position < input.Length ? input[position++] : (byte)0;
@@ -49,7 +68,7 @@ public static partial class WebPlatformFuzzTargets
         var firstWidth = ((Next(data) % 100) + 5) * 5;
         var width = ((Next(data) % 100) + 5) * 5;
         var height = ((Next(data) % 100) + 5) * 5;
-        var (start, row, end) = PagedInlineSizeContainers[Next(data) % PagedInlineSizeContainers.Length];
+        var (start, row, end) = containers[Next(data) % containers.Length];
         var rowCount = (Next(data) % PagedInlineSizeMaxRows) + 1;
         var markup = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"<!DOCTYPE html><style>body {{ margin: 0; font: 10px/1 Ahem }} @page {{ size: {width}px {height}px; margin: 0 }} @page :first {{ size: {firstWidth}px {height}px }}</style>"));
         markup.Append(start);
@@ -91,7 +110,8 @@ public static partial class WebPlatformFuzzTargets
         for (var i = 0; i < rowCount; i++)
         {
             FuzzAssert.True(firstPages[i] is not null, string.Create(CultureInfo.InvariantCulture, $"the row {i} is in a page: {markup}"));
-            FuzzAssert.True(firstPages[i] >= previous, string.Create(CultureInfo.InvariantCulture, $"the row {i} starts in a page after the one of the previous row: {markup}"));
+            // (an item aligned in its row may start in a page after the one of the next item)
+            FuzzAssert.True(!rowsFollowTheirOrder || firstPages[i] >= previous, string.Create(CultureInfo.InvariantCulture, $"the row {i} starts in a page after the one of the previous row: {markup}"));
             previous = firstPages[i]!.Value;
         }
 
@@ -157,6 +177,35 @@ public static partial class WebPlatformFuzzTargets
         for (var i = 0; i < scenarios.Length; i++)
         {
             yield return new FuzzSeed("paged-inline-size-" + i.ToString(CultureInfo.InvariantCulture), scenarios[i]);
+        }
+    }
+
+    /// <summary>
+    /// The seeds of the target of the aligned rows: the scenarios of the unit tests (pages of 100px whose first one is 200px wide and the next ones 400px wide, rows broken between the lines
+    /// of the paragraphs of their items, an item aligned in the row, a cell that spans the next row).
+    /// </summary>
+    private static IEnumerable<FuzzSeed> GetPagedInlineSizeRowSeeds()
+    {
+        byte[][] scenarios =
+        [
+            // A flex row and a grid row whose second item is aligned in the row, a flex line whose third item is aligned in it
+            [35, 75, 15, 0, 1, 2, 0, 39, 2, 0, 30],
+            [35, 75, 15, 1, 1, 2, 0, 39, 2, 0, 30],
+            [35, 75, 15, 2, 2, 2, 0, 39, 2, 0, 30, 2, 0, 20],
+
+            // A grid whose columns depend on its inline size, whose items are centered in their rows
+            [35, 75, 15, 3, 6, 0, 100, 2, 0, 39, 0, 100, 0, 100, 2, 0, 20, 0, 100, 0, 100],
+
+            // The cells of a table that span two rows
+            [35, 75, 15, 4, 2, 2, 0, 39, 2, 0, 39, 2, 0, 4],
+
+            // An item aligned after the break
+            [35, 75, 15, 1, 1, 2, 0, 39, 0, 100],
+        ];
+
+        for (var i = 0; i < scenarios.Length; i++)
+        {
+            yield return new FuzzSeed("paged-inline-size-rows-" + i.ToString(CultureInfo.InvariantCulture), scenarios[i]);
         }
     }
 

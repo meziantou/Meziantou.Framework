@@ -1204,6 +1204,14 @@ internal static partial class ColumnBreaker
                     var flowStart = Math.Max(item.Start, group.TrackStarts[track]);
                     if (GetOffset(flowStart) - spillover >= blockSize - Epsilon && flowStart > _position + Epsilon)
                     {
+                        // (an item that spans the next tracks and starts in one of them, e.g. aligned at the end of its grid area,
+                        // does not keep them out of the fragmentainer: they are placed, and the item in a next fragmentainer)
+                        if (track + 1 < group.TrackStarts.Length && item.Start >= group.TrackStarts[track + 1] - Epsilon)
+                        {
+                            _hasDeferredItems = true;
+                            continue;
+                        }
+
                         isAfterFragmentainer = true;
                         continue;
                     }

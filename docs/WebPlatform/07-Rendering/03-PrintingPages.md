@@ -56,8 +56,10 @@ var pages = context.RenderPages();
 - A page of another width may also start in the middle of a table row, of a flex line or of a grid row: the content of
   each cell or item continues in the width of the new page, from the line or the box where its own break is, and the
   content of all of them starts at the top of the page. As in Chromium, the cells of such a row are not aligned
-  (`vertical-align`) in the new page. The items must stay side by side in the new width and start at the top of the row
-  (`align-self` of `normal`, `stretch` or `start`); otherwise the page keeps the width of the previous one.
+  (`vertical-align`) in the new page; neither are the flex and grid items (`align-self`): an item centered or aligned at
+  the end of the row continues at the top of the page too. A table cell that spans the rows after its row continues beside
+  them. The items must stay side by side in the new width, and an aligned item must start before the break; otherwise the
+  page keeps the width of the previous one.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

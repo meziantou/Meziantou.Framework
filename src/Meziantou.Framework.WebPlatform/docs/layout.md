@@ -2840,7 +2840,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     in its track (`align-self: end`, a margin) and does not fit is pushed alone; in a grid, only when it has no possible
     break (as in Blink, a break before the first content of a row is not a possible break: the item is rather broken
     between line boxes that violate `orphans` and `widows`, `ParallelItem.BreaksBeforeAsLastResort`). An item that starts
-    after the end of the fragmentainer where its track started is placed in a next one (the flow continues for it); as in
+    after the end of the fragmentainer where its track started is placed in a next one (the flow continues for it; an item
+    that spans the next tracks and starts in one of them, e.g. aligned at the end of its grid area, does not keep them out of
+    the fragmentainer: their items start there); as in
     Blink, it starts that fragmentainer when its position is before its start (the track grew with monolithic content that
     overflowed the previous one: its offset is truncated). An item that starts before its track (a negative margin) starts with the track, at a negative offset when the track starts a fragmentainer.
     A monolithic item that overflows the fragmentainer ends its track after it (the flow does not break beside it; the items
@@ -3255,17 +3257,24 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   each item that continues after it (`BreakAnchor.Items`: a box, or a block container resumed at a line box; in an item, a
   line box that the break crosses starts its content after its own break, e.g. when its lines are aligned in the cell or
   when `widows` moved a line), and the items whose content ends before the break (`BreakAnchor.Finished`: they must have no
-  content in the page after the break). The items start at the start of the row, and the ones of a flex container or of a
-  grid are aligned at its start (`align-self`: `normal`, `stretch`, `start`, `self-start`, `flex-start`; the cells of a table
-  are not aligned in such a row in the next segment, `LayoutContext.ResumedRowCells`, as in Blink); a cell that spans the
-  rows after its row or monolithic content at the break leave the break without anchor. In the next
+  content in the page after the break, nor be pushed to it, e.g. an item that avoids breaks). The items of a grid row and of a
+  flex line are the items of the track that the break crosses (`GetItemTracks`, from the `ParallelStructure` of the
+  container: an item of the row may end before the break or start after it; an item that spans that row and other rows, or
+  the two rows that a break between rows separates, leaves the break without anchor). The items start at the start of the
+  row, or are aligned in it (`align-self` other than `normal`, `stretch`, `start`, `self-start`, `flex-start`), then they
+  must start before the break; in the next segment, the items of the row are not aligned (`LayoutContext.ResumedRowItems`:
+  the contents of the cells of a table, as in Blink, and the items of a flex line or of a grid row that are not stretched
+  start at the start of the row), so that their content after the break does not depend on the block size of the row. A
+  cell that spans the rows after its row continues beside them: the rows after the row are in `BreakAnchor.Following`,
+  and must start after the content after the break. Monolithic content at the break leaves the break without anchor. In the next
   segment, the items of a flex line and of a grid with `auto-fill` columns start a new line or row
   (`RowResume.Crossed`), and the content after the break of each item starts at the same position: the lowest of them, not
   before the end of the content of the finished items (`MeasureRowBreak`), by new layouts of the strip that add space before
   the content of the others (`LayoutContext.AnchorPushes`: before the first line box of a block container resumed at a line,
   in `InlineLayoutAlgorithm`; before a block-level box, separating its margins from the margins before it, in
   `BlockFormattingContext`), at most `MaxRowAlignmentPasses` times. When the items are not in one row in the strip (the items
-  of a flex line that do not fit in one line in another inline size) or do not reach the same position, the segment is
+  of a flex line that do not fit in one line in another inline size), do not reach the same position, or when an item after
+  the break starts before that position (an item aligned in the row in the strip without the tracks of its items), the segment is
   rejected: `LayoutPages` lays out the previous segment again without ending at that break (`rejectedBreaks`, by the index of
   the first page of the segment), so the page keeps the inline size of the previous one.
   The breaker starts the parallel flows of the segment from the break (`FlowCursor.ResumeAt`): the items that end before it
@@ -3340,9 +3349,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page starts
-  inside a line box, a multi-column container, a table row, between the lines of a flex container that wraps, inside a row
-  flex container, inside a grid row or in a grid whose columns depend on its inline size (it is laid out in the inline size of
-  the strip), the
+  inside a line box sliced by the break, inside monolithic content, a multi-column container, a subgrid, a grid whose
+  columns depend on its inline size and whose items are not placed in their order, or a row whose items cannot continue
+  side by side (it is laid out in the inline size of the strip), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 

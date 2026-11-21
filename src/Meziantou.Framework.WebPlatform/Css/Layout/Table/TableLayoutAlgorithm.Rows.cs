@@ -750,8 +750,8 @@ internal sealed partial class TableLayoutAlgorithm
         var blockSize = isOrthogonal ? fragment.WritingDirection.ToLogical(fragment.Size).Block : layout.BlockSize;
         var contentsBlockSize = fragment.IntrinsicBlockSize;
 
-        // (the cells of a row broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowCells)
-        var alignment = _context.ResumedRowCells is { } resumedCells && resumedCells.Contains(fragment.Box) ? TableCellAlignment.Top : layout.Alignment;
+        // (the cells of a row broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowItems)
+        var alignment = _context.ResumedRowItems is { } resumedCells && resumedCells.Contains(fragment.Box) ? TableCellAlignment.Top : layout.Alignment;
         var offset = alignment switch
         {
             TableCellAlignment.Middle => (blockSize - contentsBlockSize) / 2,

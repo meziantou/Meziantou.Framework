@@ -50,7 +50,14 @@ var pages = context.RenderPages();
   page whose page area has another width is laid out again in it, also when the page starts in the middle of a paragraph
   (its lines continue in the width of the new page), between the rows of a table, between the items of a column flex
   container, between the lines of a flex container that wraps (the items after the break start a new line in the width of
-  the new page), or between the rows of a grid whose number of columns does not depend on its width.
+  the new page), or between the rows of a grid. When the number of columns of the grid depends on its width (`auto-fill`,
+  `auto-fit`), the items after the break start a new row in the width of the new page; this needs items placed in their
+  order (no item with a definite row or column, `grid-auto-flow: row` without `dense`).
+- A page of another width may also start in the middle of a table row, of a flex line or of a grid row: the content of
+  each cell or item continues in the width of the new page, from the line or the box where its own break is, and the
+  content of all of them starts at the top of the page. As in Chromium, the cells of such a row are not aligned
+  (`vertical-align`) in the new page. The items must stay side by side in the new width and start at the top of the row
+  (`align-self` of `normal`, `stretch` or `start`); otherwise the page keeps the width of the previous one.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

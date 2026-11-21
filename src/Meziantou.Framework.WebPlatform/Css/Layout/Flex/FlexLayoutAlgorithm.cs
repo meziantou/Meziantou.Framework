@@ -943,9 +943,9 @@ internal sealed partial class FlexLayoutAlgorithm
         // container; a column container whose block size is indefinite breaks its lines at its maximum block size (as the browsers)
         var available = _definiteMainSize ?? _content.MaxBlockSize ?? double.PositiveInfinity;
 
-        // The content of a page of another inline size that starts between two flex lines (see LayoutContext.FlexLineResumes):
+        // The content of a page of another inline size that starts between two flex lines (see LayoutContext.RowResumes):
         // the items after the break start a new line, the items before it are in the lines before (in the previous pages)
-        var resumed = _properties.IsMultiLine && _context.FlexLineResumes is { } resumes && resumes.TryGetValue(_box, out var following) ? following : null;
+        var resumed = _properties.IsMultiLine && _context.RowResumes is { } resumes && resumes.TryGetValue(_box, out var following) ? following : null;
         if (resumed is not null || !_properties.IsBalanced || !CollectBalancedLines(available, collapse))
         {
             var start = 0;
@@ -974,7 +974,7 @@ internal sealed partial class FlexLayoutAlgorithm
                     if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance)
                         break;
 
-                    if (resumed is not null && end > start && resumed.Contains(item.Box) && !resumed.Contains(_items[end - 1].Box))
+                    if (resumed is not null && end > start && resumed.StartsRow(item.Box, _items[end - 1].Box))
                         break;
 
                     used = next;

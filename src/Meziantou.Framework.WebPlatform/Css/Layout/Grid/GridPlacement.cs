@@ -229,7 +229,11 @@ internal static class GridPlacement
     /// <param name="flow">The grid-auto-flow of the container.</param>
     /// <param name="columnLimit">The number of columns when the grid cannot have implicit columns (a subgridded axis), else null.</param>
     /// <param name="rowLimit">The number of rows when the grid cannot have implicit rows (a subgridded axis), else null.</param>
-    public static void PlaceItems(GridAxisPlacement[] columns, GridAxisPlacement[] rows, int explicitColumns, int explicitRows, GridAutoFlow flow, int? columnLimit = null, int? rowLimit = null)
+    /// <param name="newRows">
+    /// The indexes of the items that start a new row (in the major axis), after the tracks of the items before them, or null: the
+    /// first items of a row broken by a page of another inline size and after its break (see <c>LayoutContext.RowResumes</c>).
+    /// </param>
+    public static void PlaceItems(GridAxisPlacement[] columns, GridAxisPlacement[] rows, int explicitColumns, int explicitRows, GridAutoFlow flow, int? columnLimit = null, int? rowLimit = null, List<int>? newRows = null)
     {
         // The algorithm is written for grid-auto-flow: row; with column, the axes are swapped: the "major" axis is the axis in
         // which new tracks are created (the rows for row), the "minor" axis is the other one
@@ -324,6 +328,17 @@ internal static class GridPlacement
         var cursorMajor = -majorOffset;
         for (var i = 0; i < count; i++)
         {
+            if (i > 0 && newRows is not null && newRows.Contains(i))
+            {
+                // (the item starts a new row, after the rows of the items before it)
+                for (var j = 0; j < i; j++)
+                {
+                    cursorMajor = Math.Max(cursorMajor, major[j].End);
+                }
+
+                cursorMinor = -minorOffset;
+            }
+
             if (major[i].IsDefinite)
                 continue;
 

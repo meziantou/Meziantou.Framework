@@ -60,11 +60,28 @@ internal sealed class LayoutContext
     internal Dictionary<ContainerBox, InlineResume>? InlineResumes { get; set; }
 
     /// <summary>
-    /// The multi-line flex containers of the strip that is being laid out whose items after a break start a new flex line: the
-    /// content of a page of another inline size that starts between two of their flex lines (see
-    /// <c>LayoutEngine.LayoutPageSegment</c>). The first of these items in the order of the items starts a line. Null otherwise.
+    /// The multi-line flex containers and the grid containers of the strip that is being laid out whose items after a break start
+    /// a new flex line or a new grid row: the content of a page of another inline size that starts between two of their flex
+    /// lines or grid rows (see <c>LayoutEngine.LayoutPageSegment</c>). The first of these items in the order of the items starts
+    /// a line or a row. Null otherwise.
     /// </summary>
-    internal Dictionary<ContainerBox, HashSet<ContainerBox>>? FlexLineResumes { get; set; }
+    internal Dictionary<ContainerBox, RowResume>? RowResumes { get; set; }
+
+    /// <summary>
+    /// The space added before the content after a break of the items of a row broken by a page of another inline size (a table
+    /// row, a flex line, a grid row: see <c>LayoutEngine.LayoutPageSegment</c>), so that the content after the break of all the
+    /// items starts at the same position of the strip: by block container whose line boxes start at a position of its inline
+    /// content (see <see cref="InlineResumes"/>), the space before its first line box; by block-level box, the space before it.
+    /// Null otherwise.
+    /// </summary>
+    internal Dictionary<ContainerBox, double>? AnchorPushes { get; set; }
+
+    /// <summary>
+    /// The cells of a table row broken by a page of another inline size (see <see cref="AnchorPushes"/>): their contents are
+    /// aligned at the block-start edge (as in Blink, the cells of a fragmented row are not aligned), so that the content after
+    /// the break does not depend on the block size of the row. Null otherwise.
+    /// </summary>
+    internal HashSet<ContainerBox>? ResumedRowCells { get; set; }
 
     /// <summary>
     /// The inputs of the layout of the strip that is being laid out that depend on its fragmentation, and the records of the

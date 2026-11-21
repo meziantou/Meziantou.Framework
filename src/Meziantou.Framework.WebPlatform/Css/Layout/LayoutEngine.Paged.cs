@@ -308,14 +308,11 @@ internal sealed partial class LayoutEngine
 
                 {
                     var aligned = true;
-                    var isFixedItemBehind = false;
-                    foreach (var (box, itemPosition, isFixed) in rowItems)
+                    foreach (var (box, itemPosition) in rowItems)
                     {
                         if (rowStart - itemPosition > BreakAnchorEpsilon)
                         {
-                            // (a monolithic item that the break slices cannot be moved down: it starts at the start of the row)
                             aligned = false;
-                            isFixedItemBehind |= isFixed;
                             if (alignmentPasses < MaxRowAlignmentPasses)
                             {
                                 anchorPushes![box] = anchorPushes.GetValueOrDefault(box) + rowStart - itemPosition;
@@ -323,7 +320,7 @@ internal sealed partial class LayoutEngine
                         }
                     }
 
-                    if (!aligned && !isFixedItemBehind && alignmentPasses < MaxRowAlignmentPasses)
+                    if (!aligned && alignmentPasses < MaxRowAlignmentPasses)
                     {
                         alignmentPasses++;
                         ClearNestedColumnStates(context);
@@ -585,15 +582,21 @@ internal sealed partial class LayoutEngine
             var placedFragments = slicer.Slice(children, stripSize, spannerBoxes: null);
             ClearNestedColumnStates(context);
 
-            // The page that ends the segment: the first of these pages whose content starts with the anchor (see IsAnchorOfPage)
+            // The page that ends the segment: the first of these pages whose content starts with the anchor (see ResolveAnchorOfPage)
             var segmentEnd = sequence.Count;
             PageSegmentStart? next = null;
             if (segmentEnds is not null)
             {
-                foreach (var (sequenceIndex, index, anchor, areaSize, breakPosition) in segmentEnds)
+                foreach (var (sequenceIndex, index, candidate, areaSize, breakPosition) in segmentEnds)
                 {
-                    if (anchor.IsInRows && !IsAnchorOfPage(anchor, placedFragments[index - 1], placedFragments[index], writingDirection))
-                        continue;
+                    var anchor = candidate;
+                    if (candidate.IsInRows)
+                    {
+                        if (ResolveAnchorOfPage(candidate, placedFragments[index - 1], placedFragments[index], writingDirection) is not { } resolved)
+                            continue;
+
+                        anchor = resolved;
+                    }
 
                     // (a blank page before the page is inserted again by the next segment)
                     segmentEnd = sequenceIndex > 0 && !sequence[sequenceIndex - 1].HasContent ? sequenceIndex - 1 : sequenceIndex;
@@ -826,7 +829,7 @@ internal sealed partial class LayoutEngine
         /// <summary>
         /// Whether the break is inside a container broken between or inside its rows: the rows are parallel flows, whose breaks
         /// may differ from the break of the strip, so the anchor is checked against the content of the pages (see
-        /// <see cref="IsAnchorOfPage"/>).
+        /// <see cref="ResolveAnchorOfPage"/>).
         /// </summary>
         public bool IsInRows { get; init; }
 
@@ -844,6 +847,9 @@ internal sealed partial class LayoutEngine
         /// <summary>The items of the broken row (see <see cref="Items"/>), or null.</summary>
         public HashSet<ContainerBox>? RowItems { get; init; }
 
+        /// <summary>The items of <see cref="RowItems"/> that span the rows before the broken row, which start before it, or null.</summary>
+        public HashSet<ContainerBox>? SpanningItems { get; init; }
+
         /// <summary>
         /// When the break slices the content after it (a monolithic box, <see cref="Box"/>, or the line box of <see cref="Resume"/>,
         /// taller than the page): the offset of the break from its block-start edge, else null.
@@ -852,6 +858,14 @@ internal sealed partial class LayoutEngine
 
         /// <summary>The geometry of the content that the break slices in the strip of the break (see <see cref="SliceOffset"/>), or null.</summary>
         public SlicedContent? Slice { get; init; }
+
+        /// <summary>
+        /// For the line box of <see cref="Resume"/> that the break crosses in an item of a row: the offset of the break from its
+        /// block-start edge, else null. The break of the item may be before the line (the line starts the next page), or the break
+        /// slices it, a line taller than the page: then it is in both pages, and the anchor is its rest (see
+        /// <see cref="ResolveAnchorOfPage"/>, <see cref="SliceOffset"/>).
+        /// </summary>
+        public double? SlicedLineOffset { get; init; }
     }
 
     /// <summary>
@@ -930,18 +944,23 @@ internal sealed partial class LayoutEngine
             return null;
 
         // (the content that the break slices in the items of a broken row)
-        if (anchor.Items is { } items && items.Any(item => item.SliceOffset is not null))
+        // (and the lines that the break crosses, which it may slice)
+        if (anchor.Items is { } items && items.Any(item => item.SliceOffset is not null || item.SlicedLineOffset is not null))
         {
             var measured = new List<BreakAnchor>(items.Count);
             foreach (var item in items)
             {
-                if (item.SliceOffset is null)
+                if (item.SliceOffset is null && item.SlicedLineOffset is null)
                 {
                     measured.Add(item);
                 }
                 else if (MeasureSlicedContent(children, stripSize, writingDirection, item) is { } itemSlice)
                 {
                     measured.Add(item with { Slice = itemSlice });
+                }
+                else if (item.SliceOffset is null)
+                {
+                    measured.Add(item);
                 }
                 else
                 {
@@ -1072,8 +1091,9 @@ internal sealed partial class LayoutEngine
             if (bottom > position + BreakAnchorEpsilon)
             {
                 // (in an item of a row, a line box that the break crosses starts the content of the item after its own break)
+                // (or, when the break slices it, a line taller than the page, its rest: see BreakAnchor.SlicedLineOffset)
                 if (isParallelFlow && child is LineBoxFragment { StartPosition: { } crossedResume } && parent is not null)
-                    return new BreakAnchor(parent.Box, writingDirection.ToLogical(parent.Border.Add(parent.Padding).Add(parent.Scrollbars)).BlockStart, crossedResume);
+                    return new BreakAnchor(parent.Box, writingDirection.ToLogical(parent.Border.Add(parent.Padding).Add(parent.Scrollbars)).BlockStart, crossedResume) { SlicedLineOffset = position - top };
 
                 // (a line box taller than the page, which the break slices: the line boxes of its block container are laid out again
                 // from its start, and the page starts inside it, see SlicedContent)
@@ -1130,6 +1150,7 @@ internal sealed partial class LayoutEngine
         List<(BoxFragment Item, double Top)>? crossedItems = null;
         HashSet<ContainerBox>? following = null;
         HashSet<ContainerBox>? preceding = null;
+        HashSet<ContainerBox>? spanning = null;
         BoxFragment? first = null;
         var firstTop = double.PositiveInfinity;
 
@@ -1171,10 +1192,20 @@ internal sealed partial class LayoutEngine
                     crossedCount++;
                     (crossedItems ??= []).Add((child, childTop));
                 }
+                else if (box.Box.Display.Inside == DisplayInside.Grid && !IsAutoRepeatGridContainer(box.Box)
+                    && itemTrack.Start < (tracks.Crossed >= 0 ? tracks.Crossed : tracks.After) && itemTrack.End >= (tracks.Crossed >= 0 ? tracks.Crossed : tracks.After))
+                {
+                    // (an item of a grid whose rows do not depend on its inline size that spans the rows before the row that the break
+                    // crosses, or the two rows that the break separates, continues beside them: it starts at the start of its first
+                    // row, before the start of the others)
+                    crossedCount++;
+                    (crossedItems ??= []).Add((child, childTop));
+                    (spanning ??= []).Add(child.Box);
+                }
                 else
                 {
-                    // (an item that spans the row that the break crosses and the rows before it or the rows of a grid whose rows
-                    // depend on its inline size, or two rows that the break separates)
+                    // (an item that spans the row that the break crosses and the rows before it in a grid whose rows depend on its
+                    // inline size)
                     return null;
                 }
             }
@@ -1229,7 +1260,7 @@ internal sealed partial class LayoutEngine
                 }
             }
 
-            return FindRowBreakAnchor(box, crossedItems, following, preceding, writingDirection, position);
+            return FindRowBreakAnchor(box, crossedItems, following, preceding, spanning, writingDirection, position);
         }
 
         // A break inside the only row that it crosses, when the rows are stacked: the content after it in that row starts the
@@ -1265,17 +1296,21 @@ internal sealed partial class LayoutEngine
     /// row starts after the break, when an item does not start at the start of the row (but it is aligned in it), or has content
     /// after the break that cannot be found again.
     /// </summary>
-    private static BreakAnchor? FindRowBreakAnchor(BoxFragment container, List<(BoxFragment Item, double Top)> crossed, HashSet<ContainerBox>? following, HashSet<ContainerBox>? preceding, WritingDirection writingDirection, double position)
+    private static BreakAnchor? FindRowBreakAnchor(BoxFragment container, List<(BoxFragment Item, double Top)> crossed, HashSet<ContainerBox>? following, HashSet<ContainerBox>? preceding, HashSet<ContainerBox>? spanning, WritingDirection writingDirection, double position)
     {
         var isTableRow = container.Box.Display.Internal == DisplayInternal.TableRow;
         FlexContainerProperties? flexProperties = container.Box.Display.Inside == DisplayInside.Flex ? FlexContainerProperties.Get(container.Box) : null;
         if (flexProperties is { IsCrossReverse: true } or { IsWebkitBox: true })
             return null;
 
+        // (the start of the row: the items that span the rows before it start before it)
         var rowTop = double.PositiveInfinity;
-        foreach (var (_, itemTop) in crossed)
+        foreach (var (item, itemTop) in crossed)
         {
-            rowTop = Math.Min(rowTop, itemTop);
+            if (spanning?.Contains(item.Box) != true)
+            {
+                rowTop = Math.Min(rowTop, itemTop);
+            }
         }
 
         List<BreakAnchor>? items = null;
@@ -1289,10 +1324,19 @@ internal sealed partial class LayoutEngine
             if (!isTableRow)
             {
                 // (the items of a flex or grid row start at its block-start edge, or are aligned in it: an aligned item continues
-                // at the start of the next page, see LayoutContext.ResumedRowItems, so it must start before the break)
+                // at the start of the next page, see LayoutContext.ResumedRowItems; an aligned item that starts after the break
+                // starts the next page whole, moved down to the content after the break of the other items, see
+                // LayoutContext.AnchorPushes)
                 var alignSelf = flexProperties is { } flex ? flex.GetAlignSelf(item.Box.Style.Layout) : BoxAlignment.GetAlignSelf(item.Box.Style.Layout, container.Box.Style.Layout);
                 var isAligned = alignSelf.Keyword is not (AlignmentKeyword.Auto or AlignmentKeyword.Normal or AlignmentKeyword.Stretch or AlignmentKeyword.Start or AlignmentKeyword.SelfStart or AlignmentKeyword.FlexStart);
-                if (isAligned ? itemTop >= position - BreakAnchorEpsilon : Math.Abs(itemTop - rowTop) > BreakAnchorEpsilon)
+                if (isAligned && itemTop >= position - BreakAnchorEpsilon)
+                {
+                    rowItems.Add(item.Box);
+                    (items ??= []).Add(new BreakAnchor(item.Box, 0));
+                    continue;
+                }
+
+                if (!isAligned && spanning?.Contains(item.Box) != true && Math.Abs(itemTop - rowTop) > BreakAnchorEpsilon)
                     return null;
             }
             else if (Math.Abs(itemTop - rowTop) > BreakAnchorEpsilon)
@@ -1341,7 +1385,7 @@ internal sealed partial class LayoutEngine
         if (items is null)
             return null;
 
-        return new BreakAnchor(items[0].Box, 0, Container: container.Box, Following: following) { Preceding = preceding, IsInRows = true, Items = items, Finished = finished, RowItems = rowItems };
+        return new BreakAnchor(items[0].Box, 0, Container: container.Box, Following: following) { Preceding = preceding, IsInRows = true, Items = items, Finished = finished, RowItems = rowItems, SpanningItems = spanning };
     }
 
     /// <summary>
@@ -1419,9 +1463,9 @@ internal sealed partial class LayoutEngine
     /// break. Null when the row is not in the strip, or when its items are not in one row in it (e.g. the items of a flex line
     /// that do not fit in one line in another inline size).
     /// </summary>
-    private static (List<(ContainerBox Box, double Position, bool IsFixed)> Items, double Start)? MeasureRowBreak(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, BreakAnchor anchor, Dictionary<ContainerBox, double>? pushes)
+    private static (List<(ContainerBox Box, double Position)> Items, double Start)? MeasureRowBreak(ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, BreakAnchor anchor, Dictionary<ContainerBox, double>? pushes)
     {
-        var positions = new List<(ContainerBox Box, double Position, bool IsFixed)>();
+        var positions = new List<(ContainerBox Box, double Position)>();
         var start = double.NegativeInfinity;
         foreach (var item in anchor.Items!)
         {
@@ -1430,27 +1474,37 @@ internal sealed partial class LayoutEngine
 
             // (the space before the first line box of a block container resumed at a line box is in its content box)
             var itemPosition = top + item.Offset + (item.Resume is not null && pushes is not null ? pushes.GetValueOrDefault(item.Box) : 0);
-            var isFixed = false;
-            if (item.Slice is { } slice)
+            if (item is { Slice: { } slice, SliceOffset: not null })
             {
                 // (the content that the break slices has the same size in this strip: its rest continues the part in the previous
-                // page; a monolithic item cannot be moved down, a monolithic box of an item can, by the space before it)
+                // page)
                 if (MeasureSlicedContent(children, stripSize, writingDirection, item) is not { } sliced || !sliced.HasSameSize(slice))
                     return null;
 
                 itemPosition = sliced.Top + item.SliceOffset.GetValueOrDefault();
-                isFixed = anchor.RowItems!.Contains(item.Box);
             }
 
-            positions.Add((item.Box, itemPosition, isFixed));
+            positions.Add((item.Box, itemPosition));
             start = Math.Max(start, itemPosition);
         }
 
-        // (the items of the row are in one row: they start at the same position)
+        // (the items of the row are in one row: they start at the same position, before the space added to the margins of the
+        // items moved down, see LayoutContext.AnchorPushes)
         double? rowTop = null;
         foreach (var box in anchor.RowItems!)
         {
-            if (FindBoxFragment(children, stripSize, writingDirection, box, parentTop: 0) is not var (_, itemTop) || (rowTop is { } expected && Math.Abs(itemTop - expected) > BreakAnchorEpsilon))
+            if (FindBoxFragment(children, stripSize, writingDirection, box, parentTop: 0) is not var (_, itemTop))
+                return null;
+
+            if (anchor.SpanningItems?.Contains(box) == true)
+                continue;
+
+            if (pushes is not null && !anchor.Items!.Any(item => item.Resume is not null && ReferenceEquals(item.Box, box)))
+            {
+                itemTop -= pushes.GetValueOrDefault(box);
+            }
+
+            if (rowTop is { } expected && Math.Abs(itemTop - expected) > BreakAnchorEpsilon)
                 return null;
 
             rowTop = itemTop;
@@ -1469,6 +1523,19 @@ internal sealed partial class LayoutEngine
             }
         }
 
+        // (when an item spans the rows before the broken row, its content after the break may start in them in this strip: the
+        // start is after the end of the items of these rows, which are in the previous pages)
+        if (anchor is { SpanningItems: not null, Preceding: { } preceding })
+        {
+            foreach (var box in preceding)
+            {
+                if (FindBoxFragment(children, stripSize, writingDirection, box, parentTop: 0) is var (fragment, top))
+                {
+                    start = Math.Max(start, top + writingDirection.ToLogical(fragment.Size).Block);
+                }
+            }
+        }
+
         // (the items after the break are after the start: their content is not in the previous pages)
         if (anchor.Following is { } following)
         {
@@ -1483,26 +1550,34 @@ internal sealed partial class LayoutEngine
     }
 
     /// <summary>
-    /// Returns whether the content of a page starts with the anchor of its break (see <see cref="BreakAnchor.IsInRows"/>): the rows
-    /// before the break do not continue in it, the rows after the break and the anchor box are not in the previous page, and
-    /// the anchor box is in it, starting with the line box of <see cref="BreakAnchor.Resume"/>. Then the content before the
-    /// anchor is in the previous pages, and the content after it is laid out again from it.
+    /// Returns the anchor of the break of a page when the content of the page starts with it (see <see cref="BreakAnchor.IsInRows"/>),
+    /// else null: the rows before the break do not continue in it, the rows after the break and the anchor box are not in the
+    /// previous page, and the anchor box is in it, starting with the line box of <see cref="BreakAnchor.Resume"/> (or with the rest
+    /// of that line, when the break slices it: the anchor of the item is then its rest, see <see cref="BreakAnchor.SlicedLineOffset"/>).
+    /// Then the content before the anchor is in the previous pages, and the content after it is laid out again from it.
     /// </summary>
-    private static bool IsAnchorOfPage(BreakAnchor anchor, List<FragmentSlicer.PlacedFragment> previousPage, List<FragmentSlicer.PlacedFragment> page, WritingDirection writingDirection)
+    private static BreakAnchor? ResolveAnchorOfPage(BreakAnchor anchor, List<FragmentSlicer.PlacedFragment> previousPage, List<FragmentSlicer.PlacedFragment> page, WritingDirection writingDirection)
     {
         if (anchor.Preceding is { } preceding && ContainsAnyBox(page, preceding))
-            return false;
+            return null;
 
         if (anchor.Following is { } following && ContainsAnyBox(previousPage, following))
-            return false;
+            return null;
 
         if (anchor.Items is { } items)
         {
             // (the content after the break of each item of a broken row starts the page)
-            foreach (var item in items)
+            List<BreakAnchor>? resolvedItems = null;
+            for (var i = 0; i < items.Count; i++)
             {
-                if (!IsAnchorOfPage(item, previousPage, page, writingDirection))
-                    return false;
+                if (ResolveAnchorOfPage(items[i], previousPage, page, writingDirection) is not { } resolvedItem)
+                    return null;
+
+                if (!ReferenceEquals(resolvedItem, items[i]))
+                {
+                    resolvedItems ??= [.. items];
+                    resolvedItems[i] = resolvedItem;
+                }
             }
 
             // (the items that end before the break of the strip have no content in the page: their own break is not before it, and
@@ -1512,44 +1587,59 @@ internal sealed partial class LayoutEngine
                 foreach (var box in finished)
                 {
                     if (FindFirstFragment(page, box) is { } finishedFragment && (FindFirstFragment(previousPage, box) is null || HasContentStartingInPage(finishedFragment, previousPage)))
-                        return false;
+                        return null;
                 }
             }
 
-            return true;
+            return resolvedItems is null ? anchor : anchor with { Items = resolvedItems };
         }
 
         if (FindFirstFragment(page, anchor.Box) is not { } fragment)
-            return false;
+            return null;
 
         // (the content that the break slices is in both pages, and its part in the page starts at the break: the break of its
         // own flow is the break of the strip)
         if (anchor.SliceOffset is { } sliceOffset)
-            return FindFirstFragment(previousPage, anchor.Box) is not null && FindBlockOffset(page, anchor.Box, writingDirection) is { } offset && Math.Abs(offset + sliceOffset) <= BreakAnchorEpsilon;
+            return FindFirstFragment(previousPage, anchor.Box) is not null && FindBlockOffset(page, anchor.Box, writingDirection) is { } offset && Math.Abs(offset + sliceOffset) <= BreakAnchorEpsilon ? anchor : null;
 
         if (anchor.Resume is { } resume)
         {
-            // (the line box is not in the previous page: a line sliced by the break, which could not be pushed to the next
-            // page, is in both)
+            // (the first line box of the page is the line of the anchor)
+            var fragmentTop = FindBlockOffset(page, anchor.Box, writingDirection);
+            LineBoxFragment? firstLine = null;
+            var firstLineTop = 0d;
+            foreach (var child in fragment.ChildrenSpan)
+            {
+                if (child is LineBoxFragment line)
+                {
+                    firstLine = line;
+                    firstLineTop = FragmentationFlow.GetBlockRange(line, fragment.Size, writingDirection, fragmentTop.GetValueOrDefault()).Top;
+                    break;
+                }
+            }
+
+            if (firstLine?.StartPosition != resume)
+                return null;
+
+            // (the line box is not in the previous page; a line sliced by the break, which could not be pushed to the next page, is
+            // in both: its rest starts the page at the offset of the break)
             if (FindFirstFragment(previousPage, anchor.Box) is { } previousFragment)
             {
                 foreach (var child in previousFragment.ChildrenSpan)
                 {
                     if (child is LineBoxFragment { StartPosition: var previousStart } && previousStart == resume)
-                        return false;
+                    {
+                        return anchor is { SlicedLineOffset: { } slicedOffset, Slice: not null } && fragmentTop is not null && Math.Abs(firstLineTop + slicedOffset) <= BreakAnchorEpsilon
+                            ? anchor with { SliceOffset = slicedOffset }
+                            : null;
+                    }
                 }
             }
 
-            foreach (var child in fragment.ChildrenSpan)
-            {
-                if (child is LineBoxFragment line)
-                    return line.StartPosition == resume;
-            }
-
-            return false;
+            return anchor;
         }
 
-        return FindFirstFragment(previousPage, anchor.Box) is null;
+        return FindFirstFragment(previousPage, anchor.Box) is null ? anchor : null;
 
         // Returns whether a fragment has a line box or a box whose content is not in the previous page
         static bool HasContentStartingInPage(Fragment fragment, List<FragmentSlicer.PlacedFragment> previousPage)

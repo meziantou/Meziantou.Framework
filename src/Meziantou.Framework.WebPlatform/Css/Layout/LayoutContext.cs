@@ -71,8 +71,8 @@ internal sealed class LayoutContext
     /// The space added before the content after a break of the items of a row broken by a page of another inline size (a table
     /// row, a flex line, a grid row: see <c>LayoutEngine.LayoutPageSegment</c>), so that the content after the break of all the
     /// items starts at the same position of the strip: by block container whose line boxes start at a position of its inline
-    /// content (see <see cref="InlineResumes"/>), the space before its first line box; by block-level box, the space before it.
-    /// Null otherwise.
+    /// content (see <see cref="InlineResumes"/>), the space before its first line box; by block-level box, the space before it;
+    /// by item of a flex line or of a grid row, the space added to its block-start margin. Null otherwise.
     /// </summary>
     internal Dictionary<ContainerBox, double>? AnchorPushes { get; set; }
 

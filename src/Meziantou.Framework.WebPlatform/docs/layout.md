@@ -3247,7 +3247,7 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   but not before the end of the other children (which may end later in another inline size, e.g. with another alignment).
   The rows are parallel flows that break apart from the flow of their container (a row may continue after the break of the
   strip: a grid item that avoids breaks, the cells of a row, an item whose own break is before the one of the strip), so
-  such a page ends the segment only when its content starts with the anchor (`IsAnchorOfPage`, checked on the fragments
+  such a page ends the segment only when its content starts with the anchor (`ResolveAnchorOfPage`, checked on the fragments
   that the slicer placed in the pages: no fragment of a row before the break in it, no fragment of a row after the break
   nor of the anchor in the previous page, and the first line box of a block container resumed at a line is that line, not
   also in the previous page where a line sliced by the break is); else the page is laid out in the inline size of the strip
@@ -3259,21 +3259,28 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   when `widows` moved a line), and the items whose content ends before the break (`BreakAnchor.Finished`: they must have no
   content in the page after the break, nor be pushed to it, e.g. an item that avoids breaks). The items of a grid row and of a
   flex line are the items of the track that the break crosses (`GetItemTracks`, from the `ParallelStructure` of the
-  container: an item of the row may end before the break or start after it; an item that spans that row and other rows, or
-  the two rows that a break between rows separates, leaves the break without anchor). The items start at the start of the
-  row, or are aligned in it (`align-self` other than `normal`, `stretch`, `start`, `self-start`, `flex-start`), then they
-  must start before the break; in the next segment, the items of the row are not aligned (`LayoutContext.ResumedRowItems`:
+  container: an item of the row may end before the break or start after it; an item that spans that row and the rows
+  before it, or the two rows that a break between rows separates, is an item of the row in a grid whose columns do not
+  depend on its inline size, `BreakAnchor.SpanningItems`: it starts before the others, and the content after the break
+  starts after the end of the items of the rows before, `BreakAnchor.Preceding`, which its content may start in; else it
+  leaves the break without anchor). The items start at the start of the row, or are aligned in it (`align-self` other than
+  `normal`, `stretch`, `start`, `self-start`, `flex-start`): an aligned item that starts after the break starts the next
+  page whole (its anchor is the item, at offset 0); in the next segment, the items of the row are not aligned (`LayoutContext.ResumedRowItems`:
   the contents of the cells of a table, as in Blink, and the items of a flex line or of a grid row that are not stretched
   start at the start of the row), so that their content after the break does not depend on the block size of the row. A
   cell that spans the rows after its row continues beside them: the rows after the row are in `BreakAnchor.Following`,
   and must start after the content after the break. Monolithic content of an item that the break slices (the item, or a
   monolithic block-level box of its block flow) is the anchor of the item (`BreakAnchor.SliceOffset`): it must have the same
   size in the strip of the segment (`SlicedContent.HasSameSize`: its position follows the item, whose position depends on the
-  inline size, e.g. a column of a grid), and its rest must start the next page (`IsAnchorOfPage`: it is in both pages, at the
-  offset of the break in the page); a monolithic item cannot be moved down by `LayoutContext.AnchorPushes`, so the segment
-  is rejected when the content after the break of another item starts below its break. The content of a finished monolithic
-  item is the item itself (its block-end edge, not the end of its children). A line box of an item that the break slices
-  leaves the break without anchor. In the next
+  inline size, e.g. a column of a grid), and its rest must start the next page (`ResolveAnchorOfPage`: it is in both pages, at the
+  offset of the break in the page). An item of a flex line or of a grid row whose anchor is the item is moved down by the
+  space added to its block-start margin (`LayoutContext.AnchorPushes`, in `FlexLayoutAlgorithm` and `GridLayoutAlgorithm`;
+  the check that the items are in one row ignores it). The content of a finished monolithic
+  item is the item itself (its block-end edge, not the end of its children). A line box of an item that the break crosses
+  is the start of its content after the break (`BreakAnchor.Resume`), as when the break of the item is before it, or its rest
+  when the break slices it (`BreakAnchor.SlicedLineOffset`): only the pages tell (`ResolveAnchorOfPage`: a sliced line is in
+  both pages, and its rest starts the page at the offset of the break; the anchor of the item then has a `SliceOffset`, and
+  the line box must have the same size and content in the strip of the segment). In the next
   segment, the items of a flex line and of a grid with `auto-fill` columns start a new line or row
   (`RowResume.Crossed`), and the content after the break of each item starts at the same position: the lowest of them, not
   before the end of the content of the finished items (`MeasureRowBreak`), by new layouts of the strip that add space before
@@ -3367,7 +3374,7 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page starts
-  inside a line box sliced by the break, inside monolithic content, a multi-column container, a subgrid, a grid whose
+  inside a line box or monolithic content sliced by the break that is not laid out the same way, a multi-column container, a subgrid, a grid whose
   columns depend on its inline size and whose items are not placed in their order, or a row whose items cannot continue
   side by side (it is laid out in the inline size of the strip), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,

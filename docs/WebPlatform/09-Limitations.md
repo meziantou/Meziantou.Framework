@@ -26,11 +26,9 @@ fails.
     new inline size, inside a multi-column container, inside a subgrid, inside a
     grid whose number of columns depends on its width (`auto-fill`, `auto-fit`) and whose items are not placed in their
     order (an item with a definite row or column, `grid-auto-flow: column` or `dense`), or inside a table row, a flex line
-    or a grid row whose items cannot continue side by side in the new width (an item aligned in the row that starts after
-    the break, a grid item that spans rows before the broken row or the rows of a grid whose number of columns depends on
-    its width, items of a flex line that no longer fit in one line, an item with a line box sliced by the break or an image sliced by the
-    break that changes size, an image item cut above the content after the break of the other items): it keeps the
-    inline size of the previous page;
+    or a grid row whose items cannot continue side by side in the new width (a grid item that spans several rows of a grid
+    whose number of columns depends on its width, items of a flex line that no longer fit in one line, an item whose line
+    box or image sliced by the break changes size or content): it keeps the inline size of the previous page;
   - the spelling changes at a hyphenation break that need a dictionary (the triple consonants of the Swedish and Norwegian
     compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);

@@ -738,6 +738,25 @@ public sealed class PagedMediaTests : IDisposable
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }
 
+    [Theory]
+    [InlineData(100)]
+    [InlineData(300)]
+    public void Pages_GridItemThatSpansTheRowBeforeTheBreakIsLaidOutInAPageOfAnotherInlineSize(int firstRowHeight)
+    {
+        // The paragraph of the first item spans the two rows of the grid (400px tall in the 100px wide columns of the first
+        // page): the break crosses its second row (or, after a first row of 300px, is between the rows). It continues beside the
+        // second row in the 400px wide page area of the second page (200px wide columns)
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a style='grid-row: span 2'>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div style='height: {{firstRowHeight}}px'></div><div id=b style='height: 100px'></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, 200d), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+        Assert.Equal(200, GetPageRects(pages, document.GetElementById("b")!)[^1].Rect.Width);
+    }
+
     [Fact]
     public void Pages_RowWithACellThatSpansTheNextRowIsLaidOutInAPageOfAnotherInlineSize()
     {
@@ -770,20 +789,25 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Theory]
-    [InlineData("display: flex")]
-    [InlineData("display: grid; grid-template-columns: 1fr 1fr")]
-    public void Pages_RowWithAnItemAlignedAfterTheBreakKeepsItsLayout(string display)
+    [InlineData("display: flex", "")]
+    [InlineData("display: grid; grid-template-columns: 1fr 1fr", "")]
+    [InlineData("display: flex", "padding-top: 20px")]
+    [InlineData("display: grid; grid-template-columns: 1fr 1fr", "padding-top: 20px")]
+    public void Pages_RowWithAnItemAlignedAfterTheBreakIsLaidOutInAPageOfAnotherInlineSize(string display, string firstItemStyle)
     {
-        // The second item is aligned at the end of the row, after the break: its position depends on the block size of the row,
-        // so the row keeps the layout of the first page
+        // The second item is aligned at the end of the row, after the break (the paragraph of the first item is 400px tall in the
+        // first page, 100px wide): it starts the second page whole, beside the rest of the paragraph, which continues in the
+        // 400px wide page area (200px wide columns); the items are not aligned there (with a padding before the paragraph, the
+        // second item is moved down to its content, see LayoutContext.AnchorPushes)
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { flex: 1 1 0; min-width: 0 }</style>
-            <div id=c style='{{display}}'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='align-self: end; height: 100px'></div></div>
+            <div id=c style='{{display}}'><div id=a style='{{firstItemStyle}}'>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='align-self: end; height: 100px'></div></div>
             """);
         using var session = document.BeginPrint(Options);
         var pages = session.GetPages();
-        Assert.Equal((1, 100d), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
-        Assert.Equal([(1, new PhysicalRect(100, 0, 100, 100))], GetPageRects(pages, document.GetElementById("b")!));
+        Assert.Equal((1, 200d), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
+        Assert.Equal([(1, new PhysicalRect(200, 0, 200, 100))], GetPageRects(pages, document.GetElementById("b")!));
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
     }
 
     [Theory]
@@ -810,12 +834,17 @@ public sealed class PagedMediaTests : IDisposable
     [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div style='padding-top: 20px'><div id=m style='contain: size; width: 80px; height: 400px'></div><div style='height: 20px'></div></div>", "</div>", 200)]
     [InlineData("<table style='width: 100%; border-spacing: 0'><tr>", "<td style='padding: 0; width: 80px'><div id=m style='contain: size; width: 80px; height: 400px'></div></td>", "</tr></table>", 320)]
     [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id=m style='contain: size; width: 80%; height: 400px'></div>", "</div>", 100)]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div style='line-height: 0'><span id=m style='display: inline-block; width: 80px; height: 400px; vertical-align: top'></span></div>", "</div>", 200)]
+    [InlineData("<div style='display: flex; align-items: flex-start'>", "<div style='flex: none; width: 80px; line-height: 0'><span id=m style='display: inline-block; width: 80px; height: 400px; vertical-align: top'></span></div>", "</div>", 320)]
+    [InlineData("<table style='width: 100%; border-spacing: 0'><tr>", "<td style='padding: 0; width: 80px; line-height: 0'><span id=m style='display: inline-block; width: 80px; height: 400px; vertical-align: top'></span></td>", "</tr></table>", 320)]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div style='line-height: 0'><span id=m style='display: inline-block; width: 80px; height: 400px; vertical-align: top'></span> XXXX</div>", "</div>", 100)]
     public void Pages_RowWithAMonolithicItemSlicedByTheBreakIsLaidOutInAPageOfAnotherInlineSize(string start, string item, string end, double secondPageWidth)
     {
-        // The monolithic content of the second item (a box with size containment, as an image) is taller than the 300px tall
-        // pages: the break slices it. When it has the same size in the 400px wide page area of the second page, its rest
-        // continues there, the paragraph of the first item continues beside it in that inline size, from the same position;
-        // else (80% of its column) the row keeps the layout of the first page
+        // The monolithic content of the second item (a box with size containment, as an image, or a line box with an
+        // inline-block) is taller than the 300px tall pages: the break slices it. When it has the same size and content in the
+        // 400px wide page area of the second page, its rest continues there, the paragraph of the first item continues beside it
+        // in that inline size, from the same position; else (80% of its column, a line that holds a word in a wider column) the
+        // row keeps the layout of the first page
         var tag = start.StartsWith("<table", StringComparison.Ordinal) ? "td style='padding: 0'" : "div";
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
@@ -824,7 +853,7 @@ public sealed class PagedMediaTests : IDisposable
         using var session = document.BeginPrint(Options);
         var pages = session.GetPages();
         Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect), ..] ? (page, rect.Width) : default);
-        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+        Assert.Equal(item.Contains("XXXX", StringComparison.Ordinal) ? 81 : 80, pages.Sum(page => CountWords(page.Content)));
         var sliced = GetPageRects(pages, document.GetElementById("m")!);
         Assert.Equal(2, sliced.Count);
         Assert.Equal((1, sliced[0].Rect.Y - 300, sliced[0].Rect.Width, sliced[0].Rect.Height), (sliced[1].Page, sliced[1].Rect.Y, sliced[1].Rect.Width, sliced[1].Rect.Height));

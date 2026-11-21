@@ -949,7 +949,8 @@ internal sealed partial class LayoutEngine
     /// inline size (a box, a line box of a block container). In the strip of another inline size, the content after the break
     /// of all the items starts at the same position (see <see cref="LayoutContext.AnchorPushes"/>). Null when an item is aligned
     /// in the block size of the row (other than at its start, but the cells of a table, which are not aligned in such a row:
-    /// <see cref="LayoutContext.ResumedRowCells"/>), spans other rows, or has content after the break that cannot be found again.
+    /// <see cref="LayoutContext.ResumedRowCells"/>), spans other rows, is monolithic and crosses the break (an image), or has
+    /// content after the break that cannot be found again.
     /// </summary>
     private static BreakAnchor? FindRowBreakAnchor(BoxFragment container, List<(BoxFragment Item, double Top)> crossed, HashSet<ContainerBox>? following, HashSet<ContainerBox>? preceding, WritingDirection writingDirection, double position)
     {
@@ -974,13 +975,24 @@ internal sealed partial class LayoutEngine
                 if (alignSelf.Keyword is not (AlignmentKeyword.Auto or AlignmentKeyword.Normal or AlignmentKeyword.Stretch or AlignmentKeyword.Start or AlignmentKeyword.SelfStart or AlignmentKeyword.FlexStart))
                     return null;
             }
-            else if (FragmentationFlow.GetBlockRange(item, container.Size, writingDirection, rowTop).Bottom > rowTop + writingDirection.ToLogical(container.Size).Block + BreakAnchorEpsilon)
+            else if (itemTop + writingDirection.ToLogical(item.Size).Block > rowTop + writingDirection.ToLogical(container.Size).Block + BreakAnchorEpsilon)
             {
                 // (a cell that spans the rows after its row)
                 return null;
             }
 
             rowItems.Add(item.Box);
+
+            // (a monolithic item, such as an image, that the break crosses is sliced: it cannot continue in another inline size)
+            if (FragmentationFlow.IsMonolithic(item, writingDirection, scrollContainersAreMonolithic: false))
+            {
+                if (itemTop + writingDirection.ToLogical(item.Size).Block > position + BreakAnchorEpsilon)
+                    return null;
+
+                (finished ??= []).Add(item.Box);
+                continue;
+            }
+
             if (GetContentBlockEnd(item, writingDirection, itemTop) <= position + BreakAnchorEpsilon)
             {
                 (finished ??= []).Add(item.Box);

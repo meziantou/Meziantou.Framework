@@ -644,6 +644,24 @@ public sealed class PagedMediaTests : IDisposable
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }
 
+    [Theory]
+    [InlineData(400, 100)]
+    [InlineData(100, 200)]
+    public void Pages_RowWithAMonolithicItemIsLaidOutInAPageOfAnotherInlineSizeWhenItEndsBeforeTheBreak(int height, double secondPageWidth)
+    {
+        // The second item is monolithic (size containment, as an image): when the break crosses it, it is sliced and cannot
+        // continue in another inline size, so the row keeps the layout of the first page; when it ends before the break, the
+        // paragraph of the first item continues in the 400px wide page area of the second page
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='contain: size; height: {{height}}px'></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+    }
+
     [Fact]
     public void Pages_AutoRepeatGridWithAPlacedItemKeepsItsLayout()
     {

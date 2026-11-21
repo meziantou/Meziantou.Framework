@@ -57,6 +57,30 @@ Assert.Equal("report.csv", item.Attachments.Single().Name);
 ```
 <!-- endref -->
 
+## Outlook templates
+
+An Outlook template (`.oft`) is an `.msg` file whose root storage has the class identifier of the templates: Outlook
+creates a new item from it when it opens it. [MsgFile.Load](cref:Meziantou.Framework.Email.Mapi.MsgFile.Load) reads it
+as an `.msg` file, [MsgFile.IsTemplate](cref:Meziantou.Framework.Email.Mapi.MsgFile.IsTemplate) tells it from an
+`.msg` file, and the `template` parameter of [MsgFile.Save](cref:Meziantou.Framework.Email.Mapi.MsgFile.Save) writes
+one:
+
+<!-- ref:../../../tests/Meziantou.Framework.Email.Tests/MsgFileTests.cs;region=MsgFile_Template;format=md-fenced-code-block;dedent=true -->
+```csharp
+var template = new MapiMessageBuilder
+{
+    Subject = "Weekly status",
+    Body = "Done:\r\nNext:\r\n",
+};
+MsgFile.Save(template, path, template: true);
+
+var bytes = File.ReadAllBytes(path);
+Assert.True(MsgFile.IsTemplate(bytes));
+Assert.Equal(EmailFileFormat.OutlookTemplate, EmailFormatDetector.Detect(bytes));
+Assert.Equal("Weekly status", MsgFile.Load(bytes).Subject);
+```
+<!-- endref -->
+
 ## Convert between .msg and PST files
 
 [MapiMessageBuilder.FromMessage](cref:Meziantou.Framework.Email.Mapi.MapiMessageBuilder.FromMessage) copies an item, with all

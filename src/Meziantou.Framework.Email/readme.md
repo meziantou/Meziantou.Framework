@@ -9,7 +9,8 @@ Reads and writes email files, without native dependencies. It does not send emai
   No Outlook or MAPI installation is needed.
 - Email messages (`.eml`): the Internet Message Format and MIME, with the encoded headers, the multiparts, the
   attachments and the embedded messages. A message read and written without changes keeps its bytes.
-- Outlook items (`.msg`, [MS-OXMSG]), read and written with the types of the items of Outlook data files.
+- Outlook items (`.msg`, [MS-OXMSG]) and Outlook templates (`.oft`), read and written with the types of the items of
+  Outlook data files.
 - TNEF streams (`winmail.dat`, [MS-OXTNEF]), read and written with the same types; the `winmail.dat` attachments of
   MIME messages are expanded when they are converted to `EmailMessage`.
 - Mailboxes: mbox files (mboxo, mboxrd, mboxcl, mboxcl2), Maildir folders, Apple Mail `.emlx` files, and the Mork

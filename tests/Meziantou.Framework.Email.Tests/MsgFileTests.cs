@@ -106,6 +106,55 @@ public sealed class MsgFileTests
     }
 
     [Fact]
+    public void Template_RoundTrip()
+    {
+        var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N") + ".oft");
+        try
+        {
+            #region MsgFile_Template
+            var template = new MapiMessageBuilder
+            {
+                Subject = "Weekly status",
+                Body = "Done:\r\nNext:\r\n",
+            };
+            MsgFile.Save(template, path, template: true);
+
+            var bytes = File.ReadAllBytes(path);
+            Assert.True(MsgFile.IsTemplate(bytes));
+            Assert.Equal(EmailFileFormat.OutlookTemplate, EmailFormatDetector.Detect(bytes));
+            Assert.Equal("Weekly status", MsgFile.Load(bytes).Subject);
+            #endregion
+
+            // MsgReader reads a template as an .msg file
+            using var oracle = new MsgReader.Outlook.Storage.Message(path);
+            Assert.Equal(DescribeWithMsgReader(oracle), Describe(MsgFile.Load(bytes)));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Files))]
+    public void File_IsNotTemplate(string fileName)
+    {
+        var bytes = File.ReadAllBytes(GetPath(fileName));
+        Assert.False(MsgFile.IsTemplate(bytes));
+        Assert.Equal(EmailFileFormat.Msg, EmailFormatDetector.Detect(bytes));
+    }
+
+    [Fact]
+    public void Writer_ClassIdentifier()
+    {
+        // [MS-OXMSG]: the root storage of an .msg file has the class identifier CLSID_MailMessage, as Outlook writes it
+        var bytes = MsgFile.ToByteArray(new MapiMessageBuilder { Subject = "x" });
+        var file = Meziantou.Framework.Email.Internals.Cfb.CompoundFile.Read(bytes, maxStreamSize: 0);
+        Assert.Equal(new Guid("00020D0B-0000-0000-C000-000000000046"), file.Root.Clsid);
+        Assert.False(MsgFile.IsTemplate(bytes));
+    }
+
+    [Fact]
     public void PstItem_ToMsg()
     {
         var pstPath = Path.Combine(AppContext.BaseDirectory, "TestData", "Pst", "libyal-outlook.pst");

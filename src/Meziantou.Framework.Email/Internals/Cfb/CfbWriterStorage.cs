@@ -15,6 +15,9 @@ internal sealed class CfbWriterStorage
 
     public string Name { get; }
 
+    /// <summary>Gets or sets the class identifier of the storage, which tells the application that created it.</summary>
+    public Guid Clsid { get; set; }
+
     public List<CfbWriterStorage> Storages { get; } = [];
 
     public List<(string Name, byte[] Data)> Streams { get; } = [];

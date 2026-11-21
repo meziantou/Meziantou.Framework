@@ -199,7 +199,7 @@ internal sealed class CompoundFile
             size = 0;
         }
 
-        return new CfbEntry(this, id, name, type, start, size, left, right, child);
+        return new CfbEntry(this, id, name, type, start, size, left, right, child, new Guid(data[80..96]));
     }
 
     private ReadOnlySpan<byte> GetSector(uint sector)

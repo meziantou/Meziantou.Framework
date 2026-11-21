@@ -4,7 +4,7 @@ using Meziantou.Framework.Email.Internals.Msg;
 
 namespace Meziantou.Framework.Email.Mapi;
 
-/// <summary>Reads and writes Outlook items saved as files (.msg, [MS-OXMSG]). The item of a file is read with the types of the items of Outlook data files: a <see cref="MapiMessage"/>, or a <see cref="MapiContact"/>, <see cref="MapiAppointment"/>, <see cref="MapiTask"/> or <see cref="MapiDistributionList"/>.</summary>
+/// <summary>Reads and writes Outlook items saved as files (.msg, [MS-OXMSG]) and Outlook templates (.oft), which have the format of the .msg files. The item of a file is read with the types of the items of Outlook data files: a <see cref="MapiMessage"/>, or a <see cref="MapiContact"/>, <see cref="MapiAppointment"/>, <see cref="MapiTask"/> or <see cref="MapiDistributionList"/>.</summary>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Email.Tests/MsgFileTests.cs" ref:region="MsgFile_Save" ref:dedent="true">
 /// var message = new MapiMessageBuilder
@@ -65,33 +65,45 @@ public static class MsgFile
         return Load(File.ReadAllBytes(path), options);
     }
 
-    /// <summary>Writes an item as an .msg file, with Unicode strings.</summary>
+    /// <summary>Writes an item as an .msg file, or as an Outlook template (.oft), with Unicode strings.</summary>
     /// <param name="item">The item: a message, a contact, an appointment, a task or a distribution list.</param>
     /// <param name="stream">The stream.</param>
-    public static void Save(MapiMessageBuilder item, Stream stream)
+    /// <param name="template"><see langword="true"/> to write an Outlook template (.oft): Outlook creates a new item from it when it opens it.</param>
+    public static void Save(MapiMessageBuilder item, Stream stream, bool template = false)
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(stream);
-        MsgWriter.Write(item, stream);
+        MsgWriter.Write(item, stream, template);
     }
 
-    /// <summary>Writes an item as an .msg file, with Unicode strings.</summary>
+    /// <summary>Writes an item as an .msg file, or as an Outlook template (.oft), with Unicode strings.</summary>
     /// <param name="item">The item: a message, a contact, an appointment, a task or a distribution list.</param>
     /// <param name="path">The path of the file.</param>
-    public static void Save(MapiMessageBuilder item, string path)
+    /// <param name="template"><see langword="true"/> to write an Outlook template (.oft): Outlook creates a new item from it when it opens it.</param>
+    public static void Save(MapiMessageBuilder item, string path, bool template = false)
     {
         ArgumentNullException.ThrowIfNull(path);
         using var stream = File.Create(path);
-        Save(item, stream);
+        Save(item, stream, template);
     }
 
-    /// <summary>Returns the content of an .msg file of an item.</summary>
+    /// <summary>Returns the content of an .msg file, or of an Outlook template (.oft), of an item.</summary>
     /// <param name="item">The item.</param>
+    /// <param name="template"><see langword="true"/> to write an Outlook template (.oft).</param>
     /// <returns>The content of the file.</returns>
-    public static byte[] ToByteArray(MapiMessageBuilder item)
+    public static byte[] ToByteArray(MapiMessageBuilder item, bool template = false)
     {
         using var stream = new MemoryStream();
-        Save(item, stream);
+        Save(item, stream, template);
         return stream.ToArray();
+    }
+
+    /// <summary>Returns whether an .msg file is an Outlook template (.oft): the class identifier of its root storage is the one of the templates.</summary>
+    /// <param name="data">The content of the file.</param>
+    /// <returns><see langword="true"/> for an Outlook template, <see langword="false"/> for another item.</returns>
+    /// <exception cref="InvalidEmailDataException">The file is not a compound file, or its structures are malformed.</exception>
+    public static bool IsTemplate(ReadOnlyMemory<byte> data)
+    {
+        return CompoundFile.Read(data, maxStreamSize: 0).Root.Clsid == MsgNames.TemplateClsid;
     }
 }

@@ -13,6 +13,12 @@ internal static class MsgNames
     public const ushort AttachDataObjectId = 0x3701;
     public const int BucketCount = 0x1F;
 
+    /// <summary>The class identifier of the root storage of an .msg file (CLSID_MailMessage).</summary>
+    public static readonly Guid MessageClsid = new("00020D0B-0000-0000-C000-000000000046");
+
+    /// <summary>The class identifier of the root storage of an Outlook template, an .oft file (CLSID_TemplateMessage).</summary>
+    public static readonly Guid TemplateClsid = new("0006F046-0000-0000-C000-000000000046");
+
     public static string Recipient(int index) => RecipientPrefix + index.ToString("X8", CultureInfo.InvariantCulture);
 
     public static string Attachment(int index) => AttachmentPrefix + index.ToString("X8", CultureInfo.InvariantCulture);

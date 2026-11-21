@@ -9,7 +9,7 @@ description: The email, contact and calendar formats Meziantou.Framework.Email r
 | --- | --- | --- | --- | --- |
 | Outlook data files | `.pst`, `.ost` | Yes | Yes | [Outlook data files](03-Pst/01-Overview.md) |
 | Email messages (Internet Message Format, MIME) | `.eml` | Yes | Yes | [Email files](04-Mime/01-Overview.md) |
-| Outlook items | `.msg` | Yes | Yes | [Outlook items](05-Msg/01-Overview.md) |
+| Outlook items, Outlook templates | `.msg`, `.oft` | Yes | Yes | [Outlook items](05-Msg/01-Overview.md) |
 | TNEF streams | `winmail.dat` | Yes | Yes | [Winmail.dat](06-Tnef/01-Overview.md) |
 | mbox files (mboxo, mboxrd, mboxcl, mboxcl2) | `.mbox`, Thunderbird folders | Yes | Yes | [mbox files](07-Mailboxes/01-Mbox.md) |
 | Maildir folders (Maildir++) | `cur`, `new`, `tmp` | Yes | Yes | [Maildir folders](07-Mailboxes/02-Maildir.md) |

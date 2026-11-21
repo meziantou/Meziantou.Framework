@@ -7,11 +7,11 @@ namespace Meziantou.Framework.Email.Internals.Msg;
 /// <summary>Writes an item in an .msg file ([MS-OXMSG]): a compound file with a storage per recipient, attachment and embedded message, with Unicode strings.</summary>
 internal static class MsgWriter
 {
-    public static void Write(MapiMessageBuilder message, Stream output)
+    public static void Write(MapiMessageBuilder message, Stream output, bool template)
     {
         var encoder = new ItemEncoder();
         var item = encoder.Encode(message);
-        var root = new CfbWriterStorage("Root Entry");
+        var root = new CfbWriterStorage("Root Entry") { Clsid = template ? MsgNames.TemplateClsid : MsgNames.MessageClsid };
         WriteMessage(root, item, depth: 0);
 
         // The named properties of the file, embedded messages included

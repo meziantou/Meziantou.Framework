@@ -6,8 +6,9 @@ internal sealed class CfbEntry
     private readonly CompoundFile _file;
     private Dictionary<string, CfbEntry>? _children;
 
-    internal CfbEntry(CompoundFile file, int id, string name, CfbEntryType type, uint startSector, long size, int left, int right, int child)
+    internal CfbEntry(CompoundFile file, int id, string name, CfbEntryType type, uint startSector, long size, int left, int right, int child, Guid clsid)
     {
+        Clsid = clsid;
         _file = file;
         Id = id;
         Name = name;
@@ -20,6 +21,9 @@ internal sealed class CfbEntry
     }
 
     public int Id { get; }
+
+    /// <summary>Gets the class identifier of a storage, which tells the application that created it.</summary>
+    public Guid Clsid { get; }
 
     public string Name { get; }
 

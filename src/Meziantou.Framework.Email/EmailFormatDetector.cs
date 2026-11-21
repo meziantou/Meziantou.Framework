@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Email.Internals.Cfb;
+using Meziantou.Framework.Email.Internals.Msg;
 using Meziantou.Framework.Email.Internals.Tnef;
 
 namespace Meziantou.Framework.Email;
@@ -110,7 +111,12 @@ public static class EmailFormatDetector
         {
             // [MS-OXMSG] 2.4: an Outlook item has a property stream at the root of the compound file
             var file = CompoundFile.Read(data, maxStreamSize: 0);
-            return file.Root.GetChild("__properties_version1.0") is { IsStream: true } ? EmailFileFormat.Msg : EmailFileFormat.Unknown;
+            if (file.Root.GetChild(MsgNames.Properties) is not { IsStream: true })
+            {
+                return EmailFileFormat.Unknown;
+            }
+
+            return file.Root.Clsid == MsgNames.TemplateClsid ? EmailFileFormat.OutlookTemplate : EmailFileFormat.Msg;
         }
         catch (EmailException)
         {

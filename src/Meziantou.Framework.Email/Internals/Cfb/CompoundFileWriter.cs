@@ -14,7 +14,7 @@ internal static class CompoundFileWriter
     public static void Write(CfbWriterStorage root, Stream output)
     {
         // The directory: the root first, then the entries of each storage
-        var entries = new List<Entry> { new("Root Entry", CfbEntryType.Root, Data: null) };
+        var entries = new List<Entry> { new("Root Entry", CfbEntryType.Root, Data: null) { Clsid = root.Clsid } };
         AddChildren(entries, 0, root);
 
         // The streams: the small ones in the mini stream, the others in sectors
@@ -186,6 +186,7 @@ internal static class CompoundFileWriter
             BinaryPrimitives.WriteInt32LittleEndian(span[68..], entry.Left);
             BinaryPrimitives.WriteInt32LittleEndian(span[72..], entry.Right);
             BinaryPrimitives.WriteInt32LittleEndian(span[76..], entry.Child);
+            entry.Clsid.TryWriteBytes(span[80..96]);
             var start = entry.Type == CfbEntryType.Storage ? 0u : entry.Data is { Length: 0 } ? CompoundFile.EndOfChain : entry.Start;
             BinaryPrimitives.WriteUInt32LittleEndian(span[116..], start);
             BinaryPrimitives.WriteInt64LittleEndian(span[120..], entry.Type == CfbEntryType.Root ? entry.Size : entry.Data?.Length ?? 0);
@@ -229,7 +230,7 @@ internal static class CompoundFileWriter
         foreach (var child in storage.Storages)
         {
             children.Add((entries.Count, child));
-            entries.Add(new Entry(child.Name, CfbEntryType.Storage, Data: null));
+            entries.Add(new Entry(child.Name, CfbEntryType.Storage, Data: null) { Clsid = child.Clsid });
         }
 
         foreach (var (name, data) in storage.Streams)
@@ -311,5 +312,7 @@ internal static class CompoundFileWriter
         public uint Start { get; set; } = CompoundFile.EndOfChain;
 
         public long Size { get; set; }
+
+        public Guid Clsid { get; init; }
     }
 }

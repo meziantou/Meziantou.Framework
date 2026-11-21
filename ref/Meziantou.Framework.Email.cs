@@ -54,15 +54,16 @@ namespace Meziantou.Framework.Email
         Pst = 1,
         Ost = 2,
         Msg = 3,
-        Tnef = 4,
-        OfflineAddressBook = 5,
-        Eml = 6,
-        Emlx = 7,
-        Mbox = 8,
-        Maildir = 9,
-        Mork = 10,
-        VCard = 11,
-        ICalendar = 12,
+        OutlookTemplate = 4,
+        Tnef = 5,
+        OfflineAddressBook = 6,
+        Eml = 7,
+        Emlx = 8,
+        Mbox = 9,
+        Maildir = 10,
+        Mork = 11,
+        VCard = 12,
+        ICalendar = 13,
     }
 
     public static class EmailFormatDetector
@@ -1064,12 +1065,13 @@ namespace Meziantou.Framework.Email.Mapi
 
     public static class MsgFile
     {
+        public static bool IsTemplate(System.ReadOnlyMemory<byte> data) => throw null;
         public static Meziantou.Framework.Email.Mapi.MapiMessage Load(System.IO.Stream stream, Meziantou.Framework.Email.Storage.PstReadOptions? options = null) => throw null;
         public static Meziantou.Framework.Email.Mapi.MapiMessage Load(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Email.Storage.PstReadOptions? options = null) => throw null;
         public static Meziantou.Framework.Email.Mapi.MapiMessage Load(string path, Meziantou.Framework.Email.Storage.PstReadOptions? options = null) => throw null;
-        public static void Save(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, System.IO.Stream stream) { }
-        public static void Save(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, string path) { }
-        public static byte[] ToByteArray(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item) => throw null;
+        public static void Save(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, System.IO.Stream stream, bool template = false) { }
+        public static void Save(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, string path, bool template = false) { }
+        public static byte[] ToByteArray(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, bool template = false) => throw null;
     }
 
     public static class RtfEncapsulation

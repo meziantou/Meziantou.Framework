@@ -15,6 +15,9 @@ public enum EmailFileFormat
     /// <summary>An Outlook item (<c>.msg</c>), read with <see cref="Mapi.MsgFile"/>.</summary>
     Msg,
 
+    /// <summary>An Outlook template (<c>.oft</c>), read with <see cref="Mapi.MsgFile"/>.</summary>
+    OutlookTemplate,
+
     /// <summary>A TNEF stream (<c>winmail.dat</c>), read with <see cref="Mapi.TnefFile"/>.</summary>
     Tnef,
 

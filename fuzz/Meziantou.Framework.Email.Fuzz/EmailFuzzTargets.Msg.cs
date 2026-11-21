@@ -39,6 +39,14 @@ public static partial class EmailFuzzTargets
         catch (EmailException)
         {
         }
+
+        try
+        {
+            _ = MsgFile.IsTemplate(data.ToArray());
+        }
+        catch (EmailException)
+        {
+        }
     }
 
     private static void MsgRoundTrip(ReadOnlySpan<byte> data)
@@ -63,8 +71,12 @@ public static partial class EmailFuzzTargets
             return;
         }
 
+        // The copy of the copy is written as an Outlook template, which has the same content
+        var template = MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(item), template: true);
+        FuzzAssert.True(MsgFile.IsTemplate(template), "The template is not a template");
+        FuzzAssert.Equal(EmailFileFormat.OutlookTemplate, EmailFormatDetector.Detect(template), "The template is not detected as a template");
         var second = new List<string>();
-        DescribeItem(MsgFile.Load(MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(item))), second, "", depth: 0);
+        DescribeItem(MsgFile.Load(template), second, "", depth: 0);
         FuzzAssert.Equal(string.Join('\n', first), string.Join('\n', second), "The copy of the copy of an item differs from the copy");
     }
 
@@ -74,6 +86,7 @@ public static partial class EmailFuzzTargets
         var root = new CfbWriterStorage("Root Entry");
         var storages = new List<CfbWriterStorage> { root };
         var count = FuzzInput.ReadByte(ref data);
+        root.Clsid = new Guid(count, 1, 2, new byte[8]);
         for (var i = 0; i < count && !data.IsEmpty; i++)
         {
             var kind = FuzzInput.ReadByte(ref data);
@@ -90,7 +103,9 @@ public static partial class EmailFuzzTargets
             name.Append('#').Append(i);
             if (kind % 4 == 0)
             {
-                storages.Add(parent.AddStorage(name.ToString()));
+                var storage = parent.AddStorage(name.ToString());
+                storage.Clsid = new Guid(i, (short)kind, 3, new byte[8]);
+                storages.Add(storage);
             }
             else
             {
@@ -113,6 +128,7 @@ public static partial class EmailFuzzTargets
 
     private static void CompareCompoundFile(CfbWriterStorage expected, CfbEntry actual, string path)
     {
+        FuzzAssert.Equal(expected.Clsid, actual.Clsid, "The storage '" + path + "' has a different class identifier");
         FuzzAssert.Equal(expected.Storages.Count + expected.Streams.Count, actual.Children.Count, "The storage '" + path + "' has a different number of entries");
         foreach (var (name, content) in expected.Streams)
         {

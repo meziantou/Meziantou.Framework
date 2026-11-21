@@ -432,19 +432,40 @@ internal sealed partial class GridLayoutAlgorithm
 
         // The content of a page of another inline size that starts between two rows (see LayoutContext.RowResumes): the items after
         // the break start a new row, the items before it are in the rows before (in the previous pages)
+        // (the items after the broken row start the row after it, beside its items that span the rows after it; the items with a
+        // definite row are before the break, see LayoutEngine.IsPlacedInOrder: the new rows start after their rows)
         List<int>? newRows = null;
+        HashSet<int>? rowsAfterBrokenRow = null;
+        int? newRowsStart = null;
         if (_context.RowResumes is { } resumes && resumes.TryGetValue(_box, out var resume))
         {
-            for (var i = 1; i < count; i++)
+            ContainerBox? previous = null;
+            for (var i = 0; i < count; i++)
             {
-                if (resume.StartsRow(_items[i].Box, _items[i - 1].Box))
+                if (rows[i].IsDefinite)
+                {
+                    if (resume.Preceding?.Contains(_items[i].Box) == true)
+                    {
+                        newRowsStart = Math.Max(newRowsStart ?? int.MinValue, rows[i].End);
+                    }
+
+                    continue;
+                }
+
+                if (resume.StartsRow(_items[i].Box, previous))
                 {
                     (newRows ??= []).Add(i);
+                    if (previous is not null && resume.Crossed is { } crossed && crossed.Contains(previous) && resume.Following.Contains(_items[i].Box))
+                    {
+                        (rowsAfterBrokenRow ??= []).Add(i);
+                    }
                 }
+
+                previous = _items[i].Box;
             }
         }
 
-        GridPlacement.PlaceItems(columns, rows, _explicitColumns.TrackCount, _explicitRows.TrackCount, grid.AutoFlow, columnsInput?.Span, rowsInput?.Span, newRows);
+        GridPlacement.PlaceItems(columns, rows, _explicitColumns.TrackCount, _explicitRows.TrackCount, grid.AutoFlow, columnsInput?.Span, rowsInput?.Span, newRows, rowsAfterBrokenRow, newRowsStart);
 
         // A subgridded axis has no implicit tracks: the areas of the items are clamped to the explicit grid
         for (var i = 0; i < count; i++)

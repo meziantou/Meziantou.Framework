@@ -52,15 +52,23 @@ var pages = context.RenderPages();
   container, between the lines of a flex container that wraps (the items after the break start a new line in the width of
   the new page), or between the rows of a grid. When the number of columns of the grid depends on its width (`auto-fill`,
   `auto-fit`), the items after the break start a new row in the width of the new page; this needs items placed in their
-  order (no item with a definite row or column, `grid-auto-flow: row` without `dense`).
+  order (`grid-auto-flow: row`, with `dense` or not, and the items with a definite row before the break; an item with a
+  definite column is placed in it). The items after the break do not fill the holes of the rows before it.
 - A page of another width may also start in the middle of a table row, of a flex line or of a grid row: the content of
   each cell or item continues in the width of the new page, from the line or the box where its own break is, and the
   content of all of them starts at the top of the page. As in Chromium, the cells of such a row are not aligned
   (`vertical-align`) in the new page; neither are the flex and grid items (`align-self`): an item centered or aligned at
   the end of the row continues at the top of the page too, and an aligned item that starts after the break starts the new
-  page whole, beside the content of the others. A table cell that spans the rows after its row continues beside them, and
-  so does a grid item that spans the rows before the broken row (in a grid whose number of columns does not depend on its
-  width). The items must stay side by side in the new width; otherwise the page keeps the width of the previous one.
+  page whole, beside the content of the others. A table cell or a grid item that spans the rows after its row continues
+  beside them (in a grid whose number of columns depends on its width, the items after the row start the next row, beside
+  it), and so does a grid item that spans the rows before the broken row (in a grid whose number of columns does not
+  depend on its width). The items of a subgrid of the rows of its grid (`grid-template-rows: subgrid`) are items of these
+  rows. The items of a flex line stay in one line, even when they no longer fit in the new width: they shrink, or
+  overflow the container. The content of an item may also continue between the rows of a table, of a grid (also a subgrid
+  of the columns) or of a column flex container of the item: its rows after the break are moved down with the content of the
+  other items. When the break crosses a row of an item (a row of its grid or of its table, a flex line), the items of that
+  row continue beside the others, as items of the broken row. The items must stay side by side in the new width; otherwise the page keeps the width of the
+  previous one.
 - A page of another width may also start in the middle of content taller than a page, which the break slices: an image, a
   box with size containment, or a line box (an inline-block taller than the page). The rest of the content continues at
   the top of the new page, and the content after it is laid out in the width of the new page. The content must be laid out

@@ -4152,6 +4152,47 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DeskewOnAnExpandedCanvasKeepsTheCornersOfThePage()
+    {
+        // A page with a black border, scanned 4 degrees counterclockwise on a canvas that holds all of it
+        var input = GetPath("skewed.png");
+        using (var page = new Image<Rgb24>(200, 160, new Rgb24(255, 255, 255)))
+        {
+            for (var y = 0; y < 160; y++)
+            {
+                for (var x = 0; x < 200; x++)
+                {
+                    var border = x < 4 || x >= 196 || y < 4 || y >= 156;
+                    var text = y >= 20 && y < 146 && (y - 20) % 18 < 6 && x >= 20 && x < 180 && x % 21 < 16;
+                    if (border || text)
+                    {
+                        page.Frames[0][x, y] = new Rgb24(0, 0, 0);
+                    }
+                }
+            }
+
+            page.Rotate(-4, new TransformOptions { CanvasMode = TransformCanvasMode.Expand, BackgroundColor = new Rgba64(65535, 65535, 65535) });
+            page.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        Assert.InRange(ProcessingExamples.StraightenScanWithoutCuttingCorners(input, output), -4.1, -3.9);
+        using var result = Image.Load<Rgb24>(output);
+        Assert.InRange(result.Frames[0].EstimateSkew(), -0.1, 0.1);
+        Assert.True(result.Width > 200);
+        Assert.True(result.Height > 160);
+        Assert.Equal(new Rgb24(255, 255, 255), result.Frames[0][0, 0]);
+
+        // The four corners of the page are still on the canvas: the black border is around its center
+        var centerX = result.Width / 2;
+        var centerY = result.Height / 2;
+        Assert.InRange(result.Frames[0][centerX - 98, centerY - 78].R, 0, 63);
+        Assert.InRange(result.Frames[0][centerX + 97, centerY - 78].R, 0, 63);
+        Assert.InRange(result.Frames[0][centerX - 98, centerY + 77].R, 0, 63);
+        Assert.InRange(result.Frames[0][centerX + 97, centerY + 77].R, 0, 63);
+    }
+
+    [Fact]
     public void AlignToReferenceIgnoresTheWrongMatches()
     {
         var input = GetPath("photo.png");

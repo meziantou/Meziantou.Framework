@@ -175,8 +175,31 @@ the projection profiles: the dark pixels (or the light ones, for light text on a
 lines of each candidate angle, and the angle where the lines of text fall in the fewest rows wins.
 [SkewEstimationOptions](cref:Meziantou.Framework.Imaging.SkewEstimationOptions) sets the largest angle searched (15
 degrees by default) and the precision (0.05 degree). The estimate needs parallel lines of ink, such as text or a table;
-a page without contrast gives 0, and leaves the image unchanged. Pass
-[TransformOptions](cref:Meziantou.Framework.Imaging.TransformOptions) to choose another filter, background or canvas.
+a page without contrast gives 0, and leaves the image unchanged.
+
+Keeping the size of the image cuts the corners of the page that the rotation moves outside of it. Pass
+[TransformOptions](cref:Meziantou.Framework.Imaging.TransformOptions) to choose another canvas, background or filter:
+with [TransformCanvasMode.Expand](cref:Meziantou.Framework.Imaging.TransformCanvasMode.Expand), the canvas grows to hold
+the whole page, centered in it. The options replace the default ones, so set the background too: it is transparent
+black by default.
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DeskewExpand;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScanWithoutCuttingCorners(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The canvas grows to hold the whole rotated page; the area around the page is white
+    var skew = scan.Deskew(transformOptions: new TransformOptions
+    {
+        CanvasMode = TransformCanvasMode.Expand,
+        BackgroundColor = new Rgba64(65535, 65535, 65535),
+    });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
 
 ## Estimate a homography from matched points
 

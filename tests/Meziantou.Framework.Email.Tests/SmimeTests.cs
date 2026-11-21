@@ -186,7 +186,11 @@ public sealed class SmimeTests
         message.Subject = "S/MIME";
         message.Body = body;
         using var stream = new MemoryStream();
-        message.WriteTo(stream);
+
+        // MimeKit writes the line breaks of the platform by default: LF on Unix
+        var options = MimeKit.FormatOptions.Default.Clone();
+        options.NewLineFormat = MimeKit.NewLineFormat.Dos;
+        message.WriteTo(options, stream);
         return stream.ToArray();
     }
 

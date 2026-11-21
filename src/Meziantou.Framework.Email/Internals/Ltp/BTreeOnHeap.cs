@@ -8,12 +8,10 @@ internal sealed class BTreeOnHeap
     public const byte Signature = 0xB5;
 
     private readonly HeapOnNode _heap;
-    private readonly int _maxDepth;
 
     public BTreeOnHeap(HeapOnNode heap, uint hidHeader, int maxDepth)
     {
         _heap = heap;
-        _maxDepth = maxDepth;
         var header = heap.GetItem(hidHeader);
         if (header.Length < 8 || header[0] != Signature)
         {

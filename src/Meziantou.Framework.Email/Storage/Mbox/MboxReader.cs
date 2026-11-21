@@ -61,8 +61,8 @@ public static class MboxReader
 
         // The file starts with the From line of its first message; an empty file has no message
         ReadOnlySpan<byte> line;
-        string? fromLine = null;
-        long offset = 0;
+        string? fromLine;
+        long offset;
         while (true)
         {
             offset = reader.Position;

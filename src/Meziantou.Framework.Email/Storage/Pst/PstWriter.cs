@@ -104,7 +104,6 @@ public sealed class PstWriter : IDisposable
     private readonly DateTime _now;
     private readonly string _storeDisplayName;
     private readonly PstWriterFolder _rootFolder;
-    private readonly PstWriterFolder _searchRoot;
     private readonly PstWriterFolder _spamSearchFolder;
     private uint _searchKeyCounter;
     private bool _completed;
@@ -137,7 +136,7 @@ public sealed class PstWriter : IDisposable
 
         _rootFolder = new PstWriterFolder(this, Nids.RootFolder, parent: null, "", containerClass: null);
         IpmSubtree = AddSpecialFolder(_rootFolder, IpmSubtreeNid, options.RootFolderName);
-        _searchRoot = AddSpecialFolder(_rootFolder, SearchRootNid, "Search Root");
+        AddSpecialFolder(_rootFolder, SearchRootNid, "Search Root");
         _spamSearchFolder = new PstWriterFolder(this, SpamSearchFolderNid, _rootFolder, "SPAM Search Folder 2", containerClass: null, isSearchFolder: true);
         SpecialChildren[_rootFolder].Add(_spamSearchFolder);
         DeletedItems = AddSpecialFolder(IpmSubtree, DeletedItemsNid, "Deleted Items");

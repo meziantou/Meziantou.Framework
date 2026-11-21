@@ -474,6 +474,36 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal(400, GetPageRects(pages, document.GetElementById("m")!)[1].Rect.Width);
     }
 
+    [Theory]
+    [InlineData(0, 10, 4, 0)] // the break is in the row of columns after the spanner
+    [InlineData(4, 6, 0, 0)] // the break is after the spanner
+    [InlineData(6, 4, 0, 50)] // the break is before the spanner
+    public void Pages_MultiColumnContainerWithAColumnSpannerContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(int before, int after, int firstOnSecondPage, double secondPageTop)
+    {
+        // The first page is 200px wide, the next one 400px wide: the columns after the column spanner in the second page are
+        // 200px wide, and continue with the content after the first page (balanced)
+        static string Items(string prefix, int count) => string.Concat(Enumerable.Range(0, count).Select(i => $"<div id={prefix}{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='columns: 2; column-gap: 0'>{{Items("b", before)}}<div id=s style='column-span: all; height: 50px'></div>{{Items("a", after)}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal(secondPageTop == 0 ? 0 : 1, GetPageRects(pages, document.GetElementById("s")!).Single().Page);
+        var perColumn = (after - firstOnSecondPage) / 2;
+        for (var i = firstOnSecondPage; i < after; i++)
+        {
+            var index = i - firstOnSecondPage;
+            Assert.Equal([(1, new PhysicalRect(index / perColumn * 200, secondPageTop + (index % perColumn * 100), 200, 100))], GetPageRects(pages, document.GetElementById("a" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        if (secondPageTop > 0)
+        {
+            Assert.Equal([(1, new PhysicalRect(0, 0, 400, 50))], GetPageRects(pages, document.GetElementById("s")!));
+        }
+    }
+
     [Fact]
     public void Pages_MultiColumnContainerContinuedOnPagesOfSeveralInlineSizesIsLaidOutInThem()
     {

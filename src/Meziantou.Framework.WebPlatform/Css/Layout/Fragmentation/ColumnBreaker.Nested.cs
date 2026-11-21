@@ -101,7 +101,7 @@ internal static partial class ColumnBreaker
         /// <summary>
         /// Places the rows of columns from a position of the strip (see <see cref="NestedColumns.ResumeStart"/>), in the outer
         /// fragmentainer of <paramref name="index"/>: the content before it is in a column of the previous outer fragmentainer,
-        /// with the block-start edges of the container.
+        /// with the block-start edges of the container and the column spanners before it.
         /// </summary>
         public void ResumeAt(double position, int index)
         {
@@ -111,9 +111,16 @@ internal static partial class ColumnBreaker
             map.Add(double.NegativeInfinity, 0, 0, isBreak: true);
             _nested.Columns.Add(new NestedColumn { OuterIndex = index - 1, Start = double.NegativeInfinity, End = position, BlockSize = position });
             _nested.Fragmentainers.BlockSizes.Add(position);
-            _nested.Fragmentainers.PortionStarts.Add(0);
 
-            var (_, end, _, _) = GetSet(0);
+            // (the row of columns of the position: the content after the spanners that end before it)
+            while (_set < _flow.Spanners.Count && _flow.Spanners[_set].MarginBoxEnd <= position + Epsilon)
+            {
+                _nested.Fragmentainers.PortionStarts.Add(0);
+                _set++;
+            }
+
+            _nested.Fragmentainers.PortionStarts.Add(0);
+            var (_, end, _, _) = GetSet(_set);
             var displayOffset = GetDisplayOffsetAt(_flow, position);
             map.Add(position, 1, position - displayOffset, isBreak: true);
             KeepFloatsBefore(_flow, position, 1);

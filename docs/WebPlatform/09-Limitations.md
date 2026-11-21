@@ -23,7 +23,7 @@ fails.
   It does not implement:
   - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
     line box or a monolithic box (an image, taller than the page, which is sliced) that is not laid out the same way in the
-    new inline size, inside a multi-column container whose columns do not fill the pages (a column spanner, `column-height`,
+    new inline size, inside a multi-column container whose columns do not fill the pages (`column-height`,
     a block size, absolutely positioned boxes or nested multi-column containers in the columns) or whose last column ends inside a
     table, a grid or a flex container, inside a grid whose number of columns depends on its width
     (`auto-fill`, `auto-fit`) and whose items are not placed in their order (an item with a definite row after the break,

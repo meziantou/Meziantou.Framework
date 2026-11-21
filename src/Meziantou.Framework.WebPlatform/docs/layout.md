@@ -3332,14 +3332,16 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   a row that does not reach the same position (`rejectedBreaks`).
   A segment also starts inside a multi-column container nested in the pages (`BreakAnchor.IsInColumns`): the anchor is the
   content of its strip at the start of its first column in the page (`ResolveColumnAnchor`, from `NestedColumns.Columns`: a
-  box or a block container resumed at a line box, the column continuing the last column of the previous page), found again
+  box or a block container resumed at a line box, the column continuing the last column of the previous page or starting the
+  row after a column spanner that ends in it; or a column spanner that starts the page, `NestedColumns.Spanners`), found again
   in the strip of the columns of the segment (`BreakAnchor.ColumnContent`, `FindColumnsStart`). The breaker places the rows of
   columns from that position (`NestedColumns.ResumeStart`, `NestedColumnsCursor.ResumeAt`: the content before it is in a column
-  of the virtual first fragmentainer), and the segment starts inside the border box of the container, after its block-start
+  of the virtual first fragmentainer, with the column spanners before it, and the rows continue in the row of columns of the
+  position), and the segment starts inside the border box of the container, after its block-start
   edges (`FlowCursor.ResumeAt` resumes the container). The strips of the nested multi-column containers are laid out once the
   strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). This needs one row of columns
-  per page (`IsResumableColumns`: no column spanner, `column-height`, definite or maximum block size, absolutely positioned
-  box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`).
+  per page between the spanners (`IsResumableColumns`: no `column-height`, definite or maximum block size, absolutely
+  positioned box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`).
   A page of another inline size that starts inside a line laid out another way, a multi-column container whose columns
   cannot continue (see above), a grid whose columns depend on its inline size and whose items are not placed
   in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the

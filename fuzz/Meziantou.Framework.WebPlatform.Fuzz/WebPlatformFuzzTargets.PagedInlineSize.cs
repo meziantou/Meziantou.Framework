@@ -80,8 +80,8 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>
     /// The containers of the target of the multi-column containers: the columns of a page of another inline size continue the
     /// columns of the previous page in its inline size (a fixed number of columns, with edges or not, after other content or
-    /// not, columns of a fixed width, filled sequentially), whose content is blocks, a column flex container, the rows of a
-    /// table or of a grid; and containers whose columns keep the inline size of the previous page (a column spanner, a definite
+    /// not, columns of a fixed width, filled sequentially, column spanners), whose content is blocks, a column flex container,
+    /// the rows of a table or of a grid; and a container whose columns keep the inline size of the previous page (a definite
     /// block size).
     /// </summary>
     private static readonly (string Start, string Row, string End)[] PagedInlineSizeColumnContainers =

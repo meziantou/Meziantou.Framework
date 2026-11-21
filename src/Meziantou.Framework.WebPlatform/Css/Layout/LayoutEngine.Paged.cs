@@ -1114,10 +1114,40 @@ internal sealed partial class LayoutEngine
             }
         }
 
-        if (first <= 0 || columns[first - 1].OuterIndex != index - 1 || Math.Abs(columns[first - 1].End - columns[first].Start) > BreakAnchorEpsilon)
-            return null;
+        // (a column spanner that starts the page, before its first column: the page starts with the spanner, after the columns of
+        // the previous page)
+        var spanners = nested.Flow.Spanners;
+        double position;
+        if (nested.Spanners.Find(placed => placed.Map.Map(0).Index == index) is { } startingSpanner
+            && spanners.FindIndex(spanner => ReferenceEquals(spanner.Fragment, startingSpanner.Fragment)) is var startingIndex and >= 0
+            && (first < 0 || columns[first].Start >= spanners[startingIndex].MarginBoxEnd - BreakAnchorEpsilon))
+        {
+            position = spanners[startingIndex].MarginBoxStart;
+            var previous = columns.FindLastIndex(column => !double.IsInfinity(column.Start) && column.Start < position - BreakAnchorEpsilon);
+            if (previous < 0 || columns[previous].OuterIndex != index - 1 || Math.Abs(columns[previous].End - position) > BreakAnchorEpsilon)
+                return null;
 
-        var position = columns[first].Start;
+            first = previous + 1;
+        }
+        else
+        {
+            if (first <= 0)
+                return null;
+
+            // (the column continues the last column of the previous page, or starts the row of columns after a column spanner that
+            // ends in the previous page)
+            position = columns[first].Start;
+            if (columns[first - 1].OuterIndex != index - 1 || Math.Abs(columns[first - 1].End - position) > BreakAnchorEpsilon)
+            {
+                var spanner = spanners.FindLastIndex(spanner => spanner.MarginBoxEnd <= position + BreakAnchorEpsilon);
+                if (spanner < 0 || Math.Abs(spanners[spanner].MarginBoxEnd - position) > BreakAnchorEpsilon
+                    || nested.Spanners.Find(placed => ReferenceEquals(placed.Fragment, spanners[spanner].Fragment)) is not { End.Index: var spannerEnd } || spannerEnd != index - 1)
+                {
+                    return null;
+                }
+            }
+        }
+
         if (position <= BreakAnchorEpsilon || ContinuesBeforeBreak(nested.Flow, position, first) || CrossesParallelFlow(nested.Flow, position)
             || FindBreakAnchor(nested.Children, nested.StripSize, nested.WritingDirection, position, parentTop: 0) is not { Container: null, Items: null, SliceOffset: null, IsInRows: false, IsInColumns: false } content)
         {
@@ -1144,7 +1174,7 @@ internal sealed partial class LayoutEngine
 
         // (a block container resumed at a line box starts with that line box: its content before it is not laid out again)
         var position = Math.Max(0, contentStart);
-        if (CrossesParallelFlow(nested.Flow, position))
+        if (CrossesParallelFlow(nested.Flow, position) || nested.Flow.Spanners.Exists(spanner => spanner.MarginBoxStart < position - BreakAnchorEpsilon && spanner.MarginBoxEnd > position + BreakAnchorEpsilon))
             return null;
 
         // (the strip starts inside the border box of the container: its block-start edges are in the previous page)
@@ -1158,12 +1188,12 @@ internal sealed partial class LayoutEngine
 
     /// <summary>
     /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
-    /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its content is in one row of columns of the block size of
-    /// the page (no column spanner, no <c>column-height</c>, no definite or maximum block size), without absolutely positioned
-    /// boxes or nested multi-column containers.
+    /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns (between its column spanners) have the
+    /// block size that remains in the page (no <c>column-height</c>, no definite or maximum block size), without absolutely
+    /// positioned boxes or nested multi-column containers.
     /// </summary>
     private static bool IsResumableColumns(NestedColumns nested)
-        => nested.Flow.Spanners.Count == 0 && nested.RowBlockSize is null && nested.BlockSize is null && nested.MaxBlockSize is null
+        => nested.RowBlockSize is null && nested.BlockSize is null && nested.MaxBlockSize is null
             && nested.Flow.OutOfFlowItems is null && !nested.Flow.HasNestedColumns;
 
     /// <summary>Returns whether a parallel flow of a flow (the items of a grid, of a flex container, the cells of a table) starts before a position and ends after it.</summary>

@@ -5,7 +5,7 @@ using Meziantou.Framework.Email.Internals.Ndb;
 
 namespace Meziantou.Framework.Email.Mapi;
 
-/// <summary>An item of an Outlook data file: an email, or the base of the typed items (contacts, appointments, tasks, distribution lists).</summary>
+/// <summary>An item of an Outlook data file: an email, or the base of the typed items (contacts, appointments, tasks, distribution lists, notes, journal entries).</summary>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Email.Tests/PstFileTests.cs" ref:region="PstMessage_Read" ref:dedent="true">
 /// using var file = PstFile.Open(path);
@@ -235,6 +235,16 @@ public class MapiMessage
         if (IsClass(messageClass, "IPM.Task"))
         {
             return new MapiTask(source, properties, embeddingDepth);
+        }
+
+        if (IsClass(messageClass, "IPM.StickyNote"))
+        {
+            return new MapiNote(source, properties, embeddingDepth);
+        }
+
+        if (IsClass(messageClass, "IPM.Activity"))
+        {
+            return new MapiJournal(source, properties, embeddingDepth);
         }
 
         return new MapiMessage(source, properties, embeddingDepth);

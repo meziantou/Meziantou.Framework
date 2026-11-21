@@ -1,6 +1,6 @@
 ---
 title: Contacts, calendar and tasks
-description: Read contacts, distribution lists, appointments with their recurrence and exceptions, and tasks.
+description: Read contacts, distribution lists, appointments with their recurrence and exceptions, tasks, sticky notes and journal entries.
 ---
 
 The items that Outlook types are returned as derived types of [MapiMessage](cref:Meziantou.Framework.Email.Mapi.MapiMessage), chosen
@@ -12,7 +12,9 @@ from their message class:
 | `IPM.DistList` | [MapiDistributionList](cref:Meziantou.Framework.Email.Mapi.MapiDistributionList) |
 | `IPM.Appointment` | [MapiAppointment](cref:Meziantou.Framework.Email.Mapi.MapiAppointment) |
 | `IPM.Task` | [MapiTask](cref:Meziantou.Framework.Email.Mapi.MapiTask) |
-| any other class, such as `IPM.Note` or `IPM.StickyNote` | [MapiMessage](cref:Meziantou.Framework.Email.Mapi.MapiMessage) |
+| `IPM.StickyNote` | [MapiNote](cref:Meziantou.Framework.Email.Mapi.MapiNote) |
+| `IPM.Activity` | [MapiJournal](cref:Meziantou.Framework.Email.Mapi.MapiJournal) |
+| any other class, such as `IPM.Note` or `IPM.Post` | [MapiMessage](cref:Meziantou.Framework.Email.Mapi.MapiMessage) |
 
 The classes derived from these ones (`IPM.Contact.MyForm`) get the same types. Every property, typed or not, is available
 from [Properties](cref:Meziantou.Framework.Email.Mapi.MapiMessage.Properties): see [MAPI properties](05-Properties.md).
@@ -82,3 +84,66 @@ The dates of a recurrence are in the time zone of the appointment, which
 A [MapiTask](cref:Meziantou.Framework.Email.Mapi.MapiTask) gives the [Status](cref:Meziantou.Framework.Email.Mapi.MapiTask.Status), the
 completion, the start and due dates, the owner and the efforts of a task, and
 [GetRecurrence](cref:Meziantou.Framework.Email.Mapi.MapiTask.GetRecurrence) its recurrence.
+
+## Sticky notes
+
+A [MapiNote](cref:Meziantou.Framework.Email.Mapi.MapiNote) is a sticky note ([MS-OXONOTE]): its text is the
+[Body](cref:Meziantou.Framework.Email.Mapi.MapiMessage.Body), its subject is the first line of the text, and it has a
+[Color](cref:Meziantou.Framework.Email.Mapi.MapiNote.Color) and the size and position of its window.
+[MapiNoteBuilder](cref:Meziantou.Framework.Email.Mapi.MapiNoteBuilder) writes one, and its
+[Text](cref:Meziantou.Framework.Email.Mapi.MapiNoteBuilder.Text) sets the subject as Outlook does:
+
+<!-- ref:../../../tests/Meziantou.Framework.Email.Tests/PstWriterTests.cs;region=MapiNoteBuilder_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+using (var writer = PstWriter.Create(stream, leaveOpen: true))
+{
+    var notes = writer.RootFolder.CreateFolder("Notes", "IPF.StickyNote");
+    notes.AddItem(new MapiNoteBuilder
+    {
+        Text = "Call Bob\r\nAbout the quarterly report",
+        Color = MapiNoteColor.Green,
+        Width = 200,
+        Height = 166,
+    });
+}
+
+using var file = PstFile.Open(stream);
+var note = Assert.IsType<MapiNote>(file.GetFolder("Notes")!.EnumerateItems().Single());
+Assert.Equal("Call Bob", note.Subject);
+Assert.Equal("Call Bob\r\nAbout the quarterly report", note.Body);
+Assert.Equal(MapiNoteColor.Green, note.Color);
+Assert.Equal(200, note.Width);
+```
+<!-- endref -->
+
+## Journal entries
+
+A [MapiJournal](cref:Meziantou.Framework.Email.Mapi.MapiJournal) is a journal entry ([MS-OXOJRNL]), the record of an
+activity: its [type](cref:Meziantou.Framework.Email.Mapi.MapiJournal.JournalType) (a phone call, a meeting, the editing of
+a document...), its start, end and duration, the companies and contacts it is associated with, and what was done to the
+document. [MapiJournalBuilder](cref:Meziantou.Framework.Email.Mapi.MapiJournalBuilder) writes one, and computes the
+duration from the start and the end:
+
+<!-- ref:../../../tests/Meziantou.Framework.Email.Tests/PstWriterTests.cs;region=MapiJournalBuilder_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var entry = new MapiJournalBuilder
+{
+    Subject = "Call with Bob",
+    JournalType = "Phone call",
+    JournalTypeDescription = "Phone call",
+    Start = new DateTime(2026, 3, 2, 9, 0, 0, DateTimeKind.Utc),
+    End = new DateTime(2026, 3, 2, 9, 25, 0, DateTimeKind.Utc),
+    Companies = ["Contoso"],
+    Contacts = ["Bob Smith"],
+};
+Assert.Equal(TimeSpan.FromMinutes(25), entry.Duration);
+
+var item = Assert.IsType<MapiJournal>(MsgFile.Load(MsgFile.ToByteArray(entry)));
+Assert.Equal("Phone call", item.JournalType);
+Assert.Equal(TimeSpan.FromMinutes(25), item.Duration);
+Assert.Equal(["Contoso"], item.Companies);
+```
+<!-- endref -->
+
+[MS-OXONOTE]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxonote
+[MS-OXOJRNL]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxojrnl

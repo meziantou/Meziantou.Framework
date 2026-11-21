@@ -11,6 +11,8 @@ internal static class NamedProperties
     public static readonly NamedPropertyDefinition CommonStart = Common(0x8516, MapiPropertyType.Time);
     public static readonly NamedPropertyDefinition CommonEnd = Common(0x8517, MapiPropertyType.Time);
     public static readonly NamedPropertyDefinition ReminderSignalTime = Common(0x8560, MapiPropertyType.Time);
+    public static readonly NamedPropertyDefinition Companies = Common(0x8539, MapiPropertyType.MultipleUnicode);
+    public static readonly NamedPropertyDefinition Contacts = Common(0x853A, MapiPropertyType.MultipleUnicode);
     public static readonly NamedPropertyDefinition Keywords = new(new MapiNamedProperty(MapiPropertySets.PublicStrings, "Keywords"), MapiPropertyType.MultipleUnicode);
 
     // PSETID_Appointment
@@ -48,6 +50,25 @@ internal static class NamedProperties
     public static readonly NamedPropertyDefinition TaskAssigner = Task(0x8121, MapiPropertyType.Unicode);
     public static readonly NamedPropertyDefinition TaskFRecurring = Task(0x8126, MapiPropertyType.Boolean);
 
+    // PSETID_Note ([MS-OXONOTE] 2.2.1)
+    public static readonly NamedPropertyDefinition NoteColor = Note(0x8B00, MapiPropertyType.Integer32);
+    public static readonly NamedPropertyDefinition NoteWidth = Note(0x8B02, MapiPropertyType.Integer32);
+    public static readonly NamedPropertyDefinition NoteHeight = Note(0x8B03, MapiPropertyType.Integer32);
+    public static readonly NamedPropertyDefinition NoteX = Note(0x8B04, MapiPropertyType.Integer32);
+    public static readonly NamedPropertyDefinition NoteY = Note(0x8B05, MapiPropertyType.Integer32);
+
+    // PSETID_Log ([MS-OXOJRNL] 2.2.1)
+    public static readonly NamedPropertyDefinition LogType = Log(0x8700, MapiPropertyType.Unicode);
+    public static readonly NamedPropertyDefinition LogStart = Log(0x8706, MapiPropertyType.Time);
+    public static readonly NamedPropertyDefinition LogDuration = Log(0x8707, MapiPropertyType.Integer32);
+    public static readonly NamedPropertyDefinition LogEnd = Log(0x8708, MapiPropertyType.Time);
+    public static readonly NamedPropertyDefinition LogFlags = Log(0x870C, MapiPropertyType.Integer32);
+    public static readonly NamedPropertyDefinition LogDocumentPrinted = Log(0x870E, MapiPropertyType.Boolean);
+    public static readonly NamedPropertyDefinition LogDocumentSaved = Log(0x870F, MapiPropertyType.Boolean);
+    public static readonly NamedPropertyDefinition LogDocumentRouted = Log(0x8710, MapiPropertyType.Boolean);
+    public static readonly NamedPropertyDefinition LogDocumentPosted = Log(0x8711, MapiPropertyType.Boolean);
+    public static readonly NamedPropertyDefinition LogTypeDescription = Log(0x8712, MapiPropertyType.Unicode);
+
     // PSETID_Address
     public static readonly NamedPropertyDefinition FileUnder = Address(0x8005, MapiPropertyType.Unicode);
     public static readonly NamedPropertyDefinition WorkAddress = Address(0x801B, MapiPropertyType.Unicode);
@@ -82,4 +103,8 @@ internal static class NamedProperties
     private static NamedPropertyDefinition Task(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Task, id), type);
 
     private static NamedPropertyDefinition Address(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Address, id), type);
+
+    private static NamedPropertyDefinition Note(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Note, id), type);
+
+    private static NamedPropertyDefinition Log(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Log, id), type);
 }

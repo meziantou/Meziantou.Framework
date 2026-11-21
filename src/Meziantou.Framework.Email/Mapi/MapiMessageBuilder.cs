@@ -242,6 +242,8 @@ public class MapiMessageBuilder
             MapiDistributionList => new MapiDistributionListBuilder(),
             MapiAppointment => new MapiAppointmentBuilder(),
             MapiTask => new MapiTaskBuilder(),
+            MapiNote => new MapiNoteBuilder(),
+            MapiJournal => new MapiJournalBuilder(),
             _ => new MapiMessageBuilder(),
         };
 

@@ -117,7 +117,7 @@ public static partial class EmailFuzzTargets
                 var operation = FuzzInput.ReadByte(ref data);
                 var (folder, path) = FuzzInput.Pick(folders, FuzzInput.ReadByte(ref data));
                 var text = ReadString(ref data, ansi);
-                switch (operation % 5)
+                switch (operation % 7)
                 {
                     case 0 when folder.Folders.Count < 8 && path.Split('/').Length < 6:
                         var child = folder.CreateFolder(text);
@@ -147,6 +147,16 @@ public static partial class EmailFuzzTargets
                         var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(FuzzInput.ReadByte(ref data) * 37);
                         folder.AddItem(new MapiAppointmentBuilder { Subject = text, Start = start, End = start.AddHours(1), Location = text });
                         expected.Add($"{path}: IPM.Appointment|{Subject(text)}|0|0");
+                        break;
+                    case 5:
+                        folder.AddItem(new MapiNoteBuilder { Text = text, Color = (MapiNoteColor)(operation % 5), Width = operation });
+                        var firstLine = text.AsSpan().IndexOfAny('\r', '\n') is var end and >= 0 ? text[..end] : text;
+                        expected.Add($"{path}: IPM.StickyNote|{Subject(firstLine)}|0|0");
+                        break;
+                    case 6:
+                        var logStart = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(FuzzInput.ReadByte(ref data));
+                        folder.AddItem(new MapiJournalBuilder { Subject = text, JournalType = text, Start = logStart, End = logStart.AddMinutes(operation), Companies = [text] });
+                        expected.Add($"{path}: IPM.Activity|{Subject(text)}|0|0");
                         break;
                 }
             }
@@ -254,6 +264,12 @@ public static partial class EmailFuzzTargets
                 break;
             case MapiTask task:
                 result.Add($"{indent}  {task.Status}|{task.PercentComplete}|{task.GetRecurrence()?.ToByteArray().Length}");
+                break;
+            case MapiNote note:
+                result.Add($"{indent}  {note.Color}|{note.Width}|{note.Height}|{note.Left}|{note.Top}");
+                break;
+            case MapiJournal journal:
+                result.Add($"{indent}  {journal.JournalType}|{journal.JournalTypeDescription}|{journal.Start:O}|{journal.End:O}|{journal.Duration}|{string.Join(",", journal.Companies)}|{string.Join(",", journal.Contacts)}|{journal.DocumentPrinted}{journal.DocumentSaved}{journal.DocumentRouted}{journal.DocumentPosted}");
                 break;
         }
     }

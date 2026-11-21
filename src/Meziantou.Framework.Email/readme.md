@@ -27,7 +27,8 @@ Outlook data files:
 - Emails: properties, recipients, bodies in plain text, HTML and RTF (compressed RTF, [MS-OXRTFCP]), and the HTML and
   text bodies encapsulated in RTF ([MS-OXRTFEX])
 - Attachments, read block by block, and embedded messages
-- Contacts, distribution lists, appointments with their recurrence and exceptions, tasks
+- Contacts, distribution lists, appointments with their recurrence and exceptions, tasks, sticky notes and journal
+  entries
 - Every MAPI property, including the named properties
 - A writer that creates new files, and copies items from other files
 - A validator that checks the structures of a file

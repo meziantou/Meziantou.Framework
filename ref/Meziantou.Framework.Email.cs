@@ -693,6 +693,36 @@ namespace Meziantou.Framework.Email.Mapi
         High = 2,
     }
 
+    public sealed class MapiJournal : Meziantou.Framework.Email.Mapi.MapiMessage
+    {
+        public System.Collections.Generic.IReadOnlyList<string> Companies { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Contacts { get => throw null; }
+        public bool DocumentPosted { get => throw null; }
+        public bool DocumentPrinted { get => throw null; }
+        public bool DocumentRouted { get => throw null; }
+        public bool DocumentSaved { get => throw null; }
+        public System.TimeSpan? Duration { get => throw null; }
+        public System.DateTime? End { get => throw null; }
+        public string? JournalType { get => throw null; }
+        public string? JournalTypeDescription { get => throw null; }
+        public System.DateTime? Start { get => throw null; }
+    }
+
+    public sealed class MapiJournalBuilder : Meziantou.Framework.Email.Mapi.MapiMessageBuilder
+    {
+        public System.Collections.Generic.IReadOnlyList<string>? Companies { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Contacts { get => throw null; set { } }
+        public bool DocumentPosted { get => throw null; set { } }
+        public bool DocumentPrinted { get => throw null; set { } }
+        public bool DocumentRouted { get => throw null; set { } }
+        public bool DocumentSaved { get => throw null; set { } }
+        public System.TimeSpan? Duration { get => throw null; }
+        public System.DateTime? End { get => throw null; set { } }
+        public string? JournalType { get => throw null; set { } }
+        public string? JournalTypeDescription { get => throw null; set { } }
+        public System.DateTime? Start { get => throw null; set { } }
+    }
+
     public class MapiMessage
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.Mapi.MapiAttachment> Attachments { get => throw null; }
@@ -800,6 +830,34 @@ namespace Meziantou.Framework.Email.Mapi
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
+    }
+
+    public sealed class MapiNote : Meziantou.Framework.Email.Mapi.MapiMessage
+    {
+        public Meziantou.Framework.Email.Mapi.MapiNoteColor Color { get => throw null; }
+        public int? Height { get => throw null; }
+        public int? Left { get => throw null; }
+        public int? Top { get => throw null; }
+        public int? Width { get => throw null; }
+    }
+
+    public sealed class MapiNoteBuilder : Meziantou.Framework.Email.Mapi.MapiMessageBuilder
+    {
+        public Meziantou.Framework.Email.Mapi.MapiNoteColor Color { get => throw null; set { } }
+        public int? Height { get => throw null; set { } }
+        public int? Left { get => throw null; set { } }
+        public string? Text { get => throw null; set { } }
+        public int? Top { get => throw null; set { } }
+        public int? Width { get => throw null; set { } }
+    }
+
+    public enum MapiNoteColor
+    {
+        Blue = 0,
+        Green = 1,
+        Pink = 2,
+        Yellow = 3,
+        White = 4,
     }
 
     public sealed class MapiPostalAddress

@@ -93,6 +93,91 @@ public sealed class PstWriterTests
     }
 
     [Fact]
+    public void Note_RoundTrip()
+    {
+        using var stream = new MemoryStream();
+
+        #region MapiNoteBuilder_Usage
+        using (var writer = PstWriter.Create(stream, leaveOpen: true))
+        {
+            var notes = writer.RootFolder.CreateFolder("Notes", "IPF.StickyNote");
+            notes.AddItem(new MapiNoteBuilder
+            {
+                Text = "Call Bob\r\nAbout the quarterly report",
+                Color = MapiNoteColor.Green,
+                Width = 200,
+                Height = 166,
+            });
+        }
+
+        using var file = PstFile.Open(stream);
+        var note = Assert.IsType<MapiNote>(file.GetFolder("Notes")!.EnumerateItems().Single());
+        Assert.Equal("Call Bob", note.Subject);
+        Assert.Equal("Call Bob\r\nAbout the quarterly report", note.Body);
+        Assert.Equal(MapiNoteColor.Green, note.Color);
+        Assert.Equal(200, note.Width);
+        #endregion
+
+        Assert.Equal(166, note.Height);
+        Assert.Null(note.Left);
+        Assert.Empty(file.Validate());
+
+        // An .msg file of the note, and its copy, read by MsgReader as a sticky note
+        var bytes = MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(note));
+        var copy = Assert.IsType<MapiNote>(MsgFile.Load(bytes));
+        Assert.Equal(MapiNoteColor.Green, copy.Color);
+        Assert.Equal(166, copy.Height);
+        using var oracle = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
+        Assert.Equal(MsgReader.Outlook.MessageType.StickyNote, oracle.Type);
+        Assert.Equal("Call Bob", oracle.Subject);
+    }
+
+    [Fact]
+    public void Journal_RoundTrip()
+    {
+        #region MapiJournalBuilder_Usage
+        var entry = new MapiJournalBuilder
+        {
+            Subject = "Call with Bob",
+            JournalType = "Phone call",
+            JournalTypeDescription = "Phone call",
+            Start = new DateTime(2026, 3, 2, 9, 0, 0, DateTimeKind.Utc),
+            End = new DateTime(2026, 3, 2, 9, 25, 0, DateTimeKind.Utc),
+            Companies = ["Contoso"],
+            Contacts = ["Bob Smith"],
+        };
+        Assert.Equal(TimeSpan.FromMinutes(25), entry.Duration);
+
+        var item = Assert.IsType<MapiJournal>(MsgFile.Load(MsgFile.ToByteArray(entry)));
+        Assert.Equal("Phone call", item.JournalType);
+        Assert.Equal(TimeSpan.FromMinutes(25), item.Duration);
+        Assert.Equal(["Contoso"], item.Companies);
+        #endregion
+
+        Assert.Equal(new DateTime(2026, 3, 2, 9, 0, 0, DateTimeKind.Utc), item.Start);
+        Assert.Equal(new DateTime(2026, 3, 2, 9, 25, 0, DateTimeKind.Utc), item.End);
+        Assert.Equal(["Bob Smith"], item.Contacts);
+        Assert.False(item.DocumentPrinted);
+
+        // MsgReader reads the same journal entry
+        entry.DocumentSaved = true;
+        var bytes = MsgFile.ToByteArray(entry);
+        using var oracle = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
+        Assert.Equal(MsgReader.Outlook.MessageType.Journal, oracle.Type);
+        Assert.Equal("Phone call", oracle.Log.Type);
+        Assert.Equal("Phone call", oracle.Log.TypeDescription);
+        Assert.Equal(25, oracle.Log.Duration);
+        Assert.True(oracle.Log.DocumentSaved);
+        Assert.Null(oracle.Log.DocumentPrinted);
+        Assert.Equal(new DateTimeOffset(2026, 3, 2, 9, 0, 0, TimeSpan.Zero), oracle.Log.Start?.ToUniversalTime());
+        Assert.True(Assert.IsType<MapiJournal>(MsgFile.Load(bytes)).DocumentSaved);
+
+        // An end before the start has no duration
+        entry.End = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+        Assert.Null(entry.Duration);
+    }
+
+    [Fact]
     public void WriteTypedItems_Snippet()
     {
         using var stream = new MemoryStream();

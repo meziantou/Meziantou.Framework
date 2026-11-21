@@ -45,10 +45,15 @@ internal static class GuidedFilterer
     {
         var guide = GetGuideChannels(format);
         var filtered = PixelFormats.GetComponentCount(format);
-        long values = Math.Max(GetStatisticCount(guide, filtered), GetCoefficientCount(guide, filtered));
+        return GetWindowScratchDoubles(size.Width, radius, Math.Max(GetStatisticCount(guide, filtered), GetCoefficientCount(guide, filtered)));
+    }
+
+    /// <summary>Gets the number of doubles of the scratch of <see cref="SumWindows"/> for rows of <paramref name="width"/> pixels of <paramref name="values"/> values: the ring, the prefix and output rows, and a padded row with its block sums.</summary>
+    internal static long GetWindowScratchDoubles(int width, int radius, long values)
+    {
         var diameter = (2L * radius) + 1;
-        var rowLength = size.Width * values;
-        var paddedLength = (size.Width + (2L * radius)) * values;
+        var rowLength = width * values;
+        var paddedLength = (width + (2L * radius)) * values;
         return checked(((diameter + 2) * rowLength) + (2 * paddedLength));
     }
 
@@ -74,7 +79,7 @@ internal static class GuidedFilterer
     /// Computes the sums of the <c>(2 r + 1)²</c> windows of every row, in order, of a frame whose pixels have
     /// <paramref name="values"/> values each, given by <paramref name="load"/> for a row of the frame.
     /// </summary>
-    private static void SumWindows(WorkingFrameCopy copy, Span<double> scratch, int values, int radius, RowLoader load, WindowRowSink sink, CancellationToken cancellationToken)
+    internal static void SumWindows(WorkingFrameCopy copy, Span<double> scratch, int values, int radius, RowLoader load, WindowRowSink sink, CancellationToken cancellationToken)
     {
         var width = copy.Size.Width;
         var height = copy.Size.Height;
@@ -222,9 +227,9 @@ internal static class GuidedFilterer
         }
     }
 
-    private delegate void RowLoader(int y, Span<double> values);
+    internal delegate void RowLoader(int y, Span<double> values);
 
-    private delegate void WindowRowSink(int y, ReadOnlySpan<double> sums);
+    internal delegate void WindowRowSink(int y, ReadOnlySpan<double> sums);
 
     /// <summary>The state of the filtering of a frame: what the two passes read and write.</summary>
     private sealed class State

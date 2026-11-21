@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Imaging.Tests;
 
 /// <summary>
-/// The edge-preserving filters (bilateral, guided) and the radial blur. The references come from OpenCV 5.0.0
+/// The edge-preserving filters (bilateral, guided, adaptive Wiener) and the radial blur. The references come from OpenCV 5.0.0
 /// (<c>cv2.bilateralFilter</c> on gray samples, with <c>BORDER_REPLICATE</c> and <c>BORDER_REFLECT</c>, and
 /// <c>cv2.ximgproc.guidedFilter</c> of opencv-contrib-python-headless 5.0.0.93, whose box filters reflect like
 /// <see cref="ConvolutionEdgeMode.Mirror"/>), or from numpy 2.5.4 implementations of the documented definitions in double
@@ -175,6 +175,148 @@ public sealed class SmoothingTests
     }
     #endregion
 
+    #region WienerFilter_SmoothNoiseKeepEdges
+    [Fact]
+    public void WienerFilter_SmoothNoiseKeepEdges()
+    {
+        // A dark and a bright half, both with a little noise
+        using var image = new Image<Gray8>(32, 16);
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                var noise = ((x * 7) + (y * 13)) % 5 * 2;
+                image.Frames[0][x, y] = new Gray8((byte)((x < 16 ? 40 : 200) + noise));
+            }
+        }
+
+        // A noise of about 3 levels of 255 (a variance of 0.012²): the flat windows become their mean, the windows across
+        // the step of 160 levels vary much more and keep their pixels
+        image.WienerFilter(radius: 2, noiseVariance: 0.00015);
+
+        Assert.InRange(image.Frames[0][5, 8].Value, 42, 46);
+        Assert.InRange(image.Frames[0][15, 8].Value, 40, 48);
+        Assert.InRange(image.Frames[0][16, 8].Value, 200, 208);
+    }
+    #endregion
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, null)]
+    [InlineData(ConvolutionEdgeMode.Mirror, 0.002)]
+    [InlineData(ConvolutionEdgeMode.Wrap, null)]
+    [InlineData(ConvolutionEdgeMode.Zero, null)]
+    [InlineData(ConvolutionEdgeMode.Zero, 0.0005)]
+    public void WienerFilter_MatchesItsDefinition(ConvolutionEdgeMode edgeMode, double? noiseVariance)
+    {
+        // The definition of wiener2, computed by brute force in double precision on 16-bit samples: the mean and the variance
+        // of every window (every pixel of the window counting, read by the edge mode), the noise the mean of the variances
+        // when it is not given, then x - min(ν² / σ², 1) (x - μ)
+        const int Radius = 2;
+        using var image = CreateImage<Gray16>(1);
+        var samples = new double[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                samples[(y * Width) + x] = image.Frames[0][x, y].Value / 65535d;
+            }
+        }
+
+        var means = new double[samples.Length];
+        var variances = new double[samples.Length];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var sum = 0d;
+                var squares = 0d;
+                for (var dy = -Radius; dy <= Radius; dy++)
+                {
+                    for (var dx = -Radius; dx <= Radius; dx++)
+                    {
+                        var sx = Map(x + dx, Width, edgeMode);
+                        var sy = Map(y + dy, Height, edgeMode);
+                        var value = sx < 0 || sy < 0 ? 0 : samples[(sy * Width) + sx];
+                        sum += value;
+                        squares += value * value;
+                    }
+                }
+
+                var count = ((2 * Radius) + 1) * ((2 * Radius) + 1);
+                means[(y * Width) + x] = sum / count;
+                variances[(y * Width) + x] = Math.Max(0, (squares / count) - (sum / count * (sum / count)));
+            }
+        }
+
+        var noise = noiseVariance ?? variances.Average();
+        image.WienerFilter(Radius, noiseVariance, edgeMode, Ct);
+
+        for (var i = 0; i < samples.Length; i++)
+        {
+            var gain = variances[i] > noise ? noise / variances[i] : 1;
+            var expected = samples[i] - (gain * (samples[i] - means[i]));
+            var rounded = Math.Round(expected * 65535, MidpointRounding.AwayFromZero);
+            Assert.InRange(image.Frames[0][i % Width, i / Width].Value, rounded - 1, rounded + 1);
+        }
+
+        static int Map(int index, int length, ConvolutionEdgeMode mode) => (uint)index < (uint)length ? index : mode switch
+        {
+            ConvolutionEdgeMode.Clamp => index < 0 ? 0 : length - 1,
+            ConvolutionEdgeMode.Mirror => index < 0 ? -index - 1 : (2 * length) - index - 1,
+            ConvolutionEdgeMode.Wrap => ((index % length) + length) % length,
+            _ => -1,
+        };
+    }
+
+    [Fact]
+    public void WienerFilter_WithoutNoiseChangesNothing()
+    {
+        // ν² = 0: every sample of an opaque image keeps its value exactly, whatever its window
+        using var image = CreateImage<Rgba32>(3);
+        using var floats = CreateImage<RgbaFloat>(3);
+        var before = ReadBytes(image.Frames[0]);
+        var floatsBefore = ReadBytes(floats.Frames[0]);
+        image.WienerFilter(3, noiseVariance: 0, cancellationToken: Ct);
+        floats.WienerFilter(3, noiseVariance: 0, edgeMode: ConvolutionEdgeMode.Zero, cancellationToken: Ct);
+        Assert.Equal(before, ReadBytes(image.Frames[0]));
+        Assert.Equal(floatsBefore, ReadBytes(floats.Frames[0]));
+    }
+
+    [Fact]
+    public void WienerFilter_FlattensWhatVariesLessThanTheNoise()
+    {
+        // A noise variance larger than every window variance: every sample becomes the mean of its window, a box blur
+        using var image = CreateImage<Gray8>(1);
+        using var box = image.Clone();
+        image.WienerFilter(1, noiseVariance: 1, edgeMode: ConvolutionEdgeMode.Mirror, cancellationToken: Ct);
+        box.BoxBlur(1, ConvolutionEdgeMode.Mirror, cancellationToken: Ct);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                Assert.InRange(image.Frames[0][x, y].Value - box.Frames[0][x, y].Value, -1, 1);
+            }
+        }
+    }
+
+    [Fact]
+    public void WienerFilter_SpreadsSamplesThatAreNotNumbersToTheirWindowsOnly()
+    {
+        using var image = new Image<RgbaFloat>(12, 12, new RgbaFloat(0.5f, 0.25f, 0.75f, 1));
+        image.Frames[0][2, 2] = new RgbaFloat(float.NaN, 0.25f, 0.75f, 1);
+        image.Frames[0][9, 9] = new RgbaFloat(0.6f, 0.25f, 0.75f, 1);
+
+        image.WienerFilter(1, cancellationToken: Ct);
+
+        Assert.True(float.IsNaN(image.Frames[0][3, 3].R));
+        Assert.False(float.IsNaN(image.Frames[0][5, 5].R));
+        Assert.Equal(0.25f, image.Frames[0][3, 3].G);
+
+        // The estimate of the noise leaves the windows that are not numbers out (otherwise it would not be a number, and
+        // nothing would change): the bright pixel moves toward the mean of its window
+        Assert.InRange(image.Frames[0][9, 9].R, 0.5f, 0.599f);
+    }
+
     #region RadialBlur_Zoom
     [Fact]
     public void RadialBlur_Zoom()
@@ -228,6 +370,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     [InlineData("spin")]
     public void Filters_KeepUniformImages(string filter)
@@ -240,6 +383,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     [InlineData("spin")]
     public void Filters_DoNotSpreadTheColorsOfTransparentPixels(string filter)
@@ -270,6 +414,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     [InlineData("spin")]
     public void Filters_ProcessGrayFormatsLikeGray8(string filter)
@@ -299,6 +444,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     [InlineData("spin")]
     public void Filters_KeepTheSixteenBitPrecisionAndTheFloatingPointSamples(string filter)
@@ -322,6 +468,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     [InlineData("spin")]
     public void Filters_DoNotClipHighDynamicRangeSamples(string filter)
@@ -379,6 +526,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     public void Filters_ReportTheAllocationLimitBeforeAnyChange(string filter)
     {
@@ -393,6 +541,7 @@ public sealed class SmoothingTests
     [Theory]
     [InlineData("bilateral")]
     [InlineData("guided")]
+    [InlineData("wiener")]
     [InlineData("zoom")]
     public void Filters_ObserveCancellation(string filter)
     {
@@ -410,6 +559,7 @@ public sealed class SmoothingTests
         using var original = image.Clone();
         image.Frames[1].BilateralFilter(2, 1.5, 0.2, cancellationToken: Ct);
         image.Frames[1].GuidedFilter(2, 0.01, cancellationToken: Ct);
+        image.Frames[1].WienerFilter(2, cancellationToken: Ct);
         image.Frames[1].RadialBlur(new RadialBlurOptions(RadialBlurKind.Spin, new PointD(0, 0), 10), Ct);
         Assert.Equal(original.Frames[0][3, 3], image.Frames[0][3, 3]);
         Assert.Equal(original.Frames[0][20, 10], image.Frames[0][20, 10]);
@@ -425,6 +575,8 @@ public sealed class SmoothingTests
         image.GuidedFilter(0, 0.01, cancellationToken: Ct);
         image.Frames[0].BilateralFilter(0, 1, 0.1, cancellationToken: Ct);
         image.Frames[0].GuidedFilter(0, 0.01, cancellationToken: Ct);
+        image.WienerFilter(0, cancellationToken: Ct);
+        image.Frames[0].WienerFilter(0, 0.01, cancellationToken: Ct);
         Assert.Equal(before, ReadBytes(image.Frames[0]));
     }
 
@@ -466,6 +618,14 @@ public sealed class SmoothingTests
         Assert.Throws<ArgumentOutOfRangeException>("radius", () => image.GuidedFilter(1001, 0.1));
         Assert.Throws<ArgumentOutOfRangeException>("epsilon", () => image.GuidedFilter(1, 0));
         Assert.Throws<ArgumentOutOfRangeException>("epsilon", () => image.Frames[0].GuidedFilter(1, -1));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).WienerFilter(1));
+        Assert.Throws<ArgumentNullException>("frame", () => ((ImageFrame)null!).WienerFilter(1));
+        Assert.Throws<ArgumentOutOfRangeException>("radius", () => image.WienerFilter(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("radius", () => image.Frames[0].WienerFilter(1001));
+        Assert.Throws<ArgumentOutOfRangeException>("noiseVariance", () => image.WienerFilter(1, -0.01));
+        Assert.Throws<ArgumentOutOfRangeException>("noiseVariance", () => image.WienerFilter(1, double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>("noiseVariance", () => image.Frames[0].WienerFilter(1, double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>("edgeMode", () => image.WienerFilter(1, edgeMode: (ConvolutionEdgeMode)42));
         Assert.Throws<ArgumentNullException>("options", () => image.RadialBlur(null!));
         Assert.Throws<ArgumentOutOfRangeException>("amount", () => new RadialBlurOptions(RadialBlurKind.Zoom, default, 2.5));
         Assert.Throws<ArgumentOutOfRangeException>("amount", () => new RadialBlurOptions(RadialBlurKind.Zoom, default, 0));
@@ -487,6 +647,8 @@ public sealed class SmoothingTests
         image.Dispose();
         Assert.Throws<ObjectDisposedException>(() => image.BilateralFilter(1, 1, 0.1));
         Assert.Throws<ObjectDisposedException>(() => image.GuidedFilter(1, 0.1));
+        Assert.Throws<ObjectDisposedException>(() => image.WienerFilter(1));
+        Assert.Throws<ObjectDisposedException>(() => frame.WienerFilter(1));
         Assert.Throws<ObjectDisposedException>(() => image.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, default, 0.2)));
         Assert.Throws<ObjectDisposedException>(() => frame.BilateralFilter(1, 1, 0.1));
     }
@@ -498,6 +660,9 @@ public sealed class SmoothingTests
         {
             case "bilateral":
                 image.BilateralFilter(2, 1.5, 0.1, ConvolutionEdgeMode.Clamp, token);
+                break;
+            case "wiener":
+                image.WienerFilter(2, noiseVariance: null, ConvolutionEdgeMode.Clamp, token);
                 break;
             case "guided":
                 image.GuidedFilter(2, 0.01, ConvolutionEdgeMode.Mirror, token);

@@ -68,10 +68,22 @@ public sealed partial class JsRealm
     /// <exception cref="JsException">The script threw an exception (a SyntaxError for an invalid script).</exception>
     public JsValue Execute(string code, string? url = null)
     {
-        // The parsing and the compilation are part of the entry: the limits apply to them
-        using var entry = Engine.EnterHostEntry();
         var source = new Text.SourceText(code, url) { IsInstrumented = Engine.Options.Debugger is not null };
-        return Run(source, Compile(source), hostDefined: null, mutedErrors: false);
+        var operation = StartExecuteOperation(source);
+        JsValue result;
+        try
+        {
+            // The parsing and the compilation are part of the entry: the limits apply to them
+            using var entry = Engine.EnterHostEntry();
+            result = Run(source, Compile(source), hostDefined: null, mutedErrors: false);
+        }
+        catch (Exception ex) when (operation.Fail(ex))
+        {
+            throw;
+        }
+
+        operation.Stop();
+        return result;
     }
 
     /// <summary>Runs a prepared script in this realm (ScriptEvaluation) and returns its completion value.</summary>
@@ -82,21 +94,38 @@ public sealed partial class JsRealm
     public JsValue Execute(JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false)
     {
         ArgumentNullException.ThrowIfNull(script);
-        using var entry = Engine.EnterHostEntry();
-        if (Engine.Options.Debugger is not null && !script.Source.IsInstrumented)
+        var operation = StartExecuteOperation(script.Source);
+        JsValue result;
+        try
         {
-            // A prepared script is compiled without the instructions of the debugger
-            var source = new Text.SourceText(script.Source.Text, script.Source.Url, script.Source.LineOffset, script.Source.ColumnOffset)
+            using var entry = Engine.EnterHostEntry();
+            if (Engine.Options.Debugger is not null && !script.Source.IsInstrumented)
             {
-                UnboundNameFunctionStart = script.Source.UnboundNameFunctionStart,
-                IsInstrumented = true,
-            };
+                // A prepared script is compiled without the instructions of the debugger
+                var source = new Text.SourceText(script.Source.Text, script.Source.Url, script.Source.LineOffset, script.Source.ColumnOffset)
+                {
+                    UnboundNameFunctionStart = script.Source.UnboundNameFunctionStart,
+                    IsInstrumented = true,
+                };
 
-            return Run(source, Compile(source), hostDefined, mutedErrors);
+                result = Run(source, Compile(source), hostDefined, mutedErrors);
+            }
+            else
+            {
+                result = Run(script.Source, script.Template, hostDefined, mutedErrors);
+            }
+        }
+        catch (Exception ex) when (operation.Fail(ex))
+        {
+            throw;
         }
 
-        return Run(script.Source, script.Template, hostDefined, mutedErrors);
+        operation.Stop();
+        return result;
     }
+
+    private static JsTelemetryOperation StartExecuteOperation(Text.SourceText source)
+        => JsTelemetryOperation.Start(JsEngineTelemetry.ScriptExecuteActivityName, histogram: null, JsCodeKind.Script, source.Url, source.Text.Length);
 
     private JsValue Run(Text.SourceText source, Compiler.FunctionTemplate template, object? hostDefined, bool mutedErrors)
     {
@@ -107,7 +136,19 @@ public sealed partial class JsRealm
             This = GlobalThis,
         };
 
-        return Interpreter.JsInterpreter.Run(frame);
+        var operation = JsTelemetryOperation.Start(activityName: null, JsEngineTelemetry.ExecutionDuration, JsCodeKind.Script);
+        JsValue result;
+        try
+        {
+            result = Interpreter.JsInterpreter.Run(frame);
+        }
+        catch (Exception ex) when (operation.Fail(ex))
+        {
+            throw;
+        }
+
+        operation.Stop();
+        return result;
     }
 
     private Compiler.FunctionTemplate Compile(Text.SourceText source)
@@ -118,8 +159,7 @@ public sealed partial class JsRealm
         {
             try
             {
-                var program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
-                return Compiler.CodeGenerator.CompileProgram(program, source, Compiler.ProgramKind.Script, isStrict: false);
+                return JsPreparedScript.Compile(source);
             }
             catch (JsSyntaxErrorException ex)
             {

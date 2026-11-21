@@ -48,12 +48,10 @@ internal static partial class JsInterpreter
             };
 
         var source = new SourceText(code, GetEvalUrl(code)) { IsInstrumented = realm.Engine.Options.Debugger is not null };
-        Ast.Program program;
         FunctionTemplate template;
         try
         {
-            program = JsParser.ParseScript(source, options);
-            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || (context?.IsStrict ?? false), context);
+            template = ParseAndCompileEval(source, options, context);
         }
         catch (JsSyntaxErrorException ex)
         {
@@ -124,8 +122,7 @@ internal static partial class JsInterpreter
         FunctionTemplate template;
         try
         {
-            var program = JsParser.ParseScript(source, options);
-            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || context.IsStrict, context);
+            template = ParseAndCompileEval(source, options, context);
         }
         catch (JsSyntaxErrorException ex)
         {
@@ -157,8 +154,7 @@ internal static partial class JsInterpreter
         try
         {
             // The script goal: new.target, super() and super properties are early errors
-            var program = JsParser.ParseScript(source, ParserOptions.Script);
-            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict);
+            template = ParseAndCompileEval(source, ParserOptions.Script, context: null);
         }
         catch (JsSyntaxErrorException ex)
         {
@@ -181,6 +177,37 @@ internal static partial class JsInterpreter
         }
 
         return JsWrappedFunction.GetWrappedValue(callerRealm, result);
+    }
+
+    /// <summary>Parses and compiles eval code (measured by the metrics of <see cref="JsEngineTelemetry"/>, without spans: eval can run in a loop).</summary>
+    private static FunctionTemplate ParseAndCompileEval(SourceText source, ParserOptions options, EvalContext? context)
+    {
+        var parse = JsEngineTelemetry.StartParse(JsCodeKind.Eval, traced: false);
+        Ast.Program program;
+        try
+        {
+            program = JsParser.ParseScript(source, options);
+        }
+        catch (Exception ex) when (parse.Fail(ex))
+        {
+            throw;
+        }
+
+        parse.Stop();
+
+        var compile = JsEngineTelemetry.StartCompile(JsCodeKind.Eval, traced: false);
+        FunctionTemplate template;
+        try
+        {
+            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Eval, program.IsStrict || (context?.IsStrict ?? false), context);
+        }
+        catch (Exception ex) when (compile.Fail(ex))
+        {
+            throw;
+        }
+
+        compile.Stop();
+        return template;
     }
 
     /// <summary>The URL of eval code: the //# sourceURL= comment of the code, if any.</summary>
@@ -215,9 +242,30 @@ internal static partial class JsInterpreter
         FunctionTemplate template;
         try
         {
-            (function, sourceText) = JsParser.ParseDynamicFunction(source.Parameters, source.Body, isAsync, isGenerator);
+            var parse = JsEngineTelemetry.StartParse(JsCodeKind.Function, traced: false);
+            try
+            {
+                (function, sourceText) = JsParser.ParseDynamicFunction(source.Parameters, source.Body, isAsync, isGenerator);
+            }
+            catch (Exception ex) when (parse.Fail(ex))
+            {
+                throw;
+            }
+
+            parse.Stop();
             sourceText.IsInstrumented = realm.Engine.Options.Debugger is not null;
-            template = CodeGenerator.CompileDynamicFunction(function, sourceText);
+
+            var compile = JsEngineTelemetry.StartCompile(JsCodeKind.Function, traced: false);
+            try
+            {
+                template = CodeGenerator.CompileDynamicFunction(function, sourceText);
+            }
+            catch (Exception ex) when (compile.Fail(ex))
+            {
+                throw;
+            }
+
+            compile.Stop();
         }
         catch (JsSyntaxErrorException ex)
         {

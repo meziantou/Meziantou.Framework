@@ -15,6 +15,8 @@
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
     <Project Path="../src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine.SourceGenerator/Meziantou.Framework.JavaScriptEngine.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Json/Meziantou.Framework.Language.Json.csproj" />
     <Project Path="../src/Meziantou.Framework.Language.Toml/Meziantou.Framework.Language.Toml.csproj" />
@@ -26,6 +28,7 @@
     <Project Path="../src/Meziantou.Framework.StronglyTypedId.Annotations/Meziantou.Framework.StronglyTypedId.Annotations.csproj" />
     <Project Path="../src/Meziantou.Framework.StronglyTypedId/Meziantou.Framework.StronglyTypedId.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <Project Path="../src/Meziantou.Framework.Unicode.Dictionaries/Meziantou.Framework.Unicode.Dictionaries.csproj" />
     <Project Path="../src/Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
     <Project Path="../src/Meziantou.Framework.Unix.ControlGroups/Meziantou.Framework.Unix.ControlGroups.csproj" />
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
@@ -43,6 +46,7 @@
     <Project Path="../tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsClient.Tests/Meziantou.Framework.DnsClient.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.NuGetPackageValidation.Tests/Meziantou.Framework.NuGetPackageValidation.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.ProcessWrapper.Tests/Meziantou.Framework.ProcessWrapper.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.StronglyTypedId.Tests/Meziantou.Framework.StronglyTypedId.Tests.csproj" />

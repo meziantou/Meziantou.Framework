@@ -4,6 +4,89 @@
 
 namespace Meziantou.Framework.Mail
 {
+    public sealed class CalendarAttendee : System.IEquatable<Meziantou.Framework.Mail.CalendarAttendee>
+    {
+        public string Address { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public string? ParticipationStatus { get => throw null; init { } }
+        public string? Role { get => throw null; init { } }
+        public CalendarAttendee(string Address, string? Name = null, string? Role = null, string? ParticipationStatus = null) { }
+        public void Deconstruct(out string Address, out string? Name, out string? Role, out string? ParticipationStatus) => throw null;
+        public bool Equals(Meziantou.Framework.Mail.CalendarAttendee? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Mail.CalendarAttendee? left, Meziantou.Framework.Mail.CalendarAttendee? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Mail.CalendarAttendee? left, Meziantou.Framework.Mail.CalendarAttendee? right) => throw null;
+    }
+
+    public class CalendarComponent
+    {
+        public Meziantou.Framework.Mail.VCalendar? Calendar { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.CalendarComponent> Components { get => throw null; }
+        public string Name { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.ContentLine> Properties { get => throw null; }
+        public CalendarComponent(string name) { }
+        public Meziantou.Framework.Mail.CalendarDateTime? GetDateTime(string name) => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.ContentLine> GetProperties(string name) => throw null;
+        public Meziantou.Framework.Mail.ContentLine? GetProperty(string name) => throw null;
+        public string? GetText(string name) => throw null;
+        public void RemoveProperties(string name) { }
+        public void SetDateTime(string name, Meziantou.Framework.Mail.CalendarDateTime? value) { }
+        public void SetText(string name, string? value) { }
+        public void SetValue(string name, string? value) { }
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct CalendarDateTime : System.IEquatable<Meziantou.Framework.Mail.CalendarDateTime>
+    {
+        public bool IsDate { get => throw null; }
+        public bool IsUtc { get => throw null; }
+        public string? TimeZoneId { get => throw null; }
+        public System.DateTime Value { get => throw null; }
+        public CalendarDateTime(System.DateTime value, string? timeZoneId = null, bool isDate = false) { }
+        public bool Equals(Meziantou.Framework.Mail.CalendarDateTime other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public static Meziantou.Framework.Mail.CalendarDateTime FromDate(System.DateOnly date) => throw null;
+        public static Meziantou.Framework.Mail.CalendarDateTime FromUtc(System.DateTime value) => throw null;
+        public override int GetHashCode() => throw null;
+        public static Meziantou.Framework.Mail.CalendarDateTime? Parse(Meziantou.Framework.Mail.ContentLine line) => throw null;
+        public static Meziantou.Framework.Mail.CalendarDateTime? Parse(string value, string? timeZoneId = null) => throw null;
+        public override string ToString() => throw null;
+        public System.DateTime? ToUtc(Meziantou.Framework.Mail.VCalendar? calendar) => throw null;
+        public static bool operator ==(Meziantou.Framework.Mail.CalendarDateTime left, Meziantou.Framework.Mail.CalendarDateTime right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Mail.CalendarDateTime left, Meziantou.Framework.Mail.CalendarDateTime right) => throw null;
+    }
+
+    public sealed class ContentLine
+    {
+        public string? Group { get => throw null; set { } }
+        public string Name { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.ContentLineParameter> Parameters { get => throw null; }
+        public string Value { get => throw null; set { } }
+        public ContentLine(string name, string value) { }
+        public static string DecodeText(string value) => throw null;
+        public static string EncodeText(string value) => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetComponents() => throw null;
+        public string? GetParameter(string name) => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetParameterValues(string name) => throw null;
+        public string GetText() => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetTypes() => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> GetValues() => throw null;
+        public void SetParameter(string name, string? value) { }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ContentLineParameter
+    {
+        public string? Name { get => throw null; }
+        public System.Collections.Generic.IList<string> Values { get => throw null; }
+        public ContentLineParameter(string? name, params System.Collections.Generic.IEnumerable<string> values) { }
+        public override string ToString() => throw null;
+    }
+
     public sealed class EmailAttachment
     {
         public System.ReadOnlyMemory<byte> Content { get => throw null; set { } }
@@ -1047,6 +1130,50 @@ namespace Meziantou.Framework.Mail
         public System.Guid? StoreId { get => throw null; set { } }
     }
 
+    public readonly struct RecurrenceDay : System.IEquatable<Meziantou.Framework.Mail.RecurrenceDay>
+    {
+        public System.DayOfWeek Day { get => throw null; init { } }
+        public int Position { get => throw null; init { } }
+        public RecurrenceDay(System.DayOfWeek Day, int Position = 0) { }
+        public void Deconstruct(out System.DayOfWeek Day, out int Position) => throw null;
+        public bool Equals(Meziantou.Framework.Mail.RecurrenceDay other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Mail.RecurrenceDay left, Meziantou.Framework.Mail.RecurrenceDay right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Mail.RecurrenceDay left, Meziantou.Framework.Mail.RecurrenceDay right) => throw null;
+    }
+
+    public enum RecurrenceFrequency
+    {
+        Secondly = 0,
+        Minutely = 1,
+        Hourly = 2,
+        Daily = 3,
+        Weekly = 4,
+        Monthly = 5,
+        Yearly = 6,
+    }
+
+    public sealed class RecurrenceRule
+    {
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.RecurrenceDay> ByDay { get => throw null; }
+        public System.Collections.Generic.IList<int> ByMonth { get => throw null; }
+        public System.Collections.Generic.IList<int> ByMonthDay { get => throw null; }
+        public System.Collections.Generic.IList<int> BySetPosition { get => throw null; }
+        public int? Count { get => throw null; set { } }
+        public Meziantou.Framework.Mail.RecurrenceFrequency Frequency { get => throw null; set { } }
+        public int Interval { get => throw null; set { } }
+        public System.Collections.Generic.IDictionary<string, string> OtherParts { get => throw null; }
+        public Meziantou.Framework.Mail.CalendarDateTime? Until { get => throw null; set { } }
+        public System.DayOfWeek WeekStart { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<System.DateTime> GetOccurrences(System.DateTime start) => throw null;
+        public static Meziantou.Framework.Mail.RecurrenceRule? Parse(string value) => throw null;
+        public override string ToString() => throw null;
+    }
+
     [System.Flags]
     public enum ThunderbirdMessageFlags
     {
@@ -1110,5 +1237,143 @@ namespace Meziantou.Framework.Mail
     {
         public UnsupportedPstFeatureException(string? message) { }
         public UnsupportedPstFeatureException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class VCalendar : Meziantou.Framework.Mail.CalendarComponent
+    {
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.VEvent> Events { get => throw null; }
+        public string? Method { get => throw null; set { } }
+        public string? ProductId { get => throw null; set { } }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.VTimeZone> TimeZones { get => throw null; }
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.VTodo> Todos { get => throw null; }
+        public VCalendar() : base(default(string)) { }
+        public T Add<T>(T component) where T : Meziantou.Framework.Mail.CalendarComponent => throw null;
+        public Meziantou.Framework.Mail.VEvent AddAppointment(Meziantou.Framework.Mail.PstAppointment appointment) => throw null;
+        public Meziantou.Framework.Mail.VTodo AddTask(Meziantou.Framework.Mail.PstTask task) => throw null;
+        public Meziantou.Framework.Mail.VTimeZone? FindTimeZone(string id) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCalendar> Load(System.IO.Stream stream) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCalendar> Load(System.ReadOnlySpan<byte> data) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCalendar> Load(string path) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCalendar> Parse(string text) => throw null;
+        public void Save(string path) { }
+    }
+
+    public sealed class VCard
+    {
+        public string? AdditionalNames { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.VCardAddress> Addresses { get => throw null; }
+        public System.DateOnly? Birthday { get => throw null; set { } }
+        public System.Collections.Generic.IList<string> Categories { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.VCardValue> Emails { get => throw null; }
+        public string? FamilyName { get => throw null; set { } }
+        public string? FormattedName { get => throw null; set { } }
+        public string? GivenName { get => throw null; set { } }
+        public string? NamePrefix { get => throw null; set { } }
+        public string? NameSuffix { get => throw null; set { } }
+        public System.Collections.Generic.IList<string> Nicknames { get => throw null; }
+        public string? Note { get => throw null; set { } }
+        public string? Organization { get => throw null; set { } }
+        public System.Collections.Generic.IList<string> OrganizationUnits { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.ContentLine> OtherProperties { get => throw null; }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.VCardValue> Phones { get => throw null; }
+        public System.ReadOnlyMemory<byte>? Photo { get => throw null; set { } }
+        public string? PhotoMediaType { get => throw null; set { } }
+        public string? Role { get => throw null; set { } }
+        public string? Title { get => throw null; set { } }
+        public string? Uid { get => throw null; set { } }
+        public System.Collections.Generic.IList<Meziantou.Framework.Mail.VCardValue> Urls { get => throw null; }
+        public Meziantou.Framework.Mail.VCardVersion Version { get => throw null; set { } }
+        public static Meziantou.Framework.Mail.VCard FromPst(Meziantou.Framework.Mail.PstContact contact) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCard> Load(System.IO.Stream stream) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCard> Load(System.ReadOnlySpan<byte> data) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCard> Load(string path) => throw null;
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.VCard> Parse(string text) => throw null;
+        public static void Save(string path, System.Collections.Generic.IEnumerable<Meziantou.Framework.Mail.VCard> cards, Meziantou.Framework.Mail.VCardVersion version = Meziantou.Framework.Mail.VCardVersion.V40) { }
+        public Meziantou.Framework.Mail.PstContactBuilder ToPstContactBuilder() => throw null;
+        public override string ToString() => throw null;
+        public string ToString(Meziantou.Framework.Mail.VCardVersion version) => throw null;
+    }
+
+    public sealed class VCardAddress
+    {
+        public string? Country { get => throw null; set { } }
+        public string? ExtendedAddress { get => throw null; set { } }
+        public string? Locality { get => throw null; set { } }
+        public string? PostOfficeBox { get => throw null; set { } }
+        public string? PostalCode { get => throw null; set { } }
+        public string? Region { get => throw null; set { } }
+        public string? Street { get => throw null; set { } }
+        public System.Collections.Generic.IList<string> Types { get => throw null; }
+        public bool HasType(string type) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class VCardValue
+    {
+        public System.Collections.Generic.IList<string> Types { get => throw null; }
+        public string Value { get => throw null; set { } }
+        public VCardValue(string value, params System.Collections.Generic.IEnumerable<string> types) { }
+        public bool HasType(string type) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public enum VCardVersion
+    {
+        V21 = 0,
+        V30 = 1,
+        V40 = 2,
+    }
+
+    public sealed class VEvent : Meziantou.Framework.Mail.CalendarComponent
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.CalendarAttendee> Attendees { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Categories { get => throw null; }
+        public string? Description { get => throw null; set { } }
+        public System.TimeSpan? Duration { get => throw null; set { } }
+        public Meziantou.Framework.Mail.CalendarDateTime? End { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.CalendarDateTime> ExceptionDates { get => throw null; }
+        public bool IsAllDay { get => throw null; }
+        public Meziantou.Framework.Mail.CalendarDateTime? LastModified { get => throw null; set { } }
+        public string? Location { get => throw null; set { } }
+        public Meziantou.Framework.Mail.CalendarAttendee? Organizer { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Mail.CalendarDateTime> RecurrenceDates { get => throw null; }
+        public Meziantou.Framework.Mail.CalendarDateTime? RecurrenceId { get => throw null; set { } }
+        public Meziantou.Framework.Mail.RecurrenceRule? RecurrenceRule { get => throw null; set { } }
+        public int? Sequence { get => throw null; set { } }
+        public Meziantou.Framework.Mail.CalendarDateTime? Stamp { get => throw null; set { } }
+        public Meziantou.Framework.Mail.CalendarDateTime? Start { get => throw null; set { } }
+        public string? Status { get => throw null; set { } }
+        public string? Summary { get => throw null; set { } }
+        public string? Transparency { get => throw null; set { } }
+        public string? Uid { get => throw null; set { } }
+        public VEvent() : base(default(string)) { }
+        public void AddAttendee(Meziantou.Framework.Mail.CalendarAttendee attendee) { }
+        public void AddExceptionDate(Meziantou.Framework.Mail.CalendarDateTime date) { }
+        public System.Collections.Generic.IEnumerable<System.DateTime> GetOccurrences() => throw null;
+        public void SetCategories(System.Collections.Generic.IEnumerable<string> categories) { }
+        public Meziantou.Framework.Mail.PstAppointmentBuilder ToPstAppointmentBuilder() => throw null;
+    }
+
+    public sealed class VTimeZone : Meziantou.Framework.Mail.CalendarComponent
+    {
+        public string? Id { get => throw null; set { } }
+        public VTimeZone() : base(default(string)) { }
+        public System.TimeSpan? GetUtcOffset(System.DateTime localTime) => throw null;
+    }
+
+    public sealed class VTodo : Meziantou.Framework.Mail.CalendarComponent
+    {
+        public Meziantou.Framework.Mail.CalendarDateTime? Completed { get => throw null; set { } }
+        public string? Description { get => throw null; set { } }
+        public Meziantou.Framework.Mail.CalendarDateTime? Due { get => throw null; set { } }
+        public int? PercentComplete { get => throw null; set { } }
+        public int? Priority { get => throw null; set { } }
+        public Meziantou.Framework.Mail.RecurrenceRule? RecurrenceRule { get => throw null; set { } }
+        public Meziantou.Framework.Mail.CalendarDateTime? Start { get => throw null; set { } }
+        public string? Status { get => throw null; set { } }
+        public string? Summary { get => throw null; set { } }
+        public string? Uid { get => throw null; set { } }
+        public VTodo() : base(default(string)) { }
+        public Meziantou.Framework.Mail.PstTaskBuilder ToPstTaskBuilder() => throw null;
     }
 }

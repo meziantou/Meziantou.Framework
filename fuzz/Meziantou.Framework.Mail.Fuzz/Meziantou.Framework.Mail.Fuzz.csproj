@@ -14,6 +14,7 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Msg\*.msg" LogicalName="TestData/Msg/%(FileName)%(Extension)" Link="Seeds\Msg\%(FileName)%(Extension)" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Tnef\*.dat" LogicalName="TestData/Tnef/%(FileName)%(Extension)" Link="Seeds\Tnef\%(FileName)%(Extension)" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Mailbox\*.mbox;..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Mailbox\*.emlx;..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Mailbox\*.msf" LogicalName="TestData/Mailbox/%(FileName)%(Extension)" Link="Seeds\Mailbox\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Calendar\*.vcf;..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Calendar\*.ics" LogicalName="TestData/Calendar/%(FileName)%(Extension)" Link="Seeds\Calendar\%(FileName)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

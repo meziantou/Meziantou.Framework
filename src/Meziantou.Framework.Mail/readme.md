@@ -11,6 +11,8 @@ Reads and writes email files, without native dependencies:
   MIME messages are expanded when they are converted to `EmailMessage`.
 - Mailboxes: mbox files (mboxo, mboxrd, mboxcl, mboxcl2), Maildir folders, Apple Mail `.emlx` files, and the Mork
   databases of Thunderbird (`.msf` summaries).
+- Contacts and calendars: vCard 2.1, 3.0 and 4.0, iCalendar with its time zones and the occurrences of its recurrence
+  rules, converted to and from the contacts, appointments and tasks of Outlook.
 - `EmailMessage`, a model to convert a message from one format to another.
 
 Outlook data files:

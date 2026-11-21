@@ -15,6 +15,8 @@ description: The email, contact and calendar formats Meziantou.Framework.Mail re
 | Maildir folders (Maildir++) | `cur`, `new`, `tmp` | Yes | Yes | [Maildir folders](07-Mailboxes/02-Maildir.md) |
 | Apple Mail messages | `.emlx` | Yes | Yes | [Apple Mail](07-Mailboxes/03-AppleMail.md) |
 | Thunderbird summaries, Mork databases | `.msf`, `.mab` | Yes | Yes | [Thunderbird](07-Mailboxes/04-Thunderbird.md) |
+| Contacts (vCard 2.1, 3.0, 4.0) | `.vcf` | Yes | Yes | [vCard](08-ContactsAndCalendars/01-VCard.md) |
+| Calendars (iCalendar), with time zones and recurrences | `.ics` | Yes | Yes | [iCalendar](08-ContactsAndCalendars/02-ICalendar.md) |
 
 Each format has its own objects, which give access to everything the format stores: the MAPI properties of an Outlook
 item, the headers and the MIME parts of a message. [EmailMessage](cref:Meziantou.Framework.Mail.EmailMessage) is the

@@ -38,6 +38,9 @@ public abstract class MimeEntity
     /// <summary>Gets the content type an entity has when it has no Content-Type header: <c>text/plain</c>, or <c>message/rfc822</c> in a <c>multipart/digest</c>.</summary>
     internal MimeContentType DefaultContentType { get; set; } = new("text", "plain");
 
+    /// <summary>Gets or sets the bytes the entity was read from, with its headers, when it is a part of a multipart or an entity read alone: S/MIME checks a signature on them, as writing the entity can change white space the signature covers.</summary>
+    internal ReadOnlyMemory<byte>? RawData { get; set; }
+
     /// <summary>Writes the entity: its headers and its content.</summary>
     internal abstract void WriteTo(Stream stream);
 }

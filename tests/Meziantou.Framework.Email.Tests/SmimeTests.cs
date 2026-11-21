@@ -76,6 +76,22 @@ public sealed class SmimeTests
     }
 
     [Fact]
+    public void ClearSigned_WhiteSpaceAfterBoundary()
+    {
+        // [RFC 2046] 5.1.1 allows white space after a boundary delimiter, which the signature covers
+        var content = "Content-Type: multipart/mixed; boundary=inner\r\n\r\n--inner \r\nContent-Type: text/plain\r\n\r\nSigned\r\n--inner--\t\r\n"u8.ToArray();
+        var cms = new System.Security.Cryptography.Pkcs.SignedCms(new System.Security.Cryptography.Pkcs.ContentInfo(content), detached: true);
+        cms.ComputeSignature(new System.Security.Cryptography.Pkcs.CmsSigner(Alice));
+        var signature = Convert.ToBase64String(cms.Encode());
+        var text = "From: alice@example.com\r\nMIME-Version: 1.0\r\nContent-Type: multipart/signed; protocol=\"application/pkcs7-signature\"; micalg=sha-256; boundary=outer\r\n\r\n" +
+            "--outer \r\n" + Encoding.ASCII.GetString(content) + "\r\n--outer\r\nContent-Type: application/pkcs7-signature; name=smime.p7s\r\nContent-Transfer-Encoding: base64\r\n\r\n" + signature + "\r\n--outer--\r\n";
+        var message = MimeMessage.Load(Encoding.ASCII.GetBytes(text));
+        var result = Smime.Verify(message.Body, verifySignatureOnly: true);
+        Assert.True(result.IsValid);
+        Assert.Equal("Signed", ((MimePart)((MimeMultipart)result.Content).Parts.Single()).GetText());
+    }
+
+    [Fact]
     public void OpaqueSigned_Valid()
     {
         using var signingContext = new TemporarySecureMimeContext();

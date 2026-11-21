@@ -160,7 +160,9 @@ public static class Smime
         }
 
         var signatureBytes = signature.GetContent();
-        var signed = Serialize(content);
+        // The bytes the content was read from: writing it back can remove white space the signature covers, such as the
+        // white space after a boundary delimiter
+        var signed = content.RawData is { } raw ? raw.ToArray() : Serialize(content);
         var signatures = VerifyDetached(signed, signatureBytes, verifySignatureOnly, extraStore);
         if (!signatures.All(signature => signature.IsValid))
         {
@@ -261,7 +263,7 @@ public static class Smime
         }
     }
 
-    /// <summary>Returns the bytes of an entity as it is written: as it was read when it was not modified.</summary>
+    /// <summary>Returns the bytes of an entity as it is written, for an entity that was not read from a message.</summary>
     private static byte[] Serialize(MimeEntity entity)
     {
         using var stream = new MemoryStream();

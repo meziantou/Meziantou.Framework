@@ -46,6 +46,15 @@ Assert.HasCount(11, email.Attachments);
 ```
 <!-- endref -->
 
+In an Outlook item, the author of a message ([From](cref:Meziantou.Framework.Email.EmailMessage.From)) is the user the
+message is sent on behalf of
+([SentRepresentingName](cref:Meziantou.Framework.Email.Mapi.MapiMessage.SentRepresentingName)), the
+[Sender](cref:Meziantou.Framework.Email.EmailMessage.Sender) is the user who sent it
+([SenderName](cref:Meziantou.Framework.Email.Mapi.MapiMessage.SenderName)), and the
+[ReplyTo](cref:Meziantou.Framework.Email.EmailMessage.ReplyTo) addresses are the
+[ReplyRecipients](cref:Meziantou.Framework.Email.Mapi.MapiMessage.ReplyRecipients). An item that has no
+represented user, or the same user as its sender, has no Sender.
+
 The other headers of a message are kept in [Headers](cref:Meziantou.Framework.Email.EmailMessage.Headers). What a format
 cannot store is lost when a message is converted to it: a MIME message has no RTF body, and an address without an
 address part (only a name) cannot be written in a MIME header.

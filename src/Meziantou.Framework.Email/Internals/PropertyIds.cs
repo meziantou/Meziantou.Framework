@@ -11,6 +11,8 @@ internal static class PropertyIds
     public const ushort Subject = 0x0037;
     public const ushort ClientSubmitTime = 0x0039;
     public const ushort SentRepresentingName = 0x0042;
+    public const ushort ReplyRecipientEntries = 0x004F;
+    public const ushort ReplyRecipientNames = 0x0050;
     public const ushort SentRepresentingAddressType = 0x0064;
     public const ushort SentRepresentingEmailAddress = 0x0065;
     public const ushort ConversationTopic = 0x0070;

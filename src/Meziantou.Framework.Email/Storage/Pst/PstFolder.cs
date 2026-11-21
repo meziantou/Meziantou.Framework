@@ -194,6 +194,22 @@ public sealed class PstFolder
         return result;
     }
 
+    /// <summary>Enumerates a function per row of the contents table, which reads its item, or returns <see langword="null"/> when the row has no item: a malformed item throws when its function is called, and the next items can still be read.</summary>
+    internal IEnumerable<Func<MapiMessage?>> EnumerateItemLoaders()
+    {
+        var table = GetTable(IsSearchFolder ? NidType.SearchContentsTable : NidType.ContentsTable);
+        if (table is null)
+        {
+            yield break;
+        }
+
+        for (var i = 0; i < table.RowCount; i++)
+        {
+            var nid = table.GetRowId(i);
+            yield return () => LoadItem(nid);
+        }
+    }
+
     private IEnumerable<MapiMessage> EnumerateItems(NidType tableType)
     {
         var table = GetTable(tableType);
@@ -204,15 +220,17 @@ public sealed class PstFolder
 
         for (var i = 0; i < table.RowCount; i++)
         {
-            var nid = table.GetRowId(i);
-            var node = _context.Reader.GetNode(nid);
-            if (node is null)
+            if (LoadItem(table.GetRowId(i)) is { } item)
             {
-                // A search folder can keep the rows of deleted messages
-                continue;
+                yield return item;
             }
-
-            yield return PstMessageSource.Load(_context, node, embeddingDepth: 0);
         }
+    }
+
+    private MapiMessage? LoadItem(uint nid)
+    {
+        // A search folder can keep the rows of deleted messages
+        var node = _context.Reader.GetNode(nid);
+        return node is null ? null : PstMessageSource.Load(_context, node, embeddingDepth: 0);
     }
 }

@@ -177,7 +177,7 @@ public sealed class VEvent : CalendarComponent
         }
 
         var excluded = new HashSet<DateTime>(ExceptionDates.Select(date => ToStartBasis(date, start)));
-        var additional = RecurrenceDates.Select(date => ToStartBasis(date, start)).Where(date => date > start.Value).Order().ToList();
+        var additional = RecurrenceDates.Select(date => ToStartBasis(date, start)).Order().ToList();
         var rule = RecurrenceRule;
         if (rule?.Until is { IsUtc: true } until && !start.IsUtc && !start.IsDate)
         {

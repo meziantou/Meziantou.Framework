@@ -88,6 +88,36 @@ public class MapiMessage
     /// <summary>Gets the address of the user the message was sent on behalf of.</summary>
     public string? SentRepresentingEmailAddress => Properties.GetString(PropertyIds.SentRepresentingEmailAddress);
 
+    /// <summary>Gets the type of the address of the user the message was sent on behalf of, such as <c>SMTP</c> or <c>EX</c>.</summary>
+    public string? SentRepresentingAddressType => Properties.GetString(PropertyIds.SentRepresentingAddressType);
+
+    /// <summary>Gets the SMTP address of the user the message was sent on behalf of, or their address when its type is <c>SMTP</c>.</summary>
+    public string? SentRepresentingSmtpAddress => Properties.GetString(PropertyIds.SentRepresentingSmtpAddress) ?? (string.Equals(SentRepresentingAddressType, "SMTP", StringComparison.OrdinalIgnoreCase) ? SentRepresentingEmailAddress : null);
+
+    /// <summary>Gets the recipients that replies go to (the Reply-To header of an email), from their one-off entry identifiers; the other entry identifiers are skipped.</summary>
+    public IReadOnlyList<MapiDistributionListMember> ReplyRecipients
+    {
+        get
+        {
+            if (Properties.GetBinary(PropertyIds.ReplyRecipientEntries) is not { } entries)
+            {
+                return [];
+            }
+
+            var result = new List<MapiDistributionListMember>();
+            foreach (var entry in EntryIds.ParseFlatEntryList(entries))
+            {
+                if ((EntryIds.ParseOneOff(entry) ?? EntryIds.ParseWrappedOneOff(entry)) is { } member)
+                {
+                    member.EntryId = entry;
+                    result.Add(member);
+                }
+            }
+
+            return result;
+        }
+    }
+
     /// <summary>Gets the display names of the To recipients, separated by semicolons.</summary>
     public string? DisplayTo => Properties.GetString(PropertyIds.DisplayTo);
 

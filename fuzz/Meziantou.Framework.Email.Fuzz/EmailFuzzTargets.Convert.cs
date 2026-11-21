@@ -28,12 +28,16 @@ public static partial class EmailFuzzTargets
                 return;
             }
 
-            var expected = MboxReader.ReadMessages(source).Select(message => ToMboxLines(message.Content.Span)).Order(StringComparer.Ordinal).ToList();
+            // A message read, without a Status header (Thunderbird), gets one in an mbox file
+            var messages = MboxReader.ReadMessages(source).Select(message => message.Content.ToArray()).ToList();
+            var expected = messages.Select(content => ToMboxLines(MailboxConverter.GetMboxReadState(content) is true && MimeMessage.Load(content).Headers.Find("Status") is null ? [.. "Status: RO\n"u8, .. content] : content)).Order(StringComparer.Ordinal).ToList();
 
             var maildir = Path.Combine(directory, "maildir");
             var result = MailboxConverter.Convert(source, maildir, MailboxFormat.Maildir);
             FuzzAssert.Equal(0, result.Errors.Count, "The conversion to a Maildir folder has errors: " + string.Join("; ", result.Errors));
             FuzzAssert.Equal(expected.Count, result.MessageCount, "The Maildir folder does not have every message");
+            var seen = MaildirFolder.Open(maildir).EnumerateFolders().SelectMany(folder => folder.Folder.EnumerateMessages()).Count(message => message.Flags.HasFlag(MaildirFlags.Seen));
+            FuzzAssert.Equal(messages.Count(content => MailboxConverter.GetMboxReadState(content) is true), seen, "The Maildir folder does not have the read state of the messages");
 
             var mbox = Path.Combine(directory, "mbox");
             MailboxConverter.Convert(maildir, mbox, MailboxFormat.Mbox);

@@ -30,7 +30,9 @@ internal static class MimeParser
     {
         var position = 0;
         var headers = ReadHeaders(data, ref position, allowMboxFromLine: false);
-        return ParseEntity(headers, data[position..], new MimeContentType("text", "plain"), options, depth: 1);
+        var entity = ParseEntity(headers, data[position..], new MimeContentType("text", "plain"), options, depth: 1);
+        entity.RawData = data;
+        return entity;
     }
 
     private static MimeEntity ParseEntity(List<MimeHeader> headers, ReadOnlyMemory<byte> content, MimeContentType defaultContentType, MimeReadOptions options, int depth)
@@ -145,7 +147,9 @@ internal static class MimeParser
 
         var position = 0;
         var headers = ReadHeaders(part, ref position, allowMboxFromLine: false);
-        multipart.Parts.Add(ParseEntity(headers, part[position..], defaultContentType, options, depth + 1));
+        var entity = ParseEntity(headers, part[position..], defaultContentType, options, depth + 1);
+        entity.RawData = part;
+        multipart.Parts.Add(entity);
     }
 
     private static int TrimLineBreak(ReadOnlySpan<byte> span, int end)

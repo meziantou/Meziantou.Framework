@@ -813,13 +813,16 @@ namespace Meziantou.Framework.Email.Mapi
         public uint NodeId { get => throw null; }
         public Meziantou.Framework.Email.Mapi.MapiPropertyCollection Properties { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.Mapi.MapiRecipient> Recipients { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.Mapi.MapiDistributionListMember> ReplyRecipients { get => throw null; }
         public string? SenderAddressType { get => throw null; }
         public string? SenderEmailAddress { get => throw null; }
         public string? SenderName { get => throw null; }
         public string? SenderSmtpAddress { get => throw null; }
         public Meziantou.Framework.Email.Mapi.MapiSensitivity Sensitivity { get => throw null; }
+        public string? SentRepresentingAddressType { get => throw null; }
         public string? SentRepresentingEmailAddress { get => throw null; }
         public string? SentRepresentingName { get => throw null; }
+        public string? SentRepresentingSmtpAddress { get => throw null; }
         public int? Size { get => throw null; }
         public string? Subject { get => throw null; }
         public string? TransportMessageHeaders { get => throw null; }
@@ -853,12 +856,14 @@ namespace Meziantou.Framework.Email.Mapi
         public string? SenderEmailAddress { get => throw null; set { } }
         public string? SenderName { get => throw null; set { } }
         public Meziantou.Framework.Email.Mapi.MapiSensitivity Sensitivity { get => throw null; set { } }
+        public string? SentRepresentingAddressType { get => throw null; set { } }
         public string? SentRepresentingEmailAddress { get => throw null; set { } }
         public string? SentRepresentingName { get => throw null; set { } }
         public string? Subject { get => throw null; set { } }
         public string? TransportMessageHeaders { get => throw null; set { } }
         public MapiMessageBuilder(string messageClass) { }
         public static Meziantou.Framework.Email.Mapi.MapiMessageBuilder FromMessage(Meziantou.Framework.Email.Mapi.MapiMessage message) => throw null;
+        public void SetReplyRecipients(System.Collections.Generic.IEnumerable<Meziantou.Framework.Email.Mapi.MapiDistributionListMember> recipients) { }
         public void SetRtfBody(System.ReadOnlySpan<byte> rtf) { }
     }
 

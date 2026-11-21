@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 
 namespace Meziantou.Framework.Email.Internals;
@@ -60,6 +61,53 @@ internal static class EntryIds
         WrappedProvider.CopyTo(result.AsSpan(4));
         oneOff.CopyTo(result, 21);
         return result;
+    }
+
+    /// <summary>Parses a list of entry identifiers ([MS-OXCDATA] 2.3.3): a count, a size, then each entry with its size, aligned on 4 bytes.</summary>
+    public static List<byte[]> ParseFlatEntryList(ReadOnlySpan<byte> data)
+    {
+        var result = new List<byte[]>();
+        if (data.Length < 8)
+        {
+            return result;
+        }
+
+        var count = BinaryPrimitives.ReadUInt32LittleEndian(data);
+        var entries = data[8..];
+        for (var i = 0u; i < count && entries.Length >= 4; i++)
+        {
+            var size = BinaryPrimitives.ReadUInt32LittleEndian(entries);
+            if (size > (uint)(entries.Length - 4))
+            {
+                break;
+            }
+
+            result.Add(entries.Slice(4, (int)size).ToArray());
+            var next = 4 + (((int)size + 3) & ~3);
+            entries = next >= entries.Length ? [] : entries[next..];
+        }
+
+        return result;
+    }
+
+    /// <summary>Writes a list of entry identifiers ([MS-OXCDATA] 2.3.3).</summary>
+    public static byte[] CreateFlatEntryList(IReadOnlyList<byte[]> entries)
+    {
+        using var stream = new MemoryStream();
+        Span<byte> number = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(number, entries.Count);
+        stream.Write(number);
+        BinaryPrimitives.WriteInt32LittleEndian(number, entries.Sum(entry => 4 + ((entry.Length + 3) & ~3)));
+        stream.Write(number);
+        foreach (var entry in entries)
+        {
+            BinaryPrimitives.WriteInt32LittleEndian(number, entry.Length);
+            stream.Write(number);
+            stream.Write(entry);
+            stream.Write(new byte[((entry.Length + 3) & ~3) - entry.Length]);
+        }
+
+        return stream.ToArray();
     }
 
     private static string? ReadString(ref ReadOnlySpan<byte> data, bool unicode)

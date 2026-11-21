@@ -137,6 +137,31 @@ public class MapiMessageBuilder
         set => Properties.SetValue(PropertyIds.SentRepresentingEmailAddress, MapiPropertyType.Unicode, value);
     }
 
+    /// <summary>Gets or sets the type of the address of the user the message is sent on behalf of, such as <c>SMTP</c>.</summary>
+    public string? SentRepresentingAddressType
+    {
+        get => Properties.GetValue<string>(PropertyIds.SentRepresentingAddressType);
+        set => Properties.SetValue(PropertyIds.SentRepresentingAddressType, MapiPropertyType.Unicode, value);
+    }
+
+    /// <summary>Sets the recipients that replies go to (the Reply-To header of an email), as one-off entry identifiers, with their display names.</summary>
+    /// <param name="recipients">The recipients, or an empty list to remove them.</param>
+    public void SetReplyRecipients(IEnumerable<MapiDistributionListMember> recipients)
+    {
+        ArgumentNullException.ThrowIfNull(recipients);
+        var list = recipients.ToList();
+        if (list.Count == 0)
+        {
+            Properties.SetValue(PropertyIds.ReplyRecipientEntries, MapiPropertyType.Binary, null);
+            Properties.SetValue(PropertyIds.ReplyRecipientNames, MapiPropertyType.Unicode, null);
+            return;
+        }
+
+        // The names, separated by semicolons, are in the order of the entries, as Outlook requires
+        Properties.SetValue(PropertyIds.ReplyRecipientEntries, MapiPropertyType.Binary, EntryIds.CreateFlatEntryList([.. list.Select(member => EntryIds.CreateOneOff(member.DisplayName ?? member.EmailAddress, member.AddressType ?? "SMTP", member.EmailAddress))]));
+        Properties.SetValue(PropertyIds.ReplyRecipientNames, MapiPropertyType.Unicode, string.Join("; ", list.Select(member => member.DisplayName ?? member.EmailAddress)));
+    }
+
     /// <summary>Gets or sets the date and time when the message was sent.</summary>
     public DateTime? ClientSubmitTime
     {

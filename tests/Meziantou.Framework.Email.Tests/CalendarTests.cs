@@ -139,6 +139,17 @@ public sealed class CalendarTests
         }
     }
 
+    [Fact]
+    public void VEvent_GetOccurrences_RecurrenceDateBeforeStart()
+    {
+        // RDATE adds dates to the recurrence set, also before the start
+        var text = "BEGIN:VEVENT\r\nUID:test\r\nDTSTAMP:20260101T000000Z\r\nDTSTART:20260110T090000\r\nRRULE:FREQ=DAILY;COUNT=2\r\nRDATE:20260105T090000,20260110T090000,20260120T090000\r\nEND:VEVENT\r\n";
+        var calendar = VCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:test\r\n" + text + "END:VCALENDAR\r\n").Single();
+        var actual = calendar.Events.Single().GetOccurrences().ToList();
+        Assert.Equal([new DateTime(2026, 1, 5, 9, 0, 0), new DateTime(2026, 1, 10, 9, 0, 0), new DateTime(2026, 1, 11, 9, 0, 0), new DateTime(2026, 1, 20, 9, 0, 0)], actual);
+        Assert.Equal(OccurrencesWithIcalNet(text, calendar, 10), actual);
+    }
+
     [Theory]
     [MemberData(nameof(Rules))]
     public void RecurrenceRule_MatchesIcalNet(string rule)

@@ -44,9 +44,10 @@ A message that does not say its `smime-type` is recognized from the type of its 
 signers are checked too: their chain of trust, their validity and their usage; `verifySignatureOnly: true` checks only
 that the content was signed by the keys of the certificates, and `extraStore` gives the certificates to build the chains.
 
-A clear-signed content is checked as it was read: the parts read from a message and not modified are written as they
-were read. A message stored with LF line breaks, such as in an mbox file, is checked in its canonical form too, with
-CRLF line breaks.
+A clear-signed content is checked on the bytes it was read from, with the white space the signature covers, such as
+the white space after the boundary delimiters of a multipart: a change made to the parsed content after reading does
+not change the result. A message stored with LF line breaks, such as in an mbox file, is checked in its canonical form
+too, with CRLF line breaks.
 
 ## Decrypt a message
 

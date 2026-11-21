@@ -68,6 +68,40 @@ public sealed class EmailMessageTests
         }
     }
 
+    [Fact]
+    public void SentOnBehalf_ReplyTo()
+    {
+        // The author (From), the user who sent the message for them (Sender) and the reply address are kept in Outlook items
+        var email = new EmailMessage
+        {
+            Subject = "On behalf",
+            From = new MailboxAddress("Manager", "manager@example.com"),
+            Sender = new MailboxAddress("Assistant", "assistant@example.com"),
+            TextBody = "Text",
+        };
+        email.ReplyTo.Add(new MailboxAddress("Team", "team@example.com"));
+        email.ReplyTo.Add(new MailboxAddress(null, "archive@example.com"));
+
+        var item = MsgFile.Load(MsgFile.ToByteArray(email.ToMapiBuilder()));
+        Assert.Equal("assistant@example.com", item.SenderEmailAddress);
+        Assert.Equal("manager@example.com", item.SentRepresentingSmtpAddress);
+        Assert.Equal(["Team <team@example.com>", "archive@example.com <archive@example.com>"], item.ReplyRecipients.Select(recipient => recipient.ToString()));
+        Assert.Equal("Team; archive@example.com", item.Properties.GetValueOrDefault<string>(0x0050));
+
+        var copy = EmailMessage.FromMapi(item);
+        Assert.Equal(email.From, copy.From);
+        Assert.Equal(email.Sender, copy.Sender);
+        Assert.Equal(email.ReplyTo, copy.ReplyTo);
+        var mime = MimeKit.MimeMessage.Load(new MemoryStream(copy.ToMime().ToByteArray()));
+        Assert.Equal("assistant@example.com", mime.Sender?.Address);
+        Assert.Equal(["team@example.com", "archive@example.com"], mime.ReplyTo.Mailboxes.Select(mailbox => mailbox.Address));
+
+        // Without a Sender, the author is the sender
+        var direct = EmailMessage.FromMapi(MsgFile.Load(MsgFile.ToByteArray(new EmailMessage { Subject = "Direct", From = email.From }.ToMapiBuilder())));
+        Assert.Equal(email.From, direct.From);
+        Assert.Null(direct.Sender);
+    }
+
     private static IEnumerable<MapiMessage> Enumerate(PstFolder folder)
     {
         foreach (var item in folder.EnumerateItems())
@@ -89,6 +123,8 @@ public sealed class EmailMessageTests
         var result = new List<string>
         {
             $"{email.Subject}|{email.From}|{email.Date?.UtcDateTime:O}|{email.MessageId}|{email.InReplyTo}|{string.Join(' ', email.References)}|{email.Importance}",
+            "sender: " + email.Sender,
+            "reply-to: " + string.Join(", ", email.ReplyTo),
             "to: " + string.Join(", ", email.To),
             "cc: " + string.Join(", ", email.Cc),
             "bcc: " + string.Join(", ", email.Bcc),

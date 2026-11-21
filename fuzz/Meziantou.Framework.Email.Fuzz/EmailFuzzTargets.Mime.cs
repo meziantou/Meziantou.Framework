@@ -65,6 +65,32 @@ public static partial class EmailFuzzTargets
         var first = EmailMessage.FromMime(MimeMessage.Load(email.ToMime().ToByteArray(), new MimeReadOptions()));
         var second = EmailMessage.FromMime(MimeMessage.Load(first.ToMime().ToByteArray(), new MimeReadOptions()));
         FuzzAssert.Equal(string.Join('\n', DescribeEmail(first)), string.Join('\n', DescribeEmail(second)), "The message written from the model reads differently");
+        CheckOutlookAddresses(first);
+    }
+
+    /// <summary>The author, the sender and the reply addresses of a message are kept in an Outlook item: the sender is dropped when it is the author.</summary>
+    private static void CheckOutlookAddresses(EmailMessage email)
+    {
+        MailboxAddress?[] addresses = [email.From, email.Sender, .. email.ReplyTo];
+        if (addresses.Any(address => address is not null && (!address.Address.Contains('@', StringComparison.Ordinal) || $"{address.Name}{address.Address}".Contains('\0', StringComparison.Ordinal))))
+        {
+            // An address without @ is compared by name with the sender, as the Exchange address of the sender; one-off entries end their strings with a null character
+            return;
+        }
+
+        var source = new EmailMessage { From = email.From, Sender = email.Sender };
+        foreach (var address in email.ReplyTo)
+        {
+            source.ReplyTo.Add(address);
+        }
+
+        var copy = EmailMessage.FromMapi(MsgFile.Load(MsgFile.ToByteArray(source.ToMapiBuilder())));
+        var from = email.From ?? email.Sender;
+        var sender = email.Sender is null || from is null || string.Equals(email.Sender.Address, from.Address, StringComparison.OrdinalIgnoreCase) ? null : email.Sender;
+        var replyTo = email.ReplyTo.Select(address => new MailboxAddress(string.Equals(address.Name ?? address.Address, address.Address, StringComparison.OrdinalIgnoreCase) ? null : address.Name, address.Address).ToString());
+        FuzzAssert.Equal(from?.ToString(), copy.From?.ToString(), "The author differs in an Outlook item");
+        FuzzAssert.Equal(sender?.ToString(), copy.Sender?.ToString(), "The sender differs in an Outlook item");
+        FuzzAssert.Equal(string.Join("|", replyTo), string.Join("|", copy.ReplyTo.Select(address => address.ToString())), "The reply addresses differ in an Outlook item");
     }
 
     private static void MimeEncodings(ReadOnlySpan<byte> data)

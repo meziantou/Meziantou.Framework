@@ -68,7 +68,7 @@ Assert.Equal([new DateTime(2026, 1, 30, 17, 0, 0), new DateTime(2026, 2, 27, 17,
   `BYSECOND`, `BYYEARDAY`, `BYWEEKNO`) are kept in [OtherParts](cref:Meziantou.Framework.Email.Calendar.RecurrenceRule.OtherParts)
   and written back; their occurrences throw a `NotSupportedException`.
 - The start (`DTSTART`) is the first occurrence, as [RFC 5545] 3.8.5.3 requires, even when the rule does not give it.
-- [VEvent.GetOccurrences](cref:Meziantou.Framework.Email.Calendar.VEvent.GetOccurrences) adds the dates of `RDATE` and removes the
+- [VEvent.GetOccurrences](cref:Meziantou.Framework.Email.Calendar.VEvent.GetOccurrences) adds the dates of `RDATE`, also those before the start, and removes the
   dates of `EXDATE`. The occurrences are in the basis of the start: in UTC, local in its time zone, or floating.
 
 ## Appointments and tasks of Outlook

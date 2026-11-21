@@ -242,6 +242,11 @@ public static partial class EmailFuzzTargets
             result.Add($"{indent}  {recipient.DisplayName}|{recipient.EmailAddress}|{recipient.RecipientType}");
         }
 
+        foreach (var recipient in item.ReplyRecipients)
+        {
+            result.Add($"{indent}  reply-to {recipient.DisplayName}|{recipient.AddressType}|{recipient.EmailAddress}");
+        }
+
         foreach (var attachment in item.Attachments)
         {
             result.Add($"{indent}  {attachment.Name}|{attachment.Method}|{attachment.GetContent().Length}");

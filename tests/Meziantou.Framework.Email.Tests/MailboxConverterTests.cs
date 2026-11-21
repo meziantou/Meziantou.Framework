@@ -70,6 +70,49 @@ public sealed class MailboxConverterTests : IDisposable
     }
 
     [Fact]
+    public void Pst_ToPst_KeepsContainerClasses()
+    {
+        // The calendar and the contacts stay a calendar and contacts; the folders without a class are folders of emails
+        var pstPath = Path.Combine(AppContext.BaseDirectory, "TestData", "Pst", "java-libpst-dist-list.pst");
+        var copyPath = Path.Combine(_directory, "copy.pst");
+        MailboxConverter.Convert(pstPath, copyPath, MailboxFormat.Pst);
+        using var source = PstFile.Open(pstPath);
+        using var copy = PstFile.Open(copyPath);
+        var expected = DescribeContainerClasses(source.Store.IpmSubtree!, "");
+        Assert.Contains(expected, folder => folder.EndsWith("IPF.Appointment", StringComparison.Ordinal));
+        var actual = DescribeContainerClasses(copy.Store.IpmSubtree!, "");
+        Assert.Equal(expected, actual.Intersect(expected, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Mbox_FolderNames_ReadStates()
+    {
+        // "Project.A" and "Project_A" have the same file name in a Maildir++ tree; the read state is in Status or X-Mozilla-Status
+        var source = Path.Combine(_directory, "source");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "Project.A"), CreateMboxMessage("Read", "Status: RO") + CreateMboxMessage("Old", "Status: O") + CreateMboxMessage("Thunderbird read", "X-Mozilla-Status: 0001"));
+        File.WriteAllText(Path.Combine(source, "Project_A"), CreateMboxMessage("Thunderbird unread", "X-Mozilla-Status: 0000\nStatus: RO") + CreateMboxMessage("Unknown", header: null));
+
+        var maildir = Path.Combine(_directory, "maildir");
+        var result = MailboxConverter.Convert(source, maildir, MailboxFormat.Maildir);
+        Assert.Equal(5, result.MessageCount);
+        var folders = MaildirFolder.Open(maildir).EnumerateFolders().ToList();
+        Assert.Equal(["Project_A", "Project_A_2"], folders.Select(folder => folder.Name));
+        Assert.Equal([("Old", false), ("Read", true), ("Thunderbird read", true)], DescribeSeen(folders[0].Folder));
+        Assert.Equal([("Thunderbird unread", false), ("Unknown", false)], DescribeSeen(folders[1].Folder));
+
+        var mbox = Path.Combine(_directory, "mbox");
+        MailboxConverter.Convert(source, mbox, MailboxFormat.Mbox);
+        Assert.Equal(["Project_A", "Project_A_2"], Directory.EnumerateFiles(mbox).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+
+        var pst = Path.Combine(_directory, "mailbox.pst");
+        MailboxConverter.Convert(source, pst, MailboxFormat.Pst);
+        using var file = PstFile.Open(pst);
+        Assert.Equal([("Old", false), ("Read", true), ("Thunderbird read", true)], file.GetFolder("Project.A")!.EnumerateItems().Select(item => (item.Subject!, item.IsRead)).OrderBy(pair => pair.Item1, StringComparer.Ordinal));
+        Assert.Equal([("Thunderbird unread", false), ("Unknown", true)], file.GetFolder("Project_A")!.EnumerateItems().Select(item => (item.Subject!, item.IsRead)).OrderBy(pair => pair.Item1, StringComparer.Ordinal));
+    }
+
+    [Fact]
     public void NonMailItems()
     {
         // The contacts, appointments and distribution lists are skipped, or written as messages
@@ -149,7 +192,30 @@ public sealed class MailboxConverterTests : IDisposable
         Assert.Equal(MailboxFormat.Pst, MailboxConverter.DetectFormat(Path.Combine(AppContext.BaseDirectory, "TestData", "Pst", "libyal-outlook.pst")));
     }
 
-    private static MimeMessage CreateMessage(string subject) => new EmailMessage { Subject = subject, From = new MailboxAddress("Alice", "alice@example.com"), TextBody = subject }.ToMime();
+    private static string CreateMboxMessage(string subject, string? header) =>
+        "From alice@example.com Thu Jan  1 00:00:00 2026\n" + (header is null ? "" : header + "\n") + "From: alice@example.com\nSubject: " + subject + "\n\n" + subject + "\n\n";
+
+    private static List<(string Subject, bool Seen)> DescribeSeen(MaildirFolder folder) =>
+        [.. folder.EnumerateMessages().Select(message => (message.Load().Subject!, message.Flags.HasFlag(MaildirFlags.Seen))).OrderBy(pair => pair.Item1, StringComparer.Ordinal)];
+
+    private static List<string> DescribeContainerClasses(PstFolder folder, string path)
+    {
+        var result = new List<string>();
+        foreach (var child in folder.Folders.Where(child => !child.IsSearchFolder))
+        {
+            var childPath = path + "/" + child.DisplayName;
+            if (!string.IsNullOrEmpty(child.ContainerClass))
+            {
+                result.Add(childPath + " " + child.ContainerClass);
+            }
+
+            result.AddRange(DescribeContainerClasses(child, childPath));
+        }
+
+        return result;
+    }
+
+    private static MimeMessage CreateMessage(string subject) =>new EmailMessage { Subject = subject, From = new MailboxAddress("Alice", "alice@example.com"), TextBody = subject }.ToMime();
 
     // The messages of each folder, by subject, of the items that are emails
     private static List<string> DescribePst(string path, bool includeNonMail)

@@ -323,11 +323,16 @@ public sealed class EmailMessage
     public static EmailMessage FromMapi(MapiMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
-        var address = message.SenderSmtpAddress ?? message.SenderEmailAddress;
+        // The author is the user the message was sent on behalf of, and the sender the user who sent it, when they differ
+        var senderAddress = message.SenderSmtpAddress ?? message.SenderEmailAddress;
+        var sender = senderAddress is null && message.SenderName is null ? null : new MailboxAddress(message.SenderName, senderAddress ?? "");
+        var authorAddress = message.SentRepresentingSmtpAddress ?? message.SentRepresentingEmailAddress;
+        var author = authorAddress is null || IsSameUser(message.SentRepresentingName, authorAddress, sender) ? sender : new MailboxAddress(message.SentRepresentingName, authorAddress);
         var result = new EmailMessage
         {
             Subject = message.Subject,
-            From = address is null && message.SenderName is null ? null : new MailboxAddress(message.SenderName, address ?? ""),
+            From = author,
+            Sender = ReferenceEquals(author, sender) ? null : sender,
             Date = (message.ClientSubmitTime ?? message.MessageDeliveryTime) is { } date ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc)) : null,
             MessageId = TrimId(message.InternetMessageId),
             InReplyTo = TrimId(message.InReplyToId),
@@ -359,6 +364,12 @@ public sealed class EmailMessage
             {
                 result.References.Add(TrimId(reference)!);
             }
+        }
+
+        foreach (var recipient in message.ReplyRecipients)
+        {
+            var replyAddress = recipient.EmailAddress ?? "";
+            result.ReplyTo.Add(new MailboxAddress(string.Equals(recipient.DisplayName, replyAddress, StringComparison.OrdinalIgnoreCase) ? null : recipient.DisplayName, replyAddress));
         }
 
         AddRange(result.Categories, message.Categories);
@@ -405,11 +416,22 @@ public sealed class EmailMessage
         }
 
         builder.Subject = Subject ?? builder.Subject;
-        if (From is not null || meeting is null)
+        if (From is not null || Sender is not null || meeting is null)
         {
-            builder.SenderName = From?.Name;
-            builder.SenderEmailAddress = From?.Address;
-            builder.SenderAddressType = From is null ? null : "SMTP";
+            // Outlook: the sender is the user who sent the message, and the "sent representing" user its author (From)
+            var sender = Sender ?? From;
+            builder.SenderName = sender?.Name;
+            builder.SenderEmailAddress = sender?.Address;
+            builder.SenderAddressType = sender is null ? null : "SMTP";
+            var author = From ?? Sender;
+            builder.SentRepresentingName = author?.Name;
+            builder.SentRepresentingEmailAddress = author?.Address;
+            builder.SentRepresentingAddressType = author is null ? null : "SMTP";
+        }
+
+        if (ReplyTo.Count > 0)
+        {
+            builder.SetReplyRecipients(ReplyTo.Select(address => new MapiDistributionListMember { DisplayName = address.Name, EmailAddress = address.Address }));
         }
 
         builder.ClientSubmitTime = Date?.UtcDateTime;
@@ -529,6 +551,10 @@ public sealed class EmailMessage
     }
 
     private static string? TrimId(string? id) => id?.Trim().TrimStart('<').TrimEnd('>');
+
+    /// <summary>Returns whether the author of an item is its sender: the same address, or the same name with an address that is not an SMTP address, such as the Exchange address of the sender.</summary>
+    private static bool IsSameUser(string? authorName, string authorAddress, MailboxAddress? sender) =>
+        sender is not null && (string.Equals(authorAddress, sender.Address, StringComparison.OrdinalIgnoreCase) || (!authorAddress.Contains('@', StringComparison.Ordinal) && string.Equals(authorName, sender.Name, StringComparison.Ordinal)));
 
     private static void AddRange<T>(IList<T> list, IEnumerable<T> items)
     {

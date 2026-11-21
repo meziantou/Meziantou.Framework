@@ -1,3 +1,6 @@
+using System.Globalization;
+using System.Text;
+
 namespace Meziantou.Framework.Email.Storage;
 
 /// <summary>
@@ -71,10 +74,27 @@ public static class MailboxConverter
         using var destination = CreateDestination(destinationPath, destinationFormat, options);
         foreach (var folder in ReadSource(sourcePath, sourceFormat, options))
         {
-            destination.EnsureFolder(folder.Path);
+            destination.EnsureFolder(folder.Path, folder.ContainerClass);
             result.FolderCount++;
-            foreach (var message in folder.Messages())
+            foreach (var load in folder.Messages())
             {
+                // A message that cannot be read is reported, and the next messages of the folder are converted
+                SourceMessage? message;
+                try
+                {
+                    message = load();
+                }
+                catch (Exception ex) when (ex is EmailException or InvalidOperationException)
+                {
+                    result.AddError(folder.Path, ex.Message);
+                    continue;
+                }
+
+                if (message is null)
+                {
+                    continue;
+                }
+
                 if (message.Item is { } item && destinationFormat != MailboxFormat.Pst && !options.IncludeNonMailItems && !IsMail(item))
                 {
                     result.SkippedItemCount++;
@@ -97,6 +117,49 @@ public static class MailboxConverter
         return result;
     }
 
+    /// <summary>Returns the read state of an mbox message: the read flag of the X-Mozilla-Status header of Thunderbird, else the <c>R</c> of the Status header (mutt, Thunderbird), or <see langword="null"/> when the message has neither.</summary>
+    internal static bool? GetMboxReadState(ReadOnlySpan<byte> content)
+    {
+        bool? status = null;
+        while (!content.IsEmpty)
+        {
+            var end = content.IndexOf((byte)'\n');
+            var line = (end < 0 ? content : content[..end]).TrimEnd((byte)'\r');
+            content = end < 0 ? [] : content[(end + 1)..];
+            if (line.IsEmpty)
+            {
+                break;
+            }
+
+            if (TryGetHeaderValue(line, "X-Mozilla-Status"u8, out var mozillaStatus))
+            {
+                // Hexadecimal flags, where 0x0001 is read
+                if (uint.TryParse(mozillaStatus, NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var flags))
+                {
+                    return (flags & 1) != 0;
+                }
+            }
+            else if (TryGetHeaderValue(line, "Status"u8, out var value))
+            {
+                status = value.Contains((byte)'R');
+            }
+        }
+
+        return status;
+    }
+
+    private static bool TryGetHeaderValue(ReadOnlySpan<byte> line, ReadOnlySpan<byte> name, out ReadOnlySpan<byte> value)
+    {
+        if (line.Length > name.Length && line[name.Length] == ':' && Ascii.EqualsIgnoreCase(line[..name.Length], name))
+        {
+            value = line[(name.Length + 1)..].Trim(" \t"u8);
+            return true;
+        }
+
+        value = default;
+        return false;
+    }
+
     private static bool IsMail(MapiMessage item) => item.GetType() == typeof(MapiMessage) || item is MapiMeetingMessage;
 
     private static IEnumerable<SourceFolder> ReadSource(string path, MailboxFormat format, MailboxConversionOptions options) => format switch
@@ -112,7 +175,7 @@ public static class MailboxConverter
         var root = file.Store.IpmSubtree ?? file.RootFolder;
         if (root.ContentCount > 0)
         {
-            yield return new SourceFolder([InboxName], () => ReadPstItems(root));
+            yield return new SourceFolder([InboxName], ContainerClass: null, () => ReadPstItems(root));
         }
 
         foreach (var folder in EnumeratePstFolders(root, []))
@@ -131,7 +194,7 @@ public static class MailboxConverter
             }
 
             string[] childPath = [.. path, child.DisplayName ?? "Folder"];
-            yield return new SourceFolder(childPath, () => ReadPstItems(child));
+            yield return new SourceFolder(childPath, child.ContainerClass, () => ReadPstItems(child));
             foreach (var descendant in EnumeratePstFolders(child, childPath))
             {
                 yield return descendant;
@@ -139,29 +202,29 @@ public static class MailboxConverter
         }
     }
 
-    private static IEnumerable<SourceMessage> ReadPstItems(PstFolder folder)
+    private static IEnumerable<Func<SourceMessage?>> ReadPstItems(PstFolder folder)
     {
-        foreach (var item in folder.EnumerateItems())
+        foreach (var load in folder.EnumerateItemLoaders())
         {
-            yield return new SourceMessage(item, Content: null, item.IsRead, Sender: null, Date: null, MimeReadOptions.Default);
+            yield return () => load() is { } item ? new SourceMessage(item, Content: null, item.IsRead, Sender: null, Date: null, MimeReadOptions.Default) : null;
         }
     }
 
     private static IEnumerable<SourceFolder> ReadMaildir(MaildirFolder root, MailboxConversionOptions options)
     {
-        yield return new SourceFolder([InboxName], () => ReadMaildirMessages(root, options));
+        yield return new SourceFolder([InboxName], ContainerClass: null, () => ReadMaildirMessages(root, options));
         foreach (var (name, folder) in root.EnumerateFolders())
         {
             // Maildir++: the levels of the name are separated by dots
-            yield return new SourceFolder(name.Split('.', StringSplitOptions.RemoveEmptyEntries), () => ReadMaildirMessages(folder, options));
+            yield return new SourceFolder(name.Split('.', StringSplitOptions.RemoveEmptyEntries), ContainerClass: null, () => ReadMaildirMessages(folder, options));
         }
     }
 
-    private static IEnumerable<SourceMessage> ReadMaildirMessages(MaildirFolder folder, MailboxConversionOptions options)
+    private static IEnumerable<Func<SourceMessage?>> ReadMaildirMessages(MaildirFolder folder, MailboxConversionOptions options)
     {
         foreach (var message in folder.EnumerateMessages())
         {
-            yield return new SourceMessage(Item: null, () => File.ReadAllBytes(message.FullPath), message.Flags.HasFlag(MaildirFlags.Seen), Sender: null, Date: null, options.MimeReadOptions ?? MimeReadOptions.Default);
+            yield return () => new SourceMessage(Item: null, () => File.ReadAllBytes(message.FullPath), message.Flags.HasFlag(MaildirFlags.Seen), Sender: null, Date: null, options.MimeReadOptions ?? MimeReadOptions.Default);
         }
     }
 
@@ -194,14 +257,14 @@ public static class MailboxConverter
     private static SourceFolder ReadMboxFile(string path, string[] folderPath, MailboxConversionOptions options)
     {
         var readOptions = new MboxReadOptions { Format = options.MboxFormat, MessageOptions = options.MimeReadOptions ?? new MimeReadOptions() };
-        return new SourceFolder(folderPath, () => ReadMboxMessages(path, readOptions));
+        return new SourceFolder(folderPath, ContainerClass: null, () => ReadMboxMessages(path, readOptions));
     }
 
-    private static IEnumerable<SourceMessage> ReadMboxMessages(string path, MboxReadOptions options)
+    private static IEnumerable<Func<SourceMessage?>> ReadMboxMessages(string path, MboxReadOptions options)
     {
         foreach (var message in MboxReader.ReadMessages(path, options))
         {
-            yield return new SourceMessage(Item: null, () => message.Content.ToArray(), IsRead: null, message.Sender, message.Date, options.MessageOptions);
+            yield return () => new SourceMessage(Item: null, () => message.Content.ToArray(), GetMboxReadState(message.Content.Span), message.Sender, message.Date, options.MessageOptions);
         }
     }
 
@@ -228,11 +291,48 @@ public static class MailboxConverter
         public MimeMessage GetMime() => Item is not null ? EmailMessage.FromMapi(Item).ToMime() : MimeMessage.Load(Content!(), MimeOptions);
     }
 
-    private sealed record SourceFolder(string[] Path, Func<IEnumerable<SourceMessage>> Messages);
+    /// <summary>A folder of a source: its path, its container class for a folder of an Outlook data file (<c>IPF.Contact</c>, <c>IPF.Appointment</c>...), and a function per message, which reads it, or returns <see langword="null"/> when there is no message.</summary>
+    private sealed record SourceFolder(string[] Path, string? ContainerClass, Func<IEnumerable<Func<SourceMessage?>>> Messages);
+
+    /// <summary>
+    /// The names of the folders of a destination, valid as file names: two folders whose names give the same file name, such as
+    /// <c>Project.A</c> and <c>Project_A</c>, or that differ only in case, get different names (<c>Project_A</c> and <c>Project_A_2</c>).
+    /// </summary>
+    private sealed class FolderNames
+    {
+        private readonly Dictionary<string, string[]> _names = new(StringComparer.Ordinal);
+        private readonly HashSet<string> _used = new(StringComparer.OrdinalIgnoreCase);
+
+        public string[] Get(string[] path)
+        {
+            if (path is [])
+            {
+                return [];
+            }
+
+            var key = string.Join('\0', path);
+            if (_names.TryGetValue(key, out var names))
+            {
+                return names;
+            }
+
+            var parent = Get(path[..^1]);
+            var baseName = GetFileName(path[^1]);
+            var name = baseName;
+            for (var i = 2; !_used.Add(string.Join('/', [.. parent, name])); i++)
+            {
+                name = baseName + "_" + i.ToString(CultureInfo.InvariantCulture);
+            }
+
+            names = [.. parent, name];
+            _names[key] = names;
+            return names;
+        }
+    }
 
     private abstract class Destination : IDisposable
     {
-        public abstract void EnsureFolder(string[] path);
+        public abstract void EnsureFolder(string[] path, string? containerClass);
 
         public abstract void Add(string[] path, SourceMessage message);
 
@@ -245,10 +345,12 @@ public static class MailboxConverter
 
     private sealed class PstDestination(string path, PstWriterOptions? options) : Destination
     {
+        private const string MailContainerClass = "IPF.Note";
+
         private readonly PstWriter _writer = PstWriter.Create(path, options);
         private readonly Dictionary<string, PstWriterFolder> _folders = new(StringComparer.Ordinal);
 
-        public override void EnsureFolder(string[] path) => GetFolder(path);
+        public override void EnsureFolder(string[] path, string? containerClass) => GetFolder(path, containerClass);
 
         public override void Add(string[] path, SourceMessage message)
         {
@@ -263,23 +365,24 @@ public static class MailboxConverter
                 builder.Flags = message.IsRead is false ? MapiMessageFlags.None : MapiMessageFlags.Read;
             }
 
-            GetFolder(path).AddItem(builder);
+            GetFolder(path, containerClass: null).AddItem(builder);
         }
 
         public override void Complete() => _writer.Complete();
 
         public override void Dispose() => _writer.Dispose();
 
-        private PstWriterFolder GetFolder(string[] path)
+        /// <summary>Returns a folder, created with the container class of the source folder (a calendar stays a calendar), or as a folder of emails.</summary>
+        private PstWriterFolder GetFolder(string[] path, string? containerClass)
         {
             var folder = _writer.RootFolder;
             var key = "";
-            foreach (var name in path)
+            for (var i = 0; i < path.Length; i++)
             {
-                key += "/" + name;
+                key += "/" + path[i];
                 if (!_folders.TryGetValue(key, out var child))
                 {
-                    child = folder.CreateFolder(name, "IPF.Note");
+                    child = folder.CreateFolder(path[i], i == path.Length - 1 && !string.IsNullOrEmpty(containerClass) ? containerClass : MailContainerClass);
                     _folders[key] = child;
                 }
 
@@ -293,8 +396,9 @@ public static class MailboxConverter
     private sealed class MaildirDestination(MaildirFolder root) : Destination
     {
         private readonly Dictionary<string, MaildirFolder> _folders = new(StringComparer.Ordinal);
+        private readonly FolderNames _names = new();
 
-        public override void EnsureFolder(string[] path) => GetFolder(path);
+        public override void EnsureFolder(string[] path, string? containerClass) => GetFolder(path);
 
         public override void Add(string[] path, SourceMessage message)
         {
@@ -322,7 +426,7 @@ public static class MailboxConverter
                 return root;
             }
 
-            var name = string.Join('.', path.Select(GetFileName));
+            var name = string.Join('.', _names.Get(path));
             if (!_folders.TryGetValue(name, out var folder))
             {
                 folder = root.CreateFolder(name);
@@ -336,8 +440,9 @@ public static class MailboxConverter
     private sealed class MboxDestination(string directory, MboxFormat format) : Destination
     {
         private readonly Dictionary<string, MboxWriter> _writers = new(StringComparer.Ordinal);
+        private readonly FolderNames _names = new();
 
-        public override void EnsureFolder(string[] path) => GetWriter(path);
+        public override void EnsureFolder(string[] path, string? containerClass) => GetWriter(path);
 
         public override void Add(string[] path, SourceMessage message)
         {
@@ -384,7 +489,7 @@ public static class MailboxConverter
                 path = [InboxName];
             }
 
-            var names = path.Select(GetFileName).ToArray();
+            var names = _names.Get(path);
             var key = string.Join('/', names);
             if (!_writers.TryGetValue(key, out var writer))
             {

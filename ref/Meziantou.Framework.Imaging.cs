@@ -428,6 +428,14 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ColorMatrix Then(Meziantou.Framework.Imaging.ColorMatrix next) => throw null;
     }
 
+    public sealed class ColorSelectionOptions
+    {
+        public Meziantou.Framework.Imaging.PixelConnectivity Connectivity { get => throw null; init { } }
+        public bool Contiguous { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.ColorSelectionOptions Default { get => throw null; }
+        public double Tolerance { get => throw null; init { } }
+    }
+
     public static class Colors
     {
         public static Meziantou.Framework.Imaging.Rgba32 AliceBlue { get => throw null; }
@@ -1981,6 +1989,12 @@ namespace Meziantou.Framework.Imaging
 
     public delegate void PixelBytesAction<TState>(Meziantou.Framework.Imaging.PixelBytesAccessor pixels, TState state) where TState : allows ref struct;
 
+    public enum PixelConnectivity
+    {
+        Four = 0,
+        Eight = 1,
+    }
+
     public sealed class PixelConversionOptions
     {
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
@@ -2044,8 +2058,16 @@ namespace Meziantou.Framework.Imaging
         public PixelMask(Meziantou.Framework.Imaging.Size size) { }
         public PixelMask(int width, int height) { }
         public void Clear() { }
+        public Meziantou.Framework.Imaging.PixelMask Clone() => throw null;
+        public void ExceptWith(Meziantou.Framework.Imaging.PixelMask other) { }
         public void Fill(Meziantou.Framework.Imaging.Rectangle rectangle, bool value = true) { }
         public static Meziantou.Framework.Imaging.PixelMask FromFrame(Meziantou.Framework.Imaging.ImageFrame frame) => throw null;
+        public static Meziantou.Framework.Imaging.PixelMask FromSimilarColors(Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Point seed, Meziantou.Framework.Imaging.ColorSelectionOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void IntersectWith(Meziantou.Framework.Imaging.PixelMask other) { }
+        public void Invert() { }
+        public void SymmetricExceptWith(Meziantou.Framework.Imaging.PixelMask other) { }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.A8> ToImage(Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public void UnionWith(Meziantou.Framework.Imaging.PixelMask other) { }
     }
 
     public ref struct PixelRowSource<TPixel> where TPixel : unmanaged

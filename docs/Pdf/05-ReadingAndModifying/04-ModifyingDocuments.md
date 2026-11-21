@@ -89,6 +89,83 @@ document.AddWatermark("DRAFT", new PdfWatermarkOptions { Opacity = 0.2 });
 - The watermark is marked as an artifact, so that screen readers skip it in tagged documents. It is part of the content:
   the text extraction returns it, and it can be removed only by editing the content.
 
+### Place the watermark in a corner
+
+[Position](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Position) puts the text in a corner or along an edge of the page instead of its center:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_WatermarkInACorner;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void WatermarkInACorner(string inputPath, string outputPath)
+{
+    var document = PdfDocument.Open(inputPath);
+
+    // Horizontal, in the lower-right corner of every page, 12 points from its edges
+    document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+    {
+        Position = PdfWatermarkPosition.BottomRight,
+        Margin = 12,
+        FontSize = 14,
+    });
+
+    document.Save(outputPath);
+}
+```
+<!-- endref -->
+
+![The welcome card with the word CONFIDENTIAL in translucent gray in its lower-right corner](images/WatermarkInACorner.png)
+
+- [Margin](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Margin) is the distance, in points, between the box of the text
+  and the edges of the page as it is displayed. The default is 36, half an inch.
+- The text is horizontal unless you set [Rotation](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Rotation); the margin
+  applies to the box of the rotated text.
+- Without a [FontSize](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.FontSize), the text is 1/20 of the diagonal of the
+  page.
+
+### Repeat the watermark over the page
+
+[IsTiled](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.IsTiled) repeats the text over the whole page, which makes
+the watermark harder to crop away:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_TiledWatermark;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void TiledWatermark(string inputPath, string outputPath)
+{
+    var document = PdfDocument.Open(inputPath);
+
+    // Repeated over the whole page, along its diagonal, the rows offset by half a copy
+    document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+    {
+        IsTiled = true,
+        FontSize = 18,
+        TileSpacing = 12,
+    });
+
+    document.Save(outputPath);
+}
+```
+<!-- endref -->
+
+![The welcome card covered with rows of the word CONFIDENTIAL in translucent gray along its diagonal, each row offset by half a word](images/TiledWatermark.png)
+
+- The copies are in rows along the diagonal of the page, or along
+  [Rotation](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Rotation), and each row is offset by half a copy from the
+  previous one, like the bricks of a wall. One copy is centered on the page.
+- [TileSpacing](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.TileSpacing) is the space, in points, between the
+  copies, horizontally and vertically. The default is the height of the text.
+- Without a [FontSize](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.FontSize), the text is 1/20 of the diagonal of the
+  page. A tiled watermark ignores [Position](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Position) and
+  [Margin](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Margin).
+- The page paints a tiling pattern whose cell paints the form of the text, so the document stays small. The pages of
+  the same size and rotation share the pattern. The text extraction does not return the text of a pattern.
+
+### Choose the pages
+
+[FirstPageIndex](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.FirstPageIndex) and
+[LastPageIndex](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.LastPageIndex) limit
+[PdfDocument.AddWatermark](cref:Meziantou.Framework.Pdf.PdfDocument.AddWatermark) to a range of pages. The indexes start
+at 0, and the last page is included; an index after the last page of the document stands for the last page.
+[PdfPage.AddWatermark](cref:Meziantou.Framework.Pdf.PdfPage.AddWatermark) ignores them.
+
 ## Add headers and footers
 
 [AddHeaderFooter](cref:Meziantou.Framework.Pdf.PdfDocument.AddHeaderFooter) stamps texts at the top and the bottom of the pages, such as page numbers or a date:

@@ -100,6 +100,22 @@ public sealed class DocumentationImageTests : IDisposable
     }
 
     [Fact]
+    public void WatermarkInACorner()
+    {
+        var card = GetPath("card.pdf");
+        PdfDocumentTests.CreateCard(card);
+        AssertPage(ReadingAndModifying, nameof(PdfPageTests.WatermarkInACorner), output => PdfPageTests.WatermarkInACorner(card, output));
+    }
+
+    [Fact]
+    public void TiledWatermark()
+    {
+        var card = GetPath("card.pdf");
+        PdfDocumentTests.CreateCard(card);
+        AssertPage(ReadingAndModifying, nameof(PdfPageTests.TiledWatermark), output => PdfPageTests.TiledWatermark(card, output));
+    }
+
+    [Fact]
     public void RenderThumbnails()
     {
         var card = GetPath("card.pdf");

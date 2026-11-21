@@ -3277,7 +3277,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   the contents of the cells of a table, as in Blink, and the items of a flex line or of a grid row that are not stretched
   start at the start of the row), so that their content after the break does not depend on the block size of the row. A
   cell that spans the rows after its row continues beside them: the rows after the row are in `BreakAnchor.Following`,
-  and must start after the content after the break. Monolithic content of an item that the break slices (the item, or a
+  and must start after the content after the break. The content of the rows before the break (`BreakAnchor.Preceding`) is
+  in the previous pages: the content after the break starts after its end in the strip of the segment (`MeasureRowBreak`,
+  the content of the cells of a table row, not their boxes: a cell of a row before the broken row that spans it may end its
+  lines later in another inline size). Monolithic content of an item that the break slices (the item, or a
   monolithic block-level box of its block flow) is the anchor of the item (`BreakAnchor.SliceOffset`): it must have the same
   size in the strip of the segment (`SlicedContent.HasSameSize`: its position follows the item, whose position depends on the
   inline size, e.g. a column of a grid), and its rest must start the next page (`ResolveAnchorOfPage`: it is in both pages, at the
@@ -3342,10 +3345,11 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). This needs one row of columns
   per page between the spanners (`IsResumableColumns`: no `column-height`, definite or maximum block size, absolutely
   positioned box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`), or between
-  the rows of a container of the columns or in its only row that it crosses (not in a row of items side by side,
-  `BreakAnchor.Items`): these anchors are checked against the content of the pages (`ResolveAnchorOfPage`), and the content of
-  their containers resumes in the strip of the columns (`LayoutContext.RowResumes`, the parallel flows resumed by
-  `FlowCursor.ResumeAt`).
+  the rows of a container of the columns, in its only row that it crosses, or in a row of items side by side
+  (`BreakAnchor.Items`; not in monolithic content that the break slices): these anchors are checked against the content of the
+  pages (`ResolveAnchorOfPage`), the content of their containers resumes in the strip of the columns (`LayoutContext.RowResumes`,
+  the parallel flows resumed by `FlowCursor.ResumeAt`), and the items of a broken row are measured and aligned in that strip
+  (`MeasureRowBreak` on the strip of the columns, `FindResumableColumns`).
   A page of another inline size that starts inside a line laid out another way, a multi-column container whose columns
   cannot continue (see above), a grid whose columns depend on its inline size and whose items are not placed
   in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the

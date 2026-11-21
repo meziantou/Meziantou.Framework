@@ -532,6 +532,27 @@ public sealed class PagedMediaTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{0}</div><div>{1}</div></div>")]
+    [InlineData("<table style='width: 100%; border-spacing: 0'><tr><td style='padding: 0; vertical-align: top'>{0}</td><td style='padding: 0; vertical-align: top'>{1}</td></tr></table>")]
+    [InlineData("<div style='display: flex; align-items: flex-start'><div style='flex: 1 1 0'>{0}</div><div style='flex: 1 1 0'>{1}</div></div>")]
+    public void Pages_RowBrokenInAMultiColumnContainerContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string format)
+    {
+        // The break at the end of the last column of the first page is inside a row of two items side by side (a grid row, a
+        // table row, a flex line): the content of both items continues in the columns of the second page, laid out in their
+        // inline size, without repeating or skipping a word
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div id=m style='columns: 2; column-gap: 0'><div style='height: 300px'></div>{{string.Format(CultureInfo.InvariantCulture, format, Words(60), Words(45))}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal(400, GetPageRects(pages, document.GetElementById("m")!)[1].Rect.Width);
+        Assert.Equal(105, pages.Sum(page => CountWords(page.Content)));
+    }
+
     [Fact]
     public void Pages_MultiColumnContainerContinuedOnPagesOfSeveralInlineSizesIsLaidOutInThem()
     {
@@ -599,6 +620,28 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal(words0 + words1 + words2, pages.Sum(page => CountWords(page.Content)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Fact]
+    public void Pages_CellSpanningTheBrokenRowFromARowBeforeItIsNotLaidOutAgain()
+    {
+        // The first cell spans the first two rows, and its lines end before the break, which crosses the second row: in the wider
+        // page, its lines would end below the start of the rest of the second cell. The rest of the second cell starts after
+        // them, and the first cell is not laid out again in the page. No word is lost or repeated.
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+        var document = Parse($$"""
+            <style>@page { size: 285px 220px; margin: 0 } @page :first { size: 200px 220px }</style>
+            <table style='width: 100%; border-spacing: 0'>
+              <tr><td rowspan=2>{{Words(39)}}</td><td></td></tr>
+              <tr><td rowspan=2>{{Words(24)}}</td><td></td></tr>
+              <tr><td rowspan=2>{{Words(4)}}</td><td></td></tr>
+            </table>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal(60, CountWords(pages[0].Content));
+        Assert.Equal(7, CountWords(pages[1].Content));
     }
 
     /// <summary>Returns the number of words of the text fragments of a fragment and of its descendants.</summary>

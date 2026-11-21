@@ -1,0 +1,9 @@
+From: alice@example.com
+To: bob@example.com
+Subject: Latin-1 body
+Date: Mon, 14 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: base64
+
+Q2Fm6SCAIDEwMAo=

@@ -1,0 +1,20 @@
+From: list@example.com
+To: subscriber@example.com
+Subject: Digest
+Date: Sat, 12 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/digest; boundary="d"
+
+--d
+
+From: one@example.com
+Subject: First
+
+First message.
+--d
+
+From: two@example.com
+Subject: Second
+
+Second message.
+--d--

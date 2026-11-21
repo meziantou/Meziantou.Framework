@@ -1,0 +1,4 @@
+title: Email
+description: Read and write email, contact and calendar files: Outlook data files (PST and OST), email messages (EML, MIME), Outlook items (MSG), winmail.dat (TNEF), mailboxes (mbox, Maildir, Apple Mail, Thunderbird), contacts and calendars (vCard, iCalendar), offline address books (OAB), and the model they convert to.
+packageIds:
+- Meziantou.Framework.Email

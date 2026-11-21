@@ -1,0 +1,33 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.Framework.Email. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+    <RootNamespace>Meziantou.Framework.Email.Fuzz</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The files of the unit tests are the seeds, except the OST of 16 MB: a smaller one is generated -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Pst\*.pst" LogicalName="TestData/Pst/%(FileName)%(Extension)" Link="Seeds\Pst\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Mime\*.eml" LogicalName="TestData/Mime/%(FileName)%(Extension)" Link="Seeds\Mime\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Msg\*.msg" LogicalName="TestData/Msg/%(FileName)%(Extension)" Link="Seeds\Msg\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Tnef\*.dat" LogicalName="TestData/Tnef/%(FileName)%(Extension)" Link="Seeds\Tnef\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Mailbox\*.mbox;..\..\tests\Meziantou.Framework.Email.Tests\TestData\Mailbox\*.emlx;..\..\tests\Meziantou.Framework.Email.Tests\TestData\Mailbox\*.msf" LogicalName="TestData/Mailbox/%(FileName)%(Extension)" Link="Seeds\Mailbox\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Calendar\*.vcf;..\..\tests\Meziantou.Framework.Email.Tests\TestData\Calendar\*.ics" LogicalName="TestData/Calendar/%(FileName)%(Extension)" Link="Seeds\Calendar\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Oab\*.oab" LogicalName="TestData/Oab/%(FileName)%(Extension)" Link="Seeds\Oab\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Email.Tests\TestData\Rtf\*.rtf" LogicalName="TestData/Rtf/%(FileName)%(Extension)" Link="Seeds\Rtf\%(FileName)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Meziantou.Framework.Email.Calendar" />
+    <Using Include="Meziantou.Framework.Email.Contacts" />
+    <Using Include="Meziantou.Framework.Email.Mapi" />
+    <Using Include="Meziantou.Framework.Email.Storage" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Email\Meziantou.Framework.Email.csproj" />
+  </ItemGroup>
+</Project>

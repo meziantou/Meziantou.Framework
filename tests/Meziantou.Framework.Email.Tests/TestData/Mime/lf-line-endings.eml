@@ -1,0 +1,17 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: LF line endings
+Date: Tue, 8 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=simple
+
+--simple
+Content-Type: text/plain
+
+Lines end with LF only.
+--simple
+Content-Type: text/plain; name=notes.txt
+Content-Disposition: attachment; filename=notes.txt
+
+Notes.
+--simple--

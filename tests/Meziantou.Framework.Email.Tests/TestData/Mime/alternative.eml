@@ -1,0 +1,23 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>, Carol <carol@example.com>
+Cc: Dave <dave@example.com>
+Subject: Alternative bodies
+Date: Thu, 3 Jul 2025 09:30:00 -0400
+Message-ID: <alternative-1@example.com>
+In-Reply-To: <simple-1@example.com>
+References: <root@example.com> <simple-1@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/alternative; boundary="alt-boundary"
+
+This is the preamble.
+
+--alt-boundary
+Content-Type: text/plain; charset=utf-8
+
+Plain text.
+--alt-boundary
+Content-Type: text/html; charset=utf-8
+
+<p>HTML <b>text</b>.</p>
+--alt-boundary--
+This is the epilogue.

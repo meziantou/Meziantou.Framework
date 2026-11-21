@@ -1,0 +1,30 @@
+269
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: First
+Date: Tue, 1 Jul 2025 10:52:37 +0200
+Message-ID: <first@example.com>
+
+Hello Bob,
+From the start of a line.
+>From a quoted line.
+>>From a line quoted twice.
+The word From in the middle: no escape.
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>date-last-viewed</key>
+	<integer>1751360000</integer>
+	<key>date-received</key>
+	<integer>1751359957</integer>
+	<key>flags</key>
+	<integer>8590195713</integer>
+	<key>original-mailbox</key>
+	<string>imap://bob@imap.example.com/INBOX</string>
+	<key>remote-id</key>
+	<string>4242</string>
+	<key>subject</key>
+	<string>First</string>
+</dict>
+</plist>

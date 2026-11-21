@@ -1,0 +1,20 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: Inline image
+Date: Fri, 4 Jul 2025 14:00:00 +0100
+MIME-Version: 1.0
+Content-Type: multipart/related; boundary="rel"; type="text/html"
+
+--rel
+Content-Type: text/html; charset=us-ascii
+
+<img src="cid:image1@example.com">
+--rel
+Content-Type: image/png; name="dot.png"
+Content-Transfer-Encoding: base64
+Content-ID: <image1@example.com>
+Content-Disposition: inline; filename="dot.png"
+
+iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M8AAAMBAQAY3Y2w
+AAAAAElFTkSuQmCC
+--rel--

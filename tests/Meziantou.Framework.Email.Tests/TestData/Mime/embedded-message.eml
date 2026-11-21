@@ -1,0 +1,33 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: Fwd: Hello
+Date: Sun, 6 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="outer"
+
+--outer
+Content-Type: text/plain
+
+Forwarded message below.
+--outer
+Content-Type: message/rfc822
+Content-Disposition: attachment; filename="hello.eml"
+
+From: Carol <carol@example.com>
+To: Alice <alice@example.com>
+Subject: Hello
+Date: Sat, 5 Jul 2025 09:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="inner"
+
+--inner
+Content-Type: text/plain
+
+Inner text.
+--inner
+Content-Type: text/plain; name="inner.txt"
+Content-Disposition: attachment; filename="inner.txt"
+
+Inner attachment.
+--inner--
+--outer--

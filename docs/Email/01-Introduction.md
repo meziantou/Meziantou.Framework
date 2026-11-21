@@ -24,3 +24,8 @@ Each format has its own objects, which give access to everything the format stor
 item, the headers and the MIME parts of a message. [EmailMessage](cref:Meziantou.Framework.Email.EmailMessage) is the
 model they convert to and from, so that a message read in one format can be written in another: see
 [Getting started](02-GettingStarted.md).
+
+[EmailFormatDetector](cref:Meziantou.Framework.Email.EmailFormatDetector) detects the format of a file from its content
+(see [Getting started](02-GettingStarted.md)), and
+[MailboxConverter](cref:Meziantou.Framework.Email.Storage.MailboxConverter) converts a whole mailbox, with its folders,
+between Outlook data files, mbox files and Maildir folders: see [Convert mailboxes](07-Mailboxes/05-Conversion.md).

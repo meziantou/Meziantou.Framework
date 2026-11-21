@@ -1258,6 +1258,36 @@ namespace Meziantou.Framework.Email.Storage
         public long RawFlags { get => throw null; }
     }
 
+    public sealed class MailboxConversionOptions
+    {
+        public bool IncludeNonMailItems { get => throw null; set { } }
+        public Meziantou.Framework.Email.Storage.MboxFormat MboxFormat { get => throw null; set { } }
+        public Meziantou.Framework.Email.MimeReadOptions? MimeReadOptions { get => throw null; set { } }
+        public Meziantou.Framework.Email.Storage.PstReadOptions? PstReadOptions { get => throw null; set { } }
+        public Meziantou.Framework.Email.Storage.PstWriterOptions? PstWriterOptions { get => throw null; set { } }
+    }
+
+    public sealed class MailboxConversionResult
+    {
+        public System.Collections.Generic.IReadOnlyList<string> Errors { get => throw null; }
+        public int FolderCount { get => throw null; }
+        public int MessageCount { get => throw null; }
+        public int SkippedItemCount { get => throw null; }
+    }
+
+    public static class MailboxConverter
+    {
+        public static Meziantou.Framework.Email.Storage.MailboxConversionResult Convert(string sourcePath, string destinationPath, Meziantou.Framework.Email.Storage.MailboxFormat destinationFormat, Meziantou.Framework.Email.Storage.MailboxConversionOptions? options = null) => throw null;
+        public static Meziantou.Framework.Email.Storage.MailboxFormat? DetectFormat(string path) => throw null;
+    }
+
+    public enum MailboxFormat
+    {
+        Pst = 0,
+        Mbox = 1,
+        Maildir = 2,
+    }
+
     [System.Flags]
     public enum MaildirFlags
     {

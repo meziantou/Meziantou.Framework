@@ -1,6 +1,6 @@
 ---
 title: Blur, sharpen and convolution
-description: Blur, remove specks, smooth noise and keep edges, sharpen with an unsharp mask, add a motion, zoom or spin blur, apply your own convolution matrix and detect edges.
+description: Blur, remove specks, smooth noise and keep edges, sharpen with an unsharp mask, add or undo a motion blur, add a zoom or spin blur, apply your own convolution matrix and detect edges.
 ---
 
 These operations compute each pixel from its neighbors. They keep the size, the pixel format, the frames and the
@@ -49,6 +49,58 @@ public static void CleanUpScan(string inputPath, string cleanedPath, string back
 horizontal, as [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate) turns), for [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve): the blur of a camera or a subject that moved while the shutter was
 open. Every pixel weighs the length of the trail inside it, so the brightness is kept, and the trail is centered on
 each pixel, so the image does not move. The cost grows with the number of pixels the trail crosses.
+
+## Undo a known blur
+
+[WienerDeconvolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.WienerDeconvolve) makes a blurred photo sharp again when you know the blur: the trail of a camera that moved
+([ConvolutionKernel.CreateMotionBlur](cref:Meziantou.Framework.Imaging.ConvolutionKernel.CreateMotionBlur)), a soft focus ([ConvolutionKernel.CreateGaussianBlur](cref:Meziantou.Framework.Imaging.ConvolutionKernel.CreateGaussianBlur), the matrix of
+[GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur)), or any matrix you measured. It undoes what [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve) does with that matrix:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Deblur;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void Deblur(string shakenPath, string softPath, string outputDirectory)
+{
+    // The camera moved 12 pixels at 20 degrees while the shutter was open. A noise-to-signal ratio of 0.005 restores
+    // what the blur weakened, and leaves what it erased instead of amplifying the noise there
+    using (var shaken = Image.Load(shakenPath))
+    {
+        var trail = ConvolutionKernel.CreateMotionBlur(length: 12, degrees: 20);
+        shaken.WienerDeconvolve(new WienerDeconvolutionOptions(trail, noiseToSignalRatio: 0.005));
+        shaken.Save(Path.Combine(outputDirectory, "steady.png"));
+    }
+
+    // A soft focus is close to a Gaussian blur. The lens blurred light, so the deconvolution works in linear light
+    using var soft = Image.Load(softPath);
+    var focus = ConvolutionKernel.CreateGaussianBlur(sigma: 1.5);
+    soft.WienerDeconvolve(new WienerDeconvolutionOptions(focus, noiseToSignalRatio: 0.002) { WorkingSpace = ConvolutionWorkingSpace.LinearSrgb });
+    soft.Save(Path.Combine(outputDirectory, "focused.png"));
+}
+```
+<!-- endref -->
+
+The [NoiseToSignalRatio](cref:Meziantou.Framework.Imaging.WienerDeconvolutionOptions.NoiseToSignalRatio) sets how far the details are brought back. A blur weakens the fine details and
+erases some of them; amplifying them back amplifies the noise too. The Wiener filter restores the details the blur kept
+much more than this ratio, and leaves those it weakened below it:
+
+| Ratio | Result |
+| --- | --- |
+| 0.0001 or less | The sharpest result, for a clean image whose blur is known exactly (a blur you applied yourself) |
+| 0.001 to 0.01 | A photograph with a little noise or compression |
+| 0.05 or more | A noisy image: a softer result, with less ringing around the edges |
+
+- The matrix must match the blur: a trail of the wrong length or angle leaves copies of the edges instead of sharp ones.
+  Try a few lengths and angles, and keep the one whose edges look single.
+- The [EdgeMode](cref:Meziantou.Framework.Imaging.WienerDeconvolutionOptions.EdgeMode) says what the blur read beyond the edges, as for a convolution. [Wrap](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Wrap) undoes the blur of a
+  tiling image exactly. [Clamp](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp) (the default) and [Mirror](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Mirror) suit photographs: the pixels near the edges are
+  less accurate than inside, as what the blur read beyond them is guessed. [Zero](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Zero) suits content whose blur lies inside
+  the image, such as a sprite on a transparent canvas.
+- A Wiener filter darkens the whole image slightly: its mean is multiplied by `1 / (1 + ratio)`, so 0.01 loses 1%.
+- [WorkingSpace](cref:Meziantou.Framework.Imaging.WienerDeconvolutionOptions.WorkingSpace) set to [LinearSrgb](cref:Meziantou.Framework.Imaging.ConvolutionWorkingSpace.LinearSrgb) undoes a blur of light, as a lens or a moving
+  camera makes it.
+- The time does not depend on the size of the matrix: it grows a little faster than the number of pixels. The memory is
+  about 30 bytes per pixel of the image (a copy of 4 bytes per sample, and 16 bytes per pixel of the transformed plane),
+  a little more for the margins, and 8 more per pixel for a matrix that is not separable (a motion blur at an angle). The
+  result is the same on every platform.
 
 ## Smooth noise and keep the edges
 

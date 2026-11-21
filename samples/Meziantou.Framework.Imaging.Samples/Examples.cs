@@ -1137,6 +1137,27 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A photo shaken during the exposure, and a soft one, made sharp again.</summary>
+    #region Imaging_Deblur
+    public static void Deblur(string shakenPath, string softPath, string outputDirectory)
+    {
+        // The camera moved 12 pixels at 20 degrees while the shutter was open. A noise-to-signal ratio of 0.005 restores
+        // what the blur weakened, and leaves what it erased instead of amplifying the noise there
+        using (var shaken = Image.Load(shakenPath))
+        {
+            var trail = ConvolutionKernel.CreateMotionBlur(length: 12, degrees: 20);
+            shaken.WienerDeconvolve(new WienerDeconvolutionOptions(trail, noiseToSignalRatio: 0.005));
+            shaken.Save(Path.Combine(outputDirectory, "steady.png"));
+        }
+
+        // A soft focus is close to a Gaussian blur. The lens blurred light, so the deconvolution works in linear light
+        using var soft = Image.Load(softPath);
+        var focus = ConvolutionKernel.CreateGaussianBlur(sigma: 1.5);
+        soft.WienerDeconvolve(new WienerDeconvolutionOptions(focus, noiseToSignalRatio: 0.002) { WorkingSpace = ConvolutionWorkingSpace.LinearSrgb });
+        soft.Save(Path.Combine(outputDirectory, "focused.png"));
+    }
+    #endregion
+
     /// <summary>A photo cropped to a square around its subject.</summary>
     #region Imaging_SuggestCrop
     public static Rectangle CropToSquare(string inputPath, string outputPath)

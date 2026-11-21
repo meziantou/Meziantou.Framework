@@ -600,6 +600,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ConvolutionKernel SobelY { get => throw null; }
         public int Width { get => throw null; }
         public ConvolutionKernel(int width, int height, System.ReadOnlySpan<double> values) { }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel CreateGaussianBlur(double sigma) => throw null;
         public static Meziantou.Framework.Imaging.ConvolutionKernel CreateMotionBlur(double length, double degrees) => throw null;
         public static Meziantou.Framework.Imaging.ConvolutionKernel CreateSeparable(System.ReadOnlySpan<double> rowWeights, System.ReadOnlySpan<double> columnWeights) => throw null;
     }
@@ -1567,6 +1568,8 @@ namespace Meziantou.Framework.Imaging
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Vignette(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Vignette(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerDeconvolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.WienerDeconvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerDeconvolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.WienerDeconvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions
@@ -2584,6 +2587,16 @@ namespace Meziantou.Framework.Imaging
         public UnsupportedImageFeatureException(string? message) { }
         public UnsupportedImageFeatureException(string? message, System.Exception? innerException) { }
         public UnsupportedImageFeatureException(string? message, Meziantou.Framework.Imaging.ImageFormat format, string? feature) { }
+    }
+
+    public sealed class WienerDeconvolutionOptions
+    {
+        public const double MinNoiseToSignalRatio = 1E-12d;
+        public Meziantou.Framework.Imaging.ConvolutionEdgeMode EdgeMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ConvolutionKernel Kernel { get => throw null; }
+        public double NoiseToSignalRatio { get => throw null; }
+        public Meziantou.Framework.Imaging.ConvolutionWorkingSpace WorkingSpace { get => throw null; init { } }
+        public WienerDeconvolutionOptions(Meziantou.Framework.Imaging.ConvolutionKernel kernel, double noiseToSignalRatio) { }
     }
 }
 namespace Meziantou.Framework.Imaging.Drawing

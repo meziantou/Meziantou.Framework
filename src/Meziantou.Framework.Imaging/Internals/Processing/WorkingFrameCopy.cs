@@ -116,6 +116,10 @@ internal sealed class WorkingFrameCopy : IDisposable
     public ReadOnlySpan<float> GetRow(int y)
         => unsafe(MemoryMarshal.Cast<byte, float>(GetCopy().GetRowSpanCore(y)))[..(Size.Width * WorkingChannels)];
 
+    /// <summary>Gets the working samples of row <paramref name="y"/> of the frame last loaded, for the filters that rewrite the copy before they store it (<see cref="WienerDeconvolver"/>).</summary>
+    public Span<float> GetWritableRow(int y)
+        => unsafe(MemoryMarshal.Cast<byte, float>(GetCopy().GetRowSpanCore(y)))[..(Size.Width * WorkingChannels)];
+
     /// <summary>Copies the working samples of a frame of the format of the copy.</summary>
     /// <exception cref="OperationCanceledException">The token was canceled between two rows.</exception>
     public void Load(PixelStorage storage, CancellationToken cancellationToken)

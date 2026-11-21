@@ -13,7 +13,8 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// with a fixed or an automatic number of columns, a row flex container that wraps, a block, a table row whose rows are its cells,
 /// a single-line row flex container whose rows are its items) and its rows (their block sizes,
 /// whether they avoid breaks, a paragraph); the second target has rows whose items are aligned in them or span the next rows, whose first pages may not follow their order. Each row is in a page, the first pages of the rows follow their order, each word of
-/// the paragraphs is laid out once, and the rectangles of the fragments are finite.
+/// the paragraphs is laid out once, and the rectangles of the fragments are finite. The third target has monolithic content that
+/// the breaks slice (see <see cref="PagedInlineSizeSliced"/>).
 /// </summary>
 public static partial class WebPlatformFuzzTargets
 {
@@ -206,6 +207,137 @@ public static partial class WebPlatformFuzzTargets
         for (var i = 0; i < scenarios.Length; i++)
         {
             yield return new FuzzSeed("paged-inline-size-rows-" + i.ToString(CultureInfo.InvariantCulture), scenarios[i]);
+        }
+    }
+
+    /// <summary>
+    /// Decodes the input to a document whose first page has another inline size than the next ones, with monolithic content
+    /// that the breaks may slice (a box with size containment of a fixed or percentage width, centered or not, an SVG image, an
+    /// inline-block in a paragraph, between words) between paragraphs, and checks its pages: each item is in a page, the first
+    /// pages of the items follow their order, each word is laid out once, and the parts of a sliced item continue each other
+    /// (the same size and inline position, from the end of the previous page).
+    /// </summary>
+    public static void PagedInlineSizeSliced(ReadOnlySpan<byte> data)
+    {
+        var position = 0;
+        byte Next(ReadOnlySpan<byte> input) => position < input.Length ? input[position++] : (byte)0;
+
+        var firstWidth = ((Next(data) % 100) + 5) * 5;
+        var width = ((Next(data) % 100) + 5) * 5;
+        var height = ((Next(data) % 100) + 5) * 5;
+        var itemCount = (Next(data) % PagedInlineSizeMaxRows) + 1;
+        var markup = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"<!DOCTYPE html><style>body {{ margin: 0; font: 10px/1 Ahem }} @page {{ size: {width}px {height}px; margin: 0 }} @page :first {{ size: {firstWidth}px {height}px }}</style>"));
+        var words = 0;
+        var isMonolithic = new bool[itemCount];
+        for (var i = 0; i < itemCount; i++)
+        {
+            var kind = Next(data);
+            var size = Next(data);
+            var extent = Next(data) * 3;
+            var id = "r" + i.ToString(CultureInfo.InvariantCulture);
+            var wordCount = Next(data) % 20;
+            var text = string.Join(' ', Enumerable.Repeat("XXXX", wordCount));
+            words += wordCount;
+            isMonolithic[i] = (kind % 5) != 0;
+            markup.Append((kind % 5) switch
+            {
+                0 => string.Create(CultureInfo.InvariantCulture, $"<p id={id} style='margin: {size % 30}px 0'>{text}</p>"),
+                1 => string.Create(CultureInfo.InvariantCulture, $"<div id={id} style='contain: size; width: {size}px; height: {extent}px{((kind & 8) != 0 ? "; margin: 0 auto" : "")}'></div><p style='margin: 0'>{text}</p>"),
+                2 => string.Create(CultureInfo.InvariantCulture, $"<div id={id} style='contain: size; width: {size % 101}%; height: {extent}px'></div><p style='margin: 0'>{text}</p>"),
+                3 => string.Create(CultureInfo.InvariantCulture, $"<svg id={id} width={size} height={extent} style='display: block'></svg><p style='margin: 0'>{text}</p>"),
+                _ => string.Create(CultureInfo.InvariantCulture, $"<p style='margin: 0{((kind & 8) != 0 ? "; text-align: center" : "")}'>{((kind & 16) != 0 ? text : "")}<span id={id} style='display: inline-block; width: {size}px; height: {extent}px; vertical-align: top'></span>{((kind & 16) != 0 ? "" : text)}</p>"),
+            });
+        }
+
+        using var context = new BrowsingContext();
+        var document = context.Navigate("https://example.com/", _ => markup.ToString());
+        context.EventLoop.RunUntilIdle();
+        using var session = document.BeginPrint(new PrintOptions { PageWidth = width, PageHeight = height });
+        var pages = session.GetPages();
+        FuzzAssert.True(pages.Count > 0, "the document has a page");
+
+        // The fragments of the items by page (their rectangles in the page), and the words of the text fragments that start in their
+        // page (the part of a sliced line after the end of the page is in the next page)
+        var fragments = new List<(int Page, double X, double Y, double Width, double Height)>[itemCount];
+        var laidOutWords = 0;
+        foreach (var page in pages)
+        {
+            Visit(page.Content, page.Index, x: 0, y: 0);
+        }
+
+        var previous = 0;
+        for (var i = 0; i < itemCount; i++)
+        {
+            FuzzAssert.True(fragments[i] is { Count: > 0 }, string.Create(CultureInfo.InvariantCulture, $"the item {i} is in a page: {markup}"));
+            FuzzAssert.True(fragments[i][0].Page >= previous, string.Create(CultureInfo.InvariantCulture, $"the item {i} starts in a page after the one of the previous item: {markup}"));
+            previous = fragments[i][0].Page;
+            if (!isMonolithic[i])
+                continue;
+
+            // (the part of a sliced item in a page continues the part in the previous page; an item without block size is not
+            // sliced, it may be at the end of a page and at the start of the next one)
+            for (var j = 1; j < fragments[i].Count && fragments[i][0].Height > PagedInlineSizeTolerance; j++)
+            {
+                var (page, x, y, fragmentWidth, fragmentHeight) = fragments[i][j];
+                var before = fragments[i][j - 1];
+                FuzzAssert.True(page == before.Page + 1 && Math.Abs(x - before.X) <= PagedInlineSizeTolerance && Math.Abs(fragmentWidth - before.Width) <= PagedInlineSizeTolerance
+                    && Math.Abs(fragmentHeight - before.Height) <= PagedInlineSizeTolerance && Math.Abs(y - (before.Y - height)) <= PagedInlineSizeTolerance,
+                    string.Create(CultureInfo.InvariantCulture, $"the part of the item {i} in the page {page} ({x}, {y}, {fragmentWidth}x{fragmentHeight}) continues the part in the previous page ({before.X}, {before.Y}, {before.Width}x{before.Height}): {markup}"));
+            }
+        }
+
+        FuzzAssert.Equal(words, laidOutWords, $"the number of words laid out in the pages: {markup}");
+
+        void Visit(Fragment fragment, int index, double x, double y)
+        {
+            FuzzAssert.True(double.IsFinite(fragment.Offset.X) && double.IsFinite(fragment.Offset.Y) && double.IsFinite(fragment.Size.Width) && double.IsFinite(fragment.Size.Height), "the rectangle of a fragment is finite");
+            x += fragment.Offset.X;
+            y += fragment.Offset.Y;
+            if (fragment is BoxFragment { Box: { Element: { } element, PseudoElement: null } } && element.Id is ['r', .. var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var itemIndex) && itemIndex < itemCount)
+            {
+                (fragments[itemIndex] ??= []).Add((index, x, y, fragment.Size.Width, fragment.Size.Height));
+            }
+
+            if (fragment is TextFragment text && y >= -PagedInlineSizeTolerance && y < height - PagedInlineSizeTolerance)
+            {
+                laidOutWords += text.Run.Data[text.Start..text.End].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+            }
+
+            foreach (var child in fragment.ChildrenSpan)
+            {
+                Visit(child, index, x, y);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The seeds of the target of the sliced content: the scenarios of the unit tests (pages of 300px whose first one is 200px
+    /// wide and the next ones 400px wide, content of 400px or 700px that the break slices, followed by a paragraph).
+    /// </summary>
+    private static IEnumerable<FuzzSeed> GetPagedInlineSizeSlicedSeeds()
+    {
+        byte[][] scenarios =
+        [
+            // A box with size containment, 150px wide (400px tall, 699px tall), 50% wide, centered; an SVG image
+            [35, 75, 55, 0, 1, 150, 133, 4],
+            [35, 75, 55, 0, 1, 150, 233, 4],
+            [35, 75, 55, 0, 2, 50, 133, 4],
+            [35, 75, 55, 0, 11, 150, 133, 4],
+            [35, 75, 55, 0, 3, 150, 133, 4],
+
+            // An inline-block alone in its line box, centered, followed and preceded by words
+            [35, 75, 55, 0, 4, 150, 133, 0],
+            [35, 75, 55, 0, 9, 150, 133, 0],
+            [35, 75, 55, 0, 4, 170, 133, 2],
+            [35, 75, 55, 0, 24, 150, 133, 2],
+
+            // Paragraphs around a sliced box
+            [35, 75, 55, 2, 0, 0, 0, 19, 1, 150, 133, 19, 0, 10, 0, 19],
+        ];
+
+        for (var i = 0; i < scenarios.Length; i++)
+        {
+            yield return new FuzzSeed("paged-inline-size-sliced-" + i.ToString(CultureInfo.InvariantCulture), scenarios[i]);
         }
     }
 

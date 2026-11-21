@@ -819,6 +819,43 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([(1, new PhysicalRect(100, 0, 100, 100))], GetPageRects(pages, document.GetElementById("i7")!));
     }
 
+    [Theory]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 400px'></div>", 200)]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 700px'></div>", 200)]
+    [InlineData("<svg id=m width=150 height=400 style='display: block'></svg>", 200)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 200)]
+    [InlineData("<div id=m style='contain: size; width: 50%; height: 400px'></div>", 100)]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 400px; margin: 0 auto'></div>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0; text-align: center'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 170px; height: 400px; vertical-align: top'></span> XXXX XXXX</p>", 100)]
+    public void Pages_ContentSlicedByTheBreakContinuesInAPageOfAnotherInlineSize(string content, double width)
+    {
+        // The monolithic content (a box with size containment, an SVG image, an inline-block in a line box) is taller than the 300px
+        // tall pages: the break slices it. The rest of it continues in the 400px wide pages after the first one when it is laid
+        // out the same way in them (the same size and inline position, the same line box), and the content after it is laid out
+        // in them (50%: 200px); else the pages keep the layout of the first page (100px)
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            {{content}}
+            <div id=b style='width: 50%; height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        var sliced = GetPageRects(pages, document.GetElementById("m")!);
+        Assert.Equal((0, 0d), (sliced[0].Page, sliced[0].Rect.Y));
+        Assert.Equal((pages.Count - 1, width), GetPageRects(pages, document.GetElementById("b")!) is [var (page, rect)] ? (page, rect.Width) : default);
+        for (var i = 1; i < sliced.Count; i++)
+        {
+            // (the rest of the content continues where the previous page ends)
+            Assert.Equal(i, sliced[i].Page);
+            Assert.Equal(sliced[0].Rect.Height, sliced[i].Rect.Height);
+            Assert.Equal(sliced[0].Rect.X, sliced[i].Rect.X);
+            Assert.Equal(-300 * i, sliced[i].Rect.Y);
+        }
+
+        Assert.Equal(content.Contains("XXXX", StringComparison.Ordinal) ? 2 : 0, pages.Sum(page => CountWords(page.Content)));
+    }
+
     [Fact]
     public void Pages_ParagraphContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
     {

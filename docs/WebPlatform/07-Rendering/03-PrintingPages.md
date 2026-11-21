@@ -60,6 +60,12 @@ var pages = context.RenderPages();
   the end of the row continues at the top of the page too. A table cell that spans the rows after its row continues beside
   them. The items must stay side by side in the new width, and an aligned item must start before the break; otherwise the
   page keeps the width of the previous one.
+- A page of another width may also start in the middle of content taller than a page, which the break slices: an image, a
+  box with size containment, or a line box (an inline-block taller than the page). The rest of the content continues at
+  the top of the new page, and the content after it is laid out in the width of the new page. The content must be laid out
+  the same way in the new width (the same size and position, and for a line box the same content), so that its rest
+  continues the part printed in the previous page: an image as wide as its container, a centered image, or a line that would
+  hold more words in the new width keeps the width of the previous page.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

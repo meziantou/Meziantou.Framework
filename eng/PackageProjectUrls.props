@@ -42,6 +42,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DnsClient'">https://framework.meziantou.net/dns/dnsclient/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DnsFilter'">https://framework.meziantou.net/dns/dnsfilter/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.DnsServer'">https://framework.meziantou.net/dns/dnsserver/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Email'">https://framework.meziantou.net/email/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.EmbeddedConstantsGenerator'">https://framework.meziantou.net/embeddedconstantsgenerator/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.FastEnumGenerator'">https://framework.meziantou.net/fastenumgenerator/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.FileConversion.Tool'">https://framework.meziantou.net/file-conversion/</PackageProjectUrl>
@@ -90,7 +91,6 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Language.Toml'">https://framework.meziantou.net/language/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Language.Tool'">https://framework.meziantou.net/language/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Language.Xml'">https://framework.meziantou.net/language/</PackageProjectUrl>
-    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Mail'">https://framework.meziantou.net/mail/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Markdown'">https://framework.meziantou.net/markdown/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.MediaTags'">https://framework.meziantou.net/mediatags/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Mermaid'">https://framework.meziantou.net/mermaid/</PackageProjectUrl>

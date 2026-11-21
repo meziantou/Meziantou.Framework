@@ -1,0 +1,28 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.Email</RootNamespace>
+    <Version>1.0.0</Version>
+    <Description>Reads and writes email, contact and calendar files. Outlook data files (PST and OST, ANSI, Unicode and 4K-page formats, with or without encryption): folders, messages, recipients, attachments, embedded messages, bodies (text, HTML, compressed RTF), MAPI and named properties, contacts, appointments with their recurrences, tasks and distribution lists. Email messages (EML, MIME): headers, addresses, encoded words, multiparts, attachments and embedded messages, kept byte for byte when unchanged. Outlook items (MSG) in compound files. TNEF streams (winmail.dat). Mailboxes: mbox, Maildir, Apple Mail (.emlx), Thunderbird summaries (.msf, Mork). Contacts and calendars: vCard 2.1, 3.0 and 4.0, iCalendar with time zones and recurrence rules, converted to and from Outlook items. Offline address books (OAB version 4). A common model to convert messages between the formats.</Description>
+    <PackageTags>mail;email;pst;ost;outlook;mapi;eml;mime;msg;tnef;winmail.dat;mbox;maildir;emlx;thunderbird;mork;vcard;icalendar;ics;oab;contacts;calendar</PackageTags>
+
+    <!-- Every public member must be documented -->
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The formats share the item model and convert to one another -->
+    <Using Include="Meziantou.Framework.Email.Calendar" />
+    <Using Include="Meziantou.Framework.Email.Contacts" />
+    <Using Include="Meziantou.Framework.Email.Mapi" />
+    <Using Include="Meziantou.Framework.Email.Storage" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The fuzz targets call the internal layers directly -->
+    <InternalsVisibleTo Include="Meziantou.Framework.Email.Fuzz" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Email.Tests" />
+  </ItemGroup>
+
+</Project>

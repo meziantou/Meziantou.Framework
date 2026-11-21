@@ -116,6 +116,7 @@
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
+    <Project Path="src/Meziantou.Framework.Email/Meziantou.Framework.Email.csproj" />
     <Project Path="src/Meziantou.Framework.EmbeddedConstantsGenerator/Meziantou.Framework.EmbeddedConstantsGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
@@ -426,7 +427,6 @@
     <Project Path="src/Meziantou.Framework.Language.Xml/Meziantou.Framework.Language.Xml.csproj" />
     <Project Path="src/Meziantou.Framework.Language/Meziantou.Framework.Language.csproj" />
     <Project Path="src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj" />
-    <Project Path="src/Meziantou.Framework.Mail/Meziantou.Framework.Mail.csproj" />
     <Project Path="src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
@@ -557,6 +557,7 @@
     <Project Path="tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Email.Tests/Meziantou.Framework.Email.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.InterceptorTests/Meziantou.Framework.FastEnumGenerator.InterceptorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
@@ -641,7 +642,6 @@
     <Project Path="tests/Meziantou.Framework.Language.Tool.Tests/Meziantou.Framework.Language.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Xml.Tests/Meziantou.Framework.Language.Xml.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.LLMContext.Tests/Meziantou.Framework.LLMContext.Tests.csproj" />
-    <Project Path="tests/Meziantou.Framework.Mail.Tests/Meziantou.Framework.Mail.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Markdown.Tests/Meziantou.Framework.Markdown.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.MediaTags.Tests/Meziantou.Framework.MediaTags.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Mermaid.Tests/Meziantou.Framework.Mermaid.Tests.csproj" />
@@ -769,6 +769,7 @@
     <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Diagrams.Fuzz/Meziantou.Framework.Diagrams.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Dns.Fuzz/Meziantou.Framework.Dns.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Email.Fuzz/Meziantou.Framework.Email.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.FastEnumGenerator.FuzzEnums/Meziantou.Framework.FastEnumGenerator.FuzzEnums.csproj" />
     <Project Path="fuzz/Meziantou.Framework.FileConversion.Tool.Fuzz/Meziantou.Framework.FileConversion.Tool.Fuzz.csproj" />
@@ -791,7 +792,6 @@
     <Project Path="fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz/Meziantou.Framework.JavaScriptEngine.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.JsonPath.Fuzz/Meziantou.Framework.JsonPath.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Language.Fuzz/Meziantou.Framework.Language.Fuzz.csproj" />
-    <Project Path="fuzz/Meziantou.Framework.Mail.Fuzz/Meziantou.Framework.Mail.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Markdown.Fuzz/Meziantou.Framework.Markdown.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.MediaTags.Fuzz/Meziantou.Framework.MediaTags.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Ntp.Fuzz/Meziantou.Framework.Ntp.Fuzz.csproj" />

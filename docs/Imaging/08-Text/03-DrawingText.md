@@ -309,7 +309,7 @@ public static void DrawWatermark(string fontPath, string inputPath, string outpu
 ![A landscape with a sky, a sun and a green hill, crossed by three rows of the translucent white word DRAFT tilted upward](images/DrawWatermark.png)
 
 See [Transformations](../07-Drawing/04-Transformations.md) for the other transformations of the canvas, and
-[Add a watermark](../03-Guides/06-AddAWatermark.md) for a complete solution.
+[Add a watermark](../03-Guides/06-AddAWatermark.md) for [AddWatermark](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AddWatermark), which places a watermark for you.
 
 ## Draw many labels quickly
 

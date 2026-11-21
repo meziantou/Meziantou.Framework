@@ -346,13 +346,18 @@ internal static class PdfFuzzOracle
         CheckReadBack(document.ToByteArray(), options, pageCount, "after a redaction");
     }
 
-    /// <summary>Adds a watermark under the first page and over every page, from the boxes and the rotation of the file: the document is written and read back.</summary>
+    /// <summary>
+    /// Adds watermarks, from the boxes and the rotation of the file: under the first page, over every page, tiled over
+    /// every page, and in the corner of the pages after the first one. The document is written and read back.
+    /// </summary>
     private static void CheckWatermark(PdfDocument document, PdfReadOptions options, int pageCount)
     {
         try
         {
             document.Pages[0].AddWatermark("DRAFT", new PdfWatermarkOptions { Placement = PdfContentPlacement.Under });
             document.AddWatermark("CONFIDENTIAL");
+            document.AddWatermark("COPY", new PdfWatermarkOptions { IsTiled = true, Placement = PdfContentPlacement.Under });
+            document.AddWatermark("TOP SECRET", new PdfWatermarkOptions { Position = PdfWatermarkPosition.BottomRight, Margin = 10, FirstPageIndex = 1 });
         }
         catch (InvalidOperationException)
         {

@@ -1,6 +1,7 @@
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
@@ -138,6 +139,57 @@ internal static class GuideExamples
             AllowBitDepthReduction = true, // 10-bit and 12-bit photos load with 16-bit samples
             MetadataHandling = MetadataHandling.Strip,
         });
+    }
+    #endregion
+
+    /// <summary>The word DRAFT across the center of an image, along its diagonal, with the default options.</summary>
+    #region Imaging_AddWatermark
+    public static void AddWatermark(string fontPath, string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // By default, the text is gray at 30% opacity, along the diagonal, and as large as 80% of the image allows
+        image.AddWatermark("DRAFT", new ImageWatermarkOptions(Font.Load(fontPath)));
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>A text repeated across the whole image, turned by 30 degrees.</summary>
+    #region Imaging_AddTiledWatermark
+    public static void AddTiledWatermark(string fontPath, string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        var options = new ImageWatermarkOptions(Font.Load(fontPath))
+        {
+            IsTiled = true,
+            FontSize = image.Width / 12.0,
+            Rotation = 30,
+            Color = new Rgba32(255, 255, 255),
+            Opacity = 0.35,
+        };
+
+        // Rows of copies cover the image, each one offset by half a copy: the text cannot be cropped out
+        image.AddWatermark("CONFIDENTIAL", options);
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>A copyright notice in the bottom-right corner of an image.</summary>
+    #region Imaging_AddCornerWatermark
+    public static void AddCornerWatermark(string fontPath, string inputPath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+        var options = new ImageWatermarkOptions(Font.Load(fontPath))
+        {
+            Position = WatermarkPosition.BottomRight,
+            FontSize = image.Height / 14.0,
+            Color = new Rgba32(255, 255, 255),
+            Opacity = 0.8,
+        };
+
+        // In a corner, the text is horizontal, at a fortieth of the smaller side of the image from its edges
+        image.AddWatermark("© Example Studio", options);
+        image.Save(outputPath);
     }
     #endregion
 

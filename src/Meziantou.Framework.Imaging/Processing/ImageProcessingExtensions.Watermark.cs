@@ -111,10 +111,13 @@ public static partial class ImageProcessingExtensions
             double height = size.Height;
             var tiled = options.IsTiled;
             var position = tiled ? WatermarkPosition.Center : options.Position;
-            var angle = options.Rotation ?? (position == WatermarkPosition.Center ? Math.Atan2(height, width) * 180 / Math.PI : 0);
-            var radians = angle * Math.PI / 180;
-            var cos = Math.Abs(Math.Cos(radians));
-            var sin = Math.Abs(Math.Sin(radians));
+            // The angles and the box of the turned text come from the rotation that draws it, computed without the
+            // trigonometric functions of the platform: the pixels are the same on every platform. A positive angle of
+            // AffineTransform turns clockwise on the image, the angle of the options counterclockwise.
+            var angle = options.Rotation ?? (position == WatermarkPosition.Center ? DeterministicAngle.Atan2(height, width) * 180 : 0);
+            var rotation = AffineTransform.CreateRotation(-angle);
+            var cos = Math.Abs(rotation.M11);
+            var sin = Math.Abs(rotation.M12);
 
             var layout = TextLayout.Create(text, new TextStyle(options.Fonts, options.FontSize ?? WatermarkReferenceSize));
             if (layout.HasMissingGlyphs)
@@ -153,10 +156,9 @@ public static partial class ImageProcessingExtensions
             if (bounds.IsEmpty)
                 return null;
 
-            // The center of the ink at the origin, then the rotation: a positive angle of AffineTransform turns clockwise
-            // on the image, the angle of the options counterclockwise
+            // The center of the ink at the origin, then the rotation
             var centered = AffineTransform.CreateTranslation(-(bounds.X + (bounds.Width / 2)), -(bounds.Y + (bounds.Height / 2)))
-                .Then(AffineTransform.CreateRotation(-angle));
+                .Then(rotation);
 
             if (tiled)
             {
@@ -179,7 +181,7 @@ public static partial class ImageProcessingExtensions
                 {
                     Opacity = options.Opacity,
                     Transform = AffineTransform.CreateTranslation(-(bounds.Width / 2), -(bounds.Height / 2))
-                        .Then(AffineTransform.CreateRotation(-angle))
+                        .Then(rotation)
                         .Then(AffineTransform.CreateTranslation(width / 2, height / 2)),
                 };
 

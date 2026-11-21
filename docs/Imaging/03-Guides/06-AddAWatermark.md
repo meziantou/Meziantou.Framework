@@ -28,7 +28,7 @@ public static void AddWatermark(string fontPath, string inputPath, string output
   none of the fonts throws an `ArgumentException` before any pixel changes.
 - By default, the text is gray (128, 128, 128) at 30% opacity, along the diagonal from the bottom-left corner to the
   top-right corner, and as large as fits in 80% of the image: the watermark keeps its proportions on images of any
-  size. `FontSize` (in pixels), `Rotation` (in degrees, counterclockwise), `Color` and `Opacity` change them.
+  size. [FontSize](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.FontSize) (in pixels), [Rotation](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.Rotation) (in degrees, counterclockwise), [Color](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.Color) and [Opacity](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.Opacity) change them.
 - The text is placed by the box of what it draws (its ink), not by its line: the center of the ink is on the center of
   the image.
 
@@ -57,10 +57,10 @@ public static void AddTiledWatermark(string fontPath, string inputPath, string o
 
 ![A landscape covered by rows of the translucent white word CONFIDENTIAL, tilted upward, each row offset from the previous one](../08-Text/images/AddTiledWatermark.png)
 
-- With `IsTiled`, the text is repeated in rows along the turned text, each row offset by half a copy, with a copy in
-  the center of the image. `TileSpacing` is the gap between two copies, along the text and between the rows, in
+- With [IsTiled](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.IsTiled), the text is repeated in rows along the turned text, each row offset by half a copy, with a copy in
+  the center of the image. [TileSpacing](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.TileSpacing) is the gap between two copies, along the text and between the rows, in
   pixels; it is the height of the text by default.
-- Without a `FontSize`, a tiled text is a twentieth of the diagonal of the image.
+- Without a [FontSize](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.FontSize), a tiled text is a twentieth of the diagonal of the image.
 - The copies are drawn once in a pattern ([PatternBrush](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush)) that fills the image: the cost depends on the size of the
   image, not on the number of copies.
 
@@ -88,10 +88,10 @@ public static void AddCornerWatermark(string fontPath, string inputPath, string 
 
 ![A landscape with the small white text © Example Studio in its bottom-right corner](../08-Text/images/AddCornerWatermark.png)
 
-- `Position` places the text in a corner, against an edge or in the center ([WatermarkPosition](cref:Meziantou.Framework.Imaging.WatermarkPosition)). In a corner or
-  against an edge, the text is horizontal by default, and the box of the turned text is at `Margin` pixels from the
+- [Position](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.Position) places the text in a corner, against an edge or in the center ([WatermarkPosition](cref:Meziantou.Framework.Imaging.WatermarkPosition)). In a corner or
+  against an edge, the text is horizontal by default, and the box of the turned text is at [Margin](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.Margin) pixels from the
   edges: a fortieth of the smaller side of the image by default.
-- Without a `FontSize`, the text is a twentieth of the diagonal of the image.
+- Without a [FontSize](cref:Meziantou.Framework.Imaging.ImageWatermarkOptions.FontSize), the text is a twentieth of the diagonal of the image.
 - An image that is not yet upright (a photo with an EXIF orientation) gets the text in the wrong corner: call
   [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) first.
 

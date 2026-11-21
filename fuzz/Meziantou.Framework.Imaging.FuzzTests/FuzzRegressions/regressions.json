@@ -277,6 +277,17 @@
       "expectedLoad": "UnsupportedImageFeatureException"
     },
     {
+      "id": "exr/luminance-display-window-alpha",
+      "file": "exr-luminance-display-window-alpha.min.exr",
+      "sha256": "3a7b156fec2d7fec211a7cf82c171a08a451811d240ff12f963c4eac05a21a93",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group exr, base seed 44883392427, 420 seconds, mutation 5663 of exr/zip-uint-luminance (reader variant 7)",
+      "defect": "A UINT luminance image whose display window (513x10) is larger than its data window (10x10): the untyped load chose GrayFloat, which cannot hold the transparent black pixels the data window leaves, and rejected them (UnsupportedImageFeatureException), while the Rgba64 load decoded them. Fixed in ExrStructureParser.DefaultPixelFormat: a luminance image whose data window does not cover it loads as LaHalf or LaFloat.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
+    },
+    {
       "id": "avif/header-probe-replaced-sequence-header",
       "file": "avif-header-probe-replaced-sequence-header.avif",
       "sha256": "91a534ee98299b191e7e12b453e59bf858cb42f7a16cda760d4a6b1e6a01fbe1",

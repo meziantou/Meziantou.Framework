@@ -213,9 +213,10 @@ public static partial class WebPlatformFuzzTargets
     /// <summary>
     /// Decodes the input to a document whose first page has another inline size than the next ones, with monolithic content
     /// that the breaks may slice (a box with size containment of a fixed or percentage width, centered or not, an SVG image, an
-    /// inline-block in a paragraph, between words) between paragraphs, and checks its pages: each item is in a page, the first
-    /// pages of the items follow their order, each word is laid out once, and the parts of a sliced item continue each other
-    /// (the same size and inline position, from the end of the previous page).
+    /// inline-block in a paragraph, between words; a monolithic item beside a paragraph in a grid row, a flex row, a table row)
+    /// between paragraphs, and checks its pages: each item is in a page, the first pages of the items follow their order, each
+    /// word is laid out once, and the parts of a sliced item continue each other (the same size, and the same inline position
+    /// out of a row, from the end of the previous page).
     /// </summary>
     public static void PagedInlineSizeSliced(ReadOnlySpan<byte> data)
     {
@@ -229,6 +230,7 @@ public static partial class WebPlatformFuzzTargets
         var markup = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"<!DOCTYPE html><style>body {{ margin: 0; font: 10px/1 Ahem }} @page {{ size: {width}px {height}px; margin: 0 }} @page :first {{ size: {firstWidth}px {height}px }}</style>"));
         var words = 0;
         var isMonolithic = new bool[itemCount];
+        var isInRow = new bool[itemCount];
         for (var i = 0; i < itemCount; i++)
         {
             var kind = Next(data);
@@ -238,14 +240,18 @@ public static partial class WebPlatformFuzzTargets
             var wordCount = Next(data) % 20;
             var text = string.Join(' ', Enumerable.Repeat("XXXX", wordCount));
             words += wordCount;
-            isMonolithic[i] = (kind % 5) != 0;
-            markup.Append((kind % 5) switch
+            isMonolithic[i] = (kind % 8) != 0;
+            isInRow[i] = (kind % 8) >= 5;
+            markup.Append((kind % 8) switch
             {
                 0 => string.Create(CultureInfo.InvariantCulture, $"<p id={id} style='margin: {size % 30}px 0'>{text}</p>"),
                 1 => string.Create(CultureInfo.InvariantCulture, $"<div id={id} style='contain: size; width: {size}px; height: {extent}px{((kind & 8) != 0 ? "; margin: 0 auto" : "")}'></div><p style='margin: 0'>{text}</p>"),
                 2 => string.Create(CultureInfo.InvariantCulture, $"<div id={id} style='contain: size; width: {size % 101}%; height: {extent}px'></div><p style='margin: 0'>{text}</p>"),
                 3 => string.Create(CultureInfo.InvariantCulture, $"<svg id={id} width={size} height={extent} style='display: block'></svg><p style='margin: 0'>{text}</p>"),
-                _ => string.Create(CultureInfo.InvariantCulture, $"<p style='margin: 0{((kind & 8) != 0 ? "; text-align: center" : "")}'>{((kind & 16) != 0 ? text : "")}<span id={id} style='display: inline-block; width: {size}px; height: {extent}px; vertical-align: top'></span>{((kind & 16) != 0 ? "" : text)}</p>"),
+                4 => string.Create(CultureInfo.InvariantCulture, $"<p style='margin: 0{((kind & 8) != 0 ? "; text-align: center" : "")}'>{((kind & 16) != 0 ? text : "")}<span id={id} style='display: inline-block; width: {size}px; height: {extent}px; vertical-align: top'></span>{((kind & 16) != 0 ? "" : text)}</p>"),
+                5 => string.Create(CultureInfo.InvariantCulture, $"<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{text}</div><div id={id} style='contain: size; width: {size}px; height: {extent}px'></div></div>"),
+                6 => string.Create(CultureInfo.InvariantCulture, $"<div style='display: flex; align-items: flex-start'><div style='flex: 1 1 0; min-width: 0'>{text}</div><div id={id} style='flex: none; contain: size; width: {size}px; height: {extent}px'></div></div>"),
+                _ => string.Create(CultureInfo.InvariantCulture, $"<table style='width: 100%; border-spacing: 0'><tr><td style='padding: 0'>{text}</td><td style='padding: {size % 30}px 0 0'><div id={id} style='contain: size; width: {size}px; height: {extent}px'></div></td></tr></table>"),
             });
         }
 
@@ -280,7 +286,7 @@ public static partial class WebPlatformFuzzTargets
             {
                 var (page, x, y, fragmentWidth, fragmentHeight) = fragments[i][j];
                 var before = fragments[i][j - 1];
-                FuzzAssert.True(page == before.Page + 1 && Math.Abs(x - before.X) <= PagedInlineSizeTolerance && Math.Abs(fragmentWidth - before.Width) <= PagedInlineSizeTolerance
+                FuzzAssert.True(page == before.Page + 1 && (isInRow[i] || Math.Abs(x - before.X) <= PagedInlineSizeTolerance) && Math.Abs(fragmentWidth - before.Width) <= PagedInlineSizeTolerance
                     && Math.Abs(fragmentHeight - before.Height) <= PagedInlineSizeTolerance && Math.Abs(y - (before.Y - height)) <= PagedInlineSizeTolerance,
                     string.Create(CultureInfo.InvariantCulture, $"the part of the item {i} in the page {page} ({x}, {y}, {fragmentWidth}x{fragmentHeight}) continues the part in the previous page ({before.X}, {before.Y}, {before.Width}x{before.Height}): {markup}"));
             }
@@ -312,7 +318,8 @@ public static partial class WebPlatformFuzzTargets
 
     /// <summary>
     /// The seeds of the target of the sliced content: the scenarios of the unit tests (pages of 300px whose first one is 200px
-    /// wide and the next ones 400px wide, content of 400px or 700px that the break slices, followed by a paragraph).
+    /// wide and the next ones 400px wide, content of 400px or 700px that the break slices, followed by a paragraph or beside one
+    /// in a row).
     /// </summary>
     private static IEnumerable<FuzzSeed> GetPagedInlineSizeSlicedSeeds()
     {
@@ -322,14 +329,19 @@ public static partial class WebPlatformFuzzTargets
             [35, 75, 55, 0, 1, 150, 133, 4],
             [35, 75, 55, 0, 1, 150, 233, 4],
             [35, 75, 55, 0, 2, 50, 133, 4],
-            [35, 75, 55, 0, 11, 150, 133, 4],
+            [35, 75, 55, 0, 9, 150, 133, 4],
             [35, 75, 55, 0, 3, 150, 133, 4],
 
             // An inline-block alone in its line box, centered, followed and preceded by words
             [35, 75, 55, 0, 4, 150, 133, 0],
-            [35, 75, 55, 0, 9, 150, 133, 0],
+            [35, 75, 55, 0, 12, 150, 133, 0],
             [35, 75, 55, 0, 4, 170, 133, 2],
-            [35, 75, 55, 0, 24, 150, 133, 2],
+            [35, 75, 55, 0, 20, 150, 133, 2],
+
+            // A monolithic item beside a paragraph in a grid row, a flex row, a table row
+            [35, 75, 55, 0, 5, 80, 133, 19],
+            [35, 75, 55, 0, 6, 80, 133, 19],
+            [35, 75, 55, 0, 7, 80, 133, 19],
 
             // Paragraphs around a sliced box
             [35, 75, 55, 2, 0, 0, 0, 19, 1, 150, 133, 19, 0, 10, 0, 19],

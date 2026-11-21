@@ -791,9 +791,9 @@ public sealed class PagedMediaTests : IDisposable
     [InlineData(100, 200)]
     public void Pages_RowWithAMonolithicItemIsLaidOutInAPageOfAnotherInlineSizeWhenItEndsBeforeTheBreak(int height, double secondPageWidth)
     {
-        // The second item is monolithic (size containment, as an image): when the break crosses it, it is sliced and cannot
-        // continue in another inline size, so the row keeps the layout of the first page; when it ends before the break, the
-        // paragraph of the first item continues in the 400px wide page area of the second page
+        // The second item is monolithic (size containment, as an image): when the break crosses it, it is sliced, and as wide as
+        // its column it is not the same in another inline size, so the row keeps the layout of the first page; when it ends
+        // before the break, the paragraph of the first item continues in the 400px wide page area of the second page
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
             <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</div><div id=b style='contain: size; height: {{height}}px'></div></div>
@@ -802,6 +802,32 @@ public sealed class PagedMediaTests : IDisposable
         var pages = session.GetPages();
         Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect)] ? (page, rect.Width) : default);
         Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Theory]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id=m style='contain: size; width: 80px; height: 400px'></div>", "</div>", 200)]
+    [InlineData("<div style='display: flex; align-items: flex-start'>", "<div id=m style='flex: none; contain: size; width: 80px; height: 400px'></div>", "</div>", 320)]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div style='padding-top: 20px'><div id=m style='contain: size; width: 80px; height: 400px'></div><div style='height: 20px'></div></div>", "</div>", 200)]
+    [InlineData("<table style='width: 100%; border-spacing: 0'><tr>", "<td style='padding: 0; width: 80px'><div id=m style='contain: size; width: 80px; height: 400px'></div></td>", "</tr></table>", 320)]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id=m style='contain: size; width: 80%; height: 400px'></div>", "</div>", 100)]
+    public void Pages_RowWithAMonolithicItemSlicedByTheBreakIsLaidOutInAPageOfAnotherInlineSize(string start, string item, string end, double secondPageWidth)
+    {
+        // The monolithic content of the second item (a box with size containment, as an image) is taller than the 300px tall
+        // pages: the break slices it. When it has the same size in the 400px wide page area of the second page, its rest
+        // continues there, the paragraph of the first item continues beside it in that inline size, from the same position;
+        // else (80% of its column) the row keeps the layout of the first page
+        var tag = start.StartsWith("<table", StringComparison.Ordinal) ? "td style='padding: 0'" : "div";
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            {{start}}<{{tag}} id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</{{tag.Split(' ')[0]}}>{{item}}{{end}}
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect), ..] ? (page, rect.Width) : default);
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+        var sliced = GetPageRects(pages, document.GetElementById("m")!);
+        Assert.Equal(2, sliced.Count);
+        Assert.Equal((1, sliced[0].Rect.Y - 300, sliced[0].Rect.Width, sliced[0].Rect.Height), (sliced[1].Page, sliced[1].Rect.Y, sliced[1].Rect.Width, sliced[1].Rect.Height));
     }
 
     [Fact]

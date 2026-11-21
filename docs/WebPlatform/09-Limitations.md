@@ -28,7 +28,8 @@ fails.
     order (an item with a definite row or column, `grid-auto-flow: column` or `dense`), or inside a table row, a flex line
     or a grid row whose items cannot continue side by side in the new width (an item aligned in the row that starts after
     the break, a grid item that spans rows before the broken row or the rows of a grid whose number of columns depends on
-    its width, items of a flex line that no longer fit in one line, an item whose monolithic content is sliced by the break): it keeps the
+    its width, items of a flex line that no longer fit in one line, an item with a line box sliced by the break or an image sliced by the
+    break that changes size, an image item cut above the content after the break of the other items): it keeps the
     inline size of the previous page;
   - the spelling changes at a hyphenation break that need a dictionary (the triple consonants of the Swedish and Norwegian
     compound words);

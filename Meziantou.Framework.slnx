@@ -745,6 +745,7 @@
     <Project Path="tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator/Meziantou.Framework.Imaging.Barcodes.FontGenerator.csproj" />
     <Project Path="tools/Meziantou.Framework.Imaging.CorpusGenerator/Meziantou.Framework.Imaging.CorpusGenerator.csproj" />
     <Project Path="tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/Meziantou.Framework.JavaScriptEngine.Data.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.TestCorpus/Meziantou.Framework.TestCorpus.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Dictionaries.Generator/Meziantou.Framework.Unicode.Dictionaries.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />

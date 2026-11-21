@@ -1,5 +1,6 @@
 #!/usr/bin/env dotnet
 #:sdk Meziantou.NET.Sdk
+#:project ../../tools/Meziantou.Framework.TestCorpus/Meziantou.Framework.TestCorpus.csproj
 // Materializes tests/Meziantou.Framework.JavaScriptEngine.External/<suite> at the commits and paths pinned in
 // tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json (test262 and test262-parser-tests) and
 // tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json. Each suite is a shallow,
@@ -16,10 +17,19 @@
 //
 // Without arguments, every suite is fetched except the ones marked "optional" (parse-number-fxx-test-data). The arguments
 // name the suites to fetch, optional or not: dotnet run eng/javascriptengine/fetch-tests.cs parse-number-fxx-test-data
-using System.Diagnostics;
+//
+// The suites and the npm tarballs are fetched from their snapshots in the mirror repository of
+// eng/javascriptengine/corpus.mirror.json, else from upstream, with a warning (tools/Meziantou.Framework.TestCorpus/readme.md).
+// The tarballs are kept in npm-tarballs/<suite>, named by their integrity hash.
+//
+// Options:
+//   --publish  fetches the suites (all of them without arguments, optional or not) and the npm tarballs from upstream,
+//              pushes the snapshots that the mirror does not have, and writes eng/javascriptengine/corpus.mirror.json
+//   --mirror <owner/name|url|path>  uses another mirror repository (a fork, or a local repository to test the mirror)
 using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text.Json;
+using Meziantou.Framework.TestCorpus;
 
 var root = FindRoot(Environment.CurrentDirectory) ?? FindRoot(AppContext.BaseDirectory) ?? throw new InvalidOperationException("Cannot find the root of the repository (Meziantou.Framework.slnx)");
 string[] pinsPaths =
@@ -33,50 +43,184 @@ var npmLockFiles = new Dictionary<string, string>(StringComparer.Ordinal)
 };
 var externalPath = Path.Combine(root, "tests", "Meziantou.Framework.JavaScriptEngine.External");
 var pinsDocuments = pinsPaths.Select(path => JsonDocument.Parse(File.ReadAllText(path))).ToArray();
-var requestedSuites = args.ToHashSet(StringComparer.Ordinal);
-foreach (var name in requestedSuites)
+var publish = false;
+string? mirrorOverride = null;
+var requestedSuites = new HashSet<string>(StringComparer.Ordinal);
+for (var i = 0; i < args.Length; i++)
 {
-    if (!npmLockFiles.ContainsKey(name) && !pinsDocuments.Any(pins => pins.RootElement.TryGetProperty(name, out _)))
-        throw new InvalidOperationException($"'{name}' is not a suite of {string.Join(" or ", [.. pinsPaths, .. npmLockFiles.Values])}");
+    switch (args[i])
+    {
+        case "--publish":
+            publish = true;
+            break;
+
+        case "--mirror" when i + 1 < args.Length:
+            mirrorOverride = args[++i];
+            break;
+
+        case var name when !name.StartsWith("--", StringComparison.Ordinal):
+            if (!npmLockFiles.ContainsKey(name) && !pinsDocuments.Any(pins => pins.RootElement.TryGetProperty(name, out _)))
+                throw new InvalidOperationException($"'{name}' is not a suite of {string.Join(" or ", [.. pinsPaths, .. npmLockFiles.Values])}");
+
+            requestedSuites.Add(name);
+            break;
+
+        default:
+            Console.Error.WriteLine($"Unknown argument '{args[i]}'. Usage: dotnet run eng/javascriptengine/fetch-tests.cs [-- [--publish] [--mirror <owner/name|url|path>] [suite...]]");
+            return 1;
+    }
 }
 
+var mirror = CorpusMirror.Load(Path.Combine(root, "eng", "javascriptengine", "corpus.mirror.json"), "dotnet run eng/javascriptengine/fetch-tests.cs -- --publish", mirrorOverride);
+var pinnedNames = new List<string>();
 foreach (var pins in pinsDocuments)
 {
     foreach (var suite in pins.RootElement.EnumerateObject())
     {
+        pinnedNames.Add(suite.Name);
+        if (suite.Value.TryGetProperty("npm", out _))
+        {
+            pinnedNames.Add(NpmTarballsName(suite.Name));
+        }
+
         var optional = suite.Value.TryGetProperty("optional", out var optionalValue) && optionalValue.GetBoolean();
-        if (requestedSuites.Count > 0 ? !requestedSuites.Contains(suite.Name) : optional)
+        if (requestedSuites.Count > 0 ? !requestedSuites.Contains(suite.Name) : optional && !publish)
             continue;
 
         var repository = suite.Value.GetProperty("repository").GetString()!;
         var commit = suite.Value.GetProperty("commit").GetString()!;
         var paths = suite.Value.GetProperty("paths").EnumerateArray().Select(p => p.GetString()!).ToArray();
         var target = Path.Combine(externalPath, suite.Name);
-        Initialize(target, repository);
-        Sync(target, repository, commit, paths);
+        var upstream = CorpusSource.Upstream(repository, commit);
+        string[] pin = [$"{repository}@{commit}", .. paths];
+        SparseClone.Initialize(target, upstream.Url);
+        if (publish)
+        {
+            Sync(target, commit, paths, [upstream]);
+            mirror.Publish(target, suite.Name, pin, SparseClone.CreateSnapshot(target, SparseClone.GetSnapshotMessage(repository, commit, paths)));
+        }
+        else
+        {
+            Sync(target, commit, paths, mirror.GetSource(suite.Name, pin) is { } snapshot ? [snapshot, upstream] : [upstream]);
+        }
+
         if (suite.Value.TryGetProperty("npm", out var npm))
         {
             var lockFile = npm.GetProperty("lockfile").GetString()!;
             var packages = npm.GetProperty("packages").EnumerateArray().Select(p => p.GetString()!).ToArray();
-            await InstallNpmPackages(target, lockFile, packages);
+            await InstallNpmPackages(target, lockFile, packages, new NpmTarballs(Path.Combine(externalPath, "npm-tarballs", suite.Name), NpmTarballsName(suite.Name), mirror, publish));
         }
     }
 }
 
 foreach (var (name, lockFile) in npmLockFiles)
 {
+    pinnedNames.Add(NpmTarballsName(name));
     if (requestedSuites.Count == 0 || requestedSuites.Contains(name))
     {
-        await InstallNpmLockFile(Path.Combine(externalPath, name), lockFile);
+        await InstallNpmLockFile(Path.Combine(externalPath, name), lockFile, new NpmTarballs(Path.Combine(externalPath, "npm-tarballs", name), NpmTarballsName(name), mirror, publish));
     }
+}
+
+if (publish)
+{
+    mirror.Retain(pinnedNames);
+    mirror.Save();
 }
 
 return 0;
 
+static string NpmTarballsName(string suite) => "npm-tarballs/" + suite;
+
+static void Sync(string target, string commit, string[] paths, IReadOnlyList<CorpusSource> sources)
+{
+    var stampPath = Path.Combine(target, ".git", "fetch-tests-stamp");
+    var stamp = commit + "\n" + string.Join('\n', paths);
+    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
+    {
+        Console.WriteLine($"{Path.GetFileName(target)} is up to date ({commit})");
+        return;
+    }
+
+    var source = SparseClone.Checkout(target, sources, source => source.IsSnapshot ? SparseClone.AllFiles : paths.Select(p => "/" + p.TrimStart('/')));
+    foreach (var path in paths)
+    {
+        if (!Path.Exists(Path.Combine(target, path)))
+            throw new InvalidOperationException($"'{path}' does not exist in {source.Name} at {source.Commit}");
+    }
+
+    File.WriteAllText(stampPath, stamp);
+}
+
+// Downloads the tarballs of packages and extracts them in node_modules. A tarball is read from the directory of the npm
+// tarballs of the suite when it has it (the snapshot of the mirror), else downloaded from its URL; its integrity is checked
+// in both cases. --publish keeps the downloaded tarballs and publishes their snapshot.
+static async Task InstallTarballs(string nodeModules, IReadOnlyCollection<(string Path, string Url, string Integrity)> packages, NpmTarballs tarballs, string[] pin)
+{
+    if (!tarballs.Publish)
+    {
+        FileStore.TryFetch(tarballs.Directory, tarballs.Mirror, tarballs.Name, pin);
+    }
+
+    if (Directory.Exists(nodeModules))
+    {
+        Directory.Delete(nodeModules, recursive: true);
+    }
+
+    Console.WriteLine($"Installing {packages.Count} npm packages in {nodeModules}");
+    Directory.CreateDirectory(tarballs.Directory);
+
+    // Packages installed at several paths share their tarball: each tarball is read or downloaded once
+    var contents = new System.Collections.Concurrent.ConcurrentDictionary<string, byte[]>(StringComparer.Ordinal);
+    var downloads = 0;
+    using var httpClient = new HttpClient();
+    await Parallel.ForEachAsync(packages.DistinctBy(item => item.Integrity, StringComparer.Ordinal), new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (item, cancellationToken) =>
+    {
+        var tarballPath = Path.Combine(tarballs.Directory, GetTarballName(item.Integrity));
+        byte[] content;
+        if (File.Exists(tarballPath))
+        {
+            content = await File.ReadAllBytesAsync(tarballPath, cancellationToken);
+        }
+        else
+        {
+            content = await DownloadWithRetry(httpClient, item.Url, cancellationToken);
+            Interlocked.Increment(ref downloads);
+        }
+
+        VerifyIntegrity(item.Url, content, item.Integrity);
+        if (tarballs.Publish && !File.Exists(tarballPath))
+        {
+            await File.WriteAllBytesAsync(tarballPath, content, cancellationToken);
+        }
+
+        contents[item.Integrity] = content;
+    });
+
+    Parallel.ForEach(packages, new ParallelOptions { MaxDegreeOfParallelism = 8 }, item => Extract(contents[item.Integrity], Path.Combine(nodeModules, item.Path.Replace('/', Path.DirectorySeparatorChar))));
+
+    if (downloads > 0)
+    {
+        Console.WriteLine($"Downloaded {downloads} npm tarballs from the registry");
+    }
+
+    if (tarballs.Publish)
+    {
+        FileStore.Publish(tarballs.Directory, tarballs.Mirror, tarballs.Name, pin, packages.Select(item => GetTarballName(item.Integrity)), $"npm tarballs of {Path.GetFileName(Path.GetDirectoryName(nodeModules))}");
+    }
+}
+
+// The name of a tarball in the directory of the npm tarballs: its integrity hash, "<algorithm>-<hexadecimal hash>.tgz"
+static string GetTarballName(string integrity)
+{
+    var separator = integrity.IndexOf('-', StringComparison.Ordinal);
+    return integrity[..separator] + "-" + Convert.ToHexStringLower(Convert.FromBase64String(integrity[(separator + 1)..])) + ".tgz";
+}
+
 // The packages of a package-lock.json whose lockfileVersion is 3: the keys of "packages" are the paths where npm installs
 // them. The optional packages (the native binaries of the packages that have a JavaScript fallback) are not installed.
 // The import map of the packages is written to <target>/importmap.json, each time (see WriteImportMap).
-static async Task InstallNpmLockFile(string target, string lockFile)
+static async Task InstallNpmLockFile(string target, string lockFile, NpmTarballs tarballs)
 {
     var nodeModules = Path.Combine(target, "node_modules");
     var stampPath = Path.Combine(nodeModules, ".fetch-tests-stamp");
@@ -106,26 +250,13 @@ static async Task InstallNpmLockFile(string target, string lockFile)
         packages.Add((entry.Name["node_modules/".Length..], entry.Value.GetProperty("resolved").GetString()!, entry.Value.GetProperty("integrity").GetString()!));
     }
 
-    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
+    if (!tarballs.Publish && File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
     {
         Console.WriteLine($"{Path.GetFileName(target)}/node_modules is up to date");
     }
     else
     {
-        if (Directory.Exists(nodeModules))
-        {
-            Directory.Delete(nodeModules, recursive: true);
-        }
-
-        Console.WriteLine($"Installing {packages.Count} npm packages in {nodeModules}");
-        using var httpClient = new HttpClient();
-        await Parallel.ForEachAsync(packages, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (item, cancellationToken) =>
-        {
-            var content = await DownloadWithRetry(httpClient, item.Url, cancellationToken);
-            VerifyIntegrity(item.Url, content, item.Integrity);
-            Extract(content, Path.Combine(nodeModules, item.Path.Replace('/', Path.DirectorySeparatorChar)));
-        });
-
+        await InstallTarballs(nodeModules, packages, tarballs, [CorpusMirror.HashFile(lockFile)]);
         File.WriteAllText(stampPath, stamp);
     }
 
@@ -389,12 +520,12 @@ static string NormalizeRelativePath(string path)
     return string.Join('/', parts) + (path.EndsWith('/', StringComparison.Ordinal) && parts.Count > 0 ? "/" : "");
 }
 
-static async Task InstallNpmPackages(string target, string lockFile, string[] packages)
+static async Task InstallNpmPackages(string target, string lockFile, string[] packages, NpmTarballs tarballs)
 {
     var stampPath = Path.Combine(target, "node_modules", ".fetch-tests-stamp");
     var lockContent = File.ReadAllText(Path.Combine(target, lockFile));
     var stamp = Convert.ToHexStringLower(SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(lockContent))) + "\n" + string.Join('\n', packages);
-    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
+    if (!tarballs.Publish && File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
     {
         Console.WriteLine($"{Path.GetFileName(target)}/node_modules is up to date");
         return;
@@ -433,23 +564,13 @@ static async Task InstallNpmPackages(string target, string lockFile, string[] pa
         }
     }
 
-    var nodeModules = Path.Combine(target, "node_modules");
-    if (Directory.Exists(nodeModules))
-    {
-        Directory.Delete(nodeModules, recursive: true);
-    }
-
-    Console.WriteLine($"Installing {installed.Count} npm packages in {nodeModules}");
-    using var httpClient = new HttpClient();
-    await Parallel.ForEachAsync(installed, new ParallelOptions { MaxDegreeOfParallelism = 8 }, async (item, cancellationToken) =>
-    {
-        var url = item.Value.GetProperty("resolved").GetString()!;
-        var integrity = item.Value.GetProperty("integrity").GetString()!;
-        var content = await DownloadWithRetry(httpClient, url, cancellationToken);
-        VerifyIntegrity(url, content, integrity);
-        Extract(content, Path.Combine(nodeModules, item.Key.Replace('/', Path.DirectorySeparatorChar)));
-    });
-
+    var tarballsPin = new List<string> { CorpusMirror.HashFile(Path.Combine(target, lockFile)) };
+    tarballsPin.AddRange(packages);
+    await InstallTarballs(
+        Path.Combine(target, "node_modules"),
+        [.. installed.Select(item => (item.Key, item.Value.GetProperty("resolved").GetString()!, item.Value.GetProperty("integrity").GetString()!))],
+        tarballs,
+        [.. tarballsPin]);
     File.WriteAllText(stampPath, stamp);
 }
 
@@ -598,104 +719,4 @@ static string? FindRoot(string directory)
     return null;
 }
 
-static void Initialize(string target, string repository)
-{
-    if (Directory.Exists(Path.Combine(target, ".git")))
-        return;
-
-    if (Directory.Exists(target))
-    {
-        Directory.Delete(target, recursive: true);
-    }
-
-    Directory.CreateDirectory(target);
-    Git(target, "init -q");
-    Git(target, $"remote add origin https://github.com/{repository}.git");
-    Git(target, "config core.sparseCheckout true");
-    Git(target, "config core.sparseCheckoutCone false");
-    Git(target, "config core.symlinks false");
-    Git(target, "config core.longpaths true");
-    Git(target, "config core.autocrlf false");
-    Git(target, "config gc.auto 0");
-}
-
-static void Sync(string target, string repository, string commit, string[] paths)
-{
-    var stampPath = Path.Combine(target, ".git", "fetch-tests-stamp");
-    var stamp = commit + "\n" + string.Join('\n', paths);
-    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
-    {
-        Console.WriteLine($"{Path.GetFileName(target)} is up to date ({commit})");
-        return;
-    }
-
-    Console.WriteLine($"Fetching {repository} at {commit}");
-    var head = TryGit(target, "rev-parse -q --verify HEAD")?.Trim();
-    if (head != commit)
-    {
-        GitWithRetry(target, $"fetch -q --depth 1 --filter=blob:none origin {commit}");
-    }
-
-    File.WriteAllLines(Path.Combine(target, ".git", "info", "sparse-checkout"), paths.Select(p => "/" + p.TrimStart('/')));
-    if (head != commit)
-    {
-        GitWithRetry(target, $"checkout -q -f --detach {commit}");
-        Git(target, "reflog expire --expire=now --all");
-        Git(target, "gc -q --prune=now");
-    }
-
-    GitWithRetry(target, "sparse-checkout reapply");
-    foreach (var path in paths)
-    {
-        if (!Path.Exists(Path.Combine(target, path)))
-            throw new InvalidOperationException($"'{path}' does not exist in {repository} at {commit}");
-    }
-
-    File.WriteAllText(stampPath, stamp);
-}
-
-static void GitWithRetry(string directory, string arguments)
-{
-    for (var attempt = 0; ; attempt++)
-    {
-        try
-        {
-            Git(directory, arguments);
-            return;
-        }
-        catch (InvalidOperationException) when (attempt < 4)
-        {
-            var delay = TimeSpan.FromSeconds(2 << attempt);
-            Console.WriteLine($"git {arguments} failed, retrying in {delay.TotalSeconds}s");
-            Thread.Sleep(delay);
-        }
-    }
-}
-
-static void Git(string directory, string arguments)
-{
-    if (TryGit(directory, arguments) is null)
-        throw new InvalidOperationException($"git {arguments} failed");
-}
-
-static string? TryGit(string directory, string arguments)
-{
-    var startInfo = new ProcessStartInfo("git", $"-C \"{directory}\" {arguments}")
-    {
-        RedirectStandardOutput = true,
-        RedirectStandardError = true,
-        UseShellExecute = false,
-    };
-    using var process = Process.Start(startInfo)!;
-    var errorTask = process.StandardError.ReadToEndAsync();
-    var output = process.StandardOutput.ReadToEnd();
-    process.WaitForExit();
-    var error = errorTask.GetAwaiter().GetResult();
-    if (process.ExitCode != 0)
-    {
-        Console.Error.Write(error);
-        return null;
-    }
-
-    return output;
-}
+sealed record NpmTarballs(string Directory, string Name, CorpusMirror Mirror, bool Publish);

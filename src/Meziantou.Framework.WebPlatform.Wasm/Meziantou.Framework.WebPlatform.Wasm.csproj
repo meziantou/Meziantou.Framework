@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WebPlatform.Wasm</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>Runs the WebAssembly modules of the scripts of Meziantou.Framework.WebPlatform with Meziantou.Framework.WasmEngine (a WebAssemblyRuntime for the WebAssembly JavaScript API).</Description>
+    <PackageTags>html;dom;javascript;webassembly;wasm</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.WasmEngine\Meziantou.Framework.WasmEngine.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+    <!-- The deprecated package forwards its runtime to WasmWebAssemblyRuntime -->
+  </ItemGroup>
+</Project>

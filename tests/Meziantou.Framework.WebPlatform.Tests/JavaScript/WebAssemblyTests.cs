@@ -2,15 +2,15 @@ using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.JavaScript;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
-using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.Wasm;
 using Meziantou.Framework.WebPlatform.WebAssembly;
 
 namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 
-/// <summary>The WebAssembly JavaScript interface (https://webassembly.github.io/spec/js-api/) on Wasmtime.</summary>
+/// <summary>The WebAssembly JavaScript interface (https://webassembly.github.io/spec/js-api/) on Meziantou.Framework.WasmEngine.</summary>
 public sealed class WebAssemblyTests : IDisposable
 {
-    private static readonly WasmtimeRuntime Runtime = new();
+    private static readonly WasmWebAssemblyRuntime Runtime = new();
 
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];
@@ -41,10 +41,10 @@ public sealed class WebAssemblyTests : IDisposable
     ];
 
     /// <summary>The bytes of a module in the text format, as a JavaScript array literal.</summary>
-    private static string Wasm(string text) => "new Uint8Array([" + string.Join(',', WasmtimeRuntime.WatToWasm(text)) + "])";
+    private static string Wasm(string text) => "new Uint8Array([" + string.Join(',', WasmEngine.WasmRuntime.WatToWasm(text)) + "])";
 
     // Runs a script whose promise sets the title of the document
-    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false, bool waitForTitle = false, WasmtimeRuntime? runtime = null)
+    private async Task<string> RunAsync(string script, WebPlatformFeatures? features = null, bool withRuntime = true, bool crossOriginIsolated = false, bool waitForTitle = false, WebAssemblyRuntime? runtime = null)
     {
         var context = _contexts.Create(new BrowsingContextOptions
         {
@@ -600,7 +600,7 @@ public sealed class WebAssemblyTests : IDisposable
 
         foreach (var (url, text) in modules)
         {
-            loader.Resources["https://example.com/" + url] = new DocumentResource(WasmtimeRuntime.WatToWasm(text)) { Headers = [new("Content-Type", "application/wasm")] };
+            loader.Resources["https://example.com/" + url] = new DocumentResource(WasmEngine.WasmRuntime.WatToWasm(text)) { Headers = [new("Content-Type", "application/wasm")] };
         }
 
         var context = _contexts.Create(new BrowsingContextOptions
@@ -946,7 +946,7 @@ public sealed class WebAssemblyTests : IDisposable
     [Fact]
     public void Store_DisposedByAHostFunction_IsDeletedAfterTheCall()
     {
-        var module = Runtime.Compile(WasmtimeRuntime.WatToWasm("""
+        var module = Runtime.Compile(WasmEngine.WasmRuntime.WatToWasm("""
             (module
               (import "env" "f" (func $f (result i32)))
               (func (export "run") (result i32) (i32.add (call $f) (i32.const 1))))
@@ -967,32 +967,19 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
-    public void ExternRef_WhenTheGcHeapIsFull_Throws()
+    public void Table_WhenItCannotGrow_KeepsItsElements()
     {
-        // Wasmtime drops the data of an externref it cannot allocate, which runs the finalizer that frees the GCHandle of
-        // the host value: the store must not free it a second time
-        using var runtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { MaxMemorySize = 1024 * 1024 });
+        // A table has at most 10,000,000 elements (the limit of the JavaScript API of the browsers)
+        using var runtime = new WasmWebAssemblyRuntime();
         using var store = runtime.CreateStore(new NoInterruptHost());
         var table = store.CreateTable(new WasmTableType(WasmValueType.ExternRef, minimum: 0, maximum: null, is64: false), WasmValue.Null);
         var first = new WasmHostReference(new object());
         table.Grow(1, WasmValue.FromReference(first));
 
-        WasmAllocationException? exception = null;
-        for (var i = 0; i < 10_000_000 && exception is null; i++)
-        {
-            try
-            {
-                table.Grow(1, WasmValue.FromReference(new WasmHostReference(new object())));
-            }
-            catch (WasmAllocationException ex)
-            {
-                exception = ex;
-            }
-        }
-
-        Assert.NotNull(exception);
-        Assert.Equal("The externref cannot be allocated", exception.Message);
+        var exception = Assert.Throws<WasmAllocationException>(() => table.Grow(10_000_000, WasmValue.FromReference(new WasmHostReference(new object()))));
+        Assert.Equal("The table cannot grow", exception.Message);
         Assert.Same(first, table.Get(0).Reference);
+        Assert.Equal(1UL, table.Size);
 
         table.Set(0, WasmValue.Null);
         Assert.Null(table.Get(0).Reference);
@@ -1007,8 +994,8 @@ public sealed class WebAssemblyTests : IDisposable
         public WasmSharedMemoryBytes CreateSharedMemoryBytes(ulong byteLength, ulong capacity) => throw new WasmAllocationException("The host cannot create a shared memory");
     }
 
-    // The legacy exception handling instructions, which the toolchains still emit (Emscripten, the runtime of .NET in the
-    // browser), are translated to the exception references that Wasmtime supports
+    // The legacy exception handling instructions, which the toolchains still emit (Emscripten), are supported by the
+    // engine
     private const string LegacyExceptionHandlingModule = """
         (module
           (type $s (struct (field i32)))
@@ -1229,74 +1216,10 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
-    public void LegacyExceptionHandling_ModulesWithoutLegacyInstructionsAreNotTranslated()
-    {
-        Assert.Null(LegacyExceptionHandling.Translate(WasmtimeRuntime.WatToWasm("""(module (tag $e) (func (try_table (catch_all 0) (throw $e))))""")));
-        Assert.Null(LegacyExceptionHandling.Translate([0, 97, 115, 109, 1, 0, 0, 0, 10, 4, 1, 2, 0]));
-        Assert.Null(LegacyExceptionHandling.Translate([1, 2, 3]));
-
-        // A count that does not fit in an Int32 is an invalid module, not an OverflowException
-        Assert.Null(LegacyExceptionHandling.Translate([0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 255, 255, 255, 255, 15]));
-        Assert.Null(LegacyExceptionHandling.Translate([0, 97, 115, 109, 1, 0, 0, 0, 3, 6, 1, 255, 255, 255, 255, 15]));
-        Assert.NotNull(LegacyExceptionHandling.Translate(WasmtimeRuntime.WatToWasm(LegacyExceptionHandlingModule)));
-    }
-
-    [Fact]
-    public async Task ModuleCacheDirectory_LoadsTheCompiledModules()
-    {
-        var directory = Directory.CreateTempSubdirectory("meziantou-webplatform-wasm-cache-");
-        try
-        {
-            var bytes = Wasm("""(module (func (export "add") (param i32 i32) (result i32) (i32.add (local.get 0) (local.get 1))))""");
-            var results = new List<string>();
-            for (var i = 0; i < 2; i++)
-            {
-                // The second runtime loads the module compiled by the first one
-                results.Add(await RunWithModuleCacheAsync(directory.FullName, bytes));
-                Assert.Single(directory.GetFiles("*.cwasm"));
-            }
-
-            Assert.Equal(["42", "42"], results);
-            Assert.Empty(directory.GetFiles("*.tmp"));
-        }
-        finally
-        {
-            // A module loaded from the folder maps its file until the module is collected, and Windows does not delete a
-            // mapped file: the folder is in the temporary folder, so it may stay there
-            GC.Collect();
-            GC.WaitForPendingFinalizers();
-            GC.Collect();
-            try
-            {
-                directory.Delete(recursive: true);
-            }
-            catch (IOException)
-            {
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
-        }
-    }
-
-    // A script engine keeps the store of the first runtime that runs its modules: each runtime gets its own engine
-    private static async Task<string> RunWithModuleCacheAsync(string cacheDirectory, string bytes)
-    {
-        using var tests = new WebAssemblyTests();
-        using var runtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { ModuleCacheDirectory = cacheDirectory });
-        return await tests.RunAsync($$"""
-            async () => {
-              const { instance } = await WebAssembly.instantiate({{bytes}});
-              return instance.exports.add(40, 2);
-            }
-            """, runtime: runtime);
-    }
-
-    [Fact]
     public async Task Documentation_WebAssembly()
     {
-        #region WebPlatformWasmtime_RunModules
-        using var runtime = new WasmtimeRuntime(); // can be shared by the browsing contexts
+        #region WebPlatformWasm_RunModules
+        using var runtime = new WasmWebAssemblyRuntime(); // can be shared by the browsing contexts
         using var engine = new JavaScriptScriptEngine();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
@@ -1324,8 +1247,8 @@ public sealed class WebAssemblyTests : IDisposable
     [Fact]
     public async Task Documentation_WebAssemblyModuleScripts()
     {
-        #region WebPlatformWasmtime_ModuleScripts
-        using var runtime = new WasmtimeRuntime();
+        #region WebPlatformWasm_ModuleScripts
+        using var runtime = new WasmWebAssemblyRuntime();
         using var engine = new JavaScriptScriptEngine();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {
@@ -1356,8 +1279,8 @@ public sealed class WebAssemblyTests : IDisposable
     [Fact]
     public async Task Documentation_WebAssemblySharedMemory()
     {
-        #region WebPlatformWasmtime_SharedMemory
-        using var runtime = new WasmtimeRuntime();
+        #region WebPlatformWasm_SharedMemory
+        using var runtime = new WasmWebAssemblyRuntime();
         using var engine = new JavaScriptScriptEngine();
         using var context = new BrowsingContext(new BrowsingContextOptions
         {

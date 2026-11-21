@@ -35,7 +35,7 @@ The library is split into packages, so that an application only references what 
 | --- | --- |
 | `Meziantou.Framework.WebPlatform` | The parsers, the DOM, CSS, the layout, the browsing contexts and their event loop |
 | `Meziantou.Framework.WebPlatform.JavaScript` | A script engine: runs the scripts of the pages with Meziantou.Framework.JavaScriptEngine |
-| `Meziantou.Framework.WebPlatform.Wasmtime` | A WebAssembly runtime for the scripts, based on [Wasmtime](https://wasmtime.dev/) (a native library) |
+| `Meziantou.Framework.WebPlatform.Wasm` | A WebAssembly runtime for the scripts, based on Meziantou.Framework.WasmEngine (a WebAssembly engine written in .NET) |
 | `Meziantou.Framework.WebPlatform.Imaging` | A rendering backend: screenshots, pages printed as images, 2D canvases and image decoding, with Meziantou.Framework.Imaging |
 | `Meziantou.Framework.WebPlatform.PdfRendering` | Printing to PDF, with Meziantou.Framework.Pdf |
 | `Meziantou.Framework.WebPlatform.DevTools` | A Chrome DevTools Protocol server whose browser is this engine, for Playwright and the other CDP clients |

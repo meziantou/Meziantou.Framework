@@ -34,8 +34,8 @@ A Blazor WebAssembly application (standalone, or the Interactive WebAssembly com
 .NET runtime in WebAssembly, in the page:
 
 - Set [WebAssemblyRuntime](cref:Meziantou.AspNetCore.Testing.WebAppBrowserOptions.WebAssemblyRuntime) to the
-  [WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) of the
-  [Meziantou.Framework.WebPlatform.Wasmtime](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasmtime)
+  [WasmWebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.Wasm.WasmWebAssemblyRuntime) of the
+  [Meziantou.Framework.WebPlatform.Wasm](https://www.nuget.org/packages/Meziantou.Framework.WebPlatform.Wasm)
   package.
 - The application must serve the files of the runtime (`_framework/`): for a standalone application, serve the
   `wwwroot` folder of its published output (`dotnet publish`) with
@@ -46,9 +46,8 @@ A Blazor WebAssembly application (standalone, or the Interactive WebAssembly com
 // The wwwroot folder of the published application (dotnet publish)
 var wwwroot = typeof(WebAppBrowserTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "WasmAppPath").Value!;
 
-// The runtime of .NET runs in the page, on Wasmtime. Share the runtime between the tests, and keep the compiled code
-// of the modules in a folder of the tests: the first start compiles the runtime of .NET, the next ones load it.
-using var wasmtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { ModuleCacheDirectory = Path.Combine(AppContext.BaseDirectory, "wasmtime-cache") });
+// The runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine. The runtime can be shared between the tests
+using var wasmRuntime = new WasmWebAssemblyRuntime();
 
 // The fallback file serves the routes of the application (/accounts/42), as MapFallbackToFile does
 var origin = new Uri("https://localhost/");
@@ -56,7 +55,7 @@ var loader = TestDocumentLoaders.FromDirectories(origin, [new("/", wwwroot)], fa
 await using var browser = new WebAppBrowser(origin, loader, new WebAppBrowserOptions
 {
     DefaultTimeout = TimeSpan.FromSeconds(30),
-    WebAssemblyRuntime = wasmtime,
+    WebAssemblyRuntime = wasmRuntime,
 });
 
 var page = await browser.OpenAsync("/accounts/42");
@@ -72,14 +71,11 @@ await Expect(page).ToHaveUrlAsync("/");
 
 - The fallback file (`/index.html`) serves the routes of the application, so a test can open any page directly
   (`/accounts/42`), as `MapFallbackToFile` does on a server.
-- The applications of .NET 10 and .NET 11 run: the runtime of .NET 10 uses the legacy exception handling instructions
-  of WebAssembly, which the Wasmtime runtime translates to the ones Wasmtime supports.
-- The first start compiles the runtime of .NET to native code, which takes from a second to tens of seconds (an
-  application published with AOT compilation has a much larger module). Share the
-  [WasmtimeRuntime](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntime) between the tests, and set
-  [ModuleCacheDirectory](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.ModuleCacheDirectory) to
-  load the compiled code of the previous runs. Publishing the application of the tests without AOT compilation
-  (`-p:RunAOTCompilation=false`) also makes the first start faster.
+- The applications of .NET 10 and .NET 11 run.
+- The runtime of .NET is a large module: its functions are interpreted, and the ones that run often are compiled to
+  .NET code. Share the [WasmWebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.Wasm.WasmWebAssemblyRuntime)
+  between the tests. Publishing the application of the tests without AOT compilation (`-p:RunAOTCompilation=false`)
+  makes the module much smaller, and the start faster.
 - Publish the application with its default options. With `WasmEnableExceptionHandling=false`, the runtime of .NET 10
   fails at startup (a stack overflow in `PackedSimd`), in the browsers too.
 - Mono, the runtime of .NET in the browser, does not run the methods compiled with runtime async

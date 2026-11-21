@@ -7,4 +7,4 @@ packageIds:
 - Meziantou.Framework.WebPlatform.Imaging
 - Meziantou.Framework.WebPlatform.JavaScript
 - Meziantou.Framework.WebPlatform.PdfRendering
-- Meziantou.Framework.WebPlatform.Wasmtime
+- Meziantou.Framework.WebPlatform.Wasm

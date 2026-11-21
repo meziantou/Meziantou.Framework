@@ -1,17 +1,19 @@
 ---
 title: WebAssembly
-description: Run the WebAssembly modules of the pages with the Wasmtime runtime.
+description: Run the WebAssembly modules of the pages with the runtime of Meziantou.Framework.WebPlatform.Wasm.
 ---
 
 The `WebAssembly` API of the scripts is available when the browsing context has a WebAssembly runtime. The
-`Meziantou.Framework.WebPlatform.Wasmtime` package provides one, based on [Wasmtime](https://wasmtime.dev/), which
-compiles the modules to native code:
+`Meziantou.Framework.WebPlatform.Wasm` package provides one,
+[WasmWebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.Wasm.WasmWebAssemblyRuntime), based on the
+[WebAssembly engine](../../WasmEngine/01-Introduction.md) of `Meziantou.Framework.WasmEngine`, written in .NET (no
+native library):
 
-<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Wasmtime" />
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Wasm" />
 
-<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasmtime_RunModules;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasm_RunModules;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var runtime = new WasmtimeRuntime(); // can be shared by the browsing contexts
+using var runtime = new WasmWebAssemblyRuntime(); // can be shared by the browsing contexts
 using var engine = new JavaScriptScriptEngine();
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
@@ -42,10 +44,8 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
   supported.
 - The features of WebAssembly 3.0 are enabled (reference types, garbage collection types, exceptions, tail calls, memory64,
   multiple memories, SIMD), and the threads: see [Threads](#threads).
-- The legacy exception handling instructions (`try`, `catch`, `catch_all`, `rethrow`, `delegate`), which Emscripten and
-  the runtime of .NET in the browser (Blazor WebAssembly) still emit by default, are supported: the modules that use
-  them are translated to the exception references of WebAssembly 3.0 (`try_table`, `throw_ref`) before they are
-  compiled, as Wasmtime only supports those.
+- The legacy exception handling instructions (`try`, `catch`, `catch_all`, `rethrow`, `delegate`), which Emscripten
+  still emits by default, are supported.
 - The JS String Builtins are supported: the `builtins: ["js-string"]` compile option provides the functions of the
   `wasm:js-string` module (`length`, `concat`, `charCodeAt`, `fromCharCodeArray`...), and `importedStringConstants`
   turns the globals imported from a module into string constants (the name of the import is the string).
@@ -58,27 +58,26 @@ Assert.Equal("5", document.QuerySelector("output")!.TextContent);
   whole pages, and the buffer follows the size of the memory.
 - The running code is interrupted by the limits of the script engine, such as [Timeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.Timeout).
 
-[WasmtimeRuntimeOptions](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions) sets the size of the stack of the WebAssembly code ([MaxStackSize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxStackSize), 512 KiB by default: a
-deeper recursion throws a `RangeError`), the largest size of a memory ([MaxMemorySize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxMemorySize): the memories are .NET arrays,
+The constructor of [WasmWebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.Wasm.WasmWebAssemblyRuntime) takes the
+[WasmRuntimeOptions](cref:Meziantou.Framework.WasmEngine.WasmRuntimeOptions) of the engine, or a
+[WasmRuntime](cref:Meziantou.Framework.WasmEngine.WasmRuntime) that you share with other code (the runtime does not
+dispose it). The options set the size of the stack of the WebAssembly code
+([MaxStackSize](cref:Meziantou.Framework.WasmEngine.WasmRuntimeOptions.MaxStackSize), 512 KiB by default: a deeper
+recursion throws a `RangeError`), the largest size of a memory
+([MaxMemorySize](cref:Meziantou.Framework.WasmEngine.WasmRuntimeOptions.MaxMemorySize): the memories are .NET arrays,
 shared with the `ArrayBuffer` objects of the scripts), and how often the running code checks whether it must stop
-([InterruptionCheckInterval](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.InterruptionCheckInterval), 10 ms by default).
-A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1 beyond it.
-
-Compiling a large module takes time: the runtime of .NET in a Blazor WebAssembly application takes from a second to tens
-of seconds. Set [ModuleCacheDirectory](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.ModuleCacheDirectory)
-to save the compiled code of the modules in a folder: the next compilations of the same module, by any runtime that
-uses the folder, load it in milliseconds. The files are native code that the runtime runs without validating it, so use
-a folder that only the current user can write to. They are about ten times as large as the modules, and are never
-deleted.
+([InterruptionCheckInterval](cref:Meziantou.Framework.WasmEngine.WasmRuntimeOptions.InterruptionCheckInterval), 10 ms by
+default). A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1
+beyond it. The runtime emits the [activities and the metrics](../../WasmEngine/08-Telemetry.md) of the engine.
 
 ## Module scripts
 
 A module script can import a WebAssembly module, as a JavaScript module ([ESM integration](https://github.com/WebAssembly/esm-integration)):
 a response whose MIME type is `application/wasm` is a WebAssembly module.
 
-<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasmtime_ModuleScripts;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasm_ModuleScripts;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var runtime = new WasmtimeRuntime();
+using var runtime = new WasmWebAssemblyRuntime();
 using var engine = new JavaScriptScriptEngine();
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
@@ -140,9 +139,9 @@ workers of a page:
   `memory.atomic.wait32`, `memory.atomic.wait64` and `memory.atomic.notify` instructions use the same waiters: a script
   wakes the WebAssembly code that waits, and the reverse. An `Atomics.waitAsync()` waits on a thread of its own.
 
-<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasmtime_SharedMemory;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasm_SharedMemory;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var runtime = new WasmtimeRuntime();
+using var runtime = new WasmWebAssemblyRuntime();
 using var engine = new JavaScriptScriptEngine();
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
@@ -174,14 +173,10 @@ Assert.Equal("42", document.QuerySelector("output")!.TextContent);
 <!-- endref -->
 
 The bytes of a shared memory never move: they are allocated for the maximum size of the memory when it is created, up to
-[MaxMemorySize](cref:Meziantou.Framework.WebPlatform.Wasmtime.WasmtimeRuntimeOptions.MaxMemorySize) and 2 GiB minus one page (32,767 pages). The memory cannot grow beyond: give the shared
+[MaxMemorySize](cref:Meziantou.Framework.WasmEngine.WasmRuntimeOptions.MaxMemorySize) and 2 GiB minus one page (32,767 pages). The memory cannot grow beyond: give the shared
 memories a maximum no larger than the memory they need.
 
 A `memory.atomic.wait32` or `memory.atomic.wait64` instruction blocks the thread until it is notified or its timeout
 elapses: the limits of the script engine do not interrupt it. An `Atomics.waitAsync()` on the buffer of a shared memory
 uses a thread until it completes: a process runs at most 1,024 of them at once (beyond, `Atomics.waitAsync()` throws a
-`RangeError`), and they stop when their window or worker is closed. The threads of WebAssembly are a
-[tier 2 feature](https://docs.wasmtime.dev/stability-tiers.html) of Wasmtime.
-
-Wasmtime is a native library: it comes with the `Wasmtime` package, a dependency of
-`Meziantou.Framework.WebPlatform.Wasmtime`.
+`RangeError`), and they stop when their window or worker is closed.

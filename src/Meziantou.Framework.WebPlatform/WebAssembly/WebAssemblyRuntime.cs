@@ -3,8 +3,8 @@ namespace Meziantou.Framework.WebPlatform.WebAssembly;
 /// <summary>
 /// A WebAssembly runtime: it compiles and runs the WebAssembly modules of the scripts, through the <c>WebAssembly</c>
 /// namespace of the JavaScript realms (https://webassembly.github.io/spec/js-api/). Set it in
-/// <see cref="Dom.BrowsingContextOptions.WebAssemblyRuntime"/>. The <c>Meziantou.Framework.WebPlatform.Wasmtime</c>
-/// package provides a runtime based on Wasmtime.
+/// <see cref="Dom.BrowsingContextOptions.WebAssemblyRuntime"/>. The <c>Meziantou.Framework.WebPlatform.Wasm</c> package
+/// provides a runtime based on Meziantou.Framework.WasmEngine, a WebAssembly engine written in .NET.
 /// </summary>
 /// <remarks>
 /// A runtime can be shared by several browsing contexts and script engines: the compiled modules are shared, and each

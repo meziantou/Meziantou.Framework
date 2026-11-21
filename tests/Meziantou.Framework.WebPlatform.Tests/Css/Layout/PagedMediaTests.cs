@@ -828,12 +828,15 @@ public sealed class PagedMediaTests : IDisposable
     [InlineData("<div id=m style='contain: size; width: 150px; height: 400px; margin: 0 auto'></div>", 100)]
     [InlineData("<p style='margin: 0; line-height: 0; text-align: center'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 100)]
     [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 170px; height: 400px; vertical-align: top'></span> XXXX XXXX</p>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 25%; height: 400px; vertical-align: top'></span><span style='display: inline-block; width: calc(150px - 25%); height: 400px; vertical-align: top'></span></p>", 100)]
+    [InlineData("<div id=m style='contain: size; box-sizing: border-box; width: 150px; height: 400px; padding-left: 10%'><div style='height: 10px'></div></div>", 100)]
     public void Pages_ContentSlicedByTheBreakContinuesInAPageOfAnotherInlineSize(string content, double width)
     {
         // The monolithic content (a box with size containment, an SVG image, an inline-block in a line box) is taller than the 300px
         // tall pages: the break slices it. The rest of it continues in the 400px wide pages after the first one when it is laid
         // out the same way in them (the same size and inline position, the same line box), and the content after it is laid out
-        // in them (50%: 200px); else the pages keep the layout of the first page (100px)
+        // in them (50%: 200px); else the pages keep the layout of the first page (100px), also when only the content of the line
+        // box or of the box changes (inline-blocks whose widths change, a child moved by a percentage padding)
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
             {{content}}

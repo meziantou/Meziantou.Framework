@@ -826,18 +826,57 @@ internal sealed partial class LayoutEngine
 
     /// <summary>
     /// The content that a break slices (see <see cref="BreakAnchor.SliceOffset"/>), in a strip: its block-start edge, the extent
-    /// of its content in the inline axis, its block size and, for a line box, the position of the inline content where the next
+    /// of its content in the inline axis, its block size, the rectangles of the fragments of its content (from the start of its
+    /// content, in the axes of the strip: the boxes and the text of a line box, the descendants of a monolithic box, whose border
+    /// box may keep its size while its content moves) and, for a line box, the position of the inline content where the next
     /// line box starts (or null). The part of the content before the break is in the previous page: the page of another inline
     /// size starts inside it only when it is laid out the same way in the strip of that inline size, the part after the break
     /// continuing the part before it.
     /// </summary>
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct SlicedContent(double Top, double InlineStart, double InlineEnd, double BlockSize, InlineResume? NextLine)
+    private readonly record struct SlicedContent(double Top, double InlineStart, double InlineEnd, double BlockSize, IReadOnlyList<LogicalRect> Contents, InlineResume? NextLine)
     {
         public bool IsSameAs(SlicedContent other)
         {
             return Math.Abs(InlineStart - other.InlineStart) <= BreakAnchorEpsilon && Math.Abs(InlineEnd - other.InlineEnd) <= BreakAnchorEpsilon
-                && Math.Abs(BlockSize - other.BlockSize) <= BreakAnchorEpsilon && NextLine == other.NextLine;
+                && Math.Abs(BlockSize - other.BlockSize) <= BreakAnchorEpsilon && NextLine == other.NextLine && HasSameContents(other);
+        }
+
+        private bool HasSameContents(SlicedContent other)
+        {
+            if (Contents.Count != other.Contents.Count)
+                return false;
+
+            for (var i = 0; i < Contents.Count; i++)
+            {
+                var (rect, otherRect) = (Contents[i], other.Contents[i]);
+                if (Math.Abs(rect.InlineStart - otherRect.InlineStart) > BreakAnchorEpsilon || Math.Abs(rect.BlockStart - otherRect.BlockStart) > BreakAnchorEpsilon
+                    || Math.Abs(rect.Size.Inline - otherRect.Size.Inline) > BreakAnchorEpsilon || Math.Abs(rect.Size.Block - otherRect.Size.Block) > BreakAnchorEpsilon)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+
+    /// <summary>Returns the rectangles of the descendants of a fragment, in the axes of the strip, from an origin (the offset of the fragment from it).</summary>
+    private static List<LogicalRect> GetContentRects(Fragment fragment, WritingDirection writingDirection, LogicalOffset offset)
+    {
+        var rects = new List<LogicalRect>();
+        Collect(fragment, offset);
+        return rects;
+
+        void Collect(Fragment parent, LogicalOffset parentOffset)
+        {
+            foreach (var child in parent.ChildrenSpan)
+            {
+                var rect = writingDirection.ToLogical(child.Rect, parent.Size);
+                var childOffset = new LogicalOffset(parentOffset.Inline + rect.Offset.Inline, parentOffset.Block + rect.Offset.Block);
+                rects.Add(new LogicalRect(childOffset, rect.Size));
+                Collect(child, childOffset);
+            }
         }
     }
 
@@ -865,7 +904,7 @@ internal sealed partial class LayoutEngine
         if (anchor.Resume is not { } resume)
         {
             var size = writingDirection.ToLogical(box.Size);
-            return new SlicedContent(top, inlineStart, inlineStart + size.Inline, size.Block, NextLine: null);
+            return new SlicedContent(top, inlineStart, inlineStart + size.Inline, size.Block, GetContentRects(box, writingDirection, LogicalOffset.Zero), NextLine: null);
         }
 
         // (the line box that starts at the position of the anchor, the extent of its content, and the start of the next line box)
@@ -902,7 +941,7 @@ internal sealed partial class LayoutEngine
             }
 
             var lineOrigin = inlineStart + lineInlineStart;
-            return new SlicedContent(lineTop, lineOrigin + contentStart, lineOrigin + contentEnd, lineBottom - lineTop, nextLine);
+            return new SlicedContent(lineTop, lineOrigin + contentStart, lineOrigin + contentEnd, lineBottom - lineTop, GetContentRects(line, writingDirection, new LogicalOffset(-contentStart, 0)), nextLine);
         }
 
         return null;

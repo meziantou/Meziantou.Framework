@@ -33,7 +33,7 @@ public static partial class EmailFuzzTargets
 
     private static readonly PstReadOptions ReadOptions = new() { MaxPropertySize = 4 * 1024 * 1024, MaxTreeDepth = 16, MaxEmbeddedMessageDepth = 8, CacheSize = 32 };
 
-    public static IReadOnlyList<FuzzTarget> All => [.. PstTargets, .. MimeTargets, .. MsgTargets, .. TnefTargets, .. MailboxTargets, .. CalendarTargets, .. OabTargets, .. RtfTargets];
+    public static IReadOnlyList<FuzzTarget> All => [.. PstTargets, .. MimeTargets, .. MsgTargets, .. TnefTargets, .. MailboxTargets, .. CalendarTargets, .. OabTargets, .. RtfTargets, .. DetectTargets];
 
     private static IReadOnlyList<FuzzTarget> PstTargets { get; } =
     [

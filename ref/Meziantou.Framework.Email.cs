@@ -48,6 +48,30 @@ namespace Meziantou.Framework.Email
         public EmailException(string? message, System.Exception? innerException) { }
     }
 
+    public enum EmailFileFormat
+    {
+        Unknown = 0,
+        Pst = 1,
+        Ost = 2,
+        Msg = 3,
+        Tnef = 4,
+        OfflineAddressBook = 5,
+        Eml = 6,
+        Emlx = 7,
+        Mbox = 8,
+        Maildir = 9,
+        Mork = 10,
+        VCard = 11,
+        ICalendar = 12,
+    }
+
+    public static class EmailFormatDetector
+    {
+        public static Meziantou.Framework.Email.EmailFileFormat Detect(System.IO.Stream stream) => throw null;
+        public static Meziantou.Framework.Email.EmailFileFormat Detect(System.ReadOnlySpan<byte> data) => throw null;
+        public static Meziantou.Framework.Email.EmailFileFormat Detect(string path) => throw null;
+    }
+
     public enum EmailImportance
     {
         Low = 0,

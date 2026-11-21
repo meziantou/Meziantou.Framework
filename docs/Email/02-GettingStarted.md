@@ -49,3 +49,27 @@ Assert.HasCount(11, email.Attachments);
 The other headers of a message are kept in [Headers](cref:Meziantou.Framework.Email.EmailMessage.Headers). What a format
 cannot store is lost when a message is converted to it: a MIME message has no RTF body, and an address without an
 address part (only a name) cannot be written in a MIME header.
+
+## Detect the format of a file
+
+[EmailFormatDetector.Detect](cref:Meziantou.Framework.Email.EmailFormatDetector.Detect) returns the
+[format](cref:Meziantou.Framework.Email.EmailFileFormat) of a file, of a stream or of bytes, from their content: the
+signatures of the binary formats (Outlook data files, `.msg`, TNEF, offline address books) and the first lines of the
+text formats (`.eml`, `.emlx`, mbox, Mork, vCard, iCalendar). A folder that has the `cur`, `new` and `tmp` subfolders is
+a Maildir folder.
+
+<!-- ref:../../tests/Meziantou.Framework.Email.Tests/EmailFormatDetectorTests.cs;region=EmailFormatDetector_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var format = EmailFormatDetector.Detect(path);
+Assert.Equal(EmailFileFormat.Msg, format);
+
+Assert.Equal(EmailFileFormat.VCard, EmailFormatDetector.Detect("BEGIN:VCARD\r\nVERSION:4.0\r\nFN:Alice\r\nEND:VCARD\r\n"u8));
+Assert.Equal(EmailFileFormat.Eml, EmailFormatDetector.Detect("From: alice@example.com\r\nSubject: Hello\r\n\r\nHi"u8));
+Assert.Equal(EmailFileFormat.Unknown, EmailFormatDetector.Detect("Hello world"u8));
+```
+<!-- endref -->
+
+A compound file is an Outlook item when it has the property stream of an item, so detecting an `.msg` file reads the
+whole file. The other formats are detected from the first 64 KB. An email message is detected from its header fields:
+the content must start with header fields, one of them a usual field of a message (`From`, `Date`, `Subject`,
+`Received`...).

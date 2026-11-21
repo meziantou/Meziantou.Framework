@@ -18,6 +18,7 @@ Reads and writes email files, without native dependencies. It does not send emai
   rules, converted to and from the contacts, appointments and tasks of Outlook.
 - Offline address books of Exchange and Outlook (`udetails.oab`, version 4 Full Details, [MS-OXOAB]).
 - `EmailMessage`, a model to convert a message from one format to another.
+- `EmailFormatDetector`, which detects the format of a file from its content.
 
 Outlook data files:
 

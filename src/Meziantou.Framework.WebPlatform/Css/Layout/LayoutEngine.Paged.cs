@@ -785,7 +785,7 @@ internal sealed partial class LayoutEngine
                     continue;
 
                 var (top, bottom, _) = FragmentationFlow.GetBlockRange(child, parent.Size, writingDirection, parentTop);
-                if (anchor.Following!.Contains(child.Box))
+                if (anchor.Following.Contains(child.Box))
                 {
                     firstTop = Math.Min(firstTop, top);
                 }

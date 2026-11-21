@@ -83,8 +83,10 @@ var pages = context.RenderPages();
   width of the new page, and continue with the content of the last column of the previous page (a paragraph continues from
   its next line); its last columns are balanced as usual. The new page may also start before or after a column spanner
   (`column-span: all`), or in the columns after it. This needs columns that fill the height of the pages: without
-  `column-height`, height or maximum height, and with no absolutely positioned box or multi-column container in the columns. The break at the end of the last column must be between two boxes or two lines,
-  outside of a table, a grid or a flex container; otherwise the page keeps the width of the previous one.
+  `column-height`, height or maximum height, and with no absolutely positioned box or multi-column container in the columns.
+  The break at the end of the last column must be between two boxes or two lines, between the rows of a table, a grid or a
+  flex container, or inside the only row of one of them that it crosses, as outside of the columns (not inside a row of
+  items side by side, such as a table row or a grid row); otherwise the page keeps the width of the previous one.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

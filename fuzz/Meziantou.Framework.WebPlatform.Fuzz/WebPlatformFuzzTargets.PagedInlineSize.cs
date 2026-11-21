@@ -81,7 +81,7 @@ public static partial class WebPlatformFuzzTargets
     /// The containers of the target of the multi-column containers: the columns of a page of another inline size continue the
     /// columns of the previous page in its inline size (a fixed number of columns, with edges or not, after other content or
     /// not, columns of a fixed width, filled sequentially, column spanners), whose content is blocks, a column flex container,
-    /// the rows of a table or of a grid; and a container whose columns keep the inline size of the previous page (a definite
+    /// the rows of a table or of a grid, the lines of a flex container that wraps; and a container whose columns keep the inline size of the previous page (a definite
     /// block size).
     /// </summary>
     private static readonly (string Start, string Row, string End)[] PagedInlineSizeColumnContainers =
@@ -95,6 +95,9 @@ public static partial class WebPlatformFuzzTargets
         ("<div style='columns: 2'><div style='display: grid; grid-template-columns: 1fr 1fr'>", "<div id={0} style='{1}'>{2}</div>", "</div></div>"),
         ("<style>#c > :nth-child(4n) { column-span: all }</style><div id=c style='columns: 2'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<div style='columns: 2; height: 400px'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        // (the items of a flex line do not avoid breaks and are not empty: an item that avoids them may be pushed alone to the next
+        // column, after the next item of its line, and an empty line after it stays in the previous column)
+        ("<style>#c > * { break-inside: auto !important }</style><div style='columns: 2'><div id=c style='display: flex; flex-wrap: wrap'>", "<div id={0} style='width: 45px; min-height: 1px; {1}'>{2}</div>", "</div></div>"),
     ];
 
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>

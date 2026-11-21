@@ -3341,7 +3341,11 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   edges (`FlowCursor.ResumeAt` resumes the container). The strips of the nested multi-column containers are laid out once the
   strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). This needs one row of columns
   per page between the spanners (`IsResumableColumns`: no `column-height`, definite or maximum block size, absolutely
-  positioned box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`).
+  positioned box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`), or between
+  the rows of a container of the columns or in its only row that it crosses (not in a row of items side by side,
+  `BreakAnchor.Items`): these anchors are checked against the content of the pages (`ResolveAnchorOfPage`), and the content of
+  their containers resumes in the strip of the columns (`LayoutContext.RowResumes`, the parallel flows resumed by
+  `FlowCursor.ResumeAt`).
   A page of another inline size that starts inside a line laid out another way, a multi-column container whose columns
   cannot continue (see above), a grid whose columns depend on its inline size and whose items are not placed
   in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the

@@ -25,7 +25,7 @@ fails.
     line box or a monolithic box (an image, taller than the page, which is sliced) that is not laid out the same way in the
     new inline size, inside a multi-column container whose columns do not fill the pages (`column-height`,
     a block size, absolutely positioned boxes or nested multi-column containers in the columns) or whose last column ends inside a
-    table, a grid or a flex container, inside a grid whose number of columns depends on its width
+    row of items side by side (a table row, a flex line, a grid row), inside a grid whose number of columns depends on its width
     (`auto-fill`, `auto-fit`) and whose items are not placed in their order (an item with a definite row after the break,
     `grid-auto-flow: column`, an item that `dense` places before the break), or inside a table row, a flex line or a grid row
     whose items cannot continue side by side in the new width (an item whose line box or image sliced by the break changes

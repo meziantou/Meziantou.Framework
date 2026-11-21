@@ -504,6 +504,34 @@ public sealed class PagedMediaTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("<table style='width: 100%; border-spacing: 0'>", "<tr id={0} style='height: 100px'><td></td></tr>", "</table>")]
+    [InlineData("<div style='display: flex; flex-direction: column'>", "<div id={0} style='height: 100px'></div>", "</div>")]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 100px'>", "<div id={0}></div><div></div>", "</div>")]
+    public void Pages_RowsInAMultiColumnContainerContinuedOnAPageOfAnotherInlineSizeAreLaidOutInIt(string start, string row, string end)
+    {
+        // The break at the end of the last column of the first page is between two rows (table rows, flex items, grid rows): the
+        // rows after it are laid out again in the columns of the second page (200px wide instead of 100px), balanced
+        var rows = string.Concat(Enumerable.Range(0, 10).Select(i => string.Format(CultureInfo.InvariantCulture, row, "r" + i.ToString(CultureInfo.InvariantCulture))));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='columns: 2; column-gap: 0'>{{start}}{{rows}}{{end}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        var width = row.Contains("<div></div>", StringComparison.Ordinal) ? 0.5 : 1;
+        for (var i = 0; i < 6; i++)
+        {
+            Assert.Equal([(0, new PhysicalRect(i / 3 * 100, i % 3 * 100, 100 * width, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        for (var i = 6; i < 10; i++)
+        {
+            Assert.Equal([(1, new PhysicalRect((i - 6) / 2 * 200, (i - 6) % 2 * 100, 200 * width, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+    }
+
     [Fact]
     public void Pages_MultiColumnContainerContinuedOnPagesOfSeveralInlineSizesIsLaidOutInThem()
     {

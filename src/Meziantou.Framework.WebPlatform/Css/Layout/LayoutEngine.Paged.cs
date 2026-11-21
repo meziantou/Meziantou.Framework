@@ -582,7 +582,7 @@ internal sealed partial class LayoutEngine
                     && (found.IsInColumns ? ResolveColumnAnchor(found, flow, children, stripSize, writingDirection, baseIndex + contentIndex) : found) is { } anchor)
                 {
                     (segmentEnds ??= []).Add((i, baseIndex + contentIndex, anchor, areaSize, breaks[contentIndex - 1].Position));
-                    if (!anchor.IsInRows)
+                    if (!anchor.IsInRows && anchor.ColumnContent?.IsInRows != true)
                         break;
                 }
 
@@ -621,6 +621,15 @@ internal sealed partial class LayoutEngine
                             continue;
 
                         anchor = resolved;
+                    }
+                    else if (candidate.ColumnContent is { IsInRows: true } columnContent)
+                    {
+                        // (a break between the rows of a container in the columns of a multi-column container, or in its only row that
+                        // the break crosses: the rows are checked against the content of the pages, the columns of the container)
+                        if (ResolveAnchorOfPage(columnContent, placedFragments[index - 1], placedFragments[index], writingDirection) is not { } resolved)
+                            continue;
+
+                        anchor = candidate with { ColumnContent = resolved };
                     }
 
                     // (a blank page before the page is inserted again by the next segment)
@@ -732,6 +741,9 @@ internal sealed partial class LayoutEngine
     /// </summary>
     private static Dictionary<ContainerBox, RowResume>? GetRowResumes(BreakAnchor anchor)
     {
+        if (anchor.ColumnContent is { } content)
+            return GetRowResumes(content);
+
         Dictionary<ContainerBox, RowResume>? resumes = null;
         Add(anchor);
         if (anchor.NestedRows is { } nestedRows)
@@ -1148,8 +1160,11 @@ internal sealed partial class LayoutEngine
             }
         }
 
-        if (position <= BreakAnchorEpsilon || ContinuesBeforeBreak(nested.Flow, position, first) || CrossesParallelFlow(nested.Flow, position)
-            || FindBreakAnchor(nested.Children, nested.StripSize, nested.WritingDirection, position, parentTop: 0) is not { Container: null, Items: null, SliceOffset: null, IsInRows: false, IsInColumns: false } content)
+        // (the content after the break is a box, a block container resumed at a line box, or the rows after a break between the
+        // rows of a container or in its only row that the break crosses, see FindBreakAnchor; not the items of a broken row)
+        if (position <= BreakAnchorEpsilon || ContinuesBeforeBreak(nested.Flow, position, first)
+            || FindBreakAnchor(nested.Children, nested.StripSize, nested.WritingDirection, position, parentTop: 0) is not { Items: null, SliceOffset: null, IsInColumns: false } content
+            || (!content.IsInRows && CrossesParallelFlow(nested.Flow, position)))
         {
             return null;
         }
@@ -1174,7 +1189,7 @@ internal sealed partial class LayoutEngine
 
         // (a block container resumed at a line box starts with that line box: its content before it is not laid out again)
         var position = Math.Max(0, contentStart);
-        if (CrossesParallelFlow(nested.Flow, position) || nested.Flow.Spanners.Exists(spanner => spanner.MarginBoxStart < position - BreakAnchorEpsilon && spanner.MarginBoxEnd > position + BreakAnchorEpsilon))
+        if ((!content.IsInRows && CrossesParallelFlow(nested.Flow, position)) || nested.Flow.Spanners.Exists(spanner => spanner.MarginBoxStart < position - BreakAnchorEpsilon && spanner.MarginBoxEnd > position + BreakAnchorEpsilon))
             return null;
 
         // (the strip starts inside the border box of the container: its block-start edges are in the previous page)

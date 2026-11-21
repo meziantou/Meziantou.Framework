@@ -72,9 +72,18 @@ internal sealed class LayoutContext
     /// row, a flex line, a grid row: see <c>LayoutEngine.LayoutPageSegment</c>), so that the content after the break of all the
     /// items starts at the same position of the strip: by block container whose line boxes start at a position of its inline
     /// content (see <see cref="InlineResumes"/>), the space before its first line box; by block-level box, the space before it;
-    /// by item of a flex line or of a grid row, the space added to its block-start margin. Null otherwise.
+    /// by item of a flex line or of a grid row, or of a single-line column flex container, the space added to its block-start
+    /// margin; by row or row group of a table, the space before it. Null otherwise.
     /// </summary>
     internal Dictionary<ContainerBox, double>? AnchorPushes { get; set; }
+
+    /// <summary>
+    /// The number of layouts of the strips of the pages (see <c>LayoutEngine.LayoutPageSegment</c>): each one has its own content
+    /// after a break (<see cref="InlineResumes"/>, <see cref="RowResumes"/>) and its own <see cref="AnchorPushes"/>, so the intrinsic
+    /// block sizes measured in another one are not valid in it (e.g. the block size of a flex item of a column flex container
+    /// whose line boxes are moved down).
+    /// </summary>
+    internal int StripLayoutCount { get; set; }
 
     /// <summary>
     /// The items of a row broken by a page of another inline size (see <see cref="AnchorPushes"/>: the cells of a table row, the
@@ -255,7 +264,7 @@ internal sealed class LayoutContext
     {
         Debug.Assert(space.MeasuresIntrinsicBlockSize, "The space must measure the intrinsic block size");
         var cache = box.IntrinsicBlockSizeCache;
-        if (cache is not null && cache.Space == space && (cache.Pass == Pass || IsCacheOfPreviousPassValid(cache.Generation, cache.InitialContainingBlockSize)))
+        if (cache is not null && cache.Space == space && cache.StripLayout == StripLayoutCount && (cache.Pass == Pass || IsCacheOfPreviousPassValid(cache.Generation, cache.InitialContainingBlockSize)))
             return cache.Size;
 
         var preventionCount = LayoutCachingPreventionCount;
@@ -265,6 +274,7 @@ internal sealed class LayoutContext
         cache.Space = space;
         cache.Size = size;
         cache.Generation = GetCacheGeneration(preventionCount);
+        cache.StripLayout = StripLayoutCount;
         cache.InitialContainingBlockSize = InitialContainingBlockSize;
         return size;
     }

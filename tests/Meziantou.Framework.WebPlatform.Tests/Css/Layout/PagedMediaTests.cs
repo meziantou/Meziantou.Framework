@@ -587,6 +587,33 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([0d, 100d, 200d, 300d], rects.Select(rect => rect.Rect.X));
     }
 
+    [Theory]
+    [InlineData("", "<div id=h style='grid-row: 1; grid-column: 1 / -1'></div>", "", 2)]
+    [InlineData("grid-auto-flow: row dense", "", " style='grid-column: span 2'", 1)]
+    public void Pages_AutoRepeatGridPlacedAroundTheBreakContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string gridStyle, string header, string secondItemStyle, int lastRowItems)
+    {
+        // The columns are repeated (2 columns of 100px in the 200px wide first page, 4 in the 400px wide second page). A header in
+        // the first row (a definite row), or the dense packing of an item that spans the two columns (the third item fills the
+        // hole before it), places the items before the break out of their order: the items after the break start a new row in the
+        // page area of the second page, after the rows of the items before the break, without filling the holes before it
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=i{i}{(i == 1 ? secondItemStyle : "")}></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px } #c > div { height: 100px }</style>
+            <div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 100px); {{gridStyle}}'>{{header}}{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        var firstPageItems = 10 - 4 - lastRowItems;
+        for (var i = 0; i < firstPageItems; i++)
+        {
+            Assert.Equal(0, Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!)).Page);
+        }
+
+        var rects = Enumerable.Range(firstPageItems, 10 - firstPageItems).Select(i => Assert.Single(GetPageRects(pages, document.GetElementById("i" + i.ToString(CultureInfo.InvariantCulture))!))).ToList();
+        Assert.Equal([.. Enumerable.Range(0, 10 - firstPageItems).Select(i => (1, new PhysicalRect(i % 4 * 100, i / 4 * 100, 100, 100)))], rects);
+    }
+
     [Fact]
     public void Pages_AutoRepeatGridWithAnItemInADefiniteColumnContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
     {
@@ -838,6 +865,59 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal((1, 200d, 200d, 10d), (c.Page, c.Rect.X, c.Rect.Width, c.Rect.Height));
         Assert.True(c.Rect.Y >= 50);
         Assert.Equal([120, 34], pages.Select(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Theory]
+    [InlineData("<table style='width: 100%; border-spacing: 0'><tr style='height: 100px'><td></td></tr><tr style='height: 100px'><td></td></tr><tr style='height: 100px'><td></td></tr><tr id=r style='height: 100px'><td></td></tr></table>")]
+    [InlineData("<table style='width: 100%; border-spacing: 0'><tbody><tr style='height: 300px'><td></td></tr></tbody><tbody id=r><tr style='height: 100px'><td></td></tr></tbody></table>")]
+    [InlineData("<div style='display: flex; flex-direction: column'><div style='height: 100px'></div><div style='height: 100px'></div><div style='height: 100px'></div><div id=r style='height: 100px'></div></div>")]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 100px'><div></div><div></div><div></div><div></div><div></div><div></div><div id=r></div><div id=m></div></div>")]
+    [InlineData("<div style='display: grid; grid-template-columns: subgrid; grid-auto-rows: 100px'><div></div><div></div><div></div><div id=r></div></div>")]
+    public void Pages_GridRowWithAnItemBrokenBetweenItsRowsIsLaidOutInAPageOfAnotherInlineSize(string rows)
+    {
+        // The break is between the rows of the table (or the items of the column flex container, the rows of a grid, of a subgrid
+        // of the columns) of the second item, and crosses the paragraph of the first one (160 words, 4 per line in the 200px wide
+        // columns of the 400px wide first page, 120 on it). In the 100px wide columns of the 200px wide second page, the first 120
+        // words take 60 lines: the rows after the break are moved down to the content after the break of the paragraph (all the
+        // items of the first row of a grid), and both start at the start of the page
+        var document = Parse($$"""
+            <style>@page { size: 200px 300px; margin: 0 } @page :first { size: 400px 300px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 160))}}</div><div>{{rows}}</div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, new PhysicalRect(0, 0, 100, 200)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        var mate = document.GetElementById("m");
+        Assert.Equal([(1, new PhysicalRect(100, 0, mate is null ? 100 : 50, 100))], GetPageRects(pages, document.GetElementById("r")!));
+        if (mate is not null)
+        {
+            Assert.Equal([(1, new PhysicalRect(150, 0, 50, 100))], GetPageRects(pages, mate));
+        }
+
+        Assert.Equal([120, 40], pages.Select(page => CountWords(page.Content)));
+    }
+
+    [Fact]
+    public void Pages_GridRowWithAParagraphOfAColumnFlexItemMovedDownIsLaidOutInAPageOfAnotherInlineSize()
+    {
+        // The paragraphs of the items are items of column flex containers, after two boxes of 40px: in the 200px wide columns of
+        // the 400px wide first page (4 words per line), the break crosses the third line of the first paragraph (9 words), and
+        // the second one (8 words, which avoids breaks) ends at it. In the 100px wide columns of the 200px wide second page, the
+        // content after the break of the first paragraph is moved down to the end of the second one: the flex item grows with
+        // its line boxes (its block size measured in another layout of the strip is not used), and its last word starts the page
+        var document = Parse($$"""
+            <style>@page { size: 200px 100px; margin: 0 } @page :first { size: 400px 100px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>
+              <div style='display: flex; flex-direction: column'><div style='height: 40px'></div><div style='height: 40px'></div><div id=a>{{Words(9)}}</div></div>
+              <div style='display: flex; flex-direction: column; break-inside: avoid'><div style='height: 40px'></div><div style='height: 40px'></div><div>{{Words(8)}}</div></div>
+            </div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, new PhysicalRect(0, 0, 100, 10)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal([16, 1], pages.Select(page => CountWords(page.Content)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }

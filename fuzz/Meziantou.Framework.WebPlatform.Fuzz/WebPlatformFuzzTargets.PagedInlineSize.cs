@@ -59,7 +59,9 @@ public static partial class WebPlatformFuzzTargets
     /// The containers of the target of the rows whose layout depends on the inline size: a flex container that wraps whose items
     /// shrink (the items of a broken flex line stay in one line), a grid with <c>auto-fill</c> columns whose items span two rows
     /// (every third item) or are in a definite column (every fourth item), and a grid whose items are subgrids of two rows (every
-    /// third item).
+    /// third item), a dense grid with <c>auto-fill</c> columns with a header in its first row whose items span two columns (every
+    /// fifth item), and a grid whose items have rows of their own (a column flex container, a grid) before their paragraph. The
+    /// number of containers keeps the inputs of the regressions on their container.
     /// </summary>
     private static readonly (string Start, string Row, string End)[] PagedInlineSizeReflowedRowContainers =
     [
@@ -67,6 +69,8 @@ public static partial class WebPlatformFuzzTargets
         ("<style>#c > :nth-child(3n) { grid-row: span 2 }</style><div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 90px); align-items: start'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<style>#c > :nth-child(4n) { grid-column: 2 }</style><div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 90px)'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<style>#c > :nth-child(3n) { grid-row: span 2; display: grid; grid-template-rows: subgrid }</style><div id=c style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<style>#c > :nth-child(5n) { grid-column: span 2 }</style><div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 90px); grid-auto-flow: row dense'><div style='grid-row: 1; grid-column: 1 / -1; height: 20px'></div>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
+        ("<style>#c > :nth-child(2n) > div { display: grid; grid-template-columns: 1fr 1fr }</style><div id=c style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id={0} style='{1}'><div style='display: flex; flex-direction: column'><div style='height: 40px'></div><div style='height: 40px'></div><div>{2}</div></div></div>", "</div>"),
     ];
 
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>
@@ -242,6 +246,10 @@ public static partial class WebPlatformFuzzTargets
             [35, 75, 15, 1, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 4],
             [35, 75, 15, 2, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
             [35, 75, 15, 3, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 4],
+
+            // A dense automatic grid with a header and items that span two columns, a grid whose items have rows of their own
+            [35, 75, 15, 4, 9, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
+            [75, 35, 15, 5, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 20],
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

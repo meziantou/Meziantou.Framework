@@ -3233,9 +3233,12 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped.
   A segment also starts at a break between the rows of a container whose rows are the same in any inline size
   (`IsRowContainer`: a table wrapper box, a table grid box and its row groups, a single-line column flex container, a grid
-  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid, a grid whose columns have such a
-  repetition and whose items are placed in their order: `grid-auto-flow: row`, not dense, not a subgrid, no item with a
-  definite row position (an item with a definite column is placed by the auto-placement cursor), `IsAutoRepeatGridContainer`, a multi-line row flex container whose
+  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid of both axes (a subgrid of the columns has
+  rows of its own), a grid whose columns have such a repetition and whose items are placed in rows: `grid-auto-flow: row`,
+  dense or not, not a subgrid, `IsAutoRepeatGridContainer`; its items must be in their order at the break, `IsPlacedInOrder`:
+  the auto-placed items before the break, of the broken row, after it, in order-modified document order, and the items with a
+  definite row before the break; in the next segment, the new rows start after their rows, `RowResume.Preceding`, and the
+  dense packing does not fill the holes before them; an item with a definite column is placed by the auto-placement cursor), a multi-line row flex container whose
   lines are stacked in the order of the items: `flex-wrap: wrap`, not balanced, not a `-webkit-box`, `IsFlexLineContainer`),
   or inside the only row that the break crosses when the rows are stacked (not in a grid nor in a flex line: their items are
   side by side). The flex lines and the rows of such a grid depend on the inline size: in the next segment, the items after
@@ -3280,7 +3283,12 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   inline size, e.g. a column of a grid), and its rest must start the next page (`ResolveAnchorOfPage`: it is in both pages, at the
   offset of the break in the page). An item of a flex line or of a grid row whose anchor is the item is moved down by the
   space added to its block-start margin (`LayoutContext.AnchorPushes`, in `FlexLayoutAlgorithm` and `GridLayoutAlgorithm`;
-  the check that the items are in one row ignores it). The content of a finished monolithic
+  the check that the items are in one row ignores it). The content after the break of an item may start between the rows of
+  a container of the item whose rows can be moved down (`IsPushableRowContainer`: the row groups and the rows of a table,
+  pushed by `TableLayoutAlgorithm` before the row; the items of a single-line column flex container, by their main-start
+  margin; a grid whose rows do not depend on its inline size, a subgrid of the columns, whose items of the first row after the
+  break are all pushed, `BreakAnchor.PushedWith`); `MeasureRowBreak` rejects the strip when a row after that break starts
+  before the first of them. The content of a finished monolithic
   item is the item itself (its block-end edge, not the end of its children). A line box of an item that the break crosses
   is the start of its content after the break (`BreakAnchor.Resume`), as when the break of the item is before it, or its rest
   when the break slices it (`BreakAnchor.SlicedLineOffset`): only the pages tell (`ResolveAnchorOfPage`: a sliced line is in
@@ -3292,7 +3300,9 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   before the end of the content of the finished items (`MeasureRowBreak`), by new layouts of the strip that add space before
   the content of the others (`LayoutContext.AnchorPushes`: before the first line box of a block container resumed at a line,
   in `InlineLayoutAlgorithm`; before a block-level box, separating its margins from the margins before it, in
-  `BlockFormattingContext`), at most `MaxRowAlignmentPasses` times. When the items are not in one row in the strip (e.g. the
+  `BlockFormattingContext`), at most `MaxRowAlignmentPasses` times (the intrinsic block sizes measured in another layout of a
+  strip are not used, `LayoutContext.StripLayoutCount`: e.g. a flex item of a column flex container whose line boxes are
+  moved down). When the items are not in one row in the strip (e.g. the
   items of a subgrid with block-start padding), do not reach the same position, or when an item after
   the break starts before that position (an item aligned in the row in the strip without the tracks of its items), the segment is
   rejected: `LayoutPages` lays out the previous segment again without ending at that break (`rejectedBreaks`, by the index of
@@ -3317,9 +3327,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   same offset in it (the block-start edge of the content in the strip plus the offset of the break), else it is rejected as
   a row that does not reach the same position (`rejectedBreaks`). A page of another inline size that starts inside a line
   laid out another way, a multi-column container, a grid whose columns depend on its inline size and whose items are not placed
-  in their order (an item with a definite row, `grid-auto-flow: column` or `dense`), a subgrid whose columns are the columns of
-  its grid (its rows are rows of its own, nested in the row of the grid), a row whose items cannot continue side by side in
-  another inline size... is laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the
+  dense packing in a hole before the break), a row of a container in an item of a broken row (a grid row, a table row, crossed
+  by the break), a row whose items cannot continue side by side in another inline size... is laid out in the inline size of
+  the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.

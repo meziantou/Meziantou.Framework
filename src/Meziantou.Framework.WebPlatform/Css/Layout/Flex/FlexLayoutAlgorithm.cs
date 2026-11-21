@@ -466,9 +466,17 @@ internal sealed partial class FlexLayoutAlgorithm
 
         // (an item of a flex line broken by a page of another inline size whose content after the break starts below the one of
         // the other items is moved down, see LayoutContext.AnchorPushes)
-        if (_isRow && !_properties.IsCrossReverse && _context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
+        // (or, in a single-line column flex container in a broken row, its item after the break)
+        if (_context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
         {
-            item.MarginCrossStart += push;
+            if (_isRow && !_properties.IsCrossReverse)
+            {
+                item.MarginCrossStart += push;
+            }
+            else if (!_isRow && !_properties.IsMainReverse && !_properties.IsMultiLine)
+            {
+                item.MarginMainStart += push;
+            }
         }
 
         var paddingAndBorder = FormattingContext.ResolvePadding(boxModel, _content.InlineSize).Add(boxModel.BorderWidth);

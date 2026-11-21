@@ -196,10 +196,11 @@ internal sealed partial class LayoutEngine
             context.StripRelayout = stripRelayout;
             context.InlineResumes = segment is null ? null : GetInlineResumes(segment.Anchor);
             context.RowResumes = segment?.Anchor is { Container: { } rowContainer } anchorOfRows && (anchorOfRows.Following is not null || anchorOfRows.RowItems is not null) && (IsFlexLineContainer(rowContainer) || IsAutoRepeatGridContainer(rowContainer))
-                ? new() { [rowContainer] = new RowResume(anchorOfRows.Following ?? [], anchorOfRows.RowItems) }
+                ? new() { [rowContainer] = new RowResume(anchorOfRows.Following ?? [], anchorOfRows.RowItems) { Preceding = anchorOfRows.Preceding } }
                 : null;
             context.AnchorPushes = anchorPushes;
             context.ResumedRowItems = rowAnchor?.RowItems;
+            context.StripLayoutCount++;
             stripRelayout.BeginLayout();
             BoxFragment initialContainingBlock;
             try
@@ -315,7 +316,19 @@ internal sealed partial class LayoutEngine
                             aligned = false;
                             if (alignmentPasses < MaxRowAlignmentPasses)
                             {
-                                anchorPushes![box] = anchorPushes.GetValueOrDefault(box) + rowStart - itemPosition;
+                                var pushes = anchorPushes!;
+                                var push = pushes.GetValueOrDefault(box) + rowStart - itemPosition;
+                                pushes[box] = push;
+                                foreach (var item in rowAnchor.Items!)
+                                {
+                                    if (ReferenceEquals(item.Box, box) && item.PushedWith is { } pushedWith)
+                                    {
+                                        foreach (var mate in pushedWith)
+                                        {
+                                            pushes[mate] = push;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -861,6 +874,12 @@ internal sealed partial class LayoutEngine
         public HashSet<ContainerBox>? SpanningItems { get; init; }
 
         /// <summary>
+        /// At a break between the rows of a grid in an item of a broken row: the other items of the first row after the break,
+        /// moved down with <see cref="Box"/> (see <see cref="LayoutContext.AnchorPushes"/>), or null.
+        /// </summary>
+        public HashSet<ContainerBox>? PushedWith { get; init; }
+
+        /// <summary>
         /// When the break slices the content after it (a monolithic box, <see cref="Box"/>, or the line box of <see cref="Resume"/>,
         /// taller than the page): the offset of the break from its block-start edge, else null.
         /// </summary>
@@ -1205,9 +1224,32 @@ internal sealed partial class LayoutEngine
             }
         }
 
+        // (the items of a grid whose rows depend on its inline size are placed again after the break in the strip of another inline
+        // size: they must be in their order)
+        if (itemTracks is not null && IsAutoRepeatGridContainer(box.Box) && !IsPlacedInOrder(box, preceding, crossedItems, following))
+            return null;
+
         // A break between the rows: the rows after it start the content
         if (crossedCount == 0 && !isSingleRow)
-            return first is null ? null : new BreakAnchor(first.Box, position - firstTop, Container: box.Box, Following: following) { Preceding = preceding, IsInRows = true };
+        {
+            if (first is null)
+                return null;
+
+            // (the items of the first row of a grid after the break move down with the first of them, see BreakAnchor.PushedWith)
+            HashSet<ContainerBox>? pushedWith = null;
+            if (itemTracks is { } firstTracks && box.Box.Display.Inside == DisplayInside.Grid)
+            {
+                for (var i = 0; i < box.InFlowChildCount && i < children.Length; i++)
+                {
+                    if (children[i] is BoxFragment child && !ReferenceEquals(child, first) && following!.Contains(child.Box) && firstTracks.Items.TryGetValue(child, out var childTrack) && childTrack.Start == firstTracks.After)
+                    {
+                        (pushedWith ??= []).Add(child.Box);
+                    }
+                }
+            }
+
+            return new BreakAnchor(first.Box, position - firstTop, Container: box.Box, Following: following) { Preceding = preceding, IsInRows = true, PushedWith = pushedWith };
+        }
 
         // A break inside a row whose items are side by side: the content after it in each item starts the content
         if (rowsSideBySide)
@@ -1418,7 +1460,9 @@ internal sealed partial class LayoutEngine
                 continue;
             }
 
-            if (FindBreakAnchorIn(item, writingDirection, position, itemTop, isParallelFlow: true) is not { Container: null, Items: null } inner)
+            // (the content after the break of an item may start between the rows of a table or the items of a column flex container
+            // of the item, which are moved down with the first of them, see LayoutContext.AnchorPushes)
+            if (FindBreakAnchorIn(item, writingDirection, position, itemTop, isParallelFlow: true) is not { Items: null } inner || (inner.Container is { } nested && !IsPushableRowContainer(nested)))
                 return null;
 
             if (inner.Preceding is not null)
@@ -1529,6 +1573,17 @@ internal sealed partial class LayoutEngine
                     return null;
 
                 itemPosition = sliced.Top + item.SliceOffset.GetValueOrDefault();
+            }
+
+            // (at a break between the rows of a container of the item, the rows after the break start after the first of them: they
+            // are moved down with it)
+            if (item is { Container: not null, Following: { } itemFollowing })
+            {
+                foreach (var box in itemFollowing)
+                {
+                    if (FindBoxFragment(children, stripSize, writingDirection, box, parentTop: 0) is (_, var followingTop) && followingTop < top - BreakAnchorEpsilon)
+                        return null;
+                }
             }
 
             positions.Add((item.Box, itemPosition));
@@ -1816,11 +1871,31 @@ internal sealed partial class LayoutEngine
             case DisplayInside.Grid:
                 var columns = box.Style.Layout.Grid.TemplateColumns;
                 sideBySide = true;
-                return (columns.AutoRepeat is null && !columns.IsSubgrid) || IsAutoRepeatGridContainer(box);
+                // (a subgrid of the columns of its grid has the number of columns that it spans: its rows are its own, unless it is
+                // also a subgrid of the rows, whose items are in the rows of its grid, see FindBreakAnchorIn)
+                return (columns.AutoRepeat is null && (!columns.IsSubgrid || !box.Style.Layout.Grid.TemplateRows.IsSubgrid)) || IsAutoRepeatGridContainer(box);
 
             default:
                 return false;
         }
+    }
+
+    /// <summary>
+    /// Returns whether the rows of a container in an item of a broken row can be moved down from the first row after the break
+    /// (see <see cref="LayoutContext.AnchorPushes"/>): the row groups of a table grid box and the rows of a row group (in
+    /// <c>TableLayoutAlgorithm</c>), the items of a single-line column flex container (in <c>FlexLayoutAlgorithm</c>).
+    /// </summary>
+    private static bool IsPushableRowContainer(ContainerBox box)
+    {
+        if (box.Kind == ContainerBoxKind.TableGrid || box.Display.Internal == DisplayInternal.TableRowGroup)
+            return true;
+
+        // (the items of the first row of a grid whose rows do not depend on its inline size, see BreakAnchor.PushedWith)
+        if (box.Kind is ContainerBoxKind.Normal or ContainerBoxKind.Anonymous && !box.Display.IsInternal && box.Display.Inside == DisplayInside.Grid)
+            return !IsAutoRepeatGridContainer(box) && box.Style.Layout.Grid.TemplateColumns.AutoRepeat is null && !box.Style.Layout.Grid.TemplateRows.IsSubgrid;
+
+        return box.Kind is ContainerBoxKind.Normal or ContainerBoxKind.Anonymous && !box.Display.IsInternal && box.Display.Inside == DisplayInside.Flex
+            && FlexContainerProperties.Get(box) is { IsRow: false, IsMainReverse: false, IsMultiLine: false, IsWebkitBox: false };
     }
 
     /// <summary>
@@ -1845,9 +1920,9 @@ internal sealed partial class LayoutEngine
 
     /// <summary>
     /// Returns whether a box is a grid container whose number of columns depends on its inline size (an <c>auto-fill</c> or
-    /// <c>auto-fit</c> repetition of its columns, not a subgrid) and whose items are placed in rows in the order of the items
-    /// (<c>grid-auto-flow: row</c>, not dense, no item with a definite row position): the items after a break between
-    /// two of its rows start a new row in the strip of another inline size (see <see cref="LayoutContext.RowResumes"/>).
+    /// <c>auto-fit</c> repetition of its columns, not a subgrid) and whose items are placed in rows (<c>grid-auto-flow: row</c>,
+    /// dense or not): the items after a break between two of its rows start a new row in the strip of another inline size (see
+    /// <see cref="LayoutContext.RowResumes"/>). The items must be in their order at the break (see <see cref="IsPlacedInOrder"/>).
     /// </summary>
     private static bool IsAutoRepeatGridContainer(ContainerBox box)
     {
@@ -1855,19 +1930,45 @@ internal sealed partial class LayoutEngine
             return false;
 
         var grid = box.Style.Layout.Grid;
-        if (grid.TemplateColumns.AutoRepeat is null || grid.TemplateColumns.IsSubgrid || grid.TemplateRows.IsSubgrid || grid.AutoFlow.IsColumn || grid.AutoFlow.IsDense)
-            return false;
+        return grid.TemplateColumns.AutoRepeat is not null && !grid.TemplateColumns.IsSubgrid && !grid.TemplateRows.IsSubgrid && !grid.AutoFlow.IsColumn;
+    }
 
-        foreach (var child in box.Children)
+    /// <summary>
+    /// Returns whether the items of a grid container with <c>auto-fill</c> or <c>auto-fit</c> columns (see
+    /// <see cref="IsAutoRepeatGridContainer"/>) are in their order at a break: the items whose row is placed by the auto-placement
+    /// (in order-modified document order, the order of their fragments) are the items before the break, then the items of the row
+    /// that the break crosses, then the items after the break, and the items with a definite row are before the break. In the strip
+    /// of another inline size, the items after the break start a new row after the rows of the items before it, and after the rows of
+    /// the items with a definite row (see <see cref="RowResume.Preceding"/>); with <c>dense</c> packing, they do not fill the holes
+    /// before it (see <see cref="GridPlacement.PlaceItems"/>).
+    /// </summary>
+    private static bool IsPlacedInOrder(BoxFragment box, HashSet<ContainerBox>? preceding, List<(BoxFragment Item, double Top)>? crossed, HashSet<ContainerBox>? following)
+    {
+        var group = 0;
+        var children = box.ChildrenSpan;
+        for (var i = 0; i < box.InFlowChildCount && i < children.Length; i++)
         {
-            if (child is not ContainerBox item || item.IsOutOfFlow)
+            if (children[i] is not BoxFragment child || child.Box.IsOutOfFlow)
                 continue;
 
-            // (an item with a definite column is placed by the auto-placement cursor, in the order of the items; not an item with a
-            // definite row)
-            var itemGrid = item.Style.Layout.Grid;
-            if (!IsAutomatic(itemGrid.RowStart) || !IsAutomatic(itemGrid.RowEnd))
+            var itemGrid = child.Box.Style.Layout.Grid;
+            var isDefinite = !IsAutomatic(itemGrid.RowStart) || !IsAutomatic(itemGrid.RowEnd);
+            var itemGroup = preceding?.Contains(child.Box) == true ? 0 : following?.Contains(child.Box) == true ? 2 : 1;
+            if (isDefinite)
+            {
+                if (itemGroup != 0)
+                    return false;
+
+                continue;
+            }
+
+            if (itemGroup == 1 && crossed?.Exists(item => ReferenceEquals(item.Item, child)) != true)
                 return false;
+
+            if (itemGroup < group)
+                return false;
+
+            group = itemGroup;
         }
 
         return true;

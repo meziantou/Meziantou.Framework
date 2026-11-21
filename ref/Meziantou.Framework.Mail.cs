@@ -898,6 +898,17 @@ namespace Meziantou.Framework.Mail
         public System.Guid? StoreId { get => throw null; set { } }
     }
 
+    public static class TnefFile
+    {
+        public static bool HasSignature(System.ReadOnlySpan<byte> data) => throw null;
+        public static Meziantou.Framework.Mail.PstMessage Load(System.IO.Stream stream, Meziantou.Framework.Mail.PstReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.PstMessage Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Mail.PstReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.PstMessage Load(string path, Meziantou.Framework.Mail.PstReadOptions? options = null) => throw null;
+        public static void Save(Meziantou.Framework.Mail.PstMessageBuilder item, System.IO.Stream stream) { }
+        public static void Save(Meziantou.Framework.Mail.PstMessageBuilder item, string path) { }
+        public static byte[] ToByteArray(Meziantou.Framework.Mail.PstMessageBuilder item) => throw null;
+    }
+
     public sealed class UnsupportedPstFeatureException : Meziantou.Framework.Mail.PstException
     {
         public UnsupportedPstFeatureException(string? message) { }

@@ -203,6 +203,14 @@ internal static class PropertyValueCodec
         };
     }
 
+    /// <summary>Removes the null terminator the files of a single item (.msg, TNEF) store after a string, so that the value has the format of the values of an Outlook data file.</summary>
+    public static byte[] RemoveTerminator(PstPropertyType type, byte[] value) => type switch
+    {
+        PstPropertyType.Unicode when value.Length >= 2 && value[^1] == 0 && value[^2] == 0 && value.Length % 2 == 0 => value[..^2],
+        PstPropertyType.String8 when value.Length >= 1 && value[^1] == 0 => value[..^1],
+        _ => value,
+    };
+
     /// <summary>Joins variable-size values in the format of the multi-valued properties: a count, the offsets of the values, then the values.</summary>
     public static byte[] JoinVariable(IReadOnlyList<byte[]> values)
     {

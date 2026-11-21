@@ -94,7 +94,7 @@ internal sealed class MsgPropertySource : PropertySource
             return ReadMultipleVariable(tag);
         }
 
-        return _storage.GetChild(MsgNames.Stream(tag))?.ReadStream() ?? [];
+        return PropertyValueCodec.RemoveTerminator(tag.Type, _storage.GetChild(MsgNames.Stream(tag))?.ReadStream() ?? []);
     }
 
     public override long GetSize(RawProperty property)
@@ -104,9 +104,9 @@ internal sealed class MsgPropertySource : PropertySource
             return property.Inline.Length;
         }
 
-        if (property.Tag.Type is PstPropertyType.MultipleUnicode or PstPropertyType.MultipleString8 or PstPropertyType.MultipleBinary)
+        if (property.Tag.Type is PstPropertyType.MultipleUnicode or PstPropertyType.MultipleString8 or PstPropertyType.MultipleBinary or PstPropertyType.Unicode or PstPropertyType.String8)
         {
-            return ReadMultipleVariable(property.Tag).Length;
+            return ReadBytes(property).Length;
         }
 
         return _storage.GetChild(MsgNames.Stream(property.Tag)) is { IsStream: true } stream ? stream.Size : 0;
@@ -128,7 +128,7 @@ internal sealed class MsgPropertySource : PropertySource
                 throw new MailResourceLimitException($"The property {tag} is larger than the limit of {_context.Options.MaxPropertySize} bytes.");
             }
 
-            values.Add(value);
+            values.Add(PropertyValueCodec.RemoveTerminator(PropertyTypes.GetElementType(tag.Type), value));
         }
 
         return PropertyValueCodec.JoinVariable(values);

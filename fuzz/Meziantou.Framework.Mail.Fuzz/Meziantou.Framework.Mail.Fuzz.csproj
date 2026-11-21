@@ -12,6 +12,7 @@
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Pst\*.pst" LogicalName="TestData/Pst/%(FileName)%(Extension)" Link="Seeds\Pst\%(FileName)%(Extension)" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Mime\*.eml" LogicalName="TestData/Mime/%(FileName)%(Extension)" Link="Seeds\Mime\%(FileName)%(Extension)" />
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Msg\*.msg" LogicalName="TestData/Msg/%(FileName)%(Extension)" Link="Seeds\Msg\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Mail.Tests\TestData\Tnef\*.dat" LogicalName="TestData/Tnef/%(FileName)%(Extension)" Link="Seeds\Tnef\%(FileName)%(Extension)" />
   </ItemGroup>
 
   <ItemGroup>

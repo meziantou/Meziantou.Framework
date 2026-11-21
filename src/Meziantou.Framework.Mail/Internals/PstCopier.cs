@@ -39,6 +39,27 @@ internal static class PstCopier
                 continue;
             }
 
+            if (property.Type is PstPropertyType.String8 or PstPropertyType.MultipleString8)
+            {
+                // The 8-bit strings are in the code page of the source, which the destination does not know: they are copied as Unicode strings
+                var unicode = property.Type == PstPropertyType.String8 ? PstPropertyType.Unicode : PstPropertyType.MultipleUnicode;
+                object? value;
+                try
+                {
+                    value = property.Value;
+                }
+                catch (PstException)
+                {
+                    value = null;
+                }
+
+                if (value is not null)
+                {
+                    destination.SetRaw(new PstPropertyTag(property.Id, unicode), name, Ltp.PropertyValueCodec.Encode(unicode, value, source.Encoding));
+                    continue;
+                }
+            }
+
             destination.SetRaw(property.Tag, name, property.GetBytes());
         }
     }

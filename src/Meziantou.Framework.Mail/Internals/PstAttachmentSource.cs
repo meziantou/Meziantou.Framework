@@ -20,7 +20,7 @@ internal sealed class PstAttachmentSource : AttachmentSource
 
     public override PstPropertyCollection Properties { get; }
 
-    public override PstMessage LoadEmbeddedMessage(PstProperty reference, int embeddingDepth)
+    public override PstMessage? LoadEmbeddedMessage(PstProperty reference, int embeddingDepth)
     {
         // [MS-PST] 2.3.3.5: the value of an object is the identifier of a subnode, then the size of the object
         uint nid;

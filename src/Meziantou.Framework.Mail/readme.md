@@ -7,6 +7,8 @@ Reads and writes email files, without native dependencies:
 - Email messages (`.eml`): the Internet Message Format and MIME, with the encoded headers, the multiparts, the
   attachments and the embedded messages. A message read and written without changes keeps its bytes.
 - Outlook items (`.msg`, [MS-OXMSG]), read and written with the types of the items of Outlook data files.
+- TNEF streams (`winmail.dat`, [MS-OXTNEF]), read and written with the same types; the `winmail.dat` attachments of
+  MIME messages are expanded when they are converted to `EmailMessage`.
 - `EmailMessage`, a model to convert a message from one format to another.
 
 Outlook data files:
@@ -157,4 +159,5 @@ Assert.HasCount(11, email.Attachments);
 
 [MS-PST]: https://learn.microsoft.com/openspecs/office_file_formats/ms-pst/141923d5-15ab-4ef1-a524-6dce75aae546
 [MS-OXMSG]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxmsg/b046868c-9fbf-41ae-9ffb-8de2bd4eec82
+[MS-OXTNEF]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxtnef/1f0544d7-30b7-4194-b58f-adc82f3763bb
 [MS-OXRTFCP]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxrtfcp/65dfe2df-1b69-43fc-8ebd-21819a7463fb

@@ -17,7 +17,7 @@ internal sealed class MsgAttachmentSource : AttachmentSource
 
     public override PstPropertyCollection Properties { get; }
 
-    public override PstMessage LoadEmbeddedMessage(PstProperty reference, int embeddingDepth)
+    public override PstMessage? LoadEmbeddedMessage(PstProperty reference, int embeddingDepth)
     {
         // [MS-OXMSG] 2.2.2.1: the embedded message is in a storage named after the property PidTagAttachDataObject
         var storage = _storage.GetChild(MsgNames.EmbeddedMessage);

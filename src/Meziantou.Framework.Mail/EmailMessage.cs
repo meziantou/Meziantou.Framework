@@ -84,13 +84,38 @@ public sealed class EmailMessage
     /// <summary>Gets the other headers, such as Received or List-Id, with their decoded values.</summary>
     public IList<KeyValuePair<string, string>> Headers { get; } = [];
 
-    /// <summary>Creates the model of a MIME message.</summary>
+    /// <summary>Creates the model of a MIME message. A <c>winmail.dat</c> attachment (<c>application/ms-tnef</c>) is replaced by the attachments of the Outlook item it contains, and gives the bodies the message does not have; a malformed one is kept as an attachment.</summary>
     /// <param name="message">The message.</param>
     /// <returns>The model.</returns>
     public static EmailMessage FromMime(MimeMessage message)
     {
         ArgumentNullException.ThrowIfNull(message);
         return FromMime(message, depth: 0);
+    }
+
+    private static bool IsTnef(MimePart part)
+    {
+        var type = part.ContentType;
+        return type.MediaType.Equals("application", StringComparison.OrdinalIgnoreCase)
+            && (type.MediaSubtype.Equals("ms-tnef", StringComparison.OrdinalIgnoreCase) || type.MediaSubtype.Equals("vnd.ms-tnef", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static EmailMessage? TryReadTnef(byte[] content)
+    {
+        if (!TnefFile.HasSignature(content))
+        {
+            return null;
+        }
+
+        try
+        {
+            return FromPst(TnefFile.Load(content));
+        }
+        catch (MailException)
+        {
+            // A malformed stream is kept as an attachment
+            return null;
+        }
     }
 
     private static EmailMessage FromMime(MimeMessage message, int depth)
@@ -139,6 +164,17 @@ public sealed class EmailMessage
 
             switch (entity)
             {
+                case MimePart part when IsTnef(part) && TryReadTnef(part.GetContent()) is { } tnef:
+                    // A winmail.dat attachment: the bodies and the attachments of the Outlook item it contains
+                    result.TextBody ??= tnef.TextBody;
+                    result.HtmlBody ??= tnef.HtmlBody;
+                    result.RtfBody ??= tnef.RtfBody;
+                    foreach (var item in tnef.Attachments)
+                    {
+                        result.Attachments.Add(item);
+                    }
+
+                    continue;
                 case MimePart part:
                     attachment.Content = part.GetContent();
                     break;

@@ -13,6 +13,9 @@ internal sealed class NameToIdMapWriter
 
     public int Count => _names.Count;
 
+    /// <summary>Returns the name of an identifier the map gave.</summary>
+    public PstNamedProperty GetName(ushort id) => _names[id - 0x8000];
+
     /// <summary>Returns the identifier of a named property, and assigns one the first time.</summary>
     /// <exception cref="InvalidOperationException">The file already maps 32,767 named properties.</exception>
     public ushort GetId(PstNamedProperty name)

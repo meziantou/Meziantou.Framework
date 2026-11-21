@@ -899,6 +899,29 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([120, 40], pages.Select(page => CountWords(page.Content)));
     }
 
+    [Theory]
+    [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr'><div id=b1>{0}</div><div id=b2>{0}</div></div>")]
+    [InlineData("<table style='width: 100%; border-spacing: 0; table-layout: fixed'><tr><td id=b1 style='padding: 0'>{0}</td><td id=b2 style='padding: 0'>{0}</td></tr></table>")]
+    [InlineData("<div style='display: flex'><div id=b1 style='flex: 1 1 0'>{0}</div><div id=b2 style='flex: 1 1 0'>{0}</div></div>")]
+    public void Pages_GridRowWithARowBrokenInAnItemIsLaidOutInAPageOfAnotherInlineSize(string nestedRow)
+    {
+        // The second item of the grid row has a row of its own (a grid, a table row, a flex line), which the break crosses: its
+        // items are items of the row. In the 400px wide first page, the paragraph of the first item has 4 words per line (120 of
+        // 160 words on it), the ones of the nested row 2 (60 of 80); in the 200px wide second page, 2 and 1: the content after
+        // the break of all of them starts at the start of the page, in the new inline size
+        var words = string.Join(' ', Enumerable.Repeat("XXXX", 80));
+        var document = Parse($$"""
+            <style>@page { size: 200px 300px; margin: 0 } @page :first { size: 400px 300px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{words}} {{words}}</div><div>{{string.Format(CultureInfo.InvariantCulture, nestedRow, words)}}</div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((1, new PhysicalRect(0, 0, 100, 200)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal((1, new PhysicalRect(100, 0, 50, 200)), GetPageRects(pages, document.GetElementById("b1")!)[^1]);
+        Assert.Equal((1, new PhysicalRect(150, 0, 50, 200)), GetPageRects(pages, document.GetElementById("b2")!)[^1]);
+        Assert.Equal([240, 80], pages.Select(page => CountWords(page.Content)));
+    }
+
     [Fact]
     public void Pages_GridRowWithAParagraphOfAColumnFlexItemMovedDownIsLaidOutInAPageOfAnotherInlineSize()
     {

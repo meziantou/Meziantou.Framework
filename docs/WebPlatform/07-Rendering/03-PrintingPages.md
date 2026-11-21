@@ -66,7 +66,8 @@ var pages = context.RenderPages();
   rows. The items of a flex line stay in one line, even when they no longer fit in the new width: they shrink, or
   overflow the container. The content of an item may also continue between the rows of a table, of a grid (also a subgrid
   of the columns) or of a column flex container of the item: its rows after the break are moved down with the content of the
-  other items. The items must stay side by side in the new width; otherwise the page keeps the width of the
+  other items. When the break crosses a row of an item (a row of its grid or of its table, a flex line), the items of that
+  row continue beside the others, as items of the broken row. The items must stay side by side in the new width; otherwise the page keeps the width of the
   previous one.
 - A page of another width may also start in the middle of content taller than a page, which the break slices: an image, a
   box with size containment, or a line box (an inline-block taller than the page). The rest of the content continues at

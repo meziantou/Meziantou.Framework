@@ -27,7 +27,7 @@ fails.
     (`auto-fill`, `auto-fit`) and whose items are not placed in their order (an item with a definite row after the break,
     `grid-auto-flow: column`, an item that `dense` places before the break), or inside a table row, a flex line or a grid row
     whose items cannot continue side by side in the new width (an item whose line box or image sliced by the break changes
-    size or content, an item broken inside a row of its own grid or table): it keeps the inline size of the previous page;
+    size or content): it keeps the inline size of the previous page;
   - the spelling changes at a hyphenation break that need a dictionary (the triple consonants of the Swedish and Norwegian
     compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);

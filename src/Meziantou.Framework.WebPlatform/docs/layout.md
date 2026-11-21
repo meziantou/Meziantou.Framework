@@ -3288,7 +3288,11 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   pushed by `TableLayoutAlgorithm` before the row; the items of a single-line column flex container, by their main-start
   margin; a grid whose rows do not depend on its inline size, a subgrid of the columns, whose items of the first row after the
   break are all pushed, `BreakAnchor.PushedWith`); `MeasureRowBreak` rejects the strip when a row after that break starts
-  before the first of them. The content of a finished monolithic
+  before the first of them. The break may also cross a row of an item (a grid row, a table row, a flex line of a container of
+  the item): its items are items of the broken row (`BreakAnchor.NestedRows`: their anchors are in `BreakAnchor.Items`, so
+  their content after the break starts at the same position as the others; each nested row keeps its own items in one row,
+  its finished items, its items before and after the break, which `MeasureRowBreak` and `ResolveAnchorOfPage` check, and its
+  container is in `LayoutContext.RowResumes` and its items in `LayoutContext.ResumedRowItems`). The content of a finished monolithic
   item is the item itself (its block-end edge, not the end of its children). A line box of an item that the break crosses
   is the start of its content after the break (`BreakAnchor.Resume`), as when the break of the item is before it, or its rest
   when the break slices it (`BreakAnchor.SlicedLineOffset`): only the pages tell (`ResolveAnchorOfPage`: a sliced line is in
@@ -3328,9 +3332,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   a row that does not reach the same position (`rejectedBreaks`). A page of another inline size that starts inside a line
   laid out another way, a multi-column container, a grid whose columns depend on its inline size and whose items are not placed
   in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the
-  dense packing in a hole before the break), a row of a container in an item of a broken row (a grid row, a table row, crossed
-  by the break), a row whose items cannot continue side by side in another inline size... is laid out in the inline size of
-  the strip. The floats and the absolutely positioned boxes of the inline
+  dense packing in a hole before the break), a row whose items cannot continue side by side in another inline size... is laid
+  out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.

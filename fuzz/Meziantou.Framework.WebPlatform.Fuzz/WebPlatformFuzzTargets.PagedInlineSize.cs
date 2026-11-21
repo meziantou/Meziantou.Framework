@@ -60,8 +60,9 @@ public static partial class WebPlatformFuzzTargets
     /// shrink (the items of a broken flex line stay in one line), a grid with <c>auto-fill</c> columns whose items span two rows
     /// (every third item) or are in a definite column (every fourth item), and a grid whose items are subgrids of two rows (every
     /// third item), a dense grid with <c>auto-fill</c> columns with a header in its first row whose items span two columns (every
-    /// fifth item), and a grid whose items have rows of their own (a column flex container, a grid) before their paragraph. The
-    /// number of containers keeps the inputs of the regressions on their container.
+    /// fifth item), a grid whose items have rows of their own (a column flex container, a grid) before their paragraph, and grid
+    /// and flex rows whose items have a row of their own beside their paragraph (a grid, a table row, a flex line). The number of
+    /// containers keeps the inputs of the regressions on their container.
     /// </summary>
     private static readonly (string Start, string Row, string End)[] PagedInlineSizeReflowedRowContainers =
     [
@@ -71,6 +72,8 @@ public static partial class WebPlatformFuzzTargets
         ("<style>#c > :nth-child(3n) { grid-row: span 2; display: grid; grid-template-rows: subgrid }</style><div id=c style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<style>#c > :nth-child(5n) { grid-column: span 2 }</style><div id=c style='display: grid; grid-template-columns: repeat(auto-fill, 90px); grid-auto-flow: row dense'><div style='grid-row: 1; grid-column: 1 / -1; height: 20px'></div>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<style>#c > :nth-child(2n) > div { display: grid; grid-template-columns: 1fr 1fr }</style><div id=c style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id={0} style='{1}'><div style='display: flex; flex-direction: column'><div style='height: 40px'></div><div style='height: 40px'></div><div>{2}</div></div></div>", "</div>"),
+        ("<div id=c style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>", "<div id={0} style='{1}'><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{2}</div><div style='height: 50px'></div></div></div>", "</div>"),
+        ("<style>#c > :nth-child(2n) > table { display: flex }</style><div id=c style='display: flex; align-items: flex-start'>", "<div id={0} style='flex: 1 1 0; min-width: 0; {1}'><table style='width: 100%; border-spacing: 0'><tr><td style='padding: 0'>{2}</td><td style='padding: 0; width: 30%'><div style='height: 40px'></div></td></tr></table></div>", "</div>"),
     ];
 
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>
@@ -250,6 +253,10 @@ public static partial class WebPlatformFuzzTargets
             // A dense automatic grid with a header and items that span two columns, a grid whose items have rows of their own
             [35, 75, 15, 4, 9, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
             [75, 35, 15, 5, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 20],
+
+            // Rows whose items have a row of their own beside their paragraph (a grid, a table row, a flex line)
+            [75, 35, 15, 6, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 20],
+            [35, 75, 15, 7, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 20],
         ];
 
         for (var i = 0; i < scenarios.Length; i++)

@@ -28,7 +28,40 @@ An email has up to three bodies:
 - [Body](cref:Meziantou.Framework.Email.Mapi.MapiMessage.Body), the plain text,
 - [BodyHtml](cref:Meziantou.Framework.Email.Mapi.MapiMessage.BodyHtml), decoded with the code page of the message,
 - [GetRtfBody](cref:Meziantou.Framework.Email.Mapi.MapiMessage.GetRtfBody), the RTF, decompressed from the compressed RTF property.
-  Outlook keeps the HTML of some messages inside the RTF only.
+
+### Bodies encapsulated in RTF
+
+Outlook often keeps the HTML of a message only inside its RTF body, and the RTF of a message written from plain text
+says so ([MS-OXRTFEX]). [GetHtmlBody](cref:Meziantou.Framework.Email.Mapi.MapiMessage.GetHtmlBody) returns the HTML
+property, or the HTML encapsulated in the RTF when the message has no HTML property, and
+[GetTextBody](cref:Meziantou.Framework.Email.Mapi.MapiMessage.GetTextBody) does the same for the plain text.
+[EmailMessage.FromMapi](cref:Meziantou.Framework.Email.EmailMessage.FromMapi) uses them, so that converting such a
+message to an `.eml` file keeps its HTML.
+
+[RtfEncapsulation](cref:Meziantou.Framework.Email.Mapi.RtfEncapsulation) works on the RTF itself:
+[GetFormat](cref:Meziantou.Framework.Email.Mapi.RtfEncapsulation.GetFormat) reads the header,
+[Decapsulate](cref:Meziantou.Framework.Email.Mapi.RtfEncapsulation.Decapsulate) extracts the HTML or the text, and
+[EncapsulateHtml](cref:Meziantou.Framework.Email.Mapi.RtfEncapsulation.EncapsulateHtml) and
+[EncapsulateText](cref:Meziantou.Framework.Email.Mapi.RtfEncapsulation.EncapsulateText) write a body that
+[SetRtfBody](cref:Meziantou.Framework.Email.Mapi.MapiMessageBuilder.SetRtfBody) stores in an item:
+
+<!-- ref:../../../tests/Meziantou.Framework.Email.Tests/RtfEncapsulationTests.cs;region=RtfEncapsulation_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var rtf = RtfEncapsulation.EncapsulateHtml("<p>Hello {world}</p>\r\n");
+Assert.Equal(RtfEncapsulationFormat.Html, RtfEncapsulation.GetFormat(rtf));
+Assert.Equal("<p>Hello {world}</p>\r\n", RtfEncapsulation.Decapsulate(rtf));
+
+// An RTF body that does not encapsulate another format
+Assert.Equal(RtfEncapsulationFormat.None, RtfEncapsulation.GetFormat(@"{\rtf1\ansi Hello}"u8));
+Assert.Null(RtfEncapsulation.Decapsulate(@"{\rtf1\ansi Hello}"u8));
+```
+<!-- endref -->
+
+The reader follows the code pages of the header and of the fonts. The RTF that
+[EncapsulateHtml](cref:Meziantou.Framework.Email.Mapi.RtfEncapsulation.EncapsulateHtml) writes contains only the HTML:
+a reader that does not support the encapsulation shows an empty document.
+
+[MS-OXRTFEX]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxrtfex
 
 ## Attachments
 

@@ -294,8 +294,8 @@ public sealed class EmailMessage
             Date = (message.ClientSubmitTime ?? message.MessageDeliveryTime) is { } date ? new DateTimeOffset(DateTime.SpecifyKind(date, DateTimeKind.Utc)) : null,
             MessageId = TrimId(message.InternetMessageId),
             InReplyTo = TrimId(message.InReplyToId),
-            TextBody = message.Body,
-            HtmlBody = message.BodyHtml,
+            TextBody = message.GetTextBody(),
+            HtmlBody = message.GetHtmlBody(),
             RtfBody = message.GetRtfBody() is { } rtf ? Encoding.Latin1.GetString(rtf) : null,
             Importance = (EmailImportance)message.Importance,
         };

@@ -706,7 +706,9 @@ namespace Meziantou.Framework.Email.Mapi
         public int? Size { get => throw null; }
         public string? Subject { get => throw null; }
         public string? TransportMessageHeaders { get => throw null; }
+        public string? GetHtmlBody() => throw null;
         public byte[]? GetRtfBody() => throw null;
+        public string? GetTextBody() => throw null;
         public override string ToString() => throw null;
     }
 
@@ -1044,6 +1046,21 @@ namespace Meziantou.Framework.Email.Mapi
         public static void Save(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, System.IO.Stream stream) { }
         public static void Save(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item, string path) { }
         public static byte[] ToByteArray(Meziantou.Framework.Email.Mapi.MapiMessageBuilder item) => throw null;
+    }
+
+    public static class RtfEncapsulation
+    {
+        public static string? Decapsulate(System.ReadOnlySpan<byte> rtf) => throw null;
+        public static byte[] EncapsulateHtml(string html) => throw null;
+        public static byte[] EncapsulateText(string text) => throw null;
+        public static Meziantou.Framework.Email.Mapi.RtfEncapsulationFormat GetFormat(System.ReadOnlySpan<byte> rtf) => throw null;
+    }
+
+    public enum RtfEncapsulationFormat
+    {
+        None = 0,
+        Html = 1,
+        Text = 2,
     }
 
     public static class TnefFile

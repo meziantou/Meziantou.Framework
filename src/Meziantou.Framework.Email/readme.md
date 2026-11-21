@@ -22,7 +22,8 @@ Reads and writes email files, without native dependencies. It does not send emai
 Outlook data files:
 
 - Folders, search folders and associated items
-- Emails: properties, recipients, bodies in plain text, HTML and RTF (compressed RTF, [MS-OXRTFCP])
+- Emails: properties, recipients, bodies in plain text, HTML and RTF (compressed RTF, [MS-OXRTFCP]), and the HTML and
+  text bodies encapsulated in RTF ([MS-OXRTFEX])
 - Attachments, read block by block, and embedded messages
 - Contacts, distribution lists, appointments with their recurrence and exceptions, tasks
 - Every MAPI property, including the named properties
@@ -170,3 +171,4 @@ Assert.HasCount(11, email.Attachments);
 [MS-OXTNEF]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxtnef/1f0544d7-30b7-4194-b58f-adc82f3763bb
 [MS-OXOAB]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxoab
 [MS-OXRTFCP]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxrtfcp/65dfe2df-1b69-43fc-8ebd-21819a7463fb
+[MS-OXRTFEX]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxrtfex

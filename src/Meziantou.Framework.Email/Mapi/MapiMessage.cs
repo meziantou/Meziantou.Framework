@@ -185,6 +185,22 @@ public class MapiMessage
         return Lzfu.Decompress(property.GetBytes(), Source.Options.MaxPropertySize, Source.Options.VerifyChecksums);
     }
 
+    /// <summary>Returns the HTML body: the HTML property, or the HTML encapsulated in the RTF body when the message has no HTML property, as Outlook often stores it ([MS-OXRTFEX]).</summary>
+    /// <returns>The HTML, or <see langword="null"/> when the message has no HTML body.</returns>
+    /// <exception cref="InvalidEmailDataException">The compressed RTF is malformed.</exception>
+    public string? GetHtmlBody()
+    {
+        return BodyHtml ?? DecapsulateRtf(RtfEncapsulationFormat.Html);
+    }
+
+    /// <summary>Returns the plain text body: the body property, or the text encapsulated in the RTF body when the message has no body property ([MS-OXRTFEX]).</summary>
+    /// <returns>The text, or <see langword="null"/> when the message has no plain text body.</returns>
+    /// <exception cref="InvalidEmailDataException">The compressed RTF is malformed.</exception>
+    public string? GetTextBody()
+    {
+        return Body ?? DecapsulateRtf(RtfEncapsulationFormat.Text);
+    }
+
     /// <summary>Returns the subject.</summary>
     /// <returns>The subject.</returns>
     public override string ToString() => Subject ?? "";
@@ -234,6 +250,16 @@ public class MapiMessage
     {
         var encoding = Properties.GetInt32(PropertyIds.InternetCodepage) is int codePage and > 0 and < 65536 ? PstContext.GetEncoding(codePage) : Encoding.UTF8;
         return encoding.GetString(bytes).TrimEnd('\0');
+    }
+
+    private string? DecapsulateRtf(RtfEncapsulationFormat format)
+    {
+        if (!HasRtfBody || GetRtfBody() is not { } rtf || RtfEncapsulation.GetFormat(rtf) != format)
+        {
+            return null;
+        }
+
+        return RtfEncapsulation.Decapsulate(rtf);
     }
 
     private List<MapiRecipient> LoadRecipients() => Source.LoadRecipients(this);

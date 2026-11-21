@@ -809,26 +809,39 @@ public sealed class PdfPageTests
     [Fact]
     public void Example_WatermarkInACorner()
     {
-        var document = new PdfDocument();
-        document.Pages.Add(PdfSize.A4);
+        using var directory = TemporaryDirectory.Create();
+        var input = directory / "card.pdf";
+        var output = directory / "confidential.pdf";
+        PdfDocumentTests.CreateCard(input);
 
-        #region Pdf_WatermarkInACorner
-        // Horizontal, in the upper-right corner of every page, half an inch from its edges
+        WatermarkInACorner(input, output);
+
+        // The card is 300 x 180. The box of the text ends at the margin: its advance on the right, the descender of
+        // Helvetica Bold (AFM: -207) at the bottom
+        var line = Assert.Single(PdfDocument.Open(output).Pages[0].ExtractTextLayout().Lines, line => line.Text == "CONFIDENTIAL");
+        Assert.Equal(0, line.Glyphs[0].Angle, 0.01);
+        Assert.Equal(300 - 12, line.Glyphs[^1].End.X, 0.01);
+        Assert.Equal(12 + (0.207 * 14), line.Glyphs[0].Origin.Y, 0.01);
+    }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_WatermarkInACorner
+    public static void WatermarkInACorner(string inputPath, string outputPath)
+    {
+        var document = PdfDocument.Open(inputPath);
+
+        // Horizontal, in the lower-right corner of every page, 12 points from its edges
         document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
         {
-            Position = PdfWatermarkPosition.TopRight,
-            Margin = 36,
-            FontSize = 24,
+            Position = PdfWatermarkPosition.BottomRight,
+            Margin = 12,
+            FontSize = 14,
         });
-        #endregion
 
-        // The box of the text ends at the margin: its advance on the right, the ascender of Helvetica Bold (AFM: 718) at the top
-        var line = Assert.Single(PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractTextLayout().Lines);
-        Assert.Equal("CONFIDENTIAL", line.Text);
-        Assert.Equal(0, line.Glyphs[0].Angle, 0.01);
-        Assert.Equal(595.28 - 36, line.Glyphs[^1].End.X, 0.01);
-        Assert.Equal(841.89 - 36 - (0.718 * 24), line.Glyphs[0].Origin.Y, 0.01);
+        document.Save(outputPath);
     }
+    #endregion
+#pragma warning restore xUnit1013
 
     [Fact]
     public void AddWatermark_AnchorsTheTextOnTheDisplayOfARotatedPage()
@@ -878,21 +891,17 @@ public sealed class PdfPageTests
     [Fact]
     public void Example_TiledWatermark()
     {
+        using var directory = TemporaryDirectory.Create();
+        var input = directory / "blank.pdf";
+        var output = directory / "confidential.pdf";
         var document = new PdfDocument();
         document.Pages.Add(new PdfSize(300, 200));
         document.Pages.Add(new PdfSize(300, 200));
+        document.Save(input);
 
-        #region Pdf_TiledWatermark
-        // Repeated over the whole page, along its diagonal, the rows offset by half a copy
-        document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
-        {
-            IsTiled = true,
-            FontSize = 18,
-            TileSpacing = 12,
-        });
-        #endregion
+        TiledWatermark(input, output);
 
-        var read = PdfDocument.Open(document.ToByteArray());
+        var read = PdfDocument.Open(output);
         var patterns = read.Pages.Select(page => Assert.Single(page.Resources!.Get<PdfDictionary>(PdfName.Create("Pattern"))!).Value).ToArray();
         Assert.Equal(patterns[0], patterns[1]); // the pages of the same size share the pattern
         Assert.Contains("/Artifact", Encoding.Latin1.GetString(read.Pages[0].GetContentData()));
@@ -917,6 +926,25 @@ public sealed class PdfPageTests
             return false;
         }
     }
+
+#pragma warning disable xUnit1013 // An example of the documentation, called by DocumentationImageTests
+    #region Pdf_TiledWatermark
+    public static void TiledWatermark(string inputPath, string outputPath)
+    {
+        var document = PdfDocument.Open(inputPath);
+
+        // Repeated over the whole page, along its diagonal, the rows offset by half a copy
+        document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+        {
+            IsTiled = true,
+            FontSize = 18,
+            TileSpacing = 12,
+        });
+
+        document.Save(outputPath);
+    }
+    #endregion
+#pragma warning restore xUnit1013
 
     [Fact]
     public void AddWatermark_TilesTheTextOnARotatedPage()

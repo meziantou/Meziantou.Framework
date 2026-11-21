@@ -95,15 +95,24 @@ document.AddWatermark("DRAFT", new PdfWatermarkOptions { Opacity = 0.2 });
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_WatermarkInACorner;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// Horizontal, in the upper-right corner of every page, half an inch from its edges
-document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+public static void WatermarkInACorner(string inputPath, string outputPath)
 {
-    Position = PdfWatermarkPosition.TopRight,
-    Margin = 36,
-    FontSize = 24,
-});
+    var document = PdfDocument.Open(inputPath);
+
+    // Horizontal, in the lower-right corner of every page, 12 points from its edges
+    document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+    {
+        Position = PdfWatermarkPosition.BottomRight,
+        Margin = 12,
+        FontSize = 14,
+    });
+
+    document.Save(outputPath);
+}
 ```
 <!-- endref -->
+
+![The welcome card with the word CONFIDENTIAL in translucent gray in its lower-right corner](images/WatermarkInACorner.png)
 
 - [Margin](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Margin) is the distance, in points, between the box of the text
   and the edges of the page as it is displayed. The default is 36, half an inch.
@@ -114,20 +123,29 @@ document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
 
 ### Repeat the watermark over the page
 
-[IsTiled](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.IsTiled) repeats the text over the whole page, so that no part
-of the page can be cropped without it:
+[IsTiled](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.IsTiled) repeats the text over the whole page, which makes
+the watermark harder to crop away:
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_TiledWatermark;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// Repeated over the whole page, along its diagonal, the rows offset by half a copy
-document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+public static void TiledWatermark(string inputPath, string outputPath)
 {
-    IsTiled = true,
-    FontSize = 18,
-    TileSpacing = 12,
-});
+    var document = PdfDocument.Open(inputPath);
+
+    // Repeated over the whole page, along its diagonal, the rows offset by half a copy
+    document.AddWatermark("CONFIDENTIAL", new PdfWatermarkOptions
+    {
+        IsTiled = true,
+        FontSize = 18,
+        TileSpacing = 12,
+    });
+
+    document.Save(outputPath);
+}
 ```
 <!-- endref -->
+
+![The welcome card covered with rows of the word CONFIDENTIAL in translucent gray along its diagonal, each row offset by half a word](images/TiledWatermark.png)
 
 - The copies are in rows along the diagonal of the page, or along
   [Rotation](cref:Meziantou.Framework.Pdf.PdfWatermarkOptions.Rotation), and each row is offset by half a copy from the

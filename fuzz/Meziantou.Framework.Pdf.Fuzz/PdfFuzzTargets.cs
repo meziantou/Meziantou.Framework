@@ -911,9 +911,9 @@ public static class PdfFuzzTargets
             {
                 FuzzAssert.True(content.AsSpan().SequenceEqual(contents[i]), "A page outside the range changed");
             }
-            else if (!options.IsTiled)
+            else
             {
-                // A copy that is not tiled is always painted; the steps of a tiled one can be too small to be written
+                // Helvetica Bold and the sizes of the input keep the steps of a tiled watermark far above the smallest one written
                 FuzzAssert.True(System.Text.Encoding.Latin1.GetString(content).Contains("/Artifact", StringComparison.Ordinal), "A page of the range has no watermark");
             }
         }

@@ -16,7 +16,7 @@ public sealed class PstPropertyCollection : IReadOnlyCollection<PstProperty>
     internal PstPropertyCollection(PropertySource source, IReadOnlyList<RawProperty> properties)
     {
         Source = source;
-        var encoding = source.Context.DefaultEncoding;
+        var encoding = source.DefaultEncoding;
         foreach (var property in properties)
         {
             if (property.Tag.Id == MessageCodePageId && property.Tag.Type == PstPropertyType.Integer32 && property.Inline is { Length: 4 } inline)
@@ -62,7 +62,7 @@ public sealed class PstPropertyCollection : IReadOnlyCollection<PstProperty>
     public PstProperty? Find(PstNamedProperty name)
     {
         ArgumentNullException.ThrowIfNull(name);
-        var id = Source.Context.NameToIdMap.GetId(name);
+        var id = Source.GetId(name);
         return id is null ? null : Find(id.Value);
     }
 

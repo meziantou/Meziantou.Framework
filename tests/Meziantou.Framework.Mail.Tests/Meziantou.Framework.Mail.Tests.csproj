@@ -12,6 +12,7 @@
   <ItemGroup>
     <!-- An independent MIME parser (MIT), the oracle of MimeOracleTests -->
     <PackageReference Include="MimeKit" Version="4.18.2" />
+    <PackageReference Include="MsgReader" Version="6.2.0" />
   </ItemGroup>
 
   <ItemGroup>

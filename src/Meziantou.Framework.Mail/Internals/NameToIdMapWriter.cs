@@ -34,13 +34,14 @@ internal sealed class NameToIdMapWriter
     }
 
     /// <summary>Returns the properties of the map: the bucket count, the streams and the hash buckets.</summary>
-    public List<(PstPropertyTag Tag, byte[] Value)> CreateProperties()
+    /// <param name="bucketCount">The number of hash buckets: 251 in an Outlook data file, 31 in an .msg file.</param>
+    public List<(PstPropertyTag Tag, byte[] Value)> CreateProperties(int bucketCount = BucketCount)
     {
         using var guids = new MemoryStream();
         using var entries = new MemoryStream();
         using var strings = new MemoryStream();
         var guidIndexes = new Dictionary<Guid, int>();
-        var buckets = new List<byte>[BucketCount];
+        var buckets = new List<byte>[bucketCount];
         Span<byte> entry = stackalloc byte[8];
         Span<byte> length = stackalloc byte[4];
         for (var i = 0; i < _names.Count; i++)
@@ -95,19 +96,19 @@ internal sealed class NameToIdMapWriter
             entries.Write(entry);
 
             var record = CreateBucketRecord(entry, strings.GetBuffer().AsSpan(0, (int)strings.Length));
-            var bucket = GetBucket(record, BucketCount);
+            var bucket = GetBucket(record, bucketCount);
             (buckets[bucket] ??= []).AddRange(record);
         }
 
         var result = new List<(PstPropertyTag Tag, byte[] Value)>
         {
-            (new PstPropertyTag(NameToIdMap.BucketCountId, PstPropertyType.Integer32), BitConverter.GetBytes(BucketCount)),
+            (new PstPropertyTag(NameToIdMap.BucketCountId, PstPropertyType.Integer32), BitConverter.GetBytes(bucketCount)),
             (new PstPropertyTag(NameToIdMap.GuidStreamId, PstPropertyType.Binary), guids.ToArray()),
             (new PstPropertyTag(NameToIdMap.EntryStreamId, PstPropertyType.Binary), entries.ToArray()),
             (new PstPropertyTag(NameToIdMap.StringStreamId, PstPropertyType.Binary), strings.ToArray()),
         };
 
-        for (var i = 0; i < BucketCount; i++)
+        for (var i = 0; i < bucketCount; i++)
         {
             result.Add((new PstPropertyTag((ushort)(0x1000 + i), PstPropertyType.Binary), buckets[i]?.ToArray() ?? []));
         }

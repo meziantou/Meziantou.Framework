@@ -9,6 +9,7 @@ description: The email, contact and calendar formats Meziantou.Framework.Mail re
 | --- | --- | --- | --- | --- |
 | Outlook data files | `.pst`, `.ost` | Yes | Yes | [Outlook data files](03-Pst/01-Overview.md) |
 | Email messages (Internet Message Format, MIME) | `.eml` | Yes | Yes | [Email files](04-Mime/01-Overview.md) |
+| Outlook items | `.msg` | Yes | Yes | [Outlook items](05-Msg/01-Overview.md) |
 
 Each format has its own objects, which give access to everything the format stores: the MAPI properties of an Outlook
 item, the headers and the MIME parts of a message. [EmailMessage](cref:Meziantou.Framework.Mail.EmailMessage) is the

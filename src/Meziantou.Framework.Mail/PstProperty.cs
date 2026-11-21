@@ -20,7 +20,7 @@ public sealed class PstProperty
         _encoding = encoding;
         if (raw.Tag.IsNamed)
         {
-            NamedProperty = source.Context.NameToIdMap.GetName(raw.Tag.Id);
+            NamedProperty = source.GetName(raw.Tag.Id);
         }
     }
 

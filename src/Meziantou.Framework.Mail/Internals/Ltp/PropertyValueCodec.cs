@@ -96,17 +96,7 @@ internal static class PropertyValueCodec
             return [.. items.SelectMany(item => item)];
         }
 
-        var result = new byte[4 + (items.Count * 4) + items.Sum(item => item.Length)];
-        BinaryPrimitives.WriteUInt32LittleEndian(result, (uint)items.Count);
-        var offset = 4 + (items.Count * 4);
-        for (var i = 0; i < items.Count; i++)
-        {
-            BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(4 + (i * 4)), (uint)offset);
-            items[i].CopyTo(result, offset);
-            offset += items[i].Length;
-        }
-
-        return result;
+        return JoinVariable(items);
     }
 
     private static byte[] Write(int size, SpanAction write)
@@ -211,6 +201,22 @@ internal static class PropertyValueCodec
             PstPropertyType.String8 => items.Select(item => DecodeString8(item, string8Encoding)).ToArray(),
             _ => items.ToArray(),
         };
+    }
+
+    /// <summary>Joins variable-size values in the format of the multi-valued properties: a count, the offsets of the values, then the values.</summary>
+    public static byte[] JoinVariable(IReadOnlyList<byte[]> values)
+    {
+        var result = new byte[4 + (values.Count * 4) + values.Sum(value => value.Length)];
+        BinaryPrimitives.WriteUInt32LittleEndian(result, (uint)values.Count);
+        var offset = 4 + (values.Count * 4);
+        for (var i = 0; i < values.Count; i++)
+        {
+            BinaryPrimitives.WriteUInt32LittleEndian(result.AsSpan(4 + (i * 4)), (uint)offset);
+            values[i].CopyTo(result, offset);
+            offset += values[i].Length;
+        }
+
+        return result;
     }
 
     public static List<byte[]> SplitVariable(ReadOnlySpan<byte> data)

@@ -1,4 +1,4 @@
 title: Mail
-description: Read and write email, contact and calendar files: Outlook data files (PST and OST), email messages (EML, MIME), and the model they convert to.
+description: Read and write email, contact and calendar files: Outlook data files (PST and OST), email messages (EML, MIME), Outlook items (MSG), and the model they convert to.
 packageIds:
 - Meziantou.Framework.Mail

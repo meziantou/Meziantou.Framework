@@ -6,6 +6,7 @@ Reads and writes email files, without native dependencies:
   No Outlook or MAPI installation is needed.
 - Email messages (`.eml`): the Internet Message Format and MIME, with the encoded headers, the multiparts, the
   attachments and the embedded messages. A message read and written without changes keeps its bytes.
+- Outlook items (`.msg`, [MS-OXMSG]), read and written with the types of the items of Outlook data files.
 - `EmailMessage`, a model to convert a message from one format to another.
 
 Outlook data files:
@@ -113,6 +114,29 @@ foreach (var attachment in message.Attachments.OfType<MimePart>())
 ```
 <!-- endref -->
 
+## Save an Outlook item as an .msg file
+
+<!-- ref:../../tests/Meziantou.Framework.Mail.Tests/MsgFileTests.cs;region=MsgFile_Save;format=md-fenced-code-block;dedent=true -->
+```csharp
+var message = new PstMessageBuilder
+{
+    Subject = "Quarterly report",
+    Body = "The report is attached.",
+    SenderName = "Alice",
+    SenderEmailAddress = "alice@example.com",
+    SenderAddressType = "SMTP",
+};
+message.Recipients.Add(new PstRecipientBuilder("Bob", "bob@example.com"));
+message.Attachments.Add(PstAttachmentBuilder.FromContent("report.csv", "Quarter,Total\nQ1,42\n"u8.ToArray(), "text/csv"));
+MsgFile.Save(message, path);
+
+var item = MsgFile.Load(path);
+Assert.Equal("Quarterly report", item.Subject);
+Assert.Equal("bob@example.com", item.Recipients.Single().EmailAddress);
+Assert.Equal("report.csv", item.Attachments.Single().Name);
+```
+<!-- endref -->
+
 ## Convert a message
 
 <!-- ref:../../tests/Meziantou.Framework.Mail.Tests/EmailMessageTests.cs;region=EmailMessage_Convert;format=md-fenced-code-block;dedent=true -->
@@ -132,4 +156,5 @@ Assert.HasCount(11, email.Attachments);
 <!-- endref -->
 
 [MS-PST]: https://learn.microsoft.com/openspecs/office_file_formats/ms-pst/141923d5-15ab-4ef1-a524-6dce75aae546
+[MS-OXMSG]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxmsg/b046868c-9fbf-41ae-9ffb-8de2bd4eec82
 [MS-OXRTFCP]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxrtfcp/65dfe2df-1b69-43fc-8ebd-21819a7463fb

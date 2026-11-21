@@ -4,8 +4,8 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Mail</RootNamespace>
     <Version>1.0.0</Version>
-    <Description>Reads and writes email, contact and calendar files. Outlook data files (PST and OST, ANSI, Unicode and 4K-page formats, with or without encryption): folders, messages, recipients, attachments, embedded messages, bodies (text, HTML, compressed RTF), MAPI and named properties, contacts, appointments with their recurrences, tasks and distribution lists. Email messages (EML, MIME): headers, addresses, encoded words, multiparts, attachments and embedded messages, kept byte for byte when unchanged. A common model to convert messages between the formats.</Description>
-    <PackageTags>mail;email;pst;ost;outlook;mapi;eml;mime;contacts;calendar</PackageTags>
+    <Description>Reads and writes email, contact and calendar files. Outlook data files (PST and OST, ANSI, Unicode and 4K-page formats, with or without encryption): folders, messages, recipients, attachments, embedded messages, bodies (text, HTML, compressed RTF), MAPI and named properties, contacts, appointments with their recurrences, tasks and distribution lists. Email messages (EML, MIME): headers, addresses, encoded words, multiparts, attachments and embedded messages, kept byte for byte when unchanged. Outlook items (MSG) in compound files. A common model to convert messages between the formats.</Description>
+    <PackageTags>mail;email;pst;ost;outlook;mapi;eml;mime;msg;contacts;calendar</PackageTags>
 
     <!-- Every public member must be documented -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>

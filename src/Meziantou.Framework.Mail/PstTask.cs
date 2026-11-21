@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Mail;
 /// <summary>A task (IPM.Task).</summary>
 public sealed class PstTask : PstMessage
 {
-    internal PstTask(PstContext context, NdbNode node, PstPropertyCollection properties, int embeddingDepth)
-        : base(context, node, properties, embeddingDepth)
+    internal PstTask(MessageSource source, PstPropertyCollection properties, int embeddingDepth)
+        : base(source, properties, embeddingDepth)
     {
     }
 

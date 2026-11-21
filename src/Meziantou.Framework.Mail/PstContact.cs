@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Mail;
 /// <summary>A contact (IPM.Contact).</summary>
 public sealed class PstContact : PstMessage
 {
-    internal PstContact(PstContext context, NdbNode node, PstPropertyCollection properties, int embeddingDepth)
-        : base(context, node, properties, embeddingDepth)
+    internal PstContact(MessageSource source, PstPropertyCollection properties, int embeddingDepth)
+        : base(source, properties, embeddingDepth)
     {
     }
 

@@ -208,6 +208,16 @@ namespace Meziantou.Framework.Mail
         public long MaxSize { get => throw null; set { } }
     }
 
+    public static class MsgFile
+    {
+        public static Meziantou.Framework.Mail.PstMessage Load(System.IO.Stream stream, Meziantou.Framework.Mail.PstReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.PstMessage Load(System.ReadOnlyMemory<byte> data, Meziantou.Framework.Mail.PstReadOptions? options = null) => throw null;
+        public static Meziantou.Framework.Mail.PstMessage Load(string path, Meziantou.Framework.Mail.PstReadOptions? options = null) => throw null;
+        public static void Save(Meziantou.Framework.Mail.PstMessageBuilder item, System.IO.Stream stream) { }
+        public static void Save(Meziantou.Framework.Mail.PstMessageBuilder item, string path) { }
+        public static byte[] ToByteArray(Meziantou.Framework.Mail.PstMessageBuilder item) => throw null;
+    }
+
     public sealed class PstAppointment : Meziantou.Framework.Mail.PstMessage
     {
         public string? AllAttendees { get => throw null; }

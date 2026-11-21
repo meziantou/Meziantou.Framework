@@ -1,7 +1,4 @@
-using System.Buffers.Binary;
 using Meziantou.Framework.Mail.Internals;
-using Meziantou.Framework.Mail.Internals.Ltp;
-using Meziantou.Framework.Mail.Internals.Ndb;
 
 namespace Meziantou.Framework.Mail;
 
@@ -25,17 +22,14 @@ namespace Meziantou.Framework.Mail;
 public sealed class PstAttachment
 {
     private readonly PstMessage _message;
-    private readonly NdbNode _node;
+    private readonly AttachmentSource _source;
 
-    internal PstAttachment(PstMessage message, NdbNode node)
+    internal PstAttachment(PstMessage message, AttachmentSource source)
     {
         _message = message;
-        _node = node;
-        var pc = new PropertyContext(node);
-        Properties = new PstPropertyCollection(new PropertySource(message.Context, pc.Heap, node), pc.Properties);
+        _source = source;
+        Properties = source.Properties;
     }
-
-    internal NdbNode Node => _node;
 
     /// <summary>Gets the message the attachment belongs to.</summary>
     public PstMessage Message => _message;
@@ -110,25 +104,7 @@ public sealed class PstAttachment
             return null;
         }
 
-        // [MS-PST] 2.3.3.5: the value of an object is the identifier of a subnode, then the size of the object
-        uint nid;
-        if (property.Raw.Inline is null && property.Raw.Hnid != 0 && !HeapOnNode.IsHid(property.Raw.Hnid))
-        {
-            nid = property.Raw.Hnid;
-        }
-        else
-        {
-            var value = property.GetBytes();
-            if (value.Length < 4)
-            {
-                throw new InvalidPstException("The reference to an embedded message is truncated.");
-            }
-
-            nid = BinaryPrimitives.ReadUInt32LittleEndian(value);
-        }
-
-        var node = _node.GetSubnode(nid) ?? throw new InvalidPstException($"The embedded message 0x{nid:X} of attachment 0x{_node.Nid:X} does not exist.");
-        return PstMessage.Load(_message.Context, node, _message.EmbeddingDepth + 1);
+        return _source.LoadEmbeddedMessage(property, _message.EmbeddingDepth + 1);
     }
 
     /// <summary>Returns the name of the attachment.</summary>

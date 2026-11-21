@@ -18,7 +18,7 @@ public sealed class NameToIdMapTests
         using var file = PstFile.Open(PstOracleTests.GetPath(fileName));
         var node = file.Reader.GetNode(Nids.NameToIdMap)!;
         var pc = new PropertyContext(node);
-        var source = new PropertySource(file.Context, pc.Heap, node);
+        var source = new PstPropertySource(file.Context, pc.Heap, node);
         byte[] Get(ushort id) => pc.Properties.FirstOrDefault(p => p.Tag.Id == id) is { Tag.Type: PstPropertyType.Binary } p ? source.ReadBytes(p) : [];
 
         var entries = Get(NameToIdMap.EntryStreamId);

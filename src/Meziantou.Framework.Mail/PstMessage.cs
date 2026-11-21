@@ -24,28 +24,25 @@ public class PstMessage
     private IReadOnlyList<PstRecipient>? _recipients;
     private IReadOnlyList<PstAttachment>? _attachments;
 
-    internal PstMessage(PstContext context, NdbNode node, PstPropertyCollection properties, int embeddingDepth)
+    internal PstMessage(MessageSource source, PstPropertyCollection properties, int embeddingDepth)
     {
-        Context = context;
-        Node = node;
+        Source = source;
         EmbeddingDepth = embeddingDepth;
         Properties = properties;
     }
 
-    internal PstContext Context { get; }
-
-    internal NdbNode Node { get; }
+    internal MessageSource Source { get; }
 
     internal int EmbeddingDepth { get; }
 
-    /// <summary>Gets the identifier of the node of the item in the file. For an embedded message, it is the identifier of a subnode of its attachment.</summary>
-    public uint NodeId => Node.Nid;
+    /// <summary>Gets the identifier of the node of the item in the Outlook data file. For an embedded message, it is the identifier of a subnode of its attachment. It is 0 for an item that is not in an Outlook data file, such as the message of an .msg file.</summary>
+    public uint NodeId => Source.NodeId;
 
     /// <summary>Gets whether the item is an embedded message, the content of an attachment.</summary>
     public bool IsEmbedded => EmbeddingDepth > 0;
 
     /// <summary>Gets whether the item is an associated (hidden) item of its folder.</summary>
-    public bool IsAssociated => Node.NidType == NidType.AssociatedMessage;
+    public bool IsAssociated => Source.IsAssociated;
 
     /// <summary>Gets the properties of the item.</summary>
     public PstPropertyCollection Properties { get; }
@@ -185,44 +182,46 @@ public class PstMessage
             return null;
         }
 
-        return Lzfu.Decompress(property.GetBytes(), Context.Options.MaxPropertySize, Context.Options.VerifyChecksums);
+        return Lzfu.Decompress(property.GetBytes(), Source.Options.MaxPropertySize, Source.Options.VerifyChecksums);
     }
 
     /// <summary>Returns the subject.</summary>
     /// <returns>The subject.</returns>
     public override string ToString() => Subject ?? "";
 
-    internal static PstMessage Load(PstContext context, NdbNode node, int embeddingDepth)
+    internal static void CheckDepth(PstReadOptions options, int embeddingDepth)
     {
-        if (embeddingDepth > context.Options.MaxEmbeddedMessageDepth)
+        if (embeddingDepth > options.MaxEmbeddedMessageDepth)
         {
-            throw new PstResourceLimitException($"The embedded messages are nested deeper than the limit of {context.Options.MaxEmbeddedMessageDepth} levels.");
+            throw new PstResourceLimitException($"The embedded messages are nested deeper than the limit of {options.MaxEmbeddedMessageDepth} levels.");
         }
+    }
 
-        var pc = new PropertyContext(node);
-        var properties = new PstPropertyCollection(new PropertySource(context, pc.Heap, node), pc.Properties);
+    /// <summary>Creates the item, of the type its class gives.</summary>
+    internal static PstMessage Create(MessageSource source, PstPropertyCollection properties, int embeddingDepth)
+    {
         var messageClass = properties.GetString(PropertyIds.MessageClass) ?? "";
         if (IsClass(messageClass, "IPM.Contact"))
         {
-            return new PstContact(context, node, properties, embeddingDepth);
+            return new PstContact(source, properties, embeddingDepth);
         }
 
         if (IsClass(messageClass, "IPM.DistList"))
         {
-            return new PstDistributionList(context, node, properties, embeddingDepth);
+            return new PstDistributionList(source, properties, embeddingDepth);
         }
 
         if (IsClass(messageClass, "IPM.Appointment"))
         {
-            return new PstAppointment(context, node, properties, embeddingDepth);
+            return new PstAppointment(source, properties, embeddingDepth);
         }
 
         if (IsClass(messageClass, "IPM.Task"))
         {
-            return new PstTask(context, node, properties, embeddingDepth);
+            return new PstTask(source, properties, embeddingDepth);
         }
 
-        return new PstMessage(context, node, properties, embeddingDepth);
+        return new PstMessage(source, properties, embeddingDepth);
     }
 
     private static bool IsClass(string messageClass, string expected)
@@ -237,42 +236,7 @@ public class PstMessage
         return encoding.GetString(bytes).TrimEnd('\0');
     }
 
-    private List<PstRecipient> LoadRecipients()
-    {
-        var result = new List<PstRecipient>();
-        var node = Node.GetSubnode(Nids.RecipientTable);
-        if (node is null)
-        {
-            return result;
-        }
+    private List<PstRecipient> LoadRecipients() => Source.LoadRecipients(this);
 
-        var table = new TableContext(node);
-        var source = new PropertySource(Context, table.Heap, node);
-        for (var i = 0; i < table.RowCount; i++)
-        {
-            result.Add(new PstRecipient(new PstPropertyCollection(source, table.GetRow(i))));
-        }
-
-        return result;
-    }
-
-    private List<PstAttachment> LoadAttachments()
-    {
-        var result = new List<PstAttachment>();
-        var node = Node.GetSubnode(Nids.AttachmentTable);
-        if (node is null)
-        {
-            return result;
-        }
-
-        var table = new TableContext(node);
-        for (var i = 0; i < table.RowCount; i++)
-        {
-            var nid = table.GetRowId(i);
-            var attachmentNode = Node.GetSubnode(nid) ?? throw new InvalidPstException($"The attachment 0x{nid:X} of message 0x{Node.Nid:X} does not exist.");
-            result.Add(new PstAttachment(this, attachmentNode));
-        }
-
-        return result;
-    }
+    private List<PstAttachment> LoadAttachments() => Source.LoadAttachments(this);
 }

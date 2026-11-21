@@ -54,6 +54,12 @@ internal sealed class NameToIdMap
             }
         }
 
+        return FromStreams(guids, entries, strings);
+    }
+
+    /// <summary>Reads the map from its streams: the GUIDs of the property sets, the entries and the names.</summary>
+    public static NameToIdMap FromStreams(byte[]? guids, byte[]? entries, byte[]? strings)
+    {
         var map = new NameToIdMap();
         if (entries is null)
         {

@@ -27,8 +27,8 @@ namespace Meziantou.Framework.Mail;
 /// </example>
 public sealed class PstAppointment : PstMessage
 {
-    internal PstAppointment(PstContext context, NdbNode node, PstPropertyCollection properties, int embeddingDepth)
-        : base(context, node, properties, embeddingDepth)
+    internal PstAppointment(MessageSource source, PstPropertyCollection properties, int embeddingDepth)
+        : base(source, properties, embeddingDepth)
     {
     }
 

@@ -36,7 +36,7 @@ public sealed class PstFolder
         _context = context;
         Node = node;
         Parent = parent;
-        Properties = new PstPropertyCollection(new PropertySource(context, pc.Heap, node), pc.Properties);
+        Properties = new PstPropertyCollection(new PstPropertySource(context, pc.Heap, node), pc.Properties);
     }
 
     internal NdbNode Node { get; }
@@ -212,7 +212,7 @@ public sealed class PstFolder
                 continue;
             }
 
-            yield return PstMessage.Load(_context, node, embeddingDepth: 0);
+            yield return PstMessageSource.Load(_context, node, embeddingDepth: 0);
         }
     }
 }

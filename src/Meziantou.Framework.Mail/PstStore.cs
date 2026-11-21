@@ -15,7 +15,7 @@ public sealed class PstStore
         _file = file;
         var node = file.Reader.GetNode(Nids.MessageStore) ?? throw new InvalidPstException("The file has no message store (node 0x21).");
         var pc = new PropertyContext(node);
-        Properties = new PstPropertyCollection(new PropertySource(file.Context, pc.Heap, node), pc.Properties);
+        Properties = new PstPropertyCollection(new PstPropertySource(file.Context, pc.Heap, node), pc.Properties);
         RootFolder = PstFolder.Load(file.Context, Nids.RootFolder, parent: null) ?? throw new InvalidPstException("The file has no root folder (node 0x122).");
     }
 

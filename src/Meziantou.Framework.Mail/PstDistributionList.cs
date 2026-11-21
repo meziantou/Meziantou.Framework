@@ -7,8 +7,8 @@ namespace Meziantou.Framework.Mail;
 /// <summary>A distribution list (IPM.DistList): a named group of addresses and contacts.</summary>
 public sealed class PstDistributionList : PstMessage
 {
-    internal PstDistributionList(PstContext context, NdbNode node, PstPropertyCollection properties, int embeddingDepth)
-        : base(context, node, properties, embeddingDepth)
+    internal PstDistributionList(MessageSource source, PstPropertyCollection properties, int embeddingDepth)
+        : base(source, properties, embeddingDepth)
     {
     }
 

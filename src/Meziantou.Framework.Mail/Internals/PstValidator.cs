@@ -109,7 +109,7 @@ internal static class PstValidator
         {
             case PropertyContext.Signature:
                 var pc = new PropertyContext(new HeapOnNode(node, data));
-                var source = new PropertySource(context, pc.Heap, node);
+                var source = new PstPropertySource(context, pc.Heap, node);
                 foreach (var property in pc.Properties)
                 {
                     source.GetSize(property);
@@ -118,7 +118,7 @@ internal static class PstValidator
                 break;
             case TableContext.Signature:
                 var tc = new TableContext(new HeapOnNode(node, data));
-                var tableSource = new PropertySource(context, tc.Heap, node);
+                var tableSource = new PstPropertySource(context, tc.Heap, node);
                 for (var i = 0; i < tc.RowCount; i++)
                 {
                     foreach (var cell in tc.GetRow(i))

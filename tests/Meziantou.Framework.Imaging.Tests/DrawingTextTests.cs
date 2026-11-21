@@ -2168,6 +2168,157 @@ public sealed class DrawingTextTests
         Assert.Empty(builder.Build().Spans);
     }
 
+    [Theory]
+    [InlineData(WatermarkPosition.TopLeft, null, 2, 2, 12, 16)]
+    [InlineData(WatermarkPosition.Top, null, 14, 2, 12, 16)]
+    [InlineData(WatermarkPosition.TopRight, null, 26, 2, 12, 16)]
+    [InlineData(WatermarkPosition.Left, null, 2, 7, 12, 16)]
+    [InlineData(WatermarkPosition.Center, 0.0, 14, 7, 12, 16)]
+    [InlineData(WatermarkPosition.Right, null, 26, 7, 12, 16)]
+    [InlineData(WatermarkPosition.BottomLeft, null, 2, 12, 12, 16)]
+    [InlineData(WatermarkPosition.Bottom, null, 14, 12, 12, 16)]
+    [InlineData(WatermarkPosition.BottomRight, null, 26, 12, 12, 16)]
+    [InlineData(WatermarkPosition.TopLeft, 90.0, 2, 2, 16, 12)]
+    [InlineData(WatermarkPosition.BottomRight, -90.0, 22, 16, 16, 12)]
+    public void AWatermarkIsPlacedByTheBoxOfItsRotatedInk(WatermarkPosition position, double? rotation, double x, double y, double width, double height)
+    {
+        // C is 12 by 16 pixels at 16 pixels per em, on a canvas of 40 by 30, 2 pixels from the edges. In a corner or
+        // against an edge, the text is horizontal by default; a quarter turn makes its box 16 by 12.
+        var options = new ImageWatermarkOptions(Boxes) { FontSize = 16, Color = new Rgba32(255, 255, 255), Opacity = 1, Margin = 2, Position = position, Rotation = rotation };
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 40, 30, canvas => canvas.FillRectangle(White, new RectangleD(x, y, width, height))),
+            Watermark(40, 30, "C", options));
+    }
+
+    [Fact]
+    public void AWatermarkFitsTheImageByDefault()
+    {
+        // At a size s, the ink of C is 0.75 s by s: in 80% of 100 by 50, s is 40, and the ink is 30 by 40, centered
+        var options = new ImageWatermarkOptions(Boxes) { Color = new Rgba32(255, 255, 255), Opacity = 1, Rotation = 0 };
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 100, 50, canvas => canvas.FillRectangle(White, new RectangleD(35, 5, 30, 40))),
+            Watermark(100, 50, "C", options));
+
+        // Along the diagonal by default, rising from the left: the left end of the text is lower than its right end
+        var samples = Watermark(200, 100, "CCCCCCCC", new ImageWatermarkOptions(Boxes) { Color = new Rgba32(255, 255, 255), Opacity = 1 });
+        var painted = Enumerable.Range(0, samples.Length).Where(index => samples[index] != 0).Select(index => (X: index % 200, Y: index / 200)).ToArray();
+        Assert.NotEmpty(painted);
+        Assert.True(painted.Where(point => point.X == painted.Min(p => p.X)).Average(p => p.Y) > painted.Where(point => point.X == painted.Max(p => p.X)).Average(p => p.Y));
+        Assert.True(painted.Min(p => p.X) >= 19 && painted.Max(p => p.X) <= 180);
+        Assert.True(painted.Min(p => p.Y) >= 9 && painted.Max(p => p.Y) <= 90);
+    }
+
+    [Fact]
+    public void ATiledWatermarkRepeatsTheTextInOffsetRows()
+    {
+        // A copy is 12 by 16 with a gap of 4: one every 16 pixels along a row, one row every 20 pixels, each row offset
+        // by 8 pixels from the previous one, and the ink of a copy of the first row centered on (32, 32)
+        var options = new ImageWatermarkOptions(Boxes) { FontSize = 16, Color = new Rgba32(255, 255, 255), Opacity = 1, Rotation = 0, IsTiled = true, TileSpacing = 4, Position = WatermarkPosition.TopLeft };
+        var copies = new List<RectangleD>();
+        for (var row = -3; row <= 3; row++)
+        {
+            for (var column = -3; column <= 4; column++)
+            {
+                copies.Add(new RectangleD(26 + (column * 16) - (row % 2 == 0 ? 0 : 8), 24 + (row * 20), 12, 16));
+            }
+        }
+
+        Assert.Equal(
+            Render(PixelFormat.Gray8, 64, 64, canvas =>
+            {
+                foreach (var copy in copies)
+                {
+                    canvas.FillRectangle(White, copy);
+                }
+            }),
+            Watermark(64, 64, "C", options));
+    }
+
+    [Fact]
+    public void AWatermarkIsDrawnOnEveryFrame()
+    {
+        var options = new ImageWatermarkOptions(Boxes) { FontSize = 16, Color = new Rgba32(255, 255, 255), Opacity = 1, Position = WatermarkPosition.TopLeft, Margin = 2 };
+        var expected = Render(PixelFormat.Gray8, 40, 30, canvas => canvas.FillRectangle(White, new RectangleD(2, 2, 12, 16)));
+        using var image = DrawingTestSupport.Create(PixelFormat.Gray8, 40, 30);
+        image.InsertFrame(1, image.Frames[0]);
+        image.AddWatermark("C", options, Ct);
+        Assert.Equal(expected, DrawingTestSupport.ReadSamples(image.Frames[0]));
+        Assert.Equal(expected, DrawingTestSupport.ReadSamples(image.Frames[1]));
+
+        // One frame only
+        using var other = DrawingTestSupport.Create(PixelFormat.Gray8, 40, 30);
+        other.InsertFrame(1, other.Frames[0]);
+        other.Frames[1].AddWatermark("C", options, Ct);
+        Assert.Equal(new int[40 * 30], DrawingTestSupport.ReadSamples(other.Frames[0]));
+        Assert.Equal(expected, DrawingTestSupport.ReadSamples(other.Frames[1]));
+    }
+
+    [Fact]
+    public void AWatermarkThatDrawsNothingLeavesTheImageUnchanged()
+    {
+        var blank = new int[40 * 30];
+        var options = new ImageWatermarkOptions(Boxes) { Color = new Rgba32(255, 255, 255) };
+        Assert.Equal(blank, Watermark(40, 30, "C", new ImageWatermarkOptions(Boxes) { Color = new Rgba32(255, 255, 255), Opacity = 0 }));
+        Assert.Equal(blank, Watermark(40, 30, "C", new ImageWatermarkOptions(Boxes) { Color = new Rgba32(255, 255, 255), Opacity = 0, IsTiled = true }));
+        Assert.Equal(blank, Watermark(40, 30, "   ", options));
+        Assert.Equal(blank, Watermark(40, 30, "   ", new ImageWatermarkOptions(Boxes) { IsTiled = true }));
+
+        // The text is validated before any pixel changes: Z is in no font
+        using var image = DrawingTestSupport.Create(PixelFormat.Gray8, 40, 30);
+        Assert.Throws<ArgumentException>("text", () => image.AddWatermark("CZ", options, Ct));
+        Assert.Throws<ArgumentException>("text", () => image.AddWatermark(string.Empty, options, Ct));
+        Assert.Throws<ArgumentNullException>("text", () => image.AddWatermark(null!, options, Ct));
+        Assert.Throws<ArgumentNullException>("options", () => image.AddWatermark("C", null!, Ct));
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).AddWatermark("C", options, Ct));
+        Assert.Throws<ArgumentNullException>("frame", () => ((ImageFrame)null!).AddWatermark("C", options, Ct));
+        Assert.Equal(blank, DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        using var cmyk = DrawingTestSupport.Create(PixelFormat.Cmyk32, 4, 4);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.AddWatermark("C", options, Ct));
+    }
+
+    [Fact]
+    public void WatermarkOptionsAreValidated()
+    {
+        var options = new ImageWatermarkOptions(Boxes);
+        Assert.Null(options.FontSize);
+        Assert.Equal(new Rgba32(128, 128, 128), options.Color);
+        Assert.Equal(0.3, options.Opacity);
+        Assert.Null(options.Rotation);
+        Assert.Equal(WatermarkPosition.Center, options.Position);
+        Assert.Null(options.Margin);
+        Assert.False(options.IsTiled);
+        Assert.Null(options.TileSpacing);
+        Assert.Throws<ArgumentNullException>("fonts", () => new ImageWatermarkOptions(null!));
+
+        foreach (var size in (double[])[0, -1, double.NaN, double.PositiveInfinity, 65536.5])
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { FontSize = size });
+        }
+
+        foreach (var opacity in (double[])[-0.1, 1.5, double.NaN])
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { Opacity = opacity });
+        }
+
+        foreach (var length in (double[])[-1, double.NaN, double.PositiveInfinity, 16777217])
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { Margin = length });
+            Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { TileSpacing = length });
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { Rotation = double.NaN });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { Rotation = double.NegativeInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageWatermarkOptions(Boxes) { Position = (WatermarkPosition)9 });
+    }
+
+    private static int[] Watermark(int width, int height, string text, ImageWatermarkOptions options)
+    {
+        using var image = DrawingTestSupport.Create(PixelFormat.Gray8, width, height);
+        image.AddWatermark(text, options, Ct);
+        return DrawingTestSupport.ReadSamples(image.Frames[0]);
+    }
+
     private static int[] Render(PixelFormat format, int width, int height, DrawingAction action)
     {
         using var image = DrawingTestSupport.Create(format, width, height);

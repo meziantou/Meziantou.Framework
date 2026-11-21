@@ -31,10 +31,20 @@ internal sealed class RawSubType
 /// https://webassembly.github.io/spec/core/valid/conventions.html#rolling-and-unrolling), so that two structurally
 /// equal groups of different modules give the same <see cref="DefinedType"/> objects. It is thread-safe.
 /// </summary>
+/// <remarks>
+/// The registry references the groups weakly: the groups of the modules that are no longer used (and of the modules that
+/// were only validated) are collected. A group references the groups of its types, so the key of a group, which has the
+/// ids of these groups, never refers to a collected group.
+/// </remarks>
 internal sealed class TypeRegistry
 {
-    private readonly Dictionary<string, DefinedType[]> _groups = new(StringComparer.Ordinal);
+    private const int MinimumCleanupCount = 1024;
+
+    private readonly Dictionary<string, WeakReference<DefinedType[]>> _groups = new(StringComparer.Ordinal);
     private readonly Lock _lock = new();
+
+    // The number of entries from which the entries of the collected groups are removed
+    private int _cleanupCount = MinimumCleanupCount;
     private int _nextId;
     private DefinedType? _mutableI16Array;
 
@@ -78,13 +88,13 @@ internal sealed class TypeRegistry
         var keyString = key.ToString();
         lock (_lock)
         {
-            if (_groups.TryGetValue(keyString, out var existing))
+            if (_groups.TryGetValue(keyString, out var entry) && entry.TryGetTarget(out var existing))
                 return existing;
 
             var result = new DefinedType[group.Length];
             for (var i = 0; i < group.Length; i++)
             {
-                result[i] = new DefinedType(_nextId++, group[i].Kind);
+                result[i] = new DefinedType(_nextId++, group[i].Kind) { Group = result };
             }
 
             DefinedType Resolve(int index) => index >= groupStart && index < groupStart + group.Length ? result[index - groupStart] : resolve(index);
@@ -112,8 +122,41 @@ internal sealed class TypeRegistry
                 }
             }
 
-            _groups.Add(keyString, result);
+            if (_groups.Count >= _cleanupCount)
+            {
+                RemoveCollectedGroups();
+                _cleanupCount = Math.Max(MinimumCleanupCount, _groups.Count * 2);
+            }
+
+            _groups[keyString] = new WeakReference<DefinedType[]>(result);
             return result;
+        }
+    }
+
+    /// <summary>The number of entries, including the ones of the groups collected since the last cleanup.</summary>
+    internal int Count
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _groups.Count;
+            }
+        }
+    }
+
+    /// <summary>Removes the entries of the collected groups.</summary>
+    internal void RemoveCollectedGroups()
+    {
+        lock (_lock)
+        {
+            foreach (var (key, entry) in _groups)
+            {
+                if (!entry.TryGetTarget(out _))
+                {
+                    _groups.Remove(key);
+                }
+            }
         }
     }
 

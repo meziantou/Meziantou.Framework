@@ -206,6 +206,49 @@ public sealed class WasmRuntimeTests
         Assert.Throws<OperationCanceledException>(() => f.Call(WasmValue.FromI32(60)));
     }
 
+    [Theory]
+    [InlineData(-1, "null")]
+    [InlineData(-1, "non-null")]
+    [InlineData(-1, "cast")]
+    [InlineData(-1, "cast-fail")]
+    [InlineData(0, "null")]
+    [InlineData(0, "cast-fail")]
+    [InlineData(100, "null")]
+    [InlineData(100, "non-null")]
+    public void Interruption_LoopsOfReferenceBranches_AreInterrupted(int threshold, string name)
+    {
+        // The loops whose backward branch is a br_on_null, br_on_non_null, br_on_cast or br_on_cast_fail (the threshold
+        // 100 continues the loop in .NET code after some iterations)
+        using var runtime = new WasmRuntime(new WasmRuntimeOptions { CompilationThreshold = threshold, InterruptionCheckInterval = TimeSpan.FromMilliseconds(10) });
+        var module = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (elem declare func $nonNull)
+              (func (export "null")
+                (loop $l (drop (br_on_null $l (ref.null func)))))
+              (func $nonNull (export "non-null")
+                ref.func $nonNull
+                loop $l (param (ref func))
+                  br_on_non_null $l
+                end)
+              (func (export "cast")
+                (ref.i31 (i32.const 1))
+                loop $l (param i31ref)
+                  br_on_cast $l anyref i31ref
+                  drop
+                end)
+              (func (export "cast-fail")
+                ref.null any
+                loop $l (param anyref)
+                  br_on_cast_fail $l anyref (ref i31)
+                  drop
+                end))
+            """));
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(100));
+        using var store = runtime.CreateStore(new WasmStoreOptions { CheckInterrupt = cancellation.Token.ThrowIfCancellationRequested });
+        var f = store.Instantiate(module).GetFunction(name)!;
+        Assert.Throws<OperationCanceledException>(() => f.Call());
+    }
+
     [Fact]
     public void Interruption_Timer_RunsWhileStoresCanBeInterrupted()
     {
@@ -638,6 +681,70 @@ public sealed class WasmRuntimeTests
     }
 
     [Fact]
+    public void SharedMemory_AtomicAccesses_AreSequentiallyConsistent()
+    {
+        // Store buffering: each thread stores 1 to its location, then loads the location of the other thread. The atomic
+        // accesses are sequentially consistent: one of the loads at least returns 1 (an iteration per address)
+        const int Iterations = 10_000;
+        using var runtime = new WasmRuntime();
+        var module = runtime.Compile(WasmRuntime.WatToWasm($$"""
+            (module
+              (import "env" "memory" (memory 4 4 shared))
+              (func (export "run") (param $me i32)
+                (local $i i32) (local $a i32)
+                (loop $next
+                  (local.set $a (i32.shl (local.get $i) (i32.const 2)))
+                  ;; Both threads start the iteration together
+                  (drop (i32.atomic.rmw.add offset={{2 * 4 * Iterations}} (local.get $a) (i32.const 1)))
+                  (loop $wait (br_if $wait (i32.lt_u (i32.atomic.load offset={{2 * 4 * Iterations}} (local.get $a)) (i32.const 2))))
+                  (if (local.get $me)
+                    (then
+                      (i32.atomic.store offset={{4 * Iterations}} (local.get $a) (i32.const 1))
+                      (i32.store offset={{4 * 4 * Iterations}} (local.get $a) (i32.atomic.load (local.get $a))))
+                    (else
+                      (i32.atomic.store (local.get $a) (i32.const 1))
+                      (i32.store offset={{3 * 4 * Iterations}} (local.get $a) (i32.atomic.load offset={{4 * Iterations}} (local.get $a)))))
+                  (br_if $next (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (i32.const {{Iterations}})))))
+              (func (export "violations") (result i32)
+                (local $i i32) (local $a i32) (local $count i32)
+                (loop $next
+                  (local.set $a (i32.shl (local.get $i) (i32.const 2)))
+                  (if (i32.eqz (i32.or (i32.load offset={{3 * 4 * Iterations}} (local.get $a)) (i32.load offset={{4 * 4 * Iterations}} (local.get $a))))
+                    (then (local.set $count (i32.add (local.get $count) (i32.const 1)))))
+                  (br_if $next (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (i32.const {{Iterations}}))))
+                (local.get $count)))
+            """));
+        using var store = runtime.CreateStore();
+        var memory = store.CreateMemory(new WasmMemoryType(minimum: 4, maximum: 4, shared: true));
+        var failures = new System.Collections.Concurrent.ConcurrentQueue<Exception>();
+        var threads = Enumerable.Range(0, 2).Select(me => new Thread(() =>
+        {
+            try
+            {
+                using var threadStore = runtime.CreateStore();
+                threadStore.Instantiate(module, [memory]).GetFunction("run")!.Call(WasmValue.FromI32(me));
+            }
+            catch (Exception ex)
+            {
+                failures.Enqueue(ex);
+            }
+        }) { IsBackground = true }).ToArray();
+        foreach (var thread in threads)
+        {
+            thread.Start();
+        }
+
+        // A thread that fails leaves the other one waiting
+        foreach (var thread in threads)
+        {
+            Assert.True(thread.Join(TimeSpan.FromMinutes(1)) || !failures.IsEmpty, "The threads did not end");
+        }
+
+        Assert.Empty(failures);
+        Assert.Equal(0, store.Instantiate(module, [memory]).GetFunction("violations")!.Call()[0].I32);
+    }
+
+    [Fact]
     public void Documentation_Telemetry()
     {
         #region WasmEngine_Telemetry
@@ -672,9 +779,57 @@ public sealed class WasmRuntimeTests
     }
 
     [Fact]
+    public void Types_OfDiscardedModules_AreCollected()
+    {
+        using var runtime = new WasmRuntime();
+        var kept = runtime.Compile(StructModule(fieldCount: 1));
+        ValidateDistinctModules(runtime, 200);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        runtime.Registry.RemoveCollectedGroups();
+        Assert.True(runtime.Registry.Count < 50, $"{runtime.Registry.Count} groups are kept");
+
+        // The types that are used keep their identity: an equal type of another module is the same type
+        using var store = runtime.CreateStore();
+        var instance = store.Instantiate(kept);
+        var other = store.Instantiate(runtime.Compile(StructModule(fieldCount: 1)));
+        Assert.Equal(1, other.GetFunction("get")!.Call(instance.GetFunction("new")!.Call()[0])[0].I32);
+
+        static byte[] StructModule(int fieldCount) => WasmRuntime.WatToWasm($$"""
+            (module
+              (type $s (struct {{string.Concat(Enumerable.Repeat("(field i32) ", fieldCount))}}))
+              (func (export "new") (result anyref) (struct.new_default $s))
+              (func (export "get") (param anyref) (result i32) (ref.test (ref $s) (local.get 0))))
+            """);
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static void ValidateDistinctModules(WasmRuntime runtime, int count)
+        {
+            for (var i = 2; i < count + 2; i++)
+            {
+                Assert.True(runtime.Validate(StructModule(i)));
+            }
+        }
+    }
+
+    [Fact]
     public void WatToWasm_InvalidText_Throws()
     {
         Assert.Throws<FormatException>(() => WasmRuntime.WatToWasm("(module (func (export"));
+    }
+
+    [Theory]
+    [InlineData("(", ")")]
+    [InlineData("(block ", ")")]
+    [InlineData("block ", "end ")]
+    public void WatToWasm_DeeplyNestedText_Throws(string open, string close)
+    {
+        // The nesting is limited by the stack: deeper text is malformed, instead of a stack overflow
+        const int Depth = 1_000_000;
+        var text = "(module (func " + string.Concat(Enumerable.Repeat(open, Depth)) + string.Concat(Enumerable.Repeat(close, Depth)) + "))";
+        var exception = Assert.Throws<FormatException>(() => WasmRuntime.WatToWasm(text));
+        Assert.Contains("nesting too deep", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]

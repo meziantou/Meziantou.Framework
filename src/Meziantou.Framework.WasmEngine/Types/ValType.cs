@@ -187,6 +187,9 @@ internal sealed class DefinedType
 
     public CompositeKind Kind { get; }
 
+    /// <summary>The types of the recursion group of the type: the canonical group stays in the registry while one of its types is used.</summary>
+    public DefinedType[] Group { get; set; } = [];
+
     public bool Final { get; set; } = true;
 
     public DefinedType? Super { get; set; }

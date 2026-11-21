@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Meziantou.Framework.WasmEngine.Text;
@@ -45,7 +46,8 @@ internal sealed class SNode
     /// <summary>The keyword of a list (its first item), or null.</summary>
     public string? Head => IsList && Items!.Count > 0 && Items[0] is { IsList: false, Kind: TokenKind.Keyword } head ? head.Text : null;
 
-    public override string ToString() => IsList ? "(" + string.Join(' ', Items!) + ")" : Kind switch
+    // The lists nested too deeply for the stack are elided
+    public override string ToString() => IsList ? (RuntimeHelpers.TryEnsureSufficientExecutionStack() ? "(" + string.Join(' ', Items!) + ")" : "(...)") : Kind switch
     {
         TokenKind.Id => "$" + Text,
         TokenKind.String => "\"" + Text + "\"",
@@ -58,6 +60,13 @@ internal sealed class SNode
 internal sealed class WatException(string message, int position) : FormatException(message + " (at offset " + position.ToString(CultureInfo.InvariantCulture) + ")")
 {
     public int Position { get; } = position;
+
+    /// <summary>Throws when the stack is too small to read or encode a nested node: deeply nested text is malformed, rather than a stack overflow.</summary>
+    public static void ThrowIfNestedTooDeeply(int position)
+    {
+        if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
+            throw new WatException("nesting too deep", position);
+    }
 }
 #pragma warning restore CA1032
 
@@ -146,6 +155,7 @@ internal static class SExpressionReader
         var c = text[position];
         if (c == '(')
         {
+            WatException.ThrowIfNestedTooDeeply(start);
             position++;
             var annotation = false;
             var custom = false;

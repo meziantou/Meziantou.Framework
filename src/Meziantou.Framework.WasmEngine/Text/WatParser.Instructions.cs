@@ -175,6 +175,7 @@ internal sealed partial class WatParser
     private void EncodeInstruction(List<SNode> items, ref int index, FunctionContext context, ByteWriter writer)
     {
         var node = items[index];
+        WatException.ThrowIfNestedTooDeeply(node.Position);
         if (node.IsList)
         {
             EncodeFolded(node, context, writer);
@@ -335,6 +336,7 @@ internal sealed partial class WatParser
 
     private void EncodeFolded(SNode node, FunctionContext context, ByteWriter writer)
     {
+        WatException.ThrowIfNestedTooDeeply(node.Position);
         var items = node.Items!;
         if (items.Count == 0 || items[0] is not { IsList: false, Kind: TokenKind.Keyword } head)
             throw new WatException("malformed folded instruction", node.Position);

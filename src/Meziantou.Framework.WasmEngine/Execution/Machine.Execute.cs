@@ -572,6 +572,12 @@ internal sealed unsafe partial class Machine
                             sp = ob + ins.I2 + ins.I1;
                         }
 
+                        if (ins.I0 < pc)
+                        {
+                            pc = ins.I0;
+                            goto BackEdge;
+                        }
+
                         pc = ins.I0;
                     }
                     else
@@ -588,6 +594,12 @@ internal sealed unsafe partial class Machine
                         {
                             CopySlots(stack, sp - ins.I1, ob + ins.I2, ins.I1);
                             sp = ob + ins.I2 + ins.I1;
+                        }
+
+                        if (ins.I0 < pc)
+                        {
+                            pc = ins.I0;
+                            goto BackEdge;
                         }
 
                         pc = ins.I0;
@@ -609,6 +621,12 @@ internal sealed unsafe partial class Machine
                         {
                             CopySlots(stack, sp - ins.I1, ob + ins.I2, ins.I1);
                             sp = ob + ins.I2 + ins.I1;
+                        }
+
+                        if (ins.I0 < pc)
+                        {
+                            pc = ins.I0;
+                            goto BackEdge;
                         }
 
                         pc = ins.I0;

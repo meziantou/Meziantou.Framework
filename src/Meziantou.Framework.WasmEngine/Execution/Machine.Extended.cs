@@ -409,19 +409,22 @@ internal sealed unsafe partial class Machine
                 var (size, _) = GetAtomicAccess(ins.Op - Op.I32AtomicStore);
                 var pointer = memory.GetAtomicAddress(Address(memory, stack[sp].A), (ulong)ins.L0, size);
                 var value = stack[sp + 1].A;
+
+                // The atomic accesses are sequentially consistent: the store is a full barrier, so that a later load
+                // cannot be ordered before it (Volatile.Write only has the release semantics)
                 switch (size)
                 {
                     case 1:
-                        Volatile.Write(ref *pointer, (byte)value);
+                        Interlocked.Exchange(ref *pointer, (byte)value);
                         break;
                     case 2:
-                        Volatile.Write(ref *(ushort*)pointer, (ushort)value);
+                        Interlocked.Exchange(ref *(ushort*)pointer, (ushort)value);
                         break;
                     case 4:
-                        Volatile.Write(ref *(int*)pointer, (int)value);
+                        Interlocked.Exchange(ref *(int*)pointer, (int)value);
                         break;
                     default:
-                        Volatile.Write(ref *(long*)pointer, value);
+                        Interlocked.Exchange(ref *(long*)pointer, value);
                         break;
                 }
 

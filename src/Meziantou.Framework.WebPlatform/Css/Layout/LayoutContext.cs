@@ -77,11 +77,12 @@ internal sealed class LayoutContext
     internal Dictionary<ContainerBox, double>? AnchorPushes { get; set; }
 
     /// <summary>
-    /// The cells of a table row broken by a page of another inline size (see <see cref="AnchorPushes"/>): their contents are
-    /// aligned at the block-start edge (as in Blink, the cells of a fragmented row are not aligned), so that the content after
-    /// the break does not depend on the block size of the row. Null otherwise.
+    /// The items of a row broken by a page of another inline size (see <see cref="AnchorPushes"/>: the cells of a table row, the
+    /// items of a flex line or of a grid row): the contents of the cells and the items that are not stretched are aligned at the
+    /// block-start edge of the row (as in Blink, the cells of a fragmented row are not aligned), so that the content after the
+    /// break does not depend on the block size of the row. Null otherwise.
     /// </summary>
-    internal HashSet<ContainerBox>? ResumedRowCells { get; set; }
+    internal HashSet<ContainerBox>? ResumedRowItems { get; set; }
 
     /// <summary>
     /// The inputs of the layout of the strip that is being laid out that depend on its fragmentation, and the records of the

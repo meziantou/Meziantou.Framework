@@ -600,6 +600,13 @@ internal sealed partial class GridLayoutAlgorithm
 
         var (justify, justifySafe, justifyIsNormal) = ResolveSelfAlignment(item, GetJustifySelf(layout), GridAxis.Columns);
         var (align, alignSafe, alignIsNormal) = ResolveSelfAlignment(item, GetAlignSelf(layout), GridAxis.Rows);
+
+        // (the items of a grid row broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowItems)
+        if (align != AxisAlignment.Stretch && _context.ResumedRowItems is { } resumedItems && resumedItems.Contains(item.Box))
+        {
+            align = AxisAlignment.Start;
+        }
+
         item.JustifySelf = justify;
         item.JustifySafe = justifySafe;
         item.AlignSelf = align;

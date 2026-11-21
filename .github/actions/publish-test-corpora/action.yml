@@ -1,0 +1,38 @@
+name: 'Publish the snapshots of test corpora'
+description: >-
+  Runs a fetcher with --publish: it pushes the snapshots that the mirror repository does not have and writes the lock
+  file (tools/Meziantou.Framework.TestCorpus/readme.md). Without a token, it publishes nothing, with a warning.
+
+inputs:
+  command:
+    description: The command of the fetcher, with --publish (run with bash)
+    required: true
+  token:
+    description: A token that can push to the mirror repositories (the TEST_CORPUS_TOKEN secret)
+    required: false
+    default: ''
+
+runs:
+  using: "composite"
+  steps:
+    - name: Publish the snapshots
+      shell: pwsh
+      env:
+        COMMAND: ${{ inputs.command }}
+        TEST_CORPUS_TOKEN: ${{ inputs.token }}
+        # The token is given to git by a credential helper, for this step only: it is not written to the git
+        # configuration. git asks for credentials only when the server requires them: the fetches of the public
+        # repositories do not use it, and the pushes to the mirror repositories do.
+        GIT_CONFIG_COUNT: '1'
+        GIT_CONFIG_KEY_0: credential.https://github.com.helper
+        GIT_CONFIG_VALUE_0: '!f() { test "$1" = get && echo username=x-access-token && echo "password=$TEST_CORPUS_TOKEN"; }; f'
+      run: |
+        if (-not $env:TEST_CORPUS_TOKEN) {
+          Write-Output "::warning::The TEST_CORPUS_TOKEN secret is not set: the snapshots are not published ($env:COMMAND)"
+          exit 0
+        }
+
+        bash -c $env:COMMAND
+        if ($LASTEXITCODE -ne 0) {
+          throw "'$env:COMMAND' failed with exit code $LASTEXITCODE"
+        }

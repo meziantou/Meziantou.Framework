@@ -69,6 +69,26 @@ public sealed class CorpusMirror
         return null;
     }
 
+    /// <summary>
+    /// Gets whether the lock file has a snapshot for a pin and the mirror has its tag. <c>--publish</c> fetches such a
+    /// corpus from the mirror instead of upstream, so publishing does not depend on the upstream of the pins that did not
+    /// change.
+    /// </summary>
+    /// <param name="name">The name of the corpus.</param>
+    /// <param name="pin">The pin.</param>
+    public bool HasSnapshot(string name, IReadOnlyList<string> pin)
+    {
+        if (!_snapshots.TryGetValue(name, out var entry) || !entry.Pin.SequenceEqual(pin, StringComparer.Ordinal))
+            return false;
+
+        var tag = $"refs/tags/{name}/{entry.Snapshot}";
+        if (!Git.RunWithRetry(Environment.CurrentDirectory, "ls-remote", Url, tag).StartsWith(entry.Snapshot, StringComparison.Ordinal))
+            return false;
+
+        Console.WriteLine($"{Name} has the snapshot of {name} ({entry.Snapshot})");
+        return true;
+    }
+
     /// <summary>Pushes a snapshot to the mirror, unless the mirror has it, and records it in the lock file (see <see cref="Save"/>).</summary>
     /// <param name="directory">The git repository that has the snapshot.</param>
     /// <param name="name">The name of the corpus.</param>

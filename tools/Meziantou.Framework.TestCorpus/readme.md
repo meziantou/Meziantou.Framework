@@ -47,8 +47,9 @@ When the mirror has no downloaded files, the fetcher or the tests download them 
 
 ## Publishing
 
-After a change of a pin, `--publish` fetches the corpora from upstream, creates their snapshots, pushes the ones that
-the mirror does not have, and writes the lock file, to commit with the change of the pin:
+After a change of a pin, `--publish` fetches the corpora that the mirror has no snapshot of from upstream, creates their
+snapshots, pushes them, and writes the lock file, to commit with the change of the pin. It fetches the other corpora from
+the mirror, so publishing does not depend on the upstream of the pins that did not change:
 
 ```shell
 dotnet run eng/pdf/fetch-tests.cs -- --publish
@@ -59,7 +60,21 @@ dotnet run eng/imaging/fetch-tests.cs -- --publish
 
 Pushing requires the right to write to the mirror repository. A ruleset of each mirror repository blocks moving and
 deleting tags, so a published snapshot stays available to the commits that pin it. `--mirror <owner/name|url|path>`
-uses another mirror repository: a fork, or a local repository to test the mirror.
+uses another mirror repository: a fork, or a local repository to test the mirror. To create a snapshot again from
+upstream and compare it with the one of the mirror, remove its entry from the lock file first.
 
 The mirror repositories redistribute the corpora under their upstream licenses: pin the license file of a repository
 with its other paths when it has one.
+
+### Publishing from CI
+
+The `publish-test-corpora` workflow (`.github/workflows/publish-test-corpora.yml`) runs on main after a change of a pin,
+and can be run manually on main. It publishes the snapshots that the mirrors do not have, and opens a pull request with
+the lock files. So a pull request that changes a pin without publishing (from a fork, or by someone who cannot push to
+the mirrors) falls back to upstream only until that pull request is merged. The weekly update of the WebPlatform
+specifications (`update-webplatform-specs.yml`) publishes the snapshots of the pins it changes, so its pull request has
+the lock file.
+
+The workflows push with the `TEST_CORPUS_TOKEN` secret: a fine-grained personal access token of the owner of the mirror
+repositories, with the "Contents: read and write" permission on them only. Without it, the update workflow publishes
+nothing, with a warning, and `publish-test-corpora` fails.

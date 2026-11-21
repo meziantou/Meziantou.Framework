@@ -13,7 +13,7 @@
 // (tools/Meziantou.Framework.TestCorpus/readme.md). When the mirror cannot be used, it warns and the tests download the files.
 //
 // Usage: dotnet run eng/imaging/fetch-tests.cs [-- [--publish] [--mirror <owner/name|url|path>]]
-//   --publish  downloads every file from upstream, pushes the snapshots that the mirror does not have, and writes eng/imaging/corpus.mirror.json
+//   --publish  downloads the corpora that the mirror has no snapshot of from upstream, pushes their snapshots, and writes eng/imaging/corpus.mirror.json
 //   --mirror   uses another mirror repository (a fork, or a local repository to test the mirror)
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -56,7 +56,7 @@ foreach (var corpus in corpora)
     var repository = pins.RootElement.GetProperty("repository").GetString()!;
     var commit = pins.RootElement.GetProperty("commit").GetString()!;
     string[] pin = [$"{repository}@{commit}", CorpusMirror.HashFile(corpus.PinsPath)];
-    if (publish)
+    if (publish && !mirror.HasSnapshot(corpus.Name, pin))
     {
         Directory.CreateDirectory(corpus.Directory);
         var files = await corpus.Download(httpClient, pins.RootElement, corpus.Directory);

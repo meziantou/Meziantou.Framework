@@ -162,7 +162,7 @@ async Task UpdateAsync(string[] arguments)
 
 // fetch-tests [--publish] [--mirror <owner/name|url|path>]: the test suites are fetched from their snapshots in the mirror
 // repository of eng/webplatform/corpus.mirror.json, else from upstream, with a warning (tools/Meziantou.Framework.TestCorpus/readme.md).
-// --publish fetches them from upstream, pushes the snapshots that the mirror does not have and writes corpus.mirror.json;
+// --publish fetches the ones that the mirror has no snapshot of from upstream, pushes their snapshots and writes corpus.mirror.json;
 // --mirror uses another mirror repository (a fork, or a local repository to test the mirror).
 async Task<int> FetchTestsAsync(string[] arguments)
 {
@@ -208,7 +208,8 @@ async Task<int> FetchTestsAsync(string[] arguments)
 
         // New directory, or a directory materialized by a previous version of this tool (a copy of the files)
         SparseClone.Initialize(target, upstream.Url, excludes: ["/MANIFEST.json.gz"]);
-        IReadOnlyList<CorpusSource> testSuiteSources = !publish && mirror.GetSource(name, pin) is { } snapshot ? [snapshot, upstream] : [upstream];
+        var publishSuite = publish && !mirror.HasSnapshot(name, pin);
+        IReadOnlyList<CorpusSource> testSuiteSources = !publishSuite && mirror.GetSource(name, pin) is { } snapshot ? [snapshot, upstream] : [upstream];
 
         // The manifest lists every test of the suite, including the directories that are not checked out. It is the one of the
         // pinned commit: the manifest of another commit is deleted first, so an interrupted update cannot keep it. The
@@ -221,7 +222,7 @@ async Task<int> FetchTestsAsync(string[] arguments)
         }
 
         await SyncTestSuiteAsync(target, commit, paths, testSuiteSources, manifestUrl);
-        if (publish)
+        if (publishSuite)
         {
             var message = SparseClone.GetSnapshotMessage(repo, commit, paths) + (manifestUrl is null ? "" : $"\nMANIFEST.json.gz: {manifestUrl}\n");
             mirror.Publish(target, name, pin, SparseClone.CreateSnapshot(target, message, manifestUrl is null ? [] : ["MANIFEST.json.gz"]));

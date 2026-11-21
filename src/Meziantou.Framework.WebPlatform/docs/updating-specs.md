@@ -71,7 +71,9 @@ Sources:
     are fetched too. The test suites come from their snapshots in [meziantou/test-corpus-webplatform](https://github.com/meziantou/test-corpus-webplatform)
     (`eng/webplatform/corpus.mirror.json`, see [the mirror of the test corpora](../../../tools/Meziantou.Framework.TestCorpus/readme.md)),
     else from upstream, with a warning. After a change of the commit or of the paths, `fetch-tests --publish` publishes
-    their snapshots (with the manifest) and rewrites `corpus.mirror.json`, to commit with the change.
+    their snapshots (with the manifest) and rewrites `corpus.mirror.json`, to commit with the change. The weekly update
+    workflow does it before opening its pull request, and the `publish-test-corpora` workflow publishes the snapshots
+    that are missing once a change is merged.
   - `verify`: checks that `tests/Meziantou.Framework.WebPlatform.SpecData/` matches the checksums in `versions.json`
   - `wpt-coverage`: generates the WPT coverage pages of the documentation ([`docs/WebPlatform/10-WptCoverage/`](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md))
     from the WPT manifest and the expectations and reasons of `tests/Meziantou.Framework.WebPlatform.Wpt`. `--check`

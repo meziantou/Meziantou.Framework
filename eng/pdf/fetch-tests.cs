@@ -10,7 +10,7 @@
 // else from upstream, with a warning (tools/Meziantou.Framework.TestCorpus/readme.md).
 //
 // Usage: dotnet run eng/pdf/fetch-tests.cs [-- [--publish] [--mirror <owner/name|url|path>]]
-//   --publish  fetches every suite from upstream, pushes the snapshots that the mirror does not have, and writes corpus.mirror.json
+//   --publish  fetches the suites that the mirror has no snapshot of from upstream, pushes their snapshots, and writes corpus.mirror.json
 //   --mirror   uses another mirror repository (a fork, or a local repository to test the mirror)
 using System.Text.Json;
 using Meziantou.Framework.TestCorpus;
@@ -51,7 +51,7 @@ foreach (var suite in pins.RootElement.EnumerateObject())
     var upstream = CorpusSource.Upstream(repository, commit);
     string[] pin = [$"{repository}@{commit}", .. paths];
     SparseClone.Initialize(target, upstream.Url);
-    if (publish)
+    if (publish && !mirror.HasSnapshot(suite.Name, pin))
     {
         Sync(target, commit, paths, [upstream]);
         mirror.Publish(target, suite.Name, pin, SparseClone.CreateSnapshot(target, SparseClone.GetSnapshotMessage(repository, commit, paths)));

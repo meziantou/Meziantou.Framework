@@ -23,8 +23,8 @@
 // The tarballs are kept in npm-tarballs/<suite>, named by their integrity hash.
 //
 // Options:
-//   --publish  fetches the suites (all of them without arguments, optional or not) and the npm tarballs from upstream,
-//              pushes the snapshots that the mirror does not have, and writes eng/javascriptengine/corpus.mirror.json
+//   --publish  fetches the suites (all of them without arguments, optional or not) and the npm tarballs that the mirror has no
+//              snapshot of from upstream, pushes their snapshots, and writes eng/javascriptengine/corpus.mirror.json
 //   --mirror <owner/name|url|path>  uses another mirror repository (a fork, or a local repository to test the mirror)
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -94,7 +94,7 @@ foreach (var pins in pinsDocuments)
         var upstream = CorpusSource.Upstream(repository, commit);
         string[] pin = [$"{repository}@{commit}", .. paths];
         SparseClone.Initialize(target, upstream.Url);
-        if (publish)
+        if (publish && !mirror.HasSnapshot(suite.Name, pin))
         {
             Sync(target, commit, paths, [upstream]);
             mirror.Publish(target, suite.Name, pin, SparseClone.CreateSnapshot(target, SparseClone.GetSnapshotMessage(repository, commit, paths)));
@@ -154,10 +154,11 @@ static void Sync(string target, string commit, string[] paths, IReadOnlyList<Cor
 
 // Downloads the tarballs of packages and extracts them in node_modules. A tarball is read from the directory of the npm
 // tarballs of the suite when it has it (the snapshot of the mirror), else downloaded from its URL; its integrity is checked
-// in both cases. --publish keeps the downloaded tarballs and publishes their snapshot.
+// in both cases. --publish keeps the downloaded tarballs and publishes their snapshot, unless the mirror has it.
 static async Task InstallTarballs(string nodeModules, IReadOnlyCollection<(string Path, string Url, string Integrity)> packages, NpmTarballs tarballs, string[] pin)
 {
-    if (!tarballs.Publish)
+    var publish = tarballs.Publish && !tarballs.Mirror.HasSnapshot(tarballs.Name, pin);
+    if (!publish)
     {
         FileStore.TryFetch(tarballs.Directory, tarballs.Mirror, tarballs.Name, pin);
     }
@@ -189,7 +190,7 @@ static async Task InstallTarballs(string nodeModules, IReadOnlyCollection<(strin
         }
 
         VerifyIntegrity(item.Url, content, item.Integrity);
-        if (tarballs.Publish && !File.Exists(tarballPath))
+        if (publish && !File.Exists(tarballPath))
         {
             await File.WriteAllBytesAsync(tarballPath, content, cancellationToken);
         }
@@ -204,7 +205,7 @@ static async Task InstallTarballs(string nodeModules, IReadOnlyCollection<(strin
         Console.WriteLine($"Downloaded {downloads} npm tarballs from the registry");
     }
 
-    if (tarballs.Publish)
+    if (publish)
     {
         FileStore.Publish(tarballs.Directory, tarballs.Mirror, tarballs.Name, pin, packages.Select(item => GetTarballName(item.Integrity)), $"npm tarballs of {Path.GetFileName(Path.GetDirectoryName(nodeModules))}");
     }

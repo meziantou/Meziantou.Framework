@@ -88,7 +88,7 @@ internal sealed class Thresholder : IDisposable
     }
 
     /// <summary>Gets a value indicating whether a method needs the neighborhood of each pixel.</summary>
-    public static bool IsAdaptive(ThresholdMethod method) => method is ThresholdMethod.Mean or ThresholdMethod.Sauvola;
+    public static bool IsAdaptive(ThresholdMethod method) => method is ThresholdMethod.Mean or ThresholdMethod.Sauvola or ThresholdMethod.Bradley;
 
     /// <summary>Binarizes the pixels of a frame in place.</summary>
     /// <param name="lease">The lease of the frame.</param>
@@ -432,14 +432,17 @@ internal sealed class Thresholder : IDisposable
         var radius = options.WindowSize / 2;
         var area = (long)options.WindowSize * options.WindowSize;
 
-        // The numerator of the variance fits in 64 bits when area^2 max^2 does: the sums of squares are at most area max^2
+        // The numerator of the variance fits in 64 bits when area^2 max^2 does: the sums of squares are at most area max^2.
+        // Mean and Bradley are both "scale * mean - offset": Mean scales by 1 (exact), Bradley subtracts 0 (exact).
+        var bradley = options.Method == ThresholdMethod.Bradley;
         var window = new AdaptiveWindow
         {
             Radius = radius,
             EdgeMode = edgeMode,
             Area = area,
             Sauvola = options.Method == ThresholdMethod.Sauvola,
-            Offset = options.Offset * _max,
+            MeanScale = bradley ? 1 - options.BradleyT : 1,
+            Offset = bradley ? 0 : options.Offset * _max,
             K = options.SauvolaK,
             Range = options.SauvolaR * _max,
             ExactInt64 = (UInt128)(ulong)area * (ulong)area * _max * _max <= long.MaxValue,
@@ -517,10 +520,11 @@ internal sealed class Thresholder : IDisposable
         if (!window.Sauvola)
         {
             var area = (double)window.Area;
+            var scale = window.MeanScale;
             var offset = window.Offset;
             for (; x < interiorEnd; x++)
             {
-                var threshold = (sum / area) - offset;
+                var threshold = (sum / area * scale) - offset;
                 mask[x] = lumaRow[x] > threshold ? (ushort)0xFFFF : (ushort)0;
                 sum += sums[x + radius + 1] - sums[x - radius];
             }
@@ -558,7 +562,7 @@ internal sealed class Thresholder : IDisposable
         }
         else
         {
-            threshold = mean - window.Offset;
+            threshold = (mean * window.MeanScale) - window.Offset;
         }
 
         return luma > threshold ? (ushort)0xFFFF : (ushort)0;
@@ -595,6 +599,9 @@ internal sealed class Thresholder : IDisposable
         public long Area { get; init; }
 
         public bool Sauvola { get; init; }
+
+        /// <summary>Gets what the mean is multiplied by, before <see cref="Offset"/> is subtracted (Mean and Bradley).</summary>
+        public double MeanScale { get; init; }
 
         public double Offset { get; init; }
 

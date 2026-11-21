@@ -809,7 +809,10 @@ public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPa
 without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicitly to an `Rgba64`.
 
 **No silent loss**. Converting non-opaque pixels to a format without alpha throws
-`UnsupportedImageFeatureException` unless an opaque background is given; fully opaque pixels never need one. The controls:
+`UnsupportedImageFeatureException` unless an opaque background is given; fully opaque pixels never need one. `IsOpaque`
+(on an image, every frame and the poster, or on one frame) reads the pixels and tells whether every alpha is the
+largest value of the pixel format (exactly 1 for floating-point alpha), without allocating; a format without alpha is
+always opaque. The controls:
 
 | Loss | Control |
 | --- | --- |
@@ -1965,6 +1968,9 @@ thresholds:
 - **Sauvola** (`ThresholdMethod.Sauvola`), for documents, uses `m * (1 + k * (s / R - 1))`, where `m` and `s` are the
   mean and the standard deviation of the window, `k` is `SauvolaK` (0.2) and `R` is `SauvolaR` (0.5 of the range, the
   127.5 of the paper), the formula of scikit-image's `threshold_sauvola`: a blank background stays blank.
+- **Bradley** (`ThresholdMethod.Bradley`) uses `m * (1 - t)`, where `m` is the mean of the window and `t` is `BradleyT`
+  (0.15, the 15% of Bradley and Roth): a pixel must be darker than its surroundings by that fraction of their mean, so a
+  uniform area stays in the upper class. With `t` = 0 it is `Mean` without offset.
 
 The windows read the pixels outside the frame as `EdgeMode` says (`Mirror` by default, scipy's `reflect`). Their sums
 are exact integers and their means and deviations IEEE doubles, so the results are the same on every platform; on the

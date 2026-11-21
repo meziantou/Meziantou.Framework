@@ -83,4 +83,78 @@ appointment, with a recurrence when Outlook can represent the rule (daily, weekl
 the week, yearly). [VCalendar.AddTask](cref:Meziantou.Framework.Email.Calendar.VCalendar.AddTask) and
 [VTodo.ToMapiTaskBuilder](cref:Meziantou.Framework.Email.Calendar.VTodo.ToMapiTaskBuilder) convert the tasks.
 
+The `UID` of an event is kept in the global object identifier of the appointment, as Exchange stores it ([MS-OXCICAL]):
+[MapiAppointment.Uid](cref:Meziantou.Framework.Email.Mapi.MapiAppointment.Uid) is the `UID` an event had, or the
+hexadecimal identifier Outlook created, and [Sequence](cref:Meziantou.Framework.Email.Mapi.MapiAppointment.Sequence) is
+its `SEQUENCE`.
+
+## Meeting invitations
+
+An invitation is a calendar with a method (iTIP, [RFC 5546]), sent in an email as a `text/calendar` part (iMIP,
+[RFC 6047]). Outlook stores it as a meeting message ([MS-OXOCAL]), a
+[MapiMeetingMessage](cref:Meziantou.Framework.Email.Mapi.MapiMeetingMessage):
+
+| Method | Meeting message | Class |
+| --- | --- | --- |
+| `REQUEST` | An invitation or an update | `IPM.Schedule.Meeting.Request` |
+| `CANCEL` | A cancellation | `IPM.Schedule.Meeting.Canceled` |
+| `REPLY` with `PARTSTAT=ACCEPTED` | An acceptance | `IPM.Schedule.Meeting.Resp.Pos` |
+| `REPLY` with `PARTSTAT=TENTATIVE` | A tentative acceptance | `IPM.Schedule.Meeting.Resp.Tent` |
+| `REPLY` with `PARTSTAT=DECLINED` | A refusal | `IPM.Schedule.Meeting.Resp.Neg` |
+
+[VCalendar.ToMapiMeetingMessageBuilder](cref:Meziantou.Framework.Email.Calendar.VCalendar.ToMapiMeetingMessageBuilder)
+converts an invitation to a [MapiMeetingMessageBuilder](cref:Meziantou.Framework.Email.Mapi.MapiMeetingMessageBuilder),
+and [VCalendar.AddMeetingMessage](cref:Meziantou.Framework.Email.Calendar.VCalendar.AddMeetingMessage) converts a meeting
+message back:
+
+<!-- ref:../../../tests/Meziantou.Framework.Email.Tests/CalendarTests.cs;region=MapiMeetingMessageBuilder_Usage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var invitation = VCalendar.Parse("""
+    BEGIN:VCALENDAR
+    VERSION:2.0
+    PRODID:-//Example//Example//EN
+    METHOD:REQUEST
+    BEGIN:VEVENT
+    UID:meeting-42@example.com
+    SEQUENCE:1
+    DTSTAMP:20260301T080000Z
+    DTSTART:20260302T090000Z
+    DTEND:20260302T100000Z
+    SUMMARY:Project review
+    LOCATION:Room 1
+    ORGANIZER;CN=Alice:mailto:alice@example.com
+    ATTENDEE;CN=Bob;ROLE=REQ-PARTICIPANT:mailto:bob@example.com
+    END:VEVENT
+    END:VCALENDAR
+    """)[0];
+
+// The invitation as a meeting request of Outlook
+var request = Assert.IsType<MapiMeetingMessage>(MsgFile.Load(MsgFile.ToByteArray(invitation.ToMapiMeetingMessageBuilder())));
+Assert.Equal(MapiMeetingMessageType.Request, request.MeetingMessageType);
+Assert.Equal("IPM.Schedule.Meeting.Request", request.MessageClass);
+Assert.Equal("meeting-42@example.com", request.Uid);
+Assert.Equal("alice@example.com", request.SenderEmailAddress);
+Assert.Equal("bob@example.com", request.Recipients.Single().EmailAddress);
+
+// And back as an invitation
+var calendar = new VCalendar();
+var meeting = calendar.AddMeetingMessage(request);
+Assert.Equal("REQUEST", calendar.Method);
+Assert.Equal("meeting-42@example.com", meeting.Uid);
+Assert.Equal(1, meeting.Sequence);
+```
+<!-- endref -->
+
+The organizer of an invitation is the sender of the meeting message, and its attendees are the recipients. A response
+is sent by an attendee to the organizer: its sender is the attendee, and its recipient the organizer.
+[EmailMessage.CalendarBody](cref:Meziantou.Framework.Email.EmailMessage.CalendarBody) is the `text/calendar` part of an
+email: [ToMapiBuilder](cref:Meziantou.Framework.Email.EmailMessage.ToMapiBuilder) converts an email with an invitation to
+a meeting message, and [FromMapi](cref:Meziantou.Framework.Email.EmailMessage.FromMapi) converts a meeting message to an
+email with its invitation, which [ToMime](cref:Meziantou.Framework.Email.EmailMessage.ToMime) writes as an alternative
+with its method (`text/calendar; method=REQUEST`).
+
 [RFC 5545]: https://www.rfc-editor.org/rfc/rfc5545
+[RFC 5546]: https://www.rfc-editor.org/rfc/rfc5546
+[RFC 6047]: https://www.rfc-editor.org/rfc/rfc6047
+[MS-OXOCAL]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxocal
+[MS-OXCICAL]: https://learn.microsoft.com/openspecs/exchange_server_protocols/ms-oxcical

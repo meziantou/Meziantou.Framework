@@ -84,6 +84,7 @@ namespace Meziantou.Framework.Email
     {
         public System.Collections.Generic.IList<Meziantou.Framework.Email.EmailAttachment> Attachments { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.Email.MailboxAddress> Bcc { get => throw null; }
+        public string? CalendarBody { get => throw null; set { } }
         public System.Collections.Generic.IList<string> Categories { get => throw null; }
         public System.Collections.Generic.IList<Meziantou.Framework.Email.MailboxAddress> Cc { get => throw null; }
         public System.DateTimeOffset? Date { get => throw null; set { } }
@@ -201,6 +202,7 @@ namespace Meziantou.Framework.Email
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Email.MimeEntity> Attachments { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.MailboxAddress> Bcc { get => throw null; set { } }
         public Meziantou.Framework.Email.MimeEntity Body { get => throw null; set { } }
+        public string? CalendarBody { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.MailboxAddress> Cc { get => throw null; set { } }
         public System.DateTimeOffset? Date { get => throw null; set { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.MailboxAddress> From { get => throw null; set { } }
@@ -372,6 +374,7 @@ namespace Meziantou.Framework.Email.Calendar
         public VCalendar() : base(default(string)) { }
         public T Add<T>(T component) where T : Meziantou.Framework.Email.Calendar.CalendarComponent => throw null;
         public Meziantou.Framework.Email.Calendar.VEvent AddAppointment(Meziantou.Framework.Email.Mapi.MapiAppointment appointment) => throw null;
+        public Meziantou.Framework.Email.Calendar.VEvent AddMeetingMessage(Meziantou.Framework.Email.Mapi.MapiMeetingMessage message) => throw null;
         public Meziantou.Framework.Email.Calendar.VTodo AddTask(Meziantou.Framework.Email.Mapi.MapiTask task) => throw null;
         public Meziantou.Framework.Email.Calendar.VTimeZone? FindTimeZone(string id) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.Calendar.VCalendar> Load(System.IO.Stream stream) => throw null;
@@ -379,6 +382,7 @@ namespace Meziantou.Framework.Email.Calendar
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.Calendar.VCalendar> Load(string path) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Email.Calendar.VCalendar> Parse(string text) => throw null;
         public void Save(string path) { }
+        public Meziantou.Framework.Email.Mapi.MapiMeetingMessageBuilder ToMapiMeetingMessageBuilder() => throw null;
     }
 
     public sealed class VEvent : Meziantou.Framework.Email.Calendar.CalendarComponent
@@ -505,7 +509,7 @@ namespace Meziantou.Framework.Email.Contacts
 }
 namespace Meziantou.Framework.Email.Mapi
 {
-    public sealed class MapiAppointment : Meziantou.Framework.Email.Mapi.MapiMessage
+    public class MapiAppointment : Meziantou.Framework.Email.Mapi.MapiMessage
     {
         public string? AllAttendees { get => throw null; }
         public Meziantou.Framework.Email.Mapi.MapiBusyStatus BusyStatus { get => throw null; }
@@ -520,20 +524,25 @@ namespace Meziantou.Framework.Email.Mapi
         public System.TimeSpan? ReminderDelta { get => throw null; }
         public bool ReminderSet { get => throw null; }
         public string? RequiredAttendees { get => throw null; }
+        public int? Sequence { get => throw null; }
         public System.DateTime? Start { get => throw null; }
         public string? TimeZoneDescription { get => throw null; }
+        public string? Uid { get => throw null; }
         public Meziantou.Framework.Email.Mapi.MapiRecurrencePattern? GetRecurrence() => throw null;
     }
 
-    public sealed class MapiAppointmentBuilder : Meziantou.Framework.Email.Mapi.MapiMessageBuilder
+    public class MapiAppointmentBuilder : Meziantou.Framework.Email.Mapi.MapiMessageBuilder
     {
         public Meziantou.Framework.Email.Mapi.MapiBusyStatus BusyStatus { get => throw null; set { } }
         public System.DateTime? End { get => throw null; set { } }
         public bool IsAllDay { get => throw null; set { } }
+        public bool IsMeeting { get => throw null; set { } }
         public string? Location { get => throw null; set { } }
         public Meziantou.Framework.Email.Mapi.MapiRecurrencePattern? Recurrence { get => throw null; set { } }
         public System.TimeSpan? Reminder { get => throw null; set { } }
+        public int? Sequence { get => throw null; set { } }
         public System.DateTime? Start { get => throw null; set { } }
+        public string? Uid { get => throw null; set { } }
     }
 
     public sealed class MapiAttachment
@@ -721,6 +730,26 @@ namespace Meziantou.Framework.Email.Mapi
         public string? JournalType { get => throw null; set { } }
         public string? JournalTypeDescription { get => throw null; set { } }
         public System.DateTime? Start { get => throw null; set { } }
+    }
+
+    public sealed class MapiMeetingMessage : Meziantou.Framework.Email.Mapi.MapiAppointment
+    {
+        public Meziantou.Framework.Email.Mapi.MapiMeetingMessageType MeetingMessageType { get => throw null; }
+    }
+
+    public sealed class MapiMeetingMessageBuilder : Meziantou.Framework.Email.Mapi.MapiAppointmentBuilder
+    {
+        public Meziantou.Framework.Email.Mapi.MapiMeetingMessageType MeetingMessageType { get => throw null; }
+        public MapiMeetingMessageBuilder(Meziantou.Framework.Email.Mapi.MapiMeetingMessageType meetingMessageType) { }
+    }
+
+    public enum MapiMeetingMessageType
+    {
+        Request = 0,
+        Cancellation = 1,
+        Accepted = 2,
+        Tentative = 3,
+        Declined = 4,
     }
 
     public class MapiMessage

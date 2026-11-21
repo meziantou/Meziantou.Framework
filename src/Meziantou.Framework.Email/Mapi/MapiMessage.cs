@@ -227,6 +227,11 @@ public class MapiMessage
             return new MapiDistributionList(source, properties, embeddingDepth);
         }
 
+        if (MapiMeetingMessage.GetMeetingMessageType(messageClass) is { } meetingMessageType)
+        {
+            return new MapiMeetingMessage(source, properties, embeddingDepth, meetingMessageType);
+        }
+
         if (IsClass(messageClass, "IPM.Appointment"))
         {
             return new MapiAppointment(source, properties, embeddingDepth);
@@ -250,7 +255,7 @@ public class MapiMessage
         return new MapiMessage(source, properties, embeddingDepth);
     }
 
-    private static bool IsClass(string messageClass, string expected)
+    internal static bool IsClass(string messageClass, string expected)
     {
         return messageClass.Equals(expected, StringComparison.OrdinalIgnoreCase)
             || (messageClass.Length > expected.Length && messageClass[expected.Length] == '.' && messageClass.StartsWith(expected, StringComparison.OrdinalIgnoreCase));

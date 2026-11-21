@@ -1,3 +1,4 @@
+using System.Text;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Email.Fuzz;
@@ -25,6 +26,7 @@ public static partial class EmailFuzzTargets
         new("vcard-read", VCardRead) { Seeds = () => GetCalendarSeeds(".vcf"), Dictionary = CalendarTokens },
         new("ical-read", ICalendarRead) { Seeds = () => GetCalendarSeeds(".ics"), Dictionary = CalendarTokens },
         new("ical-recurrence", RecurrenceRead) { Seeds = GetRecurrenceRuleSeeds, Dictionary = CalendarTokens },
+        new("meeting-uid", MeetingUid) { Seeds = GetMeetingUidSeeds },
     ];
 
     private static void VCardRead(ReadOnlySpan<byte> data)
@@ -77,7 +79,68 @@ public static partial class EmailFuzzTargets
             {
                 _ = todo.ToMapiTaskBuilder();
             }
+
+            CheckMeetingMessage(calendar);
         }
+    }
+
+    /// <summary>An invitation converts to a meeting message, which keeps its type and its UID in an .msg file, and converts back to an invitation with the same method and UID.</summary>
+    private static void CheckMeetingMessage(VCalendar calendar)
+    {
+        MapiMeetingMessageBuilder? builder;
+        try
+        {
+            builder = Internals.CalendarConverter.ToMeetingMessage(calendar);
+        }
+        catch (NotSupportedException)
+        {
+            return;
+        }
+
+        if (builder is null)
+        {
+            return;
+        }
+
+        var message = MsgFile.Load(MsgFile.ToByteArray(builder));
+        var meeting = message as MapiMeetingMessage;
+        FuzzAssert.True(meeting is not null, "The meeting message reads as a " + message.GetType().Name);
+        FuzzAssert.Equal(builder.MeetingMessageType, meeting.MeetingMessageType, "The meeting message has a different type");
+        FuzzAssert.Equal(builder.Uid, meeting.Uid, "The meeting message has a different UID");
+
+        var back = new VCalendar();
+        var ev = back.AddMeetingMessage(meeting);
+        FuzzAssert.Equal(calendar.Method?.Trim().ToUpperInvariant(), back.Method, "The invitation has a different method");
+        if (meeting.Uid is not null)
+        {
+            FuzzAssert.Equal(meeting.Uid, ev.Uid, "The invitation has a different UID");
+        }
+
+        var copy = Internals.CalendarConverter.ToMeetingMessage(VCalendar.Parse(back.ToString())[0]);
+        FuzzAssert.Equal(builder.MeetingMessageType, copy?.MeetingMessageType, "The invitation converts back to a different meeting message");
+    }
+
+    /// <summary>A UID stored in a global object identifier reads back unchanged, except an encoded identifier, which reads back in uppercase without its instance date, and stays the same after that.</summary>
+    private static void MeetingUid(ReadOnlySpan<byte> data)
+    {
+        _ = Internals.GlobalObjectId.ToUid(data);
+        var text = FuzzText.Decode(data);
+        var uid = Internals.GlobalObjectId.ToUid(Internals.GlobalObjectId.FromUid(text));
+        FuzzAssert.True(uid is not null, "The identifier of a UID is not an identifier");
+        FuzzAssert.Equal(uid, Internals.GlobalObjectId.ToUid(Internals.GlobalObjectId.FromUid(uid)), "The UID of an identifier changes when it is stored again");
+        var utf8 = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text));
+        if (!text.StartsWith("040000008200E00074C5B7101A82E008", StringComparison.OrdinalIgnoreCase) && utf8 == text)
+        {
+            FuzzAssert.Equal(text, uid, "A UID that is not an encoded identifier changes");
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetMeetingUidSeeds()
+    {
+        yield return FuzzSeed.FromText("third-party", "meeting-42@example.com");
+        yield return FuzzSeed.FromText("encoded", "040000008200E00074C5B7101A82E00807EA0302C0E2F0E9B9D3D801000000000000000010000000C4A5E4E6E6AE4F4BA0E9D1A4B2A3C1F0");
+        yield return FuzzSeed.FromText("short", "040000008200E00074C5B7101A82E008");
+        yield return FuzzSeed.FromText("empty", "");
     }
 
     private static void RecurrenceRead(ReadOnlySpan<byte> data)

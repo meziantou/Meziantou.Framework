@@ -129,16 +129,20 @@ public sealed class MimeMessage
     /// <summary>Gets the HTML body: the first <c>text/html</c> part that is not an attachment.</summary>
     public string? HtmlBody => FindBody("html")?.GetText();
 
-    /// <summary>Gets the attachments: the leaf parts and the embedded messages, except the text and HTML bodies.</summary>
+    /// <summary>Gets the calendar body: the first <c>text/calendar</c> part that is not an attachment, such as the invitation of a meeting (iMIP, RFC 6047).</summary>
+    public string? CalendarBody => FindBody("calendar")?.GetText();
+
+    /// <summary>Gets the attachments: the leaf parts and the embedded messages, except the text, HTML and calendar bodies.</summary>
     public IEnumerable<MimeEntity> Attachments
     {
         get
         {
             var text = FindBody("plain");
             var html = FindBody("html");
+            var calendar = FindBody("calendar");
             foreach (var entity in EnumerateLeaves(Body, depth: 0))
             {
-                if (entity != text && entity != html)
+                if (entity != text && entity != html && entity != calendar)
                 {
                     yield return entity;
                 }

@@ -3,12 +3,47 @@ using Meziantou.Framework.Email.Internals;
 namespace Meziantou.Framework.Email.Mapi;
 
 /// <summary>An appointment (IPM.Appointment) to add to a folder of a <see cref="PstWriter"/>.</summary>
-public sealed class MapiAppointmentBuilder : MapiMessageBuilder
+public class MapiAppointmentBuilder : MapiMessageBuilder
 {
     /// <summary>Initializes a new instance of the <see cref="MapiAppointmentBuilder"/> class.</summary>
     public MapiAppointmentBuilder()
         : base("IPM.Appointment")
     {
+    }
+
+    private protected MapiAppointmentBuilder(string messageClass)
+        : base(messageClass)
+    {
+    }
+
+    /// <summary>Gets or sets the unique identifier of the meeting, the <c>UID</c> of iCalendar. It is stored in the global object identifier of the item ([MS-OXCICAL] 2.1.3.1.1.20.26).</summary>
+    public string? Uid
+    {
+        get => Properties.Get(NamedProperties.CleanGlobalObjectId.Name) is byte[] id ? GlobalObjectId.ToUid(id) : null;
+        set
+        {
+            var id = value is null ? null : GlobalObjectId.FromUid(value);
+            Properties.SetValue(NamedProperties.GlobalObjectId, id);
+            Properties.SetValue(NamedProperties.CleanGlobalObjectId, id is null ? null : (byte[])id.Clone());
+        }
+    }
+
+    /// <summary>Gets or sets the sequence number of the meeting, incremented by the organizer when the meeting changes.</summary>
+    public int? Sequence
+    {
+        get => Properties.Get(NamedProperties.AppointmentSequence.Name) as int?;
+        set => Properties.SetValue(NamedProperties.AppointmentSequence, value);
+    }
+
+    /// <summary>Gets or sets whether the appointment is a meeting, which has attendees: the recipients.</summary>
+    public bool IsMeeting
+    {
+        get => Properties.Get(NamedProperties.AppointmentStateFlags.Name) is int flags && (flags & 0x1) != 0;
+        set
+        {
+            var flags = Properties.Get(NamedProperties.AppointmentStateFlags.Name) as int? ?? 0;
+            Properties.SetValue(NamedProperties.AppointmentStateFlags, value ? flags | 0x1 : flags & ~0x1);
+        }
     }
 
     /// <summary>Gets or sets the date and time, in UTC, when the appointment (or its first occurrence) starts.</summary>

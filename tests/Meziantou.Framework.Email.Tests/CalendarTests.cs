@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace Meziantou.Framework.Email.Tests;
 
@@ -279,6 +280,216 @@ public sealed class CalendarTests
         Assert.Equal(pattern.EndType, copy.EndType);
         Assert.Equal(pattern.FirstDateTime, copy.FirstDateTime);
         Assert.Equal(pattern.Exceptions.Count, calendar.Events.Count(ev => ev.RecurrenceId is not null));
+    }
+
+    [Fact]
+    public void Meeting_Request()
+    {
+        #region MapiMeetingMessageBuilder_Usage
+        var invitation = VCalendar.Parse("""
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Example//Example//EN
+            METHOD:REQUEST
+            BEGIN:VEVENT
+            UID:meeting-42@example.com
+            SEQUENCE:1
+            DTSTAMP:20260301T080000Z
+            DTSTART:20260302T090000Z
+            DTEND:20260302T100000Z
+            SUMMARY:Project review
+            LOCATION:Room 1
+            ORGANIZER;CN=Alice:mailto:alice@example.com
+            ATTENDEE;CN=Bob;ROLE=REQ-PARTICIPANT:mailto:bob@example.com
+            END:VEVENT
+            END:VCALENDAR
+            """)[0];
+
+        // The invitation as a meeting request of Outlook
+        var request = Assert.IsType<MapiMeetingMessage>(MsgFile.Load(MsgFile.ToByteArray(invitation.ToMapiMeetingMessageBuilder())));
+        Assert.Equal(MapiMeetingMessageType.Request, request.MeetingMessageType);
+        Assert.Equal("IPM.Schedule.Meeting.Request", request.MessageClass);
+        Assert.Equal("meeting-42@example.com", request.Uid);
+        Assert.Equal("alice@example.com", request.SenderEmailAddress);
+        Assert.Equal("bob@example.com", request.Recipients.Single().EmailAddress);
+
+        // And back as an invitation
+        var calendar = new VCalendar();
+        var meeting = calendar.AddMeetingMessage(request);
+        Assert.Equal("REQUEST", calendar.Method);
+        Assert.Equal("meeting-42@example.com", meeting.Uid);
+        Assert.Equal(1, meeting.Sequence);
+        #endregion
+
+        Assert.Equal(new DateTime(2026, 3, 2, 9, 0, 0, DateTimeKind.Utc), request.Start);
+        Assert.Equal("Room 1", request.Location);
+        Assert.Equal(1, request.Sequence);
+        Assert.True(request.IsMeeting);
+
+        // Ical.Net reads the invitation, and MsgReader the meeting request
+        var oracle = Ical.Net.Calendar.Load(calendar.ToString())!;
+        Assert.Equal("REQUEST", oracle.Method);
+        var ev = Assert.Single(oracle.Events);
+        Assert.Equal("meeting-42@example.com", ev.Uid);
+        Assert.Equal(1, ev.Sequence);
+        Assert.Equal("CONFIRMED", ev.Status);
+        Assert.Equal("mailto:alice@example.com", ev.Organizer!.Value!.ToString());
+        Assert.Equal("mailto:bob@example.com", Assert.Single(ev.Attendees).Value!.ToString());
+        using var msgReader = new MsgReader.Outlook.Storage.Message(new MemoryStream(MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(request))));
+        Assert.Equal(MsgReader.Outlook.MessageType.AppointmentRequest, msgReader.Type);
+        Assert.Equal("Room 1", msgReader.Appointment.Location);
+    }
+
+    [Theory]
+    [InlineData("ACCEPTED", MapiMeetingMessageType.Accepted, "IPM.Schedule.Meeting.Resp.Pos")]
+    [InlineData("TENTATIVE", MapiMeetingMessageType.Tentative, "IPM.Schedule.Meeting.Resp.Tent")]
+    [InlineData("DECLINED", MapiMeetingMessageType.Declined, "IPM.Schedule.Meeting.Resp.Neg")]
+    public void Meeting_Reply(string status, MapiMeetingMessageType expected, string messageClass)
+    {
+        // RFC 5546 3.2.3: the attendee sends the reply to the organizer
+        var reply = VCalendar.Parse($"""
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Example//Example//EN
+            METHOD:REPLY
+            BEGIN:VEVENT
+            UID:meeting-42@example.com
+            DTSTAMP:20260301T090000Z
+            DTSTART:20260302T090000Z
+            DTEND:20260302T100000Z
+            ORGANIZER;CN=Alice:mailto:alice@example.com
+            ATTENDEE;CN=Bob;PARTSTAT={status}:mailto:bob@example.com
+            END:VEVENT
+            END:VCALENDAR
+            """)[0];
+        var message = Assert.IsType<MapiMeetingMessage>(MsgFile.Load(MsgFile.ToByteArray(reply.ToMapiMeetingMessageBuilder())));
+        Assert.Equal(expected, message.MeetingMessageType);
+        Assert.Equal(messageClass, message.MessageClass);
+        Assert.Equal("bob@example.com", message.SenderEmailAddress);
+        Assert.Equal("alice@example.com", message.Recipients.Single().EmailAddress);
+
+        var calendar = new VCalendar();
+        calendar.AddMeetingMessage(message);
+        var oracle = Ical.Net.Calendar.Load(calendar.ToString())!;
+        Assert.Equal("REPLY", oracle.Method);
+        var ev = Assert.Single(oracle.Events);
+        Assert.Equal("mailto:alice@example.com", ev.Organizer!.Value!.ToString());
+        var attendee = Assert.Single(ev.Attendees);
+        Assert.Equal("mailto:bob@example.com", attendee.Value!.ToString());
+        Assert.Equal(status, attendee.ParticipationStatus);
+    }
+
+    [Fact]
+    public void Meeting_Cancellation()
+    {
+        var cancel = VCalendar.Parse("""
+            BEGIN:VCALENDAR
+            VERSION:2.0
+            PRODID:-//Example//Example//EN
+            METHOD:CANCEL
+            BEGIN:VEVENT
+            UID:meeting-42@example.com
+            SEQUENCE:2
+            DTSTAMP:20260301T100000Z
+            DTSTART:20260302T090000Z
+            DTEND:20260302T100000Z
+            STATUS:CANCELLED
+            ORGANIZER:mailto:alice@example.com
+            ATTENDEE:mailto:bob@example.com
+            END:VEVENT
+            END:VCALENDAR
+            """)[0];
+        var message = Assert.IsType<MapiMeetingMessage>(MsgFile.Load(MsgFile.ToByteArray(cancel.ToMapiMeetingMessageBuilder())));
+        Assert.Equal(MapiMeetingMessageType.Cancellation, message.MeetingMessageType);
+        Assert.Equal("IPM.Schedule.Meeting.Canceled", message.MessageClass);
+        Assert.Equal(MapiBusyStatus.Free, message.BusyStatus);
+        Assert.Equal(2, message.Sequence);
+
+        var calendar = new VCalendar();
+        var ev = calendar.AddMeetingMessage(message);
+        Assert.Equal("CANCEL", calendar.Method);
+        Assert.Equal("CANCELLED", ev.Status);
+        Assert.Equal("CANCELLED", Assert.Single(Ical.Net.Calendar.Load(calendar.ToString())!.Events).Status);
+    }
+
+    [Theory]
+    [InlineData("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:x\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")]
+    [InlineData("BEGIN:VCALENDAR\r\nMETHOD:PUBLISH\r\nBEGIN:VEVENT\r\nUID:x\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")]
+    [InlineData("BEGIN:VCALENDAR\r\nMETHOD:REQUEST\r\nEND:VCALENDAR\r\n")]
+    [InlineData("BEGIN:VCALENDAR\r\nMETHOD:REPLY\r\nBEGIN:VEVENT\r\nUID:x\r\nATTENDEE;PARTSTAT=NEEDS-ACTION:mailto:a@b.c\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")]
+    public void Meeting_NotAMeetingMessage(string text)
+    {
+        Assert.Throws<InvalidOperationException>(() => VCalendar.Parse(text)[0].ToMapiMeetingMessageBuilder());
+    }
+
+    [Fact]
+    public void Meeting_GlobalObjectIdentifier()
+    {
+        // [MS-OXCICAL] 2.1.3.1.1.20.26: the UID of Outlook is the hexadecimal identifier, without its instance date
+        const string Header = "040000008200E00074C5B7101A82E008";
+        var uid = Header + "07EA0302" + "C0E2F0E9B9D3D801" + "0000000000000000" + "10000000" + "C4A5E4E6E6AE4F4BA0E9D1A4B2A3C1F0";
+        var builder = new MapiAppointmentBuilder { Subject = "x", Uid = uid };
+        var item = Assert.IsType<MapiAppointment>(MsgFile.Load(MsgFile.ToByteArray(builder)));
+        Assert.Equal(Header + "00000000" + uid[40..], item.Uid);
+
+        // Another UID is kept as it is, after "vCal-Uid"
+        builder.Uid = "040000008200E00074C5B7101A82E008-not-hex@example.com";
+        Assert.Equal("040000008200E00074C5B7101A82E008-not-hex@example.com", Assert.IsType<MapiAppointment>(MsgFile.Load(MsgFile.ToByteArray(builder))).Uid);
+        var id = (byte[])builder.Properties.Get(new MapiNamedProperty(MapiPropertySets.Meeting, 0x0003))!;
+        Assert.Equal("vCal-Uid", Encoding.ASCII.GetString(id, 40, 8));
+
+        // An event keeps its UID through an appointment
+        var appointment = Assert.IsType<MapiAppointment>(MsgFile.Load(MsgFile.ToByteArray(VCalendar.Parse("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nUID:event-1@example.com\r\nDTSTART:20260302T090000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n")[0].Events.Single().ToMapiAppointmentBuilder())));
+        Assert.Equal("event-1@example.com", new VCalendar().AddAppointment(appointment).Uid);
+    }
+
+    [Fact]
+    public void Meeting_OutlookAppointment()
+    {
+        // The appointment of Outlook of the test files: its UID is the identifier Outlook created
+        var appointment = Assert.IsType<MapiAppointment>(MsgFile.Load(MsgFileTests.GetPath("poi-msgClassAppointment.msg")));
+        var id = appointment.Properties.GetValueOrDefault<byte[]>(new MapiNamedProperty(MapiPropertySets.Meeting, 0x0023));
+        Assert.NotNull(id);
+        Assert.Equal(Convert.ToHexString(id), appointment.Uid);
+        Assert.StartsWith("040000008200E00074C5B7101A82E008", appointment.Uid, StringComparison.Ordinal);
+        Assert.Equal(appointment.Uid, new VCalendar().AddAppointment(appointment).Uid);
+    }
+
+    [Fact]
+    public void Meeting_EmailMessage()
+    {
+        // A MIME invitation (iMIP, RFC 6047): the text/calendar alternative becomes a meeting request
+        var invitation = new EmailMessage
+        {
+            Subject = "Project review",
+            From = new MailboxAddress("Alice", "alice@example.com"),
+            TextBody = "Let's review the project.",
+            CalendarBody = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Example//Example//EN\r\nMETHOD:REQUEST\r\nBEGIN:VEVENT\r\nUID:meeting-42@example.com\r\nDTSTAMP:20260301T080000Z\r\nDTSTART:20260302T090000Z\r\nDTEND:20260302T100000Z\r\nSUMMARY:Project review\r\nORGANIZER:mailto:alice@example.com\r\nATTENDEE:mailto:bob@example.com\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+        };
+        invitation.To.Add(new MailboxAddress("Bob", "bob@example.com"));
+        var mime = invitation.ToMime().ToByteArray();
+
+        // MimeKit reads the calendar alternative with its method
+        var oracle = MimeKit.MimeMessage.Load(new MemoryStream(mime));
+        var part = oracle.BodyParts.OfType<MimeKit.TextPart>().Single(part => part.ContentType.IsMimeType("text", "calendar"));
+        Assert.Equal("REQUEST", part.ContentType.Parameters["method"]);
+        Assert.Contains("UID:meeting-42@example.com", part.Text, StringComparison.Ordinal);
+
+        var read = EmailMessage.FromMime(MimeMessage.Load(mime));
+        Assert.NotNull(read.CalendarBody);
+        Assert.Empty(read.Attachments);
+        var request = Assert.IsType<MapiMeetingMessage>(MsgFile.Load(MsgFile.ToByteArray(read.ToMapiBuilder())));
+        Assert.Equal(MapiMeetingMessageType.Request, request.MeetingMessageType);
+        Assert.Equal("meeting-42@example.com", request.Uid);
+        Assert.Equal("Project review", request.Subject);
+        Assert.Equal("Let's review the project.", request.Body);
+        Assert.Equal("Bob", request.Recipients.Single().DisplayName);
+
+        // A meeting request of Outlook converts to a MIME invitation
+        var back = EmailMessage.FromMapi(request);
+        Assert.Contains("METHOD:REQUEST", back.CalendarBody, StringComparison.Ordinal);
+        Assert.Contains("UID:meeting-42@example.com", back.CalendarBody, StringComparison.Ordinal);
+        Assert.Contains("method=REQUEST", Encoding.UTF8.GetString(back.ToMime().ToByteArray()), StringComparison.Ordinal);
     }
 
     [Fact]

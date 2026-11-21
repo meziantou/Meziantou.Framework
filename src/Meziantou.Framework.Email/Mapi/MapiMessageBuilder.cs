@@ -240,6 +240,7 @@ public class MapiMessageBuilder
         {
             MapiContact => new MapiContactBuilder(),
             MapiDistributionList => new MapiDistributionListBuilder(),
+            MapiMeetingMessage meeting => new MapiMeetingMessageBuilder(meeting.MeetingMessageType),
             MapiAppointment => new MapiAppointmentBuilder(),
             MapiTask => new MapiTaskBuilder(),
             MapiNote => new MapiNoteBuilder(),

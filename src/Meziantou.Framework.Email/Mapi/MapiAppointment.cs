@@ -25,7 +25,7 @@ namespace Meziantou.Framework.Email.Mapi;
 /// Assert.StartsWith(@"{\rtf1", rtf, StringComparison.Ordinal);
 /// </code>
 /// </example>
-public sealed class MapiAppointment : MapiMessage
+public class MapiAppointment : MapiMessage
 {
     internal MapiAppointment(MessageSource source, MapiPropertyCollection properties, int embeddingDepth)
         : base(source, properties, embeddingDepth)
@@ -52,6 +52,19 @@ public sealed class MapiAppointment : MapiMessage
 
     /// <summary>Gets whether the appointment is a meeting, which has attendees.</summary>
     public bool IsMeeting => ((Properties.GetInt32(NamedProperties.AppointmentStateFlags.Name) ?? 0) & 0x1) != 0;
+
+    /// <summary>Gets the unique identifier of the meeting, the <c>UID</c> of iCalendar: the identifier given by another application, or the hexadecimal global object identifier Outlook creates ([MS-OXCICAL] 2.1.3.1.1.20.26).</summary>
+    public string? Uid
+    {
+        get
+        {
+            var id = Properties.GetBinary(NamedProperties.CleanGlobalObjectId.Name) ?? Properties.GetBinary(NamedProperties.GlobalObjectId.Name);
+            return id is null ? null : GlobalObjectId.ToUid(id);
+        }
+    }
+
+    /// <summary>Gets the sequence number of the meeting, incremented by the organizer when the meeting changes.</summary>
+    public int? Sequence => Properties.GetInt32(NamedProperties.AppointmentSequence.Name);
 
     /// <summary>Gets the display names of all the attendees, separated by semicolons.</summary>
     public string? AllAttendees => Properties.GetString(NamedProperties.AllAttendeesString.Name);

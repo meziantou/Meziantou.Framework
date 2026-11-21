@@ -78,6 +78,13 @@ public sealed class EmailMessage
     /// <summary>Gets or sets the RTF body, which Outlook formats store; a MIME message does not have one.</summary>
     public string? RtfBody { get; set; }
 
+    /// <summary>
+    /// Gets or sets the calendar body: the iCalendar text of the invitation of a meeting (iMIP, RFC 6047), such as a
+    /// calendar with <c>METHOD:REQUEST</c>. It is the <c>text/calendar</c> alternative of a MIME message, and the meeting
+    /// properties of a meeting message of Outlook (<see cref="MapiMeetingMessage"/>).
+    /// </summary>
+    public string? CalendarBody { get; set; }
+
     /// <summary>Gets the attachments.</summary>
     public IList<EmailAttachment> Attachments { get; } = [];
 
@@ -130,6 +137,7 @@ public sealed class EmailMessage
             InReplyTo = message.InReplyTo,
             TextBody = message.TextBody,
             HtmlBody = message.HtmlBody,
+            CalendarBody = message.CalendarBody,
             Importance = ParseImportance(message.Headers["Importance"], message.Headers["X-Priority"]),
         };
 
@@ -258,6 +266,35 @@ public sealed class EmailMessage
             }
         }
 
+        if (CalendarBody is not null)
+        {
+            // RFC 6047 2.4: the invitation is an alternative of the bodies, with the method of the calendar
+            var calendar = CreateTextPart(CalendarBody, "calendar");
+            if (GetCalendar(CalendarBody)?.Method is { Length: > 0 } method)
+            {
+                // The content type is parsed from the header: the changed copy is set back
+                var contentType = calendar.ContentType;
+                contentType.Parameters["method"] = method.Trim().ToUpperInvariant();
+                calendar.ContentType = contentType;
+            }
+
+            if (body is null)
+            {
+                body = calendar;
+            }
+            else if (body is MimeMultipart existing && existing.ContentType.IsMimeType("multipart", "alternative"))
+            {
+                existing.Parts.Add(calendar);
+            }
+            else
+            {
+                var alternative = new MimeMultipart("alternative");
+                alternative.Parts.Add(body);
+                alternative.Parts.Add(calendar);
+                body = alternative;
+            }
+        }
+
         var others = Attachments.Where(attachment => !(HtmlBody is not null && attachment.IsInline && attachment.ContentId is not null && attachment.EmbeddedMessage is null)).ToList();
         if (others.Count > 0)
         {
@@ -296,6 +333,7 @@ public sealed class EmailMessage
             InReplyTo = TrimId(message.InReplyToId),
             TextBody = message.GetTextBody(),
             HtmlBody = message.GetHtmlBody(),
+            CalendarBody = message is MapiMeetingMessage meeting ? CreateCalendarBody(meeting) : null,
             RtfBody = message.GetRtfBody() is { } rtf ? Encoding.Latin1.GetString(rtf) : null,
             Importance = (EmailImportance)message.Importance,
         };
@@ -357,23 +395,33 @@ public sealed class EmailMessage
     /// <returns>The builder, to add to a folder of a <see cref="PstWriter"/>.</returns>
     public MapiMessageBuilder ToMapiBuilder()
     {
-        var builder = new MapiMessageBuilder
+        // An invitation is a meeting message, with the properties of its meeting
+        var meeting = CalendarBody is null ? null : GetCalendar(CalendarBody) is { } calendar ? Internals.CalendarConverter.ToMeetingMessage(calendar) : null;
+        var builder = meeting ?? new MapiMessageBuilder();
+        if (meeting is not null && (To.Count > 0 || Cc.Count > 0 || Bcc.Count > 0))
         {
-            Subject = Subject,
-            SenderName = From?.Name,
-            SenderEmailAddress = From?.Address,
-            SenderAddressType = From is null ? null : "SMTP",
-            ClientSubmitTime = Date?.UtcDateTime,
-            MessageDeliveryTime = Date?.UtcDateTime,
-            InternetMessageId = MessageId is null ? null : "<" + MessageId + ">",
-            InReplyToId = InReplyTo is null ? null : "<" + InReplyTo + ">",
-            InternetReferences = References.Count == 0 ? null : string.Join(' ', References.Select(id => "<" + id + ">")),
-            Body = TextBody,
-            BodyHtml = HtmlBody,
-            Importance = (MapiImportance)Importance,
-            Categories = Categories.Count == 0 ? null : [.. Categories],
-            TransportMessageHeaders = Headers.Count == 0 ? null : string.Concat(Headers.Select(header => header.Key + ": " + header.Value + "\r\n")),
-        };
+            // The recipients of the message, rather than the attendees of the invitation
+            meeting.Recipients.Clear();
+        }
+
+        builder.Subject = Subject ?? builder.Subject;
+        if (From is not null || meeting is null)
+        {
+            builder.SenderName = From?.Name;
+            builder.SenderEmailAddress = From?.Address;
+            builder.SenderAddressType = From is null ? null : "SMTP";
+        }
+
+        builder.ClientSubmitTime = Date?.UtcDateTime;
+        builder.MessageDeliveryTime = Date?.UtcDateTime;
+        builder.InternetMessageId = MessageId is null ? null : "<" + MessageId + ">";
+        builder.InReplyToId = InReplyTo is null ? null : "<" + InReplyTo + ">";
+        builder.InternetReferences = References.Count == 0 ? null : string.Join(' ', References.Select(id => "<" + id + ">"));
+        builder.Body = TextBody ?? (meeting is null ? null : builder.Body);
+        builder.BodyHtml = HtmlBody;
+        builder.Importance = (MapiImportance)Importance;
+        builder.Categories = Categories.Count == 0 ? (meeting is null ? null : builder.Categories) : [.. Categories];
+        builder.TransportMessageHeaders = Headers.Count == 0 ? null : string.Concat(Headers.Select(header => header.Key + ": " + header.Value + "\r\n"));
 
         if (RtfBody is not null)
         {
@@ -404,6 +452,25 @@ public sealed class EmailMessage
         }
 
         return builder;
+    }
+
+    private static string CreateCalendarBody(MapiMeetingMessage meeting)
+    {
+        var calendar = new VCalendar();
+        calendar.AddMeetingMessage(meeting);
+        return calendar.ToString();
+    }
+
+    private static VCalendar? GetCalendar(string text)
+    {
+        try
+        {
+            return VCalendar.Parse(text) is [var calendar, ..] ? calendar : null;
+        }
+        catch (EmailException)
+        {
+            return null;
+        }
     }
 
     private static MimePart CreateTextPart(string text, string subtype)

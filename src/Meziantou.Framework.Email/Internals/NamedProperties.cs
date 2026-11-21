@@ -16,6 +16,7 @@ internal static class NamedProperties
     public static readonly NamedPropertyDefinition Keywords = new(new MapiNamedProperty(MapiPropertySets.PublicStrings, "Keywords"), MapiPropertyType.MultipleUnicode);
 
     // PSETID_Appointment
+    public static readonly NamedPropertyDefinition AppointmentSequence = Appointment(0x8201, MapiPropertyType.Integer32);
     public static readonly NamedPropertyDefinition BusyStatus = Appointment(0x8205, MapiPropertyType.Integer32);
     public static readonly NamedPropertyDefinition Location = Appointment(0x8208, MapiPropertyType.Unicode);
     public static readonly NamedPropertyDefinition AppointmentStartWhole = Appointment(0x820D, MapiPropertyType.Time);
@@ -49,6 +50,11 @@ internal static class NamedProperties
     public static readonly NamedPropertyDefinition TaskOwner = Task(0x811F, MapiPropertyType.Unicode);
     public static readonly NamedPropertyDefinition TaskAssigner = Task(0x8121, MapiPropertyType.Unicode);
     public static readonly NamedPropertyDefinition TaskFRecurring = Task(0x8126, MapiPropertyType.Boolean);
+
+    // PSETID_Meeting ([MS-OXOCAL] 2.2.1)
+    public static readonly NamedPropertyDefinition GlobalObjectId = Meeting(0x0003, MapiPropertyType.Binary);
+    public static readonly NamedPropertyDefinition CleanGlobalObjectId = Meeting(0x0023, MapiPropertyType.Binary);
+    public static readonly NamedPropertyDefinition MeetingType = Meeting(0x0026, MapiPropertyType.Integer32);
 
     // PSETID_Note ([MS-OXONOTE] 2.2.1)
     public static readonly NamedPropertyDefinition NoteColor = Note(0x8B00, MapiPropertyType.Integer32);
@@ -103,6 +109,8 @@ internal static class NamedProperties
     private static NamedPropertyDefinition Task(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Task, id), type);
 
     private static NamedPropertyDefinition Address(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Address, id), type);
+
+    private static NamedPropertyDefinition Meeting(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Meeting, id), type);
 
     private static NamedPropertyDefinition Note(int id, MapiPropertyType type) => new(new MapiNamedProperty(MapiPropertySets.Note, id), type);
 

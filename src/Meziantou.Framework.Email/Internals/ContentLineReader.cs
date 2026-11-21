@@ -132,9 +132,10 @@ internal static class ContentLineReader
             var part = parts[i];
             var equal = part.IndexOf('=', StringComparison.Ordinal);
             ContentLineParameter parameter;
-            if (equal < 0)
+            if (equal < 0 || part[..equal].Trim() is not { Length: > 0 } candidate || !IsName(candidate))
             {
-                // vCard 2.1: a parameter without a name (TEL;WORK;VOICE), or an encoding (ENCODING is implied)
+                // vCard 2.1: a parameter without a name (TEL;WORK;VOICE), or an encoding (ENCODING is implied). A part
+                // whose name is not a name (a quote, a semicolon...) is kept the same way, as it was read
                 parameter = new ContentLineParameter(null, part.Trim());
             }
             else

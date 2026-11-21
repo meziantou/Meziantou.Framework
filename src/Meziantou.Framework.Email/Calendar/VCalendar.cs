@@ -99,6 +99,65 @@ public sealed class VCalendar : CalendarComponent
         return CalendarConverter.AddAppointment(this, appointment);
     }
 
+    /// <summary>
+    /// Adds a meeting message of Outlook, and sets the method of the calendar, so that it is an invitation of iTIP (RFC 5546):
+    /// an invitation is <c>METHOD:REQUEST</c>, a cancellation <c>METHOD:CANCEL</c> with the status <c>CANCELLED</c>, and a
+    /// response <c>METHOD:REPLY</c>, whose attendee is the sender with the participation status of the response, and whose
+    /// organizer is the recipient.
+    /// </summary>
+    /// <param name="message">The meeting message.</param>
+    /// <returns>The event of the meeting.</returns>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Email.Tests/CalendarTests.cs" ref:region="MapiMeetingMessageBuilder_Usage" ref:dedent="true">
+    /// var invitation = VCalendar.Parse("""
+    ///     BEGIN:VCALENDAR
+    ///     VERSION:2.0
+    ///     PRODID:-//Example//Example//EN
+    ///     METHOD:REQUEST
+    ///     BEGIN:VEVENT
+    ///     UID:meeting-42@example.com
+    ///     SEQUENCE:1
+    ///     DTSTAMP:20260301T080000Z
+    ///     DTSTART:20260302T090000Z
+    ///     DTEND:20260302T100000Z
+    ///     SUMMARY:Project review
+    ///     LOCATION:Room 1
+    ///     ORGANIZER;CN=Alice:mailto:alice@example.com
+    ///     ATTENDEE;CN=Bob;ROLE=REQ-PARTICIPANT:mailto:bob@example.com
+    ///     END:VEVENT
+    ///     END:VCALENDAR
+    ///     """)[0];
+    ///
+    /// // The invitation as a meeting request of Outlook
+    /// var request = Assert.IsType&lt;MapiMeetingMessage&gt;(MsgFile.Load(MsgFile.ToByteArray(invitation.ToMapiMeetingMessageBuilder())));
+    /// Assert.Equal(MapiMeetingMessageType.Request, request.MeetingMessageType);
+    /// Assert.Equal("IPM.Schedule.Meeting.Request", request.MessageClass);
+    /// Assert.Equal("meeting-42@example.com", request.Uid);
+    /// Assert.Equal("alice@example.com", request.SenderEmailAddress);
+    /// Assert.Equal("bob@example.com", request.Recipients.Single().EmailAddress);
+    ///
+    /// // And back as an invitation
+    /// var calendar = new VCalendar();
+    /// var meeting = calendar.AddMeetingMessage(request);
+    /// Assert.Equal("REQUEST", calendar.Method);
+    /// Assert.Equal("meeting-42@example.com", meeting.Uid);
+    /// Assert.Equal(1, meeting.Sequence);
+    /// </code>
+    /// </example>
+    public VEvent AddMeetingMessage(MapiMeetingMessage message)
+    {
+        ArgumentNullException.ThrowIfNull(message);
+        return Internals.CalendarConverter.AddMeetingMessage(this, message);
+    }
+
+    /// <summary>Converts the calendar, an invitation of iTIP (RFC 5546), to a meeting message of Outlook: <c>METHOD:REQUEST</c> to an invitation, <c>METHOD:CANCEL</c> to a cancellation, and <c>METHOD:REPLY</c> to the response its attendee gives (<c>PARTSTAT</c>).</summary>
+    /// <returns>The builder of the meeting message, from the first event of the calendar.</returns>
+    /// <exception cref="InvalidOperationException">The calendar has no event, or its method is not the one of a meeting message.</exception>
+    public MapiMeetingMessageBuilder ToMapiMeetingMessageBuilder()
+    {
+        return Internals.CalendarConverter.ToMeetingMessage(this) ?? throw new InvalidOperationException("The calendar is not an invitation, a cancellation or a response: it needs an event and the method REQUEST, CANCEL, or REPLY with the participation status of its attendee.");
+    }
+
     /// <summary>Adds a task of Outlook as a to-do.</summary>
     /// <param name="task">The task.</param>
     /// <returns>The to-do.</returns>

@@ -150,9 +150,10 @@ internal static class CalendarConverter
 
     public static VEvent AddAppointment(VCalendar calendar, MapiAppointment appointment)
     {
-        var uid = CreateUid(appointment);
+        var uid = appointment.Uid ?? CreateUid(appointment);
         var master = calendar.Add(new VEvent());
         master.Uid = uid;
+        master.Sequence = appointment.Sequence;
         master.Stamp = CalendarDateTime.FromUtc(appointment.LastModificationTime ?? appointment.CreationTime ?? new DateTime(2000, 1, 1, 0, 0, 0, DateTimeKind.Utc));
         master.Summary = appointment.Subject;
         master.Description = appointment.Body;
@@ -212,6 +213,7 @@ internal static class CalendarConverter
         {
             var occurrence = calendar.Add(new VEvent());
             occurrence.Uid = uid;
+            occurrence.Sequence = master.Sequence;
             occurrence.Stamp = master.Stamp;
             occurrence.RecurrenceId = appointment.IsAllDay ? new CalendarDateTime(exception.OriginalStartDate, isDate: true) : CalendarDateTime.FromUtc(DateTime.SpecifyKind(exception.OriginalStartDate - offset, DateTimeKind.Utc));
             occurrence.Summary = exception.Subject ?? appointment.Subject;
@@ -222,16 +224,22 @@ internal static class CalendarConverter
         return master;
     }
 
-    public static MapiAppointmentBuilder ToAppointment(VEvent ev)
+    public static MapiAppointmentBuilder ToAppointment(VEvent ev) => ToAppointment(ev, new MapiAppointmentBuilder());
+
+    private static T ToAppointment<T>(VEvent ev, T builder)
+        where T : MapiAppointmentBuilder
     {
-        var builder = new MapiAppointmentBuilder
+        builder.Subject = ev.Summary;
+        builder.Body = ev.Description;
+        builder.Location = ev.Location;
+        builder.IsAllDay = ev.IsAllDay;
+        builder.BusyStatus = string.Equals(ev.Transparency, "TRANSPARENT", StringComparison.OrdinalIgnoreCase) ? MapiBusyStatus.Free : MapiBusyStatus.Busy;
+        builder.Uid = ev.Uid;
+        builder.Sequence = ev.Sequence;
+        if (ev.Organizer is not null || ev.Attendees.Count > 0)
         {
-            Subject = ev.Summary,
-            Body = ev.Description,
-            Location = ev.Location,
-            IsAllDay = ev.IsAllDay,
-            BusyStatus = string.Equals(ev.Transparency, "TRANSPARENT", StringComparison.OrdinalIgnoreCase) ? MapiBusyStatus.Free : MapiBusyStatus.Busy,
-        };
+            builder.IsMeeting = true;
+        }
 
         var start = ev.Start;
         var startUtc = start?.ToUtc(ev.Calendar) ?? start?.Value;
@@ -267,6 +275,123 @@ internal static class CalendarConverter
         if (start is { } first && ev.RecurrenceRule is { } rule && startUtc is { } firstUtc && endUtc is { } lastUtc)
         {
             builder.Recurrence = ToPattern(rule, first.Value, lastUtc - firstUtc, ev);
+        }
+
+        return builder;
+    }
+
+    /// <summary>Converts a meeting message to an invitation of iTIP (RFC 5546): a calendar with a <c>METHOD</c>.</summary>
+    public static VEvent AddMeetingMessage(VCalendar calendar, MapiMeetingMessage message)
+    {
+        calendar.Method = message.MeetingMessageType switch
+        {
+            MapiMeetingMessageType.Request => "REQUEST",
+            MapiMeetingMessageType.Cancellation => "CANCEL",
+            _ => "REPLY",
+        };
+
+        var master = AddAppointment(calendar, message);
+        var events = calendar.Events.Where(ev => string.Equals(ev.Uid, master.Uid, StringComparison.Ordinal)).ToList();
+        if (message.SenderEmailAddress is { } sender)
+        {
+            foreach (var ev in events)
+            {
+                ev.Organizer = new CalendarAttendee(message.SenderSmtpAddress ?? sender, message.SenderName);
+            }
+        }
+
+        switch (message.MeetingMessageType)
+        {
+            case MapiMeetingMessageType.Request:
+                foreach (var ev in events)
+                {
+                    ev.Status = "CONFIRMED";
+                }
+
+                break;
+            case MapiMeetingMessageType.Cancellation:
+                foreach (var ev in events)
+                {
+                    ev.Status = "CANCELLED";
+                }
+
+                break;
+            default:
+                // A response is sent by an attendee to the organizer, its recipient (RFC 5546 3.2.3)
+                var organizer = message.Recipients.FirstOrDefault(recipient => recipient.RecipientType == MapiRecipientType.To && recipient.EmailAddress is not null);
+                var status = message.MeetingMessageType switch
+                {
+                    MapiMeetingMessageType.Accepted => "ACCEPTED",
+                    MapiMeetingMessageType.Tentative => "TENTATIVE",
+                    _ => "DECLINED",
+                };
+
+                foreach (var ev in events)
+                {
+                    ev.RemoveProperties("ORGANIZER");
+                    ev.RemoveProperties("ATTENDEE");
+                    if (organizer is not null)
+                    {
+                        ev.Organizer = new CalendarAttendee(organizer.SmtpAddress ?? organizer.EmailAddress!, organizer.DisplayName);
+                    }
+
+                    if (message.SenderEmailAddress is { } attendee)
+                    {
+                        ev.AddAttendee(new CalendarAttendee(message.SenderSmtpAddress ?? attendee, message.SenderName, ParticipationStatus: status));
+                    }
+                }
+
+                break;
+        }
+
+        return master;
+    }
+
+    /// <summary>Converts an invitation of iTIP to a meeting message, or returns <see langword="null"/> when the calendar is not an invitation, a cancellation or a response.</summary>
+    public static MapiMeetingMessageBuilder? ToMeetingMessage(VCalendar calendar)
+    {
+        if ((calendar.Events.FirstOrDefault(ev => ev.RecurrenceId is null) ?? calendar.Events.FirstOrDefault()) is not { } ev)
+        {
+            return null;
+        }
+
+        MapiMeetingMessageType? type = calendar.Method?.Trim().ToUpperInvariant() switch
+        {
+            "REQUEST" => MapiMeetingMessageType.Request,
+            "CANCEL" => MapiMeetingMessageType.Cancellation,
+            "REPLY" => (ev.Attendees is [var first, ..] ? first.ParticipationStatus : null)?.Trim().ToUpperInvariant() switch
+            {
+                "ACCEPTED" => MapiMeetingMessageType.Accepted,
+                "TENTATIVE" => MapiMeetingMessageType.Tentative,
+                "DECLINED" => MapiMeetingMessageType.Declined,
+                _ => null,
+            },
+            _ => null,
+        };
+
+        if (type is not { } meetingMessageType)
+        {
+            return null;
+        }
+
+        var builder = ToAppointment(ev, new MapiMeetingMessageBuilder(meetingMessageType));
+        if (meetingMessageType == MapiMeetingMessageType.Cancellation)
+        {
+            builder.BusyStatus = MapiBusyStatus.Free;
+        }
+
+        if (meetingMessageType is not (MapiMeetingMessageType.Request or MapiMeetingMessageType.Cancellation))
+        {
+            // The attendee who responds is the sender, and the organizer the recipient
+            var attendee = ev.Attendees[0];
+            builder.SenderName = attendee.Name;
+            builder.SenderEmailAddress = attendee.Address;
+            builder.SenderAddressType = "SMTP";
+            builder.Recipients.Clear();
+            if (ev.Organizer is { } organizer)
+            {
+                builder.Recipients.Add(new MapiRecipientBuilder(organizer.Name, organizer.Address, MapiRecipientType.To));
+            }
         }
 
         return builder;
@@ -555,6 +680,6 @@ internal static class CalendarConverter
     private static string CreateUid(MapiMessage item)
     {
         var key = string.Join("|", item.InternetMessageId, item.Subject, item.CreationTime?.Ticks, item.NodeId, item.MessageClass);
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..32] + "@meziantou.framework.mail";
+        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(key)))[..32] + "@meziantou.framework.email";
     }
 }

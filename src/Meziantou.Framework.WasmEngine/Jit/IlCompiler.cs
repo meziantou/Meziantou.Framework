@@ -1203,8 +1203,7 @@ internal sealed partial class IlCompiler
                 return true;
 
             case Op.I32Const or Op.I64Const or Op.F32Const or Op.F64Const:
-                _il.Emit(OpCodes.Ldc_I8, ins.L0);
-                _il.Emit(OpCodes.Stloc, _stackA[h]);
+                EmitConstantBits(in ins, h);
                 return true;
 
             // Control

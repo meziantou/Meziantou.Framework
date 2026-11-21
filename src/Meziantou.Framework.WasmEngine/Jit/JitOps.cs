@@ -411,6 +411,10 @@ internal static unsafe class JitOps
 
     public static long F64PromoteF32(long a) => Numerics.Bits(Numerics.Promote(Numerics.F32(a)));
 
+    /// <summary>Returns its argument: the JIT of .NET does not see the value of a constant that the compiler passes to it (see <see cref="IlCompiler"/>).</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    public static long Opaque(long bits) => bits;
+
     public static long I32ReinterpretF32(long a) => (int)a;
 
     public static long F32ReinterpretI32(long a) => (int)a;

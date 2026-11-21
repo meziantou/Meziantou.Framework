@@ -293,8 +293,20 @@ internal static class Numerics
 
     public static long Bits(double value) => BitConverter.DoubleToInt64Bits(value);
 
-    /// <summary>f32.demote_f64: a NaN stays a quiet NaN (the low bits of its payload are lost).</summary>
-    public static float Demote(double value) => (float)value;
+    /// <summary>
+    /// f32.demote_f64: a NaN stays a quiet NaN (the low bits of its payload are lost). The optimizations of the JIT of .NET
+    /// remove the conversions of <c>(float)(double)x</c>, which keeps a signaling NaN: the NaNs are converted with their bits.
+    /// </summary>
+    public static float Demote(double value)
+    {
+        if (double.IsNaN(value))
+        {
+            var bits = BitConverter.DoubleToInt64Bits(value);
+            return BitConverter.Int32BitsToSingle((int)((bits >>> 32) & 0x8000_0000) | 0x7FC0_0000 | (int)((bits >>> 29) & 0x003F_FFFF));
+        }
+
+        return (float)value;
+    }
 
     public static double Promote(float value) => value;
 

@@ -22,6 +22,14 @@ internal sealed partial class IlCompiler
     private static readonly MethodInfo ConvertU64ToF32 = GetMethod(typeof(Numerics), nameof(Numerics.ConvertU64ToF32));
     private static readonly MethodInfo Promote = GetMethod(typeof(Numerics), nameof(Numerics.Promote));
     private static readonly MethodInfo Demote = GetMethod(typeof(Numerics), nameof(Numerics.Demote));
+    private static readonly FieldInfo DoubleZeroField = GetConstantField(nameof(JitConstants.DoubleZero));
+    private static readonly FieldInfo DoubleNegativeZeroField = GetConstantField(nameof(JitConstants.DoubleNegativeZero));
+    private static readonly FieldInfo DoubleOneField = GetConstantField(nameof(JitConstants.DoubleOne));
+    private static readonly FieldInfo DoubleNegativeOneField = GetConstantField(nameof(JitConstants.DoubleNegativeOne));
+    private static readonly FieldInfo SingleZeroField = GetConstantField(nameof(JitConstants.SingleZero));
+    private static readonly FieldInfo SingleNegativeZeroField = GetConstantField(nameof(JitConstants.SingleNegativeZero));
+    private static readonly FieldInfo SingleOneField = GetConstantField(nameof(JitConstants.SingleOne));
+    private static readonly FieldInfo SingleNegativeOneField = GetConstantField(nameof(JitConstants.SingleNegativeOne));
 
     /// <summary>Where the value of an operand is: its bits (<see cref="_stackA"/>), or a floating-point local.</summary>
     private enum ValueKind : byte
@@ -164,15 +172,31 @@ internal sealed partial class IlCompiler
         switch (ins.Op)
         {
             // The JIT of .NET keeps the constants as double values: a NaN constant stays bits, so that a signaling NaN keeps its
-            // payload
+            // payload (see EmitConstantBits). The constants of the operations that the JIT removes are fields (see JitConstants).
             case Op.F64Const when !double.IsNaN(BitConverter.Int64BitsToDouble(ins.L0)):
-                _il.Emit(OpCodes.Ldc_R8, BitConverter.Int64BitsToDouble(ins.L0));
+                if (GetDoubleConstantField(ins.L0) is { } doubleField)
+                {
+                    _il.Emit(OpCodes.Ldsfld, doubleField);
+                }
+                else
+                {
+                    _il.Emit(OpCodes.Ldc_R8, BitConverter.Int64BitsToDouble(ins.L0));
+                }
+
                 _il.Emit(OpCodes.Stloc, StackD(h));
                 _kinds[h] = ValueKind.F64;
                 return true;
 
             case Op.F32Const when !float.IsNaN(BitConverter.Int32BitsToSingle((int)ins.L0)):
-                _il.Emit(OpCodes.Ldc_R4, BitConverter.Int32BitsToSingle((int)ins.L0));
+                if (GetSingleConstantField((uint)ins.L0) is { } singleField)
+                {
+                    _il.Emit(OpCodes.Ldsfld, singleField);
+                }
+                else
+                {
+                    _il.Emit(OpCodes.Ldc_R4, BitConverter.Int32BitsToSingle((int)ins.L0));
+                }
+
                 _il.Emit(OpCodes.Stloc, StackF(h));
                 _kinds[h] = ValueKind.F32;
                 return true;
@@ -307,6 +331,54 @@ internal sealed partial class IlCompiler
         }
     }
 #pragma warning restore MA0051
+
+    private static FieldInfo GetConstantField(string name) => typeof(JitConstants).GetField(name) ?? throw new InvalidOperationException($"The field {name} does not exist");
+
+    private static FieldInfo? GetDoubleConstantField(long bits) => bits switch
+    {
+        0L => DoubleZeroField,
+        unchecked((long)0x8000_0000_0000_0000) => DoubleNegativeZeroField,
+        0x3FF0_0000_0000_0000 => DoubleOneField,
+        unchecked((long)0xBFF0_0000_0000_0000) => DoubleNegativeOneField,
+        _ => null,
+    };
+
+    private static FieldInfo? GetSingleConstantField(uint bits) => bits switch
+    {
+        0u => SingleZeroField,
+        0x8000_0000 => SingleNegativeZeroField,
+        0x3F80_0000 => SingleOneField,
+        0xBF80_0000 => SingleNegativeOneField,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Writes the bits of a constant (<paramref name="ins"/>) to the slot <paramref name="h"/>. The JIT of .NET converts the
+    /// floating-point constants it finds, such as the result of <see cref="BitConverter.Int32BitsToSingle"/> of a constant,
+    /// to double values, which makes a signaling NaN quiet: a constant whose bits are a signaling NaN goes through
+    /// <see cref="JitOps.Opaque"/>.
+    /// </summary>
+    private void EmitConstantBits(in Instr ins, int h)
+    {
+        _il.Emit(OpCodes.Ldc_I8, ins.L0);
+        if (IsSignalingNaN(ins.Op, ins.L0))
+        {
+            _il.Emit(OpCodes.Call, GetJitOp(nameof(JitOps.Opaque)));
+        }
+
+        _il.Emit(OpCodes.Stloc, _stackA[h]);
+    }
+
+    private static bool IsSignalingNaN(ushort op, long bits)
+    {
+        if (op is Op.I32Const or Op.F32Const)
+        {
+            var single = (uint)bits;
+            return (single & 0x7FC0_0000) == 0x7F80_0000 && (single & 0x003F_FFFF) != 0;
+        }
+
+        return (bits & 0x7FF8_0000_0000_0000) == 0x7FF0_0000_0000_0000 && (bits & 0x0007_FFFF_FFFF_FFFF) != 0;
+    }
 
     private bool EmitDoubleBinary(int h, OpCode operation)
     {

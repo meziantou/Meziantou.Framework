@@ -749,7 +749,10 @@ internal sealed partial class TableLayoutAlgorithm
         var alignmentDirection = isOrthogonal ? fragment.WritingDirection : _writingDirection;
         var blockSize = isOrthogonal ? fragment.WritingDirection.ToLogical(fragment.Size).Block : layout.BlockSize;
         var contentsBlockSize = fragment.IntrinsicBlockSize;
-        var offset = layout.Alignment switch
+
+        // (the cells of a row broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowCells)
+        var alignment = _context.ResumedRowCells is { } resumedCells && resumedCells.Contains(fragment.Box) ? TableCellAlignment.Top : layout.Alignment;
+        var offset = alignment switch
         {
             TableCellAlignment.Middle => (blockSize - contentsBlockSize) / 2,
             TableCellAlignment.Bottom => blockSize - contentsBlockSize,
@@ -757,7 +760,7 @@ internal sealed partial class TableLayoutAlgorithm
             _ => 0,
         };
 
-        if (offset > 0 || (offset < 0 && layout.IsUnsafeAlignment && layout.Alignment != TableCellAlignment.Baseline))
+        if (offset > 0 || (offset < 0 && layout.IsUnsafeAlignment && alignment != TableCellAlignment.Baseline))
         {
             var physical = alignmentDirection.BlockStart switch
             {

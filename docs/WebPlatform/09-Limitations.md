@@ -22,8 +22,12 @@ fails.
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:
   - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
-    line box, a multi-column container, a table row, a flex line, a grid row, or a grid whose number of columns depends on
-    its width (`auto-fill`, `auto-fit`, a subgrid): it keeps the inline size of the previous page;
+    line box (a line taller than the page, which is sliced), inside a multi-column container, inside a subgrid, inside a
+    grid whose number of columns depends on its width (`auto-fill`, `auto-fit`) and whose items are not placed in their
+    order (an item with a definite row or column, `grid-auto-flow: column` or `dense`), or inside a table row, a flex line
+    or a grid row whose items cannot continue side by side in the new width (an item aligned other than at the start of
+    the row, a cell that spans several rows, items of a flex line that no longer fit in one line,
+    content that is monolithic at the break): it keeps the inline size of the previous page;
   - the spelling changes at a hyphenation break that need a dictionary (the triple consonants of the Swedish and Norwegian
     compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);

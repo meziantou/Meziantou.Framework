@@ -145,6 +145,20 @@ internal sealed partial class InlineLayoutAlgorithm
                 _outsideMarker = null;
                 marker = null;
                 trimStart = false;
+
+                // (the line boxes of a block container of a row broken by a page of another inline size start where the content
+                // after the break of the other items of the row starts, see LayoutContext.AnchorPushes)
+                if (context.AnchorPushes is { } pushes && pushes.TryGetValue(box, out var push) && push > 0)
+                {
+                    if (content.BlockFormattingContext is { } pushContext)
+                    {
+                        pushContext.CollapseMargins();
+                        pushContext.AdvanceBlockPosition(push);
+                    }
+
+                    lines.BlockOffset = push;
+                    lines.HasLines = true;
+                }
             }
 
             // https://drafts.csswg.org/css-overflow-4/#line-clamp: the lines after the clamp point are hidden, and the block container

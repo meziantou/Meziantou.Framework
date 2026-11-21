@@ -1,6 +1,6 @@
 <Project Sdk="Meziantou.NET.Sdk.BlazorWebAssembly">
   <!-- The Blazor WebAssembly application that the end-to-end tests of Meziantou.AspNetCore.Testing publish and open in the
-       browser engine: the runtime of .NET runs in the page, on Wasmtime -->
+       browser engine: the runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine -->
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>

@@ -64,6 +64,6 @@ browser, and the functions that you add.
 - [Calling JavaScript from .NET](03-CallingJavaScriptFromDotNet.md): evaluate code, call functions, convert values, and
   add .NET functions to the pages.
 - [Running untrusted pages](04-RunningUntrustedPages.md): the limits of the engine and the requests of the pages.
-- [WebAssembly](05-WebAssembly.md): run the WebAssembly modules of the pages with Wasmtime.
+- [WebAssembly](05-WebAssembly.md): run the WebAssembly modules of the pages with Meziantou.Framework.WasmEngine, a WebAssembly engine written in .NET.
 - [Calling the tools of a page (WebMCP)](06-WebMcpTools.md): list the tools that a page registers with WebMCP, and
   execute them from .NET.

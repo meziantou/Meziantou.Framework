@@ -192,13 +192,13 @@ internal sealed class WasmSharedMemoryBytes(IGrowableSharedDataBlock block, ulon
 /// </summary>
 internal sealed class WasmWaitSignal
 {
-    private byte[]? _flag;
+    private Func<bool>? _isSet;
 
     /// <summary>Whether the thread of the wait is about to wait (or is waiting, or waited).</summary>
-    public bool IsSet => Volatile.Read(ref _flag) is { } flag && Volatile.Read(ref flag[0]) != 0;
+    public bool IsSet => Volatile.Read(ref _isSet) is { } isSet && isSet();
 
-    /// <summary>Sets the bytes whose first byte the native code of the wait sets (a memory of the helper of the wait).</summary>
-    public void Attach(byte[] flag) => Volatile.Write(ref _flag, flag);
+    /// <summary>Sets the function that reads the signal of the runtime (e.g. the flag the native code of the wait sets).</summary>
+    public void Attach(Func<bool> isSet) => Volatile.Write(ref _isSet, isSet);
 }
 
 /// <summary>A table (a table address).</summary>

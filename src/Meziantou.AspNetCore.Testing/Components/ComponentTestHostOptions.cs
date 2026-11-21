@@ -51,7 +51,7 @@ public sealed class ComponentTestHostOptions
     /// <summary>
     /// Gets the runtime that compiles and runs the WebAssembly modules of the scripts of the page (with
     /// <see cref="EnableJavaScript"/>), or null: the <c>WebAssembly</c> namespace is then not defined. The
-    /// <c>Meziantou.Framework.WebPlatform.Wasmtime</c> package provides a runtime (<c>WasmtimeRuntime</c>). The host does
+    /// <c>Meziantou.Framework.WebPlatform.Wasm</c> package provides a runtime (<c>WasmWebAssemblyRuntime</c>). The host does
     /// not dispose it.
     /// </summary>
     public WebAssemblyRuntime? WebAssemblyRuntime { get; init; }

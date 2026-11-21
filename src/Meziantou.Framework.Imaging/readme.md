@@ -1170,6 +1170,27 @@ public static double StraightenScan(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
+With `TransformCanvasMode.Expand`, the canvas grows to hold the whole rotated page instead of cutting its corners. The
+`TransformOptions` replace the default ones, so set the background too (transparent black by default):
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DeskewExpand;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScanWithoutCuttingCorners(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The canvas grows to hold the whole rotated page; the area around the page is white
+    var skew = scan.Deskew(transformOptions: new TransformOptions
+    {
+        CanvasMode = TransformCanvasMode.Expand,
+        BackgroundColor = new Rgba64(65535, 65535, 65535),
+    });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
+
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CorrectPerspective;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)

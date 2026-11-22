@@ -5,12 +5,14 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Meziantou.Framework.TestCorpus;
 using SpecUpdate;
 
 // Keeps the specification inputs (tests/Meziantou.Framework.WebPlatform.SpecData/) and the external test suites (tests/Meziantou.Framework.WebPlatform.External/) up to date.
 //
 //   SpecUpdate update        Resolve the latest revision of every source (or of the given sources, --except to exclude some), download spec data and rewrite tests/Meziantou.Framework.WebPlatform.SpecData/versions.json
-//   SpecUpdate fetch-tests   Materialize tests/Meziantou.Framework.WebPlatform.External/* at the revisions pinned in tests/Meziantou.Framework.WebPlatform.SpecData/versions.json and the paths of tests/Meziantou.Framework.WebPlatform.SpecData/sources.json
+//   SpecUpdate fetch-tests [--publish] [--mirror <repository>]
+//                            Materialize tests/Meziantou.Framework.WebPlatform.External/* at the revisions pinned in tests/Meziantou.Framework.WebPlatform.SpecData/versions.json and the paths of tests/Meziantou.Framework.WebPlatform.SpecData/sources.json
 //   SpecUpdate verify        Check that tests/Meziantou.Framework.WebPlatform.SpecData/ matches the checksums recorded in tests/Meziantou.Framework.WebPlatform.SpecData/versions.json
 //   SpecUpdate wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]
 //                            Compare two WPT_REPORT files (e.g. of two commits): the regressions,
@@ -34,8 +36,7 @@ switch (command)
         await UpdateAsync(args.Skip(1).ToArray());
         return 0;
     case "fetch-tests":
-        await FetchTestsAsync();
-        return 0;
+        return await FetchTestsAsync(args[1..]);
     case "verify":
         return Verify() ? 0 : 1;
     case "wpt-coverage":
@@ -48,7 +49,7 @@ switch (command)
     }
 
     default:
-        Console.WriteLine("Usage: SpecUpdate <update [source...] [--except source...]|fetch-tests|verify|wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]|wpt-coverage [--check]>");
+        Console.WriteLine("Usage: SpecUpdate <update [source...] [--except source...]|fetch-tests [--publish] [--mirror <repository>]|verify|wpt-compare <baseline.jsonl> <candidate.jsonl> [--allowed <file>]|wpt-coverage [--check]>");
         return command == "help" ? 0 : 1;
 }
 
@@ -159,10 +160,36 @@ async Task UpdateAsync(string[] arguments)
     Console.WriteLine($"Wrote {versionsPath}");
 }
 
-async Task FetchTestsAsync()
+// fetch-tests [--publish] [--mirror <owner/name|url|path>]: the test suites are fetched from their snapshots in the mirror
+// repository of eng/webplatform/corpus.mirror.json, else from upstream, with a warning (tools/Meziantou.Framework.TestCorpus/readme.md).
+// --publish fetches the ones that the mirror has no snapshot of from upstream, pushes their snapshots and writes corpus.mirror.json;
+// --mirror uses another mirror repository (a fork, or a local repository to test the mirror).
+async Task<int> FetchTestsAsync(string[] arguments)
 {
+    var publish = false;
+    string? mirrorOverride = null;
+    for (var i = 0; i < arguments.Length; i++)
+    {
+        switch (arguments[i])
+        {
+            case "--publish":
+                publish = true;
+                break;
+
+            case "--mirror" when i + 1 < arguments.Length:
+                mirrorOverride = arguments[++i];
+                break;
+
+            default:
+                Console.Error.WriteLine($"Unknown argument '{arguments[i]}'. Usage: SpecUpdate fetch-tests [--publish] [--mirror <owner/name|url|path>]");
+                return 1;
+        }
+    }
+
     var sources = LoadSources();
     var versions = JsonNode.Parse(File.ReadAllText(versionsPath))!.AsObject();
+    var mirror = CorpusMirror.Load(Path.Combine(root, "eng", "webplatform", "corpus.mirror.json"), "dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- fetch-tests --publish", mirrorOverride);
+    var testSuites = new List<string>();
     foreach (var (name, entryNode) in versions)
     {
         var entry = entryNode!.AsObject();
@@ -173,109 +200,101 @@ async Task FetchTestsAsync()
         var repo = (string)entry["repo"]!;
         var commit = (string)entry["commit"]!;
         var paths = (sources[name]?["paths"] ?? throw new InvalidOperationException($"tests/Meziantou.Framework.WebPlatform.SpecData/sources.json has no paths for '{name}'")).AsArray().Select(p => (string)p!).ToArray();
+        var manifestUrl = (string?)entry["manifest"];
         var target = Path.Combine(root, "tests", "Meziantou.Framework.WebPlatform.External", name);
+        var upstream = CorpusSource.Upstream(repo, commit);
+        string[] pin = [$"{repo}@{commit}", .. paths];
+        testSuites.Add(name);
 
-        // The repository is created before the manifest is downloaded into it, so creating it cannot delete the manifest
-        InitializeTestSuite(target, repo);
+        // New directory, or a directory materialized by a previous version of this tool (a copy of the files)
+        SparseClone.Initialize(target, upstream.Url, excludes: ["/MANIFEST.json.gz"]);
+        var publishSuite = publish && !mirror.HasSnapshot(name, pin);
+        IReadOnlyList<CorpusSource> testSuiteSources = !publishSuite && mirror.GetSource(name, pin) is { } snapshot ? [snapshot, upstream] : [upstream];
 
         // The manifest lists every test of the suite, including the directories that are not checked out. It is the one of the
-        // pinned commit: the manifest of the previous commit is deleted first, so an interrupted update cannot keep it.
-        string[] referencePaths = [];
-        if (entry["manifest"] is JsonNode manifest)
+        // pinned commit: the manifest of another commit is deleted first, so an interrupted update cannot keep it. The
+        // snapshot of the suite has the manifest of its commit.
+        var manifestPath = Path.Combine(target, "MANIFEST.json.gz");
+        var head = SparseClone.GetHead(target);
+        if (manifestUrl is not null && !testSuiteSources.Any(source => source.Commit == head))
         {
-            var head = TryRun("git", $"-C \"{target}\" rev-parse -q --verify HEAD")?.Trim();
-            if (head != commit)
-            {
-                File.Delete(Path.Combine(target, "MANIFEST.json.gz"));
-            }
-
-            var manifestPath = await EnsureManifestAsync(target, (string)manifest!);
-
-            // The references of the reftests of the paths are fetched with them (e.g. the green squares of css/reference)
-            referencePaths = [.. WptManifest.GetReferencesOutsideOfPaths(manifestPath, paths)];
-            if (referencePaths.Length > 0)
-            {
-                Console.WriteLine($"{name}: {referencePaths.Length} references of the reftests outside of the paths");
-            }
+            File.Delete(manifestPath);
         }
 
-        SyncTestSuite(target, repo, commit, paths, referencePaths);
+        await SyncTestSuiteAsync(target, commit, paths, testSuiteSources, manifestUrl);
+        if (publishSuite)
+        {
+            var message = SparseClone.GetSnapshotMessage(repo, commit, paths) + (manifestUrl is null ? "" : $"\nMANIFEST.json.gz: {manifestUrl}\n");
+            mirror.Publish(target, name, pin, SparseClone.CreateSnapshot(target, message, manifestUrl is null ? [] : ["MANIFEST.json.gz"]));
+        }
     }
-}
 
-// Creates the git repository of a test suite (tests/Meziantou.Framework.WebPlatform.External/<name>) if it does not exist yet
-static void InitializeTestSuite(string target, string repo)
-{
-    var gitDirectory = Path.Combine(target, ".git");
-    if (Directory.Exists(gitDirectory))
-        return;
+    if (publish)
+    {
+        mirror.Retain(testSuites);
+        mirror.Save();
+    }
 
-    // New directory, or a directory materialized by a previous version of this tool (a copy of the files)
-    RecreateDirectory(target);
-    Git(target, "init -q");
-    Git(target, $"remote add origin https://github.com/{repo}.git");
-    Git(target, "config core.sparseCheckout true");
-    Git(target, "config core.sparseCheckoutCone false");
-    Git(target, "config core.symlinks false");
-    Git(target, "config core.longpaths true");
-    Git(target, "config core.autocrlf false");
-    Git(target, "config gc.auto 0");
-    File.AppendAllText(Path.Combine(gitDirectory, "info", "exclude"), "/MANIFEST.json.gz\n");
+    return 0;
 }
 
 // Updates the sparse checkout of a test suite (tests/Meziantou.Framework.WebPlatform.External/<name>) to the commit and the paths. The directory is a
 // shallow, blob-less clone, so changing the commit or the paths only downloads the files that changed. The symbolic links
-// are not materialized: they are excluded from the sparse checkout.
-static void SyncTestSuite(string target, string repo, string commit, string[] paths, string[] additionalFiles)
+// are not materialized: they are excluded from the sparse checkout. The references of the reftests of the paths are
+// checked out with them (e.g. the green squares of css/reference): they are read from the manifest of the suite, which
+// is downloaded once the commit is checked out (a snapshot has the manifest, the references and no symbolic link).
+static async Task SyncTestSuiteAsync(string target, string commit, string[] paths, IReadOnlyList<CorpusSource> sources, string? manifestUrl)
 {
-    var gitDirectory = Path.Combine(target, ".git");
-    var stampPath = Path.Combine(gitDirectory, "specupdate-stamp");
-    var stamp = commit + "\n" + string.Join('\n', paths.Concat(additionalFiles));
-    if (File.Exists(stampPath) && File.ReadAllText(stampPath) == stamp)
+    var manifestPath = Path.Combine(target, "MANIFEST.json.gz");
+    var references = manifestUrl is not null && File.Exists(manifestPath) ? GetReferences(target, manifestPath, paths) : [];
+    var stampPath = Path.Combine(target, ".git", "specupdate-stamp");
+    if ((manifestUrl is null || File.Exists(manifestPath)) && File.Exists(stampPath) && File.ReadAllText(stampPath) == GetStamp(commit, paths, references))
     {
         Console.WriteLine($"{Path.GetFileName(target)} is up to date ({commit})");
         return;
     }
 
-    var head = TryRun("git", $"-C \"{target}\" rev-parse -q --verify HEAD")?.Trim();
-    var commitChanged = head != commit;
-    if (commitChanged)
+    var source = SparseClone.Checkout(target, sources, source => source.IsSnapshot ? SparseClone.AllFiles : GetPatterns(target, source.Commit, paths, references));
+    if (manifestUrl is not null)
     {
-        Console.WriteLine($"Fetching {Path.GetFileName(target)} at {commit}");
-        GitWithRetry(target, $"fetch -q --depth 1 --filter=blob:none origin {commit}");
+        await EnsureManifestAsync(target, manifestUrl);
+        var checkedOutReferences = references;
+        references = GetReferences(target, manifestPath, paths);
+        if (!source.IsSnapshot && !references.SequenceEqual(checkedOutReferences, StringComparer.Ordinal))
+        {
+            SparseClone.Reapply(target, GetPatterns(target, source.Commit, paths, references));
+        }
     }
-    else
-    {
-        Console.WriteLine($"Updating the paths of {Path.GetFileName(target)}");
-    }
-
-    var symbolicLinks = RunWithOutput("git", $"-C \"{target}\" ls-tree -r -z --full-tree {commit}")
-        .Split('\0', StringSplitOptions.RemoveEmptyEntries)
-        .Where(line => line.StartsWith("120000 ", StringComparison.Ordinal))
-        .Select(line => line[(line.IndexOf('\t', StringComparison.Ordinal) + 1)..]);
-    File.WriteAllLines(
-        Path.Combine(gitDirectory, "info", "sparse-checkout"),
-        paths.Select(p => "/" + p.TrimStart('/')).Concat(additionalFiles.Select(p => "/" + EscapeSparsePattern(p))).Concat(symbolicLinks.Select(p => "!/" + EscapeSparsePattern(p))));
-
-    // The checkouts download the blobs of the files from the remote (blob-less clone)
-    if (commitChanged)
-    {
-        GitWithRetry(target, $"checkout -q -f --detach {commit}");
-
-        // Drop the previous commit (a shallow clone only keeps the pinned commit)
-        Git(target, "reflog expire --expire=now --all");
-        Git(target, "gc -q --prune=now");
-    }
-
-    GitWithRetry(target, "sparse-checkout reapply");
 
     foreach (var path in paths)
     {
         if (!path.Contains('*', StringComparison.Ordinal) && !Path.Exists(Path.Combine(target, path)))
-            throw new InvalidOperationException($"'{path}' does not exist in {repo} at {commit}");
+            throw new InvalidOperationException($"'{path}' does not exist in {source.Name} at {source.Commit}");
     }
 
-    File.WriteAllText(stampPath, stamp);
+    File.WriteAllText(stampPath, GetStamp(commit, paths, references));
+
+    static string GetStamp(string commit, string[] paths, string[] references) => commit + "\n" + string.Join('\n', paths.Concat(references));
+
+    static string[] GetReferences(string target, string manifestPath, string[] paths)
+    {
+        string[] references = [.. WptManifest.GetReferencesOutsideOfPaths(manifestPath, paths)];
+        if (references.Length > 0)
+        {
+            Console.WriteLine($"{Path.GetFileName(target)}: {references.Length} references of the reftests outside of the paths");
+        }
+
+        return references;
+    }
+
+    static IEnumerable<string> GetPatterns(string target, string commit, string[] paths, string[] references)
+    {
+        var symbolicLinks = RunWithOutput("git", $"-C \"{target}\" ls-tree -r -z --full-tree {commit}")
+            .Split('\0', StringSplitOptions.RemoveEmptyEntries)
+            .Where(line => line.StartsWith("120000 ", StringComparison.Ordinal))
+            .Select(line => line[(line.IndexOf('\t', StringComparison.Ordinal) + 1)..]);
+        return paths.Select(p => "/" + p.TrimStart('/')).Concat(references.Select(p => "/" + EscapeSparsePattern(p))).Concat(symbolicLinks.Select(p => "!/" + EscapeSparsePattern(p)));
+    }
 }
 
 // Escapes the special characters of a path in a sparse checkout pattern (gitignore syntax)

@@ -116,6 +116,15 @@ internal sealed class NestedColumns
     /// </summary>
     public double? ResumeStart { get; set; }
 
+    /// <summary>
+    /// The block size of the content box of the container used in the previous pages when the pages of another inline size start
+    /// inside it (see <see cref="ResumeStart"/>): a container with a definite or maximum block size ends after the rest of it.
+    /// </summary>
+    public double ResumeConsumedBlockSize { get; set; }
+
+    /// <summary>The block size of the content box used in each outer fragmentainer and the ones before it, by index of the outer fragmentainer (the placement of the last run of the breaker).</summary>
+    public Dictionary<int, double> ConsumedBlockSizes { get; } = [];
+
     private FragmentationFlow? _trialFlow;
 
     /// <summary>The flow the block size of balanced columns is computed on.</summary>
@@ -165,6 +174,7 @@ internal sealed class NestedColumns
         Columns.Clear();
         Spanners.Clear();
         Rows.Clear();
+        ConsumedBlockSizes.Clear();
     }
 }
 

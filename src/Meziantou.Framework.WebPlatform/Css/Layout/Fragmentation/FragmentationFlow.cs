@@ -378,6 +378,14 @@ internal sealed class FragmentationFlow
     public bool IsRootGrowingUnbroken => _root.GrowsUnbroken;
 
     /// <summary>
+    /// When the flow is laid out again from a break inside a multi-column container whose columns continue (the pages of another
+    /// inline size, see <see cref="NestedColumns.ResumeStart"/>): the block size of the content box of the container used in the
+    /// previous fragmentainers, which the content of the flow after the start follows (its positions in the first fragmentainer are
+    /// moved up by it). 0 otherwise.
+    /// </summary>
+    public double ResumeShift { get; set; }
+
+    /// <summary>
     /// Whether the monolithic content that does not fit in an empty fragmentainer is sliced at its end (the pages, see
     /// <see cref="PageBreakRules"/>), instead of overflowing it: the strip of this flow and of its parallel flows.
     /// </summary>

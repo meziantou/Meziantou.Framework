@@ -1,0 +1,158 @@
+# Publishes the snapshots of the pinned test corpora that the mirror repositories do not have, and opens a pull request
+# with the lock files that list them (tools/Meziantou.Framework.TestCorpus/readme.md). It runs on main after a change of a
+# pin, so a pull request that changed a pin without publishing (from a fork, for example) only falls back to upstream
+# until this pull request is merged. A manual run on another branch does nothing: the snapshots of a branch are
+# published with its change (--publish), or by this workflow once the change is merged. The fetchers fetch the corpora
+# that have a snapshot from the mirror, so a run does not depend on the upstream of the pins that did not change.
+#
+# The TEST_CORPUS_TOKEN secret is a token that can push to the mirror repositories: a fine-grained personal access
+# token of the owner of the mirror repositories, with the "Contents: read and write" permission on them only. The
+# rulesets of the mirror repositories block moving and deleting tags, whatever the token.
+name: publish-test-corpora
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish-test-corpora.yml'
+      - '.github/actions/publish-test-corpora/**'
+      - 'tools/Meziantou.Framework.TestCorpus/**'
+      - 'eng/pdf/fetch-tests.cs'
+      - 'tests/Meziantou.Framework.Pdf.Corpus/corpus.json'
+      - 'tests/Meziantou.Framework.Pdf.Corpus/corpus.mirror.json'
+      - 'eng/javascriptengine/fetch-tests.cs'
+      - 'eng/javascriptengine/corpus.mirror.json'
+      - 'tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json'
+      - 'tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json'
+      - 'tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json'
+      - 'eng/webplatform/corpus.mirror.json'
+      - 'tests/Meziantou.Framework.WebPlatform.SpecData/versions.json'
+      - 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json'
+      - 'eng/imaging/**'
+      - 'tests/Meziantou.Framework.Imaging.InteropTests/*/corpus.json'
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  publish:
+    name: publish (${{ matrix.id }})
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - id: pdf
+            command: dotnet run eng/pdf/fetch-tests.cs -- --publish
+            lock: tests/Meziantou.Framework.Pdf.Corpus/corpus.mirror.json
+          - id: javascriptengine
+            command: dotnet run eng/javascriptengine/fetch-tests.cs -- --publish
+            lock: eng/javascriptengine/corpus.mirror.json
+          - id: webplatform
+            command: ./eng/webplatform/fetch-tests.sh --publish
+            lock: eng/webplatform/corpus.mirror.json
+          - id: imaging
+            command: dotnet run eng/imaging/fetch-tests.cs -- --publish
+            lock: eng/imaging/corpus.mirror.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Check the token
+        env:
+          TEST_CORPUS_TOKEN: ${{ secrets.TEST_CORPUS_TOKEN }}
+        run: |
+          if (-not $env:TEST_CORPUS_TOKEN) {
+            throw "The TEST_CORPUS_TOKEN secret is not set: it must be a token that can push to the mirror repositories"
+          }
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - name: Publish the snapshots
+        uses: $/.github/actions/publish-test-corpora
+        with:
+          command: ${{ matrix.command }}
+          token: ${{ secrets.TEST_CORPUS_TOKEN }}
+      - name: Save the changes of the lock file
+        env:
+          LOCK_FILE: ${{ matrix.lock }}
+          PATCH: ${{ runner.temp }}/lock-files/${{ matrix.id }}.patch
+        run: |
+          New-Item -ItemType Directory -Force (Split-Path $env:PATCH) | Out-Null
+          git diff --output=$env:PATCH -- $env:LOCK_FILE
+          git diff --stat -- $env:LOCK_FILE
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: lock-file-${{ matrix.id }}
+          path: ${{ runner.temp }}/lock-files/${{ matrix.id }}.patch
+          retention-days: 7
+
+  # The lock files of the publish jobs that succeeded: a failure of a mirror or of an upstream does not delay the others
+  create_pull_request:
+    needs: publish
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: lock-file-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/lock-files
+      - name: Open a pull request
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PATCHES: ${{ runner.temp }}/lock-files
+        run: |
+          foreach ($patch in Get-ChildItem $env:PATCHES -Filter *.patch -ErrorAction SilentlyContinue | Where-Object Length -gt 0) {
+            git apply $patch.FullName
+            if ($LASTEXITCODE -ne 0) {
+              throw "Cannot apply the changes of the lock file of $($patch.BaseName)"
+            }
+          }
+
+          $branch = "publish-test-corpora"
+          $openPr = gh pr list --head $branch --state open --json number --jq '.[0].number // empty'
+          git add .
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            # The lock files of main were updated in the meantime: the pull request would revert them
+            if ($openPr) {
+              gh pr close $openPr --comment "The lock files of main are up to date" --delete-branch
+            }
+
+            Write-Host "The lock files are up to date"
+            exit 0
+          }
+
+          $title = "Update the lock files of the mirrors of the test corpora"
+          git config --global user.email "git@meziantou.net"
+          git config --global user.name "meziantou"
+          git checkout -b $branch
+          git commit -m $title
+          git push origin $branch --force
+          $runUrl = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          $body = "The snapshots of the pins that changed are published in the mirror repositories: the fetchers read them instead of upstream once this pull request is merged (``tools/Meziantou.Framework.TestCorpus/readme.md``).`n`nCreated by: $runUrl"
+
+          if ($openPr) {
+            gh pr edit $openPr --title $title --body $body
+          } else {
+            gh pr create --title $title --body $body --base main --head $branch
+          }

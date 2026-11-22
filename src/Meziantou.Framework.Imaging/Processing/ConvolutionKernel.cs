@@ -186,6 +186,23 @@ public sealed class ConvolutionKernel
     }
 
     /// <summary>
+    /// Creates the separable matrix of <see cref="ImageProcessingExtensions.GaussianBlur(Image, double, ConvolutionEdgeMode, ConvolutionWorkingSpace, CancellationToken)"/>:
+    /// the <c>2 ceil(3 sigma) + 1</c> weights <c>exp(-i² / (2 sigma²))</c> of the blur, divided by their sum, as its row and
+    /// its column. Convolving with it gives the result of the blur; it is also the kernel to undo a soft focus with
+    /// <see cref="ImageProcessingExtensions.WienerDeconvolve(Image, WienerDeconvolutionOptions, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="sigma">The standard deviation of the blur, in pixels: between 0 and 10000. A deviation of 0 gives the single weight 1.</param>
+    /// <returns>The matrix.</returns>
+    /// <exception cref="ArgumentException"><paramref name="sigma"/> is not a finite number.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="sigma"/> is negative or exceeds 10000.</exception>
+    public static ConvolutionKernel CreateGaussianBlur(double sigma)
+    {
+        Internals.GaussianKernel.Validate(sigma, nameof(sigma));
+        var weights = Internals.GaussianKernel.Create(sigma);
+        return new ConvolutionKernel(weights, weights.AsSpan().ToArray());
+    }
+
+    /// <summary>
     /// Creates the matrix of a motion blur: a straight segment of <paramref name="length"/> pixels through the center, at
     /// <paramref name="degrees"/> from the horizontal, as the trail of a camera or a subject that moved while the shutter
     /// was open. Apply it with <see cref="ImageProcessingExtensions.Convolve(Image, ConvolutionOptions, CancellationToken)"/>.

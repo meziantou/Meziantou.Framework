@@ -51,13 +51,26 @@ jobs:
           path: tests/Meziantou.Framework.WebPlatform.External
           key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
           restore-keys: webplatform-external-tests-
-      - name: Update and open a pull request
+      - name: Update
+        id: update
         run: |
           # The script reports the test failures through its exit code: the pull request is still opened, as a draft,
           # so that the update is not lost
           bash -c "${{ matrix.script }}"
-          $checksPassed = $LASTEXITCODE -eq 0
-
+          "checks-passed=$($LASTEXITCODE -eq 0)" >> $env:GITHUB_OUTPUT
+          exit 0
+      - name: Publish the snapshots of the test suites
+        # The snapshots of the pins that the update changed, so the pull request has the lock file that lists them
+        # (tools/Meziantou.Framework.TestCorpus/readme.md). When publishing fails, the pull request is still opened:
+        # the fetchers fall back to upstream, and publish-test-corpora.yml publishes the snapshots once it is merged.
+        continue-on-error: true
+        uses: $/.github/actions/publish-test-corpora
+        with:
+          command: ./eng/webplatform/fetch-tests.sh --publish
+          token: ${{ secrets.TEST_CORPUS_TOKEN }}
+      - name: Open a pull request
+        run: |
+          $checksPassed = '${{ steps.update.outputs.checks-passed }}' -eq 'True'
           git add .
           git diff --cached --quiet
           if ($LASTEXITCODE -eq 0) {

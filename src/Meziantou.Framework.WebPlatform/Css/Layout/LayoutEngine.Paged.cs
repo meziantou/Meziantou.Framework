@@ -353,7 +353,7 @@ internal sealed partial class LayoutEngine
 
                     if (rowColumns is var (rowNested, rowColumnsStart))
                     {
-                        if (!ResumeColumns(rowNested, Math.Max(0, rowStart), isInRows: true))
+                        if (!ResumeColumns(rowNested, Math.Max(0, rowStart), isInRows: true, segment.Anchor.ColumnsConsumedBlockSize))
                         {
                             isRejected = true;
                             ClearNestedColumnStates(context);
@@ -1008,6 +1008,12 @@ internal sealed partial class LayoutEngine
         /// slices), laid out again in the columns of the inline size of the page, or null.
         /// </summary>
         public BreakAnchor? ColumnContent { get; init; }
+
+        /// <summary>
+        /// For a break inside a multi-column container (see <see cref="ColumnContent"/>): the block size of its content box used in
+        /// the pages before the break (see <see cref="NestedColumns.ResumeConsumedBlockSize"/>).
+        /// </summary>
+        public double ColumnsConsumedBlockSize { get; init; }
     }
 
     /// <summary>
@@ -1190,7 +1196,12 @@ internal sealed partial class LayoutEngine
             return null;
         }
 
-        return anchor with { ColumnContent = content };
+        // (a container with a definite or maximum block size continues with the rest of it, which must remain)
+        var consumed = nested.ConsumedBlockSizes.GetValueOrDefault(index - 1);
+        if ((nested.BlockSize ?? nested.MaxBlockSize) is { } limit && consumed >= limit - BreakAnchorEpsilon)
+            return null;
+
+        return anchor with { ColumnContent = content, ColumnsConsumedBlockSize = consumed };
     }
 
     /// <summary>
@@ -1207,7 +1218,7 @@ internal sealed partial class LayoutEngine
         }
 
         // (a block container resumed at a line box starts with that line box: its content before it is not laid out again)
-        return ResumeColumns(nested, Math.Max(0, contentStart), content.IsInRows) ? start : null;
+        return ResumeColumns(nested, Math.Max(0, contentStart), content.IsInRows, anchor.ColumnsConsumedBlockSize) ? start : null;
     }
 
     /// <summary>
@@ -1215,6 +1226,11 @@ internal sealed partial class LayoutEngine
     /// in the strip of a segment, and the position in the strip where the content of the segment starts, or null: the content of
     /// the strip starts inside the container, after its block-start edges (which are in the previous page).
     /// </summary>
+    /// <remarks>
+    /// The content of the strip after the start follows the block size of the content box of the container used in the previous
+    /// pages (<see cref="FragmentationFlow.ResumeShift"/>, from <see cref="BreakAnchor.ColumnsConsumedBlockSize"/>; the start
+    /// is a little after the block-start edges of the container when they have no block size, which the shift compensates).
+    /// </remarks>
     private static (NestedColumns Nested, double Start)? FindResumableColumns(FragmentationFlow flow, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, BreakAnchor anchor)
     {
         if (FindBoxFragment(children, stripSize, writingDirection, anchor.Box, parentTop: 0) is not var (fragment, top)
@@ -1223,8 +1239,13 @@ internal sealed partial class LayoutEngine
             return null;
         }
 
-        var start = top + Math.Max(writingDirection.ToLogical(fragment.Border.Add(fragment.Padding).Add(fragment.Scrollbars)).BlockStart, 2 * BreakAnchorEpsilon);
-        return start < item.End - BreakAnchorEpsilon ? (nested, start) : null;
+        var contentTop = top + writingDirection.ToLogical(fragment.Border.Add(fragment.Padding).Add(fragment.Scrollbars)).BlockStart;
+        var start = Math.Max(contentTop, top + (2 * BreakAnchorEpsilon));
+        if (start >= item.End - BreakAnchorEpsilon)
+            return null;
+
+        flow.ResumeShift = anchor.ColumnsConsumedBlockSize - (start - contentTop);
+        return (nested, start);
     }
 
     /// <summary>
@@ -1232,23 +1253,24 @@ internal sealed partial class LayoutEngine
     /// or returns false: the position is not in a column spanner, nor in a parallel flow unless the content after the break is
     /// in rows (see <see cref="BreakAnchor.IsInRows"/>: the parallel flows are resumed from it).
     /// </summary>
-    private static bool ResumeColumns(NestedColumns nested, double position, bool isInRows)
+    private static bool ResumeColumns(NestedColumns nested, double position, bool isInRows, double consumedBlockSize)
     {
         if ((!isInRows && CrossesParallelFlow(nested.Flow, position)) || nested.Flow.Spanners.Exists(spanner => spanner.MarginBoxStart < position - BreakAnchorEpsilon && spanner.MarginBoxEnd > position + BreakAnchorEpsilon))
             return false;
 
         nested.ResumeStart = position;
+        nested.ResumeConsumedBlockSize = consumedBlockSize;
         return true;
     }
 
     /// <summary>
     /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
     /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns (between its column spanners) have the
-    /// block size that remains in the page (no <c>column-height</c>, no definite or maximum block size), without absolutely
-    /// positioned boxes or nested multi-column containers.
+    /// block size that remains in the page or in its content box (no <c>column-height</c>), without absolutely positioned boxes or
+    /// nested multi-column containers.
     /// </summary>
     private static bool IsResumableColumns(NestedColumns nested)
-        => nested.RowBlockSize is null && nested.BlockSize is null && nested.MaxBlockSize is null
+        => nested.RowBlockSize is null
             && nested.Flow.OutOfFlowItems is null && !nested.Flow.HasNestedColumns;
 
     /// <summary>Returns whether a parallel flow of a flow (the items of a grid, of a flex container, the cells of a table) starts before a position and ends after it.</summary>

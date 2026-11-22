@@ -18,6 +18,9 @@
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IconifyIconSet" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IconifyClassName" />
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="IconifyIcons" />
+
+    <!-- IconifyResolveIconSets builds this file as a project, which is not a ProjectReference (msbuild -isolate) -->
+    <GraphIsolationExemptReference Include="$(MSBuildThisFileFullPath)" />
   </ItemGroup>
 
   <Target Name="IconifyResolveIconSets"
@@ -43,21 +46,27 @@
     </ItemGroup>
 
     <!-- A cached file is never downloaded again. Pin the Version metadata for reproducible builds.
-         The builds of the target frameworks of a project share the cache, so each one downloads to its own temporary file,
-         and moves it once it is complete: an interrupted download is not mistaken for a cached file. -->
-    <PropertyGroup>
-      <_IconifyDownloadId>$([System.Guid]::NewGuid().ToString('N'))</_IconifyDownloadId>
-    </PropertyGroup>
+         The builds of the target frameworks of a project share the cache, and so can several projects (IconifyCacheDirectory).
+         So that a build never reads a file that another build is replacing:
+         - the MSBuild task downloads the files, by building this file as a project whose global properties are the URL and the
+           destination, without TargetFramework and RuntimeIdentifier. MSBuild builds a project with the same global properties
+           once per build, and the other requests wait for its result: each file is downloaded once per build;
+         - the download goes to a temporary file, moved to the cache once it is complete: an interrupted download is not mistaken
+           for a cached file;
+         - a cached file is never replaced: when another build, such as another dotnet build process, adds the file first, the
+           temporary file is deleted. -->
+    <ItemGroup>
+      <_IconifyDownloadRequest Include="@(_IconifyRemoteIconSet->'$(MSBuildThisFileFullPath)')"
+                               Condition="'%(_IconifyRemoteIconSet.Identity)' != '' AND !Exists('%(_IconifyRemoteIconSet._IconifyPath)')">
+        <AdditionalProperties>_IconifyDownloadUrl=%(_IconifyRemoteIconSet._IconifyUrl);_IconifyDownloadDirectory=%(_IconifyRemoteIconSet._IconifyDirectory);_IconifyDownloadFileName=%(_IconifyRemoteIconSet.Identity).json</AdditionalProperties>
+      </_IconifyDownloadRequest>
+    </ItemGroup>
 
-    <DownloadFile SourceUrl="%(_IconifyRemoteIconSet._IconifyUrl)"
-                  DestinationFolder="%(_IconifyRemoteIconSet._IconifyDirectory)"
-                  DestinationFileName="%(_IconifyRemoteIconSet.Identity).json.$(_IconifyDownloadId).download"
-                  Retries="3"
-                  Condition="'%(_IconifyRemoteIconSet.Identity)' != '' AND !Exists('%(_IconifyRemoteIconSet._IconifyPath)')" />
-
-    <Move SourceFiles="%(_IconifyRemoteIconSet._IconifyPath).$(_IconifyDownloadId).download"
-          DestinationFiles="%(_IconifyRemoteIconSet._IconifyPath)"
-          Condition="'%(_IconifyRemoteIconSet.Identity)' != '' AND Exists('%(_IconifyRemoteIconSet._IconifyPath).$(_IconifyDownloadId).download')" />
+    <MSBuild Projects="@(_IconifyDownloadRequest)"
+             Targets="_IconifyDownloadIconSet"
+             RemoveProperties="TargetFramework;RuntimeIdentifier;SelfContained"
+             BuildInParallel="$(BuildInParallel)"
+             Condition="'@(_IconifyDownloadRequest)' != ''" />
 
     <ItemGroup>
       <AdditionalFiles Include="@(_IconifyLocalIconSet->'%(FullPath)')">
@@ -71,5 +80,30 @@
         <IconifyIcons>%(_IconifyRemoteIconSet.Icons)</IconifyIcons>
       </AdditionalFiles>
     </ItemGroup>
+  </Target>
+
+  <!-- Downloads _IconifyDownloadUrl to _IconifyDownloadDirectory/_IconifyDownloadFileName. IconifyResolveIconSets builds this file as a project to call it. -->
+  <Target Name="_IconifyDownloadIconSet">
+    <PropertyGroup>
+      <_IconifyDownloadPath>$(_IconifyDownloadDirectory)$(_IconifyDownloadFileName)</_IconifyDownloadPath>
+      <_IconifyDownloadTemporaryFileName>$(_IconifyDownloadFileName).$([System.Guid]::NewGuid().ToString('N')).download</_IconifyDownloadTemporaryFileName>
+      <_IconifyDownloadTemporaryPath>$(_IconifyDownloadDirectory)$(_IconifyDownloadTemporaryFileName)</_IconifyDownloadTemporaryPath>
+    </PropertyGroup>
+
+    <!-- Continue on error, so that the temporary file of a failed download is deleted -->
+    <DownloadFile SourceUrl="$(_IconifyDownloadUrl)"
+                  DestinationFolder="$(_IconifyDownloadDirectory)"
+                  DestinationFileName="$(_IconifyDownloadTemporaryFileName)"
+                  Retries="3"
+                  ContinueOnError="ErrorAndContinue"
+                  Condition="!Exists('$(_IconifyDownloadPath)')" />
+
+    <!-- The Move task deletes an existing destination before it moves the file, so it only runs when there is none -->
+    <Move SourceFiles="$(_IconifyDownloadTemporaryPath)"
+          DestinationFiles="$(_IconifyDownloadPath)"
+          Condition="'$(MSBuildLastTaskResult)' == 'true' AND Exists('$(_IconifyDownloadTemporaryPath)') AND !Exists('$(_IconifyDownloadPath)')" />
+
+    <Delete Files="$(_IconifyDownloadTemporaryPath)"
+            Condition="Exists('$(_IconifyDownloadTemporaryPath)')" />
   </Target>
 </Project>

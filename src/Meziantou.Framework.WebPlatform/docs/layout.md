@@ -3038,7 +3038,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     filled, with `column-fill: auto`), else the row has `column-count` columns of that block size and the content continues in
     a row of the next outer fragmentainer. The last row of a container whose definite block size ends in the outer
     fragmentainer has overflow columns (also the row where the content box of a container whose block size is not definite
-    reaches its `max-height`). A row of a fixed block size (`column-height`) is broken by the end of the outer
+    reaches its `max-height`). A block size that the parent imposes on a container whose block size is `auto` (a stretched
+    flex or grid item, a table cell, `ContentArea.IsBlockSizeImposed`) is the size of its content laid out without
+    fragmentation: it is a minimum, and the rows that the outer fragmentainers break grow the container instead. A row of a fixed block size (`column-height`) is broken by the end of the outer
     fragmentainer. As in Blink, when its columns are filled sequentially (`column-fill: auto`) and it follows other content
     of the container in the outer fragmentainer, it starts there only if it fits; a balanced row starts in any space that
     remains, and when it follows a column spanner and is broken by the end of the outer fragmentainer, it starts again with its

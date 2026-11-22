@@ -599,10 +599,12 @@ public sealed class PagedMediaTests : IDisposable
     [Theory]
     [InlineData("<div style='padding-top: 10px'><div style='columns: 2; column-gap: 0'>{0}</div></div>")]
     [InlineData("<div style='columns: 2; column-gap: 0'><div style='columns: 1; column-gap: 0'>{0}</div></div>")]
+    [InlineData("<div style='display: flex'><div style='flex: 1; columns: 2; column-gap: 0'>{0}</div></div>")]
     public void Pages_MultiColumnContainerNestedDeeplyInAMultiColumnContainerIsNotSlicedInEmptyRows(string format)
     {
         // The rows of columns of the outer container after the end of its strip, where the nested containers continue, are as
-        // tall as the page: each item is in a single fragment, not in slivers of 1px in more pages
+        // tall as the page: each item is in a single fragment in the page, not in slivers of 1px in more pages, nor in a column
+        // after the last one of the page
         var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 }</style>
@@ -615,6 +617,29 @@ public sealed class PagedMediaTests : IDisposable
         {
             var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
             Assert.Equal(new PhysicalSize(100, 50), Assert.Single(rects).Rect.Size);
+            Assert.True(rects[0].Rect.X + rects[0].Rect.Width <= 400, $"r{i} is in the page: {rects[0]}");
+        }
+    }
+
+    [Fact]
+    public void Pages_StretchedMultiColumnContainerNestedInAMultiColumnContainerKeepsItsBlockSize()
+    {
+        // The nested container is stretched to the block size of its flex line (the 1500px of its sibling): its block size is a
+        // minimum, the fragments of the container follow the ones of its sibling, and its items are in the columns of the pages
+        var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 }</style>
+            <div style='columns: 2; column-gap: 0'><div style='height: 120px'></div><div style='display: flex'><div id=m style='flex: 1; columns: 2; column-gap: 0'>{{items}}</div><div id=s style='width: 10px; height: 1500px'></div></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        Assert.Equal(GetPageRects(pages, document.GetElementById("s")!).Select(rect => (rect.Page, rect.Rect.Y, rect.Rect.Height)), GetPageRects(pages, document.GetElementById("m")!).Select(rect => (rect.Page, rect.Rect.Y, rect.Rect.Height)));
+        for (var i = 0; i < 31; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal(new PhysicalSize(95, 50), Assert.Single(rects).Rect.Size);
+            Assert.True(rects[0].Rect.X + rects[0].Rect.Width <= 400, $"r{i} is in the page: {rects[0]}");
         }
     }
 

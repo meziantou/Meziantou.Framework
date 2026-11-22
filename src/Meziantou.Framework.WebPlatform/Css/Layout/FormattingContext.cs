@@ -136,6 +136,14 @@ internal readonly record struct ContentArea(WritingDirection WritingDirection, L
     public bool IsBlockSizeIndefinite { get; init; }
 
     /// <summary>
+    /// Whether <see cref="BlockSize"/> is imposed by the parent formatting context (<see cref="ConstraintSpace.FixedBlockSize"/>)
+    /// on a box whose preferred block size is <c>auto</c> (a stretched flex or grid item, a flexed item, a table cell): it is the
+    /// size of the box laid out without fragmentation, not a size of the box itself, and the content that fragmentation
+    /// pushes may grow the box (see <c>NestedColumns.BlockSize</c>).
+    /// </summary>
+    public bool IsBlockSizeImposed { get; init; }
+
+    /// <summary>
     /// Whether <see cref="InlineSize"/> is given by the contents of the box (its fit-content size, or an intrinsic size keyword): it is
     /// not a definite size (https://drafts.csswg.org/css-sizing-3/#definite: "a size that can be determined without performing layout").
     /// </summary>
@@ -874,6 +882,7 @@ internal abstract class FormattingContext
         var content = new ContentArea(writingDirection, new LogicalOffset(edges.InlineStart, edges.BlockStart), contentInlineSize, contentBlockSize)
         {
             IsBlockSizeIndefinite = space.IsFixedBlockSizeIndefinite && !isOrthogonal && fixedBlockSize is not null,
+            IsBlockSizeImposed = fixedBlockSize is not null && preferredBlockSize.IsAuto && !isOrthogonal,
             InlineSizeDependsOnContents = inlineDependsOnContents,
             BlockSizeGrowsToContents = blockIsRatioDependent && UsesAspectRatioAutomaticMinimum(box, layout, blockIsHorizontal),
             AnonymousPercentageBlockSize = contentBlockSize is null && !isOrthogonal && box is { Kind: ContainerBoxKind.Anonymous, IsInlineBox: false, Display.Internal: DisplayInternal.None } ? space.PercentageBlockSize : null,

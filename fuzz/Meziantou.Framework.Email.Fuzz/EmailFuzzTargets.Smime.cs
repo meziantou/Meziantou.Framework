@@ -156,6 +156,9 @@ public static partial class EmailFuzzTargets
         using var rsa = RSA.Create(2048);
         var request = new CertificateRequest("CN=fuzz@example.com", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
         using var certificate = request.CreateSelfSigned(new DateTimeOffset(2020, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2100, 1, 1, 0, 0, 0, TimeSpan.Zero));
-        return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pfx, "fuzz"), "fuzz", X509KeyStorageFlags.EphemeralKeySet);
+
+        // macOS does not support EphemeralKeySet: the key goes to a temporary keychain instead
+        var keyStorageFlags = OperatingSystem.IsMacOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet;
+        return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pfx, "fuzz"), "fuzz", keyStorageFlags);
     }
 }

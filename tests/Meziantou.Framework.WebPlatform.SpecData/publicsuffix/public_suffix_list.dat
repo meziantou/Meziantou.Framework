@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-14_09-32-49_UTC
-// COMMIT: c3a53eed2cc49353c5fb5c30536186795d5c451b
+// VERSION: 2026-11-20_10-39-09_UTC
+// COMMIT: d7d7f1fd55166aaf73ad2f526e72634490acd9c8
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -12416,6 +12416,10 @@ apigee.io
 // Submitted by Matt Saladna <matt@apisnetworks.com>
 panel.dev
 
+// AppDirect, Inc. : https://devs.ai/
+// Submitted by Devs.ai Developer Team <developer@devs.ai>
+apps.devs.ai
+
 // Apphud : https://apphud.com
 // Submitted by Alexander Selivanov <alex@apphud.com>
 siiites.com
@@ -12492,6 +12496,11 @@ myasustor.com
 *.atlassian-3p-us-gov-mod.com
 *.atlassian-isolated-3p.com
 cdn.prod.atlassian-dev.net
+
+// Automattic Inc. : https://automattic.com
+// Submitted by Stefano Sala <support@spacefast.com>
+space.fast
+view.fast
 
 // AVM : https://avm.de
 // Submitted by Andreas Weise <a.weise@avm.de>
@@ -12678,6 +12687,10 @@ cdn77-ssl.net
 c.cdn77.org
 rsc.cdn77.org
 ssl.origin.cdn77-secure.org
+
+// Ceero ApS : https://ceero.site
+// Submitted by Ceero ApS <abuse@ceero.eu>
+ceero.site
 
 // CentralNic : https://teaminternet.com/
 // Submitted by registry <gavin.brown@centralnic.com>
@@ -12868,6 +12881,10 @@ site.hosting-cluster.nl
 // Submitted by Contentful Developer Experience Team <prd-ecosystem-dx@contentful.com>
 ctfcloud.net
 
+// Converge AI Pte. Ltd. : https://converge.ai
+// Submitted by Tyler <support@enter.pro>
+prod.enter.pro
+
 // Convex : https://convex.dev/
 // Submitted by James Cowling <security@convex.dev>
 convex.app
@@ -12964,6 +12981,10 @@ dattoweb.com
 mydatto.com
 dattolocal.net
 mydatto.net
+
+// ddns.ge : https://nic.ddns.ge
+// Submitted by John Snow <support@mail.ddns.ge>
+ddns.ge
 
 // ddnss.de : https://www.ddnss.de/
 // Submitted by Robert Niedziela <webmaster@ddnss.de>
@@ -13793,6 +13814,12 @@ freeboxos.fr
 // Submitted by Daniel Stone <daniel@fooishbar.org>
 freedesktop.org
 
+// FreeDns : https://freedns.my
+// Submitted by FreeDns Team <support@freedns.my>
+pvf.cc
+kz.ci
+xyz.ci
+
 // freemyip.com : https://freemyip.com
 // Submitted by Cadence <contact@freemyip.com>
 freemyip.com
@@ -13843,6 +13870,11 @@ futuremailing.at
 gadget.app
 gadget.host
 
+// Gcore : https://gcore.com/
+// Submitted by Maryia Miskevich <fastedge@gcore.com>
+fastedge.app
+gcorecdn.com
+
 // GDS : https://www.gov.uk/service-manual/technology/managing-domain-names
 // Submitted by Stephen Ford <hostmaster@digital.cabinet-office.gov.uk>
 campaign.gov.uk
@@ -13869,6 +13901,10 @@ cdn-edges.net
 // GignoSystemJapan : http://gsj.bz
 // Submitted by GignoSystemJapan <kakutou-ec@gsj.bz>
 gsj.bz
+
+// Ginta : https://ginta.app/
+// Submitted by Povilas Adomas Brukas <support@ginta.app>
+ginta.page
 
 // GitBook Inc. : https://www.gitbook.com/
 // Submitted by Samy Pesse <devs@gitbook.com>
@@ -14521,6 +14557,10 @@ kiloapps.io
 kinghost.net
 uni5.net
 
+// Kliv : https://kliv.dev
+// Submitted by Anders Olsson <security@kliv.dev>
+kliv.site
+
 // KoobinEvent, SL : https://www.koobin.com
 // Submitted by Iván Oliva <ivan.oliva@koobin.com>
 koobin.events
@@ -14725,6 +14765,11 @@ magicpatternsapp.com
 // Mail.Ru Group : https://hb.cldmail.ru
 // Submitted by Ilya Zaretskiy <zaretskiy@corp.mail.ru>
 hb.cldmail.ru
+
+// MailerLite : https://www.mailerlite.com
+// Submitted by Bob Gordon <public-suffix-list@mailerlite.com>
+mailerpage.io
+subscribepage.io
 
 // MathWorks : https://www.mathworks.com/
 // Submitted by Emily Reed <psl-maintainers@groups.mathworks.com>
@@ -15085,6 +15130,14 @@ torun.pl
 // Submitted by Nicholas Ford <dev@nimbushosting.co.uk>
 nh-serv.co.uk
 nimsite.uk
+
+// Ninjaneer Media : https://ninjaneer.au
+// Submitted by the Ninjaneer Media team <admin@ninjaneer.au>
+ninjaneer-sites.com
+
+// Nippy : https://nippy.host/
+// Submitted by Nippy Support <support@nippy.host>
+nippy.site
 
 // No-IP.com : https://noip.com/
 // Submitted by Deven Reza <publicsuffixlist@noip.com>
@@ -15474,6 +15527,10 @@ pstmn.io
 mock.pstmn.io
 httpbin.org
 
+// PrairieLearn, Inc. : https://www.prairielearn.com
+// Submitted by PrairieLearn, Inc. <security@prairielearn.com>
+*.prairielearn-user-content.com
+
 // prequalifyme.today : https://prequalifyme.today
 // Submitted by DeepakTiwari deepak@ivylead.io
 prequalifyme.today
@@ -15481,6 +15538,14 @@ prequalifyme.today
 // prgmr.com : https://prgmr.com/
 // Submitted by Sarah Newman <owner@prgmr.com>
 xen.prgmr.com
+
+// PrimeLink Limited: https://www.nic.uk.cc/
+// Submitted by PrimeLink Developer <support@nic.uk.cc>
+ec.cc
+eu.cc
+gu.cc
+uk.cc
+us.cc
 
 // priv.at : http://www.nic.priv.at/
 // Submitted by registry <lendl@nic.at>
@@ -15720,6 +15785,10 @@ io.noc.ruhr-uni-bochum.de
 // Russian Academy of Sciences
 // Submitted by Tech Support <support@rasnet.ru>
 ras.ru
+
+// Sail Research Co. : https://sailresearch.com/
+// Submitted by Sail Support <support@sailresearch.com>
+sail.box
 
 // Sakura Frp : https://www.natfrp.com
 // Submitted by Bobo Liu <support@natfrp.cloud>
@@ -15964,6 +16033,13 @@ shopitsite.com
 shopware.shop
 shopware.store
 
+// Show Corporation : https://doma.in
+// Submitted by Xiufeng Guo <support@cctld.com>
+co.fo
+com.fo
+wz.io
+wz.org
+
 // Siemens Mobility GmbH
 // Submitted by Oliver Graebner <security@mo-siemens.io>
 mo-siemens.io
@@ -16024,6 +16100,10 @@ mafelo.net
 // Solana Name Service :  https://sns.id
 // Submitted by Solana Name Service <contact@sns.id>
 sol.site
+
+// Solid Labs : https://www.solidres.com/
+// Submitted by Solid Labs <contact@solidres.com>
+solidres.page
 
 // Sony Interactive Entertainment LLC : https://sie.com/
 // Submitted by David Coles <david.coles@sony.com>
@@ -16250,14 +16330,6 @@ tche.br
 site.tb-hosting.com
 directwp.eu
 
-// TechEdge Limited: https://www.nic.uk.cc/
-// Submitted by TechEdge Developer <support@nic.uk.cc>
-ec.cc
-eu.cc
-gu.cc
-uk.cc
-us.cc
-
 // Teckids e.V. : https://www.teckids.org
 // Submitted by Dominik George <dominik.george@teckids.org>
 edugit.io
@@ -16272,6 +16344,10 @@ telebit.io
 // Teleport : https://goteleport.com
 // Submitted by Rob Picard <security@goteleport.com>
 teleport.sh
+
+// Terramind.com, Inc. : https://terramind.com
+// Submitted by Terramind Sites <sites@terramind.com>
+terramind.io
 
 // Thingdust AG : https://thingdust.com/
 // Submitted by Adrian Imboden <adi@thingdust.com>
@@ -16344,6 +16420,10 @@ site.transip.me
 // Submitted by Triton Data Center staff <tickets@tritondatacenter.com>
 *.triton.zone
 
+// Tuna : https://tuna.am/
+// Submitted by Tuna Support <support@tuna.am>
+*.2na.am
+
 // Tunnelmole: https://tunnelmole.com
 // Submitted by Robbie Cahill <support@tunnelmole.com>
 tunnelmole.net
@@ -16378,6 +16458,10 @@ it.com
 // Umso Software Inc. : https://www.umso.com
 // Submitted by Alexis Taylor <security@umso.com>
 umso.co
+
+// Uncloud : https://uncloud.run
+// Submitted by Pasha Sviderski <support@uncloud.run>
+uncld.dev
 
 // Unison Computing, PBC : https://unison.cloud
 // Submitted by Simon Højberg <security@unison.cloud>
@@ -16587,6 +16671,11 @@ affinitylottery.org.uk
 raffleentry.org.uk
 weeklylottery.org.uk
 
+// Wordsmith AI : https://wordsmith.ai
+// Submitted by Wordsmith Security <security@wordsmith.ai>
+wordsmithmcpcontent.com
+staging.wordsmithmcpcontent.com
+
 // WP Engine : https://wpengine.com/
 // Submitted by Michael Smith <michael.smith@wpengine.com>
 // Submitted by Brandon DuRette <brandon.durette@wpengine.com>
@@ -16623,6 +16712,10 @@ official.academy
 // Submitted by Stefano Rivera <stefano@yola.com>
 yolasite.com
 
+// Yunamo : https://yunamo.com/
+// Submitted by James <support@yunamo.com>
+loc.cc
+
 // Yunohost : https://yunohost.org
 // Submitted by Valentin Grimaud <security@yunohost.org>
 ynh.fr
@@ -16641,6 +16734,10 @@ zap.cloud
 // Zeabur : https://zeabur.com/
 // Submitted by Zeabur Team <contact@zeabur.com>
 zeabur.app
+
+// Zerexa domains : https://nic.fj.kg
+// Submitted by Zerexa Team <admin@zerexa.net>
+fj.kg
 
 // Zerops : https://zerops.io/
 // Submitted by Zerops Team <security@zerops.io>

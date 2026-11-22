@@ -288,6 +288,9 @@ internal static partial class ColumnBreaker
         /// <summary>The position of the flow where the content of the next fragmentainer starts.</summary>
         public double Position => _position;
 
+        /// <summary>Whether parallel flows that started in a previous fragmentainer continue in the next one.</summary>
+        public bool HasOpenParallelFlows => _open.Count > 0;
+
 
         /// <summary>The space at the start of the next fragmentainer before the content (see <see cref="FragmentainerBreak.DisplayOffset"/>).</summary>
         public double DisplayOffset => _displayOffset;
@@ -406,7 +409,7 @@ internal static partial class ColumnBreaker
                 item.MaxConsumed = 0;
                 item.MaxIndex = (_index, double.NaN);
                 var cursor = new NestedColumnsCursor(item, nested, 0);
-                cursor.ResumeAt(nestedStart, _index);
+                cursor.ResumeAt(nestedStart, nested.ResumeConsumedBlockSize, _index);
                 item.Cursor = cursor;
                 _open.Add(item);
             }
@@ -770,9 +773,11 @@ internal static partial class ColumnBreaker
                 }
             }
 
-            if (scannedAll)
+            // (the end of the content fits: it does not hide the shortage of a parallel flow that continues after it, e.g. a nested
+            // multi-column container whose rows of columns need more block size than its block size in the strip)
+            if (scannedAll && GetOffset(_end) - blockSize is var endShortage && endShortage > Epsilon)
             {
-                shortage = Math.Min(shortage, GetOffset(_end) - blockSize);
+                shortage = Math.Min(shortage, endShortage);
             }
 
             BreakCandidate next;
@@ -1294,7 +1299,15 @@ internal static partial class ColumnBreaker
                     item.MaxIndex = (_index, double.NaN);
                     if (item.Nested is { } nested)
                     {
-                        item.Cursor = new NestedColumnsCursor(item, nested, offset);
+                        var nestedCursor = new NestedColumnsCursor(item, nested, offset);
+                        if (nested.BalanceResume is { } resume && offset < -Epsilon)
+                        {
+                            // (a container that continues from the previous fragmentainers of the placement in progress, whose
+                            // rows of columns are balanced on a trial flow, see NestedColumns.BalanceResume)
+                            nestedCursor.ResumeAt(resume.Position, resume.Consumed, _index);
+                        }
+
+                        item.Cursor = nestedCursor;
                     }
                     else
                     {

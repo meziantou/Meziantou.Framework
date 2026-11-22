@@ -3062,7 +3062,12 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
   - The block-end edge of the inner container follows its content (or the end of its definite block size, which may be in a
     later outer fragmentainer than its content; `box-decoration-break: clone` repeats its edges in every fragment); the content
     of the outer flow after it is shifted accordingly. The outer columns are balanced with the same cursor (the block size the
-    inner rows need is the shortage of the outer columns).
+    inner rows need is the shortage of the outer columns). A row of outer columns that starts inside the inner container is
+    balanced on a trial flow where the inner container continues from where its content continues in the placement in
+    progress (`NestedColumns.BalanceResume`), not as if its content before the row was in a single column: the previous outer
+    fragmentainers broke it into more columns, so more of it may remain than its size in the outer strip tells. The balancing
+    starts from the rest of the inner row balanced in its columns, and a row of outer columns after the end of the content of
+    the outer strip, where the inner container continues, is as tall as the block size that remains (not empty).
   - The slicer creates one fragment of the inner container per outer fragmentainer (`FragmentSlicer.SliceNestedColumns`), with
     the columns of its rows (the inner strip is sliced by a slicer of its own), the parts of its spanners and its gap
     decorations (the row gaps before a fragment, also the ones that disappear at the outer breaks, consume the values of the row

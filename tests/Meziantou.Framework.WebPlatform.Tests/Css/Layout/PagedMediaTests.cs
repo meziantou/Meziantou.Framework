@@ -575,6 +575,49 @@ public sealed class PagedMediaTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Pages_MultiColumnContainerNestedInAMultiColumnContainerEndsInTheLastPage()
+    {
+        // The nested container fills the columns of the outer one in the first two pages: its last item is in the second page,
+        // without an empty row of columns (with a sliver of the item) in more pages
+        var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 }</style>
+            <div style='columns: 2; column-gap: 0'><div style='height: 120px'></div><div style='columns: 2; column-gap: 0'>{{items}}</div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        for (var i = 0; i < 31; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal(i < 18 ? 0 : 1, Assert.Single(rects).Page);
+            Assert.Equal(new PhysicalSize(100, 50), rects[0].Rect.Size);
+        }
+    }
+
+    [Theory]
+    [InlineData("<div style='padding-top: 10px'><div style='columns: 2; column-gap: 0'>{0}</div></div>")]
+    [InlineData("<div style='columns: 2; column-gap: 0'><div style='columns: 1; column-gap: 0'>{0}</div></div>")]
+    public void Pages_MultiColumnContainerNestedDeeplyInAMultiColumnContainerIsNotSlicedInEmptyRows(string format)
+    {
+        // The rows of columns of the outer container after the end of its strip, where the nested containers continue, are as
+        // tall as the page: each item is in a single fragment, not in slivers of 1px in more pages
+        var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 }</style>
+            <div style='columns: 2; column-gap: 0'><div style='height: 120px'></div>{{string.Format(CultureInfo.InvariantCulture, format, items)}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.True(pages.Count <= 3);
+        for (var i = 0; i < 31; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal(new PhysicalSize(100, 50), Assert.Single(rects).Rect.Size);
+        }
+    }
+
     [Theory]
     [InlineData("<div style='position: relative; height: 100px; break-inside: avoid'><div id=p style='position: absolute; top: 10px; left: 0; right: 0; height: 20px'></div></div>", "(1, (200, 10, 200x20))")]
     [InlineData("<div style='columns: 2; column-gap: 0; break-inside: avoid'><div id=p style='height: 200px'></div></div>", "(1, (200, 0, 100x100)) (1, (300, 0, 100x100))")]

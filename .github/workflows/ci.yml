@@ -840,30 +840,31 @@ jobs:
               path: |
                 **/*.coverage
 
+  # The trimmer only analyzes the code behind an OS check, such as OperatingSystem.IsWindows(), when
+  # it publishes for that OS, so the harness is published for each OS and both architectures. The
+  # libraries do not depend on the runtime: one job builds them once, then each publish only trims.
+  # Each publish is a step of its own, so a failure does not hide the results of the next runtimes.
   test_trimming:
     needs: [ compute_test_matrix ]
     if: needs.compute_test_matrix.outputs.has-trimmable-projects == 'true' && github.event_name != 'schedule'
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
-    strategy:
-      matrix:
-        # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-        include:
-          - runtime: "win-x64"
-            runner: ubuntu-26.04
-          - runtime: "linux-x64"
-            runner: ubuntu-26.04
-          - runtime: "osx-arm64"
-            runner: ubuntu-26.04-arm
-      fail-fast: false
+    env:
+      # Only references and roots the affected libraries, see eng/Trimmable.targets
+      TrimmableValidationProjects: ${{ needs.compute_test_matrix.outputs.trimmable-projects }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
-      - run: dotnet publish -mt --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
-        env:
-          # Only references and roots the affected libraries, see eng/Trimmable.targets
-          TrimmableValidationProjects: ${{ needs.compute_test_matrix.outputs.trimmable-projects }}
+      - name: Publish for win-x64
+        if: ${{ !cancelled() }}
+        run: dotnet publish -mt --configuration Release --runtime win-x64 --self-contained eng/Trimmable/Trimmable.csproj
+      - name: Publish for linux-x64
+        if: ${{ !cancelled() }}
+        run: dotnet publish -mt --configuration Release --runtime linux-x64 --self-contained eng/Trimmable/Trimmable.csproj
+      - name: Publish for osx-arm64
+        if: ${{ !cancelled() }}
+        run: dotnet publish -mt --configuration Release --runtime osx-arm64 --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
     needs: [ compute_test_matrix ]

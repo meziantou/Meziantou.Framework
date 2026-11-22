@@ -19,4 +19,18 @@
     <ProjectReference Remove="@(_TrimmableValidationProjectToRemove)" MatchOnMetadata="TrimmableValidationProjectName" />
     <TrimmerRootAssembly Remove="@(_TrimmableValidationProjectToRemove)" />
   </ItemGroup>
+
+  <!-- The harness passes its RuntimeIdentifier to its project references, including the analyzers and
+       source generators that it references directly or through the libraries. Built for linux-x64,
+       they are x64 assemblies, which the compiler cannot load on an arm64 machine (CS8034). Building
+       them without a RuntimeIdentifier lets one machine publish the harness for every runtime. -->
+  <Target Name="_TrimmableBuildAnalyzersWithoutRuntimeIdentifier"
+          AfterTargets="IncludeTransitiveProjectReferences"
+          BeforeTargets="AssignProjectConfiguration">
+    <ItemGroup>
+      <ProjectReference Condition="'%(ProjectReference.OutputItemType)' == 'Analyzer'">
+        <GlobalPropertiesToRemove>%(ProjectReference.GlobalPropertiesToRemove);RuntimeIdentifier;SelfContained</GlobalPropertiesToRemove>
+      </ProjectReference>
+    </ItemGroup>
+  </Target>
 </Project>

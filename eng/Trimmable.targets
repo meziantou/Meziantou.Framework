@@ -1,0 +1,22 @@
+<Project>
+  <!-- Imported at the end of the trimming harnesses (eng/Trimmable and eng/Trimmable.Wpf).
+
+       TrimmableValidationProjects is a semicolon-separated list of project names, such as
+       Meziantou.Framework.Csv. When it is set, the harness only references and roots these projects,
+       so the test_trimming jobs of a pull request only publish the libraries it affects. The names
+       that the harness does not reference are ignored. CI sets it as an environment variable,
+       because the -p switch splits the value on semicolons.
+
+       The projects that are not listed can still be referenced by the listed ones: they are
+       trimmed with the application, but their own code is not rooted. -->
+  <ItemGroup Condition="'$(TrimmableValidationProjects)' != ''">
+    <_TrimmableValidationProjectToKeep Include="$(TrimmableValidationProjects)" />
+    <_TrimmableValidationProjectToRemove Include="@(ProjectReference->'%(Filename)')" />
+    <_TrimmableValidationProjectToRemove Remove="@(_TrimmableValidationProjectToKeep)" />
+    <_TrimmableValidationProjectToRemove Update="@(_TrimmableValidationProjectToRemove)" TrimmableValidationProjectName="%(Identity)" />
+
+    <ProjectReference Update="@(ProjectReference)" TrimmableValidationProjectName="%(Filename)" />
+    <ProjectReference Remove="@(_TrimmableValidationProjectToRemove)" MatchOnMetadata="TrimmableValidationProjectName" />
+    <TrimmerRootAssembly Remove="@(_TrimmableValidationProjectToRemove)" />
+  </ItemGroup>
+</Project>

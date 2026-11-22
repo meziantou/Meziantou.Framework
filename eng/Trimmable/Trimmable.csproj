@@ -748,4 +748,6 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.RecentDocuments" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Yaml" />
   </ItemGroup>
+
+  <Import Project="..\Trimmable.targets" />
 </Project>

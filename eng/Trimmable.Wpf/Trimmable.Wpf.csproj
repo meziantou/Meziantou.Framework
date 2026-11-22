@@ -15,7 +15,5 @@
     <ProjectReference Include="../../src/Meziantou.Framework.WPF/Meziantou.Framework.WPF.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-  </ItemGroup>
-
+  <Import Project="../Trimmable.targets" />
 </Project>

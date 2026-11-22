@@ -447,6 +447,8 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     }
 
     sb.Append($"  </ItemGroup>{lf}");
+    sb.Append(lf);
+    sb.Append($"  <Import Project=\"..\\Trimmable.targets\" />{lf}");
     sb.Append($"</Project>{lf}");
 
     var newContent = sb.ToString();

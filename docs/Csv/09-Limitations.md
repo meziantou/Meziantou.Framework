@@ -17,3 +17,18 @@ description: What the library does not do, so you can plan around it.
 - **No parallel parsing.** A reader reads the records one after the other.
 - **Not thread-safe.** Use a reader or a writer from one thread at a time. [CsvSerializerOptions](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions) and the
   contexts can be shared.
+
+## Differences with other parsers
+
+The reader is tested against the csv-spectrum files and the parser tests of Papa Parse. It reads them the same way,
+except where it follows RFC 4180 or keeps the data as it is:
+
+- **A final line terminator ends the last record.** `a,b\n` is one record; Papa Parse returns an empty record after it.
+- **Duplicate column names are kept.** The header of `A,A` is `A` and `A`; Papa Parse renames the second one `A_1`.
+- **The characters after a closing quote are part of the value.** `"a" ,b` reads `a ` as the first value; Papa Parse
+  ignores the spaces before the separator. Set [Trim](cref:Meziantou.Framework.Csv.CsvReaderOptions.Trim) to [CsvTrimOptions.Outer](cref:Meziantou.Framework.Csv.CsvTrimOptions.Outer) to remove them.
+- **A quote closes a quoted value even when a separator does not follow it.** `"a"b,c` is two values, `ab` and `c`;
+  Papa Parse reads the quote as a character and continues the value. [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) rejects such data.
+- **Every line terminator ends a record.** `\n`, `\r\n` and `\r` can be mixed in the same data; Papa Parse uses the first
+  one it finds and reads the others as characters.
+- **A quote is escaped by doubling it.** Another escape character, such as `\"`, is not supported.

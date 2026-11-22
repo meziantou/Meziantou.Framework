@@ -8,6 +8,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="TestData/csv-spectrum/cases.json" LogicalName="Meziantou.Framework.Csv.Tests.TestData.csv-spectrum.cases.json" />
+    <EmbeddedResource Include="TestData/papaparse/cases.json" LogicalName="Meziantou.Framework.Csv.Tests.TestData.papaparse.cases.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.Csv.SourceGenerator/Meziantou.Framework.Csv.SourceGenerator.csproj"
                       OutputItemType="Analyzer"

@@ -1,0 +1,2873 @@
+[
+ {
+  "name": "core/One row",
+  "input": "A,b,c",
+  "data": [
+   [
+    "A",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Two rows",
+  "input": "A,b,c\nd,E,f",
+  "data": [
+   [
+    "A",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "E",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Three rows",
+  "input": "A,b,c\nd,E,f\nG,h,i",
+  "data": [
+   [
+    "A",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "E",
+    "f"
+   ],
+   [
+    "G",
+    "h",
+    "i"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Whitespace at edges of unquoted field",
+  "input": "a,\tb ,c",
+  "data": [
+   [
+    "a",
+    "\tb ",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field",
+  "input": "A,\"B\",C",
+  "data": [
+   [
+    "A",
+    "B",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with extra whitespace on edges",
+  "input": "A,\" B  \",C",
+  "data": [
+   [
+    "A",
+    " B  ",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with delimiter",
+  "input": "A,\"B,B\",C",
+  "data": [
+   [
+    "A",
+    "B,B",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with line break",
+  "input": "A,\"B\nB\",C",
+  "data": [
+   [
+    "A",
+    "B\nB",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted fields with line breaks",
+  "input": "A,\"B\nB\",\"C\nC\nC\"",
+  "data": [
+   [
+    "A",
+    "B\nB",
+    "C\nC\nC"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted fields at end of row with delimiter and line break",
+  "input": "a,b,\"c,c\nc\"\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c,c\nc"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with escaped quotes",
+  "input": "A,\"B\"\"B\"\"B\",C",
+  "data": [
+   [
+    "A",
+    "B\"B\"B",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with escaped quotes at boundaries",
+  "input": "A,\"\"\"B\"\"\",C",
+  "data": [
+   [
+    "A",
+    "\"B\"",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Unquoted field with quotes at end of field",
+  "input": "A,B\",C",
+  "data": [
+   [
+    "A",
+    "B\"",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with quotes around delimiter",
+  "input": "A,\"\"\",\"\"\",C",
+  "data": [
+   [
+    "A",
+    "\",\"",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with quotes on right side of delimiter",
+  "input": "A,\",\"\"\",C",
+  "data": [
+   [
+    "A",
+    ",\"",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with quotes on left side of delimiter",
+  "input": "A,\"\"\",\",C",
+  "data": [
+   [
+    "A",
+    "\",",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with 5 quotes in a row and a delimiter in there, too",
+  "input": "\"1\",\"cnonce=\"\"\"\",nc=\"\"\"\"\",\"2\"",
+  "data": [
+   [
+    "1",
+    "cnonce=\"\",nc=\"\"",
+    "2"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field with whitespace around quotes",
+  "input": "A, \"B\" ,C",
+  "data": [
+   [
+    "A",
+    " \"B\" ",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Misplaced quotes in data, not as opening quotes",
+  "input": "A,B \"B\",C",
+  "data": [
+   [
+    "A",
+    "B \"B\"",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field has no closing quote",
+  "input": "a,\"b,c\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b,c\nd,e,f"
+   ]
+  ],
+  "errors": [
+   "Quotes/MissingQuotes"
+  ]
+ },
+ {
+  "name": "core/Quoted field has invalid trailing quote after delimiter with a valid closer",
+  "input": "\"a,\"b,c\"\nd,e,f",
+  "data": [
+   [
+    "a,\"b,c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": [
+   "Quotes/InvalidQuotes"
+  ]
+ },
+ {
+  "name": "core/Quoted field has invalid trailing quote after delimiter",
+  "input": "a,\"b,\"c\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b,\"c\nd,e,f"
+   ]
+  ],
+  "errors": [
+   "Quotes/InvalidQuotes",
+   "Quotes/MissingQuotes"
+  ]
+ },
+ {
+  "name": "core/Quoted field has invalid trailing quote before delimiter",
+  "input": "a,\"b\"c,d\ne,f,g",
+  "data": [
+   [
+    "a",
+    "b\"c,d\ne,f,g"
+   ]
+  ],
+  "errors": [
+   "Quotes/InvalidQuotes",
+   "Quotes/MissingQuotes"
+  ]
+ },
+ {
+  "name": "core/Quoted field has invalid trailing quote after new line",
+  "input": "a,\"b,c\nd\"e,f,g",
+  "data": [
+   [
+    "a",
+    "b,c\nd\"e,f,g"
+   ]
+  ],
+  "errors": [
+   "Quotes/InvalidQuotes",
+   "Quotes/MissingQuotes"
+  ]
+ },
+ {
+  "name": "core/Quoted field has valid trailing quote via delimiter",
+  "input": "a,\"b\",c\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field has valid trailing quote via \\n",
+  "input": "a,b,\"c\"\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field has valid trailing quote via EOF",
+  "input": "a,b,c\nd,e,\"f\"",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field contains delimiters and \\n with valid trailing quote",
+  "input": "a,\"b,c\nd,e,f\"",
+  "data": [
+   [
+    "a",
+    "b,c\nd,e,f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Line starts with quoted field",
+  "input": "a,b,c\n\"d\",e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Line starts with unquoted empty field",
+  "input": ",b,c\n\"d\",e,f",
+  "data": [
+   [
+    "",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Line ends with quoted field",
+  "input": "a,b,c\nd,e,f\n\"g\",\"h\",\"i\"\n\"j\",\"k\",\"l\"",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h",
+    "i"
+   ],
+   [
+    "j",
+    "k",
+    "l"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Line ends with quoted field, first field of next line is empty, \\n",
+  "input": "a,b,c\n,e,f\n,\"h\",\"i\"\n,\"k\",\"l\"",
+  "config": {
+   "newline": "\n"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "",
+    "e",
+    "f"
+   ],
+   [
+    "",
+    "h",
+    "i"
+   ],
+   [
+    "",
+    "k",
+    "l"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Quoted field at end of row (but not at EOF) has quotes",
+  "input": "a,b,\"c\"\"c\"\"\"\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c\"c\""
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Empty quoted field at EOF is empty",
+  "input": "a,b,\"\"\na,b,\"\"",
+  "data": [
+   [
+    "a",
+    "b",
+    ""
+   ],
+   [
+    "a",
+    "b",
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Multiple consecutive empty fields",
+  "input": "a,b,,,c,d\n,,e,,,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "",
+    "",
+    "c",
+    "d"
+   ],
+   [
+    "",
+    "",
+    "e",
+    "",
+    "",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Empty input string",
+  "input": "",
+  "data": [],
+  "errors": []
+ },
+ {
+  "name": "core/Input is just the delimiter (2 empty fields)",
+  "input": ",",
+  "data": [
+   [
+    "",
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Input is just empty fields",
+  "input": ",,\n,,,",
+  "data": [
+   [
+    "",
+    "",
+    ""
+   ],
+   [
+    "",
+    "",
+    "",
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Input is just a string (a single field)",
+  "input": "Abc def",
+  "data": [
+   [
+    "Abc def"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Commented line at beginning",
+  "input": "# Comment!\na,b,c",
+  "config": {
+   "comments": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Commented line in middle",
+  "input": "a,b,c\n# Comment\nd,e,f",
+  "config": {
+   "comments": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Commented line at end",
+  "input": "a,true,false\n# Comment",
+  "config": {
+   "comments": true
+  },
+  "data": [
+   [
+    "a",
+    "true",
+    "false"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Two comment lines consecutively",
+  "input": "a,b,c\n#comment1\n#comment2\nd,e,f",
+  "config": {
+   "comments": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Two comment lines consecutively at end of file",
+  "input": "a,b,c\n#comment1\n#comment2",
+  "config": {
+   "comments": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Three comment lines consecutively at beginning of file",
+  "input": "#comment1\n#comment2\n#comment3\na,b,c",
+  "config": {
+   "comments": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Entire file is comment lines",
+  "input": "#comment1\n#comment2\n#comment3",
+  "config": {
+   "comments": true
+  },
+  "data": [],
+  "errors": []
+ },
+ {
+  "name": "core/Comment with non-default character",
+  "input": "a,b,c\n!Comment goes here\nd,e,f",
+  "config": {
+   "comments": "!"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Bad comments value specified",
+  "input": "a,b,c\n5comment\nd,e,f",
+  "config": {
+   "comments": 5
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "5comment"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Multi-character comment string",
+  "input": "a,b,c\n=N(Comment)\nd,e,f",
+  "config": {
+   "comments": "=N("
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Input with only a commented line",
+  "input": "#commented line",
+  "config": {
+   "comments": true,
+   "delimiter": ","
+  },
+  "data": [],
+  "errors": []
+ },
+ {
+  "name": "core/Input with only a commented line and blank line after",
+  "input": "#commented line\n",
+  "config": {
+   "comments": true,
+   "delimiter": ","
+  },
+  "data": [
+   [
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Input with only a commented line, without comments enabled",
+  "input": "#commented line",
+  "config": {
+   "delimiter": ","
+  },
+  "data": [
+   [
+    "#commented line"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Input without comments with line starting with whitespace",
+  "input": "a\n b\nc",
+  "config": {
+   "delimiter": ","
+  },
+  "data": [
+   [
+    "a"
+   ],
+   [
+    " b"
+   ],
+   [
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Multiple rows, one column (no delimiter found)",
+  "input": "a\nb\nc\nd\ne",
+  "data": [
+   [
+    "a"
+   ],
+   [
+    "b"
+   ],
+   [
+    "c"
+   ],
+   [
+    "d"
+   ],
+   [
+    "e"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/One column input with empty fields",
+  "input": "a\nb\n\n\nc\nd\ne\n",
+  "data": [
+   [
+    "a"
+   ],
+   [
+    "b"
+   ],
+   [
+    ""
+   ],
+   [
+    ""
+   ],
+   [
+    "c"
+   ],
+   [
+    "d"
+   ],
+   [
+    "e"
+   ],
+   [
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Fast mode, basic",
+  "input": "a,b,c\nd,e,f",
+  "config": {
+   "fastMode": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Fast mode with comments",
+  "input": "// Commented line\na,b,c",
+  "config": {
+   "fastMode": true,
+   "comments": "//"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Fast mode with preview",
+  "input": "a,b,c\nd,e,f\nh,j,i\n",
+  "config": {
+   "fastMode": true,
+   "preview": 2
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Fast mode with blank line at end",
+  "input": "a,b,c\n",
+  "config": {
+   "fastMode": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Simple duplicated header names",
+  "input": "A,A,A,A\n1,2,3,4",
+  "config": {
+   "header": true
+  },
+  "data": [
+   [
+    "A",
+    "A_1",
+    "A_2",
+    "A_3"
+   ],
+   [
+    "1",
+    "2",
+    "3",
+    "4"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Duplicated header names existing column",
+  "input": "c,c,c,c_1\n1,2,3,4",
+  "config": {
+   "header": true
+  },
+  "data": [
+   [
+    "c",
+    "c_2",
+    "c_3",
+    "c_1"
+   ],
+   [
+    "1",
+    "2",
+    "3",
+    "4"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Duplicate header names with __proto__ field",
+  "input": "__proto__,__proto__,__proto__\n1,2,3",
+  "config": {
+   "header": true
+  },
+  "data": [
+   [
+    "__proto__",
+    "__proto___1",
+    "__proto___2"
+   ],
+   [
+    "1",
+    "2",
+    "3"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Empty delimiter defaults to comma",
+  "input": "a,\"b\",c\nd,e,f",
+  "config": {
+   "delimiter": ""
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "core/Empty delimiter defaults to comma without quotes",
+  "input": "a,b,c\nd,e,f",
+  "config": {
+   "delimiter": ""
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Two rows, just \\r",
+  "input": "A,b,c\rd,E,f",
+  "data": [
+   [
+    "A",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "E",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Two rows, \\r\\n",
+  "input": "A,b,c\r\nd,E,f",
+  "data": [
+   [
+    "A",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "E",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted field with \\r\\n",
+  "input": "A,\"B\r\nB\",C",
+  "data": [
+   [
+    "A",
+    "B\r\nB",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted field with \\r",
+  "input": "A,\"B\rB\",C",
+  "data": [
+   [
+    "A",
+    "B\rB",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted field with \\n",
+  "input": "A,\"B\nB\",C",
+  "data": [
+   [
+    "A",
+    "B\nB",
+    "C"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted fields with spaces between closing quote and next delimiter",
+  "input": "A,\"B\" ,C,D\r\nE,F,\"G\"  ,H",
+  "data": [
+   [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   [
+    "E",
+    "F",
+    "G",
+    "H"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted fields with spaces between closing quote and next new line",
+  "input": "A,B,C,\"D\" \r\nE,F,G,\"H\"  \r\nQ,W,E,R",
+  "data": [
+   [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   [
+    "E",
+    "F",
+    "G",
+    "H"
+   ],
+   [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted fields with spaces after closing quote",
+  "input": "A,\"B\" ,C,\"D\" \r\nE,F,\"G\"  ,\"H\"  \r\nQ,W,\"E\" ,R",
+  "data": [
+   [
+    "A",
+    "B",
+    "C",
+    "D"
+   ],
+   [
+    "E",
+    "F",
+    "G",
+    "H"
+   ],
+   [
+    "Q",
+    "W",
+    "E",
+    "R"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Misplaced quotes in data twice, not as opening quotes",
+  "input": "A,B\",C\nD,E\",F",
+  "data": [
+   [
+    "A",
+    "B\"",
+    "C"
+   ],
+   [
+    "D",
+    "E\"",
+    "F"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Mixed slash n and slash r should choose first as precident",
+  "input": "a,b,c\nd,e,f\rg,h,i\n",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f\rg",
+    "h",
+    "i"
+   ],
+   [
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Header row with one row of data",
+  "input": "A,B,C\r\na,b,c",
+  "config": {
+   "header": true
+  },
+  "data": [
+   {
+    "A": "a",
+    "B": "b",
+    "C": "c"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Header row only",
+  "input": "A,B,C",
+  "config": {
+   "header": true
+  },
+  "data": [],
+  "errors": []
+ },
+ {
+  "name": "parse/Row with too few fields",
+  "input": "A,B,C\r\na,b",
+  "config": {
+   "header": true
+  },
+  "data": [
+   {
+    "A": "a",
+    "B": "b"
+   }
+  ],
+  "errors": [
+   "FieldMismatch/TooFewFields"
+  ]
+ },
+ {
+  "name": "parse/Row with too many fields",
+  "input": "A,B,C\r\na,b,c,d,e\r\nf,g,h",
+  "config": {
+   "header": true
+  },
+  "data": [
+   {
+    "A": "a",
+    "B": "b",
+    "C": "c",
+    "__parsed_extra": [
+     "d",
+     "e"
+    ]
+   },
+   {
+    "A": "f",
+    "B": "g",
+    "C": "h"
+   }
+  ],
+  "errors": [
+   "FieldMismatch/TooManyFields"
+  ]
+ },
+ {
+  "name": "parse/Row with enough fields but blank field in the begining",
+  "input": "A,B,C\r\n,b1,c1\r\na2,b2,c2",
+  "data": [
+   [
+    "A",
+    "B",
+    "C"
+   ],
+   [
+    "",
+    "b1",
+    "c1"
+   ],
+   [
+    "a2",
+    "b2",
+    "c2"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Row with enough fields but blank field in the begining using headers",
+  "input": "A,B,C\r\n,b1,c1\r\n,b2,c2",
+  "config": {
+   "header": true
+  },
+  "data": [
+   {
+    "A": "",
+    "B": "b1",
+    "C": "c1"
+   },
+   {
+    "A": "",
+    "B": "b2",
+    "C": "c2"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Row with enough fields but blank field at end",
+  "input": "A,B,C\r\na,b,",
+  "config": {
+   "header": true
+  },
+  "data": [
+   {
+    "A": "a",
+    "B": "b",
+    "C": ""
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Line ends with quoted field, first field of next line is empty using headers",
+  "input": "a,b,\"c\"\r\nd,e,\"f\"\r\n,\"h\",\"i\"\r\n,\"k\",\"l\"",
+  "config": {
+   "header": true,
+   "newline": "\r\n"
+  },
+  "data": [
+   {
+    "a": "d",
+    "b": "e",
+    "c": "f"
+   },
+   {
+    "a": "",
+    "b": "h",
+    "c": "i"
+   },
+   {
+    "a": "",
+    "b": "k",
+    "c": "l"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Tab delimiter",
+  "input": "a\tb\tc\r\nd\te\tf",
+  "config": {
+   "delimiter": "\t"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Pipe delimiter",
+  "input": "a|b|c\r\nd|e|f",
+  "config": {
+   "delimiter": "|"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/ASCII 30 delimiter",
+  "input": "a\u001eb\u001ec\r\nd\u001ee\u001ef",
+  "config": {
+   "delimiter": "\u001e"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/ASCII 31 delimiter",
+  "input": "a\u001fb\u001fc\r\nd\u001fe\u001ff",
+  "config": {
+   "delimiter": "\u001f"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Bad delimiter (\\n)",
+  "input": "a,b,c",
+  "config": {
+   "delimiter": "\n"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Multi-character delimiter",
+  "input": "a, b, c",
+  "config": {
+   "delimiter": ", "
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Multi-character delimiter (length 2) with quoted field",
+  "input": "a, b, \"c, e\", d",
+  "config": {
+   "delimiter": ", "
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c, e",
+    "d"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Empty string in delimitersToGuess",
+  "input": "a,\"b\",c\nd,e,f",
+  "config": {
+   "delimitersToGuess": [
+    ""
+   ]
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": [
+   "Delimiter/UndetectableDelimiter"
+  ]
+ },
+ {
+  "name": "parse/Dynamic typing converts numeric literals and maintains precision",
+  "input": "1,2.2,1e3\r\n-4,-4.5,-4e-5\r\n-,5a,5-2\r\n16142028098527942586,9007199254740991,-9007199254740992",
+  "config": {
+   "dynamicTyping": true
+  },
+  "data": [
+   [
+    1,
+    2.2,
+    1000
+   ],
+   [
+    -4,
+    -4.5,
+    -0.00004
+   ],
+   [
+    "-",
+    "5a",
+    "5-2"
+   ],
+   [
+    "16142028098527942586",
+    9007199254740991,
+    "-9007199254740992"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing converts boolean literals",
+  "input": "true,false,T,F,TRUE,FALSE,True,False",
+  "config": {
+   "dynamicTyping": true
+  },
+  "data": [
+   [
+    true,
+    false,
+    "T",
+    "F",
+    true,
+    false,
+    "True",
+    "False"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing doesn't convert other types",
+  "input": "A,B,C\r\nundefined,null,[\r\nvar,float,if",
+  "config": {
+   "dynamicTyping": true
+  },
+  "data": [
+   [
+    "A",
+    "B",
+    "C"
+   ],
+   [
+    "undefined",
+    "null",
+    "["
+   ],
+   [
+    "var",
+    "float",
+    "if"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing applies to specific columns",
+  "input": "A,B,C\r\n1,2.2,1e3\r\n-4,-4.5,-4e-5",
+  "config": {
+   "header": true,
+   "dynamicTyping": {
+    "A": true,
+    "C": true
+   }
+  },
+  "data": [
+   {
+    "A": 1,
+    "B": "2.2",
+    "C": 1000
+   },
+   {
+    "A": -4,
+    "B": "-4.5",
+    "C": -0.00004
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing applies to specific columns by index",
+  "input": "1,2.2,1e3\r\n-4,-4.5,-4e-5\r\n-,5a,5-2",
+  "config": {
+   "dynamicTyping": {
+    "1": true
+   }
+  },
+  "data": [
+   [
+    "1",
+    2.2,
+    "1e3"
+   ],
+   [
+    "-4",
+    -4.5,
+    "-4e-5"
+   ],
+   [
+    "-",
+    "5a",
+    "5-2"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing can be applied to `__parsed_extra`",
+  "input": "A,B,C\r\n1,2.2,1e3,5.5\r\n-4,-4.5,-4e-5",
+  "config": {
+   "header": true,
+   "dynamicTyping": {
+    "A": true,
+    "C": true,
+    "__parsed_extra": true
+   }
+  },
+  "data": [
+   {
+    "A": 1,
+    "B": "2.2",
+    "C": 1000,
+    "__parsed_extra": [
+     5.5
+    ]
+   },
+   {
+    "A": -4,
+    "B": "-4.5",
+    "C": -0.00004
+   }
+  ],
+  "errors": [
+   "FieldMismatch/TooManyFields"
+  ]
+ },
+ {
+  "name": "parse/Dynamic typing converts empty values into NULL",
+  "input": "1,2.2,1e3\r\n,NULL,\r\n-,5a,null",
+  "config": {
+   "dynamicTyping": true
+  },
+  "data": [
+   [
+    1,
+    2.2,
+    1000
+   ],
+   [
+    null,
+    "NULL",
+    null
+   ],
+   [
+    "-",
+    "5a",
+    "null"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing converts ISO date strings to Dates",
+  "input": "ISO date,long date\r\n2018-05-04T21:08:03.269Z,Fri May 04 2018 14:08:03 GMT-0700 (PDT)\r\n2018-05-08T15:20:22.642Z,Tue May 08 2018 08:20:22 GMT-0700 (PDT)",
+  "config": {
+   "dynamicTyping": true
+  },
+  "data": [
+   [
+    "ISO date",
+    "long date"
+   ],
+   [
+    "2018-05-04T21:08:03.269Z",
+    "Fri May 04 2018 14:08:03 GMT-0700 (PDT)"
+   ],
+   [
+    "2018-05-08T15:20:22.642Z",
+    "Tue May 08 2018 08:20:22 GMT-0700 (PDT)"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Dynamic typing skips ISO date strings ocurring in other strings",
+  "input": "ISO date,String with ISO date\r\n2018-05-04T21:08:03.269Z,The date is 2018-05-04T21:08:03.269Z\r\n2018-05-08T15:20:22.642Z,The date is 2018-05-08T15:20:22.642Z",
+  "config": {
+   "dynamicTyping": true
+  },
+  "data": [
+   [
+    "ISO date",
+    "String with ISO date"
+   ],
+   [
+    "2018-05-04T21:08:03.269Z",
+    "The date is 2018-05-04T21:08:03.269Z"
+   ],
+   [
+    "2018-05-08T15:20:22.642Z",
+    "The date is 2018-05-08T15:20:22.642Z"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Blank line at beginning",
+  "input": "\r\na,b,c\r\nd,e,f",
+  "config": {
+   "newline": "\r\n"
+  },
+  "data": [
+   [
+    ""
+   ],
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Blank line in middle",
+  "input": "a,b,c\r\n\r\nd,e,f",
+  "config": {
+   "newline": "\r\n"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    ""
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Blank lines at end",
+  "input": "a,b,c\nd,e,f\n\n",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ],
+   [
+    ""
+   ],
+   [
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Blank line in middle with whitespace",
+  "input": "a,b,c\r\n \r\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    " "
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/First field of a line is empty",
+  "input": "a,b,c\r\n,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Last field of a line is empty",
+  "input": "a,b,\r\nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    ""
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Other fields are empty",
+  "input": "a,,c\r\n,,",
+  "data": [
+   [
+    "a",
+    "",
+    "c"
+   ],
+   [
+    "",
+    "",
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Empty input string",
+  "input": "",
+  "data": [],
+  "errors": [
+   "Delimiter/UndetectableDelimiter"
+  ]
+ },
+ {
+  "name": "parse/Input is just the delimiter (2 empty fields)",
+  "input": ",",
+  "data": [
+   [
+    "",
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Input is just a string (a single field)",
+  "input": "Abc def",
+  "data": [
+   [
+    "Abc def"
+   ]
+  ],
+  "errors": [
+   "Delimiter/UndetectableDelimiter"
+  ]
+ },
+ {
+  "name": "parse/Preview 0 rows should default to parsing all",
+  "input": "a,b,c\r\nd,e,f\r\ng,h,i",
+  "config": {
+   "preview": 0
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h",
+    "i"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Preview 1 row",
+  "input": "a,b,c\r\nd,e,f\r\ng,h,i",
+  "config": {
+   "preview": 1
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Preview 2 rows",
+  "input": "a,b,c\r\nd,e,f\r\ng,h,i",
+  "config": {
+   "preview": 2
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Preview all (3) rows",
+  "input": "a,b,c\r\nd,e,f\r\ng,h,i",
+  "config": {
+   "preview": 3
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h",
+    "i"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Preview more rows than input has",
+  "input": "a,b,c\r\nd,e,f\r\ng,h,i",
+  "config": {
+   "preview": 4
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h",
+    "i"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Preview should count rows, not lines",
+  "input": "a,b,c\r\nd,e,\"f\r\nf\",g,h,i",
+  "config": {
+   "preview": 2
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f\r\nf",
+    "g",
+    "h",
+    "i"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Preview with header row",
+  "input": "a,b,c\r\nd,e,f\r\ng,h,i\r\nj,k,l",
+  "config": {
+   "header": true,
+   "preview": 2
+  },
+  "data": [
+   {
+    "a": "d",
+    "b": "e",
+    "c": "f"
+   },
+   {
+    "a": "g",
+    "b": "h",
+    "c": "i"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Empty lines",
+  "input": "\na,b,c\n\nd,e,f\n\n",
+  "config": {
+   "delimiter": ","
+  },
+  "data": [
+   [
+    ""
+   ],
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    ""
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ],
+   [
+    ""
+   ],
+   [
+    ""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip empty lines",
+  "input": "a,b,c\n\nd,e,f",
+  "config": {
+   "skipEmptyLines": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip empty lines, with newline at end of input",
+  "input": "a,b,c\r\n\r\nd,e,f\r\n",
+  "config": {
+   "skipEmptyLines": true
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip empty lines, with empty input",
+  "input": "",
+  "config": {
+   "skipEmptyLines": true
+  },
+  "data": [],
+  "errors": [
+   "Delimiter/UndetectableDelimiter"
+  ]
+ },
+ {
+  "name": "parse/Skip empty lines, with first line only whitespace",
+  "input": " \na,b,c",
+  "config": {
+   "skipEmptyLines": true,
+   "delimiter": ","
+  },
+  "data": [
+   [
+    " "
+   ],
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip empty lines while detecting delimiter",
+  "input": "a,b\n1,2\n3,4\n",
+  "config": {
+   "header": true,
+   "skipEmptyLines": true
+  },
+  "data": [
+   {
+    "a": "1",
+    "b": "2"
+   },
+   {
+    "a": "3",
+    "b": "4"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Lines with comments are not used when guessing the delimiter in an escaped file",
+  "input": "#1\n#2\n#3\n#4\n#5\n#6\n#7\n#8\n#9\n#10\none,\"t,w,o\",three\nfour,five,six",
+  "config": {
+   "comments": "#"
+  },
+  "data": [
+   [
+    "one",
+    "t,w,o",
+    "three"
+   ],
+   [
+    "four",
+    "five",
+    "six"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Lines with comments are not used when guessing the delimiter in a non-escaped file",
+  "input": "#1\n#2\n#3\n#4\n#5\n#6\n#7\n#8\n#9\n#10\n#11\none,two,three\nfour,five,six",
+  "config": {
+   "comments": "#"
+  },
+  "data": [
+   [
+    "one",
+    "two",
+    "three"
+   ],
+   [
+    "four",
+    "five",
+    "six"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Pipe delimiter is guessed correctly when mixed with comas",
+  "input": "one|two,two|three\nfour|five,five|six",
+  "data": [
+   [
+    "one",
+    "two,two",
+    "three"
+   ],
+   [
+    "four",
+    "five,five",
+    "six"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Pipe delimiter is guessed correctly choose avgFildCount max one",
+  "input": "a,b,c\na,b,c|d|e|f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c"
+   ],
+   [
+    "a",
+    "b",
+    "c|d|e|f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Pipe delimiter is guessed correctly when first field are enclosed in quotes and contain delimiter characters",
+  "input": "\"Field1,1,1\";Field2;\"Field3\";Field4;Field5;Field6",
+  "data": [
+   [
+    "Field1,1,1",
+    "Field2",
+    "Field3",
+    "Field4",
+    "Field5",
+    "Field6"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Pipe delimiter is guessed correctly when some fields are enclosed in quotes and contain delimiter characters and escaoped quotes",
+  "input": "Field1;Field2;\"Field,3,\"\"3,3\";Field4;Field5;\"Field6,6\"",
+  "data": [
+   [
+    "Field1",
+    "Field2",
+    "Field,3,\"3,3",
+    "Field4",
+    "Field5",
+    "Field6,6"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Delimiter is guessed correctly when a quoted field holds newlines and other delimiter characters",
+  "input": "id;title;data\r\n1;row one;\"{\n  \"\"a\"\": 1,\n  \"\"b\"\": 2,\n  \"\"c\"\": 3,\n  \"\"d\"\": 4\n}\"\r\n2;row two;\"{\n  \"\"a\"\": 1,\n  \"\"b\"\": 2,\n  \"\"c\"\": 3,\n  \"\"d\"\": 4\n}\"",
+  "data": [
+   [
+    "id",
+    "title",
+    "data"
+   ],
+   [
+    "1",
+    "row one",
+    "{\n  \"a\": 1,\n  \"b\": 2,\n  \"c\": 3,\n  \"d\": 4\n}"
+   ],
+   [
+    "2",
+    "row two",
+    "{\n  \"a\": 1,\n  \"b\": 2,\n  \"c\": 3,\n  \"d\": 4\n}"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Single quote as quote character",
+  "input": "a,b,'c,d'",
+  "config": {
+   "quoteChar": "'"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c,d"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Custom escape character in the middle",
+  "input": "a,b,\"c\\\"d\\\"f\"",
+  "config": {
+   "escapeChar": "\\"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c\"d\"f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Custom escape character at the end",
+  "input": "a,b,\"c\\\"d\\\"\"",
+  "config": {
+   "escapeChar": "\\"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c\"d\""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Custom escape character not used for escaping",
+  "input": "a,b,\"c\\d\"",
+  "config": {
+   "escapeChar": "\\"
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c\\d"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Header row with preceding comment",
+  "input": "#Comment\na,b\nc,d\n",
+  "config": {
+   "header": true,
+   "comments": "#",
+   "skipEmptyLines": true,
+   "delimiter": ","
+  },
+  "data": [
+   {
+    "a": "c",
+    "b": "d"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Carriage return in header inside quotes, with line feed endings",
+  "input": "\"a\r\na\",\"b\"\n\"c\",\"d\"\n\"e\",\"f\"\n\"g\",\"h\"\n\"i\",\"j\"",
+  "data": [
+   [
+    "a\r\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Line feed in header inside quotes, with carriage return + line feed endings",
+  "input": "\"a\na\",\"b\"\r\n\"c\",\"d\"\r\n\"e\",\"f\"\r\n\"g\",\"h\"\r\n\"i\",\"j\"",
+  "data": [
+   [
+    "a\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using \\r\\n endings uses \\r\\n linebreak",
+  "input": "a,b\r\nc,d\r\ne,f\r\ng,h\r\ni,j",
+  "data": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using \\n endings uses \\n linebreak",
+  "input": "a,b\nc,d\ne,f\ng,h\ni,j",
+  "data": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using \\r\\n endings with \\r\\n in header field uses \\r\\n linebreak",
+  "input": "\"a\r\na\",b\r\nc,d\r\ne,f\r\ng,h\r\ni,j",
+  "data": [
+   [
+    "a\r\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using \\r\\n endings with \\n in header field uses \\r\\n linebreak",
+  "input": "\"a\na\",b\r\nc,d\r\ne,f\r\ng,h\r\ni,j",
+  "data": [
+   [
+    "a\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using \\r\\n endings with \\n in header field with skip empty lines uses \\r\\n linebreak",
+  "input": "\"a\na\",b\r\nc,d\r\ne,f\r\ng,h\r\ni,j\r\n",
+  "config": {
+   "skipEmptyLines": true
+  },
+  "data": [
+   [
+    "a\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using \\n endings with \\r\\n in header field uses \\n linebreak",
+  "input": "\"a\r\na\",b\nc,d\ne,f\ng,h\ni,j",
+  "data": [
+   [
+    "a\r\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using reserved regex character . as quote character",
+  "input": ".a\na.,b\r\nc,d\r\ne,f\r\ng,h\r\ni,j",
+  "config": {
+   "quoteChar": "."
+  },
+  "data": [
+   [
+    "a\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Using reserved regex character | as quote character",
+  "input": "|a\na|,b\r\nc,d\r\ne,f\r\ng,h\r\ni,j",
+  "config": {
+   "quoteChar": "|"
+  },
+  "data": [
+   [
+    "a\na",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    "e",
+    "f"
+   ],
+   [
+    "g",
+    "h"
+   ],
+   [
+    "i",
+    "j"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/UTF-8 BOM encoded input is stripped from invisible BOM character",
+  "input": "﻿A,B\nX,Y",
+  "data": [
+   [
+    "A",
+    "B"
+   ],
+   [
+    "X",
+    "Y"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/UTF-8 BOM encoded input with header produces column key stripped from invisible BOM character",
+  "input": "﻿A,B\nX,Y",
+  "config": {
+   "header": true
+  },
+  "data": [
+   {
+    "A": "X",
+    "B": "Y"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Parsing with skipEmptyLines set to 'greedy'",
+  "input": "a,b\n\n,\nc,d\n , \n\"\",\" \"\n\t,\t\n,,,,\n",
+  "config": {
+   "skipEmptyLines": "greedy"
+  },
+  "data": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Parsing with skipEmptyLines set to 'greedy' with quotes and delimiters as content",
+  "input": "a,b\n\n,\nc,d\n\" , \",\",\"\n\"\"\" \"\"\",\"\"\"\"\"\"\n\n\n",
+  "config": {
+   "skipEmptyLines": "greedy"
+  },
+  "data": [
+   [
+    "a",
+    "b"
+   ],
+   [
+    "c",
+    "d"
+   ],
+   [
+    " , ",
+    ","
+   ],
+   [
+    "\" \"",
+    "\"\""
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted fields with spaces between closing quote and next delimiter and contains delimiter",
+  "input": "A,\",B\" ,C,D\nE,F,G,H",
+  "data": [
+   [
+    "A",
+    ",B",
+    "C",
+    "D"
+   ],
+   [
+    "E",
+    "F",
+    "G",
+    "H"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Quoted fields with spaces between closing quote and newline and contains newline",
+  "input": "a,b,\"c\n\" \nd,e,f",
+  "data": [
+   [
+    "a",
+    "b",
+    "c\n"
+   ],
+   [
+    "d",
+    "e",
+    "f"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip First N number of lines , with header and 2 rows",
+  "input": "a,b,c,d\n1,2,3,4",
+  "config": {
+   "header": true,
+   "skipFirstNLines": 1
+  },
+  "data": [],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip First N number of lines , with header and 2 rows (2)",
+  "input": "to-be-ignored\na,b,c,d\n1,2,3,4",
+  "config": {
+   "header": true,
+   "skipFirstNLines": 1
+  },
+  "data": [
+   {
+    "a": "1",
+    "b": "2",
+    "c": "3",
+    "d": "4"
+   }
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip First N number of lines , with header false",
+  "input": "a,b,c,d\n1,2,3,4\n4,5,6,7",
+  "config": {
+   "header": false,
+   "skipFirstNLines": 1
+  },
+  "data": [
+   [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   [
+    "4",
+    "5",
+    "6",
+    "7"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip First N number of lines , with header false and skipFirstNLines as negative value",
+  "input": "a,b,c,d\n1,2,3,4\n4,5,6,7",
+  "config": {
+   "header": false,
+   "skipFirstNLines": -2
+  },
+  "data": [
+   [
+    "a",
+    "b",
+    "c",
+    "d"
+   ],
+   [
+    "1",
+    "2",
+    "3",
+    "4"
+   ],
+   [
+    "4",
+    "5",
+    "6",
+    "7"
+   ]
+  ],
+  "errors": []
+ },
+ {
+  "name": "parse/Skip first 2 lines , with custom newline character",
+  "input": "skip-this\rskip-this\r1,2,3,4",
+  "config": {
+   "header": false,
+   "skipFirstNLines": 2,
+   "newline": "\r"
+  },
+  "data": [
+   [
+    "1",
+    "2",
+    "3",
+    "4"
+   ]
+  ],
+  "errors": []
+ }
+]

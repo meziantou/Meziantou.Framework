@@ -1,0 +1,175 @@
+[
+ {
+  "name": "comma_in_quotes",
+  "csv": "first,last,address,city,zip\nJohn,Doe,120 any st.,\"Anytown, WW\",08123",
+  "expected": [
+   {
+    "first": "John",
+    "last": "Doe",
+    "address": "120 any st.",
+    "city": "Anytown, WW",
+    "zip": "08123"
+   }
+  ]
+ },
+ {
+  "name": "empty",
+  "csv": "a,b,c\n1,\"\",\"\"\n2,3,4",
+  "expected": [
+   {
+    "a": "1",
+    "b": "",
+    "c": ""
+   },
+   {
+    "a": "2",
+    "b": "3",
+    "c": "4"
+   }
+  ]
+ },
+ {
+  "name": "empty_crlf",
+  "csv": "a,b,c\r\n1,\"\",\"\"\r\n2,3,4",
+  "expected": [
+   {
+    "a": "1",
+    "b": "",
+    "c": ""
+   },
+   {
+    "a": "2",
+    "b": "3",
+    "c": "4"
+   }
+  ]
+ },
+ {
+  "name": "escaped_quotes",
+  "csv": "a,b\n1,\"ha \"\"ha\"\" ha\"\n3,4\n",
+  "expected": [
+   {
+    "a": "1",
+    "b": "ha \"ha\" ha"
+   },
+   {
+    "a": "3",
+    "b": "4"
+   }
+  ]
+ },
+ {
+  "name": "json",
+  "csv": "key,val\n1,\"{\"\"type\"\": \"\"Point\"\", \"\"coordinates\"\": [102.0, 0.5]}\"\n",
+  "expected": [
+   {
+    "key": "1",
+    "val": "{\"type\": \"Point\", \"coordinates\": [102.0, 0.5]}"
+   }
+  ]
+ },
+ {
+  "name": "location_coordinates",
+  "csv": "Contact Phone Number,Location Coordinates,Cities,Counties\n2095257564,37�36'37.8\"N 121�2'17.9\"W,Modesto,Stanislaus",
+  "expected": {
+   "Contact Phone Number": "1234567890",
+   "Location Coordinates": "37�36'37.8\"N 121�2'17.9\"W",
+   "Cities": "Modesto",
+   "Counties": "Stanislaus"
+  }
+ },
+ {
+  "name": "newlines",
+  "csv": "a,b,c\n1,2,3\n\"Once upon \na time\",5,6\n7,8,9\n",
+  "expected": [
+   {
+    "a": "1",
+    "b": "2",
+    "c": "3"
+   },
+   {
+    "a": "Once upon \na time",
+    "b": "5",
+    "c": "6"
+   },
+   {
+    "a": "7",
+    "b": "8",
+    "c": "9"
+   }
+  ]
+ },
+ {
+  "name": "newlines_crlf",
+  "csv": "a,b,c\r\n1,2,3\r\n\"Once upon \r\na time\",5,6\r\n7,8,9\r\n",
+  "expected": [
+   {
+    "a": "1",
+    "b": "2",
+    "c": "3"
+   },
+   {
+    "a": "Once upon \r\na time",
+    "b": "5",
+    "c": "6"
+   },
+   {
+    "a": "7",
+    "b": "8",
+    "c": "9"
+   }
+  ]
+ },
+ {
+  "name": "quotes_and_newlines",
+  "csv": "a,b\n1,\"ha \n\"\"ha\"\" \nha\"\n3,4\n",
+  "expected": [
+   {
+    "a": "1",
+    "b": "ha \n\"ha\" \nha"
+   },
+   {
+    "a": "3",
+    "b": "4"
+   }
+  ]
+ },
+ {
+  "name": "simple",
+  "csv": "a,b,c\n1,2,3\n",
+  "expected": [
+   {
+    "a": "1",
+    "b": "2",
+    "c": "3"
+   }
+  ]
+ },
+ {
+  "name": "simple_crlf",
+  "csv": "a,b,c\r\n1,2,3\r\n",
+  "expected": [
+   {
+    "a": "1",
+    "b": "2",
+    "c": "3"
+   }
+  ]
+ },
+ {
+  "name": "utf8",
+  "csv": "a,b,c\n1,2,3\n4,5,ʤ",
+  "expected": [
+   {
+    "a": "1",
+    "b": "2",
+    "c": "3"
+   },
+   {
+    "a": "4",
+    "b": "5",
+    "c": "ʤ"
+   }
+  ]
+ }
+]

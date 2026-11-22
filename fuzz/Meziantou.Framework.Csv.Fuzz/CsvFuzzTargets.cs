@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using Meziantou.Framework.Csv.Serialization;
 using Meziantou.Framework.Fuzzing;
@@ -541,6 +542,21 @@ public static partial class CsvFuzzTargets
                 if (text.Length > 0 && seen.Add(text))
                 {
                     yield return (string.Create(CultureInfo.InvariantCulture, $"{Path.GetFileNameWithoutExtension(file)}-{index++}"), text);
+                }
+            }
+        }
+
+        // The inputs of the public test suites the unit tests run
+        foreach (var (suite, property) in ((string, string)[])[("csv-spectrum", "csv"), ("papaparse", "input")])
+        {
+            using var document = JsonDocument.Parse(FuzzResources.ReadText(typeof(CsvFuzzTargets).Assembly, suite + ".cases.json"));
+            var index = 0;
+            foreach (var testCase in document.RootElement.EnumerateArray())
+            {
+                var text = testCase.GetProperty(property).GetString()!;
+                if (text.Length > 0 && seen.Add(text))
+                {
+                    yield return (string.Create(CultureInfo.InvariantCulture, $"{suite}-{index++}"), text);
                 }
             }
         }

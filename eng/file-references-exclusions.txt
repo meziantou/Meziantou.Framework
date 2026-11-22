@@ -36,3 +36,5 @@ tests/Meziantou.Framework.WebPlatform.Tests/Css/Fonts/Resources/HarfBuzz/
 tests/Meziantou.Framework.Yaml.Tests/files/yaml-test-suite/
 src/Meziantou.Framework.Barcodes/Internal/Gs1/gs1-syntax-dictionary.txt
 tests/Meziantou.Framework.Barcodes.Tests/Gs1/gs1-linter-tests.json
+tests/Meziantou.Framework.Csv.Tests/TestData/csv-spectrum/
+tests/Meziantou.Framework.Csv.Tests/TestData/papaparse/

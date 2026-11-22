@@ -442,13 +442,13 @@ them to protect secrets against an attacker who can measure the time of the oper
 
 The `WebAssembly` namespace (https://webassembly.github.io/spec/js-api/) is defined when a WebAssembly runtime is set in
 `BrowsingContextOptions.WebAssemblyRuntime` (and `WebPlatformFeatures.WebAssemblyEnabled` is true). The
-`Meziantou.Framework.WebPlatform.Wasmtime` package provides one, based on [Wasmtime](https://wasmtime.dev/), which compiles
-the modules to native code:
+`Meziantou.Framework.WebPlatform.Wasm` package provides one, `WasmWebAssemblyRuntime`, an adapter of `Meziantou.Framework.WasmEngine` (a WebAssembly engine written
+in .NET, which interprets the code and compiles the functions that run often to IL):
 
 ```csharp
-using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.Wasm;
 
-using var runtime = new WasmtimeRuntime();        // can be shared by the browsing contexts and the script engines
+using var runtime = new WasmWebAssemblyRuntime(); // can be shared by the browsing contexts and the script engines
 using var context = new BrowsingContext(new BrowsingContextOptions
 {
     ScriptEngine = engine,
@@ -458,7 +458,9 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 
 The JavaScript interface is implemented by the WebIDL bindings (`Scripting/WebIdl/WebIdlRealm.WebAssembly.cs` and
 `WebAssemblyBindings.cs`), on the runtime abstraction of `WebAssembly/` (a runtime compiles the modules, and each agent
-has its own store of instances, memories, tables, globals and tags):
+has its own store of instances, memories, tables, globals and tags). `Meziantou.Framework.WebPlatform.Wasm` implements the
+abstraction with the public API of the engine (`AdapterObjects.cs`: a wrapper per object of the engine, the same wrapper
+for the same object, and the conversions of the values, the types and the exceptions):
 
 - `validate()`, `compile()`, `instantiate()`, `compileStreaming()`, `instantiateStreaming()` (a `Response` of type
   `application/wasm`), `JSTag`, and the `Module`, `Instance`, `Memory`, `Table`, `Global`, `Tag` and `Exception`
@@ -473,21 +475,20 @@ has its own store of instances, memories, tables, globals and tags):
 - A `WebAssembly.Module` is serializable within its agent cluster (`postMessage()` to a window, a dedicated worker or a worklet):
   the compiled module is shared.
 - The bytes of a shared memory are a growable shared data block of the script engine (`IJsAdapter.CreateGrowableSharedDataBlock`),
-  allocated for the maximum size of the memory, which never moves: the memory creator of the Wasmtime runtime gives its
-  address to Wasmtime (`SharedLinearMemory`), and the memory (a `wasmtime_sharedmemory_t`, `WasmtimeSharedMemory`) can be
+  allocated for the maximum size of the memory, which never moves (the `SharedMemoryAllocator` of the store of the engine,
+  `AdapterSharedMemoryBlock`): the engine accesses its bytes through its address, and the memory can be
   imported by the stores of every agent. A shared memory is serialized as the memory itself (the deserialized object
   wraps the same `WasmMemory`).
 - `Atomics.wait()`, `Atomics.waitAsync()` and `Atomics.notify()` on the data block of a shared memory use the waiters of
-  Wasmtime (`IGrowableSharedDataBlock.SetWaiters`, `WasmSharedMemoryWaiters`): the C API of Wasmtime has no atomic
-  operation, so they call the `memory.atomic.*` instructions of small modules that import the memory, in a store of
-  their own. A blocking wait waits on the thread of the agent; an asynchronous wait waits on a thread of its own (at most
-  1,024 in the process, stopped when the engine is disposed), and the caller stays a waiter until the native code of that
-  thread sets a byte of its own memory right before it waits (`WasmWaitSignal`), so that no notification is lost
-  meanwhile.
-- The data block of a shared memory does not reference the engine that created it: the native memory keeps it alive, and
-  the stores of the other agents use the memory.
-- `buffer.grow()` on the growable buffer of a shared memory grows the memory to the new length: Wasmtime computes the new
-  size under the lock of the memory, and a growth that another agent overtook fails and starts again (`GrowTo`).
+  the engine (`IGrowableSharedDataBlock.SetWaiters`, `WasmSharedMemoryWaiters`, `WasmMemory.AtomicWait` and
+  `WasmMemory.AtomicNotify`), so that they notify the `memory.atomic.wait32` and `memory.atomic.wait64` instructions,
+  and the reverse. A blocking wait waits on the thread of the agent; an asynchronous wait waits on a thread of its own
+  (at most 1,024 in the process, stopped when the engine is disposed), and the caller stays a waiter until that thread
+  is registered as a waiter of the address (`WasmWaitSignal`), so that no notification is lost meanwhile.
+- The data block of a shared memory does not reference the engine that created it, and the stores of the other agents
+  use the memory.
+- `buffer.grow()` on the growable buffer of a shared memory grows the memory to the new length: the engine computes the
+  new size under the lock of the memory, and a growth that another agent overtook fails and starts again (`GrowTo`).
 - The running code is interrupted by the limits of the script engine (e.g. `JavaScriptScriptEngineOptions.Timeout`), and
   a stack overflow throws a `RangeError`.
 - The ESM integration (https://webassembly.github.io/esm-integration/js-api/index.html): a module script, a static or
@@ -503,18 +504,15 @@ has its own store of instances, memories, tables, globals and tags):
   `v128` or `exnref` global stays uninitialized), the other exports are the values of the exports object.
   `WebAssembly.namespaceInstance()` returns the instance of the module of a namespace object (`IJsAdapter.GetModuleOfNamespace`).
 
-The Wasmtime runtime enables the features of WebAssembly 3.0 (the reference types, the typed function references, the
+The engine enables the features of WebAssembly 3.0 (the reference types, the typed function references, the
 GC types, the exceptions, the tail calls, memory64, the multiple memories, the SIMD and relaxed SIMD instructions) and
 the wide arithmetic, and the threads (the shared memories and the atomic instructions). The type reflection
 (https://webassembly.github.io/js-types/js-api/) is implemented (`WebIdlRealm.WebAssembly.TypeReflection.cs`: the
 `type()` methods, the `minimum` member of the descriptors, `WebAssembly.Function`, whose prototype is the one of the
 exported functions). Not implemented: JavaScript Promise Integration: see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
 
-The runtime does not use the signal handlers of Wasmtime (the traps are explicit checks) and does not register native
-unwind information for the compiled code (`native_unwind_info` is disabled): on macOS, `__register_frame` and
-`__deregister_frame` take the write lock of the cache of libunwind that .NET reads each time an exception is thrown, and
-a garbage collection that started while threads waited for that lock could hang the process (the collection never
-managed to suspend the waiting threads). A native debugger or profiler cannot unwind through the WebAssembly frames.
+The engine is written in .NET: the traps are explicit checks that throw .NET exceptions, and the WebAssembly frames are
+the frames of the interpreter (or of the methods compiled to IL), so a debugger or a profiler sees them as .NET frames.
 
 ### The parser
 

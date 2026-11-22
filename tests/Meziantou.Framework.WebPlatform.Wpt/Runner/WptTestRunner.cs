@@ -53,7 +53,7 @@ internal sealed partial class WptTestRunner
             : Environment.GetEnvironmentVariable("CI") is "true" ? 3 : 1;
 
     /// <summary>The WebAssembly runtime of the tests: the compiled modules are shared by the tests.</summary>
-    private static readonly Wasmtime.WasmtimeRuntime WebAssemblyRuntime = new();
+    private static readonly Wasm.WasmWebAssemblyRuntime WebAssemblyRuntime = new();
 
     static WptTestRunner()
     {
@@ -270,7 +270,7 @@ internal sealed partial class WptTestRunner
                 VisitedLinks = new InMemoryVisitedLinkStore(),
                 ScriptEngine = _engine.ScriptEngine,
 
-                // The WebAssembly modules run on Wasmtime (V8 has its own WebAssembly namespace)
+                // The WebAssembly modules run on Meziantou.Framework.WasmEngine (V8 has its own WebAssembly namespace)
                 WebAssemblyRuntime = WebAssemblyRuntime,
                 TimeProvider = _clock,
                 SpeculativeParsing = true,

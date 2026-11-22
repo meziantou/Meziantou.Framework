@@ -23,7 +23,7 @@ public sealed class TestPageSettings
     /// <summary>
     /// Gets the runtime that compiles and runs the WebAssembly modules of the scripts of the page, or null: the
     /// <c>WebAssembly</c> namespace is then not defined (see <see cref="BrowsingContextOptions.WebAssemblyRuntime"/>). The
-    /// <c>Meziantou.Framework.WebPlatform.Wasmtime</c> package provides a runtime. The page does not dispose it.
+    /// <c>Meziantou.Framework.WebPlatform.Wasm</c> package provides a runtime. The page does not dispose it.
     /// </summary>
     public WebAssemblyRuntime? WebAssemblyRuntime { get; init; }
 

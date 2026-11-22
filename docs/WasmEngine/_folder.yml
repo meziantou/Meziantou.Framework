@@ -1,0 +1,4 @@
+title: WebAssembly engine
+description: A WebAssembly engine written in .NET: compile and run modules with host functions, memories, exceptions, limits and telemetry.
+packageIds:
+- Meziantou.Framework.WasmEngine

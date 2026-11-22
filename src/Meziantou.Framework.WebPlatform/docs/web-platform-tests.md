@@ -671,7 +671,7 @@ which test262 covers in `tests/Meziantou.Framework.JavaScriptEngine.Test262`), `
 ## JavaScript engine
 
 The expectations are the results of Meziantou.Framework.JavaScriptEngine (`Runner/WptEngine.cs`, `JavaScriptWptEngine`),
-with the WebAssembly runtime of `Meziantou.Framework.WebPlatform.Wasmtime` (`BrowsingContextOptions.WebAssemblyRuntime`).
+with the WebAssembly runtime of `Meziantou.Framework.WebPlatform.Wasm` (`BrowsingContextOptions.WebAssemblyRuntime`).
 Its `Date` uses the virtual clock of the runner through `JavaScriptScriptEngineOptions.TimeProvider`, and an unbounded
 recursion throws a `RangeError` (the recursion limit of the engine), as the WebAssembly core tests expect, instead of
 ending the process. The expectations were switched from the results of Jint, the previous engine:

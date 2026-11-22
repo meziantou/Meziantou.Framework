@@ -166,6 +166,16 @@ dotnet_diagnostic.CA1065.severity = none
 # CA1508: The flow analysis reports false positives on the tree traversals (e.g. properties of other nodes).
 dotnet_diagnostic.CA1508.severity = none
 
+[{src,tests,fuzz,benchmarks,samples}/Meziantou.Framework.WasmEngine*/**.cs]
+# Meziantou.Framework.WasmEngine is a WebAssembly engine: its code mirrors the algorithms of the specification.
+# MA0048: File name must match type name. The files are organized by area: the types and the objects of the embedding
+# API, the runtime objects, the instructions of the interpreter, the exceptions.
+dotnet_diagnostic.MA0048.severity = none
+# CA1502: Avoid excessive complexity. The validator, the interpreter loop and the compilers are long switch statements.
+dotnet_diagnostic.CA1502.severity = none
+# CA1508: The flow analysis reports false positives on the states of the validator and of the parser.
+dotnet_diagnostic.CA1508.severity = none
+
 [{src,tests,tools,benchmarks}/Meziantou.Framework.JavaScriptEngine*/**.cs]
 # Meziantou.Framework.JavaScriptEngine implements ECMAScript: its code mirrors the algorithms of the specification.
 # CA1502: Avoid excessive complexity. The spec algorithms and the interpreter loop are long methods and switch statements.

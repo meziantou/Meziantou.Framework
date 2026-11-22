@@ -3,7 +3,7 @@
 Runs popular npm packages in the engine, in a page of Meziantou.Framework.WebPlatform, and compares their results with
 the results of Chromium. The packages are loaded as a browser loads them without a bundler: ES modules, with an import
 map built from the installed packages. The page has the platform of a browser (the DOM, `URL`, `TextEncoder`,
-`fetch`, `structuredClone`, `AbortController`, the timers, `WebAssembly` with Wasmtime...), so the packages run as they
+`fetch`, `structuredClone`, `AbortController`, the timers, `WebAssembly` with Meziantou.Framework.WasmEngine...), so the packages run as they
 were published, without polyfills.
 
 The [Web Tooling Benchmark](../Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) covers the tools of
@@ -51,7 +51,7 @@ replaces it): the workloads of immer, mobx and vue import that build by its URL,
   the workload named by the `workload` parameter of its URL and writes the result in its `#result` element. What the
   packages write to the console, and the exceptions of the callbacks, are part of the result.
 - `NpmPackagesTests.cs`: runs each workload in a new `BrowsingContext` of WebPlatform, with a new engine (in the UTC
-  time zone, with the en-US locale), Wasmtime, and a document loader that serves the files of the site. The timers run
+  time zone, with the en-US locale), `WasmWebAssemblyRuntime`, and a document loader that serves the files of the site. The timers run
   in virtual time: when the event loop is idle, the clock advances to the next timer. When the result differs from
   `expected/<name>.txt`, it is written to `<temp>/npm-packages/<name>.txt`, and the failure lists the missing files and
   the errors of the page.

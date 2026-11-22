@@ -1,7 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.JavaScript;
 using Meziantou.Framework.WebPlatform.Scripting;
-using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.Wasm;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.JavaScriptEngine.NpmPackages;
@@ -22,7 +22,7 @@ public sealed class NpmPackagesTests
     /// <summary>The npm packages of package-lock.json and their import map. Run 'dotnet run eng/javascriptengine/fetch-tests.cs' to install them.</summary>
     private static readonly FullPath PackagesDirectory = Root / "tests" / "Meziantou.Framework.JavaScriptEngine.External" / "npm-packages";
 
-    private static readonly WasmtimeRuntime WebAssemblyRuntime = new();
+    private static readonly WasmWebAssemblyRuntime WebAssemblyRuntime = new();
 
     private static readonly Lazy<string> Page = new(() => File.ReadAllText(ProjectDirectory / "page.html").Replace("{{importmap}}", File.ReadAllText(PackagesDirectory / "importmap.json"), StringComparison.Ordinal));
 

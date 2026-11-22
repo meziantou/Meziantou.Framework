@@ -118,12 +118,16 @@ internal sealed class NestedColumns
 
     /// <summary>
     /// The block size of the content box of the container used in the previous pages when the pages of another inline size start
-    /// inside it (see <see cref="ResumeStart"/>): a container with a definite or maximum block size ends after the rest of it.
+    /// inside it (see <see cref="ResumeStart"/>): a container with a definite or maximum block size ends after the rest of it; and
+    /// the block size of the row of a fixed block size (<c>column-height</c>) used in them, which continues.
     /// </summary>
-    public double ResumeConsumedBlockSize { get; set; }
+    public (double Content, double Row) ResumeConsumedBlockSize { get; set; }
 
-    /// <summary>The block size of the content box used in each outer fragmentainer and the ones before it, by index of the outer fragmentainer (the placement of the last run of the breaker).</summary>
-    public Dictionary<int, double> ConsumedBlockSizes { get; } = [];
+    /// <summary>
+    /// The block size of the content box used in each outer fragmentainer and the ones before it, and the block size of the row of
+    /// a fixed block size used in them, by index of the outer fragmentainer (the placement of the last run of the breaker).
+    /// </summary>
+    public Dictionary<int, (double Content, double Row)> ConsumedBlockSizes { get; } = [];
 
     private FragmentationFlow? _trialFlow;
 

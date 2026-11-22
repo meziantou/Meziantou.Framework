@@ -82,13 +82,19 @@ var pages = context.RenderPages();
 - A page of another width may also start in the middle of a multi-column container: its columns in the new page have the
   width of the new page, and continue with the content of the last column of the previous page (a paragraph continues from
   its next line); its last columns are balanced as usual. The new page may also start before or after a column spanner
-  (`column-span: all`), or in the columns after it. A container with a height or a maximum height continues with the rest
+  (`column-span: all`), or in the columns after it. Rows of columns of a fixed height (`column-height`, with
+  `column-wrap: wrap` or not) continue as with pages of the same width: a row broken by the end of the previous page
+  continues with the rest of its height. A container with a height or a maximum height continues with the rest
   of it (its content that does not fit overflows in more columns, as usual). The break at the end of the last column may be
   anywhere it may be outside of the columns: between two boxes or two lines, between the rows of a table, a grid or a flex
   container, or inside one of their rows (the content of its cells or items continues side by side, as described above). An
-  image or a line taller than a column is not sliced by the columns: it overflows its column. The page keeps the width of
-  the previous one when the container has `column-height`, or absolutely positioned boxes or multi-column containers in its
-  columns.
+  image or a line taller than a column is not sliced by the columns: it overflows its column. The columns may contain
+  multi-column containers and absolutely positioned boxes: the ones whose containing block is in the columns are placed in
+  them, the ones placed by `top` or `bottom` follow their offset in their containing block, and the ones at their static
+  position (no `top` nor `bottom`) are in the column of that position, as with pages of the same width. The page keeps the
+  width of the previous one when the container has an anchored absolutely positioned box (CSS Anchor Positioning), when an
+  absolutely positioned box at its static position is broken by the end of the previous page (the part of it already
+  printed is not known in the new width), or when the break is inside a multi-column container of the columns.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

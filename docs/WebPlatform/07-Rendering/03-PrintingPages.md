@@ -87,10 +87,12 @@ var pages = context.RenderPages();
   anywhere it may be outside of the columns: between two boxes or two lines, between the rows of a table, a grid or a flex
   container, or inside one of their rows (the content of its cells or items continues side by side, as described above). An
   image or a line taller than a column is not sliced by the columns: it overflows its column. The columns may contain
-  multi-column containers, and absolutely positioned boxes whose containing block is in the columns. The page keeps the
-  width of the previous one when the container has `column-height`, an absolutely positioned child, or absolutely
-  positioned boxes in its columns whose containing block is outside of it (the pages place these boxes from their offset in
-  the container), or when the break is inside a multi-column container of the columns.
+  multi-column containers, absolutely positioned boxes whose containing block is in the columns, and absolutely positioned
+  boxes whose containing block is the container, placed by `top` or `bottom` (in the pages, from their offset in the
+  container, as with pages of the same width). The page keeps the width of the previous one when the container has
+  `column-height`, or absolutely positioned boxes in its columns at their static position (no `top` nor `bottom`) or
+  anchored whose containing block is the container or outside of it, or when the break is inside a multi-column container of
+  the columns.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

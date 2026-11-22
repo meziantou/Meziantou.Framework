@@ -507,8 +507,10 @@ internal sealed partial class LayoutEngine
             var blockSizes = new List<double>();
             if (baseIndex != 0)
             {
-                fragmentainers.Add(new Fragmentainer(double.NegativeInfinity, segmentStart, segmentStart, 0, LogicalOffset.Zero));
-                blockSizes.Add(segmentStart);
+                // (it holds the block size of the multi-column container that the segment starts inside used in the previous pages,
+                // see FragmentationFlow.ResumeShift: the absolutely positioned boxes placed from their offset in the container follow it)
+                fragmentainers.Add(new Fragmentainer(double.NegativeInfinity, segmentStart, segmentStart + flow.ResumeShift, 0, LogicalOffset.Zero));
+                blockSizes.Add(segmentStart + flow.ResumeShift);
             }
 
             for (var i = 0; i <= breaks.Count; i++)
@@ -1266,24 +1268,43 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
     /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns (between its column spanners) have the
-    /// block size that remains in the page or in its content box (no <c>column-height</c>), and the pages do not place
-    /// absolutely positioned boxes from it (its absolutely positioned children, and the boxes of its columns whose containing
-    /// block is outside of it, are placed from their offsets in the container, which do not follow the columns laid out again).
-    /// The absolutely positioned boxes whose containing block is in the columns are placed in the columns.
+    /// block size that remains in the page or in its content box (no <c>column-height</c>). The absolutely positioned boxes of
+    /// the columns whose containing block is in the columns are placed in the columns; the ones that the pages place
+    /// (<see cref="NestedColumns.OutOfFlow"/>, the absolutely positioned children of the container) must be placed by their
+    /// insets in the block axis, in the container (they follow the block size of the virtual first page, see
+    /// <see cref="FragmentationFlow.ResumeShift"/>): not at their static position, whose position in the strip of the container
+    /// does not follow its columns laid out again, nor in another containing block or anchored.
     /// </summary>
     private static bool IsResumableColumns(NestedColumns nested, BoxFragment container)
     {
-        if (nested.RowBlockSize is not null || nested.OutOfFlow is not null)
+        if (nested.RowBlockSize is not null)
             return false;
+
+        if (nested.OutOfFlow is { } outOfFlow)
+        {
+            foreach (var (candidate, _) in outOfFlow)
+            {
+                if (!ReferenceEquals(candidate.ContainingBlock, container.Box) || !IsPlacedByBlockInsets(candidate.Box, container.WritingDirection))
+                    return false;
+            }
+        }
 
         var children = container.ChildrenSpan;
         for (var i = container.InFlowChildCount; i < children.Length; i++)
         {
-            if (children[i] is BoxFragment { Box.IsOutOfFlow: true })
+            if (children[i] is BoxFragment { Box.IsOutOfFlow: true } child && !IsPlacedByBlockInsets(child.Box, container.WritingDirection))
                 return false;
         }
 
         return true;
+
+        static bool IsPlacedByBlockInsets(ContainerBox box, WritingDirection writingDirection)
+        {
+            var layout = box.Style.Layout;
+            var inset = layout.Insets.Inset;
+            return (!inset.Get(writingDirection.BlockStart).IsAuto || !inset.Get(writingDirection.BlockEnd).IsAuto)
+                && box.Style.PositionBaseStyle is null && !layout.Anchor.UsesAnchorFunctions && layout.Anchor.PositionArea is null;
+        }
     }
 
     /// <summary>Returns whether a parallel flow of a flow (the items of a grid, of a flex container, the cells of a table) starts before a position and ends after it.</summary>

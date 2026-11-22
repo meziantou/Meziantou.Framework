@@ -105,10 +105,12 @@ public static partial class WebPlatformFuzzTargets
         ("<div style='columns: 2'><div style='display: flex'>", "<div id={0} style='flex: 1 1 0; min-width: 0; {1}'>{2}</div>", "</div></div>"),
         ("<div style='columns: 2; column-gap: 0; max-height: 250px'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
 
-        // (absolutely positioned boxes in the columns: in a row, from the container itself; a multi-column container in the columns)
+        // (absolutely positioned boxes in the columns: in a row, from the container itself, at their static position; a multi-column
+        // container in the columns)
         ("<div style='columns: 2'>", "<div id={0} style='position: relative; {1}'><div style='position: absolute; top: 5px; width: 10px; height: 30px'></div>{2}</div>", "</div>"),
         ("<div style='columns: 2; position: relative'><div style='position: absolute; top: 250px; width: 20px; height: 100px'></div>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<div style='columns: 2'><div style='height: 40px'></div><div style='columns: 2; column-gap: 0'>", "<div id={0} style='{1}'>{2}</div>", "</div></div>"),
+        ("<div style='columns: 2'>", "<div id={0} style='{1}'>{2}</div><div style='position: absolute; width: 10px; height: 30px'></div>", "</div>"),
     ];
 
     /// <summary>Decodes the input to a document whose first page has another inline size than the next ones, and checks its pages.</summary>

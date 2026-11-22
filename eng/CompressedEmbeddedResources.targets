@@ -1,52 +1,23 @@
 <Project>
   <!--
     Compresses the EmbeddedResource items that set Compression="Deflate", so that the assembly carries the compressed
-    content: the length of the content (32-bit little-endian), then the content compressed with raw Deflate. The sources
-    stay readable in the repository; common/CompressedResource.cs reads the resources. Deflate, not Brotli or Zstandard,
+    content: a zip archive whose only entry, named "content", is the file compressed with Deflate. The sources stay
+    readable in the repository; common/CompressedResource.cs reads the resources. Deflate, not Brotli or Zstandard,
     because WebAssembly (browser) only decompresses Deflate. An item must set LogicalName: the compressed file lives in
     the intermediate directory, and the name of the resource must not depend on it.
 
       <EmbeddedResource Include="Data/file.txt" LogicalName="My.Library.file.txt" Compression="Deflate" />
+
+    Only built-in tasks are used: in multithreaded builds (-mt), MSBuild runs the tasks of inline task factories
+    (RoslynCodeTaskFactory) in a task host, which fails when the factory compiled the same task earlier in the process
+    without an assembly file. ZipDirectory runs in the build process.
   -->
-
-  <UsingTask TaskName="DeflateCompressFiles" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
-    <ParameterGroup>
-      <Sources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-      <Destinations ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
-    </ParameterGroup>
-    <Task>
-      <Using Namespace="System.IO" />
-      <Using Namespace="System.IO.Compression" />
-      <Code Type="Fragment" Language="cs"><![CDATA[
-        // CompressionLevel.SmallestSize (3) is not part of netstandard, which the task is compiled against
-        var level = Enum.IsDefined(typeof(CompressionLevel), 3) ? (CompressionLevel)3 : CompressionLevel.Optimal;
-        for (var i = 0; i < Sources.Length; i++)
-        {
-            var content = File.ReadAllBytes(Sources[i].ItemSpec);
-            var destination = Destinations[i].ItemSpec;
-            Directory.CreateDirectory(Path.GetDirectoryName(destination));
-            using (var output = new MemoryStream())
-            {
-                output.WriteByte((byte)content.Length);
-                output.WriteByte((byte)(content.Length >> 8));
-                output.WriteByte((byte)(content.Length >> 16));
-                output.WriteByte((byte)(content.Length >> 24));
-                using (var deflate = new DeflateStream(output, level, leaveOpen: true))
-                {
-                    deflate.Write(content, 0, content.Length);
-                }
-
-                File.WriteAllBytes(destination, output.ToArray());
-            }
-        }
-      ]]></Code>
-    </Task>
-  </UsingTask>
 
   <Target Name="_PrepareCompressedEmbeddedResources">
     <ItemGroup>
       <_CompressedEmbeddedResource Include="@(EmbeddedResource)" Condition="'%(EmbeddedResource.Compression)' != ''">
         <CompressedPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'compressed-resources', '%(EmbeddedResource.LogicalName)'))</CompressedPath>
+        <StagingDirectory>$([MSBuild]::NormalizeDirectory('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'compressed-resources', 'staging', '%(EmbeddedResource.LogicalName)'))</StagingDirectory>
       </_CompressedEmbeddedResource>
     </ItemGroup>
     <Error Condition="'@(_CompressedEmbeddedResource)' != '' AND '%(_CompressedEmbeddedResource.Compression)' != 'Deflate'" Text="The embedded resource '%(_CompressedEmbeddedResource.Identity)' sets Compression to '%(_CompressedEmbeddedResource.Compression)': the only compression is Deflate." />
@@ -56,20 +27,25 @@
   <!--
     Only the resources whose source changed are compressed again (the inputs and outputs correspond one to one). The
     condition of a target is evaluated before the targets it depends on run: CompressEmbeddedResources runs
-    _PrepareCompressedEmbeddedResources first
+    _PrepareCompressedEmbeddedResources first.
+
+    Each file is copied alone in a directory, under a fixed name and with a fixed time, so that the archive does not
+    depend on the name or the time of the source: the build stays deterministic
   -->
   <Target Name="_CompressEmbeddedResourceFiles"
           Condition="'@(_CompressedEmbeddedResource)' != ''"
           Inputs="@(_CompressedEmbeddedResource)"
           Outputs="@(_CompressedEmbeddedResource->'%(CompressedPath)')">
-    <DeflateCompressFiles Sources="@(_CompressedEmbeddedResource)" Destinations="@(_CompressedEmbeddedResource->'%(CompressedPath)')" />
+    <Copy SourceFiles="@(_CompressedEmbeddedResource)" DestinationFiles="@(_CompressedEmbeddedResource->'%(StagingDirectory)content')" />
+    <Touch Files="@(_CompressedEmbeddedResource->'%(StagingDirectory)content')" Time="2000-01-01 00:00:00" />
+    <ZipDirectory SourceDirectory="%(_CompressedEmbeddedResource.StagingDirectory)" DestinationFile="%(_CompressedEmbeddedResource.CompressedPath)" CompressionLevel="SmallestSize" Overwrite="true" />
   </Target>
 
   <Target Name="CompressEmbeddedResources" BeforeTargets="AssignTargetPaths" DependsOnTargets="_PrepareCompressedEmbeddedResources;_CompressEmbeddedResourceFiles">
     <ItemGroup Condition="'@(_CompressedEmbeddedResource)' != ''">
       <EmbeddedResource Remove="@(_CompressedEmbeddedResource)" />
       <EmbeddedResource Include="@(_CompressedEmbeddedResource->'%(CompressedPath)')" WithCulture="false" Type="Non-Resx" />
-      <FileWrites Include="@(_CompressedEmbeddedResource->'%(CompressedPath)')" />
+      <FileWrites Include="@(_CompressedEmbeddedResource->'%(CompressedPath)');@(_CompressedEmbeddedResource->'%(StagingDirectory)content')" />
     </ItemGroup>
   </Target>
 </Project>

@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Reflection;
 
@@ -6,8 +5,8 @@ namespace Meziantou.Framework;
 
 /// <summary>
 /// Reads the embedded resources the build compresses, the <c>EmbeddedResource</c> items with <c>Compression="Deflate"</c>
-/// (see <c>eng/CompressedEmbeddedResources.targets</c>): the length of the content (32-bit little-endian), then the content
-/// compressed with raw Deflate, which every runtime decompresses, WebAssembly included.
+/// (see <c>eng/CompressedEmbeddedResources.targets</c>): a zip archive whose only entry is the content compressed with
+/// Deflate, which every runtime decompresses, WebAssembly included.
 /// </summary>
 internal static class CompressedResource
 {
@@ -18,18 +17,14 @@ internal static class CompressedResource
         if (stream is null)
             return null;
 
-        Span<byte> header = stackalloc byte[4];
-        stream.ReadExactly(header);
-        var length = BinaryPrimitives.ReadInt32LittleEndian(header);
-        if (length < 0)
+        using var archive = new ZipArchive(stream, ZipArchiveMode.Read);
+        if (archive.Entries is not [var entry])
             throw new InvalidDataException($"The resource '{name}' is not a compressed resource.");
 
-        var content = new byte[length];
-        using (var deflate = new DeflateStream(stream, CompressionMode.Decompress))
+        var content = new byte[checked((int)entry.Length)];
+        using (var entryStream = entry.Open())
         {
-            deflate.ReadExactly(content);
-            if (deflate.ReadByte() >= 0)
-                throw new InvalidDataException($"The resource '{name}' is longer than its header says.");
+            entryStream.ReadExactly(content);
         }
 
         return new MemoryStream(content, writable: false);

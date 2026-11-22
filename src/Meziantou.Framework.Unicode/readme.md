@@ -476,3 +476,7 @@ Assert.Equal(UnicodeBidirectionalCategory.LeftToRight, info.Value.BidiCategory);
 Assert.Equal("Basic Latin", info.Value.Block.Name);
 ```
 <!-- endref -->
+
+The names and the text properties (`DecompositionMapping`, `NumericValue`, `Unicode1Name`, `IsoComment`) are
+compressed in the assembly: the first time a program reads a name, the names are decompressed, in about 1 ms, and then
+take about 280 KB of memory; the text properties take about 140 KB the same way.

@@ -87,12 +87,13 @@ internal static class IdnaWriter
             records.Add((byte)mapping.Length);
         }
 
-        var sizes = new List<(string Name, int Bytes)>();
+        var resource = new TableResource("UnicodeIdnaTables.bin");
+        var sizes = resource.Sizes;
         var tables = new StringBuilder();
-        PropertyTablesWriter.AppendTrie(tables, sizes, "Idna", statuses, """
+        PropertyTablesWriter.AppendTrie(tables, resource, "Idna", statuses, """
             The IDNA status of the code point: 0 valid, 1 ignored, 2 mapped, 3 deviation, 4 disallowed.
             """);
-        PropertyTablesWriter.AppendBytes(tables, sizes, "IdnaMappings", [.. records],
+        PropertyTablesWriter.AppendBytes(tables, resource, "IdnaMappings", [.. records],
             "The mappings of the mapped and deviation code points: 6-byte entries sorted by code point: the code point (3 bytes), then the offset (2 bytes) and the length (1 byte) of its mapping in IdnaPool, in UTF-16 code units, little-endian. A deviation code point that is not listed maps to nothing.");
         var poolBytes = new byte[pool.Length * 2];
         for (var i = 0; i < pool.Length; i++)
@@ -101,7 +102,7 @@ internal static class IdnaWriter
             poolBytes[(i * 2) + 1] = (byte)(pool[i] >> 8);
         }
 
-        PropertyTablesWriter.AppendBytes(tables, sizes, "IdnaPool", poolBytes, "UTF-16 code units of the IDNA mappings, in little-endian order.");
+        PropertyTablesWriter.AppendBytes(tables, resource, "IdnaPool", poolBytes, "UTF-16 code units of the IDNA mappings, in little-endian order.");
 
         var sizeLines = string.Join('\n', sizes.Select(size => string.Create(CultureInfo.InvariantCulture, $"//   - {size.Name}: {size.Bytes:N0} bytes")));
         var content = string.Create(CultureInfo.InvariantCulture, $$"""
@@ -127,12 +128,16 @@ internal static class IdnaWriter
                 internal const int MaxMappingLength = {{maxLength}};
 
             {{PropertyTablesWriter.ReadUInt16Method}}
+
+            {{resource.GetDeclaration()}}
             {{tables.ToString().TrimEnd()}}
             }
 
             """).ReplaceLineEndings("\n");
 
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"  IDNA tables: {sizes.Sum(size => size.Bytes):N0} bytes ({mappings.Count:N0} mappings)"));
-        return await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeIdnaTables.g.cs", content);
+        var updated = await resource.WriteAsync(outputPath / "Data");
+        updated |= await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeIdnaTables.g.cs", content);
+        return updated;
     }
 }

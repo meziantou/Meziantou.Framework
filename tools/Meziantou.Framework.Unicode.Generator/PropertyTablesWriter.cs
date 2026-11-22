@@ -127,29 +127,30 @@ internal static class PropertyTablesWriter
         }
 
         var tables = new StringBuilder();
-        var sizes = new List<(string Name, int Bytes)>();
-        AppendTrie(tables, sizes, "General", general, """
+        var resource = new TableResource("UnicodeTables.bin");
+        var sizes = resource.Sizes;
+        AppendTrie(tables, resource, "General", general, """
             Index of a 2-byte entry of GeneralTuples: General_Category (bits 0-4, a System.Globalization.UnicodeCategory),
             Default_Ignorable_Code_Point (bit 5), ID_Start (bit 6) and ID_Continue (bit 7), then the EmojiProperties flags
             (bits 0-5), Cased (bit 6) and Case_Ignorable (bit 7).
             """);
-        AppendBytes(tables, sizes, "GeneralTuples", generalTuples.Bytes);
-        AppendTrie(tables, sizes, "Bidi", bidi, """
+        AppendBytes(tables, resource, "GeneralTuples", generalTuples.Bytes);
+        AppendTrie(tables, resource, "Bidi", bidi, """
             Bidi_Class (bits 0-4, a UnicodeBidirectionalCategory, with the default values of the unassigned code points),
             Bidi_Paired_Bracket_Type (bits 5-6, a UnicodeBidiPairedBracketType) and Bidi_Mirrored (bit 7).
             """);
-        AppendTrie(tables, sizes, "LineBreak", lineBreakLeaves, """
+        AppendTrie(tables, resource, "LineBreak", lineBreakLeaves, """
             Index of a 2-byte entry of LineBreakTuples: Line_Break (a UnicodeLineBreakClass), then East_Asian_Width
             (bits 0-2, a UnicodeEastAsianWidth), Extended_Pictographic (bit 3), General_Category=Cn (bit 4), Pi (bit 5),
             Pf (bit 6) and Mn or Mc (bit 7).
             """);
-        AppendBytes(tables, sizes, "LineBreakTuples", lineBreakTuples.Bytes);
-        AppendTrie(tables, sizes, "Segmentation", segmentation, """
+        AppendBytes(tables, resource, "LineBreakTuples", lineBreakTuples.Bytes);
+        AppendTrie(tables, resource, "Segmentation", segmentation, """
             Index of a 2-byte entry of SegmentationTuples: Grapheme_Cluster_Break (bits 0-4, a UnicodeGraphemeClusterBreak),
             Indic_Conjunct_Break (bits 5-6, a UnicodeIndicConjunctBreak) and Extended_Pictographic (bit 7), then Word_Break
             (a UnicodeWordBreak).
             """);
-        AppendBytes(tables, sizes, "SegmentationTuples", segmentationTuples.Bytes);
+        AppendBytes(tables, resource, "SegmentationTuples", segmentationTuples.Bytes);
         var sentenceWord = new byte[ValueCount];
         var wordNames = GetLongNamesByValue(wordEnum);
         var lineBreakNames = GetLongNamesByValue(lineBreakEnum);
@@ -160,24 +161,24 @@ internal static class PropertyTablesWriter
             sentenceWord[i] = (byte)(sentence[i] | ((int)kind << 4));
         }
 
-        AppendTrie(tables, sizes, "SentenceBreak", sentenceWord, """
+        AppendTrie(tables, resource, "SentenceBreak", sentenceWord, """
             Sentence_Break (bits 0-3, a UnicodeSentenceBreak), then the UnicodeWordKind of a word that ends with the code
             point (bits 4-6).
             """);
-        AppendTrie(tables, sizes, "Joining", joining, """
+        AppendTrie(tables, resource, "Joining", joining, """
             Index of a 2-byte entry of JoiningTuples: Joining_Type (a UnicodeJoiningType), then Joining_Group
             (a UnicodeJoiningGroup).
             """);
-        AppendBytes(tables, sizes, "JoiningTuples", joiningTuples.Bytes);
-        AppendTrie(tables, sizes, "Indic", indic, """
+        AppendBytes(tables, resource, "JoiningTuples", joiningTuples.Bytes);
+        AppendTrie(tables, resource, "Indic", indic, """
             Index of a 2-byte entry of IndicTuples: Indic_Syllabic_Category (a UnicodeIndicSyllabicCategory), then
             Indic_Positional_Category (a UnicodeIndicPositionalCategory).
             """);
-        AppendBytes(tables, sizes, "IndicTuples", indicTuples.Bytes);
-        AppendTrie(tables, sizes, "VerticalOrientation", orientation, """
+        AppendBytes(tables, resource, "IndicTuples", indicTuples.Bytes);
+        AppendTrie(tables, resource, "VerticalOrientation", orientation, """
             Vertical_Orientation (a UnicodeVerticalOrientation), with the default values of the unassigned code points.
             """);
-        AppendTrie(tables, sizes, "Case", caseLeaves, """
+        AppendTrie(tables, resource, "Case", caseLeaves, """
             Index of a 16-byte entry of CaseTuples: the differences between the code point and its Simple_Lowercase_Mapping,
             its Simple_Uppercase_Mapping, its Simple_Titlecase_Mapping and its Simple_Case_Folding.
             """);
@@ -190,13 +191,13 @@ internal static class PropertyTablesWriter
             System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(caseBytes.AsSpan((i * 16) + 12), caseTuples[i].Fold);
         }
 
-        AppendBytes(tables, sizes, "CaseTuples", caseBytes, "16-byte entries: four little-endian 32-bit differences, see GetCase.");
-        AppendBytes(tables, sizes, "SpecialCasingMappings", specialCasingRecords, "The unconditional full case mappings of SpecialCasing.txt: 6-byte entries sorted by code point: the code point (3 bytes), the offset of its mappings in SpecialCasingPool (2 bytes), then the lengths of its lowercase (bits 0-1), titlecase (bits 2-3) and uppercase (bits 4-5) mappings, little-endian.");
+        AppendBytes(tables, resource, "CaseTuples", caseBytes, "16-byte entries: four little-endian 32-bit differences, see GetCase.");
+        AppendBytes(tables, resource, "SpecialCasingMappings", specialCasingRecords, "The unconditional full case mappings of SpecialCasing.txt: 6-byte entries sorted by code point: the code point (3 bytes), the offset of its mappings in SpecialCasingPool (2 bytes), then the lengths of its lowercase (bits 0-1), titlecase (bits 2-3) and uppercase (bits 4-5) mappings, little-endian.");
         AppendSpecialCasingFilter(tables, specialCasingRecords);
-        AppendBytes(tables, sizes, "SpecialCasingPool", EncodeUInt24(specialCasingPool), "The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.");
-        AppendBytes(tables, sizes, "SoftDottedCodePoints", EncodeUInt24(Enumerable.Range(0, Trie.CodePointCount).Where(codePoint => softDotted[codePoint])), "Soft_Dotted: the code points, sorted, 3 bytes each, little-endian.");
-        AppendBytes(tables, sizes, "BidiMirroringPairs", EncodeUInt24(mirroringPairs), "Bidi_Mirroring_Glyph: 6-byte entries sorted by code point: the code point then its mirrored code point, 3 bytes each, little-endian.");
-        AppendBytes(tables, sizes, "BidiBracketPairs", EncodeUInt24(bracketPairs), "Bidi_Paired_Bracket: 6-byte entries sorted by code point: the code point then its paired bracket, 3 bytes each, little-endian.");
+        AppendBytes(tables, resource, "SpecialCasingPool", EncodeUInt24(specialCasingPool), "The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.");
+        AppendBytes(tables, resource, "SoftDottedCodePoints", EncodeUInt24(Enumerable.Range(0, Trie.CodePointCount).Where(codePoint => softDotted[codePoint])), "Soft_Dotted: the code points, sorted, 3 bytes each, little-endian.");
+        AppendBytes(tables, resource, "BidiMirroringPairs", EncodeUInt24(mirroringPairs), "Bidi_Mirroring_Glyph: 6-byte entries sorted by code point: the code point then its mirrored code point, 3 bytes each, little-endian.");
+        AppendBytes(tables, resource, "BidiBracketPairs", EncodeUInt24(bracketPairs), "Bidi_Paired_Bracket: 6-byte entries sorted by code point: the code point then its paired bracket, 3 bytes each, little-endian.");
 
         var sizeLines = string.Join('\n', sizes.Select(size => string.Create(CultureInfo.InvariantCulture, $"//   - {size.Name}: {size.Bytes:N0} bytes")));
         var tablesContent = string.Create(CultureInfo.InvariantCulture, $$"""
@@ -222,6 +223,8 @@ internal static class PropertyTablesWriter
                 internal const string UnicodeVersion = "{{Ucd.Version}}";
 
             {{ReadUInt16Method}}
+
+            {{resource.GetDeclaration()}}
             {{tables.ToString().TrimEnd()}}
             }
 
@@ -229,17 +232,18 @@ internal static class PropertyTablesWriter
 
         var enumsContent = FormatEnums(enums);
 
-        var updated = await GeneratorFiles.WriteTextIfChanged(tablesPath, tablesContent);
+        var updated = await resource.WriteAsync(outputPath / "Data");
+        updated |= await GeneratorFiles.WriteTextIfChanged(tablesPath, tablesContent);
         updated |= await GeneratorFiles.WriteTextIfChanged(enumsPath, enumsContent);
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"  Property tables: {sizes.Sum(size => size.Bytes):N0} bytes"));
         return updated;
     }
 
-    public static void AppendTrie(StringBuilder destination, List<(string Name, int Bytes)> sizes, string name, byte[] values, string comment)
+    public static void AppendTrie(StringBuilder destination, TableResource resource, string name, byte[] values, string comment)
     {
         var defaultValue = values.Length > Trie.CodePointCount ? values[DefaultIndex] : (byte)0;
         var trie = TrieBuilder.Build(values[..Trie.CodePointCount]);
-        sizes.Add((name, trie.ByteCount));
+        resource.Sizes.Add((name, trie.ByteCount));
 
         var bits2 = trie.Shift1 - trie.Shift2;
         destination.Append('\n');
@@ -249,7 +253,7 @@ internal static class PropertyTablesWriter
         }
 
         // The stages are bytes, read in little-endian order when an index takes two of them: a span of bytes over
-        // static data never allocates, whatever the build configuration and the tier of the JIT compiler.
+        // the resource never allocates, whatever the build configuration and the tier of the JIT compiler.
         var read1 = trie.Stage1Width == 1
             ? $"{name}Stage1[codePoint >> {trie.Shift1}]"
             : $"ReadUInt16({name}Stage1, (codePoint >> {trie.Shift1}) * 2)";
@@ -272,17 +276,11 @@ internal static class PropertyTablesWriter
                     return {{name}}Stage3[(block3 << {{trie.Shift2}}) + (codePoint & {{(1 << trie.Shift2) - 1}})];
                 }
 
-                private static ReadOnlySpan<byte> {{name}}Stage1 =>
-                [{{TrieBuilder.FormatElements<byte>(Trie.Encode(trie.Stage1, trie.Stage1Width), "        ")}}
-                ];
+            {{resource.AddProperty($"private static ReadOnlySpan<byte> {name}Stage1", Trie.Encode(trie.Stage1, trie.Stage1Width))}}
 
-                private static ReadOnlySpan<byte> {{name}}Stage2 =>
-                [{{TrieBuilder.FormatElements<byte>(Trie.Encode(trie.Stage2, trie.Stage2Width), "        ")}}
-                ];
+            {{resource.AddProperty($"private static ReadOnlySpan<byte> {name}Stage2", Trie.Encode(trie.Stage2, trie.Stage2Width))}}
 
-                private static ReadOnlySpan<byte> {{name}}Stage3 =>
-                [{{TrieBuilder.FormatElements<byte>(trie.Stage3, "        ")}}
-                ];
+            {{resource.AddProperty($"private static ReadOnlySpan<byte> {name}Stage3", trie.Stage3)}}
 
             """).ReplaceLineEndings("\n"));
     }
@@ -329,27 +327,23 @@ internal static class PropertyTablesWriter
         return [.. result];
     }
 
-    public static void AppendBytes(StringBuilder destination, List<(string Name, int Bytes)> sizes, string name, byte[] values, string comment)
+    public static void AppendBytes(StringBuilder destination, TableResource resource, string name, byte[] values, string comment)
     {
-        sizes.Add((name, values.Length));
+        resource.Sizes.Add((name, values.Length));
         destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
 
                 // {{comment}}
-                internal static ReadOnlySpan<byte> {{name}} =>
-                [{{TrieBuilder.FormatElements<byte>(values, "        ")}}
-                ];
+            {{resource.AddProperty($"internal static ReadOnlySpan<byte> {name}", values)}}
 
             """).ReplaceLineEndings("\n"));
     }
 
-    private static void AppendBytes(StringBuilder destination, List<(string Name, int Bytes)> sizes, string name, List<byte> values)
+    private static void AppendBytes(StringBuilder destination, TableResource resource, string name, List<byte> values)
     {
-        sizes.Add((name, values.Count));
+        resource.Sizes.Add((name, values.Count));
         destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
 
-                internal static ReadOnlySpan<byte> {{name}} =>
-                [{{TrieBuilder.FormatElements<byte>(values.ToArray(), "        ")}}
-                ];
+            {{resource.AddProperty($"internal static ReadOnlySpan<byte> {name}", values.ToArray())}}
 
             """).ReplaceLineEndings("\n"));
     }

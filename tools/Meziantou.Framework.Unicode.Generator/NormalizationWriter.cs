@@ -124,19 +124,20 @@ internal static class NormalizationWriter
             leaves[i] = (byte)index;
         }
 
-        var sizes = new List<(string Name, int Bytes)>();
+        var resource = new TableResource("UnicodeNormalizationTables.bin");
+        var sizes = resource.Sizes;
         var tables = new StringBuilder();
-        PropertyTablesWriter.AppendTrie(tables, sizes, "Normalization", leaves, """
+        PropertyTablesWriter.AppendTrie(tables, resource, "Normalization", leaves, """
             Index of a 2-byte entry of NormalizationTuples: Canonical_Combining_Class, then the quick check flags:
             NFD_QC=No (bit 0), NFKD_QC=No (bit 1), NFC_QC=No (bit 2) or Maybe (bit 3), NFKC_QC=No (bit 4) or Maybe (bit 5).
             """);
-        PropertyTablesWriter.AppendBytes(tables, sizes, "NormalizationTuples", [.. tuples], "See GetNormalization.");
+        PropertyTablesWriter.AppendBytes(tables, resource, "NormalizationTuples", [.. tuples], "See GetNormalization.");
 
         // Fixed-size records of three-byte little-endian fields, searched by their first fields.
-        PropertyTablesWriter.AppendBytes(tables, sizes, "CanonicalMappings",
+        PropertyTablesWriter.AppendBytes(tables, resource, "CanonicalMappings",
             PropertyTablesWriter.EncodeUInt24(canonical.SelectMany(pair => new[] { pair.Key, pair.Value[0], pair.Value.Length == 2 ? pair.Value[1] : 0 })),
             "Canonical decomposition mappings: 9-byte entries sorted by code point: the code point, then the one or two code points of its mapping (the second is 0 for a singleton). Hangul syllables are decomposed by arithmetic.");
-        PropertyTablesWriter.AppendBytes(tables, sizes, "CompatibilityMappings",
+        PropertyTablesWriter.AppendBytes(tables, resource, "CompatibilityMappings",
             PropertyTablesWriter.EncodeUInt24(compatibilityKeys.SelectMany((key, index) => new[] { key, compatibilityEntries[index] >> 6, compatibilityEntries[index] & 0x3F })),
             "Full compatibility decompositions that differ from the canonical one: 9-byte entries sorted by code point: the code point, then the offset and the length of its decomposition in CompatibilityPool, in UTF-16 code units.");
         var poolBytes = new byte[pool.Count * 2];
@@ -146,8 +147,8 @@ internal static class NormalizationWriter
             poolBytes[(i * 2) + 1] = (byte)(pool[i] >> 8);
         }
 
-        PropertyTablesWriter.AppendBytes(tables, sizes, "CompatibilityPool", poolBytes, "UTF-16 code units of the full compatibility decompositions, in little-endian order.");
-        PropertyTablesWriter.AppendBytes(tables, sizes, "Compositions",
+        PropertyTablesWriter.AppendBytes(tables, resource, "CompatibilityPool", poolBytes, "UTF-16 code units of the full compatibility decompositions, in little-endian order.");
+        PropertyTablesWriter.AppendBytes(tables, resource, "Compositions",
             PropertyTablesWriter.EncodeUInt24(compositions.SelectMany(pair => new[] { (int)(pair.Key >> 21), (int)(pair.Key & 0x1FFFFF), pair.Value })),
             "Primary composites: 9-byte entries sorted by their first two fields: the two code points of the pair, then the composite.");
 
@@ -176,13 +177,17 @@ internal static class NormalizationWriter
                 internal const int MaxCompatibilityDecompositionLength = {{maxCompatibilityLength}};
 
             {{PropertyTablesWriter.ReadUInt16Method}}
+
+            {{resource.GetDeclaration()}}
             {{tables.ToString().TrimEnd()}}
             }
 
             """).ReplaceLineEndings("\n");
 
         Console.WriteLine(string.Create(CultureInfo.InvariantCulture, $"  Normalization tables: {sizes.Sum(size => size.Bytes):N0} bytes"));
-        return await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeNormalizationTables.g.cs", content);
+        var updated = await resource.WriteAsync(outputPath / "Data");
+        updated |= await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeNormalizationTables.g.cs", content);
+        return updated;
     }
 
     /// <summary>Loads the one-step decomposition mappings of UnicodeData.txt: a canonical mapping has no tag.</summary>

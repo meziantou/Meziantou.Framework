@@ -632,6 +632,34 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([(1, new PhysicalRect(0, 0, 100, 100))], GetPageRects(pages, document.GetElementById("r6")!));
     }
 
+    [Theory]
+    [InlineData("column-height: 100px", 50)]
+    [InlineData("column-height: 100px; column-wrap: wrap", 50)]
+    [InlineData("column-height: 130px; column-wrap: wrap; row-gap: 10px", 100)]
+    [InlineData("column-height: 130px; column-wrap: wrap; column-fill: auto", 50)]
+    [InlineData("column-height: 400px; column-wrap: wrap", 100)]
+    public void Pages_MultiColumnContainerWithAColumnHeightContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string style, int itemHeight)
+    {
+        // The rows of columns of a fixed block size continue in the second page (400px wide) as when the first page is 400px wide
+        // too: the first page has the same boxes (their block sizes do not depend on the inline size), and a row broken by the end
+        // of the first page continues with the rest of its block size
+        var items = string.Concat(Enumerable.Range(0, 24).Select(i => $"<div id=r{i} style='height: {itemHeight}px; break-inside: avoid'></div>"));
+        var rects = new List<string>();
+        foreach (var firstWidth in new[] { 200, 400 })
+        {
+            var document = Parse($$"""
+                <style>@page { size: 400px 300px; margin: 0 } @page :first { size: {{firstWidth}}px 300px }</style>
+                <div style='columns: 2; column-gap: 0; {{style}}'>{{items}}</div>
+                """);
+            using var session = document.BeginPrint(Options);
+            var pages = session.GetPages();
+            rects.Add(string.Join(' ', Enumerable.Range(0, 24).Select(i => string.Join(' ', GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!).Where(rect => rect.Page > 0)))));
+        }
+
+        Assert.Equal(rects[1], rects[0]);
+        Assert.Contains("200x", rects[0], StringComparison.Ordinal);
+    }
+
     [Fact]
     public void Pages_MultiColumnContainerWithMonolithicContentTallerThanAColumnContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
     {

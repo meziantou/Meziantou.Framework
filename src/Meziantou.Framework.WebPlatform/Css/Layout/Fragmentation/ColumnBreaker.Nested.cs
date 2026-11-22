@@ -107,7 +107,7 @@ internal static partial class ColumnBreaker
         {
             _started = true;
             _hasContent = true;
-            _consumed = _nested.ResumeConsumedBlockSize;
+            (_consumed, _rowConsumed) = _nested.ResumeConsumedBlockSize;
             var map = _nested.Map;
             map.Add(double.NegativeInfinity, 0, 0, isBreak: true);
             _nested.Columns.Add(new NestedColumn { OuterIndex = index - 1, Start = double.NegativeInfinity, End = position, BlockSize = position });
@@ -128,7 +128,6 @@ internal static partial class ColumnBreaker
             _columns = new FlowCursor(_flow, map, position, end, 1, _generation, canBreakBefore: false);
             _columns.SetOrigin(position - displayOffset);
             _columns.ResumeAt(position);
-            _rowConsumed = 0;
         }
 
         public AdvanceResult Advance(double blockSize, int index)
@@ -210,7 +209,7 @@ internal static partial class ColumnBreaker
                 }
 
                 _consumed += offset - start;
-                _nested.ConsumedBlockSizes[index] = _consumed;
+                _nested.ConsumedBlockSizes[index] = (_consumed, _rowConsumed);
                 if (_phase == Phase.Done && !_isBoxEnded)
                 {
                     _endOffset = offset + _endEdges;

@@ -3342,8 +3342,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   of the virtual first fragmentainer, with the column spanners before it, and the rows continue in the row of columns of the
   position), and the segment starts inside the border box of the container, after its block-start
   edges (`FlowCursor.ResumeAt` resumes the container). The strips of the nested multi-column containers are laid out once the
-  strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). This needs one row of columns
-  per page between the spanners (`IsResumableColumns`: no `column-height`; the absolutely positioned boxes placed by the outer
+  strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). The rows of columns continue
+  under these conditions (`IsResumableColumns`; the rows of a fixed block size, `column-height`, continue with the
+  block size of the row used in the previous pages, kept with the block size of the content box,
+  `NestedColumns.ConsumedBlockSizes`; the absolutely positioned boxes placed by the outer
   fragmentation context, `NestedColumns.OutOfFlow` and the absolutely positioned children of the container, must have the
   container as containing block and a block-start or block-end inset, not anchored: they follow their offsets in the
   container, the virtual first fragmentainer having the block size of the container used in the previous pages, while a

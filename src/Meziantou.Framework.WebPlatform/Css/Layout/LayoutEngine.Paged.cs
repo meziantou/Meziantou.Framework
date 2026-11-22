@@ -1015,7 +1015,7 @@ internal sealed partial class LayoutEngine
         /// For a break inside a multi-column container (see <see cref="ColumnContent"/>): the block size of its content box used in
         /// the pages before the break (see <see cref="NestedColumns.ResumeConsumedBlockSize"/>).
         /// </summary>
-        public double ColumnsConsumedBlockSize { get; init; }
+        public (double Content, double Row) ColumnsConsumedBlockSize { get; init; }
     }
 
     /// <summary>
@@ -1200,7 +1200,7 @@ internal sealed partial class LayoutEngine
 
         // (a container with a definite or maximum block size continues with the rest of it, which must remain)
         var consumed = nested.ConsumedBlockSizes.GetValueOrDefault(index - 1);
-        if ((nested.BlockSize ?? nested.MaxBlockSize) is { } limit && consumed >= limit - BreakAnchorEpsilon)
+        if ((nested.BlockSize ?? nested.MaxBlockSize) is { } limit && consumed.Content >= limit - BreakAnchorEpsilon)
             return null;
 
         return anchor with { ColumnContent = content, ColumnsConsumedBlockSize = consumed };
@@ -1246,7 +1246,7 @@ internal sealed partial class LayoutEngine
         if (start >= item.End - BreakAnchorEpsilon)
             return null;
 
-        flow.ResumeShift = anchor.ColumnsConsumedBlockSize - (start - contentTop);
+        flow.ResumeShift = anchor.ColumnsConsumedBlockSize.Content - (start - contentTop);
         return (nested, start);
     }
 
@@ -1255,7 +1255,7 @@ internal sealed partial class LayoutEngine
     /// or returns false: the position is not in a column spanner, nor in a parallel flow unless the content after the break is
     /// in rows (see <see cref="BreakAnchor.IsInRows"/>: the parallel flows are resumed from it).
     /// </summary>
-    private static bool ResumeColumns(NestedColumns nested, double position, bool isInRows, double consumedBlockSize)
+    private static bool ResumeColumns(NestedColumns nested, double position, bool isInRows, (double Content, double Row) consumedBlockSize)
     {
         if ((!isInRows && CrossesParallelFlow(nested.Flow, position)) || nested.Flow.Spanners.Exists(spanner => spanner.MarginBoxStart < position - BreakAnchorEpsilon && spanner.MarginBoxEnd > position + BreakAnchorEpsilon))
             return false;
@@ -1267,8 +1267,8 @@ internal sealed partial class LayoutEngine
 
     /// <summary>
     /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
-    /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns (between its column spanners) have the
-    /// block size that remains in the page or in its content box (no <c>column-height</c>). The absolutely positioned boxes of
+    /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns continue with the block size of its
+    /// content box and of its row of a fixed block size used in the previous pages. The absolutely positioned boxes of
     /// the columns whose containing block is in the columns are placed in the columns; the ones that the pages place
     /// (<see cref="NestedColumns.OutOfFlow"/>, the absolutely positioned children of the container) must be placed by their
     /// insets in the block axis, in the container (they follow the block size of the virtual first page, see
@@ -1277,9 +1277,6 @@ internal sealed partial class LayoutEngine
     /// </summary>
     private static bool IsResumableColumns(NestedColumns nested, BoxFragment container)
     {
-        if (nested.RowBlockSize is not null)
-            return false;
-
         if (nested.OutOfFlow is { } outOfFlow)
         {
             foreach (var (candidate, _) in outOfFlow)

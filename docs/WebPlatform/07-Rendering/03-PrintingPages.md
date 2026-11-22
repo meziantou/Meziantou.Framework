@@ -82,7 +82,9 @@ var pages = context.RenderPages();
 - A page of another width may also start in the middle of a multi-column container: its columns in the new page have the
   width of the new page, and continue with the content of the last column of the previous page (a paragraph continues from
   its next line); its last columns are balanced as usual. The new page may also start before or after a column spanner
-  (`column-span: all`), or in the columns after it. A container with a height or a maximum height continues with the rest
+  (`column-span: all`), or in the columns after it. Rows of columns of a fixed height (`column-height`, with
+  `column-wrap: wrap` or not) continue as with pages of the same width: a row broken by the end of the previous page
+  continues with the rest of its height. A container with a height or a maximum height continues with the rest
   of it (its content that does not fit overflows in more columns, as usual). The break at the end of the last column may be
   anywhere it may be outside of the columns: between two boxes or two lines, between the rows of a table, a grid or a flex
   container, or inside one of their rows (the content of its cells or items continues side by side, as described above). An
@@ -90,7 +92,7 @@ var pages = context.RenderPages();
   multi-column containers, absolutely positioned boxes whose containing block is in the columns, and absolutely positioned
   boxes whose containing block is the container, placed by `top` or `bottom` (in the pages, from their offset in the
   container, as with pages of the same width). The page keeps the width of the previous one when the container has
-  `column-height`, or absolutely positioned boxes in its columns at their static position (no `top` nor `bottom`) or
+  absolutely positioned boxes in its columns at their static position (no `top` nor `bottom`) or
   anchored whose containing block is the container or outside of it, or when the break is inside a multi-column container of
   the columns.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in

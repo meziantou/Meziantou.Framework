@@ -82,6 +82,8 @@ jobs:
     needs: build_documentation
     runs-on: ubuntu-26.04
     permissions:
+      # Lists the artifacts of the run, to wait for the uploaded site before deploying it
+      actions: read
       pages: write
       id-token: write
     environment:
@@ -98,6 +100,11 @@ jobs:
         with:
           name: github-pages-${{ github.run_attempt }}
           path: artifacts/docs
+      # deploy-pages looks the artifact up right away, and the artifacts API often lists it only a few seconds after the
+      # upload: deploy-pages then reports that no artifact has this name, or the Pages deployment fails at once.
+      - uses: $/.github/actions/wait-for-artifact
+        with:
+          name: github-pages-${{ github.run_attempt }}
       # GitHub Pages sometimes keeps a deployment queued or syncing for more than 10 minutes, the maximum timeout of
       # deploy-pages, which then cancels it. A second deployment usually succeeds.
       - name: Deploy to GitHub Pages
@@ -111,6 +118,10 @@ jobs:
         with:
           name: github-pages-${{ github.run_attempt }}-retry
           path: artifacts/docs
+      - if: steps.deployment.outcome == 'failure'
+        uses: $/.github/actions/wait-for-artifact
+        with:
+          name: github-pages-${{ github.run_attempt }}-retry
       - name: Deploy to GitHub Pages (retry)
         id: deployment_retry
         if: steps.deployment.outcome == 'failure'

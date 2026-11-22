@@ -7,7 +7,8 @@ description: How the reader and the writer work, and the choices that keep readi
 
 The reader loads the data into a buffer and scans it in batches of records. It compares blocks of 16, 32 or 64
 characters or bytes at a time with the separator, the quote and the line terminators, using the widest SIMD instructions
-of the processor (AVX-512, AVX2, SSE or NEON), and stores where each record starts and where each of its columns ends.
+of the processor (AVX-512, AVX2, SSE or NEON; on Arm64, a block of 64 is four NEON vectors), and stores where each
+record starts and where each of its columns ends.
 Each character is compared once, and the separators are found from the result of the comparison without reading the
 data again. Reading a record then only takes the next entry of the batch, and reading a value only slices the buffer.
 A quoted value that contains doubled quotes is unescaped the first time it is read, into a buffer reused for every

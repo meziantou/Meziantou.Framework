@@ -1,4 +1,7 @@
 using Meziantou.Framework.Compression;
+using Meziantou.Framework.Email;
+using Meziantou.Framework.Email.Mapi;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.FileConversionTool.Archives;
 using Meziantou.Framework.FileConversionTool.Epub;
 using Meziantou.Framework.FileConversionTool.Inputs;
@@ -14,7 +17,7 @@ namespace Meziantou.Framework.FileConversionTool.Fuzz;
 /// <summary>
 /// The inputs the tool reads besides the image, PDF and archive files (fuzzed in their own projects): the output name
 /// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the URLs of the local files of HTML documents, the EPUB packages, the pages of the comic book archives and the copy of the entries of an
-/// archive to another format.
+/// archive to another format, the detection of the email formats and the conversions between the email message formats.
 /// </summary>
 public static class FileConversionFuzzTargets
 {
@@ -36,6 +39,14 @@ public static class FileConversionFuzzTargets
         "<img", " src=", "<svg", "<image", "xlink:href=", "<body>", "</body>", "<!DOCTYPE", "../", "%2e%2e/", "#", "image/png",
     ];
 
+    private static readonly string[] EmailTokens =
+    [
+        "From: ", "To: ", "Subject: ", "Date: ", "MIME-Version: 1.0", "Content-Type: multipart/mixed; boundary=b", "Content-Type: text/plain",
+        "Content-Transfer-Encoding: base64", "--b", "--b--", "\r\n", "\n", "\r\n\r\n", "From alice@example.com Thu Jan 15 09:00:00 2026\n", "!BDN", "SM", "SO",
+        "\x78\x9F\x3E\x22", "\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1", "__substg1.0_0037001F", "__properties_version1.0", "123       \n", "<?xml", "<plist",
+        "<key>flags</key>",
+    ];
+
     private static readonly string[] ArchiveTokens = ["PK\u0003\u0004", "PK\u0001\u0002", "PK\u0005\u0006", "7z\u00bc\u00af\u0027\u001c", "Rar!\u001a\u0007\u0001\u0000", "Rar!\u001a\u0007\u0000", "ustar", "ustar\u000000", "\u001f\u008b", "BZh9", "\u00fd7zXZ\u0000", "LZIP", ".png", ".jpg", "/", "__MACOSX/", "ComicInfo.xml"];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -51,7 +62,8 @@ public static class FileConversionFuzzTargets
         new("file-conversion-epub-package", EpubPackageTarget) { Seeds = GetArchiveSeeds, Dictionary = EpubTokens },
         new("file-conversion-comic", Comic) { Seeds = GetArchiveSeeds, Dictionary = ArchiveTokens },
         new("file-conversion-archive-copy", ArchiveCopy) { Seeds = GetArchiveSeeds, Dictionary = ArchiveTokens },
-        new("file-conversion-detect-format", DetectFormat) { Seeds = GetArchiveSeeds, Dictionary = [.. ArchiveTokens, "%PDF-", "mimetypeapplication/epub+zip", "\u0089PNG", "GIF89a", "RIFF", "WEBP"] },
+        new("file-conversion-detect-format", DetectFormat) { Seeds = GetDetectFormatSeeds, Dictionary = [.. ArchiveTokens, .. EmailTokens, "%PDF-", "mimetypeapplication/epub+zip", "\u0089PNG", "GIF89a", "RIFF", "WEBP"] },
+        new("file-conversion-email-message", EmailMessage) { Seeds = GetEmailSeeds, Dictionary = EmailTokens },
     ];
 
     private static void OutputTemplate(ReadOnlySpan<byte> data)
@@ -351,6 +363,11 @@ public static class FileConversionFuzzTargets
             FuzzAssert.Equal(format, FileFormat.FromArchiveType(format.ArchiveType, comic: false), "The detected archive format is not the format of its container");
         }
 
+        if (format is { Kind: FileFormatKind.Mailbox or FileFormatKind.EmailMessage })
+        {
+            FuzzAssert.True(EmailFormatDetector.Detect(data) is not EmailFileFormat.Unknown, "An email format is detected from content the email library does not recognize");
+        }
+
         // The extension of a comic book archive makes an archive a comic book archive, whatever its container
         stream.Position = 0;
         var comicFormat = Converter.DetectFormat(stream, "input.cbz");
@@ -358,6 +375,60 @@ public static class FileConversionFuzzTargets
         {
             FuzzAssert.Equal(format.ArchiveType, comicFormat.ArchiveType, "The container of a comic book archive is not the one of the archive");
         }
+    }
+
+    /// <summary>
+    /// Converts a message to EML, MSG and EMLX: an EML output has only CRLF line breaks, and the lines of an EML input are kept;
+    /// the MSG and EMLX outputs are read back.
+    /// </summary>
+    private static void EmailMessage(ReadOnlySpan<byte> data)
+    {
+        FileFormat? format;
+        using (var stream = new MemoryStream(data.ToArray(), writable: false))
+        {
+            format = Converter.DetectFormat(stream, "input.bin");
+        }
+
+        if (format is not { Kind: FileFormatKind.EmailMessage })
+            return;
+
+        var directory = FullPath.FromPath(Path.Combine(Path.GetTempPath(), "file-conversion-email-" + Guid.NewGuid().ToString("N")));
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var input = directory / "input.bin";
+            File.WriteAllBytes(input, data.ToArray());
+            var eml = directory / "output.eml";
+            var msg = directory / "output.msg";
+            var emlx = directory / "output.emlx";
+            try
+            {
+                EmailOutputWriter.WriteMessage(input, format, eml, FileFormat.Eml);
+                EmailOutputWriter.WriteMessage(input, format, msg, FileFormat.Msg);
+                EmailOutputWriter.WriteMessage(input, format, emlx, FileFormat.Emlx);
+            }
+            catch (EmailException)
+            {
+                // The documented error of a message that is not valid or uses a feature the library does not support
+                return;
+            }
+
+            var output = File.ReadAllBytes(eml);
+            FuzzAssert.Equal(output.AsSpan().Count((byte)'\n'), output.AsSpan().Count("\r\n"u8), "The EML output has a line break that is not CRLF");
+            if (format == FileFormat.Eml)
+            {
+                FuzzAssert.Equal(ToLines(data), ToLines(output), "The EML output does not have the lines of the EML input");
+            }
+
+            MsgFile.Load(msg);
+            EmlxFile.Load(emlx);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+
+        static string ToLines(ReadOnlySpan<byte> value) => Encoding.Latin1.GetString(value).ReplaceLineEndings("\n").TrimEnd('\n');
     }
 
     private static Archive? OpenAnyArchive(ReadOnlySpan<byte> data)
@@ -472,6 +543,20 @@ public static class FileConversionFuzzTargets
         yield return FuzzSeed.FromText("parent", "\u0003../images/a%20b.png#frag");
         yield return FuzzSeed.FromText("escape", "\u0002../../escape.xhtml");
         yield return FuzzSeed.FromText("absolute", "\u0002https://example.com/a.png");
+    }
+
+    private static IEnumerable<FuzzSeed> GetDetectFormatSeeds() => GetArchiveSeeds().Concat(GetEmailSeeds()).Append(new FuzzSeed("pst", TestFiles.CreatePst())).Append(new FuzzSeed("mbox", TestFiles.CreateMbox("First", "Second")));
+
+    private static IEnumerable<FuzzSeed> GetEmailSeeds()
+    {
+        yield return new FuzzSeed("eml", TestFiles.CreateEml("Hello"));
+        yield return new FuzzSeed("eml-lf", "From: alice@example.com\nSubject: Hello\n\nHello\n"u8.ToArray());
+        yield return new FuzzSeed("eml-multipart", "From: alice@example.com\r\nSubject: Parts\r\nMIME-Version: 1.0\r\nContent-Type: multipart/mixed; boundary=b\r\n\r\npreamble\r\n--b\r\nContent-Type: text/plain\r\n\r\nHello\r\n--b\r\nContent-Type: application/octet-stream\r\nContent-Transfer-Encoding: base64\r\n\r\nAAEC\r\n--b--\r\n"u8.ToArray());
+        yield return new FuzzSeed("msg", TestFiles.CreateMsg("Hello"));
+        yield return new FuzzSeed("tnef", TestFiles.CreateTnef("Hello"));
+        using var emlx = new MemoryStream();
+        EmlxFile.Save(MimeMessage.Load(TestFiles.CreateEml("Hello")), emlx, EmlxFlags.Read);
+        yield return new FuzzSeed("emlx", emlx.ToArray());
     }
 
     private static IEnumerable<FuzzSeed> GetArchiveSeeds()

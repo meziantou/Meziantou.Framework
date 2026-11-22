@@ -179,6 +179,67 @@ public sealed class MailboxConverterTests : IDisposable
         Assert.Equal([("Read", true), ("Unread", false)], copy.EnumerateMessages().Select(message => (message.Load().Subject!, message.Flags.HasFlag(MaildirFlags.Seen))).OrderBy(pair => pair.Item1, StringComparer.Ordinal));
     }
 
+    [Theory]
+    [InlineData("libyal-outlook.pst")]
+    [InlineData("tika-variousBodyTypes.pst")]
+    public void Pst_ToEml(string fileName)
+    {
+        var pstPath = Path.Combine(AppContext.BaseDirectory, "TestData", "Pst", fileName);
+        var eml = Path.Combine(_directory, "eml");
+        var result = MailboxConverter.Convert(pstPath, eml, MailboxFormat.Eml);
+        Assert.Empty(result.Errors);
+        Assert.Equal(DescribePst(pstPath, includeNonMail: false), DescribeMessageFiles(eml, "*.eml", path => Normalize(MimeMessage.Load(path).Subject)));
+        Assert.Equal(result.MessageCount, Directory.EnumerateFiles(eml, "*", SearchOption.AllDirectories).Count());
+    }
+
+    [Fact]
+    public void Mbox_ToEml_ByteForByte_FileNames()
+    {
+        // The messages are copied as they are, in a file named after the subject; "CON" is not a valid file name on Windows
+        var source = Path.Combine(_directory, "source");
+        Directory.CreateDirectory(source);
+        File.WriteAllText(Path.Combine(source, "Project.A"), CreateMboxMessage("Hello", header: null) + CreateMboxMessage("hello", header: null) + CreateMboxMessage("Re: v1.2 <draft>?", header: null) + CreateMboxMessage("CON", header: null) + CreateMboxMessage(" ", header: null));
+
+        var eml = Path.Combine(_directory, "eml");
+        var result = MailboxConverter.Convert(source, eml, MailboxFormat.Eml);
+        Assert.Equal(5, result.MessageCount);
+        var folder = Path.Combine(eml, "Project_A");
+        Assert.Equal(["Hello.eml", "Message.eml", "Re_ v1_2 _draft__.eml", "_CON.eml", "hello_2.eml"], Directory.EnumerateFiles(folder).Select(Path.GetFileName).Order(StringComparer.Ordinal));
+
+        var expected = MboxReader.ReadMessages(Path.Combine(source, "Project.A")).Select(message => Convert.ToHexString(message.Content.Span)).Order(StringComparer.Ordinal);
+        Assert.Equal(expected, Directory.EnumerateFiles(folder).Select(path => Convert.ToHexString(File.ReadAllBytes(path))).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void Pst_ToMsg_KeepsEveryItem()
+    {
+        // As in an Outlook data file, the contacts, appointments and distribution lists are kept
+        var pstPath = Path.Combine(AppContext.BaseDirectory, "TestData", "Pst", "java-libpst-dist-list.pst");
+        var msg = Path.Combine(_directory, "msg");
+        var result = MailboxConverter.Convert(pstPath, msg, MailboxFormat.Msg);
+        Assert.Empty(result.Errors);
+        Assert.Equal(0, result.SkippedItemCount);
+        Assert.Equal(DescribePst(pstPath, includeNonMail: true), DescribeMessageFiles(msg, "*.msg", path =>
+        {
+            var item = MsgFile.Load(path);
+            return Normalize(item.Subject) + " " + item.MessageClass;
+        }));
+    }
+
+    [Fact]
+    public void Maildir_ToMsg_ReadFlags()
+    {
+        var root = MaildirFolder.Create(Path.Combine(_directory, "source"));
+        root.AddMessage(CreateMessage("Read"), MaildirFlags.Seen);
+        root.AddMessage(CreateMessage("Unread"));
+        root.CreateFolder("Archive.2026").AddMessage(CreateMessage("Archived"));
+
+        var msg = Path.Combine(_directory, "msg");
+        MailboxConverter.Convert(root.FullPath, msg, MailboxFormat.Msg);
+        Assert.Equal([("Read", true), ("Unread", false)], Directory.EnumerateFiles(Path.Combine(msg, "Inbox")).Select(path => MsgFile.Load(path)).Select(item => (item.Subject!, item.IsRead)).OrderBy(pair => pair.Item1, StringComparer.Ordinal));
+        Assert.Equal("Archived", MsgFile.Load(Path.Combine(msg, "Archive", "2026", "Archived.msg")).Subject);
+    }
+
     [Fact]
     public void InvalidPaths()
     {
@@ -296,6 +357,20 @@ public sealed class MailboxConverterTests : IDisposable
                 using var message = parser.ParseMessage();
                 result.Add(folder + ": " + Normalize(message.Subject));
             }
+        }
+
+        result.Sort(StringComparer.Ordinal);
+        return result;
+    }
+
+    // The messages of each folder of a directory of message files: a subdirectory per folder
+    private static List<string> DescribeMessageFiles(string directory, string pattern, Func<string, string> describe)
+    {
+        var result = new List<string>();
+        foreach (var file in Directory.EnumerateFiles(directory, pattern, SearchOption.AllDirectories))
+        {
+            var folder = Path.GetRelativePath(directory, Path.GetDirectoryName(file)!).Replace(Path.DirectorySeparatorChar, '/');
+            result.Add(folder + ": " + describe(file));
         }
 
         result.Sort(StringComparer.Ordinal);

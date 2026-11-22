@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Email.Fuzz;
 /// <summary>
 /// The converter converts any mbox file: through a Maildir folder and back, the messages are the same, with the LF line breaks
 /// the mbox writer writes; to an
-/// Outlook data file, every message is written or reported in the errors, and the file is valid.
+/// Outlook data file, every message is written or reported in the errors, and the file is valid; to a directory of .eml
+/// files, every message is copied as it is to its own file; to a directory of .msg files, every file is a valid item.
 /// </summary>
 public static partial class EmailFuzzTargets
 {
@@ -47,9 +48,32 @@ public static partial class EmailFuzzTargets
             var pst = Path.Combine(directory, "mailbox.pst");
             var pstResult = MailboxConverter.Convert(source, pst, MailboxFormat.Pst);
             FuzzAssert.Equal(expected.Count, pstResult.MessageCount + pstResult.Errors.Count, "The Outlook data file does not have every message");
-            using var file = PstFile.Open(pst);
-            var issues = file.Validate();
-            FuzzAssert.True(issues.Count == 0, "The Outlook data file is not valid: " + string.Join("; ", issues));
+            using (var file = PstFile.Open(pst))
+            {
+                var issues = file.Validate();
+                FuzzAssert.True(issues.Count == 0, "The Outlook data file is not valid: " + string.Join("; ", issues));
+            }
+
+            // A directory of .eml files has the messages as they are, one per file
+            var eml = Path.Combine(directory, "eml");
+            var emlResult = MailboxConverter.Convert(source, eml, MailboxFormat.Eml);
+            FuzzAssert.Equal(messages.Count, emlResult.MessageCount + emlResult.Errors.Count, "The directory of .eml files does not have every message");
+            var files = Directory.EnumerateFiles(eml, "*", SearchOption.AllDirectories).ToList();
+            FuzzAssert.Equal(emlResult.MessageCount, files.Count, "The directory of .eml files does not have a file per message");
+            var sourceContents = messages.Select(Convert.ToHexString).ToList();
+            foreach (var path in files)
+            {
+                FuzzAssert.True(sourceContents.Remove(Convert.ToHexString(File.ReadAllBytes(path))), "An .eml file is not one of the messages of the mbox file");
+            }
+
+            // A directory of .msg files has a valid Outlook item per message
+            var msg = Path.Combine(directory, "msg");
+            var msgResult = MailboxConverter.Convert(source, msg, MailboxFormat.Msg);
+            FuzzAssert.Equal(messages.Count, msgResult.MessageCount + msgResult.Errors.Count, "The directory of .msg files does not have every message");
+            foreach (var path in Directory.EnumerateFiles(msg, "*", SearchOption.AllDirectories))
+            {
+                MsgFile.Load(path);
+            }
         }
         finally
         {

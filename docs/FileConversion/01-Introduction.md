@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: A command-line tool that converts images, PDF documents, EPUB books, Markdown and HTML documents, comic book archives and archives from one format to another.
+description: A command-line tool that converts images, PDF documents, EPUB books, Markdown and HTML documents, comic book archives, archives, mailboxes and email messages from one format to another.
 ---
 
 `Meziantou.Framework.FileConversion.Tool` is a .NET tool that converts files from one format to another:
@@ -15,6 +15,9 @@ description: A command-line tool that converts images, PDF documents, EPUB books
 - an archive to another archive format: zip, 7z, tar, .tar.gz, .tar.bz2, .tar.xz... and RAR as an input
 - several PDF documents to one PDF document, and a PDF document to one document per page
 - a PDF document to PDF/A, to a smaller, linearized or encrypted PDF document, or to a PDF document whose form fields are flattened
+- a mailbox to another mailbox format, with its folders: PST, OST, mbox (Thunderbird) and Maildir, such as PST to mbox
+- a mailbox to a folder of .eml or .msg files
+- an email message to another message format: EML, MSG, OFT, EMLX (Apple Mail) and TNEF (winmail.dat)
 
 Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--layout-page-size`.
 
@@ -28,8 +31,9 @@ Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--layout-
 - **Name the output files** when an input gives several files. See [Output file names](06-OutputNames.md).
 - **Convert Markdown and HTML** documents to each other, and to PDF documents or images. See [Markdown and HTML](08-MarkdownAndHtml.md).
 - **Convert archives** from one format to another, such as RAR to zip or zip to .tar.gz. See [Archives](07-Archives.md).
+- **Convert mailboxes and email messages**, such as PST to mbox, or MSG to EML. See [Mailboxes and email messages](09-Email.md).
 
-The [command reference](09-CommandReference.md) lists every option.
+The [command reference](10-CommandReference.md) lists every option.
 
 ## How it works
 
@@ -46,6 +50,8 @@ The format of the output decides how many files the tool writes:
   per input with `--per-input`, or to one file per page with `--per-page`.
 - **The other image formats** hold one image: each page gives one file.
 - **Archives** (zip, 7z, tar...) are not made of pages: each input archive gives one archive, with the same files.
+- **Mailboxes and email messages** are not made of pages either: each input mailbox gives one mailbox, or a folder of
+  message files, and each input message gives one message.
 
 The tool detects the format of an input from its content, so a file with a wrong extension is still read. The PDF
 pages are copied into a PDF output as they are, so their text stays text; they are rendered to images for the other

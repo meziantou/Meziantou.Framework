@@ -97,7 +97,9 @@ machines can build different icons. Pin the version to a tag of the iconify/icon
 builds.
 
 The cache is the `iconify` folder of the intermediate output folder (`obj/iconify`). Set the `IconifyCacheDirectory`
-property to share it between projects, and delete it to download the files again.
+property to share it between projects, and delete it to download the files again. A build downloads each file once,
+even when several target frameworks or projects use it, and never replaces a cached file, so the builds that run in
+parallel can share the cache.
 
 ### Make the generated types public
 

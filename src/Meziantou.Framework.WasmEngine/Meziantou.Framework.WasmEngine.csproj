@@ -19,6 +19,12 @@
     <Compile Include="../Meziantou.Framework.WebPlatform/WebAssembly/WasmModuleSections.cs" Link="Shared/WasmModuleSections.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The source generator of the typed exports and of [WasmImport], shipped in the package -->
+    <ProjectReference Include="../Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <None Include="$(OutputPath)/../../Meziantou.Framework.WasmEngine.SourceGenerator/$(Configuration.ToLowerInvariant())_netstandard2.0/Meziantou.Framework.WasmEngine.SourceGenerator.dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    <None Include="Meziantou.Framework.WasmEngine.targets" Pack="true" PackagePath="buildTransitive/Meziantou.Framework.WasmEngine.targets" />
+  </ItemGroup>
+  <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.SpecTests" />
     <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.Fuzz" />

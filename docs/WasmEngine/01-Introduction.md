@@ -25,6 +25,8 @@ AOT applications.
 - **Share memories between threads**, with the atomic wait and notify instructions. See
   [Shared memories](07-SharedMemories.md).
 - **Trace the compilations and the instantiations**, and collect metrics. See [Telemetry](08-Telemetry.md).
+- **Call the exports with strongly typed methods**, and write the host functions as .NET methods, with the source
+  generator of the package. See [Typed exports and imports](10-SourceGenerator.md).
 
 The engine passes the official WebAssembly test suite: see [Conformance](09-Conformance.md).
 

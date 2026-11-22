@@ -1,0 +1,16 @@
+<Project>
+  <!--
+    The source generator writes a class per AdditionalFiles item whose extension is .wasm or .wat:
+      <AdditionalFiles Include="fib.wat" />
+    Optional metadata: WasmClassName (name of the class, the file name followed by Module by default), WasmNamespace (the
+    RootNamespace of the project by default), WasmVisibility (internal by default, or public) and WasmEmbed (true by
+    default: the class embeds the module and has a Compile method; false to load the module at run time).
+  -->
+  <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="WasmClassName" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="WasmNamespace" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="WasmVisibility" />
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="WasmEmbed" />
+    <CompilerVisibleProperty Include="RootNamespace" />
+  </ItemGroup>
+</Project>

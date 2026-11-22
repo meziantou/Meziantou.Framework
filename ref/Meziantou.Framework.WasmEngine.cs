@@ -149,6 +149,14 @@ namespace Meziantou.Framework.WasmEngine
         public static bool operator !=(Meziantou.Framework.WasmEngine.WasmImport? left, Meziantou.Framework.WasmEngine.WasmImport? right) => throw null;
     }
 
+    [System.AttributeUsage(System.AttributeTargets.Method, AllowMultiple = true, Inherited = false)]
+    public sealed class WasmImportAttribute : System.Attribute
+    {
+        public string Module { get => throw null; }
+        public string Name { get => throw null; }
+        public WasmImportAttribute(string module, string name) { }
+    }
+
     public sealed class WasmImports
     {
         public Meziantou.Framework.WasmEngine.WasmImports Define(string module, Meziantou.Framework.WasmEngine.WasmInstance instance) => throw null;

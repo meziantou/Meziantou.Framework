@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Geo.Internals.Parquet;
 
 /// <summary>
 /// Decompresses the pages of a Parquet file. Snappy and LZ4 are decoded here; GZIP and Brotli by .NET, and Zstandard by
-/// .NET from .NET 11, else by the decoder of Meziantou.Framework.Imaging. LZO is not supported.
+/// .NET from .NET 11 except on the browser, else by the decoder of Meziantou.Framework.Imaging. LZO is not supported.
 /// </summary>
 internal static class ParquetCompression
 {

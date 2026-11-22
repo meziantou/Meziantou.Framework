@@ -15,9 +15,7 @@ internal static class FormatDetector
 
     private const long DefaultMaxMemoryUsage = 2L * 1024 * 1024 * 1024;
 
-#if !NET11_0_OR_GREATER
     private const long MaxZstandardDetectionLength = 64 * 1024 * 1024;
-#endif
 
     /// <summary>Detects the format of the outer layer: an archive, a compressed stream, or nothing known.</summary>
     public static (ArchiveFormat Format, CompressionFormat Compression) DetectOuter(ReadOnlySpan<byte> header)
@@ -146,11 +144,14 @@ internal static class FormatDetector
     public static bool IsCompressedTar(CompressionFormat compression, Stream seekableStream)
     {
         var position = seekableStream.Position;
-#if !NET11_0_OR_GREATER
-        // Before .NET 11, Zstandard data are decoded whole: a large file is taken for a tar archive rather than decoded twice
+        // Before .NET 11 and on the browser, Zstandard data are decoded whole: a large file is taken for a tar archive rather
+        // than decoded twice
+#if NET11_0_OR_GREATER
+        if (OperatingSystem.IsBrowser() && compression is CompressionFormat.Zstandard && seekableStream.Length - position > MaxZstandardDetectionLength)
+#else
         if (compression is CompressionFormat.Zstandard && seekableStream.Length - position > MaxZstandardDetectionLength)
-            return true;
 #endif
+            return true;
 
         try
         {

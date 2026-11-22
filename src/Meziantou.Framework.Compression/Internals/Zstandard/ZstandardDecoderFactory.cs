@@ -57,7 +57,7 @@ internal static class ZstandardDecoderFactory
         {
             var limit = (int)Math.Min(_maxMemoryUsage, Array.MaxLength);
             if (_outputLength > limit)
-                throw new InvalidDataException($"The Zstandard data decode to {_outputLength} bytes, more than the memory limit ({limit} bytes): before .NET 11, they are decoded in memory.");
+                throw new InvalidDataException($"The Zstandard data decode to {_outputLength} bytes, more than the memory limit ({limit} bytes): before .NET 11 and on the browser, they are decoded in memory.");
 
             using var compressed = new MemoryStream();
             var chunk = new byte[81920];
@@ -68,7 +68,7 @@ internal static class ZstandardDecoderFactory
                     break;
 
                 if (compressed.Length + read > limit)
-                    throw new InvalidDataException($"The Zstandard data are larger than the memory limit ({limit} bytes): before .NET 11, they are decoded in memory.");
+                    throw new InvalidDataException($"The Zstandard data are larger than the memory limit ({limit} bytes): before .NET 11 and on the browser, they are decoded in memory.");
 
                 compressed.Write(chunk, 0, read);
             }

@@ -717,6 +717,32 @@ public sealed class PdfReaderTests
     }
 
     [Fact]
+    public void AnObjectDoesNotDependOnTheObjectsLoadedBeforeIt()
+    {
+        // The font has a string that is not terminated: it is recovered up to the next object. Object 6 is not where its
+        // cross-reference entry says, so that loading it first scans the file. The offsets of the objects do not change
+        var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().Add(6, "<< /A 1 >>").ToArray());
+        var file = Encoding.Latin1.GetBytes(text.Replace("/Encoding /WinAnsiEncoding", "(Encoding /WinAnsiEncoding", StringComparison.Ordinal).Replace("6 0 obj", "6 0 xxx", StringComparison.Ordinal));
+
+        string ReadFont(params int[] objectNumbers)
+        {
+            var document = PdfDocument.Open(file);
+            foreach (var number in objectNumbers)
+            {
+                Assert.True(document.Objects.TryGetReference(number, out var reference));
+                _ = document.Objects.Resolve(reference);
+            }
+
+            Assert.True(document.Objects.TryGetReference(4, out var font));
+            return document.Objects.Resolve(font).ToString();
+        }
+
+        var first = ReadFont();
+        Assert.StartsWith("<</Type /Font", first, StringComparison.Ordinal);
+        Assert.Equal(first, ReadFont(6));
+    }
+
+    [Fact]
     public void Example_Diagnostics()
     {
         var text = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple().ToArray());

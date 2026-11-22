@@ -1,3 +1,4 @@
+using System.Text;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Pdf.Fuzz;
@@ -146,9 +147,29 @@ public static class PdfFuzzTargets
         {
             if (field.Values.Count > 0)
             {
-                FuzzAssert.True(names.Contains(field.Name), $"The field '{FuzzText.Escape(field.Name)}' is missing from the XFDF written");
+                FuzzAssert.True(names.Contains(ToXmlText(field.Name)), $"The field '{FuzzText.Escape(field.Name)}' is missing from the XFDF written");
             }
         }
+    }
+
+    /// <summary>Replaces the characters XML cannot hold with U+FFFD, as XFDF writes them.</summary>
+    private static string ToXmlText(string value)
+    {
+        var builder = new StringBuilder(value.Length);
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (char.IsHighSurrogate(value[i]) && i + 1 < value.Length && char.IsLowSurrogate(value[i + 1]))
+            {
+                builder.Append(value, i, 2);
+                i++;
+            }
+            else
+            {
+                builder.Append(char.IsSurrogate(value[i]) || !System.Xml.XmlConvert.IsXmlChar(value[i]) ? '\uFFFD' : value[i]);
+            }
+        }
+
+        return builder.ToString();
     }
 
     /// <summary>The input is a PDF file: when it can be read and written, the writer is deterministic and keeps its pages.</summary>
@@ -1010,18 +1031,19 @@ public static class PdfFuzzTargets
             flow.TableOfContents();
         }
 
-        if ((options & 32) != 0)
-        {
-            flow.Columns(2, 10, columns => AddBlocks(columns, lines));
-        }
-        else
-        {
-            AddBlocks(flow, lines);
-        }
-
         PdfDocument document;
         try
         {
+            // Table throws when the cells of a row do not fit the columns
+            if ((options & 32) != 0)
+            {
+                flow.Columns(2, 10, columns => AddBlocks(columns, lines));
+            }
+            else
+            {
+                AddBlocks(flow, lines);
+            }
+
             document = flow.Build();
         }
         catch (ArgumentException ex) when (ex.Message.Contains("do not fit", StringComparison.Ordinal))

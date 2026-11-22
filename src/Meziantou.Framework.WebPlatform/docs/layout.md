@@ -3346,11 +3346,13 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   under these conditions (`IsResumableColumns`; the rows of a fixed block size, `column-height`, continue with the
   block size of the row used in the previous pages, kept with the block size of the content box,
   `NestedColumns.ConsumedBlockSizes`; the absolutely positioned boxes placed by the outer
-  fragmentation context, `NestedColumns.OutOfFlow` and the absolutely positioned children of the container, must have the
-  container as containing block and a block-start or block-end inset, not anchored: they follow their offsets in the
-  container, the virtual first fragmentainer having the block size of the container used in the previous pages, while a
-  static position follows the layout of the container in the strip, which does not follow its columns laid out again; the
-  ones whose containing block is in the columns are placed in the columns, the virtual first column holding the content
+  fragmentation context, `NestedColumns.OutOfFlow` and the absolutely positioned children of the container, must not be
+  anchored: the ones placed by their block insets follow their offsets in their containing block, the virtual first
+  fragmentainer having the block size of the container used in the previous pages; the ones at their static position are in
+  the column of that position (`ColumnBreaker.TryGetNestedStaticPosition`, also for the boxes of the initial containing
+  block, `MapPlacedBox`; a static position in the virtual first column is at its start: that content is in the previous
+  pages), except when the containing block is the container, whose static position follows the layout of the container in
+  the strip, which does not follow its columns laid out again; the ones whose containing block is in the columns are placed in the columns, the virtual first column holding the content
   before the position; a nested multi-column container of the columns is a parallel flow, which
   the break must not cross; a container with a definite or maximum block size continues with the block size of its content box that remains,
   `BreakAnchor.ColumnsConsumedBlockSize` from `NestedColumns.ConsumedBlockSizes`, `NestedColumns.ResumeConsumedBlockSize`, and

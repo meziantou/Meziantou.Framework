@@ -112,6 +112,7 @@ public static partial class WebPlatformFuzzTargets
         ("<div style='columns: 2; position: relative'><div style='position: absolute; top: 250px; width: 20px; height: 100px'></div>", "<div id={0} style='{1}'>{2}</div>", "</div>"),
         ("<div style='columns: 2'><div style='height: 40px'></div><div style='columns: 2; column-gap: 0'>", "<div id={0} style='{1}'>{2}</div>", "</div></div>"),
         ("<div style='columns: 2'>", "<div id={0} style='{1}'>{2}</div><div style='position: absolute; width: 10px; height: 30px'></div>", "</div>"),
+        ("<div style='position: relative'><div style='columns: 2'>", "<div id={0} style='{1}'>{2}</div><div style='position: absolute; width: 10px; height: 30px'></div>", "</div></div>"),
 
         // (rows of columns of a fixed block size, which wrap or not)
         ("<div style='columns: 2; column-height: 120px'>", "<div id={0} style='{1}'>{2}</div>", "</div>"),

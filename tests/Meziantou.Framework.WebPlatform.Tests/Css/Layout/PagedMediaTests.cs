@@ -615,20 +615,41 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal([(1, new PhysicalRect(0, 0, 200, 100))], GetPageRects(pages, document.GetElementById("r6")!));
     }
 
-    [Fact]
-    public void Pages_MultiColumnContainerWithAnAbsolutelyPositionedBoxAtItsStaticPositionKeepsTheInlineSizeOfThePreviousPage()
+    [Theory]
+    [InlineData("", "", 1, "(0, (0, 200, 20x20))")]
+    [InlineData("", "", 7, "(1, (200, 0, 20x20))")]
+    [InlineData("<div style='position: relative'>", "</div>", 4, "(0, (100, 200, 20x20))")]
+    [InlineData("<div style='position: relative'>", "</div>", 9, "(1, (200, 200, 20x20))")]
+    public void Pages_MultiColumnContainerWithAnAbsolutelyPositionedBoxAtItsStaticPositionContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string wrapperStart, string wrapperEnd, int after, string expected)
     {
-        // The absolutely positioned box whose containing block is outside of the container is at its static position in its columns:
-        // the pages place it from the layout of the container, which does not follow its columns laid out again, so the columns of
-        // the second page keep the inline size of the first one
-        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>" + (i == 1 ? "<div id=p style='position: absolute; width: 20px; height: 20px'></div>" : "")));
+        // The absolutely positioned box whose containing block is outside of the container is at its static position in its
+        // columns, after the given box: in the columns of the first page (once), or in the columns of the second page, laid out
+        // again in its inline size
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>" + (i == after ? "<div id=p style='position: absolute; width: 20px; height: 20px'></div>" : "")));
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
-            <div style='columns: 2; column-gap: 0'>{{items}}</div>
+            {{wrapperStart}}<div style='columns: 2; column-gap: 0'>{{items}}</div>{{wrapperEnd}}
             """);
         using var session = document.BeginPrint(Options);
         var pages = session.GetPages();
-        Assert.Equal([(0, new PhysicalRect(0, 200, 20, 20))], GetPageRects(pages, document.GetElementById("p")!));
+        Assert.Equal(expected, string.Join(' ', GetPageRects(pages, document.GetElementById("p")!)));
+        Assert.Equal([(1, new PhysicalRect(0, 0, 200, 100))], GetPageRects(pages, document.GetElementById("r6")!));
+    }
+
+    [Fact]
+    public void Pages_MultiColumnContainerWithAnAbsolutelyPositionedChildAtItsStaticPositionKeepsTheInlineSizeOfThePreviousPage()
+    {
+        // The absolutely positioned box whose containing block is the container is at its static position in its columns: the
+        // pages place it from the layout of the container, which does not follow its columns laid out again, so the columns of the
+        // second page keep the inline size of the first one
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>" + (i == 7 ? "<div id=p style='position: absolute; width: 20px; height: 20px'></div>" : "")));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='columns: 2; column-gap: 0; position: relative'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(1, new PhysicalRect(100, 0, 20, 20))], GetPageRects(pages, document.GetElementById("p")!));
         Assert.Equal([(1, new PhysicalRect(0, 0, 100, 100))], GetPageRects(pages, document.GetElementById("r6")!));
     }
 

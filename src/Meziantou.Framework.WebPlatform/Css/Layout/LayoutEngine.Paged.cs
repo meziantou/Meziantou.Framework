@@ -446,6 +446,11 @@ internal sealed partial class LayoutEngine
             // content at its position
             (int Index, double Offset) MapPlacedBox(BoxFragment box, double position)
             {
+                // (a box at its static position in the columns of a nested multi-column container is in the column of its static
+                // position, see ColumnBreaker.TryGetNestedStaticPosition)
+                if (PageBreakRules.IsAtStaticBlockPosition(box) && flow.HasNestedColumns && ColumnBreaker.TryGetNestedStaticPosition(flow, box.Box, out var staticIndex, out var staticOffset, out _))
+                    return (staticIndex, staticOffset);
+
                 var anchor = box.Box.Style.Layout.Anchor;
                 if (segment is not null || PageBreakRules.IsAtStaticBlockPosition(box) || box.Box.Style.PositionBaseStyle is not null || anchor.UsesAnchorFunctions
                     || anchor.PositionArea is not null || anchor.PositionAnchor is PositionAnchorKind.Auto or PositionAnchorKind.Name or PositionAnchorKind.MatchParent)
@@ -1281,7 +1286,7 @@ internal sealed partial class LayoutEngine
         {
             foreach (var (candidate, _) in outOfFlow)
             {
-                if (!ReferenceEquals(candidate.ContainingBlock, container.Box) || !IsPlacedByBlockInsets(candidate.Box, container.WritingDirection))
+                if (!IsPlacedInColumns(candidate.Box, ReferenceEquals(candidate.ContainingBlock, container.Box), container.WritingDirection))
                     return false;
             }
         }
@@ -1289,17 +1294,20 @@ internal sealed partial class LayoutEngine
         var children = container.ChildrenSpan;
         for (var i = container.InFlowChildCount; i < children.Length; i++)
         {
-            if (children[i] is BoxFragment { Box.IsOutOfFlow: true } child && !IsPlacedByBlockInsets(child.Box, container.WritingDirection))
+            if (children[i] is BoxFragment { Box.IsOutOfFlow: true } child && !IsPlacedInColumns(child.Box, isInContainer: true, container.WritingDirection))
                 return false;
         }
 
         return true;
 
-        static bool IsPlacedByBlockInsets(ContainerBox box, WritingDirection writingDirection)
+        // (a box at its static position whose containing block is outside of the container is in the column of its static
+        // position, see ColumnBreaker.TryGetNestedStaticPosition; whose containing block is the container, it would follow the
+        // layout of the container in the strip)
+        static bool IsPlacedInColumns(ContainerBox box, bool isInContainer, WritingDirection writingDirection)
         {
             var layout = box.Style.Layout;
             var inset = layout.Insets.Inset;
-            return (!inset.Get(writingDirection.BlockStart).IsAuto || !inset.Get(writingDirection.BlockEnd).IsAuto)
+            return (!isInContainer || !inset.Get(writingDirection.BlockStart).IsAuto || !inset.Get(writingDirection.BlockEnd).IsAuto)
                 && box.Style.PositionBaseStyle is null && !layout.Anchor.UsesAnchorFunctions && layout.Anchor.PositionArea is null;
         }
     }

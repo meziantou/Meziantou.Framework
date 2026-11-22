@@ -31,6 +31,9 @@ on:
       - 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json'
       - 'eng/imaging/**'
       - 'tests/Meziantou.Framework.Imaging.InteropTests/*/corpus.json'
+      - 'eng/wasmengine/fetch-tests.cs'
+      - 'eng/wasmengine/corpus.mirror.json'
+      - 'tests/Meziantou.Framework.WasmEngine.SpecTests/testsuite.json'
 
 concurrency:
   group: ${{ github.workflow }}
@@ -68,6 +71,9 @@ jobs:
           - id: imaging
             command: dotnet run eng/imaging/fetch-tests.cs -- --publish
             lock: eng/imaging/corpus.mirror.json
+          - id: wasmengine
+            command: dotnet run eng/wasmengine/fetch-tests.cs -- --publish
+            lock: eng/wasmengine/corpus.mirror.json
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

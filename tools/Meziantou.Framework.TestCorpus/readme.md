@@ -11,12 +11,13 @@ that holds a snapshot of each pin. The fetchers read the snapshots first and fal
 | Meziantou.Framework.JavaScriptEngine | `dotnet run eng/javascriptengine/fetch-tests.cs` | `eng/javascriptengine/corpus.mirror.json` | [meziantou/test-corpus-javascriptengine](https://github.com/meziantou/test-corpus-javascriptengine) |
 | Meziantou.Framework.WebPlatform | `dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- fetch-tests` | `eng/webplatform/corpus.mirror.json` | [meziantou/test-corpus-webplatform](https://github.com/meziantou/test-corpus-webplatform) |
 | Meziantou.Framework.Imaging | `dotnet run eng/imaging/fetch-tests.cs` | `eng/imaging/corpus.mirror.json` | [meziantou/test-corpus-imaging](https://github.com/meziantou/test-corpus-imaging) |
+| Meziantou.Framework.WasmEngine | `dotnet run eng/wasmengine/fetch-tests.cs` | `eng/wasmengine/corpus.mirror.json` | [meziantou/test-corpus-wasmengine](https://github.com/meziantou/test-corpus-wasmengine) |
 
 ## Snapshots
 
 A snapshot is a git commit without parent, tagged `<name>/<snapshot>` in the mirror repository:
 
-- **A git suite** (test262, web-platform-tests, the PDF corpora, ...): the files of the pinned paths of the upstream
+- **A git suite** (test262, web-platform-tests, the PDF corpora, the WebAssembly test suite, ...): the files of the pinned paths of the upstream
   commit, with their modes. A snapshot of web-platform-tests also has the manifest of its commit (`MANIFEST.json.gz`).
 - **Downloaded files** (npm tarballs, the JPEG XL and JPEG-LS conformance files): the files, named by their hash.
 
@@ -56,6 +57,7 @@ dotnet run eng/pdf/fetch-tests.cs -- --publish
 dotnet run eng/javascriptengine/fetch-tests.cs -- --publish
 dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- fetch-tests --publish
 dotnet run eng/imaging/fetch-tests.cs -- --publish
+dotnet run eng/wasmengine/fetch-tests.cs -- --publish
 ```
 
 Pushing requires the right to write to the mirror repository. A ruleset of each mirror repository blocks moving and

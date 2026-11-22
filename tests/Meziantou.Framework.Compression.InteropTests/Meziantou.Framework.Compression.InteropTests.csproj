@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Meziantou.Prebuilt" Version="3.17.1" />
+    <PackageReference Include="Meziantou.Prebuilt" Version="3.17.4" />
   </ItemGroup>
 
   <ItemGroup>

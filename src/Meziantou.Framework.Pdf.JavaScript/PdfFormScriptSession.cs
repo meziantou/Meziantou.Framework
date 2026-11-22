@@ -470,7 +470,7 @@ public sealed class PdfFormScriptSession : IDisposable
 
     private static string ReadResource(string name)
     {
-        using var stream = typeof(PdfFormScriptSession).Assembly.GetManifestResourceStream("Meziantou.Framework.Pdf.JavaScript." + name) ?? throw new InvalidOperationException($"The resource {name} is missing");
+        using var stream = CompressedResource.TryOpen(typeof(PdfFormScriptSession).Assembly, "Meziantou.Framework.Pdf.JavaScript." + name) ?? throw new InvalidOperationException($"The resource {name} is missing");
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

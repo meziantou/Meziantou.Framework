@@ -17,7 +17,7 @@ internal static class Gs1SyntaxDictionary
 
     private static FrozenDictionary<string, Gs1DictionaryEntry> Load()
     {
-        using var stream = typeof(Gs1SyntaxDictionary).Assembly.GetManifestResourceStream(ResourceName) ?? throw new InvalidOperationException($"The resource '{ResourceName}' is missing.");
+        using var stream = CompressedResource.Open(typeof(Gs1SyntaxDictionary).Assembly, ResourceName);
         using var reader = new StreamReader(stream, Encoding.UTF8);
         return Parse(reader.ReadToEnd());
     }

@@ -27,10 +27,11 @@ obligation to support the use of the AFM files.
 ## Adobe Glyph List
 
 - Project: AGL & AGLFN, Adobe Type Tools
-- Source: <https://github.com/adobe-type-tools/agl-aglfn> (commit 4036a9ca80a62f64f9de4f7321a9a045ad0ecfd6), the same file
-  as `src/Meziantou.Framework.Pdf/Fonts/GlyphList/glyphlist.txt`
-- Files: `Type1/GlyphList/glyphlist.txt`, embedded in the assembly; the license is `Type1/GlyphList/LICENSE.md`
-- Used for: the character map of Type 1 fonts, from the names of their glyphs
+- Source: <https://github.com/adobe-type-tools/agl-aglfn> (commit 4036a9ca80a62f64f9de4f7321a9a045ad0ecfd6)
+- Files: `Type1/GlyphList/glyphlist.txt` and `Type1/GlyphList/zapfdingbats.txt`, embedded in the assembly; the license is
+  `Type1/GlyphList/LICENSE.md`
+- Used for: `AdobeGlyphList`, the characters of glyph names (the character map of Type 1 fonts, and the text of the simple
+  fonts of Meziantou.Framework.Pdf and of the AFM metrics of Meziantou.Framework.VectorGraphics)
 
 ```
 Copyright 2002-2019 Adobe (http://www.adobe.com/).

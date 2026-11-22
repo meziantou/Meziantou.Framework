@@ -11,6 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../Meziantou.Framework/ExecutableFinder.cs" Link="Utils/ExecutableFinder.cs" />
-    <EmbeddedResource Include="bootstrap.mjs" LogicalName="Meziantou.Framework.NodeJs.bootstrap.mjs" />
+    <EmbeddedResource Include="bootstrap.mjs" LogicalName="Meziantou.Framework.NodeJs.bootstrap.mjs" Compression="Deflate" />
+    <Compile Include="../../common/CompressedResource.cs" Link="Utils/CompressedResource.cs" />
   </ItemGroup>
 </Project>

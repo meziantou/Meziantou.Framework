@@ -1,0 +1,75 @@
+<Project>
+  <!--
+    Compresses the EmbeddedResource items that set Compression="Deflate", so that the assembly carries the compressed
+    content: the length of the content (32-bit little-endian), then the content compressed with raw Deflate. The sources
+    stay readable in the repository; common/CompressedResource.cs reads the resources. Deflate, not Brotli or Zstandard,
+    because WebAssembly (browser) only decompresses Deflate. An item must set LogicalName: the compressed file lives in
+    the intermediate directory, and the name of the resource must not depend on it.
+
+      <EmbeddedResource Include="Data/file.txt" LogicalName="My.Library.file.txt" Compression="Deflate" />
+  -->
+
+  <UsingTask TaskName="DeflateCompressFiles" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Sources ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+      <Destinations ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System.IO" />
+      <Using Namespace="System.IO.Compression" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        // CompressionLevel.SmallestSize (3) is not part of netstandard, which the task is compiled against
+        var level = Enum.IsDefined(typeof(CompressionLevel), 3) ? (CompressionLevel)3 : CompressionLevel.Optimal;
+        for (var i = 0; i < Sources.Length; i++)
+        {
+            var content = File.ReadAllBytes(Sources[i].ItemSpec);
+            var destination = Destinations[i].ItemSpec;
+            Directory.CreateDirectory(Path.GetDirectoryName(destination));
+            using (var output = new MemoryStream())
+            {
+                output.WriteByte((byte)content.Length);
+                output.WriteByte((byte)(content.Length >> 8));
+                output.WriteByte((byte)(content.Length >> 16));
+                output.WriteByte((byte)(content.Length >> 24));
+                using (var deflate = new DeflateStream(output, level, leaveOpen: true))
+                {
+                    deflate.Write(content, 0, content.Length);
+                }
+
+                File.WriteAllBytes(destination, output.ToArray());
+            }
+        }
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="_PrepareCompressedEmbeddedResources">
+    <ItemGroup>
+      <_CompressedEmbeddedResource Include="@(EmbeddedResource)" Condition="'%(EmbeddedResource.Compression)' != ''">
+        <CompressedPath>$([MSBuild]::NormalizePath('$(MSBuildProjectDirectory)', '$(IntermediateOutputPath)', 'compressed-resources', '%(EmbeddedResource.LogicalName)'))</CompressedPath>
+      </_CompressedEmbeddedResource>
+    </ItemGroup>
+    <Error Condition="'@(_CompressedEmbeddedResource)' != '' AND '%(_CompressedEmbeddedResource.Compression)' != 'Deflate'" Text="The embedded resource '%(_CompressedEmbeddedResource.Identity)' sets Compression to '%(_CompressedEmbeddedResource.Compression)': the only compression is Deflate." />
+    <Error Condition="'@(_CompressedEmbeddedResource)' != '' AND '%(_CompressedEmbeddedResource.LogicalName)' == ''" Text="The compressed embedded resource '%(_CompressedEmbeddedResource.Identity)' must set LogicalName." />
+  </Target>
+
+  <!--
+    Only the resources whose source changed are compressed again (the inputs and outputs correspond one to one). The
+    condition of a target is evaluated before the targets it depends on run: CompressEmbeddedResources runs
+    _PrepareCompressedEmbeddedResources first
+  -->
+  <Target Name="_CompressEmbeddedResourceFiles"
+          Condition="'@(_CompressedEmbeddedResource)' != ''"
+          Inputs="@(_CompressedEmbeddedResource)"
+          Outputs="@(_CompressedEmbeddedResource->'%(CompressedPath)')">
+    <DeflateCompressFiles Sources="@(_CompressedEmbeddedResource)" Destinations="@(_CompressedEmbeddedResource->'%(CompressedPath)')" />
+  </Target>
+
+  <Target Name="CompressEmbeddedResources" BeforeTargets="AssignTargetPaths" DependsOnTargets="_PrepareCompressedEmbeddedResources;_CompressEmbeddedResourceFiles">
+    <ItemGroup Condition="'@(_CompressedEmbeddedResource)' != ''">
+      <EmbeddedResource Remove="@(_CompressedEmbeddedResource)" />
+      <EmbeddedResource Include="@(_CompressedEmbeddedResource->'%(CompressedPath)')" WithCulture="false" Type="Non-Resx" />
+      <FileWrites Include="@(_CompressedEmbeddedResource->'%(CompressedPath)')" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -41,8 +41,12 @@
     <EmbeddedResource Include="Scripting\WebIdl\WebCrypto.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.WebCrypto.js" />
     <EmbeddedResource Include="Scripting\WebIdl\CacheStorage.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.CacheStorage.js" />
     <EmbeddedResource Include="Scripting\WebIdl\Observable.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Observable.js" />
-    <!-- The bundled fonts (see Css/Fonts/Bundled/README.md); their licenses are distributed with the package -->
-    <EmbeddedResource Include="Css\Fonts\Bundled\*.ttf;Css\Fonts\Bundled\*.woff2" LogicalName="Meziantou.Framework.WebPlatform.Css.Fonts.Bundled.%(Filename)%(Extension)" />
+    <!-- The bundled fonts (see Css/Fonts/Bundled/README.md); their licenses are distributed with the package. The build
+         compresses the TrueType fonts; the WOFF2 fonts are compressed already -->
+    <EmbeddedResource Include="Css\Fonts\Bundled\*.ttf" LogicalName="Meziantou.Framework.WebPlatform.Css.Fonts.Bundled.%(Filename)%(Extension)" Compression="Deflate" />
+    <EmbeddedResource Include="Css\Fonts\Bundled\*.woff2" LogicalName="Meziantou.Framework.WebPlatform.Css.Fonts.Bundled.%(Filename)%(Extension)" />
+    <!-- Reads the resources the build compresses (Compression="Deflate") -->
+    <Compile Include="../../common/CompressedResource.cs" Link="Utils/CompressedResource.cs" />
     <None Include="Css\Fonts\Bundled\*.txt;Css\Fonts\Bundled\README.md" Pack="true" PackagePath="fonts/%(Filename)%(Extension)" />
     <!-- The encoding detector is a port of chardetng (Apache-2.0 or MIT license): its notice is distributed with the package -->
     <None Include="Encodings\chardetng-COPYRIGHT.txt" Pack="true" PackagePath="licenses/%(Filename)%(Extension)" />

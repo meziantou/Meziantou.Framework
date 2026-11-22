@@ -18,8 +18,9 @@
 
   <ItemGroup>
     <!-- The functions of the viewers (AF functions, util) and the objects of the form the scripts see -->
-    <EmbeddedResource Include="Prelude.js" LogicalName="Meziantou.Framework.Pdf.JavaScript.Prelude.js" />
-    <EmbeddedResource Include="FormApi.js" LogicalName="Meziantou.Framework.Pdf.JavaScript.FormApi.js" />
+    <EmbeddedResource Include="Prelude.js" LogicalName="Meziantou.Framework.Pdf.JavaScript.Prelude.js" Compression="Deflate" />
+    <EmbeddedResource Include="FormApi.js" LogicalName="Meziantou.Framework.Pdf.JavaScript.FormApi.js" Compression="Deflate" />
+    <Compile Include="../../common/CompressedResource.cs" Link="Utils/CompressedResource.cs" />
   </ItemGroup>
 
   <ItemGroup>

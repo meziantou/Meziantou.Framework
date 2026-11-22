@@ -16,7 +16,7 @@ namespace Meziantou.Framework.Fonts;
 /// transformed by the rest of the matrix (the slant of an oblique font made with its matrix).
 /// </description></item>
 /// <item><description>
-/// The character map gives the glyph of each name of one character (<see cref="Type1GlyphNames"/>); a character two
+/// The character map gives the glyph of each name of one character (<see cref="AdobeGlyphList.TryGetCodePoint"/>); a character two
 /// glyphs have is the one of the first glyph. The encoding of the font is the encoding of the CFF table.
 /// </description></item>
 /// <item><description>
@@ -229,7 +229,7 @@ internal static class Type1FontConverter
             // The character map
             for (var glyph = 1; glyph < glyphNames.Count; glyph++)
             {
-                if (Type1GlyphNames.TryGetCodePoint(glyphNames[glyph], out var codePoint))
+                if (AdobeGlyphList.TryGetCodePoint(glyphNames[glyph], out var codePoint))
                 {
                     CharacterMap.TryAdd(codePoint, glyph);
                 }

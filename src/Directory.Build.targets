@@ -92,4 +92,7 @@
     <Message Importance="High" Text="Public API verify command: $(_PublicApiGeneratorCommand)" />
     <Exec Command="$(_PublicApiGeneratorCommand)" />
   </Target>
+
+  <!-- The embedded resources that set Compression="Deflate" are compressed by the build -->
+  <Import Project="$(MSBuildThisFileDirectory)../eng/CompressedEmbeddedResources.targets" />
 </Project>

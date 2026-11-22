@@ -1,4 +1,5 @@
 using System.Text;
+using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Parsing;
 
@@ -396,7 +397,7 @@ internal sealed class CMap
                             var text = operands[i + 1] switch
                             {
                                 PdfString destination => DecodeUtf16(destination.Span),
-                                PdfName name => Fonts.GlyphList.ToUnicode(name.Value),
+                                PdfName name => AdobeGlyphList.ToUnicode(name.Value),
                                 _ => null,
                             };
                             if (text is not null)

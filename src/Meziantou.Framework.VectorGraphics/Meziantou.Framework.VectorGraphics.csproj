@@ -12,12 +12,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- The Adobe Glyph List (BSD-3-Clause, see THIRD-PARTY-NOTICES.md): maps characters to the glyph names of the AFM metrics -->
-    <EmbeddedResource Include="../Meziantou.Framework.Pdf/Fonts/GlyphList/glyphlist.txt" Link="Text/glyphlist.txt" LogicalName="Meziantou.Framework.VectorGraphics.glyphlist.txt" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <!-- The AFM metrics of Helvetica, and the shaper of FontFaceTextMeasurer; brings Meziantou.Framework.Unicode -->
+    <!-- The AFM metrics of Helvetica, the Adobe Glyph List, and the shaper of FontFaceTextMeasurer; brings Meziantou.Framework.Unicode -->
     <ProjectReference Include="../Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
   </ItemGroup>
 

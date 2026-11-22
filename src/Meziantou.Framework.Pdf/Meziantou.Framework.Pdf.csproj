@@ -42,8 +42,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The Adobe Glyph List and the list of ITC Zapf Dingbats (BSD-3-Clause, see Fonts/GlyphList/LICENSE.md) -->
-    <EmbeddedResource Include="Fonts\GlyphList\*.txt" LogicalName="Meziantou.Framework.Pdf.GlyphList.%(Filename).txt" />
     <!-- The fonts that replace the standard fonts in the renderer: Liberation, subset by eng/pdf/update-substitution-fonts.cs -->
     <EmbeddedResource Include="Rendering\Fonts\Substitution\*.woff2" LogicalName="Meziantou.Framework.Pdf.Rendering.Fonts.%(Filename).woff2" />
   </ItemGroup>

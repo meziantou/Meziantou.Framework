@@ -113,7 +113,7 @@ internal static class RenderFontFactory
             return null;
 
         var isZapfDingbats = request.StandardName == "ZapfDingbats";
-        return CreateSubstitute(decoder, face, code => names(code) is { } name ? GlyphList.ToUnicode(name, isZapfDingbats) : decoder.GetText(code) ?? (code < 256 ? ((char)code).ToString() : null), cache);
+        return CreateSubstitute(decoder, face, code => names(code) is { } name ? AdobeGlyphList.ToUnicode(name, isZapfDingbats) : decoder.GetText(code) ?? (code < 256 ? ((char)code).ToString() : null), cache);
     }
 
     /// <summary>Selects the glyph of a code of a simple TrueType font (9.6.5.4): through the (3,1) subtable by the character of the glyph name, or through the (3,0) and (1,0) subtables by the code.</summary>
@@ -123,7 +123,7 @@ internal static class RenderFontFactory
         var isSymbolic = (flags & Symbolic) != 0;
         if (name is not null && (hasEncoding || !isSymbolic))
         {
-            if (program.HasCmap(3, 1) && GlyphList.ToUnicode(name) is { Length: > 0 } text)
+            if (program.HasCmap(3, 1) && AdobeGlyphList.ToUnicode(name) is { Length: > 0 } text)
             {
                 var glyph = program.MapCharacter(3, 1, char.ConvertToUtf32(text, 0));
                 if (glyph != 0)

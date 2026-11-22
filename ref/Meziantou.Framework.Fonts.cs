@@ -7,6 +7,12 @@
 
 namespace Meziantou.Framework.Fonts
 {
+    public static class AdobeGlyphList
+    {
+        public static string? ToUnicode(string name, bool zapfDingbats = false) => throw null;
+        public static bool TryGetCodePoint(string name, out int codePoint) => throw null;
+    }
+
     public readonly struct AfmBox : System.IEquatable<Meziantou.Framework.Fonts.AfmBox>
     {
         public double Bottom { get => throw null; init { } }

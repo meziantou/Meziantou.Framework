@@ -71,11 +71,82 @@ public static class Type1FuzzTargets
         "\x0c\x00", "\x0c\x01", "\x0c\x02", "\x0c\x06", "\x0c\x07", "\x0c\x0c", "\x0c\x10", "\x0c\x11", "\x0c\x21",
     ];
 
+    // The parts of glyph names: the prefixes of the Adobe Glyph List Specification, the separators of ligatures and
+    // suffixes, and names of the lists
+    private static readonly string[] GlyphNameTokens =
+    [
+        "uni", "u", "_", ".", ".sc", ".alt", "0041", "20AC", "D800", "DFFF", "1F600", "10FFFF", "110000",
+        "A", "a", "f", "i", "eacute", "f_f_i", "dalethatafpatah", "a1", "a100", "g42", "space", ".notdef",
+    ];
+
+    // The names of the unit tests of AdobeGlyphList (tests/Meziantou.Framework.Imaging.Tests/FontTests.cs)
+    private static readonly string[] GlyphNameSeeds =
+    [
+        "A", "eacute", "uni20AC", "uni20ac", "uni0041uni0042", "uni00410042", "u1F600", "u10FFFF", "u110000", "uD800",
+        "f_f_i", "f_i.alt", "a.sc", "g42", "uniD800", "dalethatafpatah", "a1", "",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("fonts-type1", LoadFile) { Seeds = GetFileSeeds, Dictionary = FileTokens },
         new("fonts-type1-charstrings", LoadCharstrings) { Seeds = GetCharstringSeeds, Dictionary = CharstringTokens },
+        new("fonts-glyph-names", GlyphNames) { Seeds = GetGlyphNameSeeds, Dictionary = GlyphNameTokens },
     ];
+
+    /// <summary>
+    /// Gets the characters of a glyph name with <see cref="AdobeGlyphList"/>: the first byte says whether the font is ITC
+    /// Zapf Dingbats, the rest is the name. The text is not empty and is valid UTF-16, a name of one character gives the
+    /// same character with both methods, and a suffix after a period does not change the text of a name.
+    /// </summary>
+    private static void GlyphNames(ReadOnlySpan<byte> data)
+    {
+        var zapfDingbats = (FuzzInput.ReadByte(ref data) & 1) != 0;
+        var name = FuzzInput.ReadText(data);
+        var text = AdobeGlyphList.ToUnicode(name, zapfDingbats);
+        if (text is not null)
+        {
+            FuzzAssert.True(text.Length > 0, "The text of a glyph name is not empty.");
+            FuzzAssert.True(IsValidUtf16(text), "The text of a glyph name is valid UTF-16.");
+        }
+
+        if (AdobeGlyphList.TryGetCodePoint(name, out var codePoint))
+        {
+            FuzzAssert.True(Rune.IsValid(codePoint), "The character of a glyph name is a Unicode scalar value.");
+            FuzzAssert.Equal(char.ConvertFromUtf32(codePoint), AdobeGlyphList.ToUnicode(name), "A name of one character gives that character as its text.");
+        }
+
+        // The names of the lists have no period: a suffix is a variant of the same characters
+        if (name.Length > 0 && !name.Contains('.', StringComparison.Ordinal))
+        {
+            FuzzAssert.Equal(text, AdobeGlyphList.ToUnicode(name + ".fuzz", zapfDingbats), "A suffix does not change the text of a name.");
+        }
+    }
+
+    private static bool IsValidUtf16(string text)
+    {
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
+            {
+                i++;
+            }
+            else if (char.IsSurrogate(text[i]))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static IEnumerable<FuzzSeed> GetGlyphNameSeeds()
+    {
+        foreach (var name in GlyphNameSeeds)
+        {
+            yield return FuzzSeed.FromText("name-" + name, [0], name);
+            yield return FuzzSeed.FromText("zapf-" + name, [1], name);
+        }
+    }
 
     /// <summary>Loads a PFA or PFB file: the first byte says whether the metrics of an AFM file are given.</summary>
     private static void LoadFile(ReadOnlySpan<byte> data)

@@ -29,11 +29,10 @@ public sealed class AfmTextMeasurer : ITextMeasurer
 
     private AfmTextMeasurer()
     {
-        var glyphList = LoadGlyphList();
-        _regular = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica")!, glyphList);
-        _bold = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica-Bold")!, glyphList);
-        _italic = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica-Oblique")!, glyphList);
-        _boldItalic = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica-BoldOblique")!, glyphList);
+        _regular = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica")!);
+        _bold = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica-Bold")!);
+        _italic = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica-Oblique")!);
+        _boldItalic = new FontMetrics(AfmFontMetrics.GetStandardFont("Helvetica-BoldOblique")!);
     }
 
     /// <summary>Gets the measurer. It is thread-safe.</summary>
@@ -57,31 +56,6 @@ public sealed class AfmTextMeasurer : ITextMeasurer
         return new TextMetrics(metrics.MeasureUnits(text) * scale, metrics.Ascender * scale, metrics.Descender * scale);
     }
 
-    private static Dictionary<string, int> LoadGlyphList()
-    {
-        using var stream = typeof(AfmTextMeasurer).Assembly.GetManifestResourceStream("Meziantou.Framework.VectorGraphics.glyphlist.txt")
-            ?? throw new InvalidOperationException("The glyph list is not embedded in the assembly.");
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-        var result = new Dictionary<string, int>(StringComparer.Ordinal);
-        while (reader.ReadLine() is { } line)
-        {
-            if (line.Length is 0 || line[0] is '#')
-                continue;
-
-            // name;XXXX, or name;XXXX YYYY for a sequence of characters, which a single glyph cannot measure
-            var separator = line.IndexOf(';', StringComparison.Ordinal);
-            if (separator < 0 || line.IndexOf(' ', separator, StringComparison.Ordinal) >= 0)
-                continue;
-
-            if (int.TryParse(line.AsSpan(separator + 1), NumberStyles.AllowHexSpecifier, CultureInfo.InvariantCulture, out var codePoint))
-            {
-                result.TryAdd(line[..separator], codePoint);
-            }
-        }
-
-        return result;
-    }
-
     private sealed class FontMetrics
     {
         // The printable ASCII characters, from U+0020 to U+007E, which most texts are made of
@@ -96,7 +70,7 @@ public sealed class AfmTextMeasurer : ITextMeasurer
         private readonly double[] _asciiWidths = new double[AsciiCount];
         private readonly float[]? _asciiKerning;
 
-        public FontMetrics(AfmFontMetrics font, Dictionary<string, int> glyphList)
+        public FontMetrics(AfmFontMetrics font)
         {
             _font = font;
             foreach (var character in font.CharacterMetrics)
@@ -104,7 +78,7 @@ public sealed class AfmTextMeasurer : ITextMeasurer
                 if (character.Name is null || character.Width is not { } width)
                     continue;
 
-                if (glyphList.TryGetValue(character.Name, out var codePoint))
+                if (AdobeGlyphList.TryGetCodePoint(character.Name, out var codePoint))
                 {
                     _characters.TryAdd(codePoint, (character.Name, width.X));
                 }

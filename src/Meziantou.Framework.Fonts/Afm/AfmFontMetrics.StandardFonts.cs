@@ -54,5 +54,11 @@ public sealed partial class AfmFontMetrics
     }
 
     /// <summary>Opens a file of the embedded AFM files of the standard fonts (<c>Helvetica.afm</c>, <c>MustRead.html</c>), or returns <see langword="null"/>.</summary>
-    internal static Stream? OpenStandardFontFile(string fileName) => typeof(AfmFontMetrics).Assembly.GetManifestResourceStream("Meziantou.Framework.Fonts.Afm." + fileName);
+    /// <remarks>The build compresses the AFM files (see the project file), not <c>MustRead.html</c>.</remarks>
+    internal static Stream? OpenStandardFontFile(string fileName)
+    {
+        var assembly = typeof(AfmFontMetrics).Assembly;
+        var name = "Meziantou.Framework.Fonts.Afm." + fileName;
+        return fileName.EndsWith(".afm", StringComparison.Ordinal) ? CompressedResource.TryOpen(assembly, name) : assembly.GetManifestResourceStream(name);
+    }
 }

@@ -34,7 +34,7 @@ public static class BarcodeFonts
 
     private static SceneFontCollection Load(string fileName)
     {
-        using var stream = typeof(BarcodeFonts).Assembly.GetManifestResourceStream("Meziantou.Framework.Barcodes.Fonts." + fileName)
+        using var stream = CompressedResource.TryOpen(typeof(BarcodeFonts).Assembly, "Meziantou.Framework.Barcodes.Fonts." + fileName)
             ?? throw new InvalidOperationException($"The font '{fileName}' is not embedded in the assembly.");
         return new SceneFontCollection(SceneFontFace.Load(stream));
     }

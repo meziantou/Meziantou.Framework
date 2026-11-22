@@ -252,7 +252,7 @@ internal sealed partial class WatParser
                 {
                     index++;
                     writer.Byte(0x07);
-                    writer.U32((uint)ResolveIndex(items[index++], _tagSpace));
+                    writer.U32((uint)ResolveIndex(ExpectOperand(items, ref index, "a tag", node), _tagSpace));
                     EncodePlainBody(items, ref index, context, writer);
                 }
 
@@ -268,7 +268,7 @@ internal sealed partial class WatParser
                 {
                     index++;
                     writer.Byte(0x18);
-                    writer.U32((uint)ResolveLabel(items[index++], context));
+                    writer.U32((uint)ResolveLabel(ExpectOperand(items, ref index, "a label", node), context));
                     return;
                 }
 
@@ -291,6 +291,15 @@ internal sealed partial class WatParser
             throw new WatException("expected " + keyword, index < items.Count ? items[index].Position : start.Position);
 
         index++;
+    }
+
+    /// <summary>Reads the immediate that follows a keyword (the tag of catch, the label of delegate): the text can end before it.</summary>
+    private static SNode ExpectOperand(List<SNode> items, ref int index, string expected, SNode start)
+    {
+        if (index >= items.Count || items[index].IsList)
+            throw new WatException("expected " + expected, index < items.Count ? items[index].Position : start.Position);
+
+        return items[index++];
     }
 
     private void EncodePlainBody(List<SNode> items, ref int index, FunctionContext context, ByteWriter writer)
@@ -445,10 +454,18 @@ internal sealed partial class WatParser
                 {
                     var clause = items[index++];
                     var clauseItems = clause.Items ?? throw new WatException("malformed try", clause.Position);
+
+                    // (delegate label) ends the try: no clause follows it
+                    if (delegated)
+                        throw new WatException("malformed try: a clause follows delegate", clause.Position);
+
                     var clauseIndex = 1;
                     switch (clause.Head)
                     {
                         case "catch":
+                            if (clauseItems.Count < 2)
+                                throw new WatException("malformed catch: expected a tag", clause.Position);
+
                             writer.Byte(0x07);
                             writer.U32((uint)ResolveIndex(clauseItems[clauseIndex++], _tagSpace));
                             break;
@@ -456,6 +473,9 @@ internal sealed partial class WatParser
                             writer.Byte(0x19);
                             break;
                         case "delegate":
+                            if (clauseItems.Count != 2)
+                                throw new WatException("malformed delegate: expected a label", clause.Position);
+
                             context.Labels.RemoveAt(context.Labels.Count - 1);
                             writer.Byte(0x18);
                             writer.U32((uint)ResolveLabel(clauseItems[1], context));

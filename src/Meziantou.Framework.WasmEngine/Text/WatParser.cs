@@ -1070,6 +1070,9 @@ internal sealed partial class WatParser
                 break;
 
             case "global":
+                if (index >= items.Count)
+                    throw new WatException("malformed import: expected a global type", descriptor.Position);
+
                 _imports.Byte(0x03);
                 WriteGlobalType(items[index++], _imports);
                 _importedGlobals++;
@@ -1391,6 +1394,9 @@ internal sealed partial class WatParser
         {
             if (index < items.Count && items[index].IsListOf("table"))
             {
+                if (items[index].Items!.Count != 2)
+                    throw new WatException("malformed table use", items[index].Position);
+
                 tableNode = items[index].Items![1];
                 index++;
                 mode = SegmentMode.Active;
@@ -1409,6 +1415,9 @@ internal sealed partial class WatParser
                 index++;
                 mode = SegmentMode.Active;
             }
+
+            if (tableNode is not null && offset is null)
+                throw new WatException("malformed element segment: expected an offset", field.Position);
         }
 
         // The elements: func x*, x* (the abbreviation of an active segment), or a reference type and expressions
@@ -1518,6 +1527,9 @@ internal sealed partial class WatParser
         SNode? offset = null;
         if (index < items.Count && items[index].IsListOf("memory"))
         {
+            if (items[index].Items!.Count != 2)
+                throw new WatException("malformed memory use", items[index].Position);
+
             memoryNode = items[index].Items![1];
             index++;
         }

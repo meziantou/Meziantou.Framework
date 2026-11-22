@@ -1,0 +1,1 @@
+(module (func (try (do) (delegate) (delegate 0))))

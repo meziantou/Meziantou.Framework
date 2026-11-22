@@ -823,6 +823,24 @@ public sealed class WasmRuntimeTests
     }
 
     [Theory]
+    [InlineData("(module (func (try (do) (delegate))))", "malformed delegate: expected a label")]
+    [InlineData("(module (func (try (do) (delegate 0 1))))", "malformed delegate: expected a label")]
+    [InlineData("(module (func (try (do) (delegate 0) (delegate 0))))", "malformed try: a clause follows delegate")]
+    [InlineData("(module (func (try (do) (delegate 0) (catch_all))))", "malformed try: a clause follows delegate")]
+    [InlineData("(module (tag $e) (func (try (do) (catch))))", "malformed catch: expected a tag")]
+    [InlineData("(module (func try delegate))", "expected a label")]
+    [InlineData("(module (tag $e) (func try catch))", "expected a tag")]
+    [InlineData("(module (import \"m\" \"g\" (global)))", "malformed import: expected a global type")]
+    [InlineData("(module (table 1 funcref) (elem (table) (i32.const 0) func))", "malformed table use")]
+    [InlineData("(module (func) (table 1 funcref) (elem (table 0) func 0))", "malformed element segment: expected an offset")]
+    [InlineData("(module (memory 1) (data (memory) (i32.const 0) \"a\"))", "malformed memory use")]
+    public void WatToWasm_MalformedField_ThrowsFormatException(string text, string message)
+    {
+        var exception = Assert.Throws<FormatException>(() => WasmRuntime.WatToWasm(text));
+        Assert.Contains(message, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
     [InlineData("(", ")")]
     [InlineData("(block ", ")")]
     [InlineData("block ", "end ")]

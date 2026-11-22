@@ -278,16 +278,19 @@ public sealed class WasmRuntimeTests
               (func (export "count") (param i32) (result i32)
                 (loop $next
                   (br_if $next (local.tee 0 (i32.sub (local.get 0) (i32.const 1)))))
-                (local.get 0)))
+                (local.get 0))
+              (func (export "spin")
+                (loop $next (br $next))))
             """));
         using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(50));
         using var interrupted = runtime.CreateStore(new WasmStoreOptions { CheckInterrupt = cancellation.Token.ThrowIfCancellationRequested });
         using var other = runtime.CreateStore();
         var count = other.Instantiate(module).GetFunction("count")!;
-        var spin = interrupted.Instantiate(module).GetFunction("count")!;
+        var spin = interrupted.Instantiate(module).GetFunction("spin")!;
 
-        // 2^32 - 1 iterations: the store is interrupted before the end
-        Assert.Throws<OperationCanceledException>(() => spin.Call(WasmValue.FromI32(0)));
+        // The loop does not end: the call returns only when the store is interrupted, however late the timers of a busy
+        // machine run
+        Assert.Throws<OperationCanceledException>(() => spin.Call());
         Assert.Equal(0, count.Call(WasmValue.FromI32(1_000_000))[0].I32);
     }
 

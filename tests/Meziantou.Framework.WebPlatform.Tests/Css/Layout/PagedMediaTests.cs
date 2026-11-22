@@ -575,6 +575,45 @@ public sealed class PagedMediaTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData("<div style='position: relative; height: 100px; break-inside: avoid'><div id=p style='position: absolute; top: 10px; left: 0; right: 0; height: 20px'></div></div>", "(1, (200, 10, 200x20))")]
+    [InlineData("<div style='columns: 2; column-gap: 0; break-inside: avoid'><div id=p style='height: 200px'></div></div>", "(1, (200, 0, 100x100)) (1, (300, 0, 100x100))")]
+    public void Pages_MultiColumnContainerWithPositionedOrMultiColumnContentContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string last, string expected)
+    {
+        // The columns of the second page (200px wide) continue after the first page; the last box of the container (a box with an
+        // absolutely positioned child, a multi-column container whose columns are 100px wide) is in them, laid out in their inline
+        // size; the absolutely positioned box at the start of the container is in the first page
+        var items = string.Concat(Enumerable.Range(0, 8).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='columns: 2; column-gap: 0'><div style='position: relative'><div style='position: absolute; top: 0; width: 10px; height: 10px'></div></div>{{items}}{{last}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(1, new PhysicalRect(0, 0, 200, 100))], GetPageRects(pages, document.GetElementById("r6")!));
+        Assert.Equal([(1, new PhysicalRect(0, 100, 200, 100))], GetPageRects(pages, document.GetElementById("r7")!));
+        Assert.Equal(expected, string.Join(' ', GetPageRects(pages, document.GetElementById("p")!)));
+    }
+
+    [Fact]
+    public void Pages_MultiColumnContainerWithAnAbsolutelyPositionedChildKeepsTheInlineSizeOfThePreviousPage()
+    {
+        // The absolutely positioned child of the container is placed in the pages from its offset in the container (in the first
+        // page and the second one, as with pages of the same inline size): the columns of the second page are not laid out again
+        // in its inline size
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='columns: 2; column-gap: 0; position: relative'><div id=p style='position: absolute; top: 250px; width: 20px; height: 100px'></div>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 250, 20, 50)), (1, new PhysicalRect(0, 0, 20, 50))], GetPageRects(pages, document.GetElementById("p")!));
+        Assert.Equal([(1, new PhysicalRect(0, 0, 100, 100))], GetPageRects(pages, document.GetElementById("r6")!));
+    }
+
     [Fact]
     public void Pages_MultiColumnContainerWithMonolithicContentTallerThanAColumnContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
     {

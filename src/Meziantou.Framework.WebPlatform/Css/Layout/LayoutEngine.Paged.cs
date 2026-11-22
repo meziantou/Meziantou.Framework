@@ -1135,7 +1135,7 @@ internal sealed partial class LayoutEngine
     private static BreakAnchor? ResolveColumnAnchor(BreakAnchor anchor, FragmentationFlow flow, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, int index)
     {
         if (FindBoxFragment(children, stripSize, writingDirection, anchor.Box, parentTop: 0) is not var (fragment, _)
-            || flow.GetNestedColumns(fragment) is not { Nested: { } nested } || !IsResumableColumns(nested))
+            || flow.GetNestedColumns(fragment) is not { Nested: { } nested } || !IsResumableColumns(nested, fragment))
         {
             return null;
         }
@@ -1234,7 +1234,7 @@ internal sealed partial class LayoutEngine
     private static (NestedColumns Nested, double Start)? FindResumableColumns(FragmentationFlow flow, ReadOnlySpan<Fragment> children, PhysicalSize stripSize, WritingDirection writingDirection, BreakAnchor anchor)
     {
         if (FindBoxFragment(children, stripSize, writingDirection, anchor.Box, parentTop: 0) is not var (fragment, top)
-            || flow.GetNestedColumns(fragment) is not { Nested: { } nested } item || !IsResumableColumns(nested))
+            || flow.GetNestedColumns(fragment) is not { Nested: { } nested } item || !IsResumableColumns(nested, fragment))
         {
             return null;
         }
@@ -1266,12 +1266,25 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
     /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns (between its column spanners) have the
-    /// block size that remains in the page or in its content box (no <c>column-height</c>), without absolutely positioned boxes or
-    /// nested multi-column containers.
+    /// block size that remains in the page or in its content box (no <c>column-height</c>), and the pages do not place
+    /// absolutely positioned boxes from it (its absolutely positioned children, and the boxes of its columns whose containing
+    /// block is outside of it, are placed from their offsets in the container, which do not follow the columns laid out again).
+    /// The absolutely positioned boxes whose containing block is in the columns are placed in the columns.
     /// </summary>
-    private static bool IsResumableColumns(NestedColumns nested)
-        => nested.RowBlockSize is null
-            && nested.Flow.OutOfFlowItems is null && !nested.Flow.HasNestedColumns;
+    private static bool IsResumableColumns(NestedColumns nested, BoxFragment container)
+    {
+        if (nested.RowBlockSize is not null || nested.OutOfFlow is not null)
+            return false;
+
+        var children = container.ChildrenSpan;
+        for (var i = container.InFlowChildCount; i < children.Length; i++)
+        {
+            if (children[i] is BoxFragment { Box.IsOutOfFlow: true })
+                return false;
+        }
+
+        return true;
+    }
 
     /// <summary>Returns whether a parallel flow of a flow (the items of a grid, of a flex container, the cells of a table) starts before a position and ends after it.</summary>
     private static bool CrossesParallelFlow(FragmentationFlow flow, double position)

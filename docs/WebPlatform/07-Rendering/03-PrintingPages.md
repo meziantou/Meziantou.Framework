@@ -92,9 +92,9 @@ var pages = context.RenderPages();
   multi-column containers and absolutely positioned boxes: the ones whose containing block is in the columns are placed in
   them, the ones placed by `top` or `bottom` follow their offset in their containing block, and the ones at their static
   position (no `top` nor `bottom`) are in the column of that position, as with pages of the same width. The page keeps the
-  width of the previous one when the container has an absolutely positioned box anchored (CSS Anchor Positioning), or at its
-  static position whose containing block is the container itself, or when the break is inside a multi-column container of
-  the columns.
+  width of the previous one when the container has an anchored absolutely positioned box (CSS Anchor Positioning), when an
+  absolutely positioned box at its static position is broken by the end of the previous page (the part of it already
+  printed is not known in the new width), or when the break is inside a multi-column container of the columns.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

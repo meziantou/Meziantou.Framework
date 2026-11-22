@@ -1196,7 +1196,10 @@ internal sealed partial class LayoutEngine
         // (the content after the break is a box, a block container resumed at a line box, the rows after a break between the rows
         // of a container or in its only row that the break crosses, or the items of a broken row, see FindSegmentAnchor; not
         // monolithic content that the break slices)
+        // (an absolutely positioned box at its static position broken by the break, in the pages or in the columns, is not
+        // continued: the part of it before the break is not known in the columns laid out again)
         if (position <= BreakAnchorEpsilon || ContinuesBeforeBreak(nested.Flow, position, first)
+            || ContinuesOutOfFlowBeforeBreak(flow, index) || ContinuesOutOfFlowBeforeBreak(nested.Flow, first)
             || FindSegmentAnchor(nested.Children, nested.StripSize, nested.WritingDirection, position) is not { SliceOffset: null, IsInColumns: false } content
             || (!content.IsInRows && CrossesParallelFlow(nested.Flow, position)))
         {
@@ -1273,12 +1276,13 @@ internal sealed partial class LayoutEngine
     /// <summary>
     /// Returns whether the rows of columns of a multi-column container can be placed from a position of its strip in a page of
     /// another inline size (see <see cref="BreakAnchor.IsInColumns"/>): its rows of columns continue with the block size of its
-    /// content box and of its row of a fixed block size used in the previous pages. The absolutely positioned boxes of
-    /// the columns whose containing block is in the columns are placed in the columns; the ones that the pages place
-    /// (<see cref="NestedColumns.OutOfFlow"/>, the absolutely positioned children of the container) must be placed by their
-    /// insets in the block axis, in the container (they follow the block size of the virtual first page, see
-    /// <see cref="FragmentationFlow.ResumeShift"/>): not at their static position, whose position in the strip of the container
-    /// does not follow its columns laid out again, nor in another containing block or anchored.
+    /// content box and of its row of a fixed block size used in the previous pages. The absolutely positioned boxes of the
+    /// columns whose containing block is in the columns are placed in the columns; the ones that the pages place
+    /// (<see cref="NestedColumns.OutOfFlow"/>, the absolutely positioned children of the container) follow their offsets in their
+    /// containing block (the virtual first page has the block size of the container used in the previous pages, see
+    /// <see cref="FragmentationFlow.ResumeShift"/>), or are in the column of their static position (see
+    /// <c>ColumnBreaker.TryGetNestedStaticPosition</c>); they must not be anchored, whose position does not follow the columns
+    /// laid out again.
     /// </summary>
     private static bool IsResumableColumns(NestedColumns nested, BoxFragment container)
     {
@@ -1286,7 +1290,7 @@ internal sealed partial class LayoutEngine
         {
             foreach (var (candidate, _) in outOfFlow)
             {
-                if (!IsPlacedInColumns(candidate.Box, ReferenceEquals(candidate.ContainingBlock, container.Box), container.WritingDirection))
+                if (IsAnchored(candidate.Box))
                     return false;
             }
         }
@@ -1294,22 +1298,35 @@ internal sealed partial class LayoutEngine
         var children = container.ChildrenSpan;
         for (var i = container.InFlowChildCount; i < children.Length; i++)
         {
-            if (children[i] is BoxFragment { Box.IsOutOfFlow: true } child && !IsPlacedInColumns(child.Box, isInContainer: true, container.WritingDirection))
+            if (children[i] is BoxFragment { Box.IsOutOfFlow: true } child && IsAnchored(child.Box))
                 return false;
         }
 
         return true;
 
-        // (a box at its static position whose containing block is outside of the container is in the column of its static
-        // position, see ColumnBreaker.TryGetNestedStaticPosition; whose containing block is the container, it would follow the
-        // layout of the container in the strip)
-        static bool IsPlacedInColumns(ContainerBox box, bool isInContainer, WritingDirection writingDirection)
+        static bool IsAnchored(ContainerBox box)
         {
-            var layout = box.Style.Layout;
-            var inset = layout.Insets.Inset;
-            return (!isInContainer || !inset.Get(writingDirection.BlockStart).IsAuto || !inset.Get(writingDirection.BlockEnd).IsAuto)
-                && box.Style.PositionBaseStyle is null && !layout.Anchor.UsesAnchorFunctions && layout.Anchor.PositionArea is null;
+            var anchor = box.Style.Layout.Anchor;
+            return box.Style.PositionBaseStyle is not null || anchor.UsesAnchorFunctions || anchor.PositionArea is not null;
         }
+    }
+
+    /// <summary>
+    /// Returns whether an absolutely positioned box of a flow at its static position in the block axis starts before a
+    /// fragmentainer and continues in it (a box placed by its insets follows its offset in its containing block).
+    /// </summary>
+    private static bool ContinuesOutOfFlowBeforeBreak(FragmentationFlow flow, int index)
+    {
+        if (flow.OutOfFlowItems is not { } items)
+            return false;
+
+        foreach (var item in items)
+        {
+            if (item is { OutOfFlow.StartIndex: var start, Box: { } box } && start < index && (!item.IsBoxDone || item.EndIndex >= index) && PageBreakRules.IsAtStaticBlockPosition(box))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>Returns whether a parallel flow of a flow (the items of a grid, of a flex container, the cells of a table) starts before a position and ends after it.</summary>

@@ -3351,8 +3351,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   fragmentainer having the block size of the container used in the previous pages; the ones at their static position are in
   the column of that position (`ColumnBreaker.TryGetNestedStaticPosition`, also for the boxes of the initial containing
   block, `MapPlacedBox`; a static position in the virtual first column is at its start: that content is in the previous
-  pages), except when the containing block is the container, whose static position follows the layout of the container in
-  the strip, which does not follow its columns laid out again; the ones whose containing block is in the columns are placed in the columns, the virtual first column holding the content
+  pages; a box at its static position broken by the break, `ContinuesOutOfFlowBeforeBreak`, is not continued: the part of
+  it in the previous pages is not known in the columns laid out again); the ones whose containing block is in the columns are placed in the columns, the virtual first column holding the content
   before the position; a nested multi-column container of the columns is a parallel flow, which
   the break must not cross; a container with a definite or maximum block size continues with the block size of its content box that remains,
   `BreakAnchor.ColumnsConsumedBlockSize` from `NestedColumns.ConsumedBlockSizes`, `NestedColumns.ResumeConsumedBlockSize`, and

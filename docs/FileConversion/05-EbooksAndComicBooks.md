@@ -1,6 +1,6 @@
 ---
-title: EPUB books and comic book archives
-description: Convert EPUB books to PDF documents, comic book archives or images, and comic book archives to PDF documents or images.
+title: E-books and comic book archives
+description: Convert EPUB, MOBI and AZW3 books to PDF documents, comic book archives or images, and comic book archives to PDF documents or images.
 ---
 
 ## Convert an EPUB book to a PDF document
@@ -45,6 +45,37 @@ only known once the book is laid out, so the numbers in the names of the files h
 ```bash
 Meziantou.Framework.FileConversion.Tool book.epub --output-format png --dpi 100
 ```
+
+## Convert a Kindle book (MOBI, AZW3)
+
+The tool reads the books of Mobipocket and of the Kindle readers: MOBI books (`.mobi`, `.prc`, `.azw`) and KF8 books
+(`.azw3`). They convert like an EPUB book: the text is laid out with its images, style sheets and fonts on pages of
+`--layout-page-size`, A5 by default. The text of a PDF document stays text, and the title and author of the book are the
+metadata of the document.
+
+```bash
+Meziantou.Framework.FileConversion.Tool book.azw3 --output-format pdf
+Meziantou.Framework.FileConversion.Tool book.mobi --output book.pdf --layout-page-size A4 --layout-font-size 12
+Meziantou.Framework.FileConversion.Tool book.azw --output-format png --dpi 100
+```
+
+- Each document of a KF8 book (usually a chapter) starts a new page, and so does each page break of a MOBI book.
+- When the text of the book does not show its cover, the cover is the first page, at its own size.
+- The `--layout-*` options apply as they do to an EPUB book.
+- The tool detects a Kindle book from its content, whatever its extension.
+
+Most `.mobi` files that kindlegen or Calibre write hold two versions of the book: a MOBI version, for the first Kindle
+readers, and a KF8 version. The tool reads the KF8 version, and the MOBI version when the KF8 version cannot be read.
+
+The pages of a comic or a manga in the KF8 format, such as the books of Kindle Comic Converter, are images: when each
+document of the book shows one image, the tool uses the images as the pages, at their own size. To get a comic book
+archive from such a book, convert it to CBZ. The images are copied as they are:
+
+```bash
+Meziantou.Framework.FileConversion.Tool comic.azw3 --output-format cbz
+```
+
+A book protected by DRM, such as most books bought from a store, cannot be read: the tool reports an error.
 
 ## Comic book archives
 

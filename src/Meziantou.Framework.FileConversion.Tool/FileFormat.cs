@@ -21,6 +21,8 @@ internal sealed class FileFormat
 
     public static FileFormat Epub { get; } = new("EPUB", FileFormatKind.Epub, [".epub"], canRead: true, canWrite: false, isMultiPage: true);
 
+    public static FileFormat Mobi { get; } = new("MOBI", FileFormatKind.Mobi, [".mobi", ".azw3", ".azw", ".prc"], canRead: true, canWrite: false, isMultiPage: true);
+
     public static FileFormat Markdown { get; } = new("Markdown", FileFormatKind.Markdown, [".md", ".markdown"], canRead: true, canWrite: true, isMultiPage: false);
 
     public static FileFormat Html { get; } = new("HTML", FileFormatKind.Html, [".html", ".htm"], canRead: true, canWrite: true, isMultiPage: false);
@@ -173,6 +175,7 @@ internal sealed class FileFormat
 
         result.Add(Pdf);
         result.Add(Epub);
+        result.Add(Mobi);
         result.Add(Markdown);
         result.Add(Html);
         result.Add(Cbz);

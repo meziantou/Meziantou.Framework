@@ -6,6 +6,9 @@ internal enum FileFormatKind
     Pdf,
     Epub,
 
+    /// <summary>A Kindle book (MOBI, KF8), laid out on pages, or whose images are the pages (comics).</summary>
+    Mobi,
+
     /// <summary>A comic book archive (CBZ, CBR, CB7, CBT): an archive whose images, sorted by name, are the pages.</summary>
     Comic,
 

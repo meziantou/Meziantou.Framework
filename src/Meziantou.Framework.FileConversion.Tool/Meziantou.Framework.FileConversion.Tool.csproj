@@ -7,8 +7,8 @@
     <RootNamespace>Meziantou.Framework.FileConversionTool</RootNamespace>
 
     <Version>1.0.3</Version>
-    <Description>CLI to convert files from one format to another: images, PDF, EPUB, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT) and archives (zip, 7z, RAR, tar)</Description>
-    <PackageTags>image, pdf, epub, markdown, html, cbz, cbr, zip, 7z, rar, tar, converter, cli, dotnet-tool</PackageTags>
+    <Description>CLI to convert files from one format to another: images, PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT) and archives (zip, 7z, RAR, tar)</Description>
+    <PackageTags>image, pdf, epub, mobi, azw3, kindle, markdown, html, cbz, cbr, zip, 7z, rar, tar, converter, cli, dotnet-tool</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

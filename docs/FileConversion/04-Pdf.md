@@ -81,7 +81,7 @@ Meziantou.Framework.FileConversion.Tool report.pdf --output "chapters/{page:00}.
 
 ## Options of the PDF output
 
-These options apply to every PDF output: images, EPUB books and comic book archives converted to PDF, and PDF documents
+These options apply to every PDF output: images, EPUB and Kindle books and comic book archives converted to PDF, and PDF documents
 merged, split or copied. To change a PDF document, convert it to a new PDF file.
 
 ### Save as PDF/A

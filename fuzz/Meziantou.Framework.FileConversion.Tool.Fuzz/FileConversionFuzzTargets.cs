@@ -2,6 +2,7 @@ using Meziantou.Framework.Compression;
 using Meziantou.Framework.FileConversionTool.Archives;
 using Meziantou.Framework.FileConversionTool.Epub;
 using Meziantou.Framework.FileConversionTool.Inputs;
+using Meziantou.Framework.FileConversionTool.Mobi;
 using Meziantou.Framework.FileConversionTool.Outputs;
 using Meziantou.Framework.FileConversionTool.Tests;
 using Meziantou.Framework.Fuzzing;
@@ -13,7 +14,7 @@ namespace Meziantou.Framework.FileConversionTool.Fuzz;
 
 /// <summary>
 /// The inputs the tool reads besides the image, PDF and archive files (fuzzed in their own projects): the output name
-/// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the URLs of the local files of HTML documents, the EPUB packages, the pages of the comic book archives and the copy of the entries of an
+/// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the URLs of the local files of HTML documents, the EPUB packages, the MOBI and KF8 books and their fonts, the pages of the comic book archives and the copy of the entries of an
 /// archive to another format.
 /// </summary>
 public static class FileConversionFuzzTargets
@@ -36,6 +37,29 @@ public static class FileConversionFuzzTargets
         "<img", " src=", "<svg", "<image", "xlink:href=", "<body>", "</body>", "<!DOCTYPE", "../", "%2e%2e/", "#", "image/png",
     ];
 
+    private static readonly string[] MobiHtmlTokens =
+    [
+        "<mbp:pagebreak/>", "</mbp:pagebreak>", "<MBP:PAGEBREAK />", "<img", " recindex=", " hirecindex=", " lorecindex=", "\"00001\"", "'2'",
+        " filepos=", "0000000000", "\"0000000123\"", "<a", "</a>", "<head>", "<guide>", "<reference", "<body>", "<body ", "</body>", ">", "<",
+        "é", "Ã©", "â\u0082¬", "\u0080", "¿", "\u0000",
+    ];
+
+    private static readonly string[] MobiTokens =
+    [
+        "BOOKMOBI", "MOBI", "EXTH", "HUFF\u0000\u0000\u0000\u0018", "CDIC\u0000\u0000\u0000\u0010", "\u0000\u0001", "\u0000\u0002", "DH",
+        "\u0000\u0000\u0000è", "\u0000\u0000ýé", "\u0000\u0000\u0004ä", "\u0000\u0000\u0000\u0006", "\u0000\u0000\u0000\u0008",
+        "\u0000\u0000\u0000d", "\u0000\u0000\u0000É", "\u0000\u0000\u0001÷", "\u0000\u0000\u0000P", "ÿÿÿÿ",
+        "\u0000\u0003", "\u0080", "\u0083", .. MobiHtmlTokens,
+    ];
+
+    private static readonly string[] Kf8Tokens =
+    [
+        "kindle:embed:", "kindle:flow:", "kindle:pos:fid:", ":off:", "?mime=text/css", "?mime=image/png", "?mime=image/svg+xml", "0001", "0002", "0000000000",
+        "FDST", "INDX", "TAGX", "IDXT", "SKEL0000000000", "BOUNDARY", "FONT", "\u0000\u0000\u0000\u0008", "\u0000\u0000\u0000y", "\u0000\u0000\u0000À",
+        "\u0001\u0001\u0003\u0000", "\u0006\u0002\u000c\u0000", "\u0000\u0000\u0000\u0001", "\u0081", "\u0085", "\u008f", " id=\"", "<body", "<img src=\"", "<svg", "<?xml",
+        .. MobiTokens,
+    ];
+
     private static readonly string[] ArchiveTokens = ["PK\u0003\u0004", "PK\u0001\u0002", "PK\u0005\u0006", "7z\u00bc\u00af\u0027\u001c", "Rar!\u001a\u0007\u0001\u0000", "Rar!\u001a\u0007\u0000", "ustar", "ustar\u000000", "\u001f\u008b", "BZh9", "\u00fd7zXZ\u0000", "LZIP", ".png", ".jpg", "/", "__MACOSX/", "ComicInfo.xml"];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -51,7 +75,12 @@ public static class FileConversionFuzzTargets
         new("file-conversion-epub-package", EpubPackageTarget) { Seeds = GetArchiveSeeds, Dictionary = EpubTokens },
         new("file-conversion-comic", Comic) { Seeds = GetArchiveSeeds, Dictionary = ArchiveTokens },
         new("file-conversion-archive-copy", ArchiveCopy) { Seeds = GetArchiveSeeds, Dictionary = ArchiveTokens },
-        new("file-conversion-detect-format", DetectFormat) { Seeds = GetArchiveSeeds, Dictionary = [.. ArchiveTokens, "%PDF-", "mimetypeapplication/epub+zip", "\u0089PNG", "GIF89a", "RIFF", "WEBP"] },
+        new("file-conversion-mobi", MobiBookTarget) { Seeds = GetMobiSeeds, Dictionary = MobiTokens },
+        new("file-conversion-kf8", MobiBookTarget) { Seeds = GetKf8Seeds, Dictionary = Kf8Tokens },
+        new("file-conversion-mobi-font", MobiFontTarget) { Seeds = GetMobiFontSeeds, Dictionary = ["FONT", "OTTO", "wOFF", "wOF2", "\u0000\u0001\u0000\u0000", "x\u009c"] },
+        new("file-conversion-mobi-html", MobiHtmlTarget) { Seeds = GetMobiHtmlSeeds, Dictionary = MobiHtmlTokens },
+        new("file-conversion-palmdoc", PalmDoc) { Seeds = GetMobiHtmlSeeds, Dictionary = MobiHtmlTokens },
+        new("file-conversion-detect-format", DetectFormat) { Seeds = GetDetectFormatSeeds, Dictionary = [.. ArchiveTokens, "%PDF-", "mimetypeapplication/epub+zip", "\u0089PNG", "GIF89a", "RIFF", "WEBP", "BOOKMOBI"] },
     ];
 
     private static void OutputTemplate(ReadOnlySpan<byte> data)
@@ -351,12 +380,194 @@ public static class FileConversionFuzzTargets
             FuzzAssert.Equal(format, FileFormat.FromArchiveType(format.ArchiveType, comic: false), "The detected archive format is not the format of its container");
         }
 
+        FuzzAssert.Equal(MobiBook.HasSignature(data), format == FileFormat.Mobi, "A file is detected as a MOBI book without its signature, or the reverse");
+
         // The extension of a comic book archive makes an archive a comic book archive, whatever its container
         stream.Position = 0;
         var comicFormat = Converter.DetectFormat(stream, "input.cbz");
         if (format is { Kind: FileFormatKind.Archive } && comicFormat is { Kind: FileFormatKind.Comic })
         {
             FuzzAssert.Equal(format.ArchiveType, comicFormat.ArchiveType, "The container of a comic book archive is not the one of the archive");
+        }
+    }
+
+    private static void MobiBookTarget(ReadOnlySpan<byte> data)
+    {
+        var bytes = data.ToArray();
+        MobiBook book;
+        try
+        {
+            book = MobiBook.Read(bytes);
+        }
+        catch (InvalidDataException)
+        {
+            // The documented error of a file that is not a MOBI book
+            return;
+        }
+
+        FuzzAssert.True(MobiBook.HasSignature(bytes), "A file without the signature of a MOBI book is read as a book");
+        FuzzAssert.True(book.Mobi6 is not null || book.Kf8 is not null, "A book has no version");
+        FuzzAssert.True(book.Kf8 is null || book.Kf8.IsKf8, "The KF8 version of a book is not a KF8 header");
+        if (book.Mobi6 is { } mobi6)
+        {
+            CheckMobi6(book, mobi6);
+        }
+
+        if (book.Kf8 is { } kf8)
+        {
+            CheckKf8(book, kf8);
+        }
+    }
+
+    private static void CheckMobi6(MobiBook book, MobiHeader header)
+    {
+        byte[] text;
+        try
+        {
+            text = book.ReadText(header);
+        }
+        catch (InvalidDataException)
+        {
+            // The documented error of a text that cannot be decompressed
+            return;
+        }
+
+        FuzzAssert.True(text.Length <= MobiBook.MaxTextLength, "The text of a book is longer than the maximum length");
+        FuzzAssert.True(text.AsSpan().SequenceEqual(book.ReadText(header)), "The text of a book is not the same when it is read again");
+
+        var html = CheckMobiHtml(text, header.IsUtf8, out var images);
+        var loader = new MobiDocumentLoader(book, html, header.EncodingName, kf8: null);
+        FuzzAssert.True(Load(loader, MobiHtml.DocumentUrl) is not null, "The HTML of the book is a network error");
+        foreach (var index in images)
+        {
+            // An image is an image of a supported format, a font, or is not found
+            FuzzAssert.True(Load(loader, MobiHtml.GetImageUrl(index)) is not null, "The URL of an image of the book is a network error");
+        }
+
+        CheckCover(book, images);
+    }
+
+    private static void CheckKf8(MobiBook book, MobiHeader header)
+    {
+        Kf8Content content;
+        try
+        {
+            content = Kf8Content.Read(book, header);
+        }
+        catch (InvalidDataException)
+        {
+            // The documented error of a KF8 version whose text, flows or indexes are not valid
+            return;
+        }
+
+        FuzzAssert.True(content.Parts.Count > 0, "A KF8 book has no document");
+        FuzzAssert.Equal(content.Parts.Count, content.PartsAreXml.Count, "A document of a KF8 book has no media type");
+        FuzzAssert.True(content.Flows.Count > 0 && content.Flows[0].Length is 0, "The first flow of a KF8 book is not the documents");
+        FuzzAssert.False(content.ResourceIndexes.Any(index => index < 1), "A KF8 book uses a resource whose number is not positive");
+        if (content.ImagePages is { } imagePages)
+        {
+            FuzzAssert.Equal(content.Parts.Count, imagePages.Count, "The images of a KF8 comic are not one per document");
+            foreach (var index in imagePages)
+            {
+                FuzzAssert.True(book.GetImage(index) is { } image && Image.DetectFormat(image.Span) is not (ImageFormat.Unknown or ImageFormat.Custom), "A page of a KF8 comic is not an image");
+            }
+        }
+
+        var loader = new MobiDocumentLoader(book, html: null, header.EncodingName, content);
+        for (var i = 0; i < content.Parts.Count; i++)
+        {
+            FuzzAssert.Equal(i, Kf8Content.GetPartIndex(Kf8Content.GetPartUrl(i)), "The URL of a document does not give its index back");
+            var resource = Load(loader, Kf8Content.GetPartUrl(i) + "#anchor");
+            FuzzAssert.True(resource?.ContentBytes is { } bytes && bytes.Span.SequenceEqual(content.Parts[i]), "The URL of a document does not serve the document");
+        }
+
+        for (var i = 1; i < content.Flows.Count; i++)
+        {
+            FuzzAssert.Equal(i, Kf8Content.GetFlowIndex(Kf8Content.GetFlowUrl(i, "text/css"), out _), "The URL of a flow does not give its index back");
+            FuzzAssert.True(Load(loader, Kf8Content.GetFlowUrl(i, "text/css")) is not null, "The URL of a flow is a network error");
+        }
+
+        foreach (var index in content.ResourceIndexes)
+        {
+            FuzzAssert.True(Load(loader, MobiHtml.GetImageUrl(index)) is not null, "The URL of a resource of the book is a network error");
+        }
+
+        CheckCover(book, content.ResourceIndexes);
+    }
+
+    private static void CheckCover(MobiBook book, IReadOnlySet<int> images)
+    {
+        if (MobiInputDocument.GetCover(book, images) is { } cover)
+        {
+            FuzzAssert.True(book.CoverImageIndex is { } coverIndex && !images.Contains(coverIndex), "The cover is a page of its own although the text shows it");
+            FuzzAssert.Equal(cover.Format, Image.DetectFormat(cover.Data.Span), "The format of the cover is not the format of its data");
+        }
+    }
+
+    private static WebPlatform.Dom.DocumentResource? Load(MobiDocumentLoader loader, string url)
+        => loader.LoadAsync(new WebPlatform.Dom.DocumentRequest(url), CancellationToken.None).AsTask().GetAwaiter().GetResult();
+
+    private static void MobiFontTarget(ReadOnlySpan<byte> data)
+    {
+        // The first byte gives the flags of the record: the rest is the font file
+        var flags = FuzzInput.ReadByte(ref data);
+        var font = data.ToArray();
+        var record = TestFiles.CreateFontRecord(font, compress: (flags & 1) is not 0, obfuscate: (flags & 2) is not 0);
+        FuzzAssert.True(MobiFont.Decode(record).AsSpan().SequenceEqual(font), "A font does not round-trip through a FONT record");
+
+        // Any record decodes, or is reported as not valid
+        try
+        {
+            MobiFont.Decode(data);
+        }
+        catch (InvalidDataException)
+        {
+        }
+    }
+
+    private static void MobiHtmlTarget(ReadOnlySpan<byte> data)
+    {
+        // The first byte tells whether the text is UTF-8
+        var isUtf8 = (FuzzInput.ReadByte(ref data) & 1) is 0;
+        CheckMobiHtml(data, isUtf8, out _);
+    }
+
+    private static byte[] CheckMobiHtml(ReadOnlySpan<byte> text, bool isUtf8, out IReadOnlySet<int> images)
+    {
+        var html = MobiHtml.Convert(text, isUtf8, out images);
+        FuzzAssert.True(html.AsSpan().SequenceEqual(MobiHtml.Convert(text, isUtf8, out _)), "The conversion of the text of a book is not deterministic");
+
+        var htmlText = Encoding.Latin1.GetString(html);
+        foreach (var index in images)
+        {
+            FuzzAssert.True(htmlText.Contains($"src=\"{MobiHtml.GetImageUrl(index)}\"", StringComparison.Ordinal), "An image of the text has no URL");
+            FuzzAssert.Equal(index, MobiHtml.GetImageIndex(MobiHtml.GetImageUrl(index)), "The URL of an image does not give its index back");
+        }
+
+        // The anchors and the attributes go between the characters of a UTF-8 text
+        if (isUtf8 && System.Text.Unicode.Utf8.IsValid(text))
+        {
+            FuzzAssert.True(System.Text.Unicode.Utf8.IsValid(html), "The conversion splits a character of a UTF-8 text");
+        }
+
+        return html;
+    }
+
+    private static void PalmDoc(ReadOnlySpan<byte> data)
+    {
+        // A text record holds 4096 bytes of text
+        var text = data[..Math.Min(data.Length, 4096)];
+        var output = new MobiBuffer(MobiBook.MaxTextLength);
+        PalmDocCompression.Decompress(TestFiles.CompressPalmDoc(text), output);
+        FuzzAssert.True(output.WrittenSpan.SequenceEqual(text), "The PalmDOC compression does not round-trip");
+
+        // Any data decompresses, or is reported as not valid
+        try
+        {
+            PalmDocCompression.Decompress(text, new MobiBuffer(MobiBook.MaxTextLength));
+        }
+        catch (InvalidDataException)
+        {
         }
     }
 
@@ -473,6 +684,55 @@ public static class FileConversionFuzzTargets
         yield return FuzzSeed.FromText("escape", "\u0002../../escape.xhtml");
         yield return FuzzSeed.FromText("absolute", "\u0002https://example.com/a.png");
     }
+
+    private static IEnumerable<FuzzSeed> GetMobiSeeds()
+    {
+        yield return new FuzzSeed("mobi-palmdoc", TestFiles.CreateTextMobi());
+        yield return new FuzzSeed("mobi-huffcdic", TestFiles.CreateTextMobi(TestFiles.MobiCompression.HuffCdic, utf8: false, trailingEntries: true));
+        yield return new FuzzSeed("mobi-uncompressed", TestFiles.CreateTextMobi(TestFiles.MobiCompression.None, trailingEntries: true));
+        yield return new FuzzSeed("mobi-drm", TestFiles.CreateMobi("<p>Text</p>", encryption: 2));
+        yield return new FuzzSeed("mobi-kf8", TestFiles.CreateMobi("<p>Text</p>", fileVersion: 8));
+    }
+
+    private static IEnumerable<FuzzSeed> GetKf8Seeds()
+    {
+        yield return new FuzzSeed("kf8-text", TestFiles.CreateTextKf8());
+        yield return new FuzzSeed("kf8-huffcdic", TestFiles.CreateTextKf8(compression: TestFiles.MobiCompression.HuffCdic, trailingEntries: true));
+        yield return new FuzzSeed("kf8-joint", TestFiles.CreateTextKf8(mobi6Html: "<html><body><p>The MOBI 6 version</p></body></html>"));
+        yield return new FuzzSeed("kf8-joint-corrupt", TestFiles.CreateTextKf8(mobi6Html: "<p>MOBI 6</p>", corruptFdst: true));
+        yield return new FuzzSeed("kf8-comic", TestFiles.CreateComicKf8());
+        yield return new FuzzSeed("kf8-svg-cover", TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("""<div><img src="kindle:flow:0002?mime=image/svg+xml" alt=""/></div>""")], ["p { margin: 0 }", """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 30 40"><image width="30" height="40" xlink:href="kindle:embed:0001?mime=image/jpeg"/></svg>"""], [TestFiles.CreateImage(30, 40, ImageFormat.Jpeg)], coverIndex: 1));
+        yield return new FuzzSeed("kf8-font", TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("<p>Text</p>")], ["@font-face { src: url(kindle:embed:0001?mime=application/x-font-ttf) }"], [TestFiles.CreateFontRecord([0, 1, 0, 0, 1, 2, 3], compress: true, obfuscate: true)]));
+    }
+
+    private static IEnumerable<FuzzSeed> GetMobiFontSeeds()
+    {
+        byte[] font = [0, 1, 0, 0, .. Enumerable.Range(0, 1200).Select(i => (byte)(i % 251))];
+        for (var flags = 0; flags < 4; flags++)
+        {
+            yield return new FuzzSeed($"font-{flags.ToString(CultureInfo.InvariantCulture)}", (byte[])[(byte)flags, .. font]);
+            yield return new FuzzSeed($"font-record-{flags.ToString(CultureInfo.InvariantCulture)}", (byte[])[(byte)flags, .. TestFiles.CreateFontRecord(font, compress: (flags & 1) is not 0, obfuscate: (flags & 2) is not 0)]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetMobiHtmlSeeds()
+    {
+        // The first byte is 0 for a UTF-8 text, 1 for a Windows-1252 text
+        string[] documents =
+        [
+            """<html><head><guide><reference type="toc" filepos=5 /></guide></head><body><p>Hello <a filepos="0000000125">link</a></p><img recindex='3' hirecindex="4" alt=""><mbp:pagebreak/><p>End</p></body></html>""",
+            """<html><body><p><a filepos=0000000060>Go</a></p><h1>Chapter one</h1><img recindex="00001" /><mbp:pagebreak/><h1>Chapter two</h1></body></html>""",
+            """<p>Le café coûte 3 €.</p><a filepos=13>é</a><a filepos=14>split</a>""",
+            "",
+        ];
+        for (var i = 0; i < documents.Length; i++)
+        {
+            yield return new FuzzSeed($"mobi-html-utf8-{i}", (byte[])[0, .. Encoding.UTF8.GetBytes(documents[i])]);
+            yield return new FuzzSeed($"mobi-html-1252-{i}", (byte[])[1, .. Encoding.Latin1.GetBytes(documents[i])]);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetDetectFormatSeeds() => GetArchiveSeeds().Concat(GetMobiSeeds()).Concat(GetKf8Seeds());
 
     private static IEnumerable<FuzzSeed> GetArchiveSeeds()
     {

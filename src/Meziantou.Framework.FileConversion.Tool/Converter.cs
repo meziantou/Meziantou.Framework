@@ -1,5 +1,6 @@
 using Meziantou.Framework.Compression;
 using Meziantou.Framework.FileConversionTool.Inputs;
+using Meziantou.Framework.FileConversionTool.Mobi;
 using Meziantou.Framework.FileConversionTool.Outputs;
 using Meziantou.Framework.Globbing;
 using Meziantou.Framework.Imaging;
@@ -118,14 +119,14 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     }
 
     /// <summary>
-    /// Detects the format of a file from its content: an image format, PDF, EPUB, or an archive (zip, 7z, RAR, tar...). An archive
+    /// Detects the format of a file from its content: an image format, PDF, EPUB, MOBI, or an archive (zip, 7z, RAR, tar...). An archive
     /// whose extension is the one of a comic book archive (<c>.cbz</c>, <c>.cbr</c>...) is a comic book archive, whatever its
     /// container. A Markdown or HTML file is recognized by its extension, or an HTML file by its start (<c>&lt;!DOCTYPE html</c>,
     /// <c>&lt;html</c>). The extension is used when the content is not recognized.
     /// </summary>
     internal static FileFormat? DetectFormat(Stream stream, string fileName)
     {
-        Span<byte> prefix = stackalloc byte[64];
+        Span<byte> prefix = stackalloc byte[68];
         var length = stream.ReadAtLeast(prefix, prefix.Length, throwOnEndOfStream: false);
         prefix = prefix[..length];
         stream.Position = 0;
@@ -135,6 +136,10 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         // The text formats have no signature, and their text can start like one ("BM" of BMP, "%PDF-" in a document about PDF)
         if (extensionFormat?.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
             return extensionFormat;
+
+        // A MOBI book is a Palm database: its signature follows its name, which can start like another signature
+        if (MobiBook.HasSignature(prefix))
+            return FileFormat.Mobi;
 
         if (prefix.StartsWith("%PDF-"u8))
             return FileFormat.Pdf;

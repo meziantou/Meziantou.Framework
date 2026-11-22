@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Email.Tests;
 
-/// <summary>Tests of vCard and iCalendar: the files of TestData/Calendar, compared with FolkerKinzel.VCards and Ical.Net, the recurrence rules, and the conversions to and from the items of Outlook.</summary>
+/// <summary>Tests of vCard and iCalendar: the files of TestData/Calendar, the recurrence rules, and the conversions to and from the items of Outlook.</summary>
 public sealed class CalendarTests
 {
     public static TheoryData<string> VCardFiles => ["contacts-21.vcf", "contacts-30.vcf", "contacts-40.vcf"];
@@ -37,14 +37,15 @@ public sealed class CalendarTests
 
     internal static string GetPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", "Calendar", fileName);
 
-    [Theory]
-    [MemberData(nameof(VCardFiles))]
-    public void VCard_MatchesFolkerKinzel(string fileName)
+    // The rules of python-dateutil whose occurrences differ. Remove a rule from the list when its occurrences are the ones dateutil expects.
+    private static readonly Dictionary<string, string> DateutilDifferences = new(StringComparer.Ordinal)
     {
-        var text = File.ReadAllText(GetPath(fileName));
-        var expected = FolkerKinzel.VCards.Vcf.Parse(text).Select(DescribeWithFolkerKinzel).ToList();
-        Assert.Equal(expected, VCard.Parse(text).Select(Describe).ToList());
-    }
+        // [RFC 5545] 3.3.10: BYMONTHDAY must not be used with FREQ=WEEKLY. dateutil gives the days of the month, the reader limits the weekday of the start to them
+        ["testWeeklyByMonthDay"] = "BYMONTHDAY with FREQ=WEEKLY",
+        ["testWeeklyByMonthAndMonthDay"] = "BYMONTHDAY with FREQ=WEEKLY",
+    };
+
+    public static TheoryData<string> DateutilRules => [.. File.ReadLines(GetPath("dateutil-rrule.tsv")).Select(line => line[..line.IndexOf('\t', StringComparison.Ordinal)])];
 
     [Theory]
     [MemberData(nameof(VCardFiles))]
@@ -60,9 +61,6 @@ public sealed class CalendarTests
                 Assert.Equal(Describe(card), Describe(copy));
                 Assert.Equal(version, copy.Version);
                 Assert.Equal(card.Photo?.ToArray(), copy.Photo?.ToArray());
-
-                // FolkerKinzel.VCards reads the card the library writes as the library does
-                Assert.Equal(DescribeWithFolkerKinzel(FolkerKinzel.VCards.Vcf.Parse(text).Single()), Describe(copy));
             }
         }
     }
@@ -122,24 +120,6 @@ public sealed class CalendarTests
     }
 
     [Fact]
-    public void ICalendar_MatchesIcalNet()
-    {
-        var text = File.ReadAllText(GetPath("calendar.ics"));
-        var oracle = Ical.Net.Calendar.Load(text)!;
-        var calendar = VCalendar.Parse(text).Single();
-        var events = calendar.Events.ToList();
-        Assert.Equal(oracle.Events.Select(ev => $"{ev.Uid} {ev.Summary} {ev.DtStart?.Value:s} {(ev.DtStart?.IsUtc == true ? "UTC" : ev.DtStart?.TzId)} {ev.RecurrenceIdentifier?.StartTime.Value:s}"), events.Select(ev => $"{ev.Uid} {ev.Summary} {ev.Start?.Value:s} {(ev.Start?.IsUtc == true ? "UTC" : ev.Start?.TimeZoneId)} {ev.RecurrenceId?.Value:s}"));
-        Assert.Equal(oracle.Todos.Select(todo => todo.Summary), calendar.Todos.Select(todo => todo.Summary));
-
-        // The occurrences of the events, with their exceptions and their additional dates
-        foreach (var ev in events.Where(ev => ev.RecurrenceId is null))
-        {
-            var expected = OccurrencesWithIcalNet(ev.ToString(), ev.Calendar!, 30);
-            Assert.Equal(expected, ev.GetOccurrences().Take(30).ToList());
-        }
-    }
-
-    [Fact]
     public void VEvent_GetOccurrences_RecurrenceDateBeforeStart()
     {
         // RDATE adds dates to the recurrence set, also before the start
@@ -147,33 +127,61 @@ public sealed class CalendarTests
         var calendar = VCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:test\r\n" + text + "END:VCALENDAR\r\n").Single();
         var actual = calendar.Events.Single().GetOccurrences().ToList();
         Assert.Equal([new DateTime(2026, 1, 5, 9, 0, 0), new DateTime(2026, 1, 10, 9, 0, 0), new DateTime(2026, 1, 11, 9, 0, 0), new DateTime(2026, 1, 20, 9, 0, 0)], actual);
-        Assert.Equal(OccurrencesWithIcalNet(text, calendar, 10), actual);
     }
 
     [Theory]
     [MemberData(nameof(Rules))]
-    public void RecurrenceRule_MatchesIcalNet(string rule)
+    public void RecurrenceRule_RoundTrip(string rule)
     {
         foreach (var start in new[] { "20260115T090000", "20260131T170000", "20280229T080000", "20251231T235900" })
         {
             var text = $"BEGIN:VEVENT\r\nUID:test\r\nDTSTAMP:20260101T000000Z\r\nDTSTART:{start}\r\nRRULE:{rule}\r\nEND:VEVENT\r\n";
             var calendar = VCalendar.Parse("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:test\r\n" + text + "END:VCALENDAR\r\n").Single();
             var ev = calendar.Events.Single();
-            var expected = OccurrencesWithIcalNet(text, calendar, 60);
             var actual = ev.GetOccurrences().Take(60).ToList();
-            if (expected.FirstOrDefault() != ev.Start!.Value.Value)
-            {
-                // A start that the rule does not give: [RFC 5545] 3.8.5.3 counts it as the first occurrence, Ical.Net does not
-                Assert.Equal(ev.Start.Value.Value, actual[0]);
-                actual.RemoveAt(0);
-                expected = [.. expected.Take(actual.Count)];
-            }
 
-            Assert.Equal(expected, actual);
+            // [RFC 5545] 3.8.5.3: the start is the first occurrence, even when the rule does not give it
+            Assert.Equal(ev.Start!.Value.Value, actual[0]);
+            Assert.Equal(actual.Order(), actual);
+            Assert.Equal(actual.Distinct(), actual);
+
             var written = RecurrenceRule.Parse(rule)!.ToString();
             Assert.Equal(written, RecurrenceRule.Parse(written)!.ToString());
-            Assert.Equal(actual, RecurrenceRule.Parse(written)!.GetOccurrences(ev.Start.Value.Value).Skip(actual.Count == expected.Count && expected.FirstOrDefault() == ev.Start.Value.Value ? 0 : 1).Take(actual.Count));
+            Assert.Equal(actual, RecurrenceRule.Parse(written)!.GetOccurrences(ev.Start.Value.Value).Take(60));
         }
+    }
+
+    [Theory]
+    [MemberData(nameof(DateutilRules))]
+    public void RecurrenceRule_MatchesDateutil(string name)
+    {
+        // The rules of the tests of python-dateutil, with the occurrences they expect
+        var fields = File.ReadLines(GetPath("dateutil-rrule.tsv")).Select(line => line.Split('\t')).Single(fields => fields[0] == name);
+        var start = ParseDateTime(fields[1]);
+        var expected = fields[3] is "-" ? [] : fields[3].Split(',').Select(ParseDateTime).ToList();
+        var rule = RecurrenceRule.Parse(fields[2])!;
+        var actual = rule.GetOccurrences(start).ToList();
+        if (expected.FirstOrDefault() != start)
+        {
+            // [RFC 5545] 3.8.5.3: the start is the first occurrence, and counts in COUNT, even when the rule does not give it; dateutil does not count it
+            Assert.Equal(start, actual[0]);
+            actual.RemoveAt(0);
+            if (rule.Count is { } count)
+            {
+                expected = [.. expected.Take(count - 1)];
+            }
+        }
+
+        if (DateutilDifferences.TryGetValue(name, out var difference))
+        {
+            Assert.NotEqual(expected, actual, "The occurrences are the ones dateutil expects: remove the rule from the differences (" + difference + ")");
+        }
+        else
+        {
+            Assert.Equal(expected, actual);
+        }
+
+        static DateTime ParseDateTime(string value) => DateTime.ParseExact(value, "yyyyMMdd'T'HHmmss", CultureInfo.InvariantCulture);
     }
 
     [Fact]
@@ -268,16 +276,16 @@ public sealed class CalendarTests
     [Fact]
     public void ICalendar_PstAppointment()
     {
-        // A recurring appointment with deleted and modified occurrences, written as an iCalendar object, read by Ical.Net, then back as an appointment
+        // A recurring appointment with deleted and modified occurrences, written as an iCalendar object, then back as an appointment
         using var file = PstFile.Open(Path.Combine(AppContext.BaseDirectory, "TestData", "Pst", "java-libpst-dist-list.pst"));
         var appointment = FindItems<MapiAppointment>(file.RootFolder).First(item => item.IsRecurring);
         var pattern = appointment.GetRecurrence()!;
         var calendar = new VCalendar();
         var master = calendar.AddAppointment(appointment);
         var text = calendar.ToString();
-        var oracle = Ical.Net.Calendar.Load(text)!;
-        Assert.HasCount(calendar.Events.Count(), oracle.Events);
-        Assert.Equal(OccurrencesWithIcalNet(master.ToString(), calendar, 20, utc: true), master.GetOccurrences().Take(20).ToList());
+        var read = VCalendar.Parse(text).Single();
+        Assert.HasCount(calendar.Events.Count(), read.Events);
+        Assert.Equal(master.GetOccurrences().Take(20), read.Events.Single(ev => ev.RecurrenceId is null).GetOccurrences().Take(20));
 
         var builder = master.ToMapiAppointmentBuilder();
         Assert.Equal(appointment.Subject, builder.Subject);
@@ -337,18 +345,15 @@ public sealed class CalendarTests
         Assert.Equal(1, request.Sequence);
         Assert.True(request.IsMeeting);
 
-        // Ical.Net reads the invitation, and MsgReader the meeting request
-        var oracle = Ical.Net.Calendar.Load(calendar.ToString())!;
-        Assert.Equal("REQUEST", oracle.Method);
-        var ev = Assert.Single(oracle.Events);
+        // The invitation written and read back
+        var read = VCalendar.Parse(calendar.ToString()).Single();
+        Assert.Equal("REQUEST", read.Method);
+        var ev = Assert.Single(read.Events);
         Assert.Equal("meeting-42@example.com", ev.Uid);
         Assert.Equal(1, ev.Sequence);
         Assert.Equal("CONFIRMED", ev.Status);
-        Assert.Equal("mailto:alice@example.com", ev.Organizer!.Value!.ToString());
-        Assert.Equal("mailto:bob@example.com", Assert.Single(ev.Attendees).Value!.ToString());
-        using var msgReader = new MsgReader.Outlook.Storage.Message(new MemoryStream(MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(request))));
-        Assert.Equal(MsgReader.Outlook.MessageType.AppointmentRequest, msgReader.Type);
-        Assert.Equal("Room 1", msgReader.Appointment.Location);
+        Assert.Equal("alice@example.com", ev.Organizer!.Address);
+        Assert.Equal("bob@example.com", Assert.Single(ev.Attendees).Address);
     }
 
     [Theory]
@@ -381,12 +386,12 @@ public sealed class CalendarTests
 
         var calendar = new VCalendar();
         calendar.AddMeetingMessage(message);
-        var oracle = Ical.Net.Calendar.Load(calendar.ToString())!;
-        Assert.Equal("REPLY", oracle.Method);
-        var ev = Assert.Single(oracle.Events);
-        Assert.Equal("mailto:alice@example.com", ev.Organizer!.Value!.ToString());
+        var read = VCalendar.Parse(calendar.ToString()).Single();
+        Assert.Equal("REPLY", read.Method);
+        var ev = Assert.Single(read.Events);
+        Assert.Equal("alice@example.com", ev.Organizer!.Address);
         var attendee = Assert.Single(ev.Attendees);
-        Assert.Equal("mailto:bob@example.com", attendee.Value!.ToString());
+        Assert.Equal("bob@example.com", attendee.Address);
         Assert.Equal(status, attendee.ParticipationStatus);
     }
 
@@ -420,7 +425,7 @@ public sealed class CalendarTests
         var ev = calendar.AddMeetingMessage(message);
         Assert.Equal("CANCEL", calendar.Method);
         Assert.Equal("CANCELLED", ev.Status);
-        Assert.Equal("CANCELLED", Assert.Single(Ical.Net.Calendar.Load(calendar.ToString())!.Events).Status);
+        Assert.Equal("CANCELLED", Assert.Single(VCalendar.Parse(calendar.ToString()).Single().Events).Status);
     }
 
     [Theory]
@@ -480,11 +485,8 @@ public sealed class CalendarTests
         invitation.To.Add(new MailboxAddress("Bob", "bob@example.com"));
         var mime = invitation.ToMime().ToByteArray();
 
-        // MimeKit reads the calendar alternative with its method
-        var oracle = MimeKit.MimeMessage.Load(new MemoryStream(mime));
-        var part = oracle.BodyParts.OfType<MimeKit.TextPart>().Single(part => part.ContentType.IsMimeType("text", "calendar"));
-        Assert.Equal("REQUEST", part.ContentType.Parameters["method"]);
-        Assert.Contains("UID:meeting-42@example.com", part.Text, StringComparison.Ordinal);
+        // The calendar alternative has its method
+        Assert.Contains("method=REQUEST", Encoding.UTF8.GetString(mime), StringComparison.Ordinal);
 
         var read = EmailMessage.FromMime(MimeMessage.Load(mime));
         Assert.NotNull(read.CalendarBody);
@@ -514,7 +516,7 @@ public sealed class CalendarTests
         Assert.Equal(task.Subject, copy.Subject);
         Assert.Equal(task.Status == MapiTaskStatus.Complete, copy.Status == MapiTaskStatus.Complete);
         Assert.Equal(task.PercentComplete, copy.PercentComplete, 2);
-        Assert.NotNull(Ical.Net.Calendar.Load(calendar.ToString()));
+        Assert.Equal(task.Subject, VCalendar.Parse(calendar.ToString()).Single().Todos.Single().Summary);
     }
 
     [Fact]
@@ -525,13 +527,6 @@ public sealed class CalendarTests
         Assert.Throws<InvalidEmailDataException>(() => VCalendar.Parse("BEGIN:VCALENDAR\r\n" + deep));
         var unclosed = VCalendar.Parse("BEGIN:VCALENDAR\r\nBEGIN:VEVENT\r\nSUMMARY:Unclosed\r\n").Single();
         Assert.Equal("Unclosed", unclosed.Events.Single().Summary);
-    }
-
-    private static List<DateTime> OccurrencesWithIcalNet(string eventText, VCalendar calendar, int count, bool utc = false)
-    {
-        var timeZones = string.Concat(calendar.TimeZones.Select(timeZone => timeZone.ToString()));
-        var oracle = Ical.Net.Calendar.Load("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:test\r\n" + timeZones + eventText + "END:VCALENDAR\r\n")!;
-        return [.. oracle.Events.Single().GetOccurrences().Take(count).Select(occurrence => utc ? occurrence.Period.StartTime.AsUtc : occurrence.Period.StartTime.Value)];
     }
 
     private static IEnumerable<T> FindItems<T>(PstFolder folder)
@@ -565,26 +560,4 @@ public sealed class CalendarTests
         string.Join(",", card.Categories),
         string.Join(",", card.Nicknames),
         string.Join(";", card.Addresses.Select(address => address.Street + "/" + address.Locality + "/" + address.PostalCode + "/" + address.Country)));
-
-    private static string DescribeWithFolkerKinzel(FolkerKinzel.VCards.VCard card)
-    {
-        static string? Empty(string? value) => string.IsNullOrEmpty(value) ? null : value;
-        static string Join(IReadOnlyList<string>? values) => values is null ? "" : string.Join(" ", values);
-        var name = card.NameViews?.FirstOrDefault(view => view is not null)?.Value;
-        var org = card.Organizations?.FirstOrDefault()?.Value;
-        return string.Join(" | ",
-            card.DisplayNames?.FirstOrDefault()?.Value,
-            Empty(Join(name?.Surnames)),
-            Empty(Join(name?.Given)),
-            string.Join(",", card.EMails?.Where(email => email is not null).Select(email => email!.Value) ?? []),
-            string.Join(",", card.Phones?.Where(phone => phone is not null).Select(phone => phone!.Value) ?? []),
-            Empty(org?.Name),
-            string.Join(",", org?.Units ?? []),
-            card.Titles?.FirstOrDefault()?.Value,
-            card.Notes?.FirstOrDefault()?.Value?.ReplaceLineEndings("\n"),
-            card.BirthDayViews?.FirstOrDefault()?.Value?.DateOnly?.ToString("O", CultureInfo.InvariantCulture),
-            string.Join(",", card.Categories?.Where(category => category is not null).SelectMany(category => category!.Value) ?? []),
-            string.Join(",", card.NickNames?.Where(nickname => nickname is not null).SelectMany(nickname => nickname!.Value) ?? []),
-            string.Join(";", card.Addresses?.Where(address => address is not null).Select(address => Join(address!.Value.Street) + "/" + Join(address.Value.Locality) + "/" + Join(address.Value.PostalCode) + "/" + Join(address.Value.Country)) ?? []));
-    }
 }

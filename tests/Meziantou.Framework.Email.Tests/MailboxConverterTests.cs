@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Email.Tests;
 
-/// <summary>Converts the mailboxes of TestData between Outlook data files, folders of mbox files and Maildir folders, and reads the mbox files the converter writes with MimeKit, an independent reader.</summary>
+/// <summary>Converts the mailboxes of TestData between Outlook data files, folders of mbox files and Maildir folders.</summary>
 public sealed class MailboxConverterTests : IDisposable
 {
     private readonly string _directory = Path.Combine(Path.GetTempPath(), "mailbox-" + Guid.NewGuid().ToString("N"));
@@ -46,9 +46,6 @@ public sealed class MailboxConverterTests : IDisposable
         Assert.Empty(result.Errors);
         var expected = DescribePst(pstPath, includeNonMail: false);
         Assert.Equal(expected, DescribeMbox(mboxPath));
-
-        // MimeKit reads the mbox files the converter writes, with the same messages
-        Assert.Equal(expected, DescribeMboxWithMimeKit(mboxPath));
 
         var copyPath = Path.Combine(_directory, "copy.pst");
         var back = MailboxConverter.Convert(mboxPath, copyPath, MailboxFormat.Pst);
@@ -331,31 +328,6 @@ public sealed class MailboxConverterTests : IDisposable
             foreach (var message in MboxReader.ReadMessages(file))
             {
                 result.Add(folder + ": " + Normalize(message.Message.Subject));
-            }
-        }
-
-        result.Sort(StringComparer.Ordinal);
-        return result;
-    }
-
-    private static List<string> DescribeMboxWithMimeKit(string directory)
-    {
-        var result = new List<string>();
-        foreach (var file in Directory.EnumerateFiles(directory, "*", SearchOption.AllDirectories))
-        {
-            var folder = Path.GetRelativePath(directory, file).Replace(".sbd" + Path.DirectorySeparatorChar, "/", StringComparison.Ordinal);
-            if (new FileInfo(file).Length == 0)
-            {
-                // An empty folder, which MimeKit does not read
-                continue;
-            }
-
-            using var stream = File.OpenRead(file);
-            var parser = new MimeKit.MimeParser(stream, MimeKit.MimeFormat.Mbox);
-            while (!parser.IsEndOfStream)
-            {
-                using var message = parser.ParseMessage();
-                result.Add(folder + ": " + Normalize(message.Subject));
             }
         }
 

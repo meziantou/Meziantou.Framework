@@ -1,0 +1,49 @@
+<message>
+<header>
+<field>
+Subject:  test</field>
+<field>
+MIME-Version: 1.0</field>
+<field>
+Content-Type: multipart/mixed;
+	boundary="--boundary.1652331600846930886"</field>
+</header>
+<multipart>
+<body-part>
+<header>
+<field>
+Content-Type: multipart/alternative;
+	boundary="--boundary.1652331600846930886-1"</field>
+</header>
+<multipart>
+<body-part>
+<header>
+<field>
+Content-Type: text/plain; charset=utf-8</field>
+</header>
+<text-body name="boundary-name-clash_decoded_1_1_1.txt"/>
+</body-part>
+<body-part>
+<header>
+<field>
+Content-Type: text/html; charset=utf-8</field>
+</header>
+<text-body name="boundary-name-clash_decoded_1_1_2.txt"/>
+</body-part>
+</multipart>
+</body-part>
+<body-part>
+<header>
+<field>
+Content-Type: application/pdf;
+	name="Daily_Stats-2022-05-12-0700.pdf"</field>
+<field>
+Content-Transfer-Encoding: base64</field>
+<field>
+Content-Disposition: Attachment;
+	filename="Daily_Stats-2022-05-12-0700.pdf"</field>
+</header>
+<binary-body name="boundary-name-clash_decoded_1_2.bin"/>
+</body-part>
+</multipart>
+</message>

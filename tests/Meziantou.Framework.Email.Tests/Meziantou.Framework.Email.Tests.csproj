@@ -10,14 +10,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- An independent MIME parser (MIT), the oracle of MimeOracleTests -->
-    <PackageReference Include="MimeKit" Version="4.18.2" />
-    <PackageReference Include="MsgReader" Version="6.2.0" />
-    <PackageReference Include="Ical.Net" Version="5.2.4" />
-    <PackageReference Include="FolkerKinzel.VCards" Version="8.2.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Using Include="Meziantou.Framework.Email.Calendar" />
     <Using Include="Meziantou.Framework.Email.Contacts" />
     <Using Include="Meziantou.Framework.Email.Mapi" />

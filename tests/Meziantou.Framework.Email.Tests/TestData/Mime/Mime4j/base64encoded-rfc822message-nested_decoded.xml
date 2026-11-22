@@ -1,0 +1,33 @@
+<message>
+<header>
+<field>
+MIME-Version: 1.0</field>
+<field>
+Content-Type: message/rfc822</field>
+<field>
+Subject: the body is a base64 encode rfc822 message including another base64 encoded rfc822 message</field>
+<field>
+Content-Transfer-Encoding: base64</field>
+</header>
+<message>
+<header>
+<field>
+MIME-Version: 1.0</field>
+<field>
+Subject: a simple rfc822 message encoded in a base64 body.</field>
+<field>
+Content-Type: message/rfc822</field>
+<field>
+Content-Transfer-Encoding: base64</field>
+</header>
+<message>
+<header>
+<field>
+Content-Type: text/plain; charset=us-ascii</field>
+<field>
+Content-Transfer-Encoding: 7bit</field>
+</header>
+<text-body name="base64encoded-rfc822message-nested_decoded_1_1_1.txt"/>
+</message>
+</message>
+</message>

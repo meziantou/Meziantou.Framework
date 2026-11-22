@@ -11,6 +11,5 @@ under a permissive license. `make-mailbox.js` writes them: run `node make-mailbo
 | `message.emlx` | A message of Apple Mail with its property list (flags, dates, remote identifier) |
 | `summary.msf` | A summary of Thunderbird: the dictionaries, the table of the messages, a value on two lines, escaped characters, a committed group and an aborted one |
 
-`MboxTests` compares the messages the reader finds in the mbox files, and in the files the writer writes, with what the
-mbox parser of [MimeKit](https://github.com/jstedfast/MimeKit) finds. No independent reader of .emlx files and Mork
-databases is available as a .NET package: their tests check the values of the files and the round trips.
+`MboxTests` checks the messages the reader finds in the mbox files, and in the files the writer writes. The tests of
+the .emlx files and Mork databases check the values of the files and the round trips.

@@ -16,6 +16,5 @@ The files come from the test data of [Apache POI](https://github.com/apache/poi)
 | `poi-keywords.msg` | Categories, a multi-valued named property |
 | `poi-msgClassAppointment.msg`, `poi-msgClassContact.msg`, `poi-msgClassTask.msg` | An appointment, a contact and a task |
 
-`MsgFileTests` compares what the reader reads in these files, and in the files the writer writes, with what
-[MsgReader](https://github.com/Sicos1977/MSGReader) reads. It also checks the compound files of the writer with
-[OpenMcdf](https://github.com/CompoundFiles/OpenMcdf).
+`MsgFileTests` checks what the reader reads in these files, and that the files the writer writes read back the same.
+It also reads back the compound files of the writer.

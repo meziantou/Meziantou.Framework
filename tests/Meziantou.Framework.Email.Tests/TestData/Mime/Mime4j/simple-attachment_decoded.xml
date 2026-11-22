@@ -1,0 +1,46 @@
+<message>
+<header>
+<field>
+Date: Fri, 27 Apr 2007 16:08:23 +0200</field>
+<field>
+From: Foo Bar &lt;bar@example.com&gt;</field>
+<field>
+MIME-Version: 1.0</field>
+<field>
+To:  foo@example.com</field>
+<field>
+Subject: Here is the attachment I was waiting for.</field>
+<field>
+Content-Type: multipart/mixed;
+ boundary="------------090404080405080108000909"</field>
+</header>
+<multipart>
+<preamble>
+This is a multi-part message in MIME format.</preamble>
+<body-part>
+<header>
+<field>
+Content-Type: text/plain; charset=ISO-8859-15</field>
+<field>
+Content-Transfer-Encoding: 7bit</field>
+</header>
+<text-body name="simple-attachment_decoded_1_1.txt"/>
+</body-part>
+<body-part>
+<header>
+<field>
+Content-Type: application/octet-stream;
+ name="data.bin"</field>
+<field>
+Content-Transfer-Encoding: base64</field>
+<field>
+Content-Disposition: attachment;
+ filename="data.bin"</field>
+</header>
+<binary-body name="simple-attachment_decoded_1_2.bin"/>
+</body-part>
+<epilogue>
+
+</epilogue>
+</multipart>
+</message>

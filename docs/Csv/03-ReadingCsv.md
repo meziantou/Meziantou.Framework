@@ -1,230 +1,348 @@
 ---
 title: Reading CSV
-description: Read rows with or without a header row, get values by position or name, change the separator and quote, and handle short rows.
+description: Read records from strings, files and streams, get values by position or name, parse them, and handle separators, quotes, comments, empty lines and spaces.
 ---
 
-[CsvReader.ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) reads the next row and returns `null` at the end of the data. Read the rows in a loop:
+[CsvReader](cref:Meziantou.Framework.Csv.CsvReader) reads UTF-16 text. Create one with [Create](cref:Meziantou.Framework.Csv.CsvReader.Create) (a `TextReader`, a `Stream` or memory),
+[CreateFromString](cref:Meziantou.Framework.Csv.CsvReader.CreateFromString) or [CreateFromFile](cref:Meziantou.Framework.Csv.CsvReader.CreateFromFile), then call [Read](cref:Meziantou.Framework.Csv.CsvReader.Read) until it returns `false`:
 
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadRowAsync;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader("Name,Age\nJohn,30\nJane,25");
-var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+using var reader = CsvReader.CreateFromString("""
+    Name,Age
+    Alice,30
+    Bob,25
+    """);
 
 var lines = new List<string>();
-while (await csvReader.ReadRowAsync() is { } row)
+while (reader.Read())
 {
-    lines.Add($"{row["Name"]} is {row["Age"]} years old");
+    var record = reader.Current;
+    lines.Add($"{record["Name"].Span} is {record["Age"].Parse<int>()} years old");
 }
 
-Assert.Equal(["John is 30 years old", "Jane is 25 years old"], lines);
+Assert.Equal(["Alice is 30 years old", "Bob is 25 years old"], lines);
 ```
 <!-- endref -->
 
-Test the `null` returned by [ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) to find the end of the data rather than [EndOfStream](cref:Meziantou.Framework.Csv.CsvReader.EndOfStream): when its buffer is
-empty, [EndOfStream](cref:Meziantou.Framework.Csv.CsvReader.EndOfStream) asks the underlying `TextReader` synchronously, so it can block.
+[ReadAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadAsync) reads the next record asynchronously, for readers over files and network streams. It only waits when the
+buffer of the reader has no complete record left. The reader can also be enumerated with `foreach`.
+
+## Values are valid until the next record
+
+[Current](cref:Meziantou.Framework.Csv.CsvReader.Current) is a [CsvRecord](cref:Meziantou.Framework.Csv.CsvRecord), and each value is a [CsvField](cref:Meziantou.Framework.Csv.CsvField). Both are `ref struct` views of the buffer of the
+reader: reading a value does not copy it, and the views are valid until the next call to [Read](cref:Meziantou.Framework.Csv.CsvReader.Read). Use the span of
+a value to process it without allocating, and [ToString](cref:Meziantou.Framework.Csv.CsvField.ToString) to keep it:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadSpans;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var reader = CsvReader.CreateFromString("Id,Amount\n1,10.5\n2,20.25");
+
+var total = 0m;
+while (reader.Read())
+{
+    // The values are slices of the buffer of the reader: reading them does not allocate
+    ReadOnlySpan<char> amount = reader.Current["Amount"].Span;
+    total += decimal.Parse(amount, CultureInfo.InvariantCulture);
+}
+
+Assert.Equal(30.75m, total);
+```
+<!-- endref -->
+
+- [Span](cref:Meziantou.Framework.Csv.CsvField.Span) is the value without its quotes, with doubled quotes unescaped.
+- [RawSpan](cref:Meziantou.Framework.Csv.CsvField.RawSpan) is the value as it is in the data, and [IsQuoted](cref:Meziantou.Framework.Csv.CsvField.IsQuoted) says whether it is quoted.
+- [ToStringArray](cref:Meziantou.Framework.Csv.CsvRecord.ToStringArray) gives all the values of a record as strings.
+
+## Parse values
+
+[Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) parse a value as any type that implements `ISpanParsable<T>`, such as numbers, dates
+and `Guid`, with [FormatProvider](cref:Meziantou.Framework.Csv.CsvReaderOptions.FormatProvider), the invariant culture by default. [ParseEnum](cref:Meziantou.Framework.Csv.CsvField.ParseEnum) parses the name or the number of a
+member of an enumeration:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ParseValues;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var reader = CsvReader.CreateFromString("Id,Price,Day\n1,9.99,monday\nx,1,sunday");
+
+Assert.True(reader.Read());
+Assert.Equal(1, reader.Current["Id"].Parse<int>());
+Assert.Equal(9.99m, reader.Current["Price"].Parse<decimal>()); // Parsed with the invariant culture
+Assert.Equal(DayOfWeek.Monday, reader.Current["Day"].ParseEnum<DayOfWeek>()); // Names are matched ignoring case
+
+Assert.True(reader.Read());
+Assert.False(reader.Current["Id"].TryParse<int>(out _));
+var exception = Assert.Throws<CsvException>(() => reader.Current["Id"].Parse<int>());
+Assert.Equal(3, exception.LineNumber);
+Assert.Equal("Id", exception.ColumnName);
+```
+<!-- endref -->
+
+An invalid value throws a [CsvException](cref:Meziantou.Framework.Csv.CsvException) that gives the line, the record and the column of the value.
+
+## Rows with a header
+
+[HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReaderOptions.HasHeaderRow) is `true` by default: the first row gives the names of the columns, and it is not returned as a record.
+[Header](cref:Meziantou.Framework.Csv.CsvReader.Header) is set once the first record is read:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadWithHeader;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var reader = CsvReader.CreateFromString("""
+    Name,Age
+    Alice,30
+    """);
+
+Assert.True(reader.Read());
+var record = reader.Current;
+
+// The header row is read with the first record
+Assert.Equal(["Name", "Age"], reader.Header!.ColumnNames);
+Assert.Equal(1, reader.Header.IndexOf("Age"));
+
+// Access by column name or by index
+Assert.Equal("Alice", record["Name"].ToString());
+Assert.Equal("30", record[1].ToString());
+
+// TryGetField returns false for a column the header does not have
+Assert.False(record.TryGetField("City", out _));
+
+Assert.False(reader.Read());
+```
+<!-- endref -->
+
+- Column names are compared with an ordinal, case-sensitive comparison. Set [ColumnNameComparer](cref:Meziantou.Framework.Csv.CsvReaderOptions.ColumnNameComparer) to change it.
+- When two columns have the same name, the name gives the first one.
+- Reading a column the header does not have throws a `KeyNotFoundException`; reading a value by name without a header
+  row throws an `InvalidOperationException`.
 
 ## Rows without a header
 
-[HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReader.HasHeaderRow) is `false` by default: every row is data, and values are read by position:
+Set [HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReaderOptions.HasHeaderRow) to `false` to read every row as a record, and read the values by position. An index from the end,
+such as `^1`, gives the last value:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadWithoutHeader;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader("""
+var options = new CsvReaderOptions { HasHeaderRow = false };
+using var reader = CsvReader.CreateFromString("""
     Alice,30,New York
     Bob,25,London
-    """);
-var csvReader = new CsvReader(reader)
-{
-    HasHeaderRow = false,
-};
+    """, options);
 
 var lines = new List<string>();
-while (await csvReader.ReadRowAsync() is { } row)
+foreach (var record in reader)
 {
-    lines.Add($"{row[0]}, {row[1]}, {row[2]}");
+    lines.Add($"{record[0].Span}, {record[1].Span}, {record[^1].Span}");
 }
 
 Assert.Equal(["Alice, 30, New York", "Bob, 25, London"], lines);
 ```
 <!-- endref -->
 
-## Rows with a header
+## Short records and empty lines
 
-Set [HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReader.HasHeaderRow) to `true` to read the names of the columns from the first row. [ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) does not return that
-row. A value can then be read by position, by column name or by [CsvColumn](cref:Meziantou.Framework.Csv.CsvColumn):
-
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadWithHeader;format=md-fenced-code-block;dedent=true -->
-```csharp
-using var reader = new StringReader("""
-    Name,Age
-    Alice,30
-    """);
-var csvReader = new CsvReader(reader)
-{
-    HasHeaderRow = true,
-};
-
-var row = await csvReader.ReadRowAsync();
-Assert.NotNull(row);
-
-// Access by column name
-Assert.Equal("Alice", row["Name"]);
-Assert.Equal("30", row["Age"]);
-
-// Access by index
-Assert.Equal("Alice", row[0]);
-
-// Access by CsvColumn
-var nameColumn = row.Columns?.FirstOrDefault(c => c.Name == "Name");
-Assert.NotNull(nameColumn);
-Assert.Equal("Alice", row[nameColumn]);
-
-// ReadRowAsync returns null at the end of the data
-Assert.Null(await csvReader.ReadRowAsync());
-```
-<!-- endref -->
-
-- [Columns](cref:Meziantou.Framework.Csv.CsvRow.Columns) lists the columns, with their [Name](cref:Meziantou.Framework.Csv.CsvColumn.Name) and [Index](cref:Meziantou.Framework.Csv.CsvColumn.Index). It is `null` when there is no header row.
-- Column names are compared with an ordinal, case-sensitive comparison. When two columns have the same name, the name
-  gives the value of the first one.
-- Reading a value by name throws an `InvalidOperationException` when the reader has no header row.
-
-[Values](cref:Meziantou.Framework.Csv.CsvRow.Values) holds the values of the row, in order.
-
-## Short rows and blank lines
-
-A row can have fewer values than the header row. Reading a column the row does not reach returns `null`, as does
-reading a column the header row does not have. A blank line is a row without values:
+A record can have fewer values than the header row. [TryGetField](cref:Meziantou.Framework.Csv.CsvRecord.TryGetField) returns `false` for a column the record does not reach,
+and the indexers throw an `ArgumentOutOfRangeException`. An empty line is a record without columns:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_BlankLinesAndShortRows;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader("Name,Age,City\nAlice,30\n\nBob,25,London");
-var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+using var reader = CsvReader.CreateFromString("Name,Age,City\nAlice,30\n\nBob,25,London");
 
-var alice = await csvReader.ReadRowAsync();
-Assert.NotNull(alice);
-Assert.Equal(["Alice", "30"], alice.Values);
-Assert.Null(alice["City"]);    // The row has no value for this column
-Assert.Null(alice["Country"]); // The header row has no such column
+Assert.True(reader.Read());
+var alice = reader.Current;
+Assert.Equal(2, alice.ColumnCount);
+Assert.False(alice.TryGetField("City", out _)); // The record has no value for this column
 
-var blankLine = await csvReader.ReadRowAsync();
-Assert.NotNull(blankLine);
-Assert.Empty(blankLine.Values);
+Assert.True(reader.Read());
+Assert.Equal(0, reader.Current.ColumnCount); // An empty line is a record without columns
 
-var bob = await csvReader.ReadRowAsync();
-Assert.NotNull(bob);
-Assert.Equal("London", bob["City"]);
+Assert.True(reader.Read());
+Assert.Equal("London", reader.Current["City"].ToString());
 ```
 <!-- endref -->
 
-Reading by position is strict: `row[index]` throws an `ArgumentOutOfRangeException` when the row has no value at that
-position. Check `row.Values.Count` first when rows can be short.
+Empty values are kept: `a,b,` is a record of three values, the last one empty. A line terminator at the end of the data
+does not add a record. Set [ValidateColumnCount](cref:Meziantou.Framework.Csv.CsvReaderOptions.ValidateColumnCount) to throw a [CsvException](cref:Meziantou.Framework.Csv.CsvException) when a record does not have the number of
+columns of the header row, or of the first record without a header row.
 
-Empty values are kept: `a,b,` is a row of three values, the last one empty. A line terminator at the end of the data
-does not add an empty row.
+## Comments and empty lines
 
-## A row as a dictionary
+[CommentCharacter](cref:Meziantou.Framework.Csv.CsvReaderOptions.CommentCharacter) skips the lines that start with a character, and [SkipEmptyLines](cref:Meziantou.Framework.Csv.CsvReaderOptions.SkipEmptyLines) skips the empty lines:
 
-[CsvRow](cref:Meziantou.Framework.Csv.CsvRow) implements `IReadOnlyDictionary<string, string?>`, keyed by column name. Pass a row to code that expects a
-dictionary:
-
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvRow_AsDictionary;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_CommentsAndEmptyLines;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader("Name,Age\nAlice,30");
-var csvReader = new CsvReader(reader) { HasHeaderRow = true };
-var row = await csvReader.ReadRowAsync();
-Assert.NotNull(row);
+var options = new CsvReaderOptions
+{
+    CommentCharacter = '#',
+    SkipEmptyLines = true,
+};
+using var reader = CsvReader.CreateFromString("""
+    # Exported on 2026-11-21
+    Name,Age
 
-IReadOnlyDictionary<string, string?> values = row;
-Assert.Equal(["Name", "Age"], values.Keys);
-Assert.True(values.TryGetValue("Age", out var age));
-Assert.Equal("30", age);
+    Alice,30
+    # Bob left
+    Charlie,35
+    """, options);
+
+var names = new List<string>();
+foreach (var record in reader)
+{
+    names.Add(record["Name"].ToString());
+}
+
+Assert.Equal(["Alice", "Charlie"], names);
 ```
 <!-- endref -->
 
-The dictionary has one entry per column of the header row, even when the row is short: the missing values are `null`.
+A comment character in the middle of a line, or at the start of a line inside a quoted value, is part of the data.
 
 ## Separators and quotes
 
-[Separator](cref:Meziantou.Framework.Csv.CsvReader.Separator) is `,` and [Quote](cref:Meziantou.Framework.Csv.CsvReader.Quote) is `"` by default. Change them to read other formats, such as tab-separated values:
+[Separator](cref:Meziantou.Framework.Csv.CsvReaderOptions.Separator) is `,` and [Quote](cref:Meziantou.Framework.Csv.CsvReaderOptions.Quote) is `"` by default. Change them to read other formats, such as tab-separated values:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_CustomSeparatorAndQuote;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader("Name\tComment\nAlice\t'Tab\tand ''quote'''");
-var csvReader = new CsvReader(reader)
+var options = new CsvReaderOptions
 {
     Separator = '\t',      // Tab-separated
     Quote = '\'',          // Single quote instead of double quote
-    HasHeaderRow = true,
 };
+using var reader = CsvReader.CreateFromString("Name\tComment\nAlice\t'Tab\tand ''quote'''", options);
 
-var row = await csvReader.ReadRowAsync();
-Assert.NotNull(row);
-Assert.Equal("Alice", row["Name"]);
-Assert.Equal("Tab\tand 'quote'", row["Comment"]);
+Assert.True(reader.Read());
+Assert.Equal("Alice", reader.Current["Name"].ToString());
+Assert.Equal("Tab\tand 'quote'", reader.Current["Comment"].ToString());
 ```
 <!-- endref -->
 
-Set [Quote](cref:Meziantou.Framework.Csv.CsvReader.Quote) to `null` when the data has no quoted values: every quote character is then part of a value.
+Set [Separator](cref:Meziantou.Framework.Csv.CsvReaderOptions.Separator) to `null` to detect it from the first line: the most frequent of `,`, `;`, tab and `|` outside quoted
+values. [Separator](cref:Meziantou.Framework.Csv.CsvReader.Separator) on the reader gives the separator in use:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_DetectSeparator;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new CsvReaderOptions { Separator = null };
+using var reader = CsvReader.CreateFromString("Name;Age\nAlice;30", options);
+
+Assert.True(reader.Read());
+Assert.Equal(';', reader.Separator);
+Assert.Equal("30", reader.Current["Age"].ToString());
+```
+<!-- endref -->
+
+Set [Quote](cref:Meziantou.Framework.Csv.CsvReaderOptions.Quote) to `null` when the data has no quoted values: every quote character is then part of a value.
 
 ## Quoted values
 
 A value that starts with the quote character ends at the next quote character that is not doubled. Inside it, the
-separator and line breaks are part of the value, and a doubled quote is one quote:
+separator and line terminators are part of the value, and a doubled quote is one quote:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_QuotedValues;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader(""""
+using var reader = CsvReader.CreateFromString(""""
     "Value with, comma","Normal value","Value with ""quotes""","Multi-line
     value"
-    """");
-var csvReader = new CsvReader(reader);
+    """", new CsvReaderOptions { HasHeaderRow = false });
 
-var row = await csvReader.ReadRowAsync();
-Assert.NotNull(row);
-Assert.Equal("Value with, comma", row[0]);
-Assert.Equal("Normal value", row[1]);
-Assert.Equal("Value with \"quotes\"", row[2]);
-Assert.Equal("Multi-line\nvalue", row[3], ignoreLineEndingDifferences: true);
+Assert.True(reader.Read());
+var record = reader.Current;
+Assert.Equal("Value with, comma", record[0].ToString());
+Assert.Equal("Normal value", record[1].ToString());
+Assert.Equal("Value with \"quotes\"", record[2].ToString());
+Assert.Equal("Multi-line\nvalue", record[3].ToString(), ignoreLineEndingDifferences: true);
+Assert.True(record[0].IsQuoted);
+Assert.Equal("\"Value with, comma\"", record[0].RawSpan.ToString());
 ```
 <!-- endref -->
 
-- A quote character in the middle of an unquoted value, as in `a"b`, is part of the value.
-- The line breaks of a multi-line value are kept as they are in the data: `\r\n` stays `\r\n`.
+- A quote character in the middle of a value that is not quoted, as in `a"b`, is part of the value.
+- The characters after the closing quote are part of the value: `"a"b` is `ab`.
+- A quoted value that is not closed ends at the end of the data.
+- The line terminators of a multi-line value are kept as they are in the data.
+- Records end at `\n`, `\r\n` or `\r`, so files written on any platform read the same.
 
-Rows end at `\n`, `\r\n` or `\r`, so files written on any platform read the same.
+Set [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) to throw a [CsvException](cref:Meziantou.Framework.Csv.CsvException) for these cases instead:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_Strict;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new CsvReaderOptions { HasHeaderRow = false, Strict = true };
+using var reader = CsvReader.CreateFromString("a,b\"c\nd,e", options);
+
+var exception = Assert.Throws<CsvException>(() => reader.Read());
+Assert.Equal(1, exception.LineNumber);
+Assert.Equal(1, exception.ColumnIndex);
+```
+<!-- endref -->
+
+## Spaces around values
+
+[Trim](cref:Meziantou.Framework.Csv.CsvReaderOptions.Trim) removes the spaces around the values ([CsvTrimOptions.Outer](cref:Meziantou.Framework.Csv.CsvTrimOptions.Outer)), at the start and the end of quoted values
+([CsvTrimOptions.InsideQuotes](cref:Meziantou.Framework.Csv.CsvTrimOptions.InsideQuotes)), or both. With [CsvTrimOptions.Outer](cref:Meziantou.Framework.Csv.CsvTrimOptions.Outer), a quoted value can be preceded by spaces:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_Trim;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new CsvReaderOptions { HasHeaderRow = false, Trim = CsvTrimOptions.All };
+using var reader = CsvReader.CreateFromString("  a  , \" b,c \" ,d", options);
+
+Assert.True(reader.Read());
+Assert.Equal(["a", "b,c", "d"], reader.Current.ToStringArray());
+```
+<!-- endref -->
+
+Only the space character is removed: tabs are part of the values.
 
 ## Positions for error messages
 
-The reader counts what it reads, which helps report where bad data is:
+[RowIndex](cref:Meziantou.Framework.Csv.CsvReader.RowIndex) is the 0-based index of the current record, without the header row and the comment lines. [LineNumber](cref:Meziantou.Framework.Csv.CsvReader.LineNumber) is
+the 1-based line where the record starts, counting the line terminators inside quoted values, and [Position](cref:Meziantou.Framework.Csv.CsvReader.Position) is its offset
+from the start of the data:
 
-| Property | Value |
-| --- | --- |
-| [RowNumber](cref:Meziantou.Framework.Csv.CsvReader.RowNumber) | The 0-based index of the row just returned. The header row counts: the first data row after a header is row 1. |
-| [LineNumber](cref:Meziantou.Framework.Csv.CsvReader.LineNumber) | The number of line terminators read so far, including those inside quoted values: the physical line in the input. |
-| [ColumnNumber](cref:Meziantou.Framework.Csv.CsvReader.ColumnNumber) | The number of characters read since the start of the current row. It is a character position, not a column index. |
-
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_RowNumber;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_Positions;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var reader = new StringReader("Name,Age\nAlice,30\nBob,unknown");
-var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+using var reader = CsvReader.CreateFromString("Name,Comment\nAlice,\"Two\nlines\"\nBob,unknown");
 
-var errors = new List<string>();
-while (await csvReader.ReadRowAsync() is { } row)
+var positions = new List<string>();
+while (reader.Read())
 {
-    if (!int.TryParse(row["Age"], CultureInfo.InvariantCulture, out _))
-    {
-        errors.Add($"Row {csvReader.RowNumber}: invalid age '{row["Age"]}'");
-    }
+    positions.Add($"record {reader.RowIndex} starts at line {reader.LineNumber}");
 }
 
-// The header row is row 0
-Assert.Equal(["Row 2: invalid age 'unknown'"], errors);
+Assert.Equal(["record 0 starts at line 2", "record 1 starts at line 4"], positions);
 ```
 <!-- endref -->
 
-## Custom rows and columns
+## UTF-8 data
 
-[CsvReader](cref:Meziantou.Framework.Csv.CsvReader) calls the protected virtual methods [CreateColumn](cref:Meziantou.Framework.Csv.CsvReader.CreateColumn) and [CreateRow](cref:Meziantou.Framework.Csv.CsvReader.CreateRow) to create each column of the header and
-each row. Override them in a derived class to return your own types derived from [CsvColumn](cref:Meziantou.Framework.Csv.CsvColumn) and [CsvRow](cref:Meziantou.Framework.Csv.CsvRow), for
-instance a row with typed properties.
+[Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader) reads UTF-8 bytes without decoding them. It has the same options and members as [CsvReader](cref:Meziantou.Framework.Csv.CsvReader); its values are
+[Utf8CsvField](cref:Meziantou.Framework.Csv.Utf8CsvField), whose [Parse](cref:Meziantou.Framework.Csv.Utf8CsvField.Parse) parses the bytes directly for the types that implement `IUtf8SpanParsable<T>`, such
+as numbers:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=Utf8CsvReader_Read;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var stream = new MemoryStream("Name,Age\nAlice,30\nBob,25"u8.ToArray());
+using var reader = Utf8CsvReader.Create(stream);
+
+var totalAge = 0;
+var names = new List<string>();
+foreach (var record in reader)
+{
+    names.Add(record["Name"].ToString());
+    totalAge += record["Age"].Parse<int>(); // Parses the UTF-8 bytes, without decoding them
+}
+
+Assert.Equal(["Alice", "Bob"], names);
+Assert.Equal(55, totalAge);
+```
+<!-- endref -->
+
+- [ParseUtf16](cref:Meziantou.Framework.Csv.Utf8CsvField.ParseUtf16) decodes the value first, for the types that only parse UTF-16 text, such as `DateTime`.
+- The separator, the quote and the comment characters must be ASCII characters.
+- A UTF-8 byte order mark at the start of the data is skipped. Invalid UTF-8 sequences are replaced with U+FFFD when a
+  value is converted to a string.
+
+[CsvReader.Create](cref:Meziantou.Framework.Csv.CsvReader.Create) also accepts a `Stream`, which it decodes with UTF-8 by default, or with the encoding of its byte order
+mark. Prefer [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader) for UTF-8 files: it skips the decoding of the values you do not read.
+
+## Long rows and untrusted data
+
+The buffer of the reader grows when a row does not fit. [MaxRowLength](cref:Meziantou.Framework.Csv.CsvReaderOptions.MaxRowLength) limits the length of a row read from a `TextReader` or a
+`Stream`, 16 777 216 characters or bytes by default: a longer row throws a [CsvException](cref:Meziantou.Framework.Csv.CsvException). This bounds the memory a
+malformed file uses, such as a quote that is never closed.

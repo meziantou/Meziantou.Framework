@@ -4,62 +4,611 @@
 
 namespace Meziantou.Framework.Csv
 {
-    public class CsvColumn
+    public sealed class CsvException : System.Exception
+    {
+        public int? ColumnIndex { get => throw null; }
+        public string? ColumnName { get => throw null; }
+        public long? LineNumber { get => throw null; }
+        public long? Position { get => throw null; }
+        public long? RowIndex { get => throw null; }
+        public CsvException(string? message) { }
+        public CsvException(string? message, System.Exception? innerException) { }
+    }
+
+    public ref struct CsvField
+    {
+        public int ColumnIndex { get => throw null; }
+        public bool IsEmpty { get => throw null; }
+        public bool IsQuoted { get => throw null; }
+        public System.ReadOnlySpan<char> RawSpan { get => throw null; }
+        public System.ReadOnlySpan<char> Span { get => throw null; }
+        public T Parse<T>() where T : System.ISpanParsable<T> => throw null;
+        public TEnum ParseEnum<TEnum>(bool ignoreCase = true) where TEnum : struct, System.Enum => throw null;
+        public override string ToString() => throw null;
+        public bool TryParse<T>([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result) where T : System.ISpanParsable<T> => throw null;
+    }
+
+    public sealed class CsvHeader
+    {
+        public int ColumnCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> ColumnNames { get => throw null; }
+        public int IndexOf(string columnName) => throw null;
+        public override string ToString() => throw null;
+        public bool TryGetIndex(string columnName, out int index) => throw null;
+    }
+
+    public enum CsvQuoteMode
+    {
+        AsNeeded = 0,
+        Always = 1,
+        Never = 2,
+    }
+
+    public sealed class CsvReader : System.IAsyncDisposable, System.IDisposable
+    {
+        public Meziantou.Framework.Csv.CsvRecord Current { get => throw null; }
+        public Meziantou.Framework.Csv.CsvHeader? Header { get => throw null; }
+        public long LineNumber { get => throw null; }
+        public long Position { get => throw null; }
+        public long RowIndex { get => throw null; }
+        public char Separator { get => throw null; }
+        public static Meziantou.Framework.Csv.CsvReader Create(System.ReadOnlyMemory<char> csv, Meziantou.Framework.Csv.CsvReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Csv.CsvReader Create(System.IO.TextReader reader, Meziantou.Framework.Csv.CsvReaderOptions? options = null, bool leaveOpen = false) => throw null;
+        public static Meziantou.Framework.Csv.CsvReader Create(System.IO.Stream stream, System.Text.Encoding? encoding = null, Meziantou.Framework.Csv.CsvReaderOptions? options = null, bool leaveOpen = false) => throw null;
+        public static Meziantou.Framework.Csv.CsvReader CreateFromFile(string path, System.Text.Encoding? encoding = null, Meziantou.Framework.Csv.CsvReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Csv.CsvReader CreateFromString(string csv, Meziantou.Framework.Csv.CsvReaderOptions? options = null) => throw null;
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public Meziantou.Framework.Csv.CsvReader.Enumerator GetEnumerator() => throw null;
+        public bool Read() => throw null;
+        public System.Threading.Tasks.ValueTask<bool> ReadAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ref struct Enumerator
+        {
+            public readonly Meziantou.Framework.Csv.CsvRecord Current { get => throw null; }
+            public readonly bool MoveNext() => throw null;
+        }
+    }
+
+    public sealed class CsvReaderOptions : System.IEquatable<Meziantou.Framework.Csv.CsvReaderOptions>
+    {
+        public const char DefaultQuote = '"';
+        public const char DefaultSeparator = ',';
+        public int BufferSize { get => throw null; init { } }
+        public System.Collections.Generic.IEqualityComparer<string> ColumnNameComparer { get => throw null; init { } }
+        public char? CommentCharacter { get => throw null; init { } }
+        public static Meziantou.Framework.Csv.CsvReaderOptions Default { get => throw null; }
+        public System.IFormatProvider? FormatProvider { get => throw null; init { } }
+        public bool HasHeaderRow { get => throw null; init { } }
+        public int MaxRowLength { get => throw null; init { } }
+        public bool PoolStrings { get => throw null; init { } }
+        public char? Quote { get => throw null; init { } }
+        public char? Separator { get => throw null; init { } }
+        public bool SkipEmptyLines { get => throw null; init { } }
+        public bool Strict { get => throw null; init { } }
+        public Meziantou.Framework.Csv.CsvTrimOptions Trim { get => throw null; init { } }
+        public bool ValidateColumnCount { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.Csv.CsvReaderOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Csv.CsvReaderOptions? left, Meziantou.Framework.Csv.CsvReaderOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Csv.CsvReaderOptions? left, Meziantou.Framework.Csv.CsvReaderOptions? right) => throw null;
+    }
+
+    public ref struct CsvRecord
+    {
+        public int ColumnCount { get => throw null; }
+        public Meziantou.Framework.Csv.CsvField this[System.Index index] { get => throw null; }
+        public Meziantou.Framework.Csv.CsvField this[int index] { get => throw null; }
+        public Meziantou.Framework.Csv.CsvField this[string columnName] { get => throw null; }
+        public long LineNumber { get => throw null; }
+        public System.ReadOnlySpan<char> RawSpan { get => throw null; }
+        public long RowIndex { get => throw null; }
+        public override string ToString() => throw null;
+        public string[] ToStringArray() => throw null;
+        public bool TryGetField(string columnName, out Meziantou.Framework.Csv.CsvField field) => throw null;
+    }
+
+    [System.Flags]
+    public enum CsvTrimOptions
+    {
+        None = 0,
+        Outer = 1,
+        InsideQuotes = 2,
+        All = 3,
+    }
+
+    public sealed class CsvWriter : System.IAsyncDisposable, System.IDisposable
+    {
+        public static Meziantou.Framework.Csv.CsvWriter Create(System.Buffers.IBufferWriter<char> bufferWriter, Meziantou.Framework.Csv.CsvWriterOptions? options = null) => throw null;
+        public static Meziantou.Framework.Csv.CsvWriter Create(System.Text.StringBuilder builder, Meziantou.Framework.Csv.CsvWriterOptions? options = null) => throw null;
+        public static Meziantou.Framework.Csv.CsvWriter Create(System.IO.TextWriter writer, Meziantou.Framework.Csv.CsvWriterOptions? options = null, bool leaveOpen = false) => throw null;
+        public static Meziantou.Framework.Csv.CsvWriter Create(System.IO.Stream stream, System.Text.Encoding? encoding = null, Meziantou.Framework.Csv.CsvWriterOptions? options = null, bool leaveOpen = false) => throw null;
+        public static Meziantou.Framework.Csv.CsvWriter CreateToFile(string path, System.Text.Encoding? encoding = null, Meziantou.Framework.Csv.CsvWriterOptions? options = null) => throw null;
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public void EndRow() { }
+        public System.Threading.Tasks.ValueTask EndRowAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Flush() { }
+        public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void WriteField(System.ReadOnlySpan<char> value) { }
+        public void WriteField(string? value) { }
+        public void WriteField<T>(T value, System.ReadOnlySpan<char> format = default, System.IFormatProvider? formatProvider = null) where T : System.ISpanFormattable { }
+        public void WriteFields(System.Collections.Generic.IEnumerable<string?> values) { }
+        public void WriteFields(params System.ReadOnlySpan<string?> values) { }
+        public void WriteRow(System.Collections.Generic.IEnumerable<string?> values) { }
+        public void WriteRow(params System.ReadOnlySpan<string?> values) { }
+        public System.Threading.Tasks.ValueTask WriteRowAsync(System.Collections.Generic.IEnumerable<string?> values, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class CsvWriterOptions : System.IEquatable<Meziantou.Framework.Csv.CsvWriterOptions>
+    {
+        public int BufferSize { get => throw null; init { } }
+        public static Meziantou.Framework.Csv.CsvWriterOptions Default { get => throw null; }
+        public bool EscapeFormulas { get => throw null; init { } }
+        public System.IFormatProvider? FormatProvider { get => throw null; init { } }
+        public string NewLine { get => throw null; init { } }
+        public char? Quote { get => throw null; init { } }
+        public Meziantou.Framework.Csv.CsvQuoteMode QuoteMode { get => throw null; init { } }
+        public char Separator { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.Csv.CsvWriterOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Csv.CsvWriterOptions? left, Meziantou.Framework.Csv.CsvWriterOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Csv.CsvWriterOptions? left, Meziantou.Framework.Csv.CsvWriterOptions? right) => throw null;
+    }
+
+    public ref struct Utf8CsvField
+    {
+        public int ColumnIndex { get => throw null; }
+        public bool IsEmpty { get => throw null; }
+        public bool IsQuoted { get => throw null; }
+        public System.ReadOnlySpan<byte> RawUtf8Span { get => throw null; }
+        public System.ReadOnlySpan<byte> Utf8Span { get => throw null; }
+        public T Parse<T>() where T : System.IUtf8SpanParsable<T> => throw null;
+        public TEnum ParseEnum<TEnum>(bool ignoreCase = true) where TEnum : struct, System.Enum => throw null;
+        public T ParseUtf16<T>() where T : System.ISpanParsable<T> => throw null;
+        public override string ToString() => throw null;
+        public bool TryParse<T>([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result) where T : System.IUtf8SpanParsable<T> => throw null;
+        public bool TryParseUtf16<T>([System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out T result) where T : System.ISpanParsable<T> => throw null;
+    }
+
+    public sealed class Utf8CsvReader : System.IAsyncDisposable, System.IDisposable
+    {
+        public Meziantou.Framework.Csv.Utf8CsvRecord Current { get => throw null; }
+        public Meziantou.Framework.Csv.CsvHeader? Header { get => throw null; }
+        public long LineNumber { get => throw null; }
+        public long Position { get => throw null; }
+        public long RowIndex { get => throw null; }
+        public char Separator { get => throw null; }
+        public static Meziantou.Framework.Csv.Utf8CsvReader Create(System.ReadOnlyMemory<byte> utf8Csv, Meziantou.Framework.Csv.CsvReaderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Csv.Utf8CsvReader Create(System.IO.Stream stream, Meziantou.Framework.Csv.CsvReaderOptions? options = null, bool leaveOpen = false) => throw null;
+        public static Meziantou.Framework.Csv.Utf8CsvReader CreateFromFile(string path, Meziantou.Framework.Csv.CsvReaderOptions? options = null) => throw null;
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public Meziantou.Framework.Csv.Utf8CsvReader.Enumerator GetEnumerator() => throw null;
+        public bool Read() => throw null;
+        public System.Threading.Tasks.ValueTask<bool> ReadAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public ref struct Enumerator
+        {
+            public readonly Meziantou.Framework.Csv.Utf8CsvRecord Current { get => throw null; }
+            public readonly bool MoveNext() => throw null;
+        }
+    }
+
+    public ref struct Utf8CsvRecord
+    {
+        public int ColumnCount { get => throw null; }
+        public Meziantou.Framework.Csv.Utf8CsvField this[System.Index index] { get => throw null; }
+        public Meziantou.Framework.Csv.Utf8CsvField this[int index] { get => throw null; }
+        public Meziantou.Framework.Csv.Utf8CsvField this[string columnName] { get => throw null; }
+        public long LineNumber { get => throw null; }
+        public System.ReadOnlySpan<byte> RawUtf8Span { get => throw null; }
+        public long RowIndex { get => throw null; }
+        public override string ToString() => throw null;
+        public string[] ToStringArray() => throw null;
+        public bool TryGetField(string columnName, out Meziantou.Framework.Csv.Utf8CsvField field) => throw null;
+    }
+
+    public sealed class Utf8CsvWriter : System.IAsyncDisposable, System.IDisposable
+    {
+        public static Meziantou.Framework.Csv.Utf8CsvWriter Create(System.Buffers.IBufferWriter<byte> bufferWriter, Meziantou.Framework.Csv.CsvWriterOptions? options = null) => throw null;
+        public static Meziantou.Framework.Csv.Utf8CsvWriter Create(System.IO.Stream stream, Meziantou.Framework.Csv.CsvWriterOptions? options = null, bool leaveOpen = false) => throw null;
+        public static Meziantou.Framework.Csv.Utf8CsvWriter CreateToFile(string path, Meziantou.Framework.Csv.CsvWriterOptions? options = null) => throw null;
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask DisposeAsync() => throw null;
+        public void EndRow() { }
+        public System.Threading.Tasks.ValueTask EndRowAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void Flush() { }
+        public System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void WriteField(System.ReadOnlySpan<byte> utf8Value) { }
+        public void WriteField(System.ReadOnlySpan<char> value) { }
+        public void WriteField(string? value) { }
+        public void WriteField<T>(T value, System.ReadOnlySpan<char> format = default, System.IFormatProvider? formatProvider = null) where T : System.IUtf8SpanFormattable { }
+        public void WriteFields(System.Collections.Generic.IEnumerable<string?> values) { }
+        public void WriteFields(params System.ReadOnlySpan<string?> values) { }
+        public void WriteRow(System.Collections.Generic.IEnumerable<string?> values) { }
+        public void WriteRow(params System.ReadOnlySpan<string?> values) { }
+        public System.Threading.Tasks.ValueTask WriteRowAsync(System.Collections.Generic.IEnumerable<string?> values, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+}
+namespace Meziantou.Framework.Csv.Serialization
+{
+    public abstract class CsvAttribute : System.Attribute
+    {
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvColumnIndexAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
     {
         public int Index { get => throw null; }
-        public string? Name { get => throw null; }
-        public CsvColumn(int index) { }
-        public CsvColumn(string? name, int index) { }
+        public CsvColumnIndexAttribute(int index) { }
     }
 
-    public class CsvReader
+    [System.AttributeUsage(System.AttributeTargets.Constructor, AllowMultiple = false)]
+    public sealed class CsvConstructorAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
     {
-        public const char DefaultQuoteCharacter = '"';
-        public const char DefaultSeparatorCharacter = ',';
-        public System.IO.TextReader BaseReader { get => throw null; }
-        public int ColumnNumber { get => throw null; }
-        public bool EndOfStream { get => throw null; }
+    }
+
+    public abstract class CsvConverter
+    {
+        public abstract System.Type? TypeToConvert { get; }
+        public abstract bool CanConvert(System.Type typeToConvert);
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvConverterAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+        [System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]
+        public System.Type ConverterType { get => throw null; }
+        public CsvConverterAttribute([System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembers(System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] System.Type converterType) { }
+    }
+
+    public sealed class CsvConverterContext
+    {
+        public string? Format { get => throw null; }
+        public System.IFormatProvider FormatProvider { get => throw null; }
+        public string? MemberName { get => throw null; }
+        public Meziantou.Framework.Csv.Serialization.CsvSerializerOptions Options { get => throw null; }
+        public CsvConverterContext(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options, string? format = null, string? memberName = null) { }
+    }
+
+    public abstract class CsvConverterFactory : Meziantou.Framework.Csv.Serialization.CsvConverter
+    {
+        public sealed override System.Type? TypeToConvert { get => throw null; }
+        public abstract Meziantou.Framework.Csv.Serialization.CsvConverter? CreateConverter(System.Type typeToConvert, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options);
+    }
+
+    public abstract class CsvConverter<T> : Meziantou.Framework.Csv.Serialization.CsvConverter
+    {
+        public virtual bool HandleNull { get => throw null; }
+        public sealed override System.Type TypeToConvert { get => throw null; }
+        public override bool CanConvert(System.Type typeToConvert) => throw null;
+        public virtual T Read(System.ReadOnlySpan<byte> utf8Value, Meziantou.Framework.Csv.Serialization.CsvConverterContext context) => throw null;
+        public abstract T Read(System.ReadOnlySpan<char> value, Meziantou.Framework.Csv.Serialization.CsvConverterContext context);
+        public virtual bool TryFormat(T value, System.Span<byte> utf8Destination, out int bytesWritten, Meziantou.Framework.Csv.Serialization.CsvConverterContext context) => throw null;
+        public abstract bool TryFormat(T value, System.Span<char> destination, out int charsWritten, Meziantou.Framework.Csv.Serialization.CsvConverterContext context);
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvFormatAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+        public string Format { get => throw null; }
+        public CsvFormatAttribute(string format) { }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvIgnoreAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvIncludeAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+    }
+
+    public enum CsvKnownNamingPolicy
+    {
+        Unspecified = 0,
+        CamelCase = 1,
+        SnakeCaseLower = 2,
+        SnakeCaseUpper = 3,
+        KebabCaseLower = 4,
+        KebabCaseUpper = 5,
+        PascalCase = 6,
+    }
+
+    public enum CsvMissingColumnHandling
+    {
+        Ignore = 0,
+        Throw = 1,
+    }
+
+    public abstract class CsvNamingPolicy
+    {
+        public static Meziantou.Framework.Csv.Serialization.CsvNamingPolicy CamelCase { get => throw null; }
+        public static Meziantou.Framework.Csv.Serialization.CsvNamingPolicy KebabCaseLower { get => throw null; }
+        public static Meziantou.Framework.Csv.Serialization.CsvNamingPolicy KebabCaseUpper { get => throw null; }
+        public static Meziantou.Framework.Csv.Serialization.CsvNamingPolicy PascalCase { get => throw null; }
+        public static Meziantou.Framework.Csv.Serialization.CsvNamingPolicy SnakeCaseLower { get => throw null; }
+        public static Meziantou.Framework.Csv.Serialization.CsvNamingPolicy SnakeCaseUpper { get => throw null; }
+        public abstract string ConvertName(string name);
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvPropertyNameAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+        public string Name { get => throw null; }
+        public CsvPropertyNameAttribute(string name) { }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvPropertyOrderAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+        public int Order { get => throw null; }
+        public CsvPropertyOrderAttribute(int order) { }
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class CsvRequiredAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = true)]
+    public sealed class CsvSerializableAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
+        public System.Type Type { get => throw null; }
+        public string? TypeInfoPropertyName { get => throw null; set { } }
+        public CsvSerializableAttribute(System.Type type) { }
+    }
+
+    public static class CsvSerializer
+    {
+        [System.Diagnostics.CodeAnalysis.FeatureSwitchDefinition("Meziantou.Framework.Csv.Serialization.CsvSerializer.IsReflectionEnabledByDefault")]
+        public static bool IsReflectionEnabledByDefault { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.List<T> Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static System.Collections.Generic.List<T> Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.List<T> Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static System.Collections.Generic.List<T> Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.List<T> Deserialize<T>(System.ReadOnlyMemory<byte> utf8Csv, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static System.Collections.Generic.List<T> Deserialize<T>(System.ReadOnlyMemory<byte> utf8Csv, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.List<T> Deserialize<T>(string csv, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static System.Collections.Generic.List<T> Deserialize<T>(string csv, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> DeserializeAsync<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> DeserializeAsync<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> DeserializeAsync<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> DeserializeAsync<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Collections.Generic.IAsyncEnumerable<T> DeserializeAsyncEnumerable<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.IEnumerable<T> DeserializeEnumerable<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> DeserializeEnumerable<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Collections.Generic.IEnumerable<T> DeserializeEnumerable<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static System.Collections.Generic.IEnumerable<T> DeserializeEnumerable<T>(System.IO.TextReader reader, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static string Serialize<T>(System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static string Serialize<T>(System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static void Serialize<T>(System.Buffers.IBufferWriter<byte> utf8BufferWriter, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) { }
+        public static void Serialize<T>(System.Buffers.IBufferWriter<byte> utf8BufferWriter, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static void Serialize<T>(System.IO.Stream utf8Stream, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) { }
+        public static void Serialize<T>(System.IO.Stream utf8Stream, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static void Serialize<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) { }
+        public static void Serialize<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream utf8Stream, System.Collections.Generic.IAsyncEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream utf8Stream, System.Collections.Generic.IAsyncEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream utf8Stream, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.Stream utf8Stream, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IAsyncEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IAsyncEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public abstract class CsvSerializerContext : Meziantou.Framework.Csv.Serialization.ICsvTypeInfoResolver
+    {
+        public Meziantou.Framework.Csv.Serialization.CsvSerializerOptions Options { get => throw null; }
+        protected CsvSerializerContext(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options) { }
+        protected Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> GetOrCreateTypeInfo<T>() => throw null;
+        public abstract Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo? GetTypeInfo(System.Type type, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options);
+    }
+
+    public sealed class CsvSerializerOptions
+    {
+        public int BufferSize { get => throw null; init { } }
+        public char? CommentCharacter { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.CsvConverter> Converters { get => throw null; init { } }
+        public static Meziantou.Framework.Csv.Serialization.CsvSerializerOptions Default { get => throw null; }
+        public bool EscapeFormulas { get => throw null; init { } }
+        public System.IFormatProvider? FormatProvider { get => throw null; init { } }
+        public bool HasHeaderRow { get => throw null; init { } }
+        public bool IncludeFields { get => throw null; init { } }
+        public int MaxRowLength { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.CsvMissingColumnHandling MissingColumnHandling { get => throw null; init { } }
+        public string NewLine { get => throw null; init { } }
+        public bool PropertyNameCaseInsensitive { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.CsvNamingPolicy? PropertyNamingPolicy { get => throw null; init { } }
+        public char? Quote { get => throw null; init { } }
+        public Meziantou.Framework.Csv.CsvQuoteMode QuoteMode { get => throw null; init { } }
+        public char Separator { get => throw null; init { } }
+        public bool Strict { get => throw null; init { } }
+        public Meziantou.Framework.Csv.CsvTrimOptions Trim { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.ICsvTypeInfoResolver? TypeInfoResolver { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.CsvUnmappedColumnHandling UnmappedColumnHandling { get => throw null; init { } }
+        public CsvSerializerOptions(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options) { }
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo GetTypeInfo(System.Type type) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> GetTypeInfo<T>() => throw null;
+    }
+
+    [System.AttributeUsage(System.AttributeTargets.Class, AllowMultiple = false)]
+    public sealed class CsvSourceGenerationOptionsAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
+    {
         public bool HasHeaderRow { get => throw null; set { } }
-        public int LineNumber { get => throw null; }
-        public char? Quote { get => throw null; set { } }
-        public int RowNumber { get => throw null; set { } }
+        public bool IncludeFields { get => throw null; set { } }
+        public Meziantou.Framework.Csv.Serialization.CsvMissingColumnHandling MissingColumnHandling { get => throw null; set { } }
+        public string NewLine { get => throw null; set { } }
+        public bool PropertyNameCaseInsensitive { get => throw null; set { } }
+        public Meziantou.Framework.Csv.Serialization.CsvKnownNamingPolicy PropertyNamingPolicy { get => throw null; set { } }
         public char Separator { get => throw null; set { } }
-        public CsvReader(System.IO.TextReader textReader) { }
-        protected virtual Meziantou.Framework.Csv.CsvColumn CreateColumn(string name, int index) => throw null;
-        protected virtual Meziantou.Framework.Csv.CsvRow CreateRow(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? columns, System.Collections.Generic.IReadOnlyList<string> values) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.Csv.CsvRow?> ReadRowAsync() => throw null;
+        public Meziantou.Framework.Csv.Serialization.CsvUnmappedColumnHandling UnmappedColumnHandling { get => throw null; set { } }
     }
 
-    public class CsvRow : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string?>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, string?>>, System.Collections.Generic.IReadOnlyDictionary<string, string?>, System.Collections.IEnumerable
+    public enum CsvUnmappedColumnHandling
     {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? Columns { get => throw null; }
-        int System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<System.String,System.String>>.Count { get => throw null; }
-        public virtual string? this[Meziantou.Framework.Csv.CsvColumn column] { get => throw null; }
-        public virtual string? this[int index] { get => throw null; }
-        public virtual string? this[string columnName] { get => throw null; }
-        string? System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.this[string key] { get => throw null; }
-        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.Keys { get => throw null; }
-        public System.Collections.Generic.IReadOnlyList<string> Values { get => throw null; }
-        System.Collections.Generic.IEnumerable<string> System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.Values { get => throw null; }
-        protected internal CsvRow(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.CsvColumn>? columns, System.Collections.Generic.IReadOnlyList<string> values) { }
-        bool System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.ContainsKey(string key) => throw null;
-        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, string?>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,System.String>>.GetEnumerator() => throw null;
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        bool System.Collections.Generic.IReadOnlyDictionary<System.String,System.String>.TryGetValue(string key, out string? value) => throw null;
+        Ignore = 0,
+        Throw = 1,
     }
 
-    public class CsvWriter
+    public interface ICsvOnDeserialized
     {
-        public System.IO.TextWriter BaseWriter { get => throw null; }
-        public string EndOfLine { get => throw null; set { } }
-        public char? Quote { get => throw null; set { } }
-        public char Separator { get => throw null; set { } }
-        public CsvWriter(System.IO.TextWriter textReader) { }
-        public System.Threading.Tasks.Task BeginRowAsync() => throw null;
-        public System.Threading.Tasks.Task WriteRowAsync(System.Collections.Generic.IEnumerable<string?> values) => throw null;
-        public System.Threading.Tasks.Task WriteRowAsync(params string?[] values) => throw null;
-        public System.Threading.Tasks.Task WriteValueAsync(string? value) => throw null;
-        public System.Threading.Tasks.Task WriteValuesAsync(System.Collections.Generic.IEnumerable<string?> values) => throw null;
-        public System.Threading.Tasks.Task WriteValuesAsync(params string?[] values) => throw null;
+        void OnDeserialized();
+    }
+
+    public interface ICsvOnDeserializing
+    {
+        void OnDeserializing();
+    }
+
+    public interface ICsvOnSerialized
+    {
+        void OnSerialized();
+    }
+
+    public interface ICsvOnSerializing
+    {
+        void OnSerializing();
+    }
+
+    public interface ICsvTypeInfoResolver
+    {
+        Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo? GetTypeInfo(System.Type type, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options);
+    }
+}
+namespace Meziantou.Framework.Csv.Serialization.Metadata
+{
+    public sealed class CsvConstructorArguments
+    {
+        public int Count { get => throw null; }
+        public TValue GetValue<TValue>(int index) => throw null;
+    }
+
+    public static class CsvMetadataServices
+    {
+        public static Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> CreateObjectInfo<T>(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options, Meziantou.Framework.Csv.Serialization.Metadata.CsvObjectInfoValues<T> values) => throw null;
+        public static Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertyInfo CreatePropertyInfo<TDeclaring, TValue>(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options, Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertyInfoValues<TDeclaring, TValue> values) => throw null;
+        public static Meziantou.Framework.Csv.Serialization.CsvConverter<T> GetConverter<T>(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options) => throw null;
+        public static Meziantou.Framework.Csv.Serialization.CsvConverter<T> GetConverter<T>(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options, Meziantou.Framework.Csv.Serialization.CsvConverter<T>? defaultConverter) => throw null;
+        public static Meziantou.Framework.Csv.Serialization.CsvConverter<TEnum> GetEnumConverter<TEnum>() where TEnum : struct, System.Enum => throw null;
+        public static Meziantou.Framework.Csv.Serialization.CsvConverter<T?> GetNullableConverter<T>(Meziantou.Framework.Csv.Serialization.CsvConverter<T> converter) where T : struct => throw null;
+        public static Meziantou.Framework.Csv.Serialization.CsvConverter<T> GetSpanParsableConverter<T>() where T : System.ISpanFormattable, System.ISpanParsable<T> => throw null;
+    }
+
+    public sealed class CsvObjectInfoValues<T>
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvParameterInfoValues>? ConstructorParameters { get => throw null; init { } }
+        public System.Func<T>? ObjectCreator { get => throw null; init { } }
+        public System.Func<Meziantou.Framework.Csv.Serialization.Metadata.CsvConstructorArguments, T>? ObjectWithParameterizedConstructorCreator { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertyInfo> Properties { get => throw null; init { } }
+    }
+
+    public sealed class CsvParameterInfoValues
+    {
+        public object? DefaultValue { get => throw null; init { } }
+        public bool HasDefaultValue { get => throw null; init { } }
+        public required string Name { get => throw null; init { } }
+        public required System.Type ParameterType { get => throw null; init { } }
+        public required int Position { get => throw null; init { } }
+    }
+
+    public abstract class CsvPropertyInfo
+    {
+        public abstract bool CanDeserialize { get; }
+        public abstract bool CanSerialize { get; }
+        public int? ColumnIndex { get => throw null; }
+        public Meziantou.Framework.Csv.Serialization.CsvConverter Converter { get => throw null; }
+        public string? Format { get => throw null; }
+        public bool IsRequired { get => throw null; }
+        public string MemberName { get => throw null; }
+        public string Name { get => throw null; }
+        public int Order { get => throw null; }
+        public System.Type PropertyType { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class CsvPropertyInfoValues<TDeclaring, TValue>
+    {
+        public int? ColumnIndex { get => throw null; init { } }
+        public string? ColumnName { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.CsvConverter? Converter { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.CsvConverter<TValue>? DefaultConverter { get => throw null; init { } }
+        public string? Format { get => throw null; init { } }
+        public System.Func<TDeclaring, TValue>? Getter { get => throw null; init { } }
+        public bool IsRequired { get => throw null; init { } }
+        public required string MemberName { get => throw null; init { } }
+        public int Order { get => throw null; init { } }
+        public int ParameterIndex { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertySetter<TDeclaring, TValue>? Setter { get => throw null; init { } }
+    }
+
+    public delegate void CsvPropertySetter<TDeclaring, TValue>(ref TDeclaring obj, TValue value);
+
+    public abstract class CsvTypeInfo
+    {
+        public Meziantou.Framework.Csv.Serialization.CsvSerializerOptions Options { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertyInfo> Properties { get => throw null; }
+        public System.Type Type { get => throw null; }
+    }
+
+    public sealed class CsvTypeInfo<T> : Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo
+    {
+    }
+
+    public sealed class ReflectionCsvTypeInfoResolver : Meziantou.Framework.Csv.Serialization.ICsvTypeInfoResolver
+    {
+        public static Meziantou.Framework.Csv.Serialization.Metadata.ReflectionCsvTypeInfoResolver Default { get => throw null; }
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The constructor of the resolver requires dynamic code.")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The constructor of the resolver requires unreferenced code.")]
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "The constructor of the resolver requires unreferenced code.")]
+        public Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo? GetTypeInfo(System.Type type, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options) => throw null;
     }
 }

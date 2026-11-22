@@ -1,128 +1,164 @@
 ---
 title: Writing CSV
-description: Write rows at once or value by value, with automatic quoting, a custom separator and a custom line terminator.
+description: Write rows value by value or at once, format numbers without allocating, control quoting, protect against CSV injection, and write asynchronously.
 ---
 
-[CsvWriter.WriteRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.WriteRowAsync) writes one row. Values that contain the separator, the quote character or a line break are
-quoted:
+[CsvWriter](cref:Meziantou.Framework.Csv.CsvWriter) writes UTF-16 text to a `TextWriter`, a `Stream`, an `IBufferWriter<char>`, a `StringBuilder` or a file.
+[WriteRow](cref:Meziantou.Framework.Csv.CsvWriter.WriteRow) writes a row at once; [WriteField](cref:Meziantou.Framework.Csv.CsvWriter.WriteField) writes a value and [EndRow](cref:Meziantou.Framework.Csv.CsvWriter.EndRow) ends the row:
 
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_WriteRows;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_Write;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var writer = new StringWriter();
-var csvWriter = new CsvWriter(writer)
+var output = new StringBuilder();
+using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "\n" }))
 {
-    EndOfLine = "\n", // Environment.NewLine by default
-};
+    writer.WriteRow("Name", "Age", "City");
+    writer.WriteRow("Alice", "30", "New York");
 
-await csvWriter.WriteRowAsync("Name", "Age", "City");
-await csvWriter.WriteRowAsync("Alice", "30", "New York");
-await csvWriter.WriteRowAsync("Bob", "25", "London, UK");
+    // Write a row value by value: numbers are formatted in the buffer, with the invariant culture
+    writer.WriteField("Bob");
+    writer.WriteField(25);
+    writer.WriteField("London, UK"); // Quoted: the value contains the separator
+    writer.EndRow();
+} // Disposing the writer flushes the data
 
-Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"", writer.ToString());
+Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"\n", output.ToString());
 ```
 <!-- endref -->
 
-There is no header option: the header is the first row you write.
+- Every row ends with [NewLine](cref:Meziantou.Framework.Csv.CsvWriterOptions.NewLine), `\r\n` by default as in RFC 4180, including the last one.
+- `null` is written as an empty value.
+- [WriteField](cref:Meziantou.Framework.Csv.CsvWriter.WriteField) formats the values that implement `ISpanFormattable`, such as numbers and dates, directly in the buffer of the
+  writer, with [FormatProvider](cref:Meziantou.Framework.Csv.CsvWriterOptions.FormatProvider), the invariant culture by default. Pass a format string to change the format.
+- The writer does not own the output it does not create: pass `leaveOpen: true` to keep a `TextWriter` or a `Stream`
+  open when the writer is disposed.
 
 ## Quoting
 
-The writer quotes a value when it contains the quote character, the separator, `\r`, `\n`, or a character of
-[EndOfLine](cref:Meziantou.Framework.Csv.CsvWriter.EndOfLine). Inside a quoted value, each quote character is doubled. Other values are written as they are. `null` and
-the empty string are both written as nothing:
+A value is quoted when it contains the separator, the quote character, a line terminator or a character of
+[NewLine](cref:Meziantou.Framework.Csv.CsvWriterOptions.NewLine). Quotes inside a quoted value are doubled:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_Quoting;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var writer = new StringWriter();
-var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
+var output = new StringBuilder();
+using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "\n" }))
+{
+    writer.WriteRow("comma, here", "quote \" here", "line\nbreak", "plain");
+}
 
-await csvWriter.WriteRowAsync("plain", "with,comma", "with \"quotes\"", "two\nlines", null, "");
-
-Assert.Equal(""""
-    plain,"with,comma","with ""quotes""","two
-    lines",,
-    """", writer.ToString(), ignoreLineEndingDifferences: true);
+Assert.Equal("\"comma, here\",\"quote \"\" here\",\"line\nbreak\",plain\n", output.ToString());
 ```
 <!-- endref -->
 
-[CsvReader](cref:Meziantou.Framework.Csv.CsvReader) reads these values back as they were written, except `null`, which is read back as an empty string.
+[QuoteMode](cref:Meziantou.Framework.Csv.CsvWriterOptions.QuoteMode) quotes every value ([CsvQuoteMode.Always](cref:Meziantou.Framework.Csv.CsvQuoteMode.Always)), or none ([CsvQuoteMode.Never](cref:Meziantou.Framework.Csv.CsvQuoteMode.Never)):
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_QuoteModes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var always = new StringBuilder();
+using (var writer = CsvWriter.Create(always, new CsvWriterOptions { QuoteMode = CsvQuoteMode.Always, NewLine = "\n" }))
+{
+    writer.WriteRow("a", "b");
+}
+
+var never = new StringBuilder();
+using (var writer = CsvWriter.Create(never, new CsvWriterOptions { QuoteMode = CsvQuoteMode.Never, NewLine = "\n" }))
+{
+    writer.WriteRow("a,b", "c");
+}
+
+Assert.Equal("\"a\",\"b\"\n", always.ToString());
+Assert.Equal("a,b,c\n", never.ToString()); // Never: the value is written as it is
+```
+<!-- endref -->
+
+With [CsvQuoteMode.Never](cref:Meziantou.Framework.Csv.CsvQuoteMode.Never), or when [Quote](cref:Meziantou.Framework.Csv.CsvWriterOptions.Quote) is `null`, a value that contains the separator or a line terminator does
+not read back as it was written. A row with a single empty value is written as `""` so that it does not read back as an
+empty line.
 
 ## Separators
 
-[Separator](cref:Meziantou.Framework.Csv.CsvWriter.Separator) is `,` by default. Use `;`, `\t` or any other character:
+[Separator](cref:Meziantou.Framework.Csv.CsvWriterOptions.Separator) is `,` by default. Formatting with the invariant culture keeps the decimal separator distinct from a `,` or
+`;` separator; a value that contains the separator is quoted anyway:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_CustomSeparator;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var writer = new StringWriter();
-var csvWriter = new CsvWriter(writer)
+var output = new StringBuilder();
+using (var writer = CsvWriter.Create(output, new CsvWriterOptions { Separator = ';', NewLine = "\n" }))
 {
-    Separator = ';',
-    EndOfLine = "\n",
-};
+    writer.WriteRow("Column1", "Column2");
+    writer.WriteField(1.5); // The invariant culture writes a dot, not the separator
+    writer.WriteField("a;b");
+    writer.EndRow();
+}
 
-await csvWriter.WriteRowAsync("Column1", "Column2");
-await csvWriter.WriteRowAsync("Value1", "Value2");
-
-Assert.Equal("Column1;Column2\nValue1;Value2", writer.ToString());
+Assert.Equal("Column1;Column2\n1.5;\"a;b\"\n", output.ToString());
 ```
 <!-- endref -->
 
-Read the data with the same [Separator](cref:Meziantou.Framework.Csv.CsvWriter.Separator) and [Quote](cref:Meziantou.Framework.Csv.CsvWriter.Quote) as it was written with.
+## CSV injection
 
-## Line terminators
+A spreadsheet runs a value that starts with `=`, `+`, `-` or `@` as a formula. When the values come from users, set
+[EscapeFormulas](cref:Meziantou.Framework.Csv.CsvWriterOptions.EscapeFormulas) to prefix these text values with a single quote:
 
-[EndOfLine](cref:Meziantou.Framework.Csv.CsvWriter.EndOfLine) is written between rows, and is `Environment.NewLine` by default, so the output depends on the operating
-system. Set it to produce the same output everywhere, for instance `"\r\n"` as RFC 4180 asks, or `"\n"`. The writer
-does not write a line terminator after the last row.
-
-## Write a row value by value
-
-When the values of a row come one at a time, call [BeginRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.BeginRowAsync), then [WriteValueAsync](cref:Meziantou.Framework.Csv.CsvWriter.WriteValueAsync) for each value, or
-[WriteValuesAsync](cref:Meziantou.Framework.Csv.CsvWriter.WriteValuesAsync) for several:
-
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_WriteValuesIncrementally;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_EscapeFormulas;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var writer = new StringWriter();
-var csvWriter = new CsvWriter(writer)
+var output = new StringBuilder();
+using (var writer = CsvWriter.Create(output, new CsvWriterOptions { EscapeFormulas = true, NewLine = "\n" }))
 {
-    EndOfLine = "\n",
-};
+    writer.WriteField("=HYPERLINK(\"http://example.com\")");
+    writer.WriteField(-5); // Numbers are not escaped
+    writer.EndRow();
+}
 
-await csvWriter.BeginRowAsync();
-await csvWriter.WriteValueAsync("First");
-await csvWriter.WriteValueAsync("Second");
-await csvWriter.WriteValueAsync("Third");
-
-await csvWriter.BeginRowAsync();
-await csvWriter.WriteValuesAsync("Fourth", "Fifth", "Sixth");
-
-Assert.Equal("First,Second,Third\nFourth,Fifth,Sixth", writer.ToString());
+Assert.Equal("\"'=HYPERLINK(\"\"http://example.com\"\")\",-5\n", output.ToString());
 ```
 <!-- endref -->
 
-[BeginRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.BeginRowAsync) writes the line terminator that ends the previous row. [WriteRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.WriteRowAsync) is [BeginRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.BeginRowAsync) followed by
-[WriteValuesAsync](cref:Meziantou.Framework.Csv.CsvWriter.WriteValuesAsync). Both also accept an `IEnumerable<string?>`.
+The values written from numbers and other formattable values are not escaped, so negative numbers stay numbers.
 
-## Disable quoting
+## Buffering and asynchronous writing
 
-Set [Quote](cref:Meziantou.Framework.Csv.CsvWriter.Quote) to `null` to write every value as it is, without quoting or escaping:
+The writer keeps the data in a buffer of [BufferSize](cref:Meziantou.Framework.Csv.CsvWriterOptions.BufferSize) characters or bytes. [EndRow](cref:Meziantou.Framework.Csv.CsvWriter.EndRow) sends the buffer to the
+output when it is mostly full; the `WriteField` methods never do, so a row is never split between two writes.
+[EndRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.EndRowAsync) sends it asynchronously: a writer used with the asynchronous methods never blocks on I/O.
 
-<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_DisableQuotes;format=md-fenced-code-block;dedent=true -->
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_WriteAsync;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var writer = new StringWriter();
-var csvWriter = new CsvWriter(writer)
+using var stream = new MemoryStream();
+await using (var writer = Utf8CsvWriter.Create(stream, leaveOpen: true))
 {
-    Quote = null, // Disable quoting (values won't be escaped)
-};
+    for (var i = 0; i < 1000; i++)
+    {
+        writer.WriteField(i);
+        writer.WriteField("value");
+        await writer.EndRowAsync(); // Sends the buffer to the stream asynchronously when it is mostly full
+    }
+}
 
-await csvWriter.WriteRowAsync("A\"", "B");
-
-Assert.Equal("A\",B", writer.ToString());
+Assert.HasCount(1000, Encoding.UTF8.GetString(stream.ToArray()).Split("\r\n", StringSplitOptions.RemoveEmptyEntries));
 ```
 <!-- endref -->
 
-The output is then only valid when no value contains the separator or a line break: the writer does not check.
+Call [Flush](cref:Meziantou.Framework.Csv.CsvWriter.Flush) or [FlushAsync](cref:Meziantou.Framework.Csv.CsvWriter.FlushAsync), or dispose the writer, to send the rest of the data.
 
-## Flushing
+## UTF-8 data
 
-The writer writes to the `TextWriter` as you go and never flushes or disposes it. Dispose the `TextWriter`, or call its
-`FlushAsync`, once the last row is written; see [Write a file](02-GettingStarted.md#write-a-file).
+[Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter) writes UTF-8 bytes to a `Stream` or an `IBufferWriter<byte>`, without a byte order mark. It formats values
+with `IUtf8SpanFormattable`, and writes UTF-8 values as they are:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=Utf8CsvWriter_Write;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var stream = new MemoryStream();
+using (var writer = Utf8CsvWriter.Create(stream, leaveOpen: true))
+{
+    writer.WriteRow("Product", "Price");
+    writer.WriteField("Café"u8); // UTF-8 bytes are written as they are
+    writer.WriteField(3.5m, "F2");
+    writer.EndRow();
+}
+
+Assert.Equal("Product,Price\r\nCafé,3.50\r\n", Encoding.UTF8.GetString(stream.ToArray()));
+```
+<!-- endref -->
+
+The separator and the quote characters must be ASCII characters. [CsvWriter.Create](cref:Meziantou.Framework.Csv.CsvWriter.Create) also accepts a `Stream` and an
+encoding, for other encodings.

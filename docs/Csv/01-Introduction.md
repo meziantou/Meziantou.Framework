@@ -1,27 +1,35 @@
 ---
 title: Introduction
-description: Read and write CSV data row by row, with or without a header row, with any separator and quote character.
+description: Read and write CSV data record by record, as UTF-16 or UTF-8, or map the records to .NET objects with a serializer.
 ---
 
-`Meziantou.Framework.Csv` reads and writes CSV data. [CsvReader](cref:Meziantou.Framework.Csv.CsvReader) reads rows from any `TextReader`, such as a
-`StreamReader` over a file, and [CsvWriter](cref:Meziantou.Framework.Csv.CsvWriter) writes rows to any `TextWriter`. Every value is a `string`: the library
-splits and quotes the data, and you convert the values to the types you need.
+`Meziantou.Framework.Csv` reads and writes CSV data, and maps the records to .NET objects. It is built for large files:
+the reader finds the separators, quotes and line terminators with SIMD instructions, and gives the values as slices of
+its buffer, so reading a record does not allocate.
 
 ## What you can do with it
 
-- **Read rows** one at a time, without loading the whole file, and get each value by position or by the name of its
-  column. See [Reading CSV](03-ReadingCsv.md).
-- **Read and write other formats** that share the CSV rules, such as tab-separated values, with your own separator and
-  quote characters.
-- **Handle quoted values**: separators, quotes and line breaks inside a value are read back as they were written.
-- **Write rows** at once or value by value, and let the writer quote the values that need it. See
-  [Writing CSV](04-WritingCsv.md).
+- **Read records** one at a time from a string, memory, a `TextReader`, a `Stream` or a file, synchronously or
+  asynchronously, and get each value by position or by the name of its column. See [Reading CSV](03-ReadingCsv.md).
+- **Read UTF-8 data without decoding it**: [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader) gives the values as UTF-8 bytes and parses numbers
+  directly from them.
+- **Write records** value by value, with the values quoted when they need it, to a `TextWriter`, a `Stream`, an
+  `IBufferWriter<T>` or a file. See [Writing CSV](04-WritingCsv.md).
+- **Map records to objects** with [CsvSerializer](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer): classes, structs and records, attributes to rename,
+  order and ignore columns, and converters for your own types. See [Serialization](05-Serialization.md) and
+  [Converters](06-Converters.md).
+- **Publish with Native AOT**: a source generator writes the serialization code when you build. See
+  [Source generation](07-SourceGeneration.md).
+- **Handle real-world files**: other separators such as tab and semicolon, separator detection, comment lines, empty
+  lines, spaces around values, and multi-line quoted values.
 
-## Namespace
+## Namespaces
 
-Every type is in the [Meziantou.Framework.Csv](cref:Meziantou.Framework.Csv) namespace: [CsvReader](cref:Meziantou.Framework.Csv.CsvReader), [CsvRow](cref:Meziantou.Framework.Csv.CsvRow), [CsvColumn](cref:Meziantou.Framework.Csv.CsvColumn) and [CsvWriter](cref:Meziantou.Framework.Csv.CsvWriter).
+- [Meziantou.Framework.Csv](cref:Meziantou.Framework.Csv): [CsvReader](cref:Meziantou.Framework.Csv.CsvReader), [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader), [CsvWriter](cref:Meziantou.Framework.Csv.CsvWriter), [Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter) and their options.
+- [Meziantou.Framework.Csv.Serialization](cref:Meziantou.Framework.Csv.Serialization): [CsvSerializer](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer), its options, the attributes and the converters.
 
 ## Next steps
 
 - [Getting started](02-GettingStarted.md): install the package, read a file and write one.
-- [Limitations](05-Limitations.md): what the library does not do.
+- [Performance](08-Performance.md): choose the APIs that do the least work.
+- [Limitations](09-Limitations.md): what the library does not do.

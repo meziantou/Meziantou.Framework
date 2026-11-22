@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<linker>
+  <assembly fullname="Meziantou.Framework.Csv" feature="Meziantou.Framework.Csv.Serialization.CsvSerializer.IsReflectionEnabledByDefault" featurevalue="false">
+    <type fullname="Meziantou.Framework.Csv.Serialization.CsvSerializer">
+      <method signature="System.Boolean get_IsReflectionEnabledByDefault()" body="stub" value="false">
+      </method>
+    </type>
+  </assembly>
+</linker>

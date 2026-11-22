@@ -48,7 +48,6 @@
     {
       "matchPackageNames": [
         "Microsoft.CodeAnalysis",
-        "Microsoft.CodeAnalysis.Analyzers",
         "Microsoft.CodeAnalysis.Common",
         "Microsoft.CodeAnalysis.CSharp",
         "Microsoft.CodeAnalysis.CSharp.Workspaces"
@@ -57,6 +56,7 @@
         "src/Meziantou.AspNetCore.ServiceDefaults.AutoRegister/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.csproj",
         "src/Meziantou.Framework.Assertions.Analyzer/Meziantou.Framework.Assertions.Analyzer.csproj",
         "src/Meziantou.Framework.Assertions.CodeFix/Meziantou.Framework.Assertions.CodeFix.csproj",
+        "src/Meziantou.Framework.Csv.SourceGenerator/Meziantou.Framework.Csv.SourceGenerator.csproj",
         "src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj",
         "src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj",
         "src/Meziantou.Framework.FixedStringBuilder.Generator/Meziantou.Framework.FixedStringBuilder.Generator.csproj",
@@ -71,6 +71,7 @@
         "src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj",
         "src/Meziantou.Framework.TaggedValues.CodeFix/Meziantou.Framework.TaggedValues.CodeFix.csproj",
         "src/Meziantou.Framework.Toml.SourceGenerator/Meziantou.Framework.Toml.SourceGenerator.csproj",
+        "src/Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj",
         "src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj",
         "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn4_8.csproj",
         "tests/Meziantou.Framework.Roslyn.Tests/Meziantou.Framework.Roslyn.Tests.Roslyn5_0.csproj",

@@ -1,0 +1,26 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WasmEngine</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- The memories are accessed with pointers: the bytes of a memory are a pinned array, or a block that never moves -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The interpreter, the vector instructions and the atomics read and write the memories with pointers in most of their
+         members: the types are unsafe, which the updated memory safety rules do not allow -->
+    <MeziantouUpdatedMemorySafetyRules>false</MeziantouUpdatedMemorySafetyRules>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>A WebAssembly engine written in .NET: a decoder, a validator, an interpreter and a compiler to .NET code for WebAssembly 3.0 modules, with host functions, memories, tables, globals, exceptions, GC references, shared memories and the text format.</Description>
+    <PackageTags>webassembly;wasm;wat;engine;runtime;interpreter</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- The reader of the sections that the engine exposes (the custom sections), shared with the WebAssembly JavaScript
+         API of Meziantou.Framework.WebPlatform -->
+    <Compile Include="../Meziantou.Framework.WebPlatform/WebAssembly/WasmModuleSections.cs" Link="Shared/WasmModuleSections.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.SpecTests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.Fuzz" />
+  </ItemGroup>
+</Project>

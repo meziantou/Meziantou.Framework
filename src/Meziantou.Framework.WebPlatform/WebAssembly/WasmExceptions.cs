@@ -3,10 +3,10 @@ namespace Meziantou.Framework.WebPlatform.WebAssembly;
 #pragma warning disable CA1032, CA1064 // The exceptions never leave the library: the bindings convert them to JavaScript errors
 
 /// <summary>A module is not valid: a <c>WebAssembly.CompileError</c>.</summary>
-internal sealed class WasmCompileException(string message) : Exception(message);
+internal sealed class WasmCompileException(string message, Exception? innerException = null) : Exception(message, innerException);
 
 /// <summary>The imports do not match the module: a <c>WebAssembly.LinkError</c>.</summary>
-internal sealed class WasmLinkException(string message) : Exception(message);
+internal sealed class WasmLinkException(string message, Exception? innerException = null) : Exception(message, innerException);
 
 /// <summary>The kind of a trap.</summary>
 internal enum WasmTrapKind
@@ -18,7 +18,7 @@ internal enum WasmTrapKind
 }
 
 /// <summary>The execution of WebAssembly trapped: a <c>WebAssembly.RuntimeError</c>.</summary>
-internal sealed class WasmTrapException(string message, WasmTrapKind kind = WasmTrapKind.Other) : Exception(message)
+internal sealed class WasmTrapException(string message, WasmTrapKind kind = WasmTrapKind.Other, Exception? innerException = null) : Exception(message, innerException)
 {
     public WasmTrapKind TrapKind { get; } = kind;
 }
@@ -30,8 +30,8 @@ internal sealed class WasmThrowException(WasmExceptionReference exception) : Exc
 }
 
 /// <summary>A memory or a table cannot be allocated or grow, or an index is out of bounds: a <c>RangeError</c>.</summary>
-internal sealed class WasmAllocationException(string message) : Exception(message);
+internal sealed class WasmAllocationException(string message, Exception? innerException = null) : Exception(message, innerException);
 
 /// <summary>A value does not match the type of its destination: a <c>TypeError</c>.</summary>
-internal sealed class WasmTypeMismatchException(string message) : Exception(message);
+internal sealed class WasmTypeMismatchException(string message, Exception? innerException = null) : Exception(message, innerException);
 #pragma warning restore CA1032, CA1064

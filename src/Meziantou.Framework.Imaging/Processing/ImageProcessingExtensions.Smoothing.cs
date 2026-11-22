@@ -1,10 +1,11 @@
 namespace Meziantou.Framework.Imaging;
 
-// The edge-preserving filters (bilateral, guided) and the radial (zoom and spin) blur
+// The edge-preserving filters (bilateral, guided, adaptive Wiener) and the radial (zoom and spin) blur
 public static partial class ImageProcessingExtensions
 {
     private const int MaxBilateralRadius = 100;
     private const int MaxGuidedRadius = 1000;
+    private const int MaxWienerRadius = 1000;
 
     /// <summary>
     /// Smooths every displayed frame and the poster frame with a bilateral filter, in place: every pixel becomes a weighted
@@ -223,6 +224,118 @@ public static partial class ImageProcessingExtensions
     }
 
     /// <summary>
+    /// Removes noise from every displayed frame and the poster frame with an adaptive Wiener filter, in place: every sample
+    /// moves toward the mean of the window around it, all the way where the window varies no more than the noise, and
+    /// hardly where it varies much more, so flat areas are smoothed and edges and texture are kept. The EXIF thumbnail, now
+    /// stale, is removed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The filter of Lim ("Two-Dimensional Signal and Image Processing", 1990), MATLAB's <c>wiener2</c>: in the window of
+    /// <c>(2 radius + 1)²</c> pixels around a sample <c>x</c>, of mean <c>μ</c> and variance <c>σ²</c>, the sample becomes
+    /// <c>x - min(ν² / σ², 1) (x - μ)</c>, where <c>ν²</c> is the variance of the noise: <c>μ + (σ² - ν²) / σ² (x - μ)</c>
+    /// where the window varies more than the noise, and <c>μ</c> elsewhere. Every pixel of a window counts, read beyond the
+    /// edges by <paramref name="edgeMode"/>: with <see cref="ConvolutionEdgeMode.Zero"/>, the result is that of
+    /// <c>wiener2(image, [2 radius + 1, 2 radius + 1], noise)</c> and of SciPy's <c>scipy.signal.wiener</c>, which pad with
+    /// zeros.
+    /// </para>
+    /// <para>
+    /// <paramref name="noiseVariance"/> is a squared fraction of the sample range: 0.0004 (0.02²) is a noise of a standard
+    /// deviation of about 5 levels of 255. When it is <see langword="null"/>, it is estimated for each sample of each frame
+    /// (each color, and alpha) as the mean of the variances of its windows, as <c>wiener2</c> estimates it; a variance of 0
+    /// changes nothing. Each sample is filtered alone (the colors of a pixel do not guide each other), colors premultiplied
+    /// by alpha and alpha too, so the hidden color of a transparent pixel does not spread; an opaque frame is filtered as its
+    /// colors alone, except with <see cref="ConvolutionEdgeMode.Zero"/>. The samples are filtered as stored
+    /// (gamma-encoded), in double precision; every result lies between the sample and the mean of its window. 16-bit
+    /// samples keep their precision and floating-point samples are not clipped. A sample that is not a number spreads to
+    /// the pixels whose windows contain it, and is left out of the estimate of the noise.
+    /// </para>
+    /// <para>
+    /// The window sums take a constant time per pixel, whatever the radius; an estimated noise takes a second pass. The
+    /// frames are copied as single-precision working samples (4 bytes per sample), charged to the image with a scratch of
+    /// <c>2 radius + 3</c> rows of window sums (2 doubles per sample), and rented before any pixel changes. The frames are
+    /// filtered on the calling thread.
+    /// </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/SmoothingTests.cs" ref:region="WienerFilter_SmoothNoiseKeepEdges" ref:dedent="true">
+    /// [Fact]
+    /// public void WienerFilter_SmoothNoiseKeepEdges()
+    /// {
+    ///     // A dark and a bright half, both with a little noise
+    ///     using var image = new Image&lt;Gray8&gt;(32, 16);
+    ///     for (var y = 0; y &lt; 16; y++)
+    ///     {
+    ///         for (var x = 0; x &lt; 32; x++)
+    ///         {
+    ///             var noise = ((x * 7) + (y * 13)) % 5 * 2;
+    ///             image.Frames[0][x, y] = new Gray8((byte)((x &lt; 16 ? 40 : 200) + noise));
+    ///         }
+    ///     }
+    ///
+    ///     // A noise of about 3 levels of 255 (a variance of 0.012²): the flat windows become their mean, the windows across
+    ///     // the step of 160 levels vary much more and keep their pixels
+    ///     image.WienerFilter(radius: 2, noiseVariance: 0.00015);
+    ///
+    ///     Assert.InRange(image.Frames[0][5, 8].Value, 42, 46);
+    ///     Assert.InRange(image.Frames[0][15, 8].Value, 40, 48);
+    ///     Assert.InRange(image.Frames[0][16, 8].Value, 200, 208);
+    /// }
+    /// </code>
+    /// </example>
+    /// <param name="image">The image to modify.</param>
+    /// <param name="radius">The radius of the windows, in pixels. Must be between 0 and 1000; 0 changes nothing.</param>
+    /// <param name="noiseVariance">The variance of the noise, a squared fraction of the sample range (not negative and finite), or <see langword="null"/> to estimate it from the image.</param>
+    /// <param name="edgeMode">The pixels the windows read beyond the edges of the image.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some frames or rows may already be filtered.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="image"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 1000, <paramref name="noiseVariance"/> is negative or not finite, or <paramref name="edgeMode"/> is not a defined value.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed a limit. The image is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The image is disposed.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void WienerFilter(this Image image, int radius, double? noiseVariance = null, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+        ThrowIfCmyk(image.PixelFormat, nameof(WienerFilter));
+        ValidateWiener(radius, noiseVariance, edgeMode);
+        if (radius == 0)
+        {
+            image.Owner.EnsureCanModify("filter the image");
+            return;
+        }
+
+        image.WienerFilterFrames(frames: null, radius, noiseVariance, edgeMode, cancellationToken);
+    }
+
+    /// <summary>
+    /// Removes noise from one frame with an adaptive Wiener filter, in place. The EXIF thumbnail of the image, now stale, is
+    /// removed. See <see cref="WienerFilter(Image, int, double?, ConvolutionEdgeMode, CancellationToken)"/>.
+    /// </summary>
+    /// <param name="frame">The frame to modify.</param>
+    /// <param name="radius">The radius of the windows, in pixels. Must be between 0 and 1000; 0 changes nothing.</param>
+    /// <param name="noiseVariance">The variance of the noise, a squared fraction of the sample range (not negative and finite), or <see langword="null"/> to estimate it from the frame.</param>
+    /// <param name="edgeMode">The pixels the windows read beyond the edges of the frame.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, some rows may already be filtered.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="frame"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="radius"/> is negative or exceeds 1000, <paramref name="noiseVariance"/> is negative or not finite, or <paramref name="edgeMode"/> is not a defined value.</exception>
+    /// <exception cref="ImageResourceLimitException">The working memory would exceed a limit. The frame is unchanged.</exception>
+    /// <exception cref="InvalidOperationException">A pixel lease is active.</exception>
+    /// <exception cref="ObjectDisposedException">The frame is no longer attached to a live image.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static void WienerFilter(this ImageFrame frame, int radius, double? noiseVariance = null, ConvolutionEdgeMode edgeMode = ConvolutionEdgeMode.Clamp, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(frame);
+        ThrowIfCmyk(frame.PixelFormat, nameof(WienerFilter));
+        ValidateWiener(radius, noiseVariance, edgeMode);
+        _ = frame.GetStorage();
+        if (radius == 0)
+            return;
+
+        frame.OwnerImage.WienerFilterFrames([frame], radius, noiseVariance, edgeMode, cancellationToken);
+    }
+
+    /// <summary>
     /// Blurs every displayed frame and the poster frame along lines through a center (a zoom blur) or circles around it (a
     /// spin blur), in place: the streaks of a zoom or a rotation during the exposure, sharp at the center. The EXIF
     /// thumbnail, now stale, is removed.
@@ -314,6 +427,16 @@ public static partial class ImageProcessingExtensions
 
         if (!(rangeSigma > 0 && double.IsFinite(rangeSigma)))
             throw new ArgumentOutOfRangeException(nameof(rangeSigma), rangeSigma, "The range sigma must be positive and finite.");
+
+        if (!Enum.IsDefined(edgeMode))
+            throw new ArgumentOutOfRangeException(nameof(edgeMode), edgeMode, "The edge mode is not valid.");
+    }
+
+    private static void ValidateWiener(int radius, double? noiseVariance, ConvolutionEdgeMode edgeMode)
+    {
+        ValidateRadius(radius, MaxWienerRadius);
+        if (noiseVariance is { } variance && !(variance >= 0 && double.IsFinite(variance)))
+            throw new ArgumentOutOfRangeException(nameof(noiseVariance), noiseVariance, "The noise variance must be finite and not negative.");
 
         if (!Enum.IsDefined(edgeMode))
             throw new ArgumentOutOfRangeException(nameof(edgeMode), edgeMode, "The edge mode is not valid.");

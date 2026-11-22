@@ -98,6 +98,38 @@ internal static partial class ColumnBreaker
 
         public double GetPlacedOffset(double position) => _endOffset;
 
+        /// <summary>
+        /// Places the rows of columns from a position of the strip (see <see cref="NestedColumns.ResumeStart"/>), in the outer
+        /// fragmentainer of <paramref name="index"/>: the content before it is in a column of the previous outer fragmentainer,
+        /// with the block-start edges of the container and the column spanners before it.
+        /// </summary>
+        public void ResumeAt(double position, int index)
+        {
+            _started = true;
+            _hasContent = true;
+            (_consumed, _rowConsumed) = _nested.ResumeConsumedBlockSize;
+            var map = _nested.Map;
+            map.Add(double.NegativeInfinity, 0, 0, isBreak: true);
+            _nested.Columns.Add(new NestedColumn { OuterIndex = index - 1, Start = double.NegativeInfinity, End = position, BlockSize = position });
+            _nested.Fragmentainers.BlockSizes.Add(position);
+
+            // (the row of columns of the position: the content after the spanners that end before it)
+            while (_set < _flow.Spanners.Count && _flow.Spanners[_set].MarginBoxEnd <= position + Epsilon)
+            {
+                _nested.Fragmentainers.PortionStarts.Add(0);
+                _set++;
+            }
+
+            _nested.Fragmentainers.PortionStarts.Add(0);
+            var (_, end, _, _) = GetSet(_set);
+            var displayOffset = GetDisplayOffsetAt(_flow, position);
+            map.Add(position, 1, position - displayOffset, isBreak: true);
+            KeepFloatsBefore(_flow, position, 1);
+            _columns = new FlowCursor(_flow, map, position, end, 1, _generation, canBreakBefore: false);
+            _columns.SetOrigin(position - displayOffset);
+            _columns.ResumeAt(position);
+        }
+
         public AdvanceResult Advance(double blockSize, int index)
         {
             var isFirst = !_started;
@@ -177,6 +209,7 @@ internal static partial class ColumnBreaker
                 }
 
                 _consumed += offset - start;
+                _nested.ConsumedBlockSizes[index] = (_consumed, _rowConsumed);
                 if (_phase == Phase.Done && !_isBoxEnded)
                 {
                     _endOffset = offset + _endEdges;

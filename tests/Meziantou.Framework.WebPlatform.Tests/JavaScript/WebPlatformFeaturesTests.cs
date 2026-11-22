@@ -102,7 +102,7 @@ public sealed class WebPlatformFeaturesTests : IDisposable
 
     private static readonly TimeSpan Timeout = TimeSpan.FromSeconds(30);
 
-    private static readonly Wasmtime.WasmtimeRuntime WebAssemblyRuntime = new();
+    private static readonly Wasm.WasmWebAssemblyRuntime WebAssemblyRuntime = new();
 
     private readonly BrowsingContextScope _contexts = new();
     private readonly List<ScriptError> _errors = [];

@@ -1,0 +1,7 @@
+{
+  "testsuite": {
+    "repository": "WebAssembly/testsuite",
+    "commit": "92a3d806c7d70f5b63f125e6155b8d76304509f1",
+    "paths": ["LICENSE", "*.wast", "legacy", "proposals/threads", "proposals/wide-arithmetic"]
+  }
+}

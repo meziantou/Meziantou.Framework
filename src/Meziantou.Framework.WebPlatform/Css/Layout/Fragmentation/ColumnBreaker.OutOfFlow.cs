@@ -488,6 +488,12 @@ internal static partial class ColumnBreaker
         var placed = columns[Math.Clamp(column, 0, columns.Count - 1)];
         index = placed.OuterIndex;
         offset = placed.BlockOffset + columnOffset;
+        if (double.IsNegativeInfinity(placed.Start))
+        {
+            // (the column of the content before the position where the columns continue in the pages of another inline size, see
+            // NestedColumns.ResumeStart: the content is in the previous pages, laid out in another inline size)
+            offset = 0;
+        }
         var inline = nested.ContentOffset.Inline + MultiColumnFormattingContext.GetColumnInlineOffset(placed.IndexInRow, nested.ColumnStride) + logical.Inline;
         inlineShift = nested.StripStaticPositions is { } positions && positions.TryGetValue(box, out var used) ? inline - used.Inline : 0;
         return true;

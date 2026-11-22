@@ -1,4 +1,5 @@
 using System.Numerics;
+using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
@@ -79,6 +80,29 @@ internal static class ProcessingExamples
     }
     #endregion
 
+    /// <summary>Makes the uniform background of a photo transparent: the pixels of its color connected to two corners.</summary>
+    #region Imaging_RemoveBackground
+    public static void RemoveBackground(string photoPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        var frame = photo.Frames[0];
+
+        // The magic wand: the pixels connected to a corner whose samples are within 8% of the color of that corner
+        var options = new ColorSelectionOptions { Tolerance = 0.08 };
+        var background = PixelMask.FromSimilarColors(frame, new Point(0, 0), options);
+        background.UnionWith(PixelMask.FromSimilarColors(frame, new Point(photo.Width - 1, photo.Height - 1), options));
+
+        // The selection as an alpha image, blurred to soften its edges
+        using var mask = background.ToImage();
+        mask.GaussianBlur(1);
+
+        // A copy with alpha, where the mask erases what it covers
+        using var cutout = photo.CloneAs<Rgba32>();
+        cutout.Draw(canvas => canvas.Layer(1, layer => layer.DrawImage(mask.Frames[0], new PointD(0, 0)), CompositeMode.DestinationOut));
+        cutout.Save(outputPath);
+    }
+    #endregion
+
     /// <summary>Finds the straight lines of a photo, such as the edges of a document or the lines of a court.</summary>
     #region Imaging_DetectLines
     public static IReadOnlyList<HoughLine> FindStraightLines(string inputPath)
@@ -120,6 +144,23 @@ internal static class ProcessingExamples
 
         // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
         var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+        scan.Save(outputPath);
+        return skew;
+    }
+    #endregion
+
+    /// <summary>Straightens a scan on a larger canvas, so that no corner of the page is cut.</summary>
+    #region Imaging_DeskewExpand
+    public static double StraightenScanWithoutCuttingCorners(string inputPath, string outputPath)
+    {
+        using var scan = Image.Load(inputPath);
+
+        // The canvas grows to hold the whole rotated page; the area around the page is white
+        var skew = scan.Deskew(transformOptions: new TransformOptions
+        {
+            CanvasMode = TransformCanvasMode.Expand,
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+        });
         scan.Save(outputPath);
         return skew;
     }

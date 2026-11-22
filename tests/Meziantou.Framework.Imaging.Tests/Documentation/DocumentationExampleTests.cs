@@ -4152,6 +4152,42 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void RemoveBackgroundMakesTheBackgroundTransparent()
+    {
+        // A blue box on a white background, with a slightly gray pixel in the background (within the tolerance)
+        var photoPath = GetPath("product.png");
+        using (var photo = new Image<Rgb24>(30, 20, new Rgb24(255, 255, 255)))
+        {
+            photo.Frames[0][25, 3] = new Rgb24(240, 240, 240);
+            for (var y = 6; y < 14; y++)
+            {
+                for (var x = 10; x < 20; x++)
+                {
+                    photo.Frames[0][x, y] = new Rgb24(30, 60, 160);
+                }
+            }
+
+            photo.Save(photoPath);
+        }
+
+        var output = GetPath("cutout.png");
+        ProcessingExamples.RemoveBackground(photoPath, output);
+
+        using var result = Image.Load<Rgba32>(output);
+        var frame = result.Frames[0];
+
+        // The background is erased, the gray pixel too; the middle of the box keeps its color
+        Assert.Equal(0, frame[0, 0].A);
+        Assert.Equal(0, frame[29, 19].A);
+        Assert.Equal(0, frame[25, 3].A);
+        Assert.Equal(new Rgba32(30, 60, 160, 255), frame[15, 10]);
+
+        // The blurred mask softens the edge: the pixels on each side of it are partly transparent
+        Assert.InRange(frame[9, 10].A, 1, 254);
+        Assert.InRange(frame[10, 10].A, 1, 254);
+    }
+
+    [Fact]
     public void DetectLinesAndCornersFindTheSquare()
     {
         // A light square on a dark background: four lines (two horizontal, two vertical) and four corners
@@ -4206,6 +4242,47 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.InRange(ProcessingExamples.StraightenScan(input, output), -4.1, -3.9);
         using var result = Image.Load(output);
         Assert.InRange(result.Frames[0].EstimateSkew(), -0.1, 0.1);
+    }
+
+    [Fact]
+    public void DeskewOnAnExpandedCanvasKeepsTheCornersOfThePage()
+    {
+        // A page with a black border, scanned 4 degrees counterclockwise on a canvas that holds all of it
+        var input = GetPath("skewed.png");
+        using (var page = new Image<Rgb24>(200, 160, new Rgb24(255, 255, 255)))
+        {
+            for (var y = 0; y < 160; y++)
+            {
+                for (var x = 0; x < 200; x++)
+                {
+                    var border = x < 4 || x >= 196 || y < 4 || y >= 156;
+                    var text = y >= 20 && y < 146 && (y - 20) % 18 < 6 && x >= 20 && x < 180 && x % 21 < 16;
+                    if (border || text)
+                    {
+                        page.Frames[0][x, y] = new Rgb24(0, 0, 0);
+                    }
+                }
+            }
+
+            page.Rotate(-4, new TransformOptions { CanvasMode = TransformCanvasMode.Expand, BackgroundColor = new Rgba64(65535, 65535, 65535) });
+            page.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        Assert.InRange(ProcessingExamples.StraightenScanWithoutCuttingCorners(input, output), -4.1, -3.9);
+        using var result = Image.Load<Rgb24>(output);
+        Assert.InRange(result.Frames[0].EstimateSkew(), -0.1, 0.1);
+        Assert.True(result.Width > 200);
+        Assert.True(result.Height > 160);
+        Assert.Equal(new Rgb24(255, 255, 255), result.Frames[0][0, 0]);
+
+        // The four corners of the page are still on the canvas: the black border is around its center
+        var centerX = result.Width / 2;
+        var centerY = result.Height / 2;
+        Assert.InRange(result.Frames[0][centerX - 98, centerY - 78].R, 0, 63);
+        Assert.InRange(result.Frames[0][centerX + 97, centerY - 78].R, 0, 63);
+        Assert.InRange(result.Frames[0][centerX - 98, centerY + 77].R, 0, 63);
+        Assert.InRange(result.Frames[0][centerX + 97, centerY + 77].R, 0, 63);
     }
 
     [Fact]

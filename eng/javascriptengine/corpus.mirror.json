@@ -1,0 +1,90 @@
+{
+  "repository": "meziantou/test-corpus-javascriptengine",
+  "snapshots": {
+    "npm-tarballs/npm-packages": {
+      "pin": [
+        "package-lock.json sha256:2596f8ac0e1b1d3042fe40f25126519b136458ca741780925ca3ae575f84107f"
+      ],
+      "snapshot": "5a8324be6ec2922fc27be806cca344da5ec7f4d1"
+    },
+    "npm-tarballs/web-tooling-benchmark": {
+      "pin": [
+        "package-lock.json sha256:97b182857c6e8363da88973543524d05c6a8402e36d4db78d6654f8d98ff68d7",
+        "@babel/standalone",
+        "acorn",
+        "autoprefixer",
+        "babel-minify",
+        "babylon",
+        "buble",
+        "chai",
+        "coffeescript",
+        "espree",
+        "esprima",
+        "jshint",
+        "lebab",
+        "postcss",
+        "postcss-nested",
+        "prepack",
+        "prettier",
+        "source-map",
+        "terser",
+        "typescript",
+        "uglify-js",
+        "node-libs-browser>assert",
+        "node-libs-browser>buffer",
+        "node-libs-browser>events",
+        "node-libs-browser>os-browserify",
+        "node-libs-browser>path-browserify",
+        "node-libs-browser>process",
+        "node-libs-browser>punycode",
+        "node-libs-browser>stream-browserify",
+        "node-libs-browser>string_decoder",
+        "node-libs-browser>tty-browserify",
+        "node-libs-browser>url",
+        "node-libs-browser>util",
+        "node-libs-browser>vm-browserify"
+      ],
+      "snapshot": "9da09b4e3146743db268fce18cb8de440f0f39ba"
+    },
+    "parse-number-fxx-test-data": {
+      "pin": [
+        "nigeltao/parse-number-fxx-test-data@55d79b184b7d8fac2e143e89dc19b766ec4e54b8",
+        "LICENSE",
+        "data"
+      ],
+      "snapshot": "484541cf306702d1463da2556352a38e024cf761"
+    },
+    "test262": {
+      "pin": [
+        "tc39/test262@d53ebc8b1931d9f1541e43d59650776e4b766248",
+        "LICENSE",
+        "features.txt",
+        "harness",
+        "test"
+      ],
+      "snapshot": "f8ee91a5c3b23f1cf0f2961989eb1d0f7ad27a6f"
+    },
+    "test262-parser-tests": {
+      "pin": [
+        "tc39/test262-parser-tests@0e808c74fbec780646434cad17bb22dc52461003",
+        "licenses.md",
+        "pass",
+        "pass-explicit",
+        "fail",
+        "early"
+      ],
+      "snapshot": "314542bd46aa3a6935b8969db1a4353bdd5c9a78"
+    },
+    "web-tooling-benchmark": {
+      "pin": [
+        "v8/web-tooling-benchmark@4a12828c6a1eed02a70c011bd080445dd319a05f",
+        "LICENSE",
+        "package.json",
+        "package-lock.json",
+        "src",
+        "third_party"
+      ],
+      "snapshot": "754f85506c3b30269cd86c56f05941e195430005"
+    }
+  }
+}

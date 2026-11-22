@@ -428,6 +428,14 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ColorMatrix Then(Meziantou.Framework.Imaging.ColorMatrix next) => throw null;
     }
 
+    public sealed class ColorSelectionOptions
+    {
+        public Meziantou.Framework.Imaging.PixelConnectivity Connectivity { get => throw null; init { } }
+        public bool Contiguous { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.ColorSelectionOptions Default { get => throw null; }
+        public double Tolerance { get => throw null; init { } }
+    }
+
     public static class Colors
     {
         public static Meziantou.Framework.Imaging.Rgba32 AliceBlue { get => throw null; }
@@ -600,6 +608,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ConvolutionKernel SobelY { get => throw null; }
         public int Width { get => throw null; }
         public ConvolutionKernel(int width, int height, System.ReadOnlySpan<double> values) { }
+        public static Meziantou.Framework.Imaging.ConvolutionKernel CreateGaussianBlur(double sigma) => throw null;
         public static Meziantou.Framework.Imaging.ConvolutionKernel CreateMotionBlur(double length, double degrees) => throw null;
         public static Meziantou.Framework.Imaging.ConvolutionKernel CreateSeparable(System.ReadOnlySpan<double> rowWeights, System.ReadOnlySpan<double> columnWeights) => throw null;
     }
@@ -1571,6 +1580,10 @@ namespace Meziantou.Framework.Imaging
         public static void Transform(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.ProjectiveTransform transform, Meziantou.Framework.Imaging.TransformOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Vignette(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
         public static void Vignette(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Rgba64 color, double radiusX, double radiusY, Meziantou.Framework.Imaging.Rectangle? rectangle = null, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerDeconvolve(this Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.WienerDeconvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerDeconvolve(this Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.WienerDeconvolutionOptions options, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerFilter(this Meziantou.Framework.Imaging.Image image, int radius, double? noiseVariance = null, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
+        public static void WienerFilter(this Meziantou.Framework.Imaging.ImageFrame frame, int radius, double? noiseVariance = null, Meziantou.Framework.Imaging.ConvolutionEdgeMode edgeMode = Meziantou.Framework.Imaging.ConvolutionEdgeMode.Clamp, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public sealed class ImageReaderOptions
@@ -2001,6 +2014,12 @@ namespace Meziantou.Framework.Imaging
 
     public delegate void PixelBytesAction<TState>(Meziantou.Framework.Imaging.PixelBytesAccessor pixels, TState state) where TState : allows ref struct;
 
+    public enum PixelConnectivity
+    {
+        Four = 0,
+        Eight = 1,
+    }
+
     public sealed class PixelConversionOptions
     {
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
@@ -2064,8 +2083,16 @@ namespace Meziantou.Framework.Imaging
         public PixelMask(Meziantou.Framework.Imaging.Size size) { }
         public PixelMask(int width, int height) { }
         public void Clear() { }
+        public Meziantou.Framework.Imaging.PixelMask Clone() => throw null;
+        public void ExceptWith(Meziantou.Framework.Imaging.PixelMask other) { }
         public void Fill(Meziantou.Framework.Imaging.Rectangle rectangle, bool value = true) { }
         public static Meziantou.Framework.Imaging.PixelMask FromFrame(Meziantou.Framework.Imaging.ImageFrame frame) => throw null;
+        public static Meziantou.Framework.Imaging.PixelMask FromSimilarColors(Meziantou.Framework.Imaging.ImageFrame frame, Meziantou.Framework.Imaging.Point seed, Meziantou.Framework.Imaging.ColorSelectionOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void IntersectWith(Meziantou.Framework.Imaging.PixelMask other) { }
+        public void Invert() { }
+        public void SymmetricExceptWith(Meziantou.Framework.Imaging.PixelMask other) { }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.A8> ToImage(Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public void UnionWith(Meziantou.Framework.Imaging.PixelMask other) { }
     }
 
     public ref struct PixelRowSource<TPixel> where TPixel : unmanaged
@@ -2619,6 +2646,16 @@ namespace Meziantou.Framework.Imaging
         BottomLeft = 6,
         Bottom = 7,
         BottomRight = 8,
+    }
+
+    public sealed class WienerDeconvolutionOptions
+    {
+        public const double MinNoiseToSignalRatio = 1E-12d;
+        public Meziantou.Framework.Imaging.ConvolutionEdgeMode EdgeMode { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.ConvolutionKernel Kernel { get => throw null; }
+        public double NoiseToSignalRatio { get => throw null; }
+        public Meziantou.Framework.Imaging.ConvolutionWorkingSpace WorkingSpace { get => throw null; init { } }
+        public WienerDeconvolutionOptions(Meziantou.Framework.Imaging.ConvolutionKernel kernel, double noiseToSignalRatio) { }
     }
 }
 namespace Meziantou.Framework.Imaging.Drawing

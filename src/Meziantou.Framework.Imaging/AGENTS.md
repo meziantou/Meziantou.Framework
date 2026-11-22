@@ -485,7 +485,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   decoding and the encoder are exact. VarDCT is defined in floating point, so lossy decoding is compared with a
   tolerance, measured against both djxl and jxl-oxide, which must also agree with each other: never loosen a tolerance
   to hide a file that is read in two ways. The conformance corpus of the JPEG XL project (`libjxl/conformance`, at the
-  commit of `InteropTests/JpegXlConformance/corpus.json`, downloaded by the tests and never committed) checks every
+  commit of `InteropTests/JpegXlConformance/corpus.json`, fetched from the mirror by `eng/imaging/fetch-tests.cs` or
+  downloaded by the tests, never committed) checks every
   case (`JpegXlConformanceTests`): decoded within its own tolerance plus the rounding of the output depth, or rejected
   with the `UnsupportedImageFeatureException` that `readme.md` documents. A feature that makes a rejected case decode
   moves it from `UnsupportedCases` to `DecodedCases`. The integer path (`JpegXlDecoder.WriteFrame`) is only taken by
@@ -802,7 +803,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   fractional bits and unclamped values between frames, so its decoding differs by a few units, and its lossless
   hierarchical files (`-y 0 -c`) are not restored exactly. The lossless-only structure is tested exactly with frames of
   the test-side lossless encoder (`JpegLosslessTestOptions.Differential`).
-- **JPEG-LS** (`JpegLsScanDecoder`): the T.87 conformance streams (downloaded from CharLS at a pinned commit) are the
+- **JPEG-LS** (`JpegLsScanDecoder`): the T.87 conformance streams (CharLS at the commit of
+  `InteropTests/JpegLsConformance/corpus.json`, fetched like the JPEG XL corpus) are the
   oracle. FFmpeg 9.0.2 misreads the sample-interleaved mode (ILV 2) and ignores the HP transforms of separate scans; the
   ISO reference decoder misreads near-lossless and 16-bit streams that CharLS, FFmpeg and the library agree on.
 - **Scaled JPEG decoding** (`ImageDecodeRequest.ScaleDenominator`/`TargetSize`, `JpegFrameComponent.SetGeometry`,

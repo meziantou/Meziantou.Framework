@@ -13,6 +13,7 @@
     <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.VectorGraphics.Benchmarks/Meziantou.Framework.VectorGraphics.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.WasmEngine.Benchmarks/Meziantou.Framework.WasmEngine.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.WebPlatform.Benchmarks/Meziantou.Framework.WebPlatform.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Yaml.Benchmarks/Meziantou.Framework.Yaml.Benchmarks.csproj" />
   </Folder>
@@ -488,12 +489,13 @@
     <Project Path="src/Meziantou.Framework.ValueStringBuilder/Meziantou.Framework.ValueStringBuilder.csproj" />
     <Project Path="src/Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
     <Project Path="src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <Project Path="src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.DevTools.Tool/Meziantou.Framework.WebPlatform.DevTools.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.DevTools/Meziantou.Framework.WebPlatform.DevTools.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.JavaScript/Meziantou.Framework.WebPlatform.JavaScript.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
-    <Project Path="src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
+    <Project Path="src/Meziantou.Framework.WebPlatform.Wasm/Meziantou.Framework.WebPlatform.Wasm.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.AccessToken/Meziantou.Framework.Win32.AccessToken.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.Amsi/Meziantou.Framework.Win32.Amsi.csproj" />
@@ -709,6 +711,8 @@
     <Project Path="tests/Meziantou.Framework.ValueStringBuilder.Tests/Meziantou.Framework.ValueStringBuilder.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.VectorGraphics.Tests/Meziantou.Framework.VectorGraphics.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Versioning.Tests/Meziantou.Framework.Versioning.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.WasmEngine.SpecTests/Meziantou.Framework.WasmEngine.SpecTests.csproj" />
+    <Project Path="tests/Meziantou.Framework.WasmEngine.Tests/Meziantou.Framework.WasmEngine.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.AotTests/Meziantou.Framework.WebPlatform.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.DevTools.Tests/Meziantou.Framework.WebPlatform.DevTools.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Imaging.Tests/Meziantou.Framework.WebPlatform.Imaging.Tests.csproj" />
@@ -747,6 +751,7 @@
     <Project Path="tools/Meziantou.Framework.Imaging.Barcodes.FontGenerator/Meziantou.Framework.Imaging.Barcodes.FontGenerator.csproj" />
     <Project Path="tools/Meziantou.Framework.Imaging.CorpusGenerator/Meziantou.Framework.Imaging.CorpusGenerator.csproj" />
     <Project Path="tools/Meziantou.Framework.JavaScriptEngine.Data.Generator/Meziantou.Framework.JavaScriptEngine.Data.Generator.csproj" />
+    <Project Path="tools/Meziantou.Framework.TestCorpus/Meziantou.Framework.TestCorpus.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Dictionaries.Generator/Meziantou.Framework.Unicode.Dictionaries.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Unicode.Generator/Meziantou.Framework.Unicode.Generator.csproj" />
     <Project Path="tools/Meziantou.Framework.Uri.PublicSuffix.Generator/Meziantou.Framework.Uri.PublicSuffix.Generator.csproj" />
@@ -813,9 +818,9 @@
     <Project Path="fuzz/Meziantou.Framework.Uri.Fuzz/Meziantou.Framework.Uri.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.VectorGraphics.Fuzz/Meziantou.Framework.VectorGraphics.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Versioning.Fuzz/Meziantou.Framework.Versioning.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.WasmEngine.Fuzz/Meziantou.Framework.WasmEngine.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
-    <Project Path="fuzz/Meziantou.Framework.WebPlatform.Wasmtime.Fuzz/Meziantou.Framework.WebPlatform.Wasmtime.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
 </Solution>

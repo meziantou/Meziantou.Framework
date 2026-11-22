@@ -363,9 +363,15 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   downloads the benchmark and its npm packages; see the readme of the project.
 - `tests/Meziantou.Framework.JavaScriptEngine.NpmPackages`: about 60 current npm packages (lightningcss-wasm, sass,
   tailwindcss, Vue, date-fns, d3...) used by small workloads, which run as ES modules in a page of
-  Meziantou.Framework.WebPlatform (with an import map and Wasmtime); the results are compared with the results of
+  Meziantou.Framework.WebPlatform (with an import map and Meziantou.Framework.WasmEngine); the results are compared with the results of
   Chromium. `fetch-tests.cs npm-packages` installs the packages of its `package-lock.json` and writes their import map;
   see the readme of the project.
+- The fetch script reads the suites and the npm tarballs from their snapshots in
+  [meziantou/test-corpus-javascriptengine](https://github.com/meziantou/test-corpus-javascriptengine)
+  (`eng/javascriptengine/corpus.mirror.json`, see [the mirror of the test corpora](../../../tools/Meziantou.Framework.TestCorpus/readme.md)),
+  else from upstream, with a warning. After a change of a pin (`test262.json`, `web-tooling-benchmark.json`, the
+  `package-lock.json` of the npm packages), `dotnet run eng/javascriptengine/fetch-tests.cs -- --publish` publishes
+  their snapshots and rewrites `corpus.mirror.json`, to commit with the change.
 
 ## Conventions and pitfalls
 

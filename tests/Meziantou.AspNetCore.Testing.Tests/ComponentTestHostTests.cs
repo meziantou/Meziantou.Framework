@@ -3,7 +3,7 @@ using Meziantou.AspNetCore.Testing.Components.JSInterop;
 using Meziantou.AspNetCore.Testing.Tests.TestComponents;
 using Meziantou.Framework.SnapshotTesting;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.Wasm;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Time.Testing;
@@ -75,7 +75,7 @@ public sealed class ComponentTestHostTests
     [Fact]
     public async Task WebAssemblyRuntime_RunsTheModulesOfThePage()
     {
-        using var runtime = new WasmtimeRuntime();
+        using var runtime = new WasmWebAssemblyRuntime();
         await using var host = new ComponentTestHost(new ComponentTestHostOptions
         {
             EnableJavaScript = true,

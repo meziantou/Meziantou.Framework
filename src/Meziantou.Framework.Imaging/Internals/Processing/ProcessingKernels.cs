@@ -26,6 +26,9 @@ internal static class ProcessingKernels
     /// <summary>The number of rows processed between two cancellation checks.</summary>
     internal const int RowsPerCancellationCheck = 64;
 
+    /// <summary>Converts a tolerance, a fraction of the range of a sample from 0 to 1, to 16-bit steps, rounded to nearest with ties upward.</summary>
+    internal static int GetToleranceSteps(double tolerance) => (int)Math.Floor((tolerance * ushort.MaxValue) + 0.5 + (1.0 / 1048576));
+
     /// <summary>
     /// Writes <paramref name="region"/> of the source, permuted by <paramref name="transform"/>, to the whole destination.
     /// The destination size must be <c>transform.GetOutputSize(region.Size)</c>; the region must be inside the source.

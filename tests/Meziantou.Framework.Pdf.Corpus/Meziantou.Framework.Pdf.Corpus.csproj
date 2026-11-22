@@ -4,7 +4,8 @@
     PDF Association, Apache PDFBox, the veraPDF corpus), and the pages of the reference tests of pdf.js rendered by
     the renderer of Meziantou.Framework.Pdf and compared with PDFium, and the signatures of the signed files checked by
     its verifier. They are fetched by 'dotnet run eng/pdf/fetch-tests.cs' into
-    tests/Meziantou.Framework.Pdf.External; without them, the tests are skipped. The documented exceptions a file throws
+    tests/Meziantou.Framework.Pdf.External, from the snapshots of the mirror repository of corpus.mirror.json when it
+    has them, else from upstream; without them, the tests are skipped. The documented exceptions a file throws
     are recorded in expectations/<suite>.txt.
   -->
   <PropertyGroup>

@@ -3,7 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Meziantou.AspNetCore.Testing.TestApp;
 using Meziantou.Framework.WebPlatform.Dom;
-using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.Wasm;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -581,8 +581,8 @@ public sealed class WebAppBrowserTests
     public async Task WebAssemblyRuntimeRunsTheModulesOfThePages()
     {
         #region WebAppBrowser_WebAssemblyRuntime
-        // The runtime of the Meziantou.Framework.WebPlatform.Wasmtime package: the pages share it
-        using var runtime = new WasmtimeRuntime();
+        // The runtime of the Meziantou.Framework.WebPlatform.Wasm package: the pages share it
+        using var runtime = new WasmWebAssemblyRuntime();
         await using var factory = new WebApplicationFactory<Program>();
         await using var browser = WebAppBrowser.Create(factory.Server, new WebAppBrowserOptions { WebAssemblyRuntime = runtime });
 
@@ -713,9 +713,8 @@ public sealed class WebAppBrowserTests
         // The wwwroot folder of the published application (dotnet publish)
         var wwwroot = typeof(WebAppBrowserTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "WasmAppPath").Value!;
 
-        // The runtime of .NET runs in the page, on Wasmtime. Share the runtime between the tests, and keep the compiled code
-        // of the modules in a folder of the tests: the first start compiles the runtime of .NET, the next ones load it.
-        using var wasmtime = new WasmtimeRuntime(new WasmtimeRuntimeOptions { ModuleCacheDirectory = Path.Combine(AppContext.BaseDirectory, "wasmtime-cache") });
+        // The runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine. The runtime can be shared between the tests
+        using var wasmRuntime = new WasmWebAssemblyRuntime();
 
         // The fallback file serves the routes of the application (/accounts/42), as MapFallbackToFile does
         var origin = new Uri("https://localhost/");
@@ -723,7 +722,7 @@ public sealed class WebAppBrowserTests
         await using var browser = new WebAppBrowser(origin, loader, new WebAppBrowserOptions
         {
             DefaultTimeout = TimeSpan.FromSeconds(30),
-            WebAssemblyRuntime = wasmtime,
+            WebAssemblyRuntime = wasmRuntime,
         });
 
         var page = await browser.OpenAsync("/accounts/42");

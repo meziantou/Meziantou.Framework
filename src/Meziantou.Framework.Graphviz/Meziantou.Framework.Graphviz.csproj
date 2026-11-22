@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Graphviz</RootNamespace>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Description>Reads the DOT language of Graphviz into the flowcharts of Meziantou.Framework.Diagrams, drawn as deterministic SVG without Graphviz, and writes flowcharts as DOT: nodes, edges, clusters, shapes, styles, colors, record and HTML-like labels.</Description>
     <PackageTags>graphviz;dot;gv;diagram;diagrams;graph;svg;flowchart;parser</PackageTags>
 

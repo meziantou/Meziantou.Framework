@@ -77,7 +77,7 @@ internal static partial class ColumnBreaker
         // (the pages of another inline size, laid out again from a break: the content before it is in the previous pages, and the
         // first page starts with the space of the break, e.g. a repeated table header)
         var resumes = flow.IsPaged && baseIndex > 0 && start > Epsilon;
-        var startDisplayOffset = resumes ? GetDisplayOffsetAt(flow, start) - flow.ResumeShift : 0;
+        var startDisplayOffset = resumes ? GetDisplayOffsetAt(flow, start) - flow.ResumeShift + flow.ResumeLeadingBlockSize : 0;
         map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start - startDisplayOffset, isBreak: true);
         if (flow.IsPaged && baseIndex > 0)
         {

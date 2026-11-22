@@ -21,14 +21,14 @@ fails.
 - **Layout.** The layout engine is internal: it runs when a web API reads the geometry, and its results are read through
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:
-  - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
-    line box or a monolithic box (an image, taller than the page, which is sliced) that is not laid out the same way in the
-    new inline size, inside a multi-column container with anchored absolutely positioned boxes or with an absolutely
-    positioned box at its static position broken by the end of the previous page, or inside a multi-column container of its columns, inside a grid whose number of columns depends on its width
-    (`auto-fill`, `auto-fit`) and whose items are not placed in their order (an item with a definite row after the break,
-    `grid-auto-flow: column`, an item that `dense` places before the break), or inside a table row, a flex line or a grid row
-    whose items cannot continue side by side in the new width (an item whose line box or image sliced by the break changes
-    size or content): it keeps the inline size of the previous page;
+  - the layout of the content at the top of a page whose inline size differs from the previous page when it cannot be laid
+    out again in that inline size (a line box or a monolithic box sliced by the break that is not laid out the same way, a
+    multi-column container with anchored absolutely positioned boxes, with an absolutely positioned box at its static
+    position broken by the end of the previous page, or with a multi-column container broken in its columns, a grid whose
+    number of columns depends on its width and whose items are not placed in their order, a table row, a flex line or a
+    grid row whose items cannot continue side by side): the rest of it keeps the layout of the previous page, and the
+    content after it is laid out in the new inline size (the whole page keeps the inline size of the previous page when
+    that content does not end on the page, or when other content continues beside its end);
   - the spelling changes at a hyphenation break that need a dictionary (the triple consonants of the Swedish and Norwegian
     compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);

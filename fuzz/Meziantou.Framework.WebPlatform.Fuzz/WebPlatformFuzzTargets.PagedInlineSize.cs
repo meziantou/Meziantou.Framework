@@ -12,7 +12,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// (a table without a header, with a repeated header or with a header too tall to be repeated, a column flex container, a grid
 /// with a fixed or an automatic number of columns, a row flex container that wraps, a block, a table row whose rows are its cells,
 /// a single-line row flex container whose rows are its items) and its rows (their block sizes,
-/// whether they avoid breaks, a paragraph); the second target has rows whose items are aligned in them or span the next rows, whose first pages may not follow their order, and the
+/// whether they avoid breaks, a paragraph), followed by a paragraph or not; the second target has rows whose items are aligned in them or span the next rows, whose first pages may not follow their order, and the
 /// fourth one rows whose layout depends on the inline size (see <see cref="PagedInlineSizeReflowedRows"/>), the fifth one a
 /// multi-column container (see <see cref="PagedInlineSizeColumns"/>). Each row is in a page, the first pages of the rows follow their order, each word of
 /// the paragraphs is laid out once, the rectangles of the fragments are finite, and in the fifth target a short row that avoids
@@ -181,6 +181,15 @@ public static partial class WebPlatformFuzzTargets
 
         markup.Append(end);
 
+        // (a paragraph after the container: a page of another inline size that starts in the container, which cannot continue
+        // there, is split after it, the paragraph being laid out in its page area)
+        var afterWords = Next(data) % 40;
+        if (afterWords > 0)
+        {
+            markup.Append(string.Create(CultureInfo.InvariantCulture, $"<p style='margin: 0'>{string.Join(' ', Enumerable.Repeat("XXXX", afterWords))}</p>"));
+            words += afterWords;
+        }
+
         using var context = new BrowsingContext();
         var document = context.Navigate("https://example.com/", _ => markup.ToString());
         context.EventLoop.RunUntilIdle();
@@ -260,6 +269,11 @@ public static partial class WebPlatformFuzzTargets
             [35, 75, 55, 5, 7, 2, 0, 20, 0, 100, 2, 0, 39, 0, 100, 0, 100, 3, 0, 10, 0, 100, 0, 100],
             [35, 75, 55, 5, 3, 0, 199, 0, 199, 0, 199, 0, 100],
 
+            // A row flex container that wraps broken inside a flex line, and a grid whose columns depend on its inline size, followed
+            // by a paragraph: the rest of the container keeps its layout, the paragraph is laid out in the next pages
+            [35, 75, 55, 5, 3, 0, 199, 0, 199, 0, 199, 0, 100, 20],
+            [35, 75, 55, 4, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 20],
+
             // A row that avoids breaks and does not fit below a header that is not repeated starts the next page
             [55, 55, 8, 7, 1, 3, 0, 28, 2, 0, 2],
 
@@ -320,6 +334,9 @@ public static partial class WebPlatformFuzzTargets
             [35, 75, 15, 2, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
             [35, 75, 15, 3, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 4],
 
+            // An automatic grid with an item in a definite column, followed by a paragraph (pages of 300px)
+            [35, 75, 55, 2, 7, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 20],
+
             // A dense automatic grid with a header and items that span two columns, a grid whose items have rows of their own
             [35, 75, 15, 4, 9, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100, 0, 100],
             [75, 35, 15, 5, 3, 2, 0, 39, 2, 0, 39, 2, 0, 30, 2, 0, 20],
@@ -346,6 +363,9 @@ public static partial class WebPlatformFuzzTargets
             var container = (byte)i;
             yield return new FuzzSeed("paged-inline-size-columns-rows-" + i.ToString(CultureInfo.InvariantCulture), new byte[] { 35, 75, 55, container, 9, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100 });
             yield return new FuzzSeed("paged-inline-size-columns-paragraph-" + i.ToString(CultureInfo.InvariantCulture), new byte[] { 35, 75, 55, container, 2, 2, 0, 39, 0, 50, 2, 0, 39 });
+
+            // (followed by a paragraph)
+            yield return new FuzzSeed("paged-inline-size-columns-after-" + i.ToString(CultureInfo.InvariantCulture), new byte[] { 35, 75, 55, container, 9, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 1, 100, 20 });
         }
 
         // (pages of 200px, 300px and 400px: a page of 400x300 then pages of 300x300, rows of 100px and a paragraph)

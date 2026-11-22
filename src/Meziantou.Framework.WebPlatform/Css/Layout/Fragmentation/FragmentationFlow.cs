@@ -386,6 +386,13 @@ internal sealed class FragmentationFlow
     public double ResumeShift { get; set; }
 
     /// <summary>
+    /// When the flow is laid out again from a break that follows content kept from the strip of another inline size at the start
+    /// of the first fragmentainer (the pages of another inline size, see <c>LayoutEngine.CarriedContent</c>): the block size of
+    /// that content, which the content of the flow follows. 0 otherwise.
+    /// </summary>
+    public double ResumeLeadingBlockSize { get; set; }
+
+    /// <summary>
     /// Whether the monolithic content that does not fit in an empty fragmentainer is sliced at its end (the pages, see
     /// <see cref="PageBreakRules"/>), instead of overflowing it: the strip of this flow and of its parallel flows.
     /// </summary>

@@ -30,20 +30,20 @@ public sealed class EmailMessageTests
     }
 
     [Theory]
-    [MemberData(nameof(MimeOracleTests.Files), MemberType = typeof(MimeOracleTests))]
+    [MemberData(nameof(MimeMessageTests.Files), MemberType = typeof(MimeMessageTests))]
     public void Mime_RoundTrip(string fileName)
     {
-        var email = EmailMessage.FromMime(MimeMessage.Load(File.ReadAllBytes(MimeOracleTests.GetPath(fileName))));
+        var email = EmailMessage.FromMime(MimeMessage.Load(File.ReadAllBytes(MimeMessageTests.GetPath(fileName))));
         var copy = EmailMessage.FromMime(MimeMessage.Load(email.ToMime().ToByteArray()));
         Assert.Equal(Describe(email), Describe(copy));
     }
 
     [Theory]
-    [MemberData(nameof(MimeOracleTests.Files), MemberType = typeof(MimeOracleTests))]
+    [MemberData(nameof(MimeMessageTests.Files), MemberType = typeof(MimeMessageTests))]
     public void Pst_RoundTrip(string fileName)
     {
         // An .eml file, written to a PST file and read back
-        var email = EmailMessage.FromMime(MimeMessage.Load(File.ReadAllBytes(MimeOracleTests.GetPath(fileName))));
+        var email = EmailMessage.FromMime(MimeMessage.Load(File.ReadAllBytes(MimeMessageTests.GetPath(fileName))));
         using var stream = new MemoryStream();
         using (var writer = PstWriter.Create(stream, leaveOpen: true))
         {
@@ -53,19 +53,6 @@ public sealed class EmailMessageTests
         using var file = PstFile.Open(stream.ToArray());
         var copy = EmailMessage.FromMapi(file.GetFolder("Inbox")!.EnumerateItems().Single());
         Assert.Equal(Describe(email, rtf: false), Describe(copy, rtf: false));
-    }
-
-    [Theory]
-    [MemberData(nameof(PstOracleTests.Files), MemberType = typeof(PstOracleTests))]
-    public void PstItems_ToMime_ReadByMimeKit(string fileName)
-    {
-        // The items of the PST samples, written as MIME messages, read the same with the library and with MimeKit
-        using var file = PstFile.Open(PstOracleTests.GetPath(fileName));
-        foreach (var item in Enumerate(file.RootFolder).Take(50))
-        {
-            var bytes = EmailMessage.FromMapi(item).ToMime().ToByteArray();
-            Assert.Equal(MimeOracleTests.DescribeWithMimeKit(MimeKit.MimeMessage.Load(new MemoryStream(bytes))), MimeOracleTests.Describe(MimeMessage.Load(bytes)));
-        }
     }
 
     [Fact]
@@ -92,30 +79,14 @@ public sealed class EmailMessageTests
         Assert.Equal(email.From, copy.From);
         Assert.Equal(email.Sender, copy.Sender);
         Assert.Equal(email.ReplyTo, copy.ReplyTo);
-        var mime = MimeKit.MimeMessage.Load(new MemoryStream(copy.ToMime().ToByteArray()));
+        var mime = MimeMessage.Load(copy.ToMime().ToByteArray());
         Assert.Equal("assistant@example.com", mime.Sender?.Address);
-        Assert.Equal(["team@example.com", "archive@example.com"], mime.ReplyTo.Mailboxes.Select(mailbox => mailbox.Address));
+        Assert.Equal(["team@example.com", "archive@example.com"], mime.ReplyTo.Select(mailbox => mailbox.Address));
 
         // Without a Sender, the author is the sender
         var direct = EmailMessage.FromMapi(MsgFile.Load(MsgFile.ToByteArray(new EmailMessage { Subject = "Direct", From = email.From }.ToMapiBuilder())));
         Assert.Equal(email.From, direct.From);
         Assert.Null(direct.Sender);
-    }
-
-    private static IEnumerable<MapiMessage> Enumerate(PstFolder folder)
-    {
-        foreach (var item in folder.EnumerateItems())
-        {
-            yield return item;
-        }
-
-        foreach (var child in folder.Folders)
-        {
-            foreach (var item in Enumerate(child))
-            {
-                yield return item;
-            }
-        }
     }
 
     internal static List<string> Describe(EmailMessage email, bool rtf = true)

@@ -1,14 +1,56 @@
+using System.Security.Cryptography;
 using System.Text;
+using System.Xml.Linq;
 using Meziantou.Framework.Email.Internals;
 
 namespace Meziantou.Framework.Email.Tests;
 
 public sealed class MimeMessageTests
 {
+    public static TheoryData<string> Files => [.. Directory.EnumerateFiles(GetPath(""), "*.eml").Select(path => Path.GetFileName(path)).Order(StringComparer.Ordinal)];
+
+    internal static string GetPath(string fileName) => Path.Combine(AppContext.BaseDirectory, "TestData", "Mime", fileName);
+
+    // The messages of mime4j that the reader reads differently. Remove a message from the list when the reader reads it as mime4j does.
+    private static readonly Dictionary<string, string> Mime4jDifferences = new(StringComparer.Ordinal)
+    {
+        // mime4j reads the same messages in two modes, which these files expect: the reader keeps the lines that are not headers in the body
+        ["malformedHeader-nocrlfcrlf"] = "mime4j drops the lines that are not headers, in its strict mode",
+        ["malformedHeader-noheader"] = "mime4j drops the lines that are not headers, in its strict mode",
+        ["malformedHeaderStartsBody-nocrlfcrlf"] = "mime4j drops the header that follows the first line that is not a header",
+        ["malformedHeaderStartsBody-noheader"] = "mime4j keeps only the first line in the body",
+        ["basic-plain-with-bad-header-separator"] = "the reader ends the header at a line of white space, which RFC 5322 reads as a folded line",
+        ["obsolete"] = "the reader ends the header at an invalid line, and does not read the white space before the colon of the obsolete syntax (RFC 5322 4.5.3)",
+        ["ending-boundaries"] = "the reader does not recognize a boundary followed by text on its line (the note to implementors of RFC 2046 5.1.1)",
+    };
+
+    public static TheoryData<string> Mime4jFiles => [.. Directory.EnumerateFiles(GetPath("Mime4j"), "*.eml").Select(path => Path.GetFileNameWithoutExtension(path)).Order(StringComparer.Ordinal)];
+
+    [Theory]
+    [MemberData(nameof(Mime4jFiles))]
+    public void Mime4j_MatchesExpectedStructure(string name)
+    {
+        // The messages of mime4j, with the structure and the decoded content of each part that mime4j expects.
+        // The headers are compared as sets: the reader keeps the content headers of a message in its body.
+        var directory = GetPath("Mime4j");
+        var expected = new List<string>();
+        DescribeExpected(XDocument.Load(Path.Combine(directory, name + "_decoded.xml")).Root!, directory, expected, "");
+        var actual = new List<string>();
+        DescribeMessage(MimeMessage.Load(File.ReadAllBytes(Path.Combine(directory, name + ".eml"))), actual, "");
+        if (Mime4jDifferences.TryGetValue(name, out var difference))
+        {
+            Assert.NotEqual(expected, actual, "The message is read as mime4j expects: remove it from the differences (" + difference + ")");
+        }
+        else
+        {
+            Assert.Equal(expected, actual);
+        }
+    }
+
     [Fact]
     public void Load_Snippet()
     {
-        var path = MimeOracleTests.GetPath("attachments.eml");
+        var path = GetPath("attachments.eml");
 
         #region MimeMessage_Load
         var message = MimeMessage.Load(path);
@@ -73,10 +115,10 @@ public sealed class MimeMessageTests
     }
 
     [Theory]
-    [MemberData(nameof(MimeOracleTests.Files), MemberType = typeof(MimeOracleTests))]
+    [MemberData(nameof(Files))]
     public void WriteTo_UnchangedMessage_IsIdentical(string fileName)
     {
-        var bytes = File.ReadAllBytes(MimeOracleTests.GetPath(fileName));
+        var bytes = File.ReadAllBytes(GetPath(fileName));
         var written = MimeMessage.Load(bytes).ToByteArray();
 
         // The multiparts write CRLF before their delimiters: compare the messages with the same line endings
@@ -190,4 +232,64 @@ public sealed class MimeMessageTests
 
         Assert.True(depth <= 10);
     }
+
+    private static void DescribeExpected(XElement element, string directory, List<string> result, string indent)
+    {
+        switch (element.Name.LocalName)
+        {
+            case "message":
+            case "body-part":
+                result.Add(indent + element.Name.LocalName + ": " + string.Join(", ", element.Element("header")!.Elements("field").Select(field => GetFieldName(field.Value)).Order(StringComparer.OrdinalIgnoreCase)));
+                foreach (var child in element.Elements().Where(child => child.Name.LocalName is not "header"))
+                {
+                    DescribeExpected(child, directory, result, indent + "  ");
+                }
+
+                break;
+            case "multipart":
+                result.Add(indent + "multipart");
+                foreach (var part in element.Elements("body-part"))
+                {
+                    DescribeExpected(part, directory, result, indent + "  ");
+                }
+
+                break;
+            case "text-body":
+            case "binary-body":
+                result.Add(indent + "content: " + HashContent(File.ReadAllBytes(Path.Combine(directory, element.Attribute("name")!.Value))));
+                break;
+        }
+
+        static string GetFieldName(string field) => field.TrimStart('\r', '\n')[..field.TrimStart('\r', '\n').IndexOf(':', StringComparison.Ordinal)].Trim();
+    }
+
+    private static void DescribeMessage(MimeMessage message, List<string> result, string indent)
+    {
+        result.Add(indent + "message: " + string.Join(", ", message.Headers.Concat(message.Body.Headers).Select(header => header.Name).Order(StringComparer.OrdinalIgnoreCase)));
+        DescribeBody(message.Body, result, indent + "  ");
+    }
+
+    private static void DescribeBody(MimeEntity entity, List<string> result, string indent)
+    {
+        switch (entity)
+        {
+            case MimeMultipart multipart:
+                result.Add(indent + "multipart");
+                foreach (var part in multipart.Parts)
+                {
+                    result.Add(indent + "  body-part: " + string.Join(", ", part.Headers.Select(header => header.Name).Order(StringComparer.OrdinalIgnoreCase)));
+                    DescribeBody(part, result, indent + "    ");
+                }
+
+                break;
+            case MimeMessagePart embedded:
+                DescribeMessage(embedded.Message, result, indent);
+                break;
+            case MimePart part:
+                result.Add(indent + "content: " + HashContent(part.GetContent()));
+                break;
+        }
+    }
+
+    private static string HashContent(byte[] content) => content.Length + " " + Convert.ToHexStringLower(SHA256.HashData(content))[..16];
 }

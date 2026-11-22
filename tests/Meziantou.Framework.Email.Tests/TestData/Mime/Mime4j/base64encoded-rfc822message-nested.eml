@@ -1,0 +1,11 @@
+MIME-Version: 1.0
+Content-Type: message/rfc822
+Subject: the body is a base64 encode rfc822 message including another base64 encoded rfc822 message
+Content-Transfer-Encoding: base64
+
+TUlNRS1WZXJzaW9uOiAxLjANClN1YmplY3Q6IGEgc2ltcGxlIHJmYzgyMiBtZXNzYWdlIGVuY29k
+ZWQgaW4gYSBiYXNlNjQgYm9keS4NCkNvbnRlbnQtVHlwZTogbWVzc2FnZS9yZmM4MjINCkNvbnRl
+bnQtVHJhbnNmZXItRW5jb2Rpbmc6IGJhc2U2NA0KDQpRMjl1ZEdWdWRDMVVlWEJsT2lCMFpYaDBM
+M0JzWVdsdU95QmphR0Z5YzJWMFBYVnpMV0Z6WTJscERRcERiMjUwWlc1MExWUnlZVzV6DQpabVZ5
+TFVWdVkyOWthVzVuT2lBM1ltbDBEUW9OQ2xSbGVIUWdZbTlrZVFvTkNnPT0NCg0K
+

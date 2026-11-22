@@ -1,0 +1,9 @@
+<message>
+<header>
+<field>
+Subject: this is a subject</field>
+<field>
+AnotherHeader: is this an header or the first part of the body?</field>
+</header>
+<text-body name="malformedHeader-nocrlfcrlf_decoded_1.txt"/>
+</message>

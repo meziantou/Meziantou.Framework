@@ -1,0 +1,27 @@
+<message>
+<header>
+<field>
+Content-Type: multipart/mixed; boundary="boundary"</field>
+</header>
+<multipart>
+<preamble>
+preamble
+</preamble>
+<body-part>
+<header>
+<field>
+Content-Type: text/plain</field>
+</header>
+<text-body name="intermediate-boundaries_decoded_1_1.txt"/>
+</body-part>
+<body-part>
+<header>
+<field>
+Content-Type: text/plain</field>
+</header>
+<text-body name="intermediate-boundaries_decoded_1_2.txt"/>
+</body-part>
+<epilogue>
+epilouge</epilogue>
+</multipart>
+</message>

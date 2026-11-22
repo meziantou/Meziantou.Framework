@@ -11,8 +11,6 @@ The files come from the test data of [Apache POI](https://github.com/apache/poi)
 | `poi-bug52400-winmail-simple.dat` | A message with recipients, ended by a line break after its last attribute |
 
 The other files of the folder are not copied: `winmail-sample1.dat` contains the personal bookmarks of someone, and
-the larger files add nothing these files do not cover. The files of the `tnef` program, which MimeKit uses in its tests,
-are under the GPL.
+the larger files add nothing these files do not cover. The files of the `tnef` program are under the GPL.
 
-`TnefFileTests` compares what the reader reads in these files, in the streams the writer writes, and in the items of the
-.msg files written as TNEF streams, with what [MimeKit](https://github.com/jstedfast/MimeKit) reads.
+`TnefFileTests` checks that these files, and the items of the .msg files, written as TNEF streams, read back the same.

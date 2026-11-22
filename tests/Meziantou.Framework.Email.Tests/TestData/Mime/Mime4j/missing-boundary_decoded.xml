@@ -1,0 +1,12 @@
+<message>
+<header>
+<field>
+Content-Type: multipart/alternative; boundary="inner-boundary"</field>
+</header>
+<multipart>
+<preamble>
+AAA
+
+</preamble>
+</multipart>
+</message>

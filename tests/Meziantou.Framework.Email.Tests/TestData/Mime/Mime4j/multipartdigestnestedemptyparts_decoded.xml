@@ -1,0 +1,54 @@
+<message>
+<header>
+<field>
+Return-Path: something@example.com</field>
+<field>
+Date: Thu, 11 Apr 1996 01:10:30 -0500</field>
+<field>
+From: Me &lt;me@example.com&gt;</field>
+<field>
+MIME-Version: 1.0</field>
+<field>
+Content-Type: multipart/digest; boundary="------------299A70B339B65A93542D2AE"</field>
+</header>
+<multipart>
+<preamble>
+This is a multi-part message in MIME format.
+</preamble>
+<body-part>
+<header>
+</header>
+<message>
+<header>
+<field>
+Return-Path: something@example.com</field>
+<field>
+Date: Thu, 11 Apr 1996 01:10:30 -0500</field>
+<field>
+From: Me &lt;me@example.com&gt;</field>
+<field>
+MIME-Version: 1.0</field>
+<field>
+Content-Type: multipart/mixed; boundary="------------299A70B339B65A93542D2AF"</field>
+</header>
+<multipart>
+<preamble>
+This is a nested multi-part message in MIME format.
+</preamble>
+<body-part>
+<header>
+</header>
+<text-body name="multipartdigestnestedemptyparts_decoded_1_1_1_1.txt"/>
+</body-part>
+<epilogue>
+
+Nested epilogue</epilogue>
+</multipart>
+</message>
+</body-part>
+<epilogue>
+
+Epilogue
+</epilogue>
+</multipart>
+</message>

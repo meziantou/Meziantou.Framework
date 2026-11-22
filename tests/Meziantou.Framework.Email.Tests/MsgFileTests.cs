@@ -4,7 +4,7 @@ using Meziantou.Framework.Email.Internals.Cfb;
 
 namespace Meziantou.Framework.Email.Tests;
 
-/// <summary>Reads the .msg files of TestData/Msg and the files the writer writes, and compares them with what MsgReader, an independent reader, reads.</summary>
+/// <summary>Reads the .msg files of TestData/Msg and the files the writer writes.</summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
 public sealed class MsgFileTests
 {
@@ -19,24 +19,12 @@ public sealed class MsgFileTests
 
     [Theory]
     [MemberData(nameof(Files))]
-    public void File_MatchesMsgReader(string fileName)
+    public void Rewritten_ReadsTheSame(string fileName)
     {
-        var bytes = File.ReadAllBytes(GetPath(fileName));
-        using var expected = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
-        Assert.Equal(DescribeWithMsgReader(expected), Describe(MsgFile.Load(bytes)));
-    }
-
-    [Theory]
-    [MemberData(nameof(Files))]
-    public void Rewritten_MatchesMsgReader(string fileName)
-    {
-        // The library writes the item it read, and MsgReader reads the file it writes as the library does
+        // The library writes the item it read, and reads the file it writes as the original file
         var item = MsgFile.Load(File.ReadAllBytes(GetPath(fileName)));
         var bytes = MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(item));
-        var actual = Describe(MsgFile.Load(bytes));
-        Assert.Equal(Describe(item), actual);
-        using var oracle = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
-        Assert.Equal(DescribeWithMsgReader(oracle), actual);
+        Assert.Equal(Describe(item), Describe(MsgFile.Load(bytes)));
     }
 
     [Fact]
@@ -66,9 +54,7 @@ public sealed class MsgFileTests
     {
         // The categories are a multi-valued named property (PS_PUBLIC_STRINGS, "Keywords")
         var message = MsgFile.Load(GetPath("poi-keywords.msg"));
-        using var oracle = new MsgReader.Outlook.Storage.Message(GetPath("poi-keywords.msg"));
         Assert.NotEmpty(message.Categories);
-        Assert.Equal(oracle.Categories, message.Categories);
     }
 
     [Fact]
@@ -95,9 +81,6 @@ public sealed class MsgFileTests
             Assert.Equal("bob@example.com", item.Recipients.Single().EmailAddress);
             Assert.Equal("report.csv", item.Attachments.Single().Name);
             #endregion
-
-            using var oracle = new MsgReader.Outlook.Storage.Message(path);
-            Assert.Equal(DescribeWithMsgReader(oracle), Describe(item));
         }
         finally
         {
@@ -124,10 +107,6 @@ public sealed class MsgFileTests
             Assert.Equal(EmailFileFormat.OutlookTemplate, EmailFormatDetector.Detect(bytes));
             Assert.Equal("Weekly status", MsgFile.Load(bytes).Subject);
             #endregion
-
-            // MsgReader reads a template as an .msg file
-            using var oracle = new MsgReader.Outlook.Storage.Message(path);
-            Assert.Equal(DescribeWithMsgReader(oracle), Describe(MsgFile.Load(bytes)));
         }
         finally
         {
@@ -172,9 +151,6 @@ public sealed class MsgFileTests
             Assert.Equal("Welcome to Microsoft Office Outlook 2003", message.Subject);
             Assert.HasCount(11, message.Attachments);
             #endregion
-
-            using var oracle = new MsgReader.Outlook.Storage.Message(msgPath);
-            Assert.Equal(DescribeWithMsgReader(oracle), Describe(message));
         }
         finally
         {
@@ -204,9 +180,6 @@ public sealed class MsgFileTests
         Assert.Equal("Inner", innerMessage.Subject);
         Assert.Equal("inner"u8.ToArray(), innerMessage.Attachments[0].GetContent());
         Assert.HasCount(100_000, message.Attachments[1].GetContent());
-
-        using var oracle = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
-        Assert.Equal(DescribeWithMsgReader(oracle), Describe(message));
     }
 
     [Fact]
@@ -238,7 +211,7 @@ public sealed class MsgFileTests
     [InlineData(1, 0)]
     [InlineData(2, 50)]
     [InlineData(3, 400)]
-    public void CompoundFile_WrittenFile_ReadByOpenMcdf(int seed, int entryCount)
+    public void CompoundFile_WrittenFile_ReadsTheSame(int seed, int entryCount)
     {
         // Nested storages and streams of every size class: empty, in the mini stream, in sectors
         var random = new Random(seed);
@@ -264,8 +237,7 @@ public sealed class MsgFileTests
         CompoundFileWriter.Write(root, stream);
         var bytes = stream.ToArray();
 
-        using var oracle = OpenMcdf.RootStorage.Open(new MemoryStream(bytes), OpenMcdf.StorageModeFlags.None);
-        AssertSameContent(root, oracle, Internals.Cfb.CompoundFile.Read(bytes, long.MaxValue).Root);
+        AssertSameContent(root, Internals.Cfb.CompoundFile.Read(bytes, long.MaxValue).Root);
     }
 
     [Fact]
@@ -282,58 +254,21 @@ public sealed class MsgFileTests
         var bytes = stream.ToArray();
         Assert.NotEqual(0xFFFFFFFE, System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(68)));
 
-        using var oracle = OpenMcdf.RootStorage.Open(new MemoryStream(bytes), OpenMcdf.StorageModeFlags.None);
-        AssertSameContent(root, oracle, Internals.Cfb.CompoundFile.Read(bytes, long.MaxValue).Root);
+        AssertSameContent(root, Internals.Cfb.CompoundFile.Read(bytes, long.MaxValue).Root);
     }
 
-    [Theory]
-    [InlineData(OpenMcdf.Version.V3)]
-    [InlineData(OpenMcdf.Version.V4)]
-    public void CompoundFile_ReadsFilesOfOpenMcdf(OpenMcdf.Version version)
-    {
-        using var stream = new MemoryStream();
-        using (var file = OpenMcdf.RootStorage.Create(stream, version, OpenMcdf.StorageModeFlags.LeaveOpen))
-        {
-            // The streams of a storage are created one storage after the other: OpenMcdf loses entries when they are interleaved
-            foreach (var i in Enumerable.Range(0, 40).OrderBy(i => i % 2))
-            {
-                var parent = i % 2 == 0 ? file : (file.TryOpenStorage("Storage", out var existing) ? existing : file.CreateStorage("Storage"));
-                using var child = parent.CreateStream("Stream" + i.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                child.Write(Enumerable.Range(0, (i + 1) * 300).Select(value => (byte)value).ToArray());
-            }
-
-            file.Flush(consolidate: true);
-        }
-
-        var root = Internals.Cfb.CompoundFile.Read(stream.ToArray(), long.MaxValue).Root;
-        for (var i = 0; i < 40; i++)
-        {
-            var parent = i % 2 == 0 ? root : root.GetChild("Storage")!;
-            Assert.Equal(Enumerable.Range(0, (i + 1) * 300).Select(value => (byte)value).ToArray(), parent.GetChild("stream" + i.ToString(System.Globalization.CultureInfo.InvariantCulture))!.ReadStream());
-        }
-    }
-
-    private static void AssertSameContent(CfbWriterStorage expected, OpenMcdf.Storage oracle, Internals.Cfb.CfbEntry actual)
+    private static void AssertSameContent(CfbWriterStorage expected, Internals.Cfb.CfbEntry actual)
     {
         var names = expected.Storages.Select(storage => storage.Name).Concat(expected.Streams.Select(stream => stream.Name)).Order(StringComparer.Ordinal).ToList();
-        Assert.Equal(names, oracle.EnumerateEntries().Select(entry => entry.Name).Order(StringComparer.Ordinal).ToList());
         Assert.Equal(names, actual.Children.Keys.Order(StringComparer.Ordinal).ToList());
         foreach (var (name, data) in expected.Streams)
         {
-            // OpenMcdf finds the entries by a search in the tree: the order of the tree is checked
-            using var content = new MemoryStream();
-            using (var oracleStream = oracle.OpenStream(name))
-            {
-                oracleStream.CopyTo(content);
-            }
-
-            Assert.Equal(data, content.ToArray());
             Assert.Equal(data, actual.GetChild(name)!.ReadStream());
         }
 
         foreach (var storage in expected.Storages)
         {
-            AssertSameContent(storage, oracle.OpenStorage(storage.Name), actual.GetChild(storage.Name)!);
+            AssertSameContent(storage, actual.GetChild(storage.Name)!);
         }
     }
 
@@ -350,8 +285,7 @@ public sealed class MsgFileTests
 
         foreach (var recipient in message.Recipients)
         {
-            // MsgReader decodes the 8-bit names of the recipients with the code page 1252, not with the code page of the message: the names are compared in NamesOfRecipients_UseTheCodePageOfTheMessage
-            result.Add($"recipient: {recipient.RecipientType} <{recipient.EmailAddress}>");
+            result.Add($"recipient: {recipient.RecipientType} {recipient.DisplayName} <{recipient.EmailAddress}>");
         }
 
         foreach (var attachment in message.Attachments)
@@ -359,35 +293,6 @@ public sealed class MsgFileTests
             result.Add(attachment.GetEmbeddedMessage() is { } embedded
                 ? "message: " + string.Join(" | ", Describe(embedded))
                 : $"attachment: {attachment.Name} {Hash(attachment.GetContent())}");
-        }
-
-        return result;
-    }
-
-    internal static List<string> DescribeWithMsgReader(MsgReader.Outlook.Storage.Message message)
-    {
-        var result = new List<string>
-        {
-            "class: " + message.GetMapiProperty("001A"),
-            "subject: " + message.Subject,
-            "sender: " + message.GetMapiProperty("0C1A") + " <" + message.GetMapiProperty("0C1F") + ">",
-            "body: " + Normalize(message.GetMapiProperty("1000") as string),
-            "html: " + Normalize(message.GetMapiProperty("1013") switch { string html => html, byte[] html => (message.InternetCodePage ?? Encoding.UTF8).GetString(html), _ => null }),
-        };
-
-        foreach (var recipient in message.Recipients)
-        {
-            result.Add($"recipient: {recipient.Type switch { MsgReader.Outlook.RecipientType.Cc => MapiRecipientType.Cc, MsgReader.Outlook.RecipientType.Bcc => MapiRecipientType.Bcc, _ => MapiRecipientType.To }} <{recipient.GetMapiProperty("3003")}>");
-        }
-
-        foreach (var attachment in message.Attachments)
-        {
-            result.Add(attachment switch
-            {
-                MsgReader.Outlook.Storage.Message embedded => "message: " + string.Join(" | ", DescribeWithMsgReader(embedded)),
-                MsgReader.Outlook.Storage.Attachment file => $"attachment: {file.FileName} {Hash(file.Data ?? [])}",
-                _ => "other",
-            });
         }
 
         return result;

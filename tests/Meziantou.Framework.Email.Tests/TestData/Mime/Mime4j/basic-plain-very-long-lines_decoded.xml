@@ -1,0 +1,17 @@
+<message>
+<header>
+<field>
+Return-Path: foo@example.com</field>
+<field>
+Subject: Simple Subject</field>
+<field>
+From: foo@example.com</field>
+<field>
+To: bar@example.com</field>
+<field>
+Cc: recipient1@example.com,recipient2@example.com, localrecipient</field>
+<field>
+Date: Wed, 11 Feb 98 11:51 CST</field>
+</header>
+<text-body name="basic-plain-very-long-lines_decoded_1.txt"/>
+</message>

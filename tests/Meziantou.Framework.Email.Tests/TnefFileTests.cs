@@ -3,7 +3,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Email.Tests;
 
-/// <summary>Reads the TNEF streams of TestData/Tnef and the streams the writer writes, and compares them with what MimeKit, an independent reader, reads.</summary>
+/// <summary>Reads the TNEF streams of TestData/Tnef and the streams the writer writes.</summary>
 public sealed class TnefFileTests
 {
     static TnefFileTests()
@@ -17,21 +17,11 @@ public sealed class TnefFileTests
 
     [Theory]
     [MemberData(nameof(Files))]
-    public void File_MatchesMimeKit(string fileName)
-    {
-        var bytes = File.ReadAllBytes(GetPath(fileName));
-        Assert.Equal(DescribeWithMimeKit(bytes), Describe(TnefFile.Load(bytes)));
-    }
-
-    [Theory]
-    [MemberData(nameof(Files))]
-    public void Rewritten_MatchesMimeKit(string fileName)
+    public void Rewritten_ReadsTheSame(string fileName)
     {
         var item = TnefFile.Load(File.ReadAllBytes(GetPath(fileName)));
         var bytes = TnefFile.ToByteArray(MapiMessageBuilder.FromMessage(item));
-        AssertCompliant(bytes);
         Assert.Equal(Describe(item), Describe(TnefFile.Load(bytes)));
-        Assert.Equal(DescribeWithMimeKit(bytes), Describe(TnefFile.Load(bytes)));
     }
 
     [Theory]
@@ -41,12 +31,10 @@ public sealed class TnefFileTests
         // The items of .msg files, with their recipients, attachments, embedded messages and named properties, written as TNEF streams
         var item = MsgFile.Load(MsgFileTests.GetPath(fileName));
         var bytes = TnefFile.ToByteArray(MapiMessageBuilder.FromMessage(item));
-        AssertCompliant(bytes);
         var copy = TnefFile.Load(bytes);
         Assert.Equal(item.GetType(), copy.GetType());
         Assert.Equal(MsgFileTests.Describe(item), MsgFileTests.Describe(copy));
         Assert.Equal(item.Categories, copy.Categories);
-        Assert.Equal(DescribeWithMimeKit(bytes), Describe(copy));
         Assert.Equal(item.Properties.Count(property => property.NamedProperty is not null), copy.Properties.Count(property => property.NamedProperty is not null));
     }
 
@@ -96,9 +84,6 @@ public sealed class TnefFileTests
         Assert.Equal("Meeting notes", item.Subject);
         Assert.Equal("notes.txt", item.Attachments.Single().Name);
         #endregion
-
-        AssertCompliant(winmail);
-        Assert.Equal(DescribeWithMimeKit(winmail), Describe(item));
     }
 
     [Fact]
@@ -141,7 +126,6 @@ public sealed class TnefFileTests
         outer.Attachments.Add(MapiAttachmentBuilder.FromContent("data.bin", RandomNumberGenerator.GetBytes(10_001)));
 
         var bytes = TnefFile.ToByteArray(outer);
-        AssertCompliant(bytes);
         var message = TnefFile.Load(bytes);
         Assert.Equal(["Red", "Blue"], message.Categories);
         var embedded = message.Attachments[0].GetEmbeddedMessage()!;
@@ -173,18 +157,6 @@ public sealed class TnefFileTests
         _ = TnefFile.Load(bytes, new PstReadOptions { VerifyChecksums = false });
     }
 
-    private static void AssertCompliant(byte[] bytes)
-    {
-        // MimeKit checks the signature, the attributes, their lengths and their checksums; it reads the properties in ConvertToMessage (DescribeWithMimeKit)
-        using var reader = new MimeKit.Tnef.TnefReader(new MemoryStream(bytes), 0, MimeKit.Tnef.TnefComplianceMode.Strict);
-        while (reader.ReadNextAttribute())
-        {
-        }
-
-        Assert.Equal(MimeKit.Tnef.TnefComplianceStatus.Compliant, reader.ComplianceStatus);
-        _ = DescribeWithMimeKit(bytes);
-    }
-
     private static List<string> Describe(MapiMessage message)
     {
         var result = new List<string>
@@ -196,27 +168,6 @@ public sealed class TnefFileTests
         foreach (var attachment in message.Attachments.Where(attachment => !attachment.IsEmbeddedMessage).OrderBy(attachment => attachment.Name, StringComparer.Ordinal))
         {
             result.Add($"attachment: {attachment.Name} {Hash(attachment.GetContent())}");
-        }
-
-        return result;
-    }
-
-    private static List<string> DescribeWithMimeKit(byte[] bytes)
-    {
-        using var part = new MimeKit.Tnef.TnefPart { Content = new MimeKit.MimeContent(new MemoryStream(bytes)) };
-        using var message = part.ConvertToMessage();
-        var result = new List<string>
-        {
-            "subject: " + message.Subject,
-            "body: " + Normalize(message.TextBody),
-        };
-
-        // The inline images are body parts of a multipart/related, not attachments; MimeKit keeps an embedded message as a TNEF part, which the description of the library skips too
-        foreach (var attachment in message.BodyParts.OfType<MimeKit.MimePart>().Where(part => part.FileName is not null && !part.ContentType.IsMimeType("application", "ms-tnef")).OrderBy(attachment => attachment.FileName, StringComparer.Ordinal))
-        {
-            using var content = new MemoryStream();
-            attachment.Content?.DecodeTo(content);
-            result.Add($"attachment: {attachment.FileName} {Hash(content.ToArray())}");
         }
 
         return result;

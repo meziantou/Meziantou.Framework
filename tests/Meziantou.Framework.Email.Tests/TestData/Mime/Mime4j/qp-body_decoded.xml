@@ -1,0 +1,13 @@
+<message>
+<header>
+<field>
+Mime-Version: 1.0</field>
+<field>
+Subject: subject</field>
+<field>
+Content-Type: text/plain; charset="iso-8859-15"</field>
+<field>
+Content-Transfer-Encoding: quoted-printable</field>
+</header>
+<text-body name="qp-body_decoded_1.txt"/>
+</message>

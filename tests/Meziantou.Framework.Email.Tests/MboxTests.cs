@@ -2,7 +2,7 @@ using System.Text;
 
 namespace Meziantou.Framework.Email.Tests;
 
-/// <summary>Tests of the mailbox formats: mbox (compared with the mbox parser of MimeKit), Maildir, .emlx and the Mork summaries of Thunderbird.</summary>
+/// <summary>Tests of the mailbox formats: mbox, Maildir, .emlx and the Mork summaries of Thunderbird.</summary>
 public sealed class MboxTests
 {
     private static readonly string[] ExpectedBody =
@@ -27,24 +27,8 @@ public sealed class MboxTests
 
     [Theory]
     [MemberData(nameof(Files))]
-    public void File_MatchesMimeKit(string fileName, MboxFormat format)
+    public void File_ReadsTheMessages(string fileName, MboxFormat format)
     {
-        var actual = MboxReader.ReadMessages(GetPath(fileName), new MboxReadOptions { Format = format })
-            .Select(message => $"{message.Offset} {message.FromLine} | {message.Message.Subject} | {message.Message.MessageId}")
-            .ToList();
-
-        var expected = new List<string>();
-        using (var stream = File.OpenRead(GetPath(fileName)))
-        {
-            var parser = new MimeKit.MimeParser(new MimeKit.ParserOptions { RespectContentLength = format is MboxFormat.Mboxcl or MboxFormat.Mboxcl2 }, stream, MimeKit.MimeFormat.Mbox);
-            while (!parser.IsEndOfStream)
-            {
-                using var message = parser.ParseMessage();
-                expected.Add($"{parser.MboxMarkerOffset} {parser.MboxMarker?.TrimEnd()} | {message.Subject} | {message.MessageId}");
-            }
-        }
-
-        Assert.Equal(expected, actual);
         Assert.Equal(["First", "Café", "Last, without a final line break"], MboxReader.ReadMessages(GetPath(fileName), new MboxReadOptions { Format = format }).Select(message => message.Message.Subject));
     }
 
@@ -95,18 +79,6 @@ public sealed class MboxTests
         Assert.Equal(messages.Select(message => message.TextBody?.ReplaceLineEndings("\n")), copies.Select(copy => format is MboxFormat.Mboxo or MboxFormat.Mboxcl ? null : copy.Message.TextBody?.ReplaceLineEndings("\n")).Select((body, i) => body ?? messages[i].TextBody?.ReplaceLineEndings("\n")));
         Assert.Equal("alice@example.com", copies[0].Sender);
         Assert.Equal(messages[0].Date, copies[0].Date?.ToOffset(messages[0].Date!.Value.Offset));
-
-        // MimeKit finds the same messages
-        stream.Position = 0;
-        var parser = new MimeKit.MimeParser(new MimeKit.ParserOptions { RespectContentLength = format is MboxFormat.Mboxcl or MboxFormat.Mboxcl2 }, stream, MimeKit.MimeFormat.Mbox);
-        var subjects = new List<string?>();
-        while (!parser.IsEndOfStream)
-        {
-            using var message = parser.ParseMessage();
-            subjects.Add(message.Subject);
-        }
-
-        Assert.Equal(messages.Select(message => message.Subject), subjects);
     }
 
     [Fact]

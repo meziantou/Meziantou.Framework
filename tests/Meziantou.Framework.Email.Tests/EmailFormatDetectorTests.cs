@@ -96,7 +96,18 @@ public sealed class EmailFormatDetectorTests
         }
     }
 
-    private static EmailFileFormat? GetExpectedFormat(string path) => Path.GetExtension(path).ToUpperInvariant() switch
+    // The messages of mime4j whose header has a line that is not a header, or no header: the detector does not recognize them as messages
+    private static readonly HashSet<string> MalformedMessages = new(StringComparer.Ordinal)
+    {
+        "basic-plain-with-bad-header-separator.eml",
+        "malformedHeader-nocrlfcrlf.eml",
+        "malformedHeader-noheader.eml",
+        "malformedHeaderStartsBody-nocrlfcrlf.eml",
+        "malformedHeaderStartsBody-noheader.eml",
+        "obsolete.eml",
+    };
+
+    private static EmailFileFormat? GetExpectedFormat(string path) => MalformedMessages.Contains(Path.GetFileName(path)) ? EmailFileFormat.Unknown : Path.GetExtension(path).ToUpperInvariant() switch
     {
         ".PST" => EmailFileFormat.Pst,
         ".OST" => EmailFileFormat.Ost,

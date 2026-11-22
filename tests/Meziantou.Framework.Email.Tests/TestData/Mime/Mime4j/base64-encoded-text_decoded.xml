@@ -1,0 +1,11 @@
+<message>
+<header>
+<field>
+Content-type: text/plain</field>
+<field>
+Content-transfer-encoding: base64</field>
+<field>
+Subject: a multipart message/rfc822 which has been base64-encoded as plain text</field>
+</header>
+<text-body name="base64-encoded-text_decoded_1.txt"/>
+</message>

@@ -246,5 +246,14 @@ public static partial class EmailFuzzTargets
         {
             yield return new FuzzSeed("rule-" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), FuzzText.Encode(rules[i]));
         }
+
+        // The rules of the tests of python-dateutil: name, start, rule and occurrences, separated by tabulations
+        using var stream = FuzzResources.Open(typeof(EmailFuzzTargets).Assembly, "TestData/Rules/dateutil-rrule.tsv");
+        using var reader = new StreamReader(stream);
+        while (reader.ReadLine() is { } line)
+        {
+            var fields = line.Split('\t');
+            yield return new FuzzSeed("dateutil-" + fields[0], FuzzText.Encode(fields[1] + "\n" + fields[2]));
+        }
     }
 }

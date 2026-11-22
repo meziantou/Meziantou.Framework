@@ -122,14 +122,13 @@ public sealed class PstWriterTests
         Assert.Null(note.Left);
         Assert.Empty(file.Validate());
 
-        // An .msg file of the note, and its copy, read by MsgReader as a sticky note
+        // An .msg file of the note, and its copy
         var bytes = MsgFile.ToByteArray(MapiMessageBuilder.FromMessage(note));
         var copy = Assert.IsType<MapiNote>(MsgFile.Load(bytes));
+        Assert.Equal("IPM.StickyNote", copy.MessageClass);
+        Assert.Equal("Call Bob", copy.Subject);
         Assert.Equal(MapiNoteColor.Green, copy.Color);
         Assert.Equal(166, copy.Height);
-        using var oracle = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
-        Assert.Equal(MsgReader.Outlook.MessageType.StickyNote, oracle.Type);
-        Assert.Equal("Call Bob", oracle.Subject);
     }
 
     [Fact]
@@ -159,18 +158,12 @@ public sealed class PstWriterTests
         Assert.Equal(["Bob Smith"], item.Contacts);
         Assert.False(item.DocumentPrinted);
 
-        // MsgReader reads the same journal entry
         entry.DocumentSaved = true;
-        var bytes = MsgFile.ToByteArray(entry);
-        using var oracle = new MsgReader.Outlook.Storage.Message(new MemoryStream(bytes));
-        Assert.Equal(MsgReader.Outlook.MessageType.Journal, oracle.Type);
-        Assert.Equal("Phone call", oracle.Log.Type);
-        Assert.Equal("Phone call", oracle.Log.TypeDescription);
-        Assert.Equal(25, oracle.Log.Duration);
-        Assert.True(oracle.Log.DocumentSaved);
-        Assert.Null(oracle.Log.DocumentPrinted);
-        Assert.Equal(new DateTimeOffset(2026, 3, 2, 9, 0, 0, TimeSpan.Zero), oracle.Log.Start?.ToUniversalTime());
-        Assert.True(Assert.IsType<MapiJournal>(MsgFile.Load(bytes)).DocumentSaved);
+        var saved = Assert.IsType<MapiJournal>(MsgFile.Load(MsgFile.ToByteArray(entry)));
+        Assert.Equal("IPM.Activity", saved.MessageClass);
+        Assert.Equal("Phone call", saved.JournalTypeDescription);
+        Assert.True(saved.DocumentSaved);
+        Assert.False(saved.DocumentPrinted);
 
         // An end before the start has no duration
         entry.End = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);

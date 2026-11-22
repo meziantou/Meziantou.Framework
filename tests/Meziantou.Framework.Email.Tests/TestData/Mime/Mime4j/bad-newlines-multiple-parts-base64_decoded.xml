@@ -1,0 +1,33 @@
+<message>
+<header>
+<field>
+Content-type: message/rfc822</field>
+<field>
+Content-transfer-encoding: base64</field>
+<field>
+Subject: a multipart message/rfc822 which has been base64-encoded</field>
+</header>
+<message>
+<header>
+<field>
+Content-Type: multipart/mixed; boundary="------------299A70B339B65A93542D2AE"</field>
+</header>
+<multipart>
+<preamble>
+This is a multi-part message in MIME format.
+</preamble>
+<body-part>
+<header>
+<field>
+Content-Type: text/plain; charset=us-ascii</field>
+<field>
+Content-Transfer-Encoding: 7bit</field>
+</header>
+<text-body name="bad-newlines-multiple-parts-base64_decoded_1_1_1.txt"/>
+</body-part>
+<epilogue>
+That was a multi-part message in MIME format.
+</epilogue>
+</multipart>
+</message>
+</message>

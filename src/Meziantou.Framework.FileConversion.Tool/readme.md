@@ -1,13 +1,13 @@
 # Meziantou.Framework.FileConversion.Tool
 
 `Meziantou.Framework.FileConversion.Tool` converts files from one format to another: images (PNG, JPEG, WebP, AVIF,
-HEIC, JPEG XL, TIFF, GIF...), PDF documents, EPUB books, Markdown and HTML documents, comic book archives (CBZ, CBR, CB7, CBT), archives (zip,
+HEIC, JPEG XL, TIFF, GIF...), PDF documents, EPUB and Kindle (MOBI, AZW3) books, Markdown and HTML documents, comic book archives (CBZ, CBR, CB7, CBT), archives (zip,
 7z, RAR, tar, .tar.gz, .tar.bz2, .tar.xz...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, OFT, EMLX,
 winmail.dat).
 
 - an image to another image format
 - a PDF document to one image per page, and images to a PDF document
-- an EPUB book to a PDF document, a comic book archive or images
+- an EPUB or Kindle book (MOBI, AZW3) to a PDF document, a comic book archive or images
 - a comic book archive to a PDF document, images or another comic book archive, and images to a comic book archive
 - a Markdown document to an HTML page, and an HTML page to a Markdown document
 - a Markdown or HTML document to a PDF document or images
@@ -51,11 +51,12 @@ Meziantou.Framework.FileConversion.Tool report.pdf --output report-archive.pdf -
 Meziantou.Framework.FileConversion.Tool report.pdf --output-format pdf --per-page
 ```
 
-Convert an EPUB book to a PDF document or to a comic book archive:
+Convert an EPUB or Kindle book to a PDF document, or a comic to a comic book archive:
 
 ```bash
 Meziantou.Framework.FileConversion.Tool book.epub --output book.pdf --layout-page-size A5
 Meziantou.Framework.FileConversion.Tool comic.epub --output-format cbz
+Meziantou.Framework.FileConversion.Tool book.azw3 --output-format pdf
 ```
 
 Convert a comic book archive, or an archive to another archive format:
@@ -95,7 +96,7 @@ Meziantou.Framework.FileConversion.Tool --list-formats
 
 ```
 Description:
-  Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)
+  Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)
 
 Usage:
   Meziantou.Framework.FileConversion.Tool [<inputs>...] [options]
@@ -114,7 +115,7 @@ Options:
   --list-formats                                                                                                              List the formats, their extensions and their options
   --max-width <max-width>                                                                                                     Shrink the images to this width, in pixels, keeping their aspect ratio
   --max-height <max-height>                                                                                                   Shrink the images to this height, in pixels, keeping their aspect ratio
-  --dpi <dpi>                                                                                                                 The resolution of the images of the PDF and EPUB pages, in dots per inch [default: 150]
+  --dpi <dpi>                                                                                                                 The resolution of the images of the PDF, EPUB and MOBI pages, in dots per inch [default: 150]
   --background <background>                                                                                                   The color the transparent pixels are composited over in JPEG output, in hexadecimal notation [default: #ffffff]
   --jpeg-quality <jpeg-quality>                                                                                               The quality of the JPEG images, from 1 to 100. Default: 90
   --webp-quality <webp-quality>                                                                                               The quality of the lossy WebP images, from 0 to 100
@@ -144,9 +145,9 @@ Options:
   --pdf-permissions <All|Annotate|Assemble|CopyContent|ExtractForAccessibility|FillForms|Modify|None|Print|PrintHighQuality>  The operations allowed without the owner password, separated by commas: None, Print, PrintHighQuality, Modify, CopyContent, Annotate, FillForms, ExtractForAccessibility, Assemble, All. Needs --pdf-owner-password. Default: All
   --pdf-flatten-forms                                                                                                         Draw the form fields of the PDF inputs in the content of their pages, so that their values are kept in the PDF output. Without it, the PDF output leaves the form fields out
   --epub-mode <Auto|Images|Render>                                                                                            How the EPUB pages are made. Auto uses the images of a book whose pages are images (comics), and lays out the text of the other books [default: Auto]
-  --layout-page-size <layout-page-size>                                                                                       The size of the pages the text of EPUB, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB, A4 for Markdown and HTML
-  --layout-margin <layout-margin>                                                                                             The margin of the pages the text of EPUB, Markdown and HTML documents is laid out on, in millimeters [default: 15]
-  --layout-font-size <layout-font-size>                                                                                       The size of the text of EPUB, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document
+  --layout-page-size <layout-page-size>                                                                                       The size of the pages the text of EPUB, MOBI, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB and MOBI, A4 for Markdown and HTML
+  --layout-margin <layout-margin>                                                                                             The margin of the pages the text of EPUB, MOBI, Markdown and HTML documents is laid out on, in millimeters [default: 15]
+  --layout-font-size <layout-font-size>                                                                                       The size of the text of EPUB, MOBI, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document
   --html-root <html-root>                                                                                                     The folder whose files (images, style sheets, fonts) Markdown and HTML documents laid out on pages can load, such as the root of a documentation site. Default: the folder of each document. Nothing is loaded from the network
   --markdown-extensions <markdown-extensions>                                                                                 The Markdown extensions of a Markdown input, separated by '+': 'common' for CommonMark only, 'advanced' (tables, task lists, footnotes, alerts...), or extensions such as 'pipetables+tasklists+emojis' [default: advanced]
   --markdown-disable-html                                                                                                     Write the raw HTML of a Markdown input as text, for a document from an untrusted source

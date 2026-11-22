@@ -139,7 +139,7 @@ public sealed partial record BrowsingContextOptions
     /// Gets or sets the runtime that compiles and runs the WebAssembly modules of the scripts: it defines the
     /// <c>WebAssembly</c> namespace in the realms (https://webassembly.github.io/spec/js-api/). The default is null: the
     /// namespace is not defined, unless the <see cref="ScriptEngine"/> provides its own (e.g. V8). The
-    /// <c>Meziantou.Framework.WebPlatform.Wasmtime</c> package provides a runtime.
+    /// <c>Meziantou.Framework.WebPlatform.Wasm</c> package provides a runtime (<c>WasmWebAssemblyRuntime</c>).
     /// </summary>
     /// <remarks>
     /// The WebAssembly code runs with the resources of the process: the limits of the script engine (e.g. its timeout)

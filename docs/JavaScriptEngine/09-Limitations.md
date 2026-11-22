@@ -14,7 +14,7 @@ A realm has the built-ins of ECMAScript only. These are not provided:
 - `fetch`, `URL`, `TextEncoder`, `TextDecoder`, `atob`, `btoa`, and the other APIs of the web platform: the DOM,
   `window`, `document`, workers...;
 - Node.js: `require`, `process`, `Buffer`, and the built-in modules (`fs`, `path`...);
-- `WebAssembly`.
+- `WebAssembly`: to run WebAssembly modules from .NET, use the [WebAssembly engine](../WasmEngine/01-Introduction.md).
 
 Add what your scripts need with .NET functions and objects: see
 [Console, timers and other host APIs](05-Interop/07-HostApis.md), [Functions](05-Interop/04-Functions.md) and

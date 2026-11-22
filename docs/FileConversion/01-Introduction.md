@@ -1,6 +1,6 @@
 ---
 title: Introduction
-description: A command-line tool that converts images, PDF documents, EPUB books, Markdown and HTML documents, comic book archives, archives, mailboxes and email messages from one format to another.
+description: A command-line tool that converts images, PDF documents, EPUB and Kindle (MOBI, AZW3) books, Markdown and HTML documents, comic book archives, archives, mailboxes and email messages from one format to another.
 ---
 
 `Meziantou.Framework.FileConversion.Tool` is a .NET tool that converts files from one format to another:
@@ -8,7 +8,7 @@ description: A command-line tool that converts images, PDF documents, EPUB books
 - an image to another image format: PNG to JPEG, JPEG to AVIF, HEIC to PNG, and so on
 - a PDF document to one image per page
 - images to a PDF document, a comic book archive (CBZ, CB7, CBT) or a multi-page TIFF file
-- an EPUB book to a PDF document, a comic book archive or images
+- an EPUB or Kindle book (MOBI, AZW3) to a PDF document, a comic book archive or images
 - a comic book archive (CBZ, CBR, CB7, CBT) to a PDF document, images or another comic book archive
 - a Markdown document to an HTML page, and an HTML page to a Markdown document
 - a Markdown or HTML document to a PDF document or images
@@ -27,7 +27,7 @@ Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--layout-
 - **Convert images**: choose the format, the quality and the size. See [Images](03-Images.md).
 - **Convert PDF documents** to images, and images to PDF documents; merge and split PDF documents, and save them as
   PDF/A, smaller, linearized or encrypted. See [PDF documents](04-Pdf.md).
-- **Convert EPUB books and comic book archives**. See [EPUB books and comic book archives](05-EpubAndComicBooks.md).
+- **Convert EPUB and Kindle books, and comic book archives**. See [E-books and comic book archives](05-EbooksAndComicBooks.md).
 - **Name the output files** when an input gives several files. See [Output file names](06-OutputNames.md).
 - **Convert Markdown and HTML** documents to each other, and to PDF documents or images. See [Markdown and HTML](08-MarkdownAndHtml.md).
 - **Convert archives** from one format to another, such as RAR to zip or zip to .tar.gz. See [Archives](07-Archives.md).
@@ -43,6 +43,8 @@ The tool reads each input as a sequence of pages, then writes the pages in the o
 - A PDF document has its pages.
 - A comic book archive, or any other archive, has its images, sorted by name.
 - An EPUB book has the pages its text is laid out on, or its images when its pages are images (comics).
+- A Kindle book (MOBI, AZW3) has its cover, when its text does not show it, then the pages its text is laid out on, or
+  its images when its pages are images (comics).
 
 The format of the output decides how many files the tool writes:
 

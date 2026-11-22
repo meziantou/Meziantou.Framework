@@ -1,4 +1,4 @@
 title: File conversion
-description: Convert files from one format to another from the command line, such as images, PDF, EPUB, Markdown, HTML, comic book archives, archives, mailboxes and email messages.
+description: Convert files from one format to another from the command line, such as images, PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives, archives, mailboxes and email messages.
 packageIds:
 - Meziantou.Framework.FileConversion.Tool

@@ -22,11 +22,11 @@
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting/Meziantou.Framework.SnapshotTesting.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.SnapshotTesting.Imaging/Meziantou.Framework.SnapshotTesting.Imaging.csproj" />
     <!-- The WebAssembly runtime of the pages -->
-    <ProjectReference Include="../../src/Meziantou.Framework.WebPlatform.Wasmtime/Meziantou.Framework.WebPlatform.Wasmtime.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.WebPlatform.Wasm/Meziantou.Framework.WebPlatform.Wasm.csproj" />
     <!-- The application of the end-to-end tests, opened with WebApplicationFactory<Program> -->
     <ProjectReference Include="../Meziantou.AspNetCore.Testing.TestApp/Meziantou.AspNetCore.Testing.TestApp.csproj" />
     <!-- The Blazor WebAssembly application of the end-to-end tests: its published files are served to the pages, and its
-         runtime runs on Wasmtime. The reference only orders the builds. -->
+         runtime runs on Meziantou.Framework.WasmEngine. The reference only orders the builds. -->
     <ProjectReference Include="$(WasmAppProject)" ReferenceOutputAssembly="false" />
   </ItemGroup>
 

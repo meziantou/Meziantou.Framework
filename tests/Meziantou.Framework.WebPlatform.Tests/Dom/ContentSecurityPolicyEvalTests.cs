@@ -1,7 +1,7 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Scripting;
 using Meziantou.Framework.WebPlatform.Tests.Scripting;
-using Meziantou.Framework.WebPlatform.Wasmtime;
+using Meziantou.Framework.WebPlatform.Wasm;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Dom;
 
@@ -11,7 +11,7 @@ namespace Meziantou.Framework.WebPlatform.Tests.Dom;
 /// </summary>
 public sealed class ContentSecurityPolicyEvalTests : IDisposable
 {
-    private static readonly WasmtimeRuntime WebAssemblyRuntime = new();
+    private static readonly WasmWebAssemblyRuntime WebAssemblyRuntime = new();
 
     // Records the violations in the title of the document
     private const string ViolationListener = """

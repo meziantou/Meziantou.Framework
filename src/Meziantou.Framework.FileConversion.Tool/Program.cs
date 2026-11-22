@@ -106,10 +106,10 @@ internal static class Program
         var gifMaxColorsOption = AddFormatOption(new Option<int?>("--gif-max-colors") { Description = "The maximum number of colors of the GIF images, from 2 to 256" }, format => format.ImageFormat is ImageFormat.Gif);
         gifMaxColorsOption.Validators.Add(result => ValidateRange(result, gifMaxColorsOption, 2, 256));
 
-        // Rendering of PDF and EPUB pages to images
+        // Rendering of PDF, EPUB and MOBI pages to images
         var dpiOption = new Option<double>("--dpi")
         {
-            Description = "The resolution of the images of the PDF and EPUB pages, in dots per inch",
+            Description = "The resolution of the images of the PDF, EPUB and MOBI pages, in dots per inch",
             DefaultValueFactory = _ => defaults.Dpi,
         };
         dpiOption.Validators.Add(result =>
@@ -195,16 +195,16 @@ internal static class Program
             Description = "How the EPUB pages are made. Auto uses the images of a book whose pages are images (comics), and lays out the text of the other books",
             DefaultValueFactory = _ => defaults.EpubMode,
         }, format => format.Kind is FileFormatKind.Epub);
-        // Layout of the text of EPUB, Markdown and HTML documents
-        static bool IsLaidOut(FileFormat format) => format.Kind is FileFormatKind.Epub or FileFormatKind.Markdown or FileFormatKind.Html;
+        // Layout of the text of EPUB, MOBI, Markdown and HTML documents
+        static bool IsLaidOut(FileFormat format) => format.Kind is FileFormatKind.Epub or FileFormatKind.Mobi or FileFormatKind.Markdown or FileFormatKind.Html;
         var layoutPageSizeOption = AddFormatOption(new Option<PageSize?>("--layout-page-size")
         {
-            Description = "The size of the pages the text of EPUB, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB, A4 for Markdown and HTML",
+            Description = "The size of the pages the text of EPUB, MOBI, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB and MOBI, A4 for Markdown and HTML",
             CustomParser = result => Parse(result, PageSize.ParseFixed),
         }, IsLaidOut);
         var layoutMarginOption = AddFormatOption(new Option<double>("--layout-margin")
         {
-            Description = "The margin of the pages the text of EPUB, Markdown and HTML documents is laid out on, in millimeters",
+            Description = "The margin of the pages the text of EPUB, MOBI, Markdown and HTML documents is laid out on, in millimeters",
             DefaultValueFactory = _ => defaults.LayoutMargin,
         }, IsLaidOut);
         layoutMarginOption.Validators.Add(result =>
@@ -214,7 +214,7 @@ internal static class Program
                 result.AddError("--layout-margin must be between 0 and 100");
             }
         });
-        var layoutFontSizeOption = AddFormatOption(new Option<double?>("--layout-font-size") { Description = "The size of the text of EPUB, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document" }, IsLaidOut);
+        var layoutFontSizeOption = AddFormatOption(new Option<double?>("--layout-font-size") { Description = "The size of the text of EPUB, MOBI, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document" }, IsLaidOut);
         layoutFontSizeOption.Validators.Add(result =>
         {
             if (result.GetValue(layoutFontSizeOption) is < 1 or > 200)
@@ -312,7 +312,7 @@ internal static class Program
             DefaultValueFactory = _ => defaults.PstEncryption,
         }, format => format == FileFormat.Pst || format == FileFormat.Ost);
 
-        var rootCommand = new RootCommand("Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)");
+        var rootCommand = new RootCommand("Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)");
         rootCommand.Arguments.Add(inputsArgument);
         Option[] options =
         [

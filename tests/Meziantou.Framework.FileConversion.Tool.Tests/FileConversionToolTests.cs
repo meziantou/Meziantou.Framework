@@ -485,6 +485,205 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task MobiToPdf_RendersTheText()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.mobi", TestFiles.CreateTextMobi());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The cover, which the text does not show, then a page per chapter: the page break of the book starts a page
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.HasCount(3, document.Pages);
+        Assert.Equal("Test book", document.Information.Title);
+        Assert.Equal("Test author", document.Information.Author);
+        Assert.Equal(PdfSize.A5.Width, document.Pages[1].MediaBox.Width, 0.5);
+        Assert.Contains("Chapter one", document.Pages[1].ExtractText());
+        Assert.Contains("second chapter", document.Pages[2].ExtractText());
+    }
+
+    [Fact]
+    public async Task MobiToCbz_CopiesTheCover()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.mobi", TestFiles.CreateTextMobi(TestFiles.MobiCompression.HuffCdic, utf8: false, trailingEntries: true));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "cbz", "--dpi", "30");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("book.cbz"));
+        Assert.Equal(["0001.jpg", "0002.png", "0003.png"], archive.Entries.Select(entry => entry.FullName).ToArray());
+    }
+
+    [Theory]
+    [InlineData(6)]
+    [InlineData(8)]
+    public async Task Mobi_WithDrmFails(int fileVersion)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.azw", TestFiles.CreateMobi("<p>Text</p>", encryption: 2, fileVersion: (uint)fileVersion));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("DRM", console.Error);
+    }
+
+    [Theory]
+    [InlineData(1, true, false)]
+    [InlineData(2, true, true)]
+    [InlineData(2, false, false)]
+    [InlineData(17480, true, true)]
+    [InlineData(17480, false, false)]
+    public void MobiBook_ReadText(int compression, bool utf8, bool trailingEntries)
+    {
+        // Several records, and characters of several bytes, which the records can split
+        var html = "<html><body>" + string.Concat(Enumerable.Range(0, 800).Select(i => string.Create(CultureInfo.InvariantCulture, $"<p>Paragraph {i}: the café costs 3 €.</p>"))) + "</body></html>";
+        var data = TestFiles.CreateMobi(html, compression: (TestFiles.MobiCompression)compression, utf8: utf8, title: "Café", trailingEntries: trailingEntries);
+
+        var book = Mobi.MobiBook.Read(data);
+
+        var encoding = utf8 ? Encoding.UTF8 : CodePagesEncodingProvider.Instance.GetEncoding(1252)!;
+        Assert.Equal(html, encoding.GetString(book.ReadText(book.Mobi6!)));
+        Assert.Equal("Café", book.Title);
+        Assert.Equal("Test author", book.Author);
+        Assert.Equal(utf8 ? "utf-8" : "windows-1252", book.Mobi6!.EncodingName);
+    }
+
+    [Fact]
+    public void MobiHtml_Convert()
+    {
+        var text = """<html><head><guide><reference type="toc" filepos=5 /></guide></head><body><p>Hello <a filepos="0000000125">link</a></p><img recindex='3' hirecindex="4" alt=""><mbp:pagebreak/><p>End</p></body></html>"""u8;
+
+        var html = Encoding.UTF8.GetString(Mobi.MobiHtml.Convert(text, isUtf8: true, out var images));
+
+        Assert.Equal([3], images.ToArray());
+        Assert.Contains("""<img src="https://mobi.invalid/images/3" recindex='3'""", html);
+        Assert.Contains("""<div style="break-before: page"></div><p>End</p>""", html);
+        Assert.Contains("""<a href="#filepos125">link</a>""", html);
+
+        // A position inside a tag goes before the tag, and a position in the head goes to the start of the body
+        Assert.Contains("""<a id="filepos125"></a><img""", html);
+        Assert.Contains("""<body><a id="filepos5"></a><p>""", html);
+    }
+
+    [Theory]
+    [InlineData("book.azw3", 2, false)]
+    [InlineData("book.mobi", 17480, true)]
+    public async Task Kf8ToPdf_RendersTheDocuments(string fileName, int compression, bool trailingEntries)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, fileName, TestFiles.CreateTextKf8(compression: (TestFiles.MobiCompression)compression, trailingEntries: trailingEntries));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The cover, which the documents do not show, then a page per document
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.HasCount(3, document.Pages);
+        Assert.Equal("Test book", document.Information.Title);
+        Assert.Equal("Test author", document.Information.Author);
+        Assert.Equal(PdfSize.A5.Width, document.Pages[1].MediaBox.Width, 0.5);
+        Assert.Contains("Chapter one", document.Pages[1].ExtractText());
+        Assert.Contains("second chapter", document.Pages[2].ExtractText());
+    }
+
+    [Fact]
+    public async Task Kf8ComicToCbz_CopiesTheImages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "comic.azw3", TestFiles.CreateComicKf8());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "cbz");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The cover is the first document
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("comic.cbz"));
+        Assert.Equal(["0001.png", "0002.png", "0003.png"], archive.Entries.Select(entry => entry.FullName).ToArray());
+    }
+
+    [Theory]
+    [InlineData(false, "KF8 version")]
+    [InlineData(true, "MOBI 6 version")]
+    public async Task JointMobi_ReadsTheKf8Version(bool corruptKf8, string expectedText)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var data = TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("<p>The KF8 version of the book.</p>")], mobi6Html: "<html><body><p>The MOBI 6 version of the book.</p></body></html>", corruptFdst: corruptKf8);
+        var input = await WriteFileAsync(temp, "book.mobi", data);
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.Contains(expectedText, string.Concat(document.Pages.Select(page => page.ExtractText())));
+    }
+
+    [Fact]
+    public void Kf8Content_Read()
+    {
+        var book = Mobi.MobiBook.Read(TestFiles.CreateTextKf8(mobi6Html: "<p>MOBI 6</p>"));
+
+        var content = Mobi.Kf8Content.Read(book, book.Kf8!);
+
+        Assert.HasCount(2, content.Parts);
+        Assert.Equal([true, true], content.PartsAreXml.ToArray());
+        Assert.Null(content.ImagePages);
+        Assert.Equal([1], content.ResourceIndexes.ToArray());
+        Assert.Equal("h1 { color: #036 }", Encoding.UTF8.GetString(content.Flows[1]));
+
+        // The links go to the closest element with an id, in the other document
+        var first = Encoding.UTF8.GetString(content.Parts[0]);
+        Assert.Contains("""<a href="https://mobi.invalid/parts/1.xhtml#chapter2">Go to chapter two</a>""", first);
+        Assert.Contains("""<link rel="stylesheet" type="text/css" href="https://mobi.invalid/flows/1.css"/>""", first);
+        Assert.Contains("""<img src="https://mobi.invalid/images/1" alt=""/>""", first);
+        Assert.Equal(TestFiles.CreateKf8Xhtml("""<h1 id="chapter2">Chapter two</h1><p>The second chapter of the book.</p>""").Replace("kindle:flow:0001?mime=text/css", "https://mobi.invalid/flows/1.css", StringComparison.Ordinal), Encoding.UTF8.GetString(content.Parts[1]));
+    }
+
+    [Fact]
+    public void Kf8Content_InlinesTheSvgImages()
+    {
+        // The cover of a book made by kindlegen or Calibre: an image that is an SVG flow, which shows the image of the cover
+        const string Svg = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 30 40"><image width="30" height="40" xlink:href="kindle:embed:0001?mime=image/jpeg"/></svg>""";
+        var data = TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("""<div><img src="kindle:flow:0002?mime=image/svg+xml" alt=""/></div>""")], ["p { margin: 0 }", Svg], [TestFiles.CreateImage(30, 40, ImageFormat.Jpeg)], coverIndex: 1);
+        var book = Mobi.MobiBook.Read(data);
+
+        var content = Mobi.Kf8Content.Read(book, book.Kf8!);
+
+        Assert.Contains("""<div><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 30 40"><image width="30" height="40" xlink:href="https://mobi.invalid/images/1"/></svg></div>""", Encoding.UTF8.GetString(content.Parts[0]));
+        Assert.Equal([1], content.ResourceIndexes.ToArray());
+        Assert.Equal([true], content.PartsAreXml.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task Kf8_ServesTheFonts(bool compress, bool obfuscate)
+    {
+        byte[] font = [0, 1, 0, 0, .. Enumerable.Range(0, 3000).Select(i => (byte)(i % 251))];
+        var data = TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("<p>Text</p>")], resources: [TestFiles.CreateImage(2, 2, ImageFormat.Png), TestFiles.CreateFontRecord(font, compress, obfuscate)]);
+        var book = Mobi.MobiBook.Read(data);
+        var loader = new Mobi.MobiDocumentLoader(book, html: null, "utf-8", Mobi.Kf8Content.Read(book, book.Kf8!));
+
+        var resource = await loader.LoadAsync(new WebPlatform.Dom.DocumentRequest(Mobi.MobiHtml.GetImageUrl(2)), XunitCancellationToken);
+
+        Assert.NotNull(resource);
+        Assert.Equal(font, resource.ContentBytes?.ToArray());
+        Assert.Contains(resource.Headers, header => header.Value is "font/ttf");
+        Assert.Equal(font, Mobi.MobiFont.Decode(TestFiles.CreateFontRecord(font, compress, obfuscate)));
+    }
+
+    [Fact]
     public async Task Error_ExistingOutput()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -561,6 +760,7 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("Jpeg (.jpg, .jpeg): read, write", console.Output);
         Assert.Contains("--jpeg-quality", console.Output);
         Assert.Contains("EPUB (.epub): read", console.Output);
+        Assert.Contains("MOBI (.mobi, .azw3, .azw, .prc): read", console.Output);
         Assert.Contains("--layout-page-size", console.Output);
         Assert.Contains("TarGz (.tar.gz, .tgz): read, write", console.Output);
         Assert.Contains("CBR (.cbr): read", console.Output);
@@ -1198,6 +1398,8 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     [InlineData("tiny.png", "PNG")]
     [InlineData("doc.bin", "PDF")]
     [InlineData("book.bin", "EPUB")]
+    [InlineData("book.bin", "MOBI")]
+    [InlineData("book.prc", "MOBI")]
     [InlineData("archive.zip", "Zip")]
     [InlineData("archive.bin", "Zip")]
     [InlineData("comic.cbz", "CBZ")]
@@ -1217,6 +1419,7 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
             ("PNG", _) => TestFiles.CreateImage(1, 1, ImageFormat.Png),
             ("PDF", _) => TestFiles.CreatePdf(1),
             ("EPUB", _) => TestFiles.CreateImageEpub(),
+            ("MOBI", _) => TestFiles.CreateTextMobi(),
             ("7z" or "CB7", _) => TestFiles.CreateSevenZip(entries),
             ("RAR" or "CBR", _) => TestFiles.CreateRar(entries),
             ("Tar" or "CBT", _) => TestFiles.CreateTar(gzip: false, entries),

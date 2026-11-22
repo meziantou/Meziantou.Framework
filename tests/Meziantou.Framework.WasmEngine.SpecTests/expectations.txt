@@ -1,0 +1,8 @@
+proposals/threads/imports.wast:309 # obsolete: the threads proposal predates the multiple tables of WebAssembly 3.0
+proposals/threads/imports.wast:313 # obsolete: the threads proposal predates the multiple tables of WebAssembly 3.0
+proposals/threads/imports.wast:317 # obsolete: the threads proposal predates the multiple tables of WebAssembly 3.0
+proposals/threads/imports.wast:404 # obsolete: the threads proposal predates the multiple memories of WebAssembly 3.0
+proposals/threads/imports.wast:408 # obsolete: the threads proposal predates the multiple memories of WebAssembly 3.0
+proposals/threads/imports.wast:412 # obsolete: the threads proposal predates the multiple memories of WebAssembly 3.0
+proposals/threads/memory.wast:14 # obsolete: the threads proposal predates the multiple memories of WebAssembly 3.0
+proposals/threads/memory.wast:15 # obsolete: the threads proposal predates the multiple memories of WebAssembly 3.0

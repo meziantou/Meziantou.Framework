@@ -310,6 +310,8 @@ artifacts/
 /tests/Meziantou.Framework.Pdf.External/
 # The JPEG XL and JPEG-LS conformance corpora of the Imaging interop tests, fetched by eng/imaging/fetch-tests.cs or downloaded by the tests
 /tests/Meziantou.Framework.Imaging.External/
+# The official WebAssembly test suite, fetched by eng/wasmengine/fetch-tests.cs at the commit pinned in tests/Meziantou.Framework.WasmEngine.SpecTests/testsuite.json
+/tests/Meziantou.Framework.WasmEngine.External/
 # The marker of an update of the WPT expectations that is running or was interrupted (see src/Meziantou.Framework.WebPlatform/docs/web-platform-tests.md)
 /tests/Meziantou.Framework.WebPlatform.Wpt/expectations/.incomplete-update-*
 

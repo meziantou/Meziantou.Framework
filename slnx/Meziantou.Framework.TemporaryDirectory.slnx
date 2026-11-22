@@ -72,6 +72,8 @@
     <Project Path="../src/Meziantou.Framework.ValueStopwatch/Meziantou.Framework.ValueStopwatch.csproj" />
     <Project Path="../src/Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
     <Project Path="../src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
+    <Project Path="../src/Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.Imaging/Meziantou.Framework.WebPlatform.Imaging.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
@@ -117,6 +119,7 @@
     <Project Path="../tests/Meziantou.Framework.Templating.Tool.Tests/Meziantou.Framework.Templating.Tool.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.TemporaryContainers.Tests/Meziantou.Framework.TemporaryContainers.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.TemporaryDirectory.Tests/Meziantou.Framework.TemporaryDirectory.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.WasmEngine.Tests/Meziantou.Framework.WasmEngine.Tests.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.FeatureSwitchSmoke/Meziantou.Framework.Yaml.FeatureSwitchSmoke.csproj" />
     <Project Path="../tests/Meziantou.Framework.Yaml.Tests/Meziantou.Framework.Yaml.Tests.csproj" />
   </Folder>

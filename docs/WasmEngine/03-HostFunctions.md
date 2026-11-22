@@ -43,6 +43,9 @@ Assert.Equal([1, 2], logged);
   that the module can catch (see [Exceptions and traps](05-ExceptionsAndTraps.md)).
 - The `state` argument is kept by the function, in
   [HostState](cref:Meziantou.Framework.WasmEngine.WasmFunction.HostState).
+- The source generator of the package writes the type and the conversions of a host function from a .NET method marked
+  with [WasmImportAttribute](cref:Meziantou.Framework.WasmEngine.WasmImportAttribute): see
+  [Typed exports and imports](10-SourceGenerator.md).
 
 The other imports are created by [CreateMemory](cref:Meziantou.Framework.WasmEngine.WasmStore.CreateMemory),
 [CreateTable](cref:Meziantou.Framework.WasmEngine.WasmStore.CreateTable),

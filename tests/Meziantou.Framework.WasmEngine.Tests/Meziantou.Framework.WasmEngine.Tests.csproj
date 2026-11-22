@@ -8,6 +8,16 @@
     <ProjectReference Include="../../src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
     <!-- ScopedActivityListener, which collects the activities of a test -->
     <ProjectReference Include="../../src/Meziantou.Framework/Meziantou.Framework.csproj" />
+    <!-- The binary modules of the tests of the generator are files -->
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+  </ItemGroup>
+
+  <!-- Runs the source generator on the modules of TestModules and on [WasmImport], and lets WasmSourceGeneratorTests run it on test compilations -->
+  <Import Project="../../src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.targets" />
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="true" SetTargetFramework="TargetFramework=netstandard2.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <AdditionalFiles Include="TestModules/*.wat;TestModules/*.wasm" />
   </ItemGroup>
 
 </Project>

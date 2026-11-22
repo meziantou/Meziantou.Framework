@@ -51,9 +51,25 @@ Assert.Equal([1, 2], logged);
 ```
 <!-- endref -->
 
+## Typed exports and imports
+
+The source generator of the package writes a class per `.wasm` or `.wat` file of the `AdditionalFiles` items, with a
+strongly typed method per exported function, and the host functions of the methods marked with `[WasmImport]`:
+
+<!-- ref:../../tests/Meziantou.Framework.WasmEngine.Tests/WasmSourceGeneratorTests.cs;region=WasmEngine_TypedExports;format=md-fenced-code-block;dedent=true -->
+```csharp
+// fib.wat is an AdditionalFiles item of the project: the generator writes the FibModule class
+using var runtime = new WasmRuntime();
+using var store = runtime.CreateStore();
+var fib = FibModule.Instantiate(store, FibModule.Compile(runtime));
+
+Assert.Equal(6765, fib.Fib(20));
+```
+<!-- endref -->
+
 ## Documentation
 
 See [the documentation](../../docs/WasmEngine/01-Introduction.md): memories, tables and globals, exceptions and traps,
-limits and interruption, shared memories, telemetry, and conformance. To run the WebAssembly
+limits and interruption, shared memories, telemetry, conformance, and the typed exports and imports. To run the WebAssembly
 modules of the scripts of Meziantou.Framework.WebPlatform, use
 [Meziantou.Framework.WebPlatform.Wasm](../Meziantou.Framework.WebPlatform.Wasm/readme.md).

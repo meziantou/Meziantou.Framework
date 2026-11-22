@@ -11,6 +11,7 @@ namespace Meziantou.Framework.WasmEngine.Fuzz;
 /// <item>The instantiation of a compiled module, with imports created from their types, and the calls of its exported
 /// functions, only throw the exceptions of the engine (or the interruption of the store).</item>
 /// <item>The functions compiled to .NET code behave as the interpreted ones: the same results, traps, memories and globals.</item>
+/// <item>The readers of the source generator agree with the engine (<see cref="WasmSourceGeneratorFuzzTargets"/>).</item>
 /// </list>
 /// </summary>
 public static class WasmEngineFuzzTargets
@@ -22,7 +23,7 @@ public static class WasmEngineFuzzTargets
     private static readonly string[] BinaryTokens = ["\0asm\u0001\0\0\0", "\u0001", "\u0002", "\u0003", "\u0004", "\u0005", "\u0006", "\u0007", "\u0008", "\u0009", "\u000A", "\u000B", "\u000C", "\u000D", "\u0002@", "\u0003@", "\u0004@", "\u0006@", "\u0006\u007F", "\u0007\u0000", "\u0008\u0000", "\u0009\u0000", "\u0018\u0000", "\u0018\u0001", "\u0019", "\u001F@", "\u000C\u0000", "\u000E", "`", "i", "\u007F", "~", "}", "|", "{", "p", "o", " \u0000", "A\u0000", "\u0010\u0000", "û", "ü", "ý", "þ"];
 
     // The keywords of the text format
-    private static readonly string[] TextTokens = ["(module", "(func", "(param", "(result", "(local", "(memory", "(table", "(global", "(export", "(import", "(tag", "(type", "(struct", "(array", "(field", "(mut", "(ref", "(elem", "(data", "(start", "shared", "i32", "i64", "f32", "f64", "v128", "funcref", "externref", "anyref", "exnref", "null", "local.get", "local.set", "global.get", "i32.const", "i64.const", "i32.add", "i32.load", "i32.store", "memory.grow", "table.grow", "call", "call_indirect", "return_call", "block", "loop", "if", "else", "end", "br", "br_if", "br_table", "unreachable", "try_table", "catch", "catch_all", "throw", "throw_ref", "try", "delegate", "rethrow", "struct.new", "array.new", "ref.null", "ref.func", "ref.i31", "any.convert_extern", "memory.atomic.notify", "memory.atomic.wait32", ")", "$f", "0", "1"];
+    private static readonly string[] TextTokens = ["(module", "(func", "(param", "(result", "(local", "(memory", "(table", "(global", "(export", "(import", "(tag", "(type", "(struct", "(array", "(field", "(mut", "(ref", "(elem", "(data", "(start", "shared", "i32", "i64", "f32", "f64", "v128", "funcref", "externref", "anyref", "exnref", "null", "local.get", "local.set", "global.get", "i32.const", "i64.const", "i32.add", "i32.load", "i32.store", "memory.grow", "table.grow", "call", "call_indirect", "return_call", "block", "loop", "if", "else", "end", "br", "br_if", "br_table", "unreachable", "try_table", "catch", "catch_all", "throw", "throw_ref", "try", "delegate", "rethrow", "struct.new", "array.new", "ref.null", "ref.func", "ref.i31", "any.convert_extern", "memory.atomic.notify", "memory.atomic.wait32", "(rec", "(sub", "final", "binary", "quote", "(@name", "(;", ";)", ";;", "nullref", "eqref", "i31ref", ")", "$f", "0", "1"];
 
     private static readonly WasmRuntime Runtime = new(new WasmRuntimeOptions { MaxMemorySize = MaxMemorySize, MaxStackSize = 256 * 1024 });
 
@@ -32,6 +33,8 @@ public static class WasmEngineFuzzTargets
         new("wasm-wat2wasm", WatToWasmTarget) { Seeds = GetTextSeeds, Dictionary = TextTokens },
         new("wasm-instantiate", InstantiateTarget) { Seeds = GetSeeds, Dictionary = BinaryTokens },
         new("wasm-compiled-interpreted", CompiledInterpretedTarget) { Seeds = GetSeeds, Dictionary = BinaryTokens },
+        new("wasm-generator-binary", WasmSourceGeneratorFuzzTargets.BinaryTarget) { Seeds = () => GetSeeds().Concat(WasmSourceGeneratorFuzzTargets.GetBinarySeeds()), Dictionary = BinaryTokens },
+        new("wasm-generator-text", WasmSourceGeneratorFuzzTargets.TextTarget) { Seeds = () => GetTextSeeds().Concat(WasmSourceGeneratorFuzzTargets.GetTextSeeds()), Dictionary = TextTokens },
     ];
 
     private static IEnumerable<FuzzSeed> GetSeeds()

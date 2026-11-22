@@ -7,6 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The readers of the source generator, and the naming of the members of the generated classes -->
+    <Compile Include="..\..\src\Meziantou.Framework.WasmEngine.SourceGenerator\WasmModuleDescription.cs" Link="SourceGenerator\WasmModuleDescription.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.WasmEngine.SourceGenerator\WasmBinaryDescriptionReader.cs" Link="SourceGenerator\WasmBinaryDescriptionReader.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.WasmEngine.SourceGenerator\WatDescriptionReader.cs" Link="SourceGenerator\WatDescriptionReader.cs" />
+    <Compile Include="..\..\src\Meziantou.Framework.WasmEngine.SourceGenerator\CSharpNaming.cs" Link="SourceGenerator\CSharpNaming.cs" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+    <!-- The modules of the tests of the generated classes are the seeds of the targets of the generator -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.WasmEngine.Tests\TestModules\*" LogicalName="TestModules.%(Filename)%(Extension)" Link="Seeds\TestModules\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WasmEngine\Meziantou.Framework.WasmEngine.csproj" />
   </ItemGroup>

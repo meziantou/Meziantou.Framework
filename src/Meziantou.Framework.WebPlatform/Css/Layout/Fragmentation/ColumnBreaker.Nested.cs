@@ -103,11 +103,14 @@ internal static partial class ColumnBreaker
         /// fragmentainer of <paramref name="index"/>: the content before it is in a column of the previous outer fragmentainer,
         /// with the block-start edges of the container and the column spanners before it.
         /// </summary>
-        public void ResumeAt(double position, int index)
+        /// <param name="position">The position of the strip where the content continues.</param>
+        /// <param name="consumed">The block size of the content box and of the row of a fixed block size used in the previous outer fragmentainers (see <see cref="NestedColumns.ResumeConsumedBlockSize"/>).</param>
+        /// <param name="index">The index of the outer fragmentainer.</param>
+        public void ResumeAt(double position, (double Content, double Row) consumed, int index)
         {
             _started = true;
             _hasContent = true;
-            (_consumed, _rowConsumed) = _nested.ResumeConsumedBlockSize;
+            (_consumed, _rowConsumed) = consumed;
             var map = _nested.Map;
             map.Add(double.NegativeInfinity, 0, 0, isBreak: true);
             _nested.Columns.Add(new NestedColumn { OuterIndex = index - 1, Start = double.NegativeInfinity, End = position, BlockSize = position });
@@ -128,6 +131,26 @@ internal static partial class ColumnBreaker
             _columns = new FlowCursor(_flow, map, position, end, 1, _generation, canBreakBefore: false);
             _columns.SetOrigin(position - displayOffset);
             _columns.ResumeAt(position);
+        }
+
+        /// <summary>
+        /// Returns the position of the strip where the content continues in the next outer fragmentainer, and the block sizes used
+        /// in the previous ones (see <see cref="ResumeAt"/>), when the content continues in a row of columns (not in a column
+        /// spanner, nor after the content that overflows one), and the end of the content of the row.
+        /// </summary>
+        public bool TryGetResumeState(out double position, out (double Content, double Row) consumed, out double rowEnd)
+        {
+            consumed = (_consumed, _rowConsumed);
+            if (_started && _phase == Phase.Columns && _columns is not null && _spanner is null && _overflowing.Count == 0 && !_breaksBeforeNext)
+            {
+                position = _columns.Position;
+                rowEnd = GetSet(_set).End;
+                return true;
+            }
+
+            position = 0;
+            rowEnd = 0;
+            return false;
         }
 
         public AdvanceResult Advance(double blockSize, int index)
@@ -286,6 +309,12 @@ internal static partial class ColumnBreaker
             {
                 var position = _columns.Position;
                 var isEmpty = extentEnd - position <= Epsilon;
+
+                // The content of the strip ends before the row, but parallel flows continue in it (e.g. a nested multi-column
+                // container whose rows of columns need more block size than the balancing of the previous row gave them): the row
+                // is as tall as the block size that remains, not balanced on the strip (empty columns would not make progress)
+                var continuesParallelFlows = isEmpty && _columns.HasOpenParallelFlows;
+                isEmpty &= !continuesParallelFlows;
                 var isAtStart = offset <= (_startsAtEdges ? fragmentStart : 0) + Epsilon;
 
                 // The block size that remains in the outer fragmentainer, in the content box of the container and in its row
@@ -322,20 +351,32 @@ internal static partial class ColumnBreaker
                     available = MinBlockSize;
                 }
 
-                var columnBlockSize = isEmpty && !hasOutOfFlow ? 0
-                    : balances || (_nested.RowBlockSize is not null && !_nested.FillsSequentially) ? Math.Max(0, Balance(_nested.BalanceFlow, position, end, columnCount, available, _buffer, extentEnd, balancesOutOfFlow, balancesOutOfFlow ? _nested.Fragmentainers : null))
-                    : Math.Max(0, available);
-
-                // As in Blink, a column that would break where a rule is violated (or overflow) is moved to the next outer
-                // fragmentainer, where it may have more space: the row ends before it, unless a break that is as bad was already
-                // taken (in the columns before it, or instead of a break before the row)
+                var balancedExtentEnd = extentEnd;
+                var resumes = SetBalanceResumes(position, ref balancedExtentEnd);
+                double columnBlockSize;
                 var maxColumns = overflows ? MaxFragmentainers : columnCount;
-                if (!isEmpty && !isAtStart)
+                try
                 {
-                    maxColumns = CountColumnsWithoutViolation(_nested.BalanceFlow, position, end, columnBlockSize, maxColumns, _hasContentInFragmentainer ? BreakAppeal.Perfect : _item.BreakBeforeAppeal);
-                    if (maxColumns == 0)
-                        return false;
+                    columnBlockSize = isEmpty && !hasOutOfFlow ? 0
+                        : continuesParallelFlows ? Math.Max(0, available)
+                        : balances || (_nested.RowBlockSize is not null && !_nested.FillsSequentially) ? Math.Max(0, Balance(_nested.BalanceFlow, position, end, columnCount, available, _buffer, balancedExtentEnd, balancesOutOfFlow, balancesOutOfFlow ? _nested.Fragmentainers : null))
+                        : Math.Max(0, available);
+
+                    // As in Blink, a column that would break where a rule is violated (or overflow) is moved to the next outer
+                    // fragmentainer, where it may have more space: the row ends before it, unless a break that is as bad was already
+                    // taken (in the columns before it, or instead of a break before the row)
+                    if (!isEmpty && !isAtStart)
+                    {
+                        maxColumns = CountColumnsWithoutViolation(_nested.BalanceFlow, position, end, columnBlockSize, maxColumns, _hasContentInFragmentainer ? BreakAppeal.Perfect : _item.BreakBeforeAppeal);
+                    }
                 }
+                finally
+                {
+                    ClearBalanceResumes(resumes);
+                }
+
+                if (maxColumns == 0)
+                    return false;
 
                 var isFinished = false;
                 var columns = 0;
@@ -437,6 +478,80 @@ internal static partial class ColumnBreaker
                 offset += _nested.RowGap;
                 if (blockSize - offset <= Epsilon || (_nested.FillsSequentially && blockSize - offset < fixedBlockSize - Epsilon))
                     return false;
+            }
+        }
+
+        /// <summary>
+        /// Gives the multi-column containers nested in the content that continue from the previous outer fragmentainers, in the
+        /// trial flow the rows of columns are balanced on, the position where their content continues in the placement in progress
+        /// (see <see cref="NestedColumns.BalanceResume"/>): their rows of columns before it used the block sizes of the previous
+        /// outer fragmentainers, not a single column of the strip. Returns the containers of the trial flow, or null.
+        /// </summary>
+        /// <param name="position">The position of the strip where the row of columns starts.</param>
+        /// <param name="extentEnd">
+        /// The end of the content of the row and of its parallel flows, extended by the content of the containers after the
+        /// position (balanced in their columns) that does not fit in what remains of them in the strip: they are laid out in the
+        /// strip in a single row of columns, whose content the previous outer fragmentainers broke in more columns. The balancing
+        /// of the row starts from it, instead of stretching columns that are too short by small shortages.
+        /// </param>
+        private List<NestedColumns>? SetBalanceResumes(double position, ref double extentEnd)
+        {
+            if (position <= Epsilon || _flow.Groups is not { } groups || _nested.BalanceFlow is not { Groups: { } trialGroups } trialFlow || ReferenceEquals(trialFlow, _flow))
+                return null;
+
+            List<NestedColumns>? result = null;
+            var extent = 0d;
+            foreach (var group in groups)
+            {
+                if (group.Start >= position - Epsilon)
+                    continue;
+
+                foreach (var item in group.Items)
+                {
+                    if (item is not { Nested: not null, Box: { } box } || item.Start >= position - Epsilon || item.Generation != _generation
+                        || item.Cursor is not NestedColumnsCursor cursor || !cursor.TryGetResumeState(out var resumePosition, out var consumed, out var rowEnd)
+                        || FindNested(trialGroups, box.Box) is not { BalanceResume: null } trialNested)
+                    {
+                        continue;
+                    }
+
+                    trialNested.BalanceResume = (resumePosition, consumed);
+                    (result ??= []).Add(trialNested);
+                    if (item.Nested is { RowBlockSize: null, BlockSize: null, MaxBlockSize: null } nested)
+                    {
+                        // (a lower bound: the rest of the current row of columns of the container, balanced in its columns)
+                        var remaining = Balance(nested.BalanceFlow, resumePosition, rowEnd, nested.ColumnCount, double.PositiveInfinity, _buffer);
+                        extent = Math.Max(extent, position + remaining - item.End);
+                    }
+                }
+            }
+
+            extentEnd += extent;
+            return result;
+
+            static NestedColumns? FindNested(List<ParallelGroup> groups, LayoutBox box)
+            {
+                foreach (var group in groups)
+                {
+                    foreach (var item in group.Items)
+                    {
+                        if (item is { Nested: { } nested, Box: { } fragment } && ReferenceEquals(fragment.Box, box))
+                            return nested;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        private static void ClearBalanceResumes(List<NestedColumns>? resumes)
+        {
+            if (resumes is null)
+                return;
+
+            foreach (var nested in resumes)
+            {
+                nested.BalanceResume = null;
             }
         }
 

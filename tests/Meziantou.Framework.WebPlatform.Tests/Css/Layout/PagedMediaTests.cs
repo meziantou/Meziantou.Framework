@@ -575,6 +575,95 @@ public sealed class PagedMediaTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Pages_MultiColumnContainerNestedInAMultiColumnContainerEndsInTheLastPage()
+    {
+        // The nested container fills the columns of the outer one in the first two pages: its last item is in the second page,
+        // without an empty row of columns (with a sliver of the item) in more pages
+        var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 }</style>
+            <div style='columns: 2; column-gap: 0'><div style='height: 120px'></div><div style='columns: 2; column-gap: 0'>{{items}}</div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        for (var i = 0; i < 31; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal(i < 18 ? 0 : 1, Assert.Single(rects).Page);
+            Assert.Equal(new PhysicalSize(100, 50), rects[0].Rect.Size);
+        }
+    }
+
+    [Theory]
+    [InlineData("<div style='padding-top: 10px'><div style='columns: 2; column-gap: 0'>{0}</div></div>")]
+    [InlineData("<div style='columns: 2; column-gap: 0'><div style='columns: 1; column-gap: 0'>{0}</div></div>")]
+    [InlineData("<div style='display: flex'><div style='flex: 1; columns: 2; column-gap: 0'>{0}</div></div>")]
+    public void Pages_MultiColumnContainerNestedDeeplyInAMultiColumnContainerIsNotSlicedInEmptyRows(string format)
+    {
+        // The rows of columns of the outer container after the end of its strip, where the nested containers continue, are as
+        // tall as the page: each item is in a single fragment in the page, not in slivers of 1px in more pages, nor in a column
+        // after the last one of the page
+        var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 }</style>
+            <div style='columns: 2; column-gap: 0'><div style='height: 120px'></div>{{string.Format(CultureInfo.InvariantCulture, format, items)}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.True(pages.Count <= 3);
+        for (var i = 0; i < 31; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal(new PhysicalSize(100, 50), Assert.Single(rects).Rect.Size);
+            Assert.True(rects[0].Rect.X + rects[0].Rect.Width <= 400, $"r{i} is in the page: {rects[0]}");
+        }
+    }
+
+    [Fact]
+    public void Pages_RowsThatAvoidBreaksInAMultiColumnContainerNestedInAMultiColumnContainerAreNotBroken()
+    {
+        // The paragraphs of the nested container need more columns than its block size in the strip of the outer container: the
+        // last row of outer columns is balanced from where the nested container continues, and is tall enough for the rows
+        // that avoid breaks (they are not broken in columns of 18px, nor in halves)
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+        var document = Parse($$"""
+            <style>@page { size: 285px 260px; margin: 0 }</style>
+            <div style='columns: 2'><div style='height: 40px'></div><div style='columns: 2; column-gap: 0'>
+            <div style='break-inside: avoid'>{{Words(31)}}</div><div>{{Words(24)}}</div><div style='height: 38px; break-inside: avoid'></div>
+            <div style='break-inside: avoid'>{{Words(21)}}</div><div style='height: 165px'></div><div style='height: 63px'></div><div style='height: 31px'></div>
+            <div style='height: 55px'></div><div style='height: 29px; break-inside: avoid'></div><div>{{Words(18)}}</div>
+            <div id=a style='height: 73px; break-inside: avoid'></div><div id=b style='height: 163px; break-inside: avoid'></div></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(73, Assert.Single(GetPageRects(pages, document.GetElementById("a")!)).Rect.Height);
+        Assert.Equal(163, Assert.Single(GetPageRects(pages, document.GetElementById("b")!)).Rect.Height);
+    }
+
+    [Fact]
+    public void Pages_StretchedMultiColumnContainerNestedInAMultiColumnContainerKeepsItsBlockSize()
+    {
+        // The nested container is stretched to the block size of its flex line (the 1500px of its sibling): its block size is a
+        // minimum, the fragments of the container follow the ones of its sibling, and its items are in the columns of the pages
+        var items = string.Concat(Enumerable.Range(0, 31).Select(i => $"<div id=r{i} style='height: 50px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 }</style>
+            <div style='columns: 2; column-gap: 0'><div style='height: 120px'></div><div style='display: flex'><div id=m style='flex: 1; columns: 2; column-gap: 0'>{{items}}</div><div id=s style='width: 10px; height: 1500px'></div></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        Assert.Equal(GetPageRects(pages, document.GetElementById("s")!).Select(rect => (rect.Page, rect.Rect.Y, rect.Rect.Height)), GetPageRects(pages, document.GetElementById("m")!).Select(rect => (rect.Page, rect.Rect.Y, rect.Rect.Height)));
+        for (var i = 0; i < 31; i++)
+        {
+            var rects = GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!);
+            Assert.Equal(new PhysicalSize(95, 50), Assert.Single(rects).Rect.Size);
+            Assert.True(rects[0].Rect.X + rects[0].Rect.Width <= 400, $"r{i} is in the page: {rects[0]}");
+        }
+    }
+
     [Theory]
     [InlineData("<div style='position: relative; height: 100px; break-inside: avoid'><div id=p style='position: absolute; top: 10px; left: 0; right: 0; height: 20px'></div></div>", "(1, (200, 10, 200x20))")]
     [InlineData("<div style='columns: 2; column-gap: 0; break-inside: avoid'><div id=p style='height: 200px'></div></div>", "(1, (200, 0, 100x100)) (1, (300, 0, 100x100))")]

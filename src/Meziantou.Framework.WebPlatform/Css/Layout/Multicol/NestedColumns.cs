@@ -124,6 +124,16 @@ internal sealed class NestedColumns
     public (double Content, double Row) ResumeConsumedBlockSize { get; set; }
 
     /// <summary>
+    /// For a container of a trial flow (see <see cref="BalanceFlow"/> of the outer container), while the breaker balances the rows
+    /// of columns of the outer container from a position inside the container: the position of its strip where its content
+    /// continues in the placement in progress, and the block sizes of its content box and of its row used before it (see
+    /// <see cref="ResumeConsumedBlockSize"/>), else null. The rows of columns of the container continue from it, as they do in
+    /// the placement: the content before the position is not laid out again as if it were in a single column, which would
+    /// not use the block size that the previous outer fragmentainers gave to it.
+    /// </summary>
+    public (double Position, (double Content, double Row) Consumed)? BalanceResume { get; set; }
+
+    /// <summary>
     /// The block size of the content box used in each outer fragmentainer and the ones before it, and the block size of the row of
     /// a fixed block size used in them, by index of the outer fragmentainer (the placement of the last run of the breaker).
     /// </summary>

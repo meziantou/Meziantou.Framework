@@ -610,7 +610,7 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Equalize`,
   `AutoLevels`, `Draw`, row callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows
   or frames updated, but the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`,
-  `MedianBlur`, `PercentileFilter`, `BilateralFilter`, `GuidedFilter`, `RadialBlur`, the morphological filters, `Sharpen`,
+  `MedianBlur`, `PercentileFilter`, `BilateralFilter`, `GuidedFilter`, `WienerFilter`, `RadialBlur`, `WienerDeconvolve`, the morphological filters, `Sharpen`,
   `Equalize`, `AutoLevels`, `ApplyToneCurve` and `ApplyLut` rent their working memory first: exceeding the allocation limit
   leaves the image unchanged. `Flip`
   moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
@@ -891,7 +891,8 @@ preview), `ReplaceColor` (a new color for the pixels of one color; `PixelMask.Fr
 [Selecting pixels by color](#selecting-pixels-by-color)), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
 `Flatten` (see [Effects](#effects)), `Convolve` (a convolution
 matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `PercentileFilter`, `Sharpen` (an unsharp mask), `DetectEdges`,
-`BilateralFilter`, `GuidedFilter` and `RadialBlur` (see [Edge-preserving smoothing and radial blurs](#edge-preserving-smoothing-and-radial-blurs)), `Erode`, `Dilate`,
+`BilateralFilter`, `GuidedFilter`, `WienerFilter` and `RadialBlur` (see [Edge-preserving smoothing and radial blurs](#edge-preserving-smoothing-and-radial-blurs)), `WienerDeconvolve`
+(a known blur undone, see [Deconvolution](#deconvolution)), `Erode`, `Dilate`,
 `MorphologicalOpen`, `MorphologicalClose`, `TopHat` and `BlackHat` (see [Morphology](#morphology)), `CorrectPerspective` (a
 quadrilateral straightened into the whole image), `ApplyToneCurve`, `ApplyToneCurves` and `ApplyLut` (gamma, levels,
 curves, lookup tables, see [Tone curves and color lookup tables](#tone-curves-and-color-lookup-tables)), `Equalize` and `AutoLevels` (histogram
@@ -899,7 +900,7 @@ equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto
 `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)) and `Threshold` (black and white, with a
 global or an adaptive threshold, see [Binarization](#binarization)). `Flip`, `Grayscale`, `ApplyColorMatrix`,
 `ReplaceColor`, the effects, `Convolve`, the blurs, `PercentileFilter`, `Sharpen`, `DetectEdges`, the edge-preserving
-filters, `RadialBlur`, the morphological filters, the tone curves, `ApplyLut`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+filters, `RadialBlur`, `WienerDeconvolve`, the morphological filters, the tone curves, `ApplyLut`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -1168,6 +1169,27 @@ public static double StraightenScan(string inputPath, string outputPath)
 
     // The angle of the lines of text is estimated, and the page rotated back; the corners it uncovers are white
     var skew = scan.Deskew(new SkewEstimationOptions { MaxAngle = 10 });
+    scan.Save(outputPath);
+    return skew;
+}
+```
+<!-- endref -->
+
+With `TransformCanvasMode.Expand`, the canvas grows to hold the whole rotated page instead of cutting its corners. The
+`TransformOptions` replace the default ones, so set the background too (transparent black by default):
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ProcessingExamples.cs;region=Imaging_DeskewExpand;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double StraightenScanWithoutCuttingCorners(string inputPath, string outputPath)
+{
+    using var scan = Image.Load(inputPath);
+
+    // The canvas grows to hold the whole rotated page; the area around the page is white
+    var skew = scan.Deskew(transformOptions: new TransformOptions
+    {
+        CanvasMode = TransformCanvasMode.Expand,
+        BackgroundColor = new Rgba64(65535, 65535, 65535),
+    });
     scan.Save(outputPath);
     return skew;
 }
@@ -1690,7 +1712,8 @@ public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
 
 #### Edge-preserving smoothing and radial blurs
 
-`BilateralFilter(radius, spatialSigma, rangeSigma)` and `GuidedFilter(radius, epsilon)` smooth noise and fine texture
+`BilateralFilter(radius, spatialSigma, rangeSigma)`, `GuidedFilter(radius, epsilon)` and
+`WienerFilter(radius, noiseVariance)` smooth noise and fine texture
 and keep the edges, where a blur would soften them:
 
 - the bilateral filter (Tomasi and Manduchi) replaces every pixel by a mean of the disk of `radius` around it
@@ -1707,6 +1730,14 @@ and keep the edges, where a blur would soften them:
   whatever the radius, and gives OpenCV's `cv2.ximgproc.guidedFilter(image, image, radius, epsilon × 255²)` on 8-bit
   samples with the `Mirror` edge mode (OpenCV reflects). The result can overshoot a little at edges: integer samples are
   clamped, floating-point colors are not.
+- the adaptive Wiener filter `WienerFilter(radius, noiseVariance)` (Lim, 1990) moves every sample `x` toward the mean `μ`
+  of its window of `(2 radius + 1)²` pixels: it becomes `x - min(ν² / σ², 1) (x - μ)`, where `σ²` is the variance of the
+  window and `ν²` that of the noise, a squared fraction of the range (`(4 / 255)²` for a deviation of 4 levels of 255).
+  Without `noiseVariance`, the noise of each sample of each frame is estimated as the mean variance of its windows (the
+  finite ones). Each sample is filtered alone, every result lies between the sample and its window mean, and a noise of
+  0 changes nothing. With the `Zero` edge mode it gives MATLAB's `wiener2(image, [2 radius + 1, 2 radius + 1], noise)`
+  and SciPy's `scipy.signal.wiener`, which pad with zeros. It takes a constant time per pixel whatever the radius (at
+  most 1000), with a second pass to estimate the noise.
 
 `RadialBlur(options)` blurs along lines through a center (`RadialBlurKind.Zoom`: the streaks of a zoom during the
 exposure) or circles around it (`RadialBlurKind.Spin`: a rotation): every pixel becomes the mean of bilinear samples,
@@ -1714,13 +1745,13 @@ evenly spaced at most one pixel apart (up to `MaxSampleCount`, 64 by default), a
 pixel, whose length is `Amount` times its distance to the center (zoom) or `Amount` degrees (spin). The center, in
 stored-pixel coordinates, may be outside the image, and the center pixel keeps its value.
 
-The three filters work like the convolutions: colors premultiplied by alpha, alpha filtered too (the hidden color of a
+The four filters work like the convolutions: colors premultiplied by alpha, alpha filtered too (the hidden color of a
 transparent pixel never spreads), the edge modes of the convolutions, 16-bit precision kept, floating-point samples not
 clipped, and `RadialBlurOptions.WorkingSpace` can average linear light. Each frame is copied as single-precision working
 samples (4 bytes per sample; the guided filter also keeps up to 64 bytes of coefficients per pixel and `2 radius + 3`
 rows of window sums), charged to the image before any pixel changes. The bilateral filter and the radial blur split
-frames of at least 65,536 pixels between up to `MaxDegreeOfParallelism` workers, with the same result; the guided filter
-runs on the calling thread.
+frames of at least 65,536 pixels between up to `MaxDegreeOfParallelism` workers, with the same result; the guided and the
+adaptive Wiener filters run on the calling thread.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_EdgePreservingSmoothing;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -1740,6 +1771,26 @@ public static void DenoisePhoto(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_WienerFilter;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void RemoveSensorNoise(string inputPath, string outputPath, string scanPath, string cleanScanPath)
+{
+    // Without a noise variance, the filter estimates it as the mean variance of the 5x5 windows, then smooths the
+    // windows that vary no more than the noise and keeps those that vary more: edges and texture
+    using (var photo = Image.Load(inputPath))
+    {
+        photo.WienerFilter(radius: 2);
+        photo.Save(outputPath);
+    }
+
+    // A known noise: a standard deviation of 4 levels of 255 is a variance of (4 / 255)², as a squared fraction of the range
+    using var scan = Image.Load(scanPath);
+    scan.WienerFilter(radius: 3, noiseVariance: (4 / 255.0) * (4 / 255.0));
+    scan.Save(cleanScanPath);
+}
+```
+<!-- endref -->
+
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_RadialBlur;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void ZoomBurst(string inputPath, string outputPath)
@@ -1751,6 +1802,53 @@ public static void ZoomBurst(string inputPath, string outputPath)
     var center = new PointD(photo.Width / 2.0, photo.Height / 2.0);
     photo.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, amount: 0.2));
     photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Deconvolution
+
+`WienerDeconvolve(options)` undoes a known blur: a camera shake (`ConvolutionKernel.CreateMotionBlur`), a soft focus
+(`ConvolutionKernel.CreateGaussianBlur`, the matrix of `GaussianBlur`), or any blur a `ConvolutionKernel` describes,
+applied as `Convolve` applies it (not flipped, the middle weight on the pixel itself). Every frequency `u` of the frame
+(its two-dimensional discrete Fourier transform) is multiplied by `conj(H(u)) / (|H(u)|² + K)`, where `H(u)` is the gain
+of the blur and `K` is `WienerDeconvolutionOptions.NoiseToSignalRatio` (at least 1e-12): the frequencies the blur kept
+are restored, those it erased stay attenuated instead of amplifying the noise. This is MATLAB's `deconvwnr` with a scalar
+noise-to-signal ratio; the mean of the frame is multiplied by `1 / (1 + K)` for a kernel whose weights add up to 1.
+
+- `EdgeMode` says what the blur read beyond the edges. With `Wrap`, the transform covers the frame exactly and the result
+  is the exact inverse of a convolution with wrapped edges. With `Clamp` and `Mirror`, the frame is extended by the edge
+  mode over the radius of the kernel and its two ends are joined by a linear ramp at least `max(2 radius, 8)` pixels long,
+  so that no step rings across the frame; `Zero` extends it with transparent black, for content whose blur lies inside
+  the frame. Pixels near the edges are less accurate than inside.
+- Colors are deconvolved premultiplied by alpha and alpha too, as for `Convolve`; 16-bit samples keep their precision,
+  floating-point samples are not clipped (beyond the single-precision range, they are clamped to it), and a sample that
+  is not finite reads as 0 and keeps its value. `WorkingSpace` can deconvolve linear light.
+- The transforms are mixed-radix (2, 3, 4 and 5) on a plane rounded up to such a length, or Bluestein's algorithm for
+  the exact size of a wrapped frame; the time grows with `N M log(N M)` whatever the size of the kernel. The working copy
+  (4 bytes per sample), the plane (16 bytes per pixel of the plane) and, for a kernel that is not separable, its transfer
+  (8 bytes per pixel of the plane) are charged to the image before any pixel changes. The arithmetic is scalar and the
+  sines and cosines do not come from the platform, so the result is the same everywhere. The frames are deconvolved on
+  the calling thread.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Deblur;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void Deblur(string shakenPath, string softPath, string outputDirectory)
+{
+    // The camera moved 12 pixels at 20 degrees while the shutter was open. A noise-to-signal ratio of 0.005 restores
+    // what the blur weakened, and leaves what it erased instead of amplifying the noise there
+    using (var shaken = Image.Load(shakenPath))
+    {
+        var trail = ConvolutionKernel.CreateMotionBlur(length: 12, degrees: 20);
+        shaken.WienerDeconvolve(new WienerDeconvolutionOptions(trail, noiseToSignalRatio: 0.005));
+        shaken.Save(Path.Combine(outputDirectory, "steady.png"));
+    }
+
+    // A soft focus is close to a Gaussian blur. The lens blurred light, so the deconvolution works in linear light
+    using var soft = Image.Load(softPath);
+    var focus = ConvolutionKernel.CreateGaussianBlur(sigma: 1.5);
+    soft.WienerDeconvolve(new WienerDeconvolutionOptions(focus, noiseToSignalRatio: 0.002) { WorkingSpace = ConvolutionWorkingSpace.LinearSrgb });
+    soft.Save(Path.Combine(outputDirectory, "focused.png"));
 }
 ```
 <!-- endref -->

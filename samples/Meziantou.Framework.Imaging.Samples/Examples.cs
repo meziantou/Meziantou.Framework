@@ -1123,6 +1123,25 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>The noise of a sensor removed by an adaptive Wiener filter.</summary>
+    #region Imaging_WienerFilter
+    public static void RemoveSensorNoise(string inputPath, string outputPath, string scanPath, string cleanScanPath)
+    {
+        // Without a noise variance, the filter estimates it as the mean variance of the 5x5 windows, then smooths the
+        // windows that vary no more than the noise and keeps those that vary more: edges and texture
+        using (var photo = Image.Load(inputPath))
+        {
+            photo.WienerFilter(radius: 2);
+            photo.Save(outputPath);
+        }
+
+        // A known noise: a standard deviation of 4 levels of 255 is a variance of (4 / 255)², as a squared fraction of the range
+        using var scan = Image.Load(scanPath);
+        scan.WienerFilter(radius: 3, noiseVariance: (4 / 255.0) * (4 / 255.0));
+        scan.Save(cleanScanPath);
+    }
+    #endregion
+
     /// <summary>The streaks of a zoom during the exposure, sharp at the center.</summary>
     #region Imaging_RadialBlur
     public static void ZoomBurst(string inputPath, string outputPath)
@@ -1134,6 +1153,27 @@ internal static class Examples
         var center = new PointD(photo.Width / 2.0, photo.Height / 2.0);
         photo.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, amount: 0.2));
         photo.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>A photo shaken during the exposure, and a soft one, made sharp again.</summary>
+    #region Imaging_Deblur
+    public static void Deblur(string shakenPath, string softPath, string outputDirectory)
+    {
+        // The camera moved 12 pixels at 20 degrees while the shutter was open. A noise-to-signal ratio of 0.005 restores
+        // what the blur weakened, and leaves what it erased instead of amplifying the noise there
+        using (var shaken = Image.Load(shakenPath))
+        {
+            var trail = ConvolutionKernel.CreateMotionBlur(length: 12, degrees: 20);
+            shaken.WienerDeconvolve(new WienerDeconvolutionOptions(trail, noiseToSignalRatio: 0.005));
+            shaken.Save(Path.Combine(outputDirectory, "steady.png"));
+        }
+
+        // A soft focus is close to a Gaussian blur. The lens blurred light, so the deconvolution works in linear light
+        using var soft = Image.Load(softPath);
+        var focus = ConvolutionKernel.CreateGaussianBlur(sigma: 1.5);
+        soft.WienerDeconvolve(new WienerDeconvolutionOptions(focus, noiseToSignalRatio: 0.002) { WorkingSpace = ConvolutionWorkingSpace.LinearSrgb });
+        soft.Save(Path.Combine(outputDirectory, "focused.png"));
     }
     #endregion
 

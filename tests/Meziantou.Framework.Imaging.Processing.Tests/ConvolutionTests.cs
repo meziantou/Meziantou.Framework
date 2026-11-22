@@ -3037,4 +3037,402 @@ public sealed class ConvolutionTests
         using var limited = new Image<Gray8>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 32_768 } });
         Assert.Throws<ImageResourceLimitException>(() => limited.Frames[0].DetectCorners());
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Wiener deconvolution: the inverse of Convolve, exact with wrapped edges, and the Fourier transform it is built on
+    // -----------------------------------------------------------------------------------------------------------------
+
+    #region WienerDeconvolve_UndoMotionBlur
+    [Fact]
+    public void WienerDeconvolve_UndoMotionBlur()
+    {
+        // Vertical bars, 8 pixels wide, blurred by a horizontal motion of 9 pixels: the edges become ramps
+        using var image = new Image<Gray8>(64, 32);
+        for (var y = 0; y < 32; y++)
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                image.Frames[0][x, y] = new Gray8((byte)(x / 8 % 2 == 0 ? 50 : 200));
+            }
+        }
+
+        var blur = ConvolutionKernel.CreateMotionBlur(length: 9, degrees: 0);
+        image.Convolve(new ConvolutionOptions(blur));
+        Assert.InRange(image.Frames[0][31, 16].Value, 120, 140);
+        Assert.InRange(image.Frames[0][32, 16].Value, 110, 130);
+
+        // The deconvolution by the same kernel brings the edges back, within the few levels the blur erased for good
+        image.WienerDeconvolve(new WienerDeconvolutionOptions(blur, noiseToSignalRatio: 0.0001));
+
+        Assert.InRange(image.Frames[0][31, 16].Value, 180, 210);
+        Assert.InRange(image.Frames[0][32, 16].Value, 40, 70);
+        Assert.InRange(image.Frames[0][28, 16].Value, 190, 210);
+    }
+    #endregion
+
+    public static TheoryData<int, int, bool> WrappedDeconvolutionCases => new()
+    {
+        { 16, 12, false },
+        { 16, 12, true },
+        { 13, 11, false },
+        { 13, 11, true },
+        { 7, 1, true },
+        { 1, 1, false },
+        { 2, 3, false },
+    };
+
+    [Theory]
+    [MemberData(nameof(WrappedDeconvolutionCases))]
+    public void WienerDeconvolveUndoesAWrappedConvolution(int width, int height, bool separable)
+    {
+        // Kernels whose gain never falls below 0.2 (the middle weight exceeds the others by 0.2), not symmetric, so that a
+        // flipped or shifted kernel would not give the original back. 13 and 11 are transformed by Bluestein's algorithm
+        var kernel = separable
+            ? ConvolutionKernel.CreateSeparable([0.2, 0.7, 0.1], [0.15, 0.75, 0.1])
+            : new ConvolutionKernel(3, 3, [0, 0.12, 0, 0.15, 0.6, 0.05, 0, 0.08, 0]);
+        Assert.Equal(separable, kernel.IsSeparable);
+        using var image = new Image<RgbaFloat>(width, height);
+        var original = new RgbaFloat[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                original[(y * width) + x] = new RgbaFloat(((x * 7) + (y * 13)) % 17 / 16f, ((x * 5) + (y * 3)) % 11 / 10f, (x * y) % 7 / 6f, 1);
+                image.Frames[0][x, y] = original[(y * width) + x];
+            }
+        }
+
+        image.Convolve(new ConvolutionOptions(kernel) { EdgeMode = ConvolutionEdgeMode.Wrap }, Ct);
+        image.WienerDeconvolve(new WienerDeconvolutionOptions(kernel, WienerDeconvolutionOptions.MinNoiseToSignalRatio) { EdgeMode = ConvolutionEdgeMode.Wrap }, Ct);
+
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var actual = image.Frames[0][x, y];
+                Assert.Equal(original[(y * width) + x].R, actual.R, 1e-4);
+                Assert.Equal(original[(y * width) + x].G, actual.G, 1e-4);
+                Assert.Equal(original[(y * width) + x].B, actual.B, 1e-4);
+                Assert.Equal(1f, actual.A);
+            }
+        }
+    }
+
+    [Fact]
+    public void WienerDeconvolveUndoesAWrappedGaussianBlurOf16BitSamples()
+    {
+        // The blur rounds to 16 bits; a gain of the deconvolution of at most a few units keeps the error within 3 units
+        using var image = new Image<Gray16>(30, 20);
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 30; x++)
+            {
+                image.Frames[0][x, y] = new Gray16((ushort)(x is >= 10 and < 20 && y is >= 5 and < 15 ? 50_000 : 10_000));
+            }
+        }
+
+        var kernel = ConvolutionKernel.CreateGaussianBlur(0.5);
+        Assert.True(kernel.IsSeparable);
+        Assert.Equal(5, kernel.Width);
+        image.Convolve(new ConvolutionOptions(kernel) { EdgeMode = ConvolutionEdgeMode.Wrap }, Ct);
+        Assert.NotEqual(50_000, image.Frames[0][10, 10].Value);
+        image.WienerDeconvolve(new WienerDeconvolutionOptions(kernel, 1e-9) { EdgeMode = ConvolutionEdgeMode.Wrap }, Ct);
+
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 30; x++)
+            {
+                var expected = x is >= 10 and < 20 && y is >= 5 and < 15 ? 50_000 : 10_000;
+                Assert.InRange(image.Frames[0][x, y].Value, expected - 3, expected + 3);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp)]
+    [InlineData(ConvolutionEdgeMode.Mirror)]
+    [InlineData(ConvolutionEdgeMode.Zero)]
+    public void WienerDeconvolveSharpensABlurWithTheOtherEdgeModes(ConvolutionEdgeMode edgeMode)
+    {
+        // A bright rectangle on a dark background, away from the edges, blurred with the edge mode: the deconvolution
+        // brings the samples much closer to the original than the blur left them. With Zero, the frame is surrounded by
+        // black before and after the blur: the background is black, and the blurred rectangle stays inside the frame
+        using var image = new Image<Rgb48>(40, 32);
+        var original = new ushort[40 * 32];
+        var background = edgeMode == ConvolutionEdgeMode.Zero ? 0 : 8_000;
+        for (var y = 0; y < 32; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                original[(y * 40) + x] = (ushort)(x is >= 12 and < 28 && y is >= 10 and < 22 ? 60_000 : background);
+                image.Frames[0][x, y] = new Rgb48(original[(y * 40) + x], original[(y * 40) + x], original[(y * 40) + x]);
+            }
+        }
+
+        var kernel = ConvolutionKernel.CreateGaussianBlur(1.2);
+        image.Convolve(new ConvolutionOptions(kernel) { EdgeMode = edgeMode }, Ct);
+        var blurred = GetError(image, original);
+        image.WienerDeconvolve(new WienerDeconvolutionOptions(kernel, 1e-6) { EdgeMode = edgeMode }, Ct);
+        var restored = GetError(image, original);
+
+        Assert.True(restored < blurred / 3, $"The error went from {blurred} to {restored}");
+
+        static double GetError(Image<Rgb48> image, ushort[] original)
+        {
+            var sum = 0d;
+            for (var y = 0; y < 32; y++)
+            {
+                for (var x = 0; x < 40; x++)
+                {
+                    var difference = image.Frames[0][x, y].R - (double)original[(y * 40) + x];
+                    sum += difference * difference;
+                }
+            }
+
+            return Math.Sqrt(sum / (40 * 32));
+        }
+    }
+
+    [Fact]
+    public void WienerDeconvolveWithTheIdentityKernelKeepsVisiblePixels()
+    {
+        var identity = new ConvolutionKernel(1, 1, [1]);
+        var options = new WienerDeconvolutionOptions(identity, WienerDeconvolutionOptions.MinNoiseToSignalRatio);
+
+        using var rgba = new Image<Rgba32>(9, 7);
+        using var gray = new Image<Gray16>(9, 7);
+        using var la = new Image<La16>(9, 7);
+        using var half = new Image<RgbaHalf>(9, 7);
+        for (var y = 0; y < 7; y++)
+        {
+            for (var x = 0; x < 9; x++)
+            {
+                var i = (y * 9) + x;
+                rgba.Frames[0][x, y] = new Rgba32((byte)(i * 37), (byte)(i * 11), (byte)(255 - (i * 5)), (byte)(1 + (i * 29 % 255)));
+                gray.Frames[0][x, y] = new Gray16((ushort)(i * 1031));
+                la.Frames[0][x, y] = new La16((byte)(i * 3), 255);
+                half.Frames[0][x, y] = new RgbaHalf((Half)(i / 64f), (Half)(-i / 8f), (Half)2.5f, Half.One);
+            }
+        }
+
+        using var rgbaExpected = rgba.Clone();
+        using var grayExpected = gray.Clone();
+        using var laExpected = la.Clone();
+        using var halfExpected = half.Clone();
+        rgba.WienerDeconvolve(options, Ct);
+        gray.WienerDeconvolve(options, Ct);
+        la.WienerDeconvolve(options, Ct);
+        half.WienerDeconvolve(options, Ct);
+
+        for (var y = 0; y < 7; y++)
+        {
+            for (var x = 0; x < 9; x++)
+            {
+                Assert.Equal(rgbaExpected.Frames[0][x, y], rgba.Frames[0][x, y]);
+                Assert.Equal(grayExpected.Frames[0][x, y], gray.Frames[0][x, y]);
+                Assert.Equal(laExpected.Frames[0][x, y], la.Frames[0][x, y]);
+                Assert.Equal(halfExpected.Frames[0][x, y], half.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
+    public void WienerDeconvolveKeepsSamplesThatAreNotFinite()
+    {
+        // A sample that is not finite keeps its value, and the others are those of the same frame with 0 in its place
+        using var image = new Image<RgbaFloat>(8, 8, new RgbaFloat(0.25f, 0.5f, 0.75f, 1));
+        using var zeros = new Image<RgbaFloat>(8, 8, new RgbaFloat(0.25f, 0.5f, 0.75f, 1));
+        image.Frames[0][3, 3] = new RgbaFloat(float.NaN, 0.5f, 0.75f, 1);
+        image.Frames[0][5, 6] = new RgbaFloat(0.25f, float.PositiveInfinity, 0.75f, 1);
+        image.Frames[0][1, 1] = new RgbaFloat(1, 1, 1, 1);
+        zeros.Frames[0][3, 3] = new RgbaFloat(0, 0.5f, 0.75f, 1);
+        zeros.Frames[0][5, 6] = new RgbaFloat(0.25f, 0, 0.75f, 1);
+        zeros.Frames[0][1, 1] = new RgbaFloat(1, 1, 1, 1);
+        var options = new WienerDeconvolutionOptions(ConvolutionKernel.CreateGaussianBlur(1), 0.01);
+
+        image.WienerDeconvolve(options, Ct);
+        zeros.WienerDeconvolve(options, Ct);
+
+        Assert.True(float.IsNaN(image.Frames[0][3, 3].R));
+        Assert.Equal(float.PositiveInfinity, image.Frames[0][5, 6].G);
+        for (var y = 0; y < 8; y++)
+        {
+            for (var x = 0; x < 8; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                var expected = zeros.Frames[0][x, y];
+                Assert.True((x, y) == (3, 3) || pixel.R == expected.R, $"R of ({x}, {y})");
+                Assert.True((x, y) == (5, 6) || pixel.G == expected.G, $"G of ({x}, {y})");
+                Assert.Equal(expected.B, pixel.B);
+                Assert.True(float.IsFinite(expected.R) && float.IsFinite(expected.G) && float.IsFinite(expected.B));
+            }
+        }
+
+        Assert.NotEqual(1f, image.Frames[0][1, 1].R);
+    }
+
+    [Fact]
+    public void WienerDeconvolveOfAFrameLeavesTheOtherFrames()
+    {
+        using var image = new Image<Gray8>(12, 12, new Gray8(100));
+        image.Frames[0][6, 6] = new Gray8(200);
+        image.InsertFrame(1, image.Frames[0]);
+        using var single = new Image<Gray8>(12, 12, new Gray8(100));
+        single.Frames[0][6, 6] = new Gray8(200);
+        var options = new WienerDeconvolutionOptions(ConvolutionKernel.CreateMotionBlur(5, 90), 0.01);
+
+        image.Frames[1].WienerDeconvolve(options, Ct);
+        single.WienerDeconvolve(options, Ct);
+
+        Assert.NotEqual(200, single.Frames[0][6, 6].Value);
+        for (var y = 0; y < 12; y++)
+        {
+            for (var x = 0; x < 12; x++)
+            {
+                Assert.Equal((x, y) == (6, 6) ? 200 : 100, image.Frames[0][x, y].Value);
+                Assert.Equal(single.Frames[0][x, y], image.Frames[1][x, y]);
+            }
+        }
+
+        // The vertical blur does not mix columns, and the mean is multiplied by 1 / (1 + K)
+        Assert.Equal(99, image.Frames[1][5, 6].Value);
+    }
+
+    [Fact]
+    public void WienerDeconvolveInLinearLight()
+    {
+        // A blur of light deconvolved in linear light gives the original back, as the same round trip in the stored values
+        using var image = new Image<Rgb48>(16, 8);
+        for (var x = 0; x < 16; x++)
+        {
+            for (var y = 0; y < 8; y++)
+            {
+                var value = (ushort)(x < 8 ? 6_000 : 52_000);
+                image.Frames[0][x, y] = new Rgb48(value, value, value);
+            }
+        }
+
+        var kernel = ConvolutionKernel.CreateSeparable([0.25, 0.6, 0.15], [1]);
+        image.Convolve(new ConvolutionOptions(kernel) { EdgeMode = ConvolutionEdgeMode.Wrap, WorkingSpace = ConvolutionWorkingSpace.LinearSrgb }, Ct);
+        image.WienerDeconvolve(new WienerDeconvolutionOptions(kernel, 1e-9) { EdgeMode = ConvolutionEdgeMode.Wrap, WorkingSpace = ConvolutionWorkingSpace.LinearSrgb }, Ct);
+
+        Assert.InRange(image.Frames[0][7, 4].R, 5_990, 6_010);
+        Assert.InRange(image.Frames[0][8, 4].R, 51_990, 52_010);
+    }
+
+    [Fact]
+    public void WienerDeconvolveValidatesItsArguments()
+    {
+        var kernel = ConvolutionKernel.CreateGaussianBlur(1);
+        Assert.Throws<ArgumentNullException>(() => new WienerDeconvolutionOptions(null!, 0.01));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WienerDeconvolutionOptions(kernel, 0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WienerDeconvolutionOptions(kernel, 1e-13));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WienerDeconvolutionOptions(kernel, double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WienerDeconvolutionOptions(kernel, double.PositiveInfinity));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WienerDeconvolutionOptions(kernel, 0.01) { EdgeMode = (ConvolutionEdgeMode)10 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WienerDeconvolutionOptions(kernel, 0.01) { WorkingSpace = (ConvolutionWorkingSpace)10 });
+        Assert.Throws<ArgumentException>(() => ConvolutionKernel.CreateGaussianBlur(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => ConvolutionKernel.CreateGaussianBlur(-1));
+        Assert.Equal(1, ConvolutionKernel.CreateGaussianBlur(0)[0, 0]);
+
+        var options = new WienerDeconvolutionOptions(kernel, 0.01);
+        Assert.Equal(0.01, options.NoiseToSignalRatio);
+        Assert.Same(kernel, options.Kernel);
+        Assert.Equal(ConvolutionEdgeMode.Clamp, options.EdgeMode);
+        Assert.Equal(ConvolutionWorkingSpace.Encoded, options.WorkingSpace);
+        Assert.Throws<ArgumentNullException>(() => ((Image)null!).WienerDeconvolve(options));
+        Assert.Throws<ArgumentNullException>(() => ((ImageFrame)null!).WienerDeconvolve(options));
+
+        using var image = new Image<Gray8>(8, 8, new Gray8(10));
+        image.Frames[0][4, 4] = new Gray8(250);
+        Assert.Throws<ArgumentNullException>(() => image.WienerDeconvolve(null!));
+        Assert.Throws<OperationCanceledException>(() => image.WienerDeconvolve(options, new CancellationToken(canceled: true)));
+        using var cmyk = new Image<Cmyk32>(2, 2);
+        Assert.Throws<UnsupportedImageFeatureException>(() => cmyk.WienerDeconvolve(options));
+
+        // The plane (16 bytes per pixel of a plane larger than the frame) does not fit: nothing changes
+        using var limited = new Image<Gray8>(64, 64, new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 64 * 64 * 8 } });
+        limited.Frames[0][4, 4] = new Gray8(250);
+        Assert.Throws<ImageResourceLimitException>(() => limited.WienerDeconvolve(options));
+        Assert.Equal(250, limited.Frames[0][4, 4].Value);
+        Assert.Equal(0, limited.Frames[0][4, 5].Value);
+        Assert.Equal(250, image.Frames[0][4, 4].Value);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    [InlineData(6)]
+    [InlineData(7)]
+    [InlineData(8)]
+    [InlineData(12)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(30)]
+    [InlineData(45)]
+    [InlineData(64)]
+    [InlineData(97)]
+    [InlineData(100)]
+    [InlineData(210)]
+    [InlineData(256)]
+    [InlineData(1000)]
+    public void FourierTransformMatchesItsDefinition(int length)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(FourierTransformMatchesItsDefinition));
+        using var transform = new FourierTransform(scope, length);
+        var input = new double[2 * length];
+        for (var i = 0; i < input.Length; i++)
+        {
+            input[i] = ((i * 37) % 101 / 50d) - 1;
+        }
+
+        var output = new double[2 * length];
+        transform.Forward(input, output);
+
+        for (var k = 0; k < length; k++)
+        {
+            var re = 0d;
+            var im = 0d;
+            for (var j = 0; j < length; j++)
+            {
+                var angle = -2 * Math.PI * ((long)j * k % length) / length;
+                re += (input[2 * j] * Math.Cos(angle)) - (input[(2 * j) + 1] * Math.Sin(angle));
+                im += (input[2 * j] * Math.Sin(angle)) + (input[(2 * j) + 1] * Math.Cos(angle));
+            }
+
+            Assert.Equal(re, output[2 * k], 1e-9 * length);
+            Assert.Equal(im, output[(2 * k) + 1], 1e-9 * length);
+        }
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(7, 8)]
+    [InlineData(17, 18)]
+    [InlineData(49, 50)]
+    [InlineData(1001, 1024)]
+    [InlineData(4097, 4320)]
+    public void FourierTransformRoundsLengthsUpToSmoothOnes(long minimum, long expected)
+    {
+        Assert.Equal(expected, FourierTransform.GetSmoothLength(minimum));
+        Assert.True(FourierTransform.IsSmooth(expected));
+        Assert.False(FourierTransform.IsSmooth(0));
+    }
+
+    [Theory]
+    [InlineData(20, 0, ConvolutionEdgeMode.Clamp, 20)]
+    [InlineData(21, 0, ConvolutionEdgeMode.Clamp, 24)]
+    [InlineData(20, 1, ConvolutionEdgeMode.Clamp, 30)]
+    [InlineData(20, 5, ConvolutionEdgeMode.Zero, 40)]
+    [InlineData(21, 3, ConvolutionEdgeMode.Wrap, 21)]
+    [InlineData(21, 0, ConvolutionEdgeMode.Wrap, 24)]
+    public void WienerDeconvolutionPadsTheFrame(int length, int radius, ConvolutionEdgeMode edgeMode, long expected)
+    {
+        // The edge mode on each side and a ramp of at least max(2 radius, 8), rounded up to a smooth length; a wrapped
+        // frame is transformed as it is
+        Assert.Equal(expected, WienerDeconvolver.GetPaddedLength(length, radius, edgeMode));
+    }
 }

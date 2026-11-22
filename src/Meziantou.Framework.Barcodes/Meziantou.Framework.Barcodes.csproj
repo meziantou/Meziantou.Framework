@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Barcodes</RootNamespace>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
     <Description>QR code, Data Matrix, PDF417, Aztec and barcode generation as vector scenes (SVG, and images or PDF with the bridge packages) and console text, with logos and human-readable text in OCR-A or OCR-B, and decoders</Description>
     <PackageTags>qrcode, barcode, datamatrix, pdf417, aztec, svg, vector, console, ocr-a, ocr-b, decoder, reader</PackageTags>
     <NoWarn>$(NoWarn);CA1814</NoWarn>

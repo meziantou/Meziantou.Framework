@@ -466,9 +466,17 @@ internal sealed partial class FlexLayoutAlgorithm
 
         // (an item of a flex line broken by a page of another inline size whose content after the break starts below the one of
         // the other items is moved down, see LayoutContext.AnchorPushes)
-        if (_isRow && !_properties.IsCrossReverse && _context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
+        // (or, in a single-line column flex container in a broken row, its item after the break)
+        if (_context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
         {
-            item.MarginCrossStart += push;
+            if (_isRow && !_properties.IsCrossReverse)
+            {
+                item.MarginCrossStart += push;
+            }
+            else if (!_isRow && !_properties.IsMainReverse && !_properties.IsMultiLine)
+            {
+                item.MarginMainStart += push;
+            }
         }
 
         var paddingAndBorder = FormattingContext.ResolvePadding(boxModel, _content.InlineSize).Add(boxModel.BorderWidth);
@@ -984,7 +992,9 @@ internal sealed partial class FlexLayoutAlgorithm
                     // "If the very first uncollected item wouldn't fit, collect just it into the line". The computed percentages
                     // are rounded: the items fit with the tolerance of the layout unit of the browsers, 1/64px (the columns of
                     // 16.66666667% and 8.33333333% of a row of Bootstrap fill it)
-                    if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance)
+                    // (the items of the flex line that the break crosses stay in one line, as the content of each one continues
+                    // beside the others: they are flexed in the new inline size)
+                    if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance && resumed?.ContinuesLine(item.Box, _items[end - 1].Box) != true)
                         break;
 
                     if (resumed is not null && end > start && resumed.StartsRow(item.Box, _items[end - 1].Box))

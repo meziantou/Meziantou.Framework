@@ -149,6 +149,23 @@ internal static class ProcessingExamples
     }
     #endregion
 
+    /// <summary>Straightens a scan on a larger canvas, so that no corner of the page is cut.</summary>
+    #region Imaging_DeskewExpand
+    public static double StraightenScanWithoutCuttingCorners(string inputPath, string outputPath)
+    {
+        using var scan = Image.Load(inputPath);
+
+        // The canvas grows to hold the whole rotated page; the area around the page is white
+        var skew = scan.Deskew(transformOptions: new TransformOptions
+        {
+            CanvasMode = TransformCanvasMode.Expand,
+            BackgroundColor = new Rgba64(65535, 65535, 65535),
+        });
+        scan.Save(outputPath);
+        return skew;
+    }
+    #endregion
+
     /// <summary>Warps a photo onto the plane of matched points, ignoring the wrong matches.</summary>
     #region Imaging_EstimateHomography
     public static HomographyEstimate AlignToReference(string photoPath, string outputPath, PointD[] photoPoints, PointD[] referencePoints, Size referenceSize)

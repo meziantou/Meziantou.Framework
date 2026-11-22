@@ -22,7 +22,7 @@ Reads and writes email files, without native dependencies. It does not send emai
 - `EmailMessage`, a model to convert a message from one format to another.
 - `EmailFormatDetector`, which detects the format of a file from its content.
 - `MailboxConverter`, which converts a mailbox with its folders between Outlook data files, mbox files (Thunderbird) and
-  Maildir folders.
+  Maildir folders, or exports its messages to .eml or .msg files.
 - S/MIME: the signatures of signed messages are checked, and encrypted messages decrypted with the certificate of a
   recipient.
 

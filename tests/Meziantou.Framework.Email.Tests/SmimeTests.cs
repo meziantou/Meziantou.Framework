@@ -204,9 +204,8 @@ public sealed class SmimeTests
         request.CertificateExtensions.Add(alternativeNames.Build());
         using var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddDays(30));
 
-        // BouncyCastle, which MimeKit uses, needs a key it can export. macOS does not support EphemeralKeySet: the key goes
-        // to a temporary keychain instead
-        var flags = OperatingSystem.IsMacOS() ? X509KeyStorageFlags.Exportable : X509KeyStorageFlags.Exportable | X509KeyStorageFlags.EphemeralKeySet;
-        return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pfx, "test"), "test", flags);
+        // BouncyCastle, which MimeKit uses, needs a key it can export. macOS does not support EphemeralKeySet: the key goes to a temporary keychain instead
+        var keyStorageFlags = OperatingSystem.IsMacOS() ? X509KeyStorageFlags.DefaultKeySet : X509KeyStorageFlags.EphemeralKeySet;
+        return X509CertificateLoader.LoadPkcs12(certificate.Export(X509ContentType.Pfx, "test"), "test", X509KeyStorageFlags.Exportable | keyStorageFlags);
     }
 }

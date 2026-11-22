@@ -1,6 +1,6 @@
 ---
 title: Convert mailboxes
-description: Convert a mailbox with its folders between Outlook data files, the mbox files of Thunderbird and Maildir folders.
+description: Convert a mailbox with its folders between Outlook data files, the mbox files of Thunderbird and Maildir folders, or export its messages to .eml and .msg files.
 ---
 
 [MailboxConverter.Convert](cref:Meziantou.Framework.Email.Storage.MailboxConverter.Convert) converts a mailbox, with its
@@ -29,6 +29,22 @@ Assert.Equal(MailboxFormat.Maildir, MailboxConverter.DetectFormat(maildirPath));
 [DetectFormat](cref:Meziantou.Framework.Email.Storage.MailboxConverter.DetectFormat) gives the format of the source. The
 destination must not exist, or be an empty directory.
 
+## Export the messages to files
+
+Two more formats are only destinations. They export a mailbox to a directory of message files, with one subdirectory per
+folder (`Inbox`, `Archive/2026`):
+
+| Format | Files |
+| --- | --- |
+| [MailboxFormat.Eml](cref:Meziantou.Framework.Email.Storage.MailboxFormat.Eml) | An email message (`.eml`) per message. The messages of mbox and Maildir folders are copied as they are |
+| [MailboxFormat.Msg](cref:Meziantou.Framework.Email.Storage.MailboxFormat.Msg) | An Outlook item (`.msg`) per item. As in an Outlook data file, the contacts, appointments and other items are kept, and a message keeps its read state |
+
+A file is named after the subject of its message, with the characters a file name cannot have replaced with `_`. A
+message without a subject is named `Message`, and two messages of a folder with the same name get `_2`, `_3`...:
+`Hello.eml`, `Hello_2.eml`. An `.eml` file has no read state.
+
+## What is kept
+
 - The messages of mbox and Maildir folders are copied as they are between these formats, with the LF line breaks of
   the mbox files. They are converted to and from the items of an Outlook data file through
   [EmailMessage](cref:Meziantou.Framework.Email.EmailMessage): what one of the formats cannot store is lost (see
@@ -49,4 +65,5 @@ destination must not exist, or be an empty directory.
   otherwise.
 - The folders of mbox and Maildir destinations have valid file names: the characters a file name or a Maildir++ name
   cannot have, such as `.` and `/`, are replaced with `_`. Two folders that would get the same name, such as `Project.A`
-  and `Project_A`, or names that differ only in case, get different names: `Project_A` and `Project_A_2`.
+  and `Project_A`, or names that differ only in case, get different names: `Project_A` and `Project_A_2`. The names of
+  the devices of Windows, such as `CON` or `NUL`, get a leading `_`.

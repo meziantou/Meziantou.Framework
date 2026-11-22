@@ -15,4 +15,5 @@ one after the other in a file, or a file per message in a directory. The types o
 | `.msf` summary, Mork database | Thunderbird | [ThunderbirdSummary](cref:Meziantou.Framework.Email.Storage.ThunderbirdSummary), [MorkDocument](cref:Meziantou.Framework.Email.Storage.MorkDocument) | [Thunderbird](05-Thunderbird.md) |
 
 [MailboxConverter](cref:Meziantou.Framework.Email.Storage.MailboxConverter) converts a whole mailbox, with its folders,
-between Outlook data files, the mbox files of Thunderbird and Maildir folders: see [Convert mailboxes](06-Conversion.md).
+between Outlook data files, the mbox files of Thunderbird and Maildir folders, or exports its messages to .eml or .msg
+files: see [Convert mailboxes](06-Conversion.md).

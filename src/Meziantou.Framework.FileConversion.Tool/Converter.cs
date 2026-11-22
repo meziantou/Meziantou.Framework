@@ -1,5 +1,8 @@
 using Meziantou.Framework.Compression;
+using Meziantou.Framework.Email;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.FileConversionTool.Inputs;
+using Meziantou.Framework.FileConversionTool.Mobi;
 using Meziantou.Framework.FileConversionTool.Outputs;
 using Meziantou.Framework.Globbing;
 using Meziantou.Framework.Imaging;
@@ -34,7 +37,15 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             ValidatePdfOutputSettings();
         }
 
-        if (outputFormat.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
+        // Only a mailbox (Maildir, a folder of mbox files) is a folder
+        if (outputFormat.Kind is not (FileFormatKind.Mailbox or FileFormatKind.EmailMessage) && inputs.Find(input => Directory.Exists(input)) is { IsEmpty: false } directory)
+            throw new ConversionException($"The input '{directory}' is a folder, which cannot be converted to {outputFormat.Name}: only a mailbox folder (Maildir, mbox) can be converted, to another mailbox or to message files");
+
+        if (outputFormat.Kind is FileFormatKind.Mailbox or FileFormatKind.EmailMessage)
+        {
+            ConvertEmails(inputs, inputFormats, template, outputFormat);
+        }
+        else if (outputFormat.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
         {
             ConvertTextDocuments(inputs, inputFormats, template, outputFormat);
         }
@@ -74,16 +85,16 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         }
     }
 
-    /// <summary>Expands the glob patterns of the inputs, sorted in natural order (<c>page2</c> before <c>page10</c>), and keeps the files as they are given.</summary>
+    /// <summary>Expands the glob patterns of the inputs, sorted in natural order (<c>page2</c> before <c>page10</c>), and keeps the files and the folders (mailboxes) as they are given.</summary>
     internal static List<FullPath> ResolveInputs(IReadOnlyList<string> inputs)
     {
         var result = new List<FullPath>();
         foreach (var input in inputs)
         {
-            if (File.Exists(input) || input.AsSpan().IndexOfAny("*?[{") < 0)
+            if (File.Exists(input) || Directory.Exists(input) || input.AsSpan().IndexOfAny("*?[{") < 0)
             {
                 var path = FullPath.FromPath(input);
-                if (!File.Exists(path))
+                if (!File.Exists(path) && !Directory.Exists(path))
                     throw new ConversionException($"The input file '{path}' does not exist");
 
                 result.Add(path);
@@ -118,14 +129,15 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     }
 
     /// <summary>
-    /// Detects the format of a file from its content: an image format, PDF, EPUB, or an archive (zip, 7z, RAR, tar...). An archive
+    /// Detects the format of a file from its content: an image format, PDF, EPUB, MOBI, or an archive (zip, 7z, RAR, tar...). An archive
     /// whose extension is the one of a comic book archive (<c>.cbz</c>, <c>.cbr</c>...) is a comic book archive, whatever its
     /// container. A Markdown or HTML file is recognized by its extension, or an HTML file by its start (<c>&lt;!DOCTYPE html</c>,
-    /// <c>&lt;html</c>). The extension is used when the content is not recognized.
+    /// <c>&lt;html</c>). An email file (PST, OST, mbox, EML, MSG, OFT, EMLX, TNEF) is detected by <see cref="EmailFormatDetector"/>. The extension
+    /// is used when the content is not recognized.
     /// </summary>
     internal static FileFormat? DetectFormat(Stream stream, string fileName)
     {
-        Span<byte> prefix = stackalloc byte[64];
+        Span<byte> prefix = stackalloc byte[68];
         var length = stream.ReadAtLeast(prefix, prefix.Length, throwOnEndOfStream: false);
         prefix = prefix[..length];
         stream.Position = 0;
@@ -135,6 +147,10 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         // The text formats have no signature, and their text can start like one ("BM" of BMP, "%PDF-" in a document about PDF)
         if (extensionFormat?.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
             return extensionFormat;
+
+        // A MOBI book is a Palm database: its signature follows its name, which can start like another signature
+        if (MobiBook.HasSignature(prefix))
+            return FileFormat.Mobi;
 
         if (prefix.StartsWith("%PDF-"u8))
             return FileFormat.Pdf;
@@ -177,11 +193,31 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         if (archiveType is not ArchiveType.None)
             return FileFormat.FromArchiveType(archiveType, comic: extensionFormat?.Kind is FileFormatKind.Comic);
 
+        stream.Position = 0;
+        var emailFormat = EmailFormatDetector.Detect(stream) switch
+        {
+            EmailFileFormat.Pst => FileFormat.Pst,
+            EmailFileFormat.Ost => FileFormat.Ost,
+            EmailFileFormat.Mbox => FileFormat.Mbox,
+            EmailFileFormat.Msg => FileFormat.Msg,
+            EmailFileFormat.OutlookTemplate => FileFormat.Oft,
+            EmailFileFormat.Tnef => FileFormat.Tnef,
+            EmailFileFormat.Emlx => FileFormat.Emlx,
+            EmailFileFormat.Eml => FileFormat.Eml,
+            _ => null,
+        };
+        stream.Position = 0;
+        if (emailFormat is not null)
+            return emailFormat;
+
         return extensionFormat ?? (IsHtml(prefix) ? FileFormat.Html : null);
     }
 
+    /// <summary>Detects the format of a mailbox folder: a Maildir folder (with <c>cur</c>, <c>new</c> and <c>tmp</c>), else a folder of mbox files.</summary>
+    internal static FileFormat DetectFolderFormat(string path) => MailboxConverter.DetectFormat(path) is Email.Storage.MailboxFormat.Maildir ? FileFormat.Maildir : FileFormat.Mbox;
+
     /// <summary>Gets the name of a format with its indefinite article: <c>a PNG</c>, <c>an EPUB</c>, <c>an HTML</c>.</summary>
-    private static string WithArticle(string name) => (name is "HTML" || "AEIOaeio".Contains(name[0], StringComparison.Ordinal) ? "an " : "a ") + name;
+    private static string WithArticle(string name) => (name is "HTML" or "MSG" or "Mbox" || "AEIOaeio".Contains(name[0], StringComparison.Ordinal) ? "an " : "a ") + name;
 
     private static bool IsHtml(ReadOnlySpan<byte> prefix)
     {
@@ -199,13 +235,20 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
 
     private FileFormat DetectInputFormat(FullPath path)
     {
+        var isDirectory = Directory.Exists(path);
         if (settings.InputFormat is { } format)
         {
             if (!format.CanRead)
                 throw new ConversionException($"The {format.Name} format cannot be read");
 
+            if (isDirectory && format != FileFormat.Mbox && format != FileFormat.Maildir)
+                throw new ConversionException($"The input '{path}' is a folder, which is not {WithArticle(format.Name)} file: only a mailbox folder (Maildir, mbox) can be converted");
+
             return format;
         }
+
+        if (isDirectory)
+            return DetectFolderFormat(path);
 
         using var stream = File.OpenRead(path);
         return DetectFormat(stream, path.Name)
@@ -226,6 +269,82 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
             var outputPath = GetOutputPath(template, values, input);
             outputPath.CreateParentDirectory();
             ArchiveOutputWriter.Write(outputPath, input, outputFormat, settings, error, cancellationToken);
+            output.WriteLine(outputPath);
+        }
+    }
+
+    /// <summary>Converts each mailbox to another mailbox format or to a folder of message files (EML, MSG), and each message to another message format.</summary>
+    private void ConvertEmails(List<FullPath> inputs, FileFormat[] inputFormats, OutputNameTemplate? template, FileFormat outputFormat)
+    {
+        for (var i = 0; i < inputs.Count; i++)
+        {
+            if (inputFormats[i].Kind is not (FileFormatKind.Mailbox or FileFormatKind.EmailMessage))
+                throw new ConversionException($"The input '{inputs[i]}' is {WithArticle(inputFormats[i].Name)} file, which cannot be converted to {outputFormat.Name}: only mailboxes and email messages can");
+        }
+
+        if (outputFormat.Kind is FileFormatKind.Mailbox && inputFormats.Any(format => format.Kind is FileFormatKind.EmailMessage))
+        {
+            ConvertMessagesToMailboxes(inputs, inputFormats, template, outputFormat);
+            return;
+        }
+
+        template ??= OutputNameTemplate.Parse(SingleOutputTemplate);
+        var extension = GetExtension(template, outputFormat);
+        for (var i = 0; i < inputs.Count; i++)
+        {
+            var input = inputs[i];
+            var inputFormat = inputFormats[i];
+            if (inputFormat.Kind is FileFormatKind.Mailbox && outputFormat.MailboxFormat is null)
+                throw new ConversionException($"The input '{input}' is {WithArticle(inputFormat.Name)} mailbox, which cannot be converted to {outputFormat.Name}: a mailbox can be converted to PST, OST, Mbox or Maildir, or to a folder of EML or MSG files");
+
+            var values = new OutputNameValues(FileFormat.GetNameWithoutExtension(input.Name), extension[1..], input.Parent, Page: 1, PageCount: 1, i + 1, inputs.Count);
+            var outputPath = GetOutputPath(template, values, input);
+            if (inputFormat.Kind is FileFormatKind.Mailbox)
+            {
+                // In the folder of an input mailbox, the output would be read as one of its folders
+                if (inputs.Find(other => Directory.Exists(other) && FileLinks.GetComparisonKey(outputPath).IsChildOf(FileLinks.GetComparisonKey(other))) is { IsEmpty: false } folder)
+                    throw new ConversionException($"The output '{outputPath}' is in the input folder '{folder}'");
+
+                outputPath.CreateParentDirectory();
+                EmailOutputWriter.WriteMailbox(input, outputPath, outputFormat, settings, error);
+            }
+            else
+            {
+                outputPath.CreateParentDirectory();
+                EmailOutputWriter.WriteMessage(input, inputFormat, outputPath, outputFormat);
+            }
+
+            output.WriteLine(outputPath);
+        }
+    }
+
+    /// <summary>
+    /// Writes messages to a mailbox: an mbox file, or the inbox of an Outlook data file or of a Maildir folder. All the inputs go to
+    /// one mailbox, or each input to its own mailbox with <c>--per-input</c>.
+    /// </summary>
+    private void ConvertMessagesToMailboxes(List<FullPath> inputs, FileFormat[] inputFormats, OutputNameTemplate? template, FileFormat outputFormat)
+    {
+        for (var i = 0; i < inputs.Count; i++)
+        {
+            if (inputFormats[i].Kind is FileFormatKind.Mailbox)
+                throw new ConversionException($"The input '{inputs[i]}' is {WithArticle(inputFormats[i].Name)} mailbox, which cannot be converted to {outputFormat.Name} with email messages: convert the mailboxes and the messages separately");
+        }
+
+        var groups = settings.PerInput || inputs.Count is 1
+            ? inputs.Select((input, index) => (Inputs: (IReadOnlyList<int>)[index], Index: index)).ToList()
+            : [(Inputs: Enumerable.Range(0, inputs.Count).ToArray(), Index: 0)];
+
+        if (groups.Count is 1 && inputs.Count > 1 && template is null)
+            throw new ConversionException($"The {inputs.Count.ToString(CultureInfo.InvariantCulture)} messages go to one {outputFormat.Name} mailbox: set its path with --output, or use --per-input to convert each message to its own mailbox");
+
+        template ??= OutputNameTemplate.Parse(SingleOutputTemplate);
+        var extension = GetExtension(template, outputFormat);
+        foreach (var group in groups)
+        {
+            var first = inputs[group.Inputs[0]];
+            var outputPath = GetOutputPath(template, new OutputNameValues(FileFormat.GetNameWithoutExtension(first.Name), extension[1..], first.Parent, Page: 1, PageCount: 1, group.Index + 1, groups.Count), first);
+            outputPath.CreateParentDirectory();
+            EmailOutputWriter.WriteMessages([.. group.Inputs.Select(index => (inputs[index], inputFormats[index]))], outputPath, outputFormat, settings, error);
             output.WriteLine(outputPath);
         }
     }
@@ -411,8 +530,8 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         if (_inputPaths.Contains(FileLinks.GetComparisonKey(path)))
             throw new ConversionException($"The output '{path}' is the input file '{input}'");
 
-        if (!settings.Overwrite && File.Exists(path))
-            throw new ConversionException($"The output file '{path}' already exists. Use --overwrite to replace it");
+        if (!settings.Overwrite && (File.Exists(path) || Directory.Exists(path)))
+            throw new ConversionException(Directory.Exists(path) ? $"The output folder '{path}' already exists" : $"The output file '{path}' already exists. Use --overwrite to replace it");
 
         return path;
     }

@@ -447,8 +447,11 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
             FillsSequentially = fragmentation.ColumnFill == ColumnFill.Auto,
             Wraps = wraps,
             RowBlockSize = fragmentation.ColumnHeight,
-            BlockSize = content.BlockSize ?? GetContainedBlockSize(content),
-            MaxBlockSize = content.BlockSize is null && GetContainedBlockSize(content) is null ? content.MaxBlockSize : null,
+            // (as in Blink, a block size that the parent imposes on a box whose block size is automatic, e.g. a stretched flex
+            // item, is the size of its content laid out without fragmentation: the rows of columns that the outer fragmentainers
+            // break need more of it, and grow the box instead of overflowing it in the inline direction)
+            BlockSize = (content.IsBlockSizeImposed ? null : content.BlockSize) ?? GetContainedBlockSize(content),
+            MaxBlockSize = (content.BlockSize is null || content.IsBlockSizeImposed) && GetContainedBlockSize(content) is null ? content.MaxBlockSize : null,
             ContentOffset = content.Offset,
             ContentInlineSize = content.InlineSize,
             CreateTrialFlow = () => LayoutNestedStrip(context, box, content, columnWidth, resumes).Flow,

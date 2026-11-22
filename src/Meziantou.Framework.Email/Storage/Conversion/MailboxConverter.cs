@@ -6,7 +6,8 @@ namespace Meziantou.Framework.Email.Storage;
 /// <summary>
 /// Converts a mailbox from one format to another, with its tree of folders: an Outlook data file, a folder of mbox files
 /// (Thunderbird) or a Maildir folder. The messages of mbox and Maildir folders are copied as they are between these formats
-/// (an mbox file has LF line breaks), and converted through <see cref="EmailMessage"/> to and from Outlook data files.
+/// (an mbox file has LF line breaks), and converted through <see cref="EmailMessage"/> to and from Outlook data files. A mailbox
+/// can also be exported to a directory of message files (<see cref="MailboxFormat.Eml"/>, <see cref="MailboxFormat.Msg"/>).
 /// </summary>
 /// <example>
 /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../../tests/Meziantou.Framework.Email.Tests/MailboxConverterTests.cs" ref:region="MailboxConverter_Usage" ref:dedent="true">
@@ -95,7 +96,7 @@ public static class MailboxConverter
                     continue;
                 }
 
-                if (message.Item is { } item && destinationFormat != MailboxFormat.Pst && !options.IncludeNonMailItems && !IsMail(item))
+                if (message.Item is { } item && destinationFormat is not (MailboxFormat.Pst or MailboxFormat.Msg) && !options.IncludeNonMailItems && !IsMail(item))
                 {
                     result.SkippedItemCount++;
                     continue;
@@ -273,6 +274,8 @@ public static class MailboxConverter
         MailboxFormat.Pst => new PstDestination(path, options.PstWriterOptions),
         MailboxFormat.Maildir => new MaildirDestination(MaildirFolder.Create(path)),
         MailboxFormat.Mbox => new MboxDestination(path, options.MboxFormat),
+        MailboxFormat.Eml => new MessageFilesDestination(path, msg: false),
+        MailboxFormat.Msg => new MessageFilesDestination(path, msg: true),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is not valid."),
     };
 
@@ -282,6 +285,13 @@ public static class MailboxConverter
         var invalid = Path.GetInvalidFileNameChars();
         var chars = name.Trim().Select(c => invalid.Contains(c) || c is '.' or '/' or '\\' or ':' or '*' or '?' or '"' or '<' or '>' or '|' || char.IsControl(c) ? '_' : c).ToArray();
         var result = new string(chars);
+
+        // The names of the devices of Windows (CON, NUL, COM1...) are not valid file names, even with an extension
+        if (result.ToUpperInvariant() is "CON" or "PRN" or "AUX" or "NUL" or ['C', 'O', 'M', >= '1' and <= '9'] or ['L', 'P', 'T', >= '1' and <= '9'])
+        {
+            result = "_" + result;
+        }
+
         return result.Length == 0 ? "_" : result;
     }
 
@@ -289,6 +299,19 @@ public static class MailboxConverter
     private sealed record SourceMessage(MapiMessage? Item, Func<byte[]>? Content, bool? IsRead, string? Sender, DateTimeOffset? Date, MimeReadOptions MimeOptions)
     {
         public MimeMessage GetMime() => Item is not null ? EmailMessage.FromMapi(Item).ToMime() : MimeMessage.Load(Content!(), MimeOptions);
+
+        /// <summary>Returns the item as an Outlook item: a MIME message is read unless the source says it is unread.</summary>
+        public MapiMessageBuilder GetMapiBuilder()
+        {
+            if (Item is not null)
+            {
+                return MapiMessageBuilder.FromMessage(Item);
+            }
+
+            var builder = EmailMessage.FromMime(GetMime()).ToMapiBuilder();
+            builder.Flags = IsRead is false ? MapiMessageFlags.None : MapiMessageFlags.Read;
+            return builder;
+        }
     }
 
     /// <summary>A folder of a source: its path, its container class for a folder of an Outlook data file (<c>IPF.Contact</c>, <c>IPF.Appointment</c>...), and a function per message, which reads it, or returns <see langword="null"/> when there is no message.</summary>
@@ -352,21 +375,7 @@ public static class MailboxConverter
 
         public override void EnsureFolder(string[] path, string? containerClass) => GetFolder(path, containerClass);
 
-        public override void Add(string[] path, SourceMessage message)
-        {
-            MapiMessageBuilder builder;
-            if (message.Item is { } item)
-            {
-                builder = MapiMessageBuilder.FromMessage(item);
-            }
-            else
-            {
-                builder = EmailMessage.FromMime(message.GetMime()).ToMapiBuilder();
-                builder.Flags = message.IsRead is false ? MapiMessageFlags.None : MapiMessageFlags.Read;
-            }
-
-            GetFolder(path, containerClass: null).AddItem(builder);
-        }
+        public override void Add(string[] path, SourceMessage message) => GetFolder(path, containerClass: null).AddItem(message.GetMapiBuilder());
 
         public override void Complete() => _writer.Complete();
 
@@ -431,6 +440,88 @@ public static class MailboxConverter
             {
                 folder = root.CreateFolder(name);
                 _folders[name] = folder;
+            }
+
+            return folder;
+        }
+    }
+
+    /// <summary>A directory per folder, and a file per message (<c>.eml</c>) or per item (<c>.msg</c>), named after its subject.</summary>
+    private sealed class MessageFilesDestination : Destination
+    {
+        private const int MaxNameLength = 100;
+
+        private readonly string _directory;
+        private readonly bool _msg;
+        private readonly FolderNames _names = new();
+        private readonly Dictionary<string, HashSet<string>> _usedNames = new(StringComparer.Ordinal);
+
+        public MessageFilesDestination(string directory, bool msg)
+        {
+            _directory = directory;
+            _msg = msg;
+            Directory.CreateDirectory(directory);
+        }
+
+        public override void EnsureFolder(string[] path, string? containerClass) => GetFolder(path);
+
+        public override void Add(string[] path, SourceMessage message)
+        {
+            var folder = GetFolder(path);
+            if (_msg)
+            {
+                var builder = message.GetMapiBuilder();
+                WriteFile(folder, builder.Subject, ".msg", MsgFile.ToByteArray(builder));
+            }
+            else if (message.Content is { } content)
+            {
+                // The bytes of a MIME message are copied as they are
+                var bytes = content();
+                WriteFile(folder, MimeMessage.Load(bytes, message.MimeOptions).Subject, ".eml", bytes);
+            }
+            else
+            {
+                using var stream = new MemoryStream();
+                message.GetMime().WriteTo(stream);
+                WriteFile(folder, message.Item?.Subject, ".eml", stream.ToArray());
+            }
+        }
+
+        public override void Dispose()
+        {
+        }
+
+        private void WriteFile(string folder, string? subject, string extension, byte[] content)
+        {
+            var baseName = string.IsNullOrWhiteSpace(subject) ? "Message" : GetFileName(subject);
+            if (baseName.Length > MaxNameLength)
+            {
+                baseName = baseName[..(char.IsHighSurrogate(baseName[MaxNameLength - 1]) ? MaxNameLength - 1 : MaxNameLength)];
+            }
+
+            var used = _usedNames[folder];
+            var name = baseName;
+            for (var i = 2; !used.Add(name); i++)
+            {
+                name = baseName + "_" + i.ToString(CultureInfo.InvariantCulture);
+            }
+
+            using var file = new FileStream(Path.Combine(folder, name + extension), FileMode.CreateNew, FileAccess.Write);
+            file.Write(content);
+        }
+
+        private string GetFolder(string[] path)
+        {
+            if (path is [])
+            {
+                path = [InboxName];
+            }
+
+            var folder = Path.Combine([_directory, .. _names.Get(path)]);
+            if (!_usedNames.ContainsKey(folder))
+            {
+                Directory.CreateDirectory(folder);
+                _usedNames[folder] = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             }
 
             return folder;

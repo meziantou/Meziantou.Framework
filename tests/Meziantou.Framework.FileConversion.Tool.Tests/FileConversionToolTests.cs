@@ -1,4 +1,7 @@
 using System.IO.Compression;
+using Meziantou.Framework.Email;
+using Meziantou.Framework.Email.Mapi;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf;
 
@@ -482,6 +485,205 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public async Task MobiToPdf_RendersTheText()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.mobi", TestFiles.CreateTextMobi());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The cover, which the text does not show, then a page per chapter: the page break of the book starts a page
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.HasCount(3, document.Pages);
+        Assert.Equal("Test book", document.Information.Title);
+        Assert.Equal("Test author", document.Information.Author);
+        Assert.Equal(PdfSize.A5.Width, document.Pages[1].MediaBox.Width, 0.5);
+        Assert.Contains("Chapter one", document.Pages[1].ExtractText());
+        Assert.Contains("second chapter", document.Pages[2].ExtractText());
+    }
+
+    [Fact]
+    public async Task MobiToCbz_CopiesTheCover()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.mobi", TestFiles.CreateTextMobi(TestFiles.MobiCompression.HuffCdic, utf8: false, trailingEntries: true));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "cbz", "--dpi", "30");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("book.cbz"));
+        Assert.Equal(["0001.jpg", "0002.png", "0003.png"], archive.Entries.Select(entry => entry.FullName).ToArray());
+    }
+
+    [Theory]
+    [InlineData(6)]
+    [InlineData(8)]
+    public async Task Mobi_WithDrmFails(int fileVersion)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "book.azw", TestFiles.CreateMobi("<p>Text</p>", encryption: 2, fileVersion: (uint)fileVersion));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("DRM", console.Error);
+    }
+
+    [Theory]
+    [InlineData(1, true, false)]
+    [InlineData(2, true, true)]
+    [InlineData(2, false, false)]
+    [InlineData(17480, true, true)]
+    [InlineData(17480, false, false)]
+    public void MobiBook_ReadText(int compression, bool utf8, bool trailingEntries)
+    {
+        // Several records, and characters of several bytes, which the records can split
+        var html = "<html><body>" + string.Concat(Enumerable.Range(0, 800).Select(i => string.Create(CultureInfo.InvariantCulture, $"<p>Paragraph {i}: the café costs 3 €.</p>"))) + "</body></html>";
+        var data = TestFiles.CreateMobi(html, compression: (TestFiles.MobiCompression)compression, utf8: utf8, title: "Café", trailingEntries: trailingEntries);
+
+        var book = Mobi.MobiBook.Read(data);
+
+        var encoding = utf8 ? Encoding.UTF8 : CodePagesEncodingProvider.Instance.GetEncoding(1252)!;
+        Assert.Equal(html, encoding.GetString(book.ReadText(book.Mobi6!)));
+        Assert.Equal("Café", book.Title);
+        Assert.Equal("Test author", book.Author);
+        Assert.Equal(utf8 ? "utf-8" : "windows-1252", book.Mobi6!.EncodingName);
+    }
+
+    [Fact]
+    public void MobiHtml_Convert()
+    {
+        var text = """<html><head><guide><reference type="toc" filepos=5 /></guide></head><body><p>Hello <a filepos="0000000125">link</a></p><img recindex='3' hirecindex="4" alt=""><mbp:pagebreak/><p>End</p></body></html>"""u8;
+
+        var html = Encoding.UTF8.GetString(Mobi.MobiHtml.Convert(text, isUtf8: true, out var images));
+
+        Assert.Equal([3], images.ToArray());
+        Assert.Contains("""<img src="https://mobi.invalid/images/3" recindex='3'""", html);
+        Assert.Contains("""<div style="break-before: page"></div><p>End</p>""", html);
+        Assert.Contains("""<a href="#filepos125">link</a>""", html);
+
+        // A position inside a tag goes before the tag, and a position in the head goes to the start of the body
+        Assert.Contains("""<a id="filepos125"></a><img""", html);
+        Assert.Contains("""<body><a id="filepos5"></a><p>""", html);
+    }
+
+    [Theory]
+    [InlineData("book.azw3", 2, false)]
+    [InlineData("book.mobi", 17480, true)]
+    public async Task Kf8ToPdf_RendersTheDocuments(string fileName, int compression, bool trailingEntries)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, fileName, TestFiles.CreateTextKf8(compression: (TestFiles.MobiCompression)compression, trailingEntries: trailingEntries));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The cover, which the documents do not show, then a page per document
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.HasCount(3, document.Pages);
+        Assert.Equal("Test book", document.Information.Title);
+        Assert.Equal("Test author", document.Information.Author);
+        Assert.Equal(PdfSize.A5.Width, document.Pages[1].MediaBox.Width, 0.5);
+        Assert.Contains("Chapter one", document.Pages[1].ExtractText());
+        Assert.Contains("second chapter", document.Pages[2].ExtractText());
+    }
+
+    [Fact]
+    public async Task Kf8ComicToCbz_CopiesTheImages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "comic.azw3", TestFiles.CreateComicKf8());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "cbz");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+
+        // The cover is the first document
+        using var archive = ZipFile.OpenRead(temp.GetFullPath("comic.cbz"));
+        Assert.Equal(["0001.png", "0002.png", "0003.png"], archive.Entries.Select(entry => entry.FullName).ToArray());
+    }
+
+    [Theory]
+    [InlineData(false, "KF8 version")]
+    [InlineData(true, "MOBI 6 version")]
+    public async Task JointMobi_ReadsTheKf8Version(bool corruptKf8, string expectedText)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var data = TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("<p>The KF8 version of the book.</p>")], mobi6Html: "<html><body><p>The MOBI 6 version of the book.</p></body></html>", corruptFdst: corruptKf8);
+        var input = await WriteFileAsync(temp, "book.mobi", data);
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("book.pdf")));
+        Assert.Contains(expectedText, string.Concat(document.Pages.Select(page => page.ExtractText())));
+    }
+
+    [Fact]
+    public void Kf8Content_Read()
+    {
+        var book = Mobi.MobiBook.Read(TestFiles.CreateTextKf8(mobi6Html: "<p>MOBI 6</p>"));
+
+        var content = Mobi.Kf8Content.Read(book, book.Kf8!);
+
+        Assert.HasCount(2, content.Parts);
+        Assert.Equal([true, true], content.PartsAreXml.ToArray());
+        Assert.Null(content.ImagePages);
+        Assert.Equal([1], content.ResourceIndexes.ToArray());
+        Assert.Equal("h1 { color: #036 }", Encoding.UTF8.GetString(content.Flows[1]));
+
+        // The links go to the closest element with an id, in the other document
+        var first = Encoding.UTF8.GetString(content.Parts[0]);
+        Assert.Contains("""<a href="https://mobi.invalid/parts/1.xhtml#chapter2">Go to chapter two</a>""", first);
+        Assert.Contains("""<link rel="stylesheet" type="text/css" href="https://mobi.invalid/flows/1.css"/>""", first);
+        Assert.Contains("""<img src="https://mobi.invalid/images/1" alt=""/>""", first);
+        Assert.Equal(TestFiles.CreateKf8Xhtml("""<h1 id="chapter2">Chapter two</h1><p>The second chapter of the book.</p>""").Replace("kindle:flow:0001?mime=text/css", "https://mobi.invalid/flows/1.css", StringComparison.Ordinal), Encoding.UTF8.GetString(content.Parts[1]));
+    }
+
+    [Fact]
+    public void Kf8Content_InlinesTheSvgImages()
+    {
+        // The cover of a book made by kindlegen or Calibre: an image that is an SVG flow, which shows the image of the cover
+        const string Svg = """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 30 40"><image width="30" height="40" xlink:href="kindle:embed:0001?mime=image/jpeg"/></svg>""";
+        var data = TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("""<div><img src="kindle:flow:0002?mime=image/svg+xml" alt=""/></div>""")], ["p { margin: 0 }", Svg], [TestFiles.CreateImage(30, 40, ImageFormat.Jpeg)], coverIndex: 1);
+        var book = Mobi.MobiBook.Read(data);
+
+        var content = Mobi.Kf8Content.Read(book, book.Kf8!);
+
+        Assert.Contains("""<div><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 30 40"><image width="30" height="40" xlink:href="https://mobi.invalid/images/1"/></svg></div>""", Encoding.UTF8.GetString(content.Parts[0]));
+        Assert.Equal([1], content.ResourceIndexes.ToArray());
+        Assert.Equal([true], content.PartsAreXml.ToArray());
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(true, false)]
+    [InlineData(false, true)]
+    [InlineData(true, true)]
+    public async Task Kf8_ServesTheFonts(bool compress, bool obfuscate)
+    {
+        byte[] font = [0, 1, 0, 0, .. Enumerable.Range(0, 3000).Select(i => (byte)(i % 251))];
+        var data = TestFiles.CreateKf8([TestFiles.CreateKf8Xhtml("<p>Text</p>")], resources: [TestFiles.CreateImage(2, 2, ImageFormat.Png), TestFiles.CreateFontRecord(font, compress, obfuscate)]);
+        var book = Mobi.MobiBook.Read(data);
+        var loader = new Mobi.MobiDocumentLoader(book, html: null, "utf-8", Mobi.Kf8Content.Read(book, book.Kf8!));
+
+        var resource = await loader.LoadAsync(new WebPlatform.Dom.DocumentRequest(Mobi.MobiHtml.GetImageUrl(2)), XunitCancellationToken);
+
+        Assert.NotNull(resource);
+        Assert.Equal(font, resource.ContentBytes?.ToArray());
+        Assert.Contains(resource.Headers, header => header.Value is "font/ttf");
+        Assert.Equal(font, Mobi.MobiFont.Decode(TestFiles.CreateFontRecord(font, compress, obfuscate)));
+    }
+
+    [Fact]
     public async Task Error_ExistingOutput()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -558,6 +760,7 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("Jpeg (.jpg, .jpeg): read, write", console.Output);
         Assert.Contains("--jpeg-quality", console.Output);
         Assert.Contains("EPUB (.epub): read", console.Output);
+        Assert.Contains("MOBI (.mobi, .azw3, .azw, .prc): read", console.Output);
         Assert.Contains("--layout-page-size", console.Output);
         Assert.Contains("TarGz (.tar.gz, .tgz): read, write", console.Output);
         Assert.Contains("CBR (.cbr): read", console.Output);
@@ -565,6 +768,302 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("Markdown (.md, .markdown): read, write", console.Output);
         Assert.Contains("HTML (.html, .htm): read, write", console.Output);
         Assert.Contains("--html-stylesheet", console.Output);
+        Assert.Contains("PST (.pst): read, write", console.Output);
+        Assert.Contains("OST (.ost): read, write", console.Output);
+        Assert.Contains("Mbox (.mbox, .mbx): read, write", console.Output);
+        Assert.Contains("MSG (.msg): read, write", console.Output);
+        Assert.Contains("--pst-encryption", console.Output);
+        Assert.Contains("--mbox-format", console.Output);
+        Assert.Contains("--email-include-non-mail-items", console.Output);
+    }
+
+    [Fact]
+    public async Task PstToMbox_WritesAThunderbirdFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "mbox");
+
+        Assert.Equal(0, exitCode);
+        var output = temp.GetFullPath("mail.mbox");
+        Assert.Equal(output.Value, console.Output.Trim());
+        Assert.Equal(["Welcome"], MboxReader.ReadMessages(output / "Inbox").Select(message => message.Message.Subject));
+        Assert.Equal(["Project plan"], MboxReader.ReadMessages(output / "Inbox.sbd" / "Projects").Select(message => message.Message.Subject));
+
+        // The contact is not an email
+        Assert.Contains("skipped the items that are not emails", console.Error);
+    }
+
+    [Fact]
+    public async Task MboxToOst_ToPst()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.mbox", TestFiles.CreateMbox("First", "Second"));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "ost")).ExitCode);
+        using (var ost = PstFile.Open(temp.GetFullPath("mail.ost")))
+        {
+            Assert.True(ost.IsOfflineFile);
+            Assert.Equal(["First", "Second"], ost.GetFolder("mail")!.EnumerateItems().Select(item => item.Subject));
+        }
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("mail.ost"), "-o", temp.GetFullPath("copy.pst"), "--pst-encryption", "None")).ExitCode);
+        using var pst = PstFile.Open(temp.GetFullPath("copy.pst"));
+        Assert.False(pst.IsOfflineFile);
+        Assert.Equal(["First", "Second"], pst.GetFolder("mail")!.EnumerateItems().Select(item => item.Subject));
+    }
+
+    [Theory]
+    [InlineData("ost", "Unicode", "An OST file has the Unicode4K format")]
+    [InlineData("pst", "Unicode4K", "use --output-format ost")]
+    public async Task PstFormat_MustMatchTheOutput(string outputFormat, string pstFormat, string expectedError)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.mbox", TestFiles.CreateMbox("First"));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", outputFormat, "--pst-format", pstFormat);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains(expectedError, console.Error);
+        Assert.DoesNotContain(Directory.EnumerateFileSystemEntries(temp.FullPath), path => path != input.Value);
+    }
+
+    [Fact]
+    public async Task MaildirFolderToPst()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var maildir = MaildirFolder.Create(temp.GetFullPath("mail"));
+        maildir.AddMessage(TestFiles.CreateEml("Read"), MaildirFlags.Seen);
+        maildir.CreateFolder("Archive").AddMessage(TestFiles.CreateEml("Archived"));
+
+        var (exitCode, _) = await RunAsync(temp.GetFullPath("mail"), "--output-format", "pst");
+
+        Assert.Equal(0, exitCode);
+        using var pst = PstFile.Open(temp.GetFullPath("mail.pst"));
+        Assert.Equal([("Read", true)], pst.GetFolder("Inbox")!.EnumerateItems().Select(item => (item.Subject!, item.IsRead)));
+        Assert.Equal([("Archived", false)], pst.GetFolder("Archive")!.EnumerateItems().Select(item => (item.Subject!, item.IsRead)));
+    }
+
+    [Fact]
+    public async Task PstToMessageFiles()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "eml")).ExitCode);
+        Assert.Equal("Welcome", MimeMessage.Load(temp.GetFullPath("mail.eml/Inbox/Welcome.eml")).Subject);
+        Assert.Equal("Project plan", MimeMessage.Load(temp.GetFullPath("mail.eml/Inbox/Projects/Project plan.eml")).Subject);
+        Assert.Empty(Directory.EnumerateFiles(temp.GetFullPath("mail.eml/Contacts")));
+
+        // An .msg file keeps the contact
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("items"), "--output-format", "msg")).ExitCode);
+        Assert.Equal("Welcome", MsgFile.Load(temp.GetFullPath("items/Inbox/Welcome.msg")).Subject);
+        Assert.IsType<MapiContact>(MsgFile.Load(Assert.Single(Directory.EnumerateFiles(temp.GetFullPath("items/Contacts")))));
+    }
+
+    [Fact]
+    public async Task MailboxOutput_DoesNotReplaceAFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "maildir")).ExitCode);
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "maildir");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("already exists", console.Error);
+
+        (exitCode, console) = await RunAsync(input, "--output-format", "maildir", "--overwrite");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is not empty", console.Error);
+        Assert.Equal(["Welcome"], MaildirFolder.Open(temp.GetFullPath("mail.maildir")).EnumerateMessages().Select(message => message.Load().Subject));
+
+        // An empty folder is filled
+        Directory.CreateDirectory(temp.GetFullPath("empty"));
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("empty"), "--output-format", "maildir", "--overwrite")).ExitCode);
+        Assert.Equal(MailboxFormat.Maildir, MailboxConverter.DetectFormat(temp.GetFullPath("empty")));
+
+        // An Outlook data file is replaced
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("mail.maildir"), "-o", temp.GetFullPath("copy.pst"))).ExitCode);
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("mail.maildir"), "-o", temp.GetFullPath("copy.pst"), "--overwrite")).ExitCode);
+        Assert.Empty(Directory.EnumerateFiles(temp.FullPath, "*.tmp"));
+    }
+
+    [Fact]
+    public async Task MailboxOutput_InTheInputFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        MaildirFolder.Create(temp.GetFullPath("mail")).AddMessage(TestFiles.CreateEml("Hello"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("mail"), "-o", temp.GetFullPath("mail/copy.pst"));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is in the input folder", console.Error);
+    }
+
+    [Fact]
+    public async Task MessageFormats_RoundTrip()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var eml = TestFiles.CreateEml("Hello");
+        var input = await WriteFileAsync(temp, "hello.eml", eml);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "msg")).ExitCode);
+        var item = MsgFile.Load(temp.GetFullPath("hello.msg"));
+        Assert.Equal("Hello", item.Subject);
+        Assert.True(item.IsRead);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.msg"), "-o", temp.GetFullPath("from-msg.eml"))).ExitCode);
+        Assert.Equal("Hello", MimeMessage.Load(temp.GetFullPath("from-msg.eml")).Subject);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.msg"), "--output-format", "oft")).ExitCode);
+        Assert.True(MsgFile.IsTemplate(await File.ReadAllBytesAsync(temp.GetFullPath("hello.oft"), XunitCancellationToken)));
+
+        // The bytes of an email message are kept through an Apple Mail message
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "emlx")).ExitCode);
+        Assert.True(EmlxFile.Load(temp.GetFullPath("hello.emlx")).Flags.HasFlag(EmlxFlags.Read));
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.emlx"), "-o", temp.GetFullPath("from-emlx.eml"))).ExitCode);
+        Assert.Equal(eml, await File.ReadAllBytesAsync(temp.GetFullPath("from-emlx.eml"), XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WinmailDat_DetectedFromItsContent()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "winmail.dat", TestFiles.CreateTnef("Forwarded"));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "eml")).ExitCode);
+
+        Assert.Equal("Forwarded", MimeMessage.Load(temp.GetFullPath("winmail.eml")).Subject);
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        await WriteFileAsync(temp, "inbox/message10.eml", TestFiles.CreateEml("Ten"));
+        await WriteFileAsync(temp, "inbox/message2.eml", TestFiles.CreateEml("Two"));
+        await WriteFileAsync(temp, "inbox/message1.eml", TestFiles.CreateEml("One"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("inbox") + "/*.eml", "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(temp.GetFullPath("all.mbox").Value, console.Output.Trim());
+
+        // One mbox file, with the messages in the natural order of the names, as they are (the lines of an mbox file end with LF)
+        var messages = MboxReader.ReadMessages(temp.GetFullPath("all.mbox")).ToList();
+        Assert.Equal(["One", "Two", "Ten"], messages.Select(message => message.Message.Subject));
+        Assert.Equal(Encoding.UTF8.GetString(TestFiles.CreateEml("One")).ReplaceLineEndings("\n"), Encoding.UTF8.GetString(messages[0].Content.Span));
+        Assert.Equal("From alice@example.com Thu Jan 15 09:00:00 2026", messages[0].FromLine);
+
+        // The mbox file is a mailbox of one folder
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("all.mbox"), "--output-format", "maildir")).ExitCode);
+        Assert.HasCount(3, MaildirFolder.Open(temp.GetFullPath("all.maildir")).EnumerateFolders().Single().Folder.EnumerateMessages());
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox_NeedsAnOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.eml", TestFiles.CreateEml("A"));
+        var second = await WriteFileAsync(temp, "b.eml", TestFiles.CreateEml("B"));
+
+        var (exitCode, console) = await RunAsync(first, second, "--output-format", "mbox");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("set its path with --output", console.Error);
+
+        Assert.Equal(0, (await RunAsync(first, second, "--output-format", "mbox", "--per-input")).ExitCode);
+        Assert.Equal("A", MboxReader.ReadMessages(temp.GetFullPath("a.mbox")).Single().Message.Subject);
+        Assert.Equal("B", MboxReader.ReadMessages(temp.GetFullPath("b.mbox")).Single().Message.Subject);
+    }
+
+    [Fact]
+    public async Task MessagesToPstAndMaildir()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var eml = await WriteFileAsync(temp, "a.eml", TestFiles.CreateEml("From EML"));
+        var msg = await WriteFileAsync(temp, "b.msg", TestFiles.CreateMsg("From MSG"));
+
+        Assert.Equal(0, (await RunAsync(eml, msg, "-o", temp.GetFullPath("mail.pst"))).ExitCode);
+        using (var pst = PstFile.Open(temp.GetFullPath("mail.pst")))
+        {
+            Assert.Equal(["From EML", "From MSG"], pst.GetFolder("Inbox")!.EnumerateItems().Select(item => item.Subject));
+        }
+
+        Assert.Equal(0, (await RunAsync(eml, msg, "-o", temp.GetFullPath("mail"), "--output-format", "maildir")).ExitCode);
+        Assert.Equal(["From EML", "From MSG"], MaildirFolder.Open(temp.GetFullPath("mail")).EnumerateMessages().Select(message => message.Load().Subject).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox_SkipsTheInvalidMessages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var valid = await WriteFileAsync(temp, "valid.eml", TestFiles.CreateEml("Valid"));
+        var invalid = await WriteFileAsync(temp, "invalid.msg", "not an Outlook item"u8.ToArray());
+
+        var (exitCode, console) = await RunAsync(valid, invalid, "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains(invalid.Value + ": ", console.Error);
+        Assert.Equal(["Valid"], MboxReader.ReadMessages(temp.GetFullPath("all.mbox")).Select(message => message.Message.Subject));
+
+        (exitCode, console) = await RunAsync(invalid, "-o", temp.GetFullPath("none.mbox"));
+        Assert.Equal(1, exitCode);
+        Assert.Contains("No message can be converted", console.Error);
+        Assert.False(File.Exists(temp.GetFullPath("none.mbox")));
+    }
+
+    [Fact]
+    public async Task MessagesAndMailboxToMailbox_IsRejected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var message = await WriteFileAsync(temp, "hello.eml", TestFiles.CreateEml("Hello"));
+        var mailbox = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        var (exitCode, console) = await RunAsync(message, mailbox, "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("convert the mailboxes and the messages separately", console.Error);
+    }
+
+    [Fact]
+    public async Task FolderToPdf_IsRejected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        Directory.CreateDirectory(temp.GetFullPath("folder"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("folder"), "--output-format", "pdf");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is a folder", console.Error);
+    }
+
+    [Theory]
+    [InlineData("PST")]
+    [InlineData("MSG")]
+    [InlineData("TNEF")]
+    [InlineData("EML")]
+    [InlineData("Mbox")]
+    public void DetectFormat_Email(string expected)
+    {
+        var content = expected switch
+        {
+            "PST" => TestFiles.CreatePst(),
+            "MSG" => TestFiles.CreateMsg("Hello"),
+            "TNEF" => TestFiles.CreateTnef("Hello"),
+            "EML" => TestFiles.CreateEml("Hello"),
+            _ => TestFiles.CreateMbox("Hello"),
+        };
+        using var stream = new MemoryStream(content);
+        Assert.Equal(expected, Converter.DetectFormat(stream, "file")?.Name);
+        Assert.Equal(0, stream.Position);
+    }
+
+    [Fact]
+    public void DetectFormat_MarkdownThatLooksLikeAMessage()
+    {
+        using var stream = new MemoryStream("Subject: notes\r\n\r\nSome notes"u8.ToArray());
+        Assert.Equal("Markdown", Converter.DetectFormat(stream, "notes.md")?.Name);
     }
 
     [Theory]
@@ -899,6 +1398,8 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     [InlineData("tiny.png", "PNG")]
     [InlineData("doc.bin", "PDF")]
     [InlineData("book.bin", "EPUB")]
+    [InlineData("book.bin", "MOBI")]
+    [InlineData("book.prc", "MOBI")]
     [InlineData("archive.zip", "Zip")]
     [InlineData("archive.bin", "Zip")]
     [InlineData("comic.cbz", "CBZ")]
@@ -918,6 +1419,7 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
             ("PNG", _) => TestFiles.CreateImage(1, 1, ImageFormat.Png),
             ("PDF", _) => TestFiles.CreatePdf(1),
             ("EPUB", _) => TestFiles.CreateImageEpub(),
+            ("MOBI", _) => TestFiles.CreateTextMobi(),
             ("7z" or "CB7", _) => TestFiles.CreateSevenZip(entries),
             ("RAR" or "CBR", _) => TestFiles.CreateRar(entries),
             ("Tar" or "CBT", _) => TestFiles.CreateTar(gzip: false, entries),

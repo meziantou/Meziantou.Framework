@@ -3,6 +3,7 @@ using System.CommandLine.Parsing;
 using System.IO.Compression;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.Compression;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Pdf;
@@ -58,7 +59,7 @@ internal static class Program
         };
         var perInputOption = new Option<bool>("--per-input")
         {
-            Description = "Convert each input to its own PDF, comic book archive or TIFF file, instead of all the inputs to one file",
+            Description = "Convert each input to its own PDF, comic book archive, TIFF file or mailbox, instead of all the inputs to one file",
         };
         var perPageOption = new Option<bool>("--per-page")
         {
@@ -105,10 +106,10 @@ internal static class Program
         var gifMaxColorsOption = AddFormatOption(new Option<int?>("--gif-max-colors") { Description = "The maximum number of colors of the GIF images, from 2 to 256" }, format => format.ImageFormat is ImageFormat.Gif);
         gifMaxColorsOption.Validators.Add(result => ValidateRange(result, gifMaxColorsOption, 2, 256));
 
-        // Rendering of PDF and EPUB pages to images
+        // Rendering of PDF, EPUB and MOBI pages to images
         var dpiOption = new Option<double>("--dpi")
         {
-            Description = "The resolution of the images of the PDF and EPUB pages, in dots per inch",
+            Description = "The resolution of the images of the PDF, EPUB and MOBI pages, in dots per inch",
             DefaultValueFactory = _ => defaults.Dpi,
         };
         dpiOption.Validators.Add(result =>
@@ -194,16 +195,16 @@ internal static class Program
             Description = "How the EPUB pages are made. Auto uses the images of a book whose pages are images (comics), and lays out the text of the other books",
             DefaultValueFactory = _ => defaults.EpubMode,
         }, format => format.Kind is FileFormatKind.Epub);
-        // Layout of the text of EPUB, Markdown and HTML documents
-        static bool IsLaidOut(FileFormat format) => format.Kind is FileFormatKind.Epub or FileFormatKind.Markdown or FileFormatKind.Html;
+        // Layout of the text of EPUB, MOBI, Markdown and HTML documents
+        static bool IsLaidOut(FileFormat format) => format.Kind is FileFormatKind.Epub or FileFormatKind.Mobi or FileFormatKind.Markdown or FileFormatKind.Html;
         var layoutPageSizeOption = AddFormatOption(new Option<PageSize?>("--layout-page-size")
         {
-            Description = "The size of the pages the text of EPUB, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB, A4 for Markdown and HTML",
+            Description = "The size of the pages the text of EPUB, MOBI, Markdown and HTML documents is laid out on: A3, A4, A5, Letter, Legal, or a size such as 148x210mm. Default: A5 for EPUB and MOBI, A4 for Markdown and HTML",
             CustomParser = result => Parse(result, PageSize.ParseFixed),
         }, IsLaidOut);
         var layoutMarginOption = AddFormatOption(new Option<double>("--layout-margin")
         {
-            Description = "The margin of the pages the text of EPUB, Markdown and HTML documents is laid out on, in millimeters",
+            Description = "The margin of the pages the text of EPUB, MOBI, Markdown and HTML documents is laid out on, in millimeters",
             DefaultValueFactory = _ => defaults.LayoutMargin,
         }, IsLaidOut);
         layoutMarginOption.Validators.Add(result =>
@@ -213,7 +214,7 @@ internal static class Program
                 result.AddError("--layout-margin must be between 0 and 100");
             }
         });
-        var layoutFontSizeOption = AddFormatOption(new Option<double?>("--layout-font-size") { Description = "The size of the text of EPUB, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document" }, IsLaidOut);
+        var layoutFontSizeOption = AddFormatOption(new Option<double?>("--layout-font-size") { Description = "The size of the text of EPUB, MOBI, Markdown and HTML documents laid out on pages, in points. Default: the size of the style sheets of the document" }, IsLaidOut);
         layoutFontSizeOption.Validators.Add(result =>
         {
             if (result.GetValue(layoutFontSizeOption) is < 1 or > 200)
@@ -291,7 +292,27 @@ internal static class Program
         var sevenZipPasswordOption = AddFormatOption(new Option<string?>("--7z-password") { Description = "Encrypt the content of a 7z output with this password (AES-256)" }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
         var sevenZipEncryptHeadersOption = AddFormatOption(new Option<bool>("--7z-encrypt-headers") { Description = "Also encrypt the names of the files of a 7z output, with --7z-password" }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
 
-        var rootCommand = new RootCommand("Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT) and archives (zip, 7z, RAR, tar...)");
+        // Mailboxes
+        var mboxFormatOption = AddFormatOption(new Option<MboxFormat>("--mbox-format")
+        {
+            Description = "The variant of the mbox files of an mbox input or output: how the lines of the messages that start with 'From ' are escaped. Mboxrd is the format of most mail tools",
+            DefaultValueFactory = _ => defaults.MboxFormat,
+        }, format => format == FileFormat.Mbox);
+        var emailIncludeNonMailItemsOption = AddFormatOption(new Option<bool>("--email-include-non-mail-items")
+        {
+            Description = "Write the items of a PST or OST input that are not emails (contacts, appointments, tasks, notes...) as messages in an mbox, Maildir or EML output. Without it, they are skipped. A PST, OST or MSG output keeps them as they are",
+        }, format => format == FileFormat.Pst || format == FileFormat.Ost || format == FileFormat.Mbox || format == FileFormat.Maildir || format == FileFormat.Eml);
+        var pstFormatOption = AddFormatOption(new Option<PstFormat?>("--pst-format")
+        {
+            Description = "The format of a PST output: Unicode (Outlook 2003 and later) or Ansi (Outlook 97 to 2002, files up to 2 GB). Default: Unicode. An OST output has the Unicode4K format",
+        }, format => format == FileFormat.Pst);
+        var pstEncryptionOption = AddFormatOption(new Option<PstEncryption>("--pst-encryption")
+        {
+            Description = "How the data of a PST or OST output is obfuscated: None, Permute (the default of Outlook) or Cyclic. None of them needs a password, so they do not protect the data",
+            DefaultValueFactory = _ => defaults.PstEncryption,
+        }, format => format == FileFormat.Pst || format == FileFormat.Ost);
+
+        var rootCommand = new RootCommand("Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)");
         rootCommand.Arguments.Add(inputsArgument);
         Option[] options =
         [
@@ -309,6 +330,7 @@ internal static class Program
             comicImageFormatOption,
             archivePasswordOption, archiveCompressionLevelOption, zipMethodOption, zipPasswordOption, zipEncryptionOption,
             sevenZipMethodOption, sevenZipSolidOption, sevenZipPasswordOption, sevenZipEncryptHeadersOption,
+            mboxFormatOption, emailIncludeNonMailItemsOption, pstFormatOption, pstEncryptionOption,
         ];
         foreach (var option in options)
         {
@@ -395,6 +417,10 @@ internal static class Program
                 SevenZipSolid = parseResult.GetValue(sevenZipSolidOption),
                 SevenZipPassword = parseResult.GetValue(sevenZipPasswordOption),
                 SevenZipEncryptHeaders = parseResult.GetValue(sevenZipEncryptHeadersOption),
+                MboxFormat = parseResult.GetValue(mboxFormatOption),
+                EmailIncludeNonMailItems = parseResult.GetValue(emailIncludeNonMailItemsOption),
+                PstFileFormat = parseResult.GetValue(pstFormatOption),
+                PstEncryption = parseResult.GetValue(pstEncryptionOption),
             };
 
             if (settings.Inputs.Count is 0)
@@ -422,7 +448,7 @@ internal static class Program
         {
             error.WriteLine(ex.Message);
         }
-        catch (Exception ex) when (ex is IOException or InvalidDataException or FormatException or ArgumentException or InvalidOperationException or NotSupportedException or UnauthorizedAccessException or ImageException or Pdf.PdfException)
+        catch (Exception ex) when (ex is IOException or InvalidDataException or FormatException or ArgumentException or InvalidOperationException or NotSupportedException or UnauthorizedAccessException or ImageException or Pdf.PdfException or Email.EmailException)
         {
             // The errors of the files: invalid or unsupported content, files that cannot be read or written
             error.WriteLine(ex.Message);

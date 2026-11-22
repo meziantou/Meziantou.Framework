@@ -1,0 +1,30 @@
+name: 'Wait for artifact'
+description: 'Waits until an artifact uploaded by the current workflow run is listed by the artifacts API'
+
+# The artifacts API lists an artifact a few seconds after upload-artifact finalizes it. An action that looks the
+# artifact up by name right after the upload, such as deploy-pages, then reports that it does not exist.
+inputs:
+  name:
+    description: Name of the artifact
+    required: true
+  token:
+    description: 'Token with the "actions: read" permission'
+    default: ${{ github.token }}
+  timeout-seconds:
+    description: Maximum time to wait for the artifact to be listed
+    default: '180'
+  settle-seconds:
+    description: Time to wait after the artifact is listed, for the other services to see it too
+    default: '10'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Wait for artifact ${{ inputs.name }}
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        ARTIFACT_NAME: ${{ inputs.name }}
+        TIMEOUT_SECONDS: ${{ inputs.timeout-seconds }}
+        SETTLE_SECONDS: ${{ inputs.settle-seconds }}
+      run: '& "$env:GITHUB_ACTION_PATH/wait-for-artifact.ps1" -Name $env:ARTIFACT_NAME -TimeoutSeconds $env:TIMEOUT_SECONDS -SettleSeconds $env:SETTLE_SECONDS'

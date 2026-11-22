@@ -7,13 +7,6 @@ partial class HstsPreloadList
 {
     // HSTS preload data source: https://raw.githubusercontent.com/chromium/chromium/ba9567c435afe2bb2e71d1a348b3c65790a572db/net/http/transport_security_state_static.json
     // Commit date: 2026-11-18T20:01:07.0000000+00:00
-    // Entries: 95544
-    // The index is the label count minus one; see preload-hosts.txt for the host names themselves.
-    private static (string? ResourceBaseName, int EntryCount)[] GetResources() =>
-    [
-        ("preload_1", 53),
-        ("preload_2", 87229),
-        ("preload_3", 8112),
-        ("preload_4", 150),
-    ];
+    // See preload-hosts.txt for the host names themselves.
+    private const int ExpectedEntryCount = 95544;
 }

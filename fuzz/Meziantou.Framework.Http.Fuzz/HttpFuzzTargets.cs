@@ -6,8 +6,9 @@ namespace Meziantou.Framework.Http.Fuzz;
 /// <summary>
 /// A <c>Strict-Transport-Security</c> header that conforms to RFC 6797 must set the policy it describes, and any other
 /// header must leave the policy alone or set one it can describe. The HSTS policies must agree with a dictionary that
-/// models them, and evicting policies must only take hosts off. The links of a <c>Link</c> header must parse again to
-/// the same links once written in a canonical form.
+/// models them, and evicting policies must only take hosts off. The preload list must upgrade a host exactly when the
+/// entries it enumerates cover it. The links of a <c>Link</c> header must parse again to the same links once written in
+/// a canonical form.
 /// </summary>
 public static class HttpFuzzTargets
 {
@@ -16,6 +17,8 @@ public static class HttpFuzzTargets
     private static readonly DateTimeOffset Start = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
 
     private static readonly string[] HstsTokens = ["max-age", "max-age=", "includeSubDomains", "preload", ";", "; ", "=", "\"", "\\", "0", "31536000", "99999999999999999999", " ", "\t", "MAX-AGE", "includesubdomains"];
+
+    private static readonly string[] PreloadTokens = [".", "..", "com", "org", "net", "dev", "app", "co.uk", "www.", "github", "google", "accounts.", "xn--", "-", "_", "0", "COM", "\u00E9"];
 
     private static readonly string[] LinkTokens = ["<", ">", ";", ",", "=", "\"", "\\", " ", "\t", "\r\n", "rel", "rel=next", "rel=\"prev\"", "title*=UTF-8''", "anchor", "https://example.com/", "</a>; rel=next"];
 
@@ -26,6 +29,7 @@ public static class HttpFuzzTargets
     [
         new("http-hsts-header", HstsHeader) { Seeds = GetHstsHeaderSeeds, Dictionary = HstsTokens },
         new("http-hsts-policies", HstsPolicies) { Seeds = GetHstsPoliciesSeeds },
+        new("http-hsts-preload", HstsPreload) { Seeds = GetHstsPreloadSeeds, Dictionary = PreloadTokens },
         new("http-link-header", LinkHeader) { Seeds = GetLinkHeaderSeeds, Dictionary = LinkTokens },
     ];
 
@@ -228,6 +232,35 @@ public static class HttpFuzzTargets
         {
             FuzzAssert.True(enumerated.ContainsKey(host), $"The enumeration does not have the policy of '{host}'");
         }
+    }
+
+    /// <summary>
+    /// Looks a host up in the preload list, which is searched where it is stored, and checks the answer against a
+    /// dictionary of the entries the list enumerates.
+    /// </summary>
+    private static void HstsPreload(ReadOnlySpan<byte> data)
+    {
+        var host = FuzzText.Decode(data);
+        var policies = PreloadModel.Policies;
+        var mustUpgrade = policies.MustUpgradeRequest(host);
+        FuzzAssert.Equal(mustUpgrade, policies.MustUpgradeRequest(host.AsSpan()), $"The overloads of MustUpgradeRequest do not agree for '{host}'");
+
+        var hasPolicy = policies.TryGetPolicy(host, out var policy);
+        if (hasPolicy)
+        {
+            FuzzAssert.True(policy!.IsPreloaded, $"The policy of '{host}' is not preloaded");
+            FuzzAssert.True(PreloadModel.Entries.TryGetValue(policy.Host, out var includeSubdomains), $"The policy of '{host}' is for '{policy.Host}', which the list does not enumerate");
+            FuzzAssert.Equal(includeSubdomains, policy.IncludeSubdomains, $"The policy of '{host}' has another includeSubDomains than its entry");
+            FuzzAssert.True(mustUpgrade, $"'{host}' has a policy but is not upgraded");
+        }
+
+        // A host that is not ASCII is converted to Punycode, which the model does not do
+        var key = GetModelKey(host);
+        if (key is null)
+            return;
+
+        FuzzAssert.Equal(PreloadModel.Entries.ContainsKey(key), hasPolicy, $"TryGetPolicy('{host}') does not agree with the entries of the list");
+        FuzzAssert.Equal(ModelMustUpgrade(PreloadModel.Model, key, Start), mustUpgrade, $"MustUpgradeRequest('{host}') does not agree with the entries of the list");
     }
 
     /// <summary>Parses a Link header, writes its links in a canonical form, and parses them again.</summary>
@@ -504,6 +537,35 @@ public static class HttpFuzzTargets
         yield return new FuzzSeed("idn", (byte[])[4, 0, 1, 15, 3, 20, 3, 1, 9, 3, 5, 1, 16, 3, 7, 0, 0]);
     }
 
+    private static IEnumerable<FuzzSeed> GetHstsPreloadSeeds()
+    {
+        string[] hosts =
+        [
+            "github.com",
+            "www.github.com",
+            "sub.github.com",
+            "GitHub.COM",
+            "github.com.",
+            "accounts.google.com",
+            "google.com",
+            "dev",
+            "example.dev",
+            "com",
+            "example.com",
+            "xn--bcher-kva.example",
+            "b\u00FCcher.example",
+            "a..github.com",
+            ".github.com",
+            "githu.com",
+            "githubb.com",
+            "github.co",
+            "zzzzzzzz.zzz",
+            "0.0",
+            "",
+        ];
+        return hosts.Select((host, index) => FuzzSeed.FromText($"host-{index}", host));
+    }
+
     private static IEnumerable<FuzzSeed> GetLinkHeaderSeeds()
     {
         string[] headers =
@@ -527,6 +589,16 @@ public static class HttpFuzzTargets
         Unknown,
         Valid,
         Invalid,
+    }
+
+    /// <summary>A collection that has only the preload list, and the entries the list enumerates, built once.</summary>
+    private static class PreloadModel
+    {
+        public static readonly HstsDomainPolicyCollection Policies = new(includePreloadDomains: true);
+
+        public static readonly Dictionary<string, bool> Entries = Policies.ToDictionary(policy => policy.Host, policy => policy.IncludeSubdomains, StringComparer.Ordinal);
+
+        public static readonly Dictionary<string, (DateTimeOffset ExpiresAt, bool IncludeSubdomains)> Model = Entries.ToDictionary(entry => entry.Key, entry => (DateTimeOffset.MaxValue, entry.Value), StringComparer.Ordinal);
     }
 
     private sealed class ManualClock(DateTimeOffset now) : TimeProvider

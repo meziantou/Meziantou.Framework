@@ -6,7 +6,6 @@
 #pragma warning disable MA0042 // Do not use blocking calls in an async method
 using System.ComponentModel;
 using System.Diagnostics;
-using System.IO.Compression;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -25,12 +24,14 @@ if (!FullPath.CurrentDirectory().TryFindGitRepositoryRoot(out var root))
 var outputPath = root / "src" / "Meziantou.Framework.Http.Hsts";
 var outputFilePath = outputPath / "HstsPreloadList.g.cs";
 var manifestPath = outputPath / "preload-hosts.txt";
+
+// The resource HstsPreloadList reads; see PreloadEncoder for its layout
+const string ResourceName = "preload.bin";
 var csprojPath = outputPath / "Meziantou.Framework.Http.Hsts.csproj";
 
 var (entries, fileUrl, commitSha, commitDate) = await LoadEntries();
 
-// The generated code indexes the resources by label count, so every count from 1 to the deepest name needs a
-// slot even if nothing lands in it
+// The manifest lists the hosts by label count, and the reader needs the highest one
 var maxSegments = entries.Max(e => e.SegmentCount);
 var buckets = new List<Data>[maxSegments];
 for (var i = 0; i < maxSegments; i++)
@@ -43,13 +44,13 @@ foreach (var entry in entries)
     buckets[entry.SegmentCount - 1].Add(entry);
 }
 
-// Sorted for the manifest, which is what a human reviews; the payload re-orders its own copy
+// Sorted for the manifest, which is what a human reviews; the resource orders its own copy
 foreach (var bucket in buckets)
 {
     bucket.Sort((x, y) => string.CompareOrdinal(x.Name, y.Name));
 }
 
-// The manifest is the only reviewable form of this data: the compressed resources are opaque in a pull request
+// The manifest is the only reviewable form of this data: the encoded resource is opaque in a pull request
 // diff, so the added and removed hosts would otherwise be visible nowhere.
 var manifest = BuildManifest();
 CheckEntryCountAgainstTheCommittedManifest();
@@ -58,8 +59,7 @@ var preloadFiles = BuildPreloadData();
 var result = BuildGeneratedCode();
 
 // Everything is produced before anything is written, so a failure cannot leave the generated file and the
-// resources it indexes out of sync. The resources are rewritten before the stale ones are removed, so there
-// is no moment where a resource the generated file loads is missing.
+// resource it describes out of sync. The files of the formats before this one are removed.
 foreach (var (name, content) in preloadFiles)
 {
     File.WriteAllBytes(outputPath / name, content);
@@ -152,97 +152,14 @@ void CheckEntryCountAgainstTheCommittedManifest()
 
 Dictionary<string, byte[]> BuildPreloadData()
 {
-    var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
-    for (var segmentCount = 1; segmentCount <= maxSegments; segmentCount++)
+    return new Dictionary<string, byte[]>(StringComparer.Ordinal)
     {
-        var bucket = buckets[segmentCount - 1];
-        if (bucket.Count == 0)
-            continue;
-
-        // The same payload is written in both formats: a target framework embeds only the one it can read,
-        // gzip before .NET 11 and Zstandard from .NET 11 on, so neither assembly carries the other's copy.
-        // Zstandard is used where it exists because it makes the resource about 10% smaller and the list
-        // loads faster from it. The checksum keeps the corrupted-resource detection gzip provided with its CRC.
-        var payload = BuildBucketPayload(bucket);
-        var baseName = GetResourceBaseName(segmentCount);
-        files.Add(baseName + ".bin", Compress(payload, stream => new GZipStream(stream, CompressionLevel.SmallestSize)));
-        files.Add(baseName + ".zst", Compress(payload, stream => new ZstandardStream(stream, new ZstandardCompressionOptions
-        {
-            Quality = ZstandardCompressionOptions.MaxQuality,
-            AppendChecksum = true,
-        }, leaveOpen: false)));
-    }
-
-    return files;
-}
-
-// A lookup is an exact match, so the reader jumps straight to the names of the probe's length and binary
-// -searches them as fixed-width records. That is what the order here is for: names by length first, then
-// ordinally within a length, which lets the length of each name be dropped in favour of one count per
-// length. The layout is the entry count, the longest name length, how many names there are of each length
-// from 1 up, the names, then the include_subdomains bits in the same order.
-// The names are known to fit a byte each: LoadEntries rejects anything longer than 253.
-static byte[] BuildBucketPayload(List<Data> bucket)
-{
-    var ordered = bucket.OrderBy(entry => entry.Name.Length).ThenBy(entry => entry.Name, StringComparer.Ordinal).ToList();
-    var longestNameLength = ordered[^1].Name.Length;
-    var countsByLength = new int[longestNameLength + 1];
-    foreach (var entry in ordered)
-    {
-        countsByLength[entry.Name.Length]++;
-    }
-
-    using var ms = new MemoryStream();
-    using (var writer = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true))
-    {
-        writer.Write(ordered.Count);
-        writer.Write(longestNameLength);
-        for (var length = 1; length <= longestNameLength; length++)
-        {
-            writer.Write(countsByLength[length]);
-        }
-
-        foreach (var entry in ordered)
-        {
-            writer.Write(Encoding.ASCII.GetBytes(entry.Name));
-        }
-
-        var bitmap = new byte[(ordered.Count + 7) / 8];
-        for (var i = 0; i < ordered.Count; i++)
-        {
-            if (ordered[i].IncludeSubdomains)
-            {
-                bitmap[i >> 3] |= (byte)(1 << (i & 7));
-            }
-        }
-
-        writer.Write(bitmap);
-    }
-
-    return ms.ToArray();
-}
-
-static byte[] Compress(byte[] payload, Func<Stream, Stream> createCompressionStream)
-{
-    using var ms = new MemoryStream();
-    using (var compression = createCompressionStream(ms))
-    {
-        compression.Write(payload);
-    }
-
-    return ms.ToArray();
+        [ResourceName] = PreloadEncoder.Encode(entries, maxSegments),
+    };
 }
 
 string BuildGeneratedCode()
 {
-    var sb = new StringBuilder();
-    for (var segmentCount = 1; segmentCount <= maxSegments; segmentCount++)
-    {
-        var count = buckets[segmentCount - 1].Count;
-        var resource = count == 0 ? "null" : $"\"{GetResourceBaseName(segmentCount)}\"";
-        sb.Append($"        ({resource}, {count.ToString(CultureInfo.InvariantCulture)}),\n");
-    }
-
     return $$"""
         // <auto-generated />
         #nullable enable
@@ -253,19 +170,11 @@ string BuildGeneratedCode()
         {
             // HSTS preload data source: {{fileUrl}}
             // Commit date: {{commitDate.ToString("O", CultureInfo.InvariantCulture)}}
-            // Entries: {{entries.Count.ToString(CultureInfo.InvariantCulture)}}
-            // The index is the label count minus one; see preload-hosts.txt for the host names themselves.
-            private static (string? ResourceBaseName, int EntryCount)[] GetResources() =>
-            [
-        {{sb.ToString().TrimEnd('\n')}}
-            ];
+            // See preload-hosts.txt for the host names themselves.
+            private const int ExpectedEntryCount = {{entries.Count.ToString(CultureInfo.InvariantCulture)}};
         }
         """.ReplaceLineEndings("\n") + "\n";
 }
-
-// The extension is the consumer's business: it appends the one matching the format its target framework
-// reads. See HstsPreloadList.cs.
-static string GetResourceBaseName(int segmentCount) => $"preload_{segmentCount.ToString(CultureInfo.InvariantCulture)}";
 
 static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOffset commitDate)> LoadEntries()
 {
@@ -307,7 +216,7 @@ static async Task<(List<Data> entries, string fileUrl, string commit, DateTimeOf
     if (entries.Count == 0)
         throw new InvalidOperationException("No entry is a force-https entry; the upstream format has probably changed");
 
-    // The lookup binary-searches a blob of lower-case ASCII names, so the data is folded to that form here and
+    // The lookup compares lower-case ASCII names, so the data is folded to that form here and
     // anything that cannot be represented in it is rejected rather than silently mangled
     foreach (var entry in entries)
     {
@@ -361,8 +270,8 @@ static string GetTokenFromGitHubCli()
 
 static bool IsValidHostName(string name)
 {
-    // The blob stores names as ASCII bytes with a single length byte each, and the generated code has to be
-    // able to name the resource, so a preload entry outside this character set is data to reject.
+    // The resource codes ASCII characters, and the reader bounds a name at 253 bytes, so a preload entry outside
+    // this character set is data to reject.
     if (name.Length is 0 or > 253 || name[0] is '.' or '-' || name[^1] is '.' or '-')
         return false;
 

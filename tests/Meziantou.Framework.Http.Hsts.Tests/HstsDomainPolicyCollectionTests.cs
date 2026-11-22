@@ -1,7 +1,3 @@
-#if NET11_0_OR_GREATER
-using System.IO.Compression;
-#endif
-using System.Reflection;
 using Meziantou.Xunit;
 using Microsoft.Extensions.Time.Testing;
 
@@ -931,7 +927,7 @@ public sealed class HstsDomainPolicyCollectionTests
         // The manifest is the only form of this data a human reviews, and comparing the whole of what the
         // loader built to it is what catches a loader that reads the layout slightly wrong: a spot-checked
         // host name would still be found while the rest of the list silently shifted. Both sides are sorted
-        // because the resource groups the names by length, which is not the order the manifest lists them in.
+        // because the resource orders the names by their reversed labels, which is not the order of the manifest.
         var expected = ReadCommittedManifest();
         var actual = HstsPreloadList.Shared.GetEntries().ToList();
         Assert.HasCount(expected.Count, actual);
@@ -950,10 +946,10 @@ public sealed class HstsDomainPolicyCollectionTests
     [Fact]
     public void PreloadResources_EveryCommittedHostIsFoundByALookup()
     {
-        // Enumerating the list walks it in storage order, which would still line up if the index the lookup
-        // navigates by were wrong. This goes through that index for every host instead, so a name filed under
-        // the wrong length, or a group whose bounds are off by one, fails here rather than in production as a
-        // request that quietly stays on http.
+        // Enumerating the list walks it in storage order, which would still line up if the search the lookup
+        // does were wrong. This goes through that search for every host instead, so a block whose first name is
+        // compared wrongly, or a name skipped within a block, fails here rather than in production as a request
+        // that quietly stays on http.
         foreach (var (host, includeSubdomains) in ReadCommittedManifest())
         {
             if (!HstsPreloadList.Shared.TryGetValue(host, HstsDomainPolicyCollection.CountSegments(host), out var actual))
@@ -965,6 +961,54 @@ public sealed class HstsDomainPolicyCollectionTests
                 Assert.Fail($"'{host}' was found with includeSubdomains: {actual} but preload-hosts.txt has {includeSubdomains}.");
             }
         }
+    }
+
+    [Fact]
+    public void PreloadResources_NamesCloseToACommittedHostAreFoundOnlyIfCommitted()
+    {
+        // A lookup stops scanning a block as soon as the names pass the probe, so the names that sort right next
+        // to a committed one are where a wrong stop would show: they must be found exactly when they are committed.
+        var manifest = ReadCommittedManifest();
+        var hosts = manifest.Select(entry => entry.Host).ToHashSet(StringComparer.Ordinal);
+        foreach (var (host, _) in manifest)
+        {
+            string[] candidates = [host + "a", host + "-", host[..^1], host[..^1] + (char)(host[^1] + 1), host[..^1] + (char)(host[^1] - 1), "a" + host, "a." + host, host + ".a"];
+            foreach (var candidate in candidates)
+            {
+                var expected = hosts.Contains(candidate);
+                var found = candidate.Length > 0 && HstsPreloadList.Shared.TryGetValue(candidate, HstsDomainPolicyCollection.CountSegments(candidate), out _);
+                if (found != expected)
+                {
+                    Assert.Fail($"'{candidate}' is {(expected ? "" : "not ")}in preload-hosts.txt but the lookup {(found ? "finds" : "does not find")} it.");
+                }
+            }
+
+            Assert.True(HstsPreloadList.Shared.TryGetValue(host.ToUpperInvariant(), HstsDomainPolicyCollection.CountSegments(host), out _), host.ToUpperInvariant());
+        }
+    }
+
+    [Fact]
+    public void PreloadResources_AnInconsistentResourceIsRejected()
+    {
+        var data = ReadPreloadResource();
+        var count = HstsPreloadList.Shared.GetEntries().Count();
+
+        var list = HstsPreloadList.Create(data, count);
+        Assert.True(list.TryGetValue("github.com", 2, out var includeSubdomains));
+        Assert.True(includeSubdomains);
+
+        Assert.Throws<InvalidOperationException>(() => HstsPreloadList.Create(data, count + 1));
+        Assert.Throws<InvalidOperationException>(() => HstsPreloadList.Create(data.AsSpan(0, data.Length - 1), count));
+        Assert.Throws<InvalidOperationException>(() => HstsPreloadList.Create([.. data, 0], count));
+        Assert.Throws<InvalidOperationException>(() => HstsPreloadList.Create([], count));
+    }
+
+    private static byte[] ReadPreloadResource()
+    {
+        using var stream = typeof(HstsPreloadList).Assembly.GetManifestResourceStream("preload.bin")!;
+        using var result = new MemoryStream();
+        stream.CopyTo(result);
+        return result.ToArray();
     }
 
     private static List<(string Host, bool IncludeSubdomains)> ReadCommittedManifest()
@@ -983,38 +1027,4 @@ public sealed class HstsDomainPolicyCollectionTests
 
         return entries;
     }
-
-#if NET11_0_OR_GREATER
-    [Fact]
-    public void PreloadResources_TheGzipAndZstandardFormsHoldTheSamePayload()
-    {
-        // The library embeds only the form its target framework can decompress, so nothing it does would
-        // notice a regeneration that updated one form and left the other behind: .NET 10 would then ship a
-        // different preload list than .NET 11. Both forms are embedded in this test assembly to be compared
-        // here, which only .NET 11 can do because it is the first to decompress Zstandard.
-        var assembly = typeof(HstsDomainPolicyCollectionTests).Assembly;
-        var resourceNames = assembly.GetManifestResourceNames();
-        var gzipNames = resourceNames.Where(name => name.EndsWith(".bin", StringComparison.Ordinal)).Order(StringComparer.Ordinal).ToList();
-        Assert.NotEmpty(gzipNames);
-
-        foreach (var gzipName in gzipNames)
-        {
-            var zstandardName = Path.ChangeExtension(gzipName, ".zst");
-            Assert.Contains(zstandardName, resourceNames, StringComparer.Ordinal);
-
-            var fromGzip = Decompress(assembly, gzipName, stream => new GZipStream(stream, CompressionMode.Decompress));
-            var fromZstandard = Decompress(assembly, zstandardName, stream => new ZstandardStream(stream, CompressionMode.Decompress));
-            Assert.True(fromGzip.AsSpan().SequenceEqual(fromZstandard), $"'{gzipName}' and '{zstandardName}' do not hold the same data. Regenerate them both with the HSTS preload generator.");
-        }
-
-        static byte[] Decompress(Assembly assembly, string resourceName, Func<Stream, Stream> createDecompressionStream)
-        {
-            using var stream = assembly.GetManifestResourceStream(resourceName)!;
-            using var decompressed = createDecompressionStream(stream);
-            using var result = new MemoryStream();
-            decompressed.CopyTo(result);
-            return result.ToArray();
-        }
-    }
-#endif
 }

@@ -93,6 +93,13 @@
     <Exec Command="$(_PublicApiGeneratorCommand)" />
   </Target>
 
+  <!-- Report the calls to the APIs that are not supported on the browser (WebAssembly), unless the project opts out with
+       IsBrowserCompatible=false. The analyzers and source generators run in the compiler, and the command-line tools in a
+       terminal, not in a browser application. -->
+  <ItemGroup Condition="'$(IsBrowserCompatible)' == 'true' and '$(MSBuildProjectExtension)' == '.csproj' and '$(EnforceExtendedAnalyzerRules)' != 'true' and '$(OutputType)' != 'Exe' and '$(OutputType)' != 'WinExe'">
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
   <!-- The embedded resources that set Compression="Deflate" are compressed by the build -->
   <Import Project="$(MSBuildThisFileDirectory)../eng/CompressedEmbeddedResources.targets" />
 </Project>

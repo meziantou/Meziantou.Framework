@@ -372,6 +372,10 @@ internal sealed class ZipWriter
 
 #if NET11_0_OR_GREATER
             case ZipCompressionMethod.Zstandard:
+                // ZstandardStream is not available on the browser (WebAssembly)
+                if (OperatingSystem.IsBrowser())
+                    throw new PlatformNotSupportedException("The Zstandard compression is not supported on the browser.");
+
                 return new ZstandardStream(output, level, leaveOpen: true);
 #endif
 

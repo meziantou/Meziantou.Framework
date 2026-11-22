@@ -181,6 +181,10 @@ internal sealed class WoffExtendedData
 
     private static void Unbrotli(byte[] compressed, Span<byte> destination)
     {
+        // Brotli is not available on the browser (WebAssembly)
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("The Brotli-compressed extended metadata of a WOFF2 font is not supported on the browser.");
+
         try
         {
             using var input = new MemoryStream(compressed, writable: false);

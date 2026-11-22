@@ -258,6 +258,7 @@ namespace Meziantou.Framework.Email
         public long MaxSize { get => throw null; set { } }
     }
 
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public static class Smime
     {
         public static Meziantou.Framework.Email.MimeEntity Decrypt(Meziantou.Framework.Email.MimeEntity entity, System.Security.Cryptography.X509Certificates.X509Certificate2Collection certificates, Meziantou.Framework.Email.MimeReadOptions? options = null) => throw null;

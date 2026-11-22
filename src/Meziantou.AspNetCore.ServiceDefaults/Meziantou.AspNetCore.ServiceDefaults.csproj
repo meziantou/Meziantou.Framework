@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <IsTrimmable>false</IsTrimmable>
     <Version>2.0.21</Version>
     <Description>Opinionated ASP.NET Core defaults for OpenTelemetry, health checks, resilience, service discovery, and security</Description>

@@ -20,6 +20,10 @@ internal sealed class AesCbcEncryptStream : WriteOnlyStreamBase
 
     public AesCbcEncryptStream(Stream inner, ReadOnlySpan<byte> key, ReadOnlySpan<byte> iv, bool leaveOpen)
     {
+        // AES is not available on the browser (WebAssembly)
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("AES encryption is not supported on the browser.");
+
         _inner = inner;
         _leaveOpen = leaveOpen;
         _aes = Aes.Create();

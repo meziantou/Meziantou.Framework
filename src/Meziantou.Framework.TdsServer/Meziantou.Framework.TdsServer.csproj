@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <!-- Maps the SQL Server collations to named cultures -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>

@@ -350,6 +350,10 @@ internal sealed class JpegXlJpegReconstructionData
     /// <exception cref="UnsupportedImageFeatureException">The file has more of something than the box can describe.</exception>
     public static byte[] Write(JpegBitstreamModel model, ReadOnlySpan<int> segmentKinds, int brotliQuality, AllocationScope scope)
     {
+        // Brotli is not available on the browser (WebAssembly)
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("Writing the JPEG reconstruction data of a JPEG XL file is not supported on the browser.");
+
         ArgumentNullException.ThrowIfNull(model);
         ArgumentNullException.ThrowIfNull(scope);
         using var writer = new LsbBitWriter(scope);

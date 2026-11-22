@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- The encryption (MD5, AES), the file identifiers (MD5) and the signatures (CMS) use cryptography that the browser does not support -->
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <RootNamespace>Meziantou.Framework.Pdf</RootNamespace>
     <Version>1.0.14</Version>
     <Description>Fully managed PDF library for .NET, written from ISO 32000-2: an object model, a reader that recovers broken files (cross-reference tables and streams, object streams, incremental updates), the standard filters (CCITT and JBIG2 included), full and incremental writers, a document API (pages, content builder, standard 14 fonts and embedded font subsets, shadings, patterns, forms and transparency, images, metadata, outlines, links, text extraction), a renderer of the pages to images, and PAdES digital signatures and their verification.</Description>

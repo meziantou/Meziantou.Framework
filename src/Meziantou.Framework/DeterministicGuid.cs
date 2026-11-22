@@ -151,6 +151,10 @@ public static class DeterministicGuid
         Span<byte> hash = stackalloc byte[20];
         if (version is DeterministicGuidVersion.Version3)
         {
+            // MD5 is not available in the browser (WebAssembly)
+            if (OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException("Version 3 GUIDs use MD5, which is not supported on the browser. Use version 5 instead.");
+
             if (!MD5.TryHashData(data, hash, out _))
                 throw new InvalidOperationException("Cannot compute MD5 hash");
         }

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworksWindows)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <IsTrimmable>false</IsTrimmable>
     <UseWPF>true</UseWPF>
     <Version>4.0.2</Version>

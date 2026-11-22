@@ -25,6 +25,10 @@ internal sealed class WinZipAesCipher : IDisposable
 
     private WinZipAesCipher(ReadOnlySpan<byte> aesKey, ReadOnlySpan<byte> hmacKey)
     {
+        // AES is not available on the browser (WebAssembly)
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("WinZip AES encryption is not supported on the browser.");
+
         _aes = Aes.Create();
         _aes.Key = aesKey.ToArray();
         _hmac = IncrementalHash.CreateHMAC(HashAlgorithmName.SHA1, hmacKey);

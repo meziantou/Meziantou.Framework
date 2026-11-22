@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>2.0.15</Version>
     <Description>Fluent API for wrapping System.Diagnostics.Process</Description>

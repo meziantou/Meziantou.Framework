@@ -222,6 +222,7 @@ public static partial class ProcessExtensions
         return children;
     }
 
+    [SupportedOSPlatform("windows")]
     private static void GetChildProcesses(List<ProcessEntry> entries, int processId, DateTime startTime, List<Process> children, int maxDepth, int currentDepth)
     {
         foreach (var entry in entries)
@@ -252,6 +253,7 @@ public static partial class ProcessExtensions
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static Process? TryGetProcessById(int processId)
     {
         try
@@ -269,6 +271,7 @@ public static partial class ProcessExtensions
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static DateTime? TryGetStartTime(Process process)
     {
         try

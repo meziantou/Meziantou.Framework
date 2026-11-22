@@ -23,8 +23,8 @@
     <PackageReference Include="System.IO.Hashing" Version="11.0.0" />
   </ItemGroup>
 
-  <!-- The Zstandard decoder of Meziantou.Framework.Imaging, for the targets older than .NET 11 (which has ZstandardStream): the files are compiled here too, in the namespace of the library, so that they stay internal to both -->
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net11.0'))">
+  <!-- The Zstandard decoder of Meziantou.Framework.Imaging, for the targets older than .NET 11 and for the browser (ZstandardStream is not available there): the files are compiled here too, in the namespace of the library, so that they stay internal to both -->
+  <ItemGroup>
     <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/ZstdDecoder.cs" Link="Internals/Shared/ZstdDecoder.cs" />
     <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/XxHash64.cs" Link="Internals/Shared/XxHash64.cs" />
   </ItemGroup>

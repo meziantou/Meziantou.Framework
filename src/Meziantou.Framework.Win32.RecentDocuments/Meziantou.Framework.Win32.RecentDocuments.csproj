@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <Description>.NET wrapper for Windows Recent Documents</Description>
     <PackageTags>windows, win32, recent-documents, shell, jumplist</PackageTags>
     <Version>2.0.11</Version>

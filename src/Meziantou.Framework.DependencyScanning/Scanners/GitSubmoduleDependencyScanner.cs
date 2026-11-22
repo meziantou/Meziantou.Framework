@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.DependencyScanning.Locations;
 
@@ -239,6 +240,10 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
             if (string.IsNullOrWhiteSpace(newValue))
                 throw new ArgumentException("The new submodule commit SHA cannot be null or empty.", nameof(newValue));
 
+            // Updating a submodule runs git, and the browser (WebAssembly) cannot start processes
+            if (OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException("Updating a Git submodule is not supported on the browser.");
+
             if (oldValue is not null)
             {
                 var gitLinks = await GitIndexReader.ReadGitLinksAsync(FileSystem, _gitDirectory, cancellationToken).ConfigureAwait(false);
@@ -259,6 +264,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static async Task<string> GetAvailableGitProcessNameAsync(CancellationToken cancellationToken)
     {
         if (await IsProcessAvailableAsync("git", cancellationToken).ConfigureAwait(false))
@@ -270,6 +276,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         throw new InvalidOperationException("Cannot update Git submodule because neither 'git' nor 'mingit' is available.");
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static async Task<bool> IsProcessAvailableAsync(string processName, CancellationToken cancellationToken)
     {
         try
@@ -291,6 +298,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static async Task RunGitCommandAsync(string processName, string workingDirectory, IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         using var process = StartGitProcess(processName, workingDirectory, arguments) ?? throw new DependencyScannerException($"Cannot start process '{processName}'.");
@@ -307,6 +315,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         }
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static Process? StartGitProcess(string processName, string? workingDirectory, IReadOnlyList<string> arguments)
     {
         var startInfo = new ProcessStartInfo(processName)
@@ -336,6 +345,7 @@ public sealed class GitSubmoduleDependencyScanner : DependencyScanner
         return process;
     }
 
+    [UnsupportedOSPlatform("browser")]
     private static async Task WaitForExitOrKillAsync(Process process, CancellationToken cancellationToken)
     {
         try

@@ -1,6 +1,8 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- The embedded CLDR and time zone data are compressed with Brotli, and String.prototype.normalize uses NFKC/NFKD, which the browser does not support -->
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <RootNamespace>Meziantou.Framework.JavaScriptEngine</RootNamespace>
     <Description>An ECMAScript engine written in .NET: a parser, a bytecode compiler and an interpreter, validated by test262.</Description>
     <PackageTags>javascript, ecmascript, js, engine, interpreter</PackageTags>

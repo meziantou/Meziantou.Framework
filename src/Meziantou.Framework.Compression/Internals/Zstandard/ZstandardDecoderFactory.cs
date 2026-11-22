@@ -4,27 +4,25 @@ using Meziantou.Framework.Compression.Internals.IO;
 namespace Meziantou.Framework.Compression.Internals.Zstandard;
 
 /// <summary>
-/// Creates the decoder of Zstandard data: <c>ZstandardStream</c> from .NET 11, and before it the managed decoder of
-/// Meziantou.Framework.Imaging, which decodes the whole data in memory.
+/// Creates the decoder of Zstandard data: <c>ZstandardStream</c> from .NET 11, and before it or on the browser (WebAssembly)
+/// the managed decoder of Meziantou.Framework.Imaging, which decodes the whole data in memory.
 /// </summary>
 internal static class ZstandardDecoderFactory
 {
     /// <param name="input">The compressed data.</param>
     /// <param name="outputLength">The length of the decoded data, or -1 when it is not known.</param>
-    /// <param name="maxMemoryUsage">The maximum length of the compressed and of the decoded data, before .NET 11.</param>
+    /// <param name="maxMemoryUsage">The maximum length of the compressed and of the decoded data, when the managed decoder is used.</param>
     /// <param name="leaveOpen"><see langword="true"/> to leave <paramref name="input"/> open when the stream is disposed.</param>
     public static Stream Create(Stream input, long outputLength, long maxMemoryUsage, bool leaveOpen)
     {
 #if NET11_0_OR_GREATER
-        _ = outputLength;
-        _ = maxMemoryUsage;
-        return new ZstandardStream(input, CompressionMode.Decompress, leaveOpen);
-#else
-        return new BufferedZstandardDecoderStream(input, outputLength, maxMemoryUsage, leaveOpen);
+        if (!OperatingSystem.IsBrowser())
+            return new ZstandardStream(input, CompressionMode.Decompress, leaveOpen);
 #endif
+
+        return new BufferedZstandardDecoderStream(input, outputLength, maxMemoryUsage, leaveOpen);
     }
 
-#if !NET11_0_OR_GREATER
     /// <summary>
     /// Reads all the compressed data, then decodes them in memory with <see cref="ZstdDecoder"/>, whose frames need the
     /// whole output to resolve their matches. The data are limited to what an array holds, and to the memory limit.
@@ -97,5 +95,4 @@ internal static class ZstandardDecoderFactory
             base.Dispose(disposing);
         }
     }
-#endif
 }

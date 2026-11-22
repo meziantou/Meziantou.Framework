@@ -24,6 +24,7 @@ namespace Meziantou.Framework
         public void Parse(string[] args) { }
     }
 
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public static class Prompt
     {
         public static bool YesNo(string question, bool? defaultValue) => throw null;

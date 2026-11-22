@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <!-- Converts internationalized domain names with IdnMapping -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>

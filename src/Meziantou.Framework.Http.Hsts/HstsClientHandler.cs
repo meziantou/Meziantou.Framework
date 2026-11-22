@@ -159,6 +159,10 @@ public sealed class HstsClientHandler : DelegatingHandler
     // explicitly configured not to follow them keeps that behavior.
     private static int TakeOverAutomaticRedirections(HttpMessageHandler? handler)
     {
+        // On the browser (WebAssembly), the requests go through fetch, which follows the redirections and enforces HSTS itself
+        if (OperatingSystem.IsBrowser())
+            return 0;
+
         while (handler is DelegatingHandler delegatingHandler)
         {
             handler = delegatingHandler.InnerHandler;

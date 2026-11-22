@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <RootNamespace>Meziantou.Framework.WebPlatform</RootNamespace>
     <Version>1.0.17</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

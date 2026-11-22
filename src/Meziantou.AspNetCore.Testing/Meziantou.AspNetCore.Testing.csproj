@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <Version>0.1.5</Version>
     <IsTrimmable>false</IsTrimmable>
     <!-- Microsoft.JSInterop does not pass trim analysis (IL2065/IL2111) -->

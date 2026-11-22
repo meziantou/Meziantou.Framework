@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <!-- Captures the culture data and the time zone names -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>

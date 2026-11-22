@@ -251,6 +251,10 @@ internal static class Woff2Reader
     /// <summary>Expands the Brotli stream of the tables, whose expanded length the table directory gives.</summary>
     private static void Decompress(ReadOnlySpan<byte> compressed, Span<byte> destination)
     {
+        // Brotli is not available on the browser (WebAssembly)
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("Reading a WOFF2 font is not supported on the browser.");
+
         using var decoder = new BrotliDecoder();
         var status = decoder.Decompress(compressed, destination, out var consumed, out var written);
         if (status == OperationStatus.DestinationTooSmall && written == destination.Length)

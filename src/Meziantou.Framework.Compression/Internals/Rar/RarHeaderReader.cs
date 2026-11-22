@@ -114,6 +114,10 @@ internal sealed class RarHeaderReader
         uint crc;
         if (_rar5HeaderKey is not null)
         {
+            // AES is not available on the browser (WebAssembly)
+            if (OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException("The encrypted headers of RAR archives are not supported on the browser.");
+
             Span<byte> iv = stackalloc byte[16];
             var read = _input.ReadAtMost(iv);
             if (read is 0)
@@ -492,6 +496,10 @@ internal sealed class RarHeaderReader
         byte[] header;
         if (_rar4HeadersEncrypted)
         {
+            // AES is not available on the browser (WebAssembly)
+            if (OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException("The encrypted headers of RAR archives are not supported on the browser.");
+
             Span<byte> salt = stackalloc byte[8];
             var read = _input.ReadAtMost(salt);
             if (read < 8)

@@ -118,6 +118,7 @@ internal sealed class HevcSubstreamJob : IDisposable
     }
 
     /// <summary>Waits until a substream decoded the coding tree block <paramref name="ctbAddrInTs"/>, or stopped.</summary>
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "The substreams are decoded concurrently only when the platform has threads: HevcSliceCoder decodes them sequentially on the browser")]
     public void WaitFor(int substream, int ctbAddrInTs)
     {
         if (Volatile.Read(ref _progress[substream]) > ctbAddrInTs)

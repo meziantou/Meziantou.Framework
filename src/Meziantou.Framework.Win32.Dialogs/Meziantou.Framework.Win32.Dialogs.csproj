@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <IsTrimmable>false</IsTrimmable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Version>4.0.10</Version>

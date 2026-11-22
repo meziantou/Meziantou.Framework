@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
     <Version>3.0.3</Version>
     <Description>TagHelpers for Razor Pages</Description>

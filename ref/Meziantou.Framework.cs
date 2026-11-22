@@ -391,6 +391,7 @@ namespace Meziantou.Framework
         public bool Equals(Meziantou.Framework.ProcessEntry other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public System.Diagnostics.Process ToProcess() => throw null;
         public override string ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.ProcessEntry left, Meziantou.Framework.ProcessEntry right) => throw null;

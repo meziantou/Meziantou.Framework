@@ -20,6 +20,10 @@ internal static class BoundedBrotliDecoder
     /// <exception cref="ImageResourceLimitException">The decompressed size exceeds the metadata limit.</exception>
     public static byte[]? TryDecompress(ReadOnlySpan<byte> compressed, InputResourceTracker tracker)
     {
+        // Brotli is not available on the browser (WebAssembly)
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("The Brotli-compressed data of the image is not supported on the browser.");
+
         ArgumentNullException.ThrowIfNull(tracker);
         var chunk = ArrayPool<byte>.Shared.Rent(ChunkSize);
         try

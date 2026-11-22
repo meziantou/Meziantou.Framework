@@ -45,6 +45,11 @@ internal sealed class AsyncEnumerableKeyValuePairConverterFactory : HumanReadabl
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<KeyValuePair<string, T>>? value, HumanReadableSerializerOptions options)
         {
             Debug.Assert(value is not null);
+
+            // Writing the items requires blocking on the asynchronous enumeration, which the browser (WebAssembly) does not support
+            if (OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException("Serializing an IAsyncEnumerable<T> is not supported on the browser.");
+
             EnumerableKeyValuePairConverter<T>.WriteValueCore(writer, value.ToBlockingEnumerable(), options);
         }
     }

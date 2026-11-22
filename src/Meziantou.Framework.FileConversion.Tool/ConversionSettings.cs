@@ -91,8 +91,8 @@ internal sealed class ConversionSettings
 
     public bool PdfFlattenForms { get; init; }
 
-    // Layout of the text of EPUB, Markdown and HTML documents
-    /// <summary>Gets the size of the pages, or null for the default size of the format: A5 for EPUB, A4 for Markdown and HTML.</summary>
+    // Layout of the text of EPUB, MOBI, Markdown and HTML documents
+    /// <summary>Gets the size of the pages, or null for the default size of the format: A5 for EPUB and MOBI, A4 for Markdown and HTML.</summary>
     public PdfSize? LayoutPageSize { get; init; }
 
     public double LayoutMargin { get; init; } = 15;

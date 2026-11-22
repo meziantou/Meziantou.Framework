@@ -28,7 +28,7 @@ A relative path is relative to the current folder. The folders of the output fil
 
 `{page}` and `{index}` are padded with zeros to the number of digits of the number of files, so that the files sort in
 order: `page-01.png` to `page-12.png` for 12 pages. When the number of pages is only known after the conversion (an
-EPUB book laid out as images), they have 4 digits.
+EPUB or Kindle book laid out as images), they have 4 digits.
 
 A format spec sets the number of digits: `{page:000}` gives `page-001.png`. `{count}` is not padded, unless it has a
 format spec too.

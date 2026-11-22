@@ -32,6 +32,7 @@ internal abstract class InputDocument : IDisposable
         FileFormatKind.Pdf => PdfInputDocument.Open(path, settings, outputFormat),
         FileFormatKind.Comic or FileFormatKind.Archive => ArchiveInputDocument.Open(path, format, settings),
         FileFormatKind.Epub => EpubInputDocument.Open(path, settings, outputFormat, cancellationToken),
+        FileFormatKind.Mobi => MobiInputDocument.Open(path, settings, outputFormat, cancellationToken),
         FileFormatKind.Markdown or FileFormatKind.Html => HtmlInputDocument.Open(path, format, settings, outputFormat),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format cannot be read"),
     };

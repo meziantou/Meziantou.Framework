@@ -107,6 +107,7 @@ internal static partial class ColumnBreaker
         {
             _started = true;
             _hasContent = true;
+            _consumed = _nested.ResumeConsumedBlockSize;
             var map = _nested.Map;
             map.Add(double.NegativeInfinity, 0, 0, isBreak: true);
             _nested.Columns.Add(new NestedColumn { OuterIndex = index - 1, Start = double.NegativeInfinity, End = position, BlockSize = position });
@@ -209,6 +210,7 @@ internal static partial class ColumnBreaker
                 }
 
                 _consumed += offset - start;
+                _nested.ConsumedBlockSizes[index] = _consumed;
                 if (_phase == Phase.Done && !_isBoxEnded)
                 {
                     _endOffset = offset + _endEdges;

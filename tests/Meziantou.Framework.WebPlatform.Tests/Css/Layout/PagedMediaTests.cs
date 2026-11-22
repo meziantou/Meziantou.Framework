@@ -553,6 +553,50 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal(105, pages.Sum(page => CountWords(page.Content)));
     }
 
+    [Theory]
+    [InlineData("height: 400px")]
+    [InlineData("max-height: 400px")]
+    public void Pages_MultiColumnContainerWithABlockSizeContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt(string style)
+    {
+        // The content box is 400px tall: 300px in the first page, the rest (100px) in the second one, whose columns are 200px wide;
+        // the content that does not fit in its columns overflows them in the inline direction, in more columns
+        var items = string.Concat(Enumerable.Range(0, 10).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div id=m style='columns: 2; column-gap: 0; {{style}}'>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 200, 300)), (1, new PhysicalRect(0, 0, 400, 100))], GetPageRects(pages, document.GetElementById("m")!));
+        for (var i = 6; i < 10; i++)
+        {
+            Assert.Equal([(1, new PhysicalRect((i - 6) * 200, 0, 200, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+    }
+
+    [Fact]
+    public void Pages_MultiColumnContainerWithMonolithicContentTallerThanAColumnContinuedOnAPageOfAnotherInlineSizeIsLaidOutInIt()
+    {
+        // The monolithic box taller than a column is not sliced by the columns: it overflows its column, and the next column
+        // starts after it. The column of the second page continues after the last column of the first page, 200px wide
+        var items = string.Concat(Enumerable.Range(0, 4).Select(i => $"<div id=r{i} style='height: 100px; break-inside: avoid'></div>"));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='columns: 2; column-gap: 0'><div id=image style='contain: size; height: 400px'></div>{{items}}</div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(2, pages.Count);
+        Assert.Equal([(0, new PhysicalRect(0, 0, 100, 400))], GetPageRects(pages, document.GetElementById("image")!));
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Equal([(0, new PhysicalRect(100, i * 100, 100, 100))], GetPageRects(pages, document.GetElementById("r" + i.ToString(CultureInfo.InvariantCulture))!));
+        }
+
+        Assert.Equal([(1, new PhysicalRect(0, 0, 200, 100))], GetPageRects(pages, document.GetElementById("r3")!));
+    }
+
     [Fact]
     public void Pages_MultiColumnContainerContinuedOnPagesOfSeveralInlineSizesIsLaidOutInThem()
     {

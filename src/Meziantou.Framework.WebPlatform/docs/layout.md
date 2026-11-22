@@ -3343,10 +3343,13 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   position), and the segment starts inside the border box of the container, after its block-start
   edges (`FlowCursor.ResumeAt` resumes the container). The strips of the nested multi-column containers are laid out once the
   strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). This needs one row of columns
-  per page between the spanners (`IsResumableColumns`: no `column-height`, definite or maximum block size, absolutely
-  positioned box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`), or between
-  the rows of a container of the columns, in its only row that it crosses, or in a row of items side by side
-  (`BreakAnchor.Items`; not in monolithic content that the break slices): these anchors are checked against the content of the
+  per page between the spanners (`IsResumableColumns`: no `column-height`, absolutely positioned box or nested multi-column
+  container; a container with a definite or maximum block size continues with the block size of its content box that remains,
+  `BreakAnchor.ColumnsConsumedBlockSize` from `NestedColumns.ConsumedBlockSizes`, `NestedColumns.ResumeConsumedBlockSize`, and
+  the positions of the strip after the start of the segment are moved up by it, `FragmentationFlow.ResumeShift`, so that the
+  block-end edge of the container and the content after it follow) and a break outside of a parallel flow
+  (`CrossesParallelFlow`), or between the rows of a container of the columns, in its only row that it crosses, or in a row of
+  items side by side (`BreakAnchor.Items`; the columns do not slice monolithic content, which overflows its column): these anchors are checked against the content of the
   pages (`ResolveAnchorOfPage`), the content of their containers resumes in the strip of the columns (`LayoutContext.RowResumes`,
   the parallel flows resumed by `FlowCursor.ResumeAt`), and the items of a broken row are measured and aligned in that strip
   (`MeasureRowBreak` on the strip of the columns, `FindResumableColumns`).

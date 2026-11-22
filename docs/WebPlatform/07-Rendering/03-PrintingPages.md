@@ -82,12 +82,13 @@ var pages = context.RenderPages();
 - A page of another width may also start in the middle of a multi-column container: its columns in the new page have the
   width of the new page, and continue with the content of the last column of the previous page (a paragraph continues from
   its next line); its last columns are balanced as usual. The new page may also start before or after a column spanner
-  (`column-span: all`), or in the columns after it. This needs columns that fill the height of the pages: without
-  `column-height`, height or maximum height, and with no absolutely positioned box or multi-column container in the columns.
-  The break at the end of the last column may be anywhere it may be outside of the columns: between two boxes or two
-  lines, between the rows of a table, a grid or a flex container, or inside one of their rows (the content of its cells or
-  items continues side by side, as described above); not inside an image or a line taller than the page. Otherwise the page
-  keeps the width of the previous one.
+  (`column-span: all`), or in the columns after it. A container with a height or a maximum height continues with the rest
+  of it (its content that does not fit overflows in more columns, as usual). The break at the end of the last column may be
+  anywhere it may be outside of the columns: between two boxes or two lines, between the rows of a table, a grid or a flex
+  container, or inside one of their rows (the content of its cells or items continues side by side, as described above). An
+  image or a line taller than a column is not sliced by the columns: it overflows its column. The page keeps the width of
+  the previous one when the container has `column-height`, or absolutely positioned boxes or multi-column containers in its
+  columns.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

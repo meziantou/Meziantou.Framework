@@ -64,7 +64,8 @@ internal static class EmojiSequencesWriter
         }
 
         var tables = new StringBuilder();
-        var sizes = new List<(string Name, int Bytes)>();
+        var resource = new TableResource("UnicodeEmojiSequences.bin");
+        var sizes = resource.Sizes;
         var arms = new StringBuilder();
         var statistics = new StringBuilder();
         for (var i = 0; i < Properties.Length; i++)
@@ -84,7 +85,7 @@ internal static class EmojiSequencesWriter
                 bytes.AddRange(PropertyTablesWriter.EncodeUInt24(sequence));
             }
 
-            PropertyTablesWriter.AppendBytes(tables, sizes, table, [.. bytes], $"{name}: for each sequence, the number of code points (1 byte) then the code points (3 bytes each, little-endian).");
+            PropertyTablesWriter.AppendBytes(tables, resource, table, [.. bytes], $"{name}: for each sequence, the number of code points (1 byte) then the code points (3 bytes each, little-endian).");
             arms.Append(CultureInfo.InvariantCulture, $"            {i} => {table},\n");
             statistics.Append(CultureInfo.InvariantCulture, $"//   - {name}: {list.Count} sequences\n");
         }
@@ -102,6 +103,8 @@ internal static class EmojiSequencesWriter
 
             #nullable enable
 
+            using System.Runtime.CompilerServices;
+
             namespace Meziantou.Framework;
 
             /// <summary>The sequences of the emoji properties of strings.</summary>
@@ -116,12 +119,16 @@ internal static class EmojiSequencesWriter
                         _ => default,
                     };
                 }
+
+            {{resource.GetDeclaration()}}
             {{tables.ToString().TrimEnd()}}
             }
 
             """).ReplaceLineEndings("\n");
 
         Console.WriteLine($"  Emoji sequences: {sequences.Values.Sum(list => list.Count)} sequences");
-        return await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeEmojiSequences.g.cs", content2);
+        var updated = await resource.WriteAsync(outputPath / "Data");
+        updated |= await GeneratorFiles.WriteTextIfChanged(outputPath / "UnicodeEmojiSequences.g.cs", content2);
+        return updated;
     }
 }

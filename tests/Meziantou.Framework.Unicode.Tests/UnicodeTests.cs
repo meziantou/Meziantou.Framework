@@ -1042,6 +1042,41 @@ public sealed class UnicodeTests
         Assert.Equal(expectedName, info.Value.Name);
     }
 
+    [Theory]
+    [InlineData(0x0041, "LATIN CAPITAL LETTER A")]
+    [InlineData(0x002D, "HYPHEN-MINUS")]
+    [InlineData(0x0F0F, "TIBETAN MARK TSHEG SHAD")]
+    [InlineData(0xFDFA, "ARABIC LIGATURE SALLALLAHOU ALAYHE WASALLAM")]
+    [InlineData(0x1F9D1, "ADULT")]
+    [InlineData(0xE0100, "VARIATION SELECTOR-17")]
+    public void GetCharacterInfo_DecodesNames(int codePoint, string expectedName)
+    {
+        // The names are front-coded by word: the words that more than one name has are stored once, the others in the name.
+        var info = Unicode.GetCharacterInfo(new Rune(codePoint));
+
+        Assert.NotNull(info);
+        Assert.Equal(expectedName, info.Value.Name);
+    }
+
+    [Theory]
+    [InlineData(0xF900, "CJK COMPATIBILITY IDEOGRAPH-F900")]
+    [InlineData(0xFAD9, "CJK COMPATIBILITY IDEOGRAPH-FAD9")]
+    [InlineData(0x2F800, "CJK COMPATIBILITY IDEOGRAPH-2F800")]
+    [InlineData(0x13460, "EGYPTIAN HIEROGLYPH-13460")]
+    [InlineData(0x18B00, "KHITAN SMALL SCRIPT CHARACTER-18B00")]
+    [InlineData(0x1B170, "NUSHU CHARACTER-1B170")]
+    public void GetCharacterInfo_DerivesNamesThatEndWithTheCodePoint(int codePoint, string expectedName)
+    {
+        // These names are stored as ranges of a prefix, then built from the code point (rule NR2 of UAX #44).
+        var first = Unicode.GetCharacterInfo(new Rune(codePoint));
+        var second = Unicode.GetCharacterInfo(new Rune(codePoint));
+
+        Assert.NotNull(first);
+        Assert.NotNull(second);
+        Assert.Equal(expectedName, first.Value.Name);
+        Assert.Same(first.Value.Name, second.Value.Name);
+    }
+
     [Fact]
     public void AllCharacters_HaveConsistentBlockAndName()
     {

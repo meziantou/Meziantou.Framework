@@ -124,3 +124,8 @@ Assert.Equal("Basic Latin", info.Value.Block.Name);
 
 [GetCharacterInfo](cref:Meziantou.Framework.Unicode.GetCharacterInfo) returns `null` for a code point the Unicode data does not list, and [TryGetCharacterInfo](cref:Meziantou.Framework.Unicode.TryGetCharacterInfo) returns
 `false`. [Unicode.AllCharacters](cref:Meziantou.Framework.Unicode.AllCharacters) lists the records of the Unicode data.
+
+The names and the text properties of the records ([DecompositionMapping](cref:Meziantou.Framework.UnicodeCharacterInfo.DecompositionMapping), [NumericValue](cref:Meziantou.Framework.UnicodeCharacterInfo.NumericValue),
+[Unicode1Name](cref:Meziantou.Framework.UnicodeCharacterInfo.Unicode1Name), [IsoComment](cref:Meziantou.Framework.UnicodeCharacterInfo.IsoComment)) are compressed in the assembly. The first time a program reads a name, the
+names are decompressed, in about 1 ms, and then take about 280 KB of memory; the text properties take about 140 KB the
+same way. A program that only reads the other properties, or uses [UnicodeProperties](cref:Meziantou.Framework.UnicodeProperties), never pays for them.

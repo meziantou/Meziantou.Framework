@@ -9,16 +9,20 @@ using static Meziantou.Framework.UnicodeDataFormat;
 /// <remarks>See <see cref="UnicodeDataFormat"/> for the layout of the tables.</remarks>
 internal static partial class UnicodeCharacterInfosWriter
 {
-    private static readonly string[] TableNames =
+    /// <summary>The embedded resources of the tables: the ones every lookup reads are read in place, the others are compressed.</summary>
+    private static readonly (string FileName, string MemberName, string[] Tables)[] Resources =
     [
-        "PropertyIndexStage1", "PropertyIndexStage2", "PropertyIndexStage3", "Properties", "RangeNames", "NameBuckets", "NameEntries", "NameText",
-        "Decompositions", "DecompositionMappings", "NumericValues", "Unicode1Names", "IsoComments", "StringOffsets", "Strings",
+        ("UnicodeCharacterInfos.bin", "Data", ["PropertyIndexStage1", "PropertyIndexStage2", "PropertyIndexStage3", "Properties"]),
+        ("UnicodeCharacterInfos.Names.deflate", "NameData", ["NameRanges", "NameRangeText", "NameBuckets", "NameEntries", "NameWordOffsets", "NameWordText"]),
+        ("UnicodeCharacterInfos.Values.deflate", "ValueData", ["Decompositions", "DecompositionMappings", "NumericValues", "Unicode1Names", "IsoComments", "StringOffsets", "Strings"]),
     ];
 
-    /// <summary>Generates the content of <c>UnicodeCharacterInfos.g.cs</c>.</summary>
+    private static IEnumerable<string> TableNames => Resources.SelectMany(resource => resource.Tables);
+
+    /// <summary>Generates the content of <c>UnicodeCharacterInfos.g.cs</c> and of its resources.</summary>
     /// <param name="entries">The characters, in any order.</param>
     /// <param name="dataSource">The URL of <c>UnicodeData.txt</c>, for the header.</param>
-    public static string Generate(IReadOnlyList<UnicodeDataEntry> entries, string dataSource)
+    public static (string Content, IReadOnlyList<TableResource> Resources) Generate(IReadOnlyList<UnicodeDataEntry> entries, string dataSource)
     {
         var ordered = entries.OrderBy(entry => entry.Rune.Value).ToList();
         var tables = new Dictionary<string, byte[]>(StringComparer.Ordinal);
@@ -36,7 +40,7 @@ internal static partial class UnicodeCharacterInfosWriter
         }
 
         var trie = WriteProperties(tables, ordered);
-        WriteNames(tables, ordered, strings);
+        var (namedCount, nameRangeCount) = WriteNames(tables, ordered);
         WriteDecompositions(tables, parsedDecompositions, strings);
         WriteStringValues(tables, "NumericValues", ordered, entry => entry.NumericValue, strings);
         WriteStringValues(tables, "Unicode1Names", ordered, entry => entry.Unicode1Name, strings);
@@ -57,7 +61,6 @@ internal static partial class UnicodeCharacterInfosWriter
         var emptyBlock2 = emptyBlock3 < 0 ? -1 : Enumerable.Range(0, trie.Stage2.Length / block2Size)
             .FirstOrDefault(block => trie.Stage2.AsSpan(block * block2Size, block2Size).IndexOfAnyExcept((ushort)emptyBlock3) < 0, -1);
 
-        var namedCount = ordered.Count(entry => !IsSharedName(entry.Name));
         var emojiCount = ordered.Count(entry => entry.EmojiProperties != EmojiProperties.None);
         var totalSize = tables.Values.Sum(table => table.Length);
 
@@ -85,6 +88,8 @@ internal static partial class UnicodeCharacterInfosWriter
 
             #nullable enable
 
+            using System.Runtime.CompilerServices;
+
             namespace Meziantou.Framework;
 
             // See UnicodeDataFormat for the layout of the tables.
@@ -97,6 +102,8 @@ internal static partial class UnicodeCharacterInfosWriter
 
                 private const int NamedCharacterCount = {{namedCount}};
 
+                private const int NameRangeCount = {{nameRangeCount}};
+
                 private const int PropertyIndexShift1 = {{trie.Shift1}};
 
                 private const int PropertyIndexShift2 = {{trie.Shift2}};
@@ -108,22 +115,23 @@ internal static partial class UnicodeCharacterInfosWriter
 
             """));
 
-        foreach (var name in TableNames)
+        var resources = new List<TableResource>();
+        foreach (var (fileName, memberName, tableNames) in Resources)
         {
-            sb.Append(CultureInfo.InvariantCulture, $"\n    private static ReadOnlySpan<byte> {name} =>");
-            if (name is "NameText" or "Strings")
+            var resource = new TableResource(fileName, memberName);
+            var accessors = new StringBuilder();
+            foreach (var name in tableNames)
             {
-                AppendUtf8Literal(sb, tables[name], name is "Strings" ? strings.Lengths : null);
+                accessors.Append('\n').Append(resource.AddProperty($"private static ReadOnlySpan<byte> {name}", tables[name])).Append('\n');
             }
-            else
-            {
-                sb.Append("\n    [").Append(TrieBuilder.FormatElements<byte>(tables[name], "        ")).Append("\n    ];\n");
-            }
+
+            sb.Append('\n').Append(resource.GetDeclaration()).Append('\n').Append(accessors);
+            resources.Add(resource);
         }
 
         sb.Append("}\n");
         Console.WriteLine($"  {ordered.Count} characters in {totalSize} bytes of tables");
-        return sb.ToString();
+        return (sb.ToString(), resources);
     }
 
     private static WideTrie WriteProperties(Dictionary<string, byte[]> tables, List<UnicodeDataEntry> entries)
@@ -212,71 +220,200 @@ internal static partial class UnicodeCharacterInfosWriter
             entry.SimpleTitlecaseMapping >= 0 ? entry.SimpleTitlecaseMapping - codePoint : 0);
     }
 
-    // Writes the names, splitting the ones a whole range shares from the ones that are unique.
-    private static void WriteNames(Dictionary<string, byte[]> tables, List<UnicodeDataEntry> entries, StringPool strings)
+    // Writes the names: the ones that follow from the code point as ranges, the others front-coded by word.
+    private static (int NamedCount, int RangeCount) WriteNames(Dictionary<string, byte[]> tables, List<UnicodeDataEntry> entries)
     {
-        var ranges = new List<(int Start, int End, string Name)>();
-        foreach (var entry in entries.Where(entry => IsSharedName(entry.Name)))
+        // A range is a run of code points whose names are the same, such as "<CJK Ideograph>", or are a prefix followed by the
+        // code point, such as "CJK COMPATIBILITY IDEOGRAPH-F900" (the rule NR2 of UAX #44).
+        var ranges = new List<(int Start, int End, string Text, bool Derived)>();
+        var named = new List<(int CodePoint, string Name)>();
+        foreach (var entry in entries)
         {
             var codePoint = entry.Rune.Value;
-            if (ranges.Count > 0 && ranges[^1].End + 1 == codePoint && string.Equals(ranges[^1].Name, entry.Name, StringComparison.Ordinal))
+            var name = entry.Name;
+            if (name.Length == 0)
+                continue;
+
+            var derivedPrefix = IsSharedName(name) ? null : GetDerivedNamePrefix(codePoint, name);
+            if (!IsSharedName(name) && derivedPrefix is null)
             {
-                ranges[^1] = (ranges[^1].Start, codePoint, entry.Name);
+                named.Add((codePoint, name));
                 continue;
             }
 
-            ranges.Add((codePoint, codePoint, entry.Name));
+            var text = derivedPrefix ?? name;
+            var derived = derivedPrefix is not null;
+            if (ranges.Count > 0 && ranges[^1].End + 1 == codePoint && ranges[^1].Derived == derived && string.Equals(ranges[^1].Text, text, StringComparison.Ordinal))
+            {
+                ranges[^1] = ranges[^1] with { End = codePoint };
+                continue;
+            }
+
+            ranges.Add((codePoint, codePoint, text, derived));
         }
 
         var rangeBytes = new List<byte>();
-        foreach (var (start, end, name) in ranges)
+        var rangeText = new List<byte>();
+        var rangeTextOffsets = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var (start, end, text, derived) in ranges)
         {
+            if (!rangeTextOffsets.TryGetValue(text, out var offset))
+            {
+                offset = rangeText.Count;
+                rangeTextOffsets.Add(text, offset);
+                var bytes = GetAsciiBytes(text);
+                rangeText.Add((byte)bytes.Length);
+                rangeText.AddRange(bytes);
+            }
+
+            if (offset >= DerivedNameFlag)
+                throw new InvalidOperationException("The text of the name ranges exceeds " + DerivedNameFlag + " bytes");
+
             WriteUInt24(rangeBytes, start);
             WriteUInt24(rangeBytes, end);
-            WriteUInt16(rangeBytes, strings.Add(name));
+            WriteUInt16(rangeBytes, offset | (derived ? DerivedNameFlag : 0));
         }
+
+        // The words that more than one name has are stored once, the most frequent first so that most of them take a single
+        // byte; a word that only one name has costs less where it is used.
+        var wordFrequencies = named.SelectMany(item => item.Name.Split(' ')).CountBy(word => word, StringComparer.Ordinal);
+        var words = wordFrequencies.Where(item => item.Value > 1).OrderByDescending(item => item.Value).ThenBy(item => item.Key, StringComparer.Ordinal).Select(item => item.Key).ToList();
+        if (words.Count > 0x8000)
+            throw new InvalidOperationException("Too many distinct words in the names: " + words.Count);
+
+        var wordIndexes = new Dictionary<string, int>(StringComparer.Ordinal);
+        var wordOffsets = new List<byte>();
+        var wordText = new List<byte>();
+        foreach (var word in words)
+        {
+            wordIndexes.Add(word, wordIndexes.Count);
+            WriteUInt16(wordOffsets, wordText.Count);
+            wordText.AddRange(GetAsciiBytes(word));
+        }
+
+        WriteUInt16(wordOffsets, wordText.Count);
 
         // Front-coding restarts at every bucket so a name can be decoded without replaying the whole table; the
         // bucket records are what make that random access possible.
-        var named = entries.Where(entry => !IsSharedName(entry.Name)).ToList();
         var buckets = new List<byte>();
         var nameEntries = new List<byte>();
-        var text = new List<byte>();
-        var previous = Array.Empty<byte>();
+        var previous = Array.Empty<string>();
         var previousCodePoint = 0;
         for (var i = 0; i < named.Count; i++)
         {
-            var codePoint = named[i].Rune.Value;
+            var (codePoint, name) = named[i];
             if (i % NameBucketSize == 0)
             {
                 WriteUInt24(buckets, codePoint);
                 WriteUInt24(buckets, nameEntries.Count);
-                WriteUInt24(buckets, text.Count);
                 previous = [];
                 previousCodePoint = codePoint;
             }
 
-            var bytes = GetAsciiBytes(named[i].Name);
-            var sharedPrefixLength = 0;
-            var max = Math.Min(previous.Length, bytes.Length);
-            while (sharedPrefixLength < max && previous[sharedPrefixLength] == bytes[sharedPrefixLength])
+            var nameWords = name.Split(' ');
+            if (nameWords.Length > MaxNameWordCount)
+                throw new InvalidOperationException($"The name of U+{codePoint:X4} has more than {MaxNameWordCount} words: {name}");
+
+            var keptCount = 0;
+            while (keptCount < Math.Min(previous.Length, nameWords.Length) && string.Equals(previous[keptCount], nameWords[keptCount], StringComparison.Ordinal))
             {
-                sharedPrefixLength++;
+                keptCount++;
             }
 
             WriteVarInt(nameEntries, codePoint - previousCodePoint);
-            nameEntries.Add((byte)sharedPrefixLength);
-            nameEntries.Add((byte)(bytes.Length - sharedPrefixLength));
-            text.AddRange(bytes.AsSpan(sharedPrefixLength));
-            previous = bytes;
+            nameEntries.Add((byte)((keptCount << 4) | (nameWords.Length - keptCount)));
+            foreach (var word in nameWords.AsSpan(keptCount))
+            {
+                if (wordIndexes.TryGetValue(word, out var index))
+                {
+                    if (index < LiteralNameWord)
+                    {
+                        nameEntries.Add((byte)index);
+                    }
+                    else
+                    {
+                        nameEntries.Add((byte)(0x80 | (index >> 8)));
+                        nameEntries.Add((byte)index);
+                    }
+                }
+                else
+                {
+                    var bytes = GetAsciiBytes(word);
+                    nameEntries.Add(LiteralNameWord);
+                    nameEntries.Add((byte)bytes.Length);
+                    nameEntries.AddRange(bytes);
+                }
+            }
+
+            previous = nameWords;
             previousCodePoint = codePoint;
         }
 
-        tables["RangeNames"] = [.. rangeBytes];
+        tables["NameRanges"] = [.. rangeBytes];
+        tables["NameRangeText"] = [.. rangeText];
         tables["NameBuckets"] = [.. buckets];
         tables["NameEntries"] = [.. nameEntries];
-        tables["NameText"] = [.. text];
-        Console.WriteLine($"  {named.Count} unique names ({text.Count} bytes of text), {ranges.Count} ranges of shared names");
+        tables["NameWordOffsets"] = [.. wordOffsets];
+        tables["NameWordText"] = [.. wordText];
+
+        // The reader decodes the names with the same code: check that every name comes back.
+        var decoded = ReadNames(tables);
+        if (decoded.Count != named.Count + ranges.Sum(range => range.End - range.Start + 1) || named.Exists(item => !string.Equals(decoded[item.CodePoint], item.Name, StringComparison.Ordinal)))
+            throw new InvalidOperationException("The names do not decode to the names of UnicodeData.txt");
+
+        Console.WriteLine($"  {named.Count} names ({words.Count} distinct words, {nameEntries.Count} bytes of entries), {ranges.Count} ranges of names that follow from the code point");
+        return (named.Count, ranges.Count);
+    }
+
+    // The prefix of a name that is the prefix, a hyphen and the code point in hexadecimal, such as "CJK COMPATIBILITY IDEOGRAPH-F900".
+    private static string? GetDerivedNamePrefix(int codePoint, string name)
+    {
+        var suffix = "-" + codePoint.ToString("X4", CultureInfo.InvariantCulture);
+        return name.Length > suffix.Length && name.EndsWith(suffix, StringComparison.Ordinal) ? name[..^suffix.Length] : null;
+    }
+
+    /// <summary>Decodes the names of the tables written by <see cref="WriteNames"/>, by code point.</summary>
+    private static Dictionary<int, string> ReadNames(Dictionary<string, byte[]> tables)
+    {
+        var names = new Dictionary<int, string>();
+        var nameRanges = tables["NameRanges"];
+        var nameRangeText = tables["NameRangeText"];
+        for (var offset = 0; offset < nameRanges.Length; offset += NameRangeRecordSize)
+        {
+            var text = ReadUInt16(nameRanges, offset + 6);
+            var textOffset = text & ~DerivedNameFlag;
+            var prefix = Encoding.ASCII.GetString(nameRangeText, textOffset + 1, nameRangeText[textOffset]);
+            for (var codePoint = ReadUInt24(nameRanges, offset); codePoint <= ReadUInt24(nameRanges, offset + 3); codePoint++)
+            {
+                names.Add(codePoint, (text & DerivedNameFlag) != 0 ? prefix + "-" + codePoint.ToString("X4", CultureInfo.InvariantCulture) : prefix);
+            }
+        }
+
+        // Reading the names forward replays the front-coding of each bucket, so the bucket records are only needed
+        // for the code point a bucket starts at.
+        var nameBuckets = tables["NameBuckets"];
+        var nameEntries = tables["NameEntries"];
+        var wordOffsets = tables["NameWordOffsets"];
+        var wordText = tables["NameWordText"];
+        var buffer = new byte[byte.MaxValue + 1];
+        var words = new int[MaxNameWordCount];
+        var wordCount = 0;
+        var position = 0;
+        var nameCodePoint = 0;
+        for (var ordinal = 0; position < nameEntries.Length; ordinal++)
+        {
+            if (ordinal % NameBucketSize == 0)
+            {
+                nameCodePoint = ReadUInt24(nameBuckets, ordinal / NameBucketSize * NameBucketRecordSize);
+                wordCount = 0;
+            }
+
+            nameCodePoint += ReadNameEntry(nameEntries, ref position, words, ref wordCount);
+            var length = WriteName(words.AsSpan(0, wordCount), nameEntries, wordOffsets, wordText, buffer);
+            names.Add(nameCodePoint, Encoding.ASCII.GetString(buffer, 0, length));
+        }
+
+        return names;
     }
 
     // Whether a name belongs to a range rather than to a single character, such as "<CJK Ideograph>".
@@ -350,54 +487,9 @@ internal static partial class UnicodeCharacterInfosWriter
         Console.WriteLine($"  {name}: {present.Count} entries");
     }
 
-    // The text is emitted as UTF-8 string literals rather than numbers: it is smaller and readable, and the
-    // compiler folds the concatenation into a single blob of static data.
-    private static void AppendUtf8Literal(StringBuilder sb, byte[] text, IReadOnlyList<int>? lineLengths)
-    {
-        if (text.Length == 0)
-        {
-            sb.Append(" [];\n");
-            return;
-        }
-
-        var lines = new List<string>();
-        if (lineLengths is not null)
-        {
-            var offset = 0;
-            foreach (var length in lineLengths)
-            {
-                lines.Add(Encoding.ASCII.GetString(text, offset, length));
-                offset += length;
-            }
-        }
-        else
-        {
-            for (var offset = 0; offset < text.Length; offset += 100)
-            {
-                lines.Add(Encoding.ASCII.GetString(text, offset, Math.Min(100, text.Length - offset)));
-            }
-        }
-
-        var literals = lines.ConvertAll(line => "\"" + line.Replace("\\", "\\\\", StringComparison.Ordinal).Replace("\"", "\\\"", StringComparison.Ordinal) + "\"u8");
-        sb.Append("\n        ").Append(Concatenate(literals, 0, literals.Count)).Append(";\n");
-
-        // A long chain of + is a deep tree that overflows the stack of some analyzers, so the literals are
-        // concatenated as a balanced tree of short chains.
-        static string Concatenate(List<string> literals, int start, int end)
-        {
-            const int MaxChainLength = 16;
-            if (end - start <= MaxChainLength)
-                return string.Join(" +\n        ", literals.GetRange(start, end - start));
-
-            var middle = start + ((end - start) / 2);
-            return "(" + Concatenate(literals, start, middle) + ") +\n        (" + Concatenate(literals, middle, end) + ")";
-        }
-    }
-
     private static byte[] GetAsciiBytes(string value)
     {
-        // The text tables are emitted as string literals, which can only hold the bytes of printable ASCII
-        // characters one for one.
+        // The names and the strings are printable ASCII, so that a character is a byte of the tables.
         foreach (var c in value)
         {
             if (c is < ' ' or > '~')
@@ -454,9 +546,11 @@ internal static partial class UnicodeCharacterInfosWriter
         destination.Add((byte)(value >> 16));
     }
 
-    /// <summary>Reads back the tables of a file written by <see cref="Generate"/>.</summary>
+    /// <summary>Reads back the tables of a file written by <see cref="Generate"/>, and of its resources.</summary>
+    /// <param name="source">The content of <c>UnicodeCharacterInfos.g.cs</c>.</param>
+    /// <param name="dataDirectory">The directory of the resources.</param>
     /// <returns>The characters, or <see langword="null"/> when the file is not in the current layout.</returns>
-    public static Dictionary<Rune, UnicodeDataEntry>? Read(string source)
+    public static async Task<Dictionary<Rune, UnicodeDataEntry>?> ReadAsync(string source, FullPath dataDirectory)
     {
         var constants = new Dictionary<string, int>(StringComparer.Ordinal);
         foreach (Match match in ConstantRegex().Matches(source))
@@ -464,13 +558,28 @@ internal static partial class UnicodeCharacterInfosWriter
             constants[match.Groups["name"].Value] = int.Parse(match.Groups["value"].Value, NumberStyles.None, CultureInfo.InvariantCulture);
         }
 
+        var resources = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        foreach (Match match in ResourceRegex().Matches(source))
+        {
+            var content = await TableResource.ReadAsync(dataDirectory / match.Groups["file"].Value);
+            if (content is null)
+                return null;
+
+            resources[match.Groups["member"].Value] = content;
+        }
+
         var tables = new Dictionary<string, byte[]>(StringComparer.Ordinal);
         foreach (Match match in TableRegex().Matches(source))
         {
-            var body = match.Groups["body"].Value;
-            tables[match.Groups["name"].Value] = body.StartsWith('[', StringComparison.Ordinal)
-                ? [.. body.Trim('[', ']').Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(value => byte.Parse(value, NumberStyles.None, CultureInfo.InvariantCulture))]
-                : [.. Utf8LiteralRegex().Matches(body).SelectMany(literal => Encoding.ASCII.GetBytes(Regex.Unescape(literal.Groups["text"].Value)))];
+            if (!resources.TryGetValue(match.Groups["member"].Value, out var content))
+                return null;
+
+            var offset = match.Groups["offset"].Success ? int.Parse(match.Groups["offset"].Value, NumberStyles.None, CultureInfo.InvariantCulture) : 0;
+            var length = int.Parse(match.Groups["length"].Value, NumberStyles.None, CultureInfo.InvariantCulture);
+            if (offset + length > content.Length)
+                return null;
+
+            tables[match.Groups["name"].Value] = content.AsSpan(offset, length).ToArray();
         }
 
         if (!TableNames.All(tables.ContainsKey) || !constants.TryGetValue("PropertyIndexShift1", out var shift1) || !constants.TryGetValue("PropertyIndexShift2", out var shift2))
@@ -484,40 +593,7 @@ internal static partial class UnicodeCharacterInfosWriter
             strings.Add(Encoding.UTF8.GetString(tables["Strings"].AsSpan(start, ReadUInt24(stringOffsets, offset + StringOffsetSize) - start)));
         }
 
-        var names = new Dictionary<int, string>();
-        var rangeNames = tables["RangeNames"];
-        for (var offset = 0; offset < rangeNames.Length; offset += RangeNameRecordSize)
-        {
-            for (var codePoint = ReadUInt24(rangeNames, offset); codePoint <= ReadUInt24(rangeNames, offset + 3); codePoint++)
-            {
-                names.Add(codePoint, strings[ReadUInt16(rangeNames, offset + 6)]);
-            }
-        }
-
-        // Reading the names forward replays the front-coding of each bucket, so the bucket records are only needed
-        // for the code point a bucket starts at.
-        var nameBuckets = tables["NameBuckets"];
-        var nameEntries = tables["NameEntries"];
-        var nameText = tables["NameText"];
-        var buffer = new byte[byte.MaxValue + 1];
-        var entryPosition = 0;
-        var textPosition = 0;
-        var nameCodePoint = 0;
-        for (var ordinal = 0; entryPosition < nameEntries.Length; ordinal++)
-        {
-            if (ordinal % NameBucketSize == 0)
-            {
-                nameCodePoint = ReadUInt24(nameBuckets, ordinal / NameBucketSize * NameBucketRecordSize);
-            }
-
-            nameCodePoint += ReadVarInt(nameEntries, ref entryPosition);
-            var sharedPrefixLength = nameEntries[entryPosition];
-            var suffixLength = nameEntries[entryPosition + 1];
-            entryPosition += 2;
-            nameText.AsSpan(textPosition, suffixLength).CopyTo(buffer.AsSpan(sharedPrefixLength));
-            textPosition += suffixLength;
-            names.Add(nameCodePoint, Encoding.UTF8.GetString(buffer, 0, sharedPrefixLength + suffixLength));
-        }
+        var names = ReadNames(tables);
 
         var decompositionMappings = new Dictionary<int, string>();
         var decompositions = tables["Decompositions"];
@@ -599,19 +675,17 @@ internal static partial class UnicodeCharacterInfosWriter
     [GeneratedRegex(@"const int (?<name>\w+) = (?<value>\d+);", RegexOptions.None, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex ConstantRegex();
 
-    [GeneratedRegex(@"ReadOnlySpan<byte> (?<name>\w+) =>\s*(?<body>\[[^\]]*\]|[(\s]*""(?:[^""\\]|\\.)*""u8(?:[\s()+]*""(?:[^""\\]|\\.)*""u8)*[)\s]*);", RegexOptions.None, matchTimeoutMilliseconds: 10_000)]
-    private static partial Regex TableRegex();
+    [GeneratedRegex(@"(?:nint (?<member>\w+) = UnicodeResources\.Map|ReadOnlySpan<byte> (?<member>\w+) => \w+ \?\? UnicodeResources\.Decompress)\((?:ref \w+, )?""(?<file>[^""]+)""", RegexOptions.None, matchTimeoutMilliseconds: 10_000)]
+    private static partial Regex ResourceRegex();
 
-    [GeneratedRegex(@"""(?<text>(?:[^""\\]|\\.)*)""u8", RegexOptions.None, matchTimeoutMilliseconds: 10_000)]
-    private static partial Regex Utf8LiteralRegex();
+    [GeneratedRegex(@"ReadOnlySpan<byte> (?<name>\w+)(?:\s*\{\s*\[[^\]]*\]\s*get)? => (?:UnicodeResources\.GetSpan\((?<member>\w+)(?: \+ (?<offset>\d+))?|(?<member>\w+)\.Slice\((?<offset>\d+)), (?<length>\d+)\);", RegexOptions.None, matchTimeoutMilliseconds: 10_000)]
+    private static partial Regex TableRegex();
 
     /// <summary>The strings of the tables, each stored once.</summary>
     private sealed class StringPool
     {
         private readonly Dictionary<string, int> _indexes = new(StringComparer.Ordinal);
         private readonly List<byte[]> _values = [];
-
-        public IReadOnlyList<int> Lengths => [.. _values.Select(value => value.Length)];
 
         public int Add(string value)
         {

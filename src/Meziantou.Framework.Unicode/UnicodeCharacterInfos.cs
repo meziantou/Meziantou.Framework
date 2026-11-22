@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 using static Meziantou.Framework.UnicodeDataFormat;
 
 namespace Meziantou.Framework;
@@ -16,6 +17,10 @@ internal static partial class UnicodeCharacterInfos
 
     // The decoded names, by bucket: a program that reads a few names does not allocate a slot for every one.
     private static readonly string?[]?[] NameCache = new string?[]?[(NamedCharacterCount + NameBucketSize - 1) / NameBucketSize];
+
+    // The names of the ranges of NameRanges: one slot for a range whose characters share their name, one per code point
+    // for a range whose names end with the code point.
+    private static readonly string?[]?[] RangeNameCache = new string?[]?[NameRangeCount];
     private static string?[]? s_decompositions;
     private static string?[]? s_strings;
     private static int s_count = -1;
@@ -101,9 +106,10 @@ internal static partial class UnicodeCharacterInfos
 
     public static string GetName(int codePoint)
     {
-        var range = FindFloorRecord(RangeNames, RangeNameRecordSize, codePoint);
-        if (range >= 0 && codePoint <= ReadUInt24(RangeNames, range + 3))
-            return GetString(ReadUInt16(RangeNames, range + 6));
+        var ranges = NameRanges;
+        var range = FindFloorRecord(ranges, NameRangeRecordSize, codePoint);
+        if (range >= 0 && codePoint <= ReadUInt24(ranges, range + 3))
+            return GetRangeName(range, codePoint, addToCache: true);
 
         var bucket = FindFloorRecord(NameBuckets, NameBucketRecordSize, codePoint);
         if (bucket >= 0)
@@ -116,63 +122,100 @@ internal static partial class UnicodeCharacterInfos
         return string.Empty;
     }
 
-    /// <summary>Decodes the name of <paramref name="codePoint"/> by replaying the front-coding of its bucket.</summary>
-    private static string? GetNameInBucket(int bucketOffset, int codePoint)
+    /// <summary>Gets the name of a code point of a record of <c>NameRanges</c>.</summary>
+    /// <param name="rangeOffset">The offset of the record.</param>
+    /// <param name="codePoint">The code point, in the range.</param>
+    /// <param name="addToCache">
+    /// Whether to cache a name that ends with the code point. A name that the whole range shares is always cached: it is a
+    /// single string.
+    /// </param>
+    private static string GetRangeName(int rangeOffset, int codePoint, bool addToCache)
     {
-        var entries = NameEntries;
-        var firstEntryPosition = ReadUInt24(NameBuckets, bucketOffset + 3);
-        var bucket = bucketOffset / NameBucketRecordSize;
-        var firstOrdinal = bucket * NameBucketSize;
-        var count = Math.Min(NameBucketSize, NamedCharacterCount - firstOrdinal);
-
-        // Find the entry first: when its name is cached, nothing has to be decoded.
-        var position = firstEntryPosition;
-        var current = ReadUInt24(NameBuckets, bucketOffset);
-        var index = 0;
-        while (true)
+        var ranges = NameRanges;
+        var start = ReadUInt24(ranges, rangeOffset);
+        var text = ReadUInt16(ranges, rangeOffset + 6);
+        var derived = (text & DerivedNameFlag) != 0;
+        var rangeIndex = rangeOffset / NameRangeRecordSize;
+        var names = RangeNameCache[rangeIndex];
+        if (names is null)
         {
-            current += ReadVarInt(entries, ref position);
-            if (current == codePoint)
-                break;
+            if (derived && !addToCache)
+                return CreateRangeName(text, codePoint);
 
-            index++;
-            if (current > codePoint || index == count)
-                return null;
-
-            position += 2;
+            names = CreateCache(ref RangeNameCache[rangeIndex], derived ? ReadUInt24(ranges, rangeOffset + 3) - start + 1 : 1);
         }
 
-        // Caching keeps a code point looked up more than once from decoding and allocating its name again.
-        var names = NameCache[bucket] ?? CreateCache(ref NameCache[bucket], NameBucketSize);
+        var index = derived ? codePoint - start : 0;
         var name = names[index];
         if (name is not null)
             return name;
 
-        Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
-        position = firstEntryPosition;
-        var textPosition = ReadUInt24(NameBuckets, bucketOffset + 6);
-        var length = 0;
-        for (var i = 0; i <= index; i++)
+        name = CreateRangeName(text, codePoint);
+        if (!derived || addToCache)
         {
-            ReadVarInt(entries, ref position);
-            length = DecodeFrontCodedName(ref position, ref textPosition, buffer);
+            names[index] = name;
         }
 
-        name = Encoding.UTF8.GetString(buffer[..length]);
-        names[index] = name;
         return name;
     }
 
-    /// <summary>Applies the next name entry to <paramref name="buffer"/>, which holds the previous name, and returns the length of the name.</summary>
-    private static int DecodeFrontCodedName(ref int entryPosition, ref int textPosition, Span<byte> buffer)
+    private static string CreateRangeName(int text, int codePoint)
+    {
+        var rangeText = NameRangeText;
+        var offset = text & ~DerivedNameFlag;
+        var prefix = rangeText.Slice(offset + 1, rangeText[offset]);
+        if ((text & DerivedNameFlag) == 0)
+            return Encoding.ASCII.GetString(prefix);
+
+        // The rule NR2 of UAX #44: the prefix, a hyphen, then the code point in hexadecimal, such as "CJK COMPATIBILITY IDEOGRAPH-F900".
+        Span<char> buffer = stackalloc char[MaxSerializedStringLength];
+        var length = Encoding.ASCII.GetChars(prefix, buffer);
+        buffer[length] = '-';
+        length++;
+        codePoint.TryFormat(buffer[length..], out var written, "X4", CultureInfo.InvariantCulture);
+        return new string(buffer[..(length + written)]);
+    }
+
+    /// <summary>Decodes the name of <paramref name="codePoint"/> by replaying the front-coding of its bucket.</summary>
+    private static string? GetNameInBucket(int bucketOffset, int codePoint)
     {
         var entries = NameEntries;
-        var sharedPrefixLength = entries[entryPosition];
-        var suffixLength = entries[entryPosition + 1];
-        entryPosition += 2;
-        NameText.Slice(textPosition, suffixLength).CopyTo(buffer[sharedPrefixLength..]);
-        textPosition += suffixLength;
-        return sharedPrefixLength + suffixLength;
+        var buckets = NameBuckets;
+        var position = ReadUInt24(buckets, bucketOffset + 3);
+        var current = ReadUInt24(buckets, bucketOffset);
+        var bucket = bucketOffset / NameBucketRecordSize;
+        var count = Math.Min(NameBucketSize, NamedCharacterCount - (bucket * NameBucketSize));
+        Span<int> words = stackalloc int[MaxNameWordCount];
+        var wordCount = 0;
+        for (var index = 0; index < count; index++)
+        {
+            current += ReadNameEntry(entries, ref position, words, ref wordCount);
+            if (current < codePoint)
+                continue;
+
+            if (current > codePoint)
+                return null;
+
+            // Caching keeps a code point looked up more than once from decoding and allocating its name again.
+            var names = NameCache[bucket] ?? CreateCache(ref NameCache[bucket], NameBucketSize);
+            var name = names[index];
+            if (name is null)
+            {
+                name = DecodeName(words[..wordCount]);
+                names[index] = name;
+            }
+
+            return name;
+        }
+
+        return null;
+    }
+
+    private static string DecodeName(ReadOnlySpan<int> words)
+    {
+        Span<byte> buffer = stackalloc byte[MaxSerializedStringLength];
+        var length = WriteName(words, NameEntries, NameWordOffsets, NameWordText, buffer);
+        return Encoding.ASCII.GetString(buffer[..length]);
     }
 
     public static string? GetDecompositionMapping(int codePoint)
@@ -307,11 +350,12 @@ internal static partial class UnicodeCharacterInfos
     private sealed class CharacterEnumerator : IEnumerator<UnicodeCharacterInfo>
     {
         private readonly byte[] _nameBuffer = new byte[MaxSerializedStringLength];
+        private readonly int[] _words = new int[MaxNameWordCount];
         private int _codePoint;
         private int _nameOrdinal;
         private int _nextNamedCodePoint;
         private int _nameEntryPosition;
-        private int _nameTextPosition;
+        private int _wordCount;
         private int _rangeOffset;
         private UnicodeCharacterInfo _current;
 
@@ -342,50 +386,64 @@ internal static partial class UnicodeCharacterInfos
         public void Reset()
         {
             _codePoint = -1;
-            _nameOrdinal = 0;
+            _nameOrdinal = -1;
             _nameEntryPosition = 0;
-            _nameTextPosition = 0;
+            _wordCount = 0;
             _rangeOffset = 0;
             _current = default;
-            _nextNamedCodePoint = NamedCharacterCount > 0 ? ReadUInt24(NameBuckets, 0) + ReadVarInt(NameEntries, ref _nameEntryPosition) : int.MaxValue;
+            ReadNextNameEntry();
         }
 
         public void Dispose()
         {
         }
 
+        /// <summary>Reads the entry of the next name of <c>NameEntries</c>: its code point and its words.</summary>
+        // The enumeration of the characters usually runs once, faster than the tiered JIT compiler promotes the methods it
+        // calls for every character: the decoding of the names is compiled optimized right away.
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
+        private void ReadNextNameEntry()
+        {
+            _nameOrdinal++;
+            if (_nameOrdinal >= NamedCharacterCount)
+            {
+                _nextNamedCodePoint = int.MaxValue;
+                return;
+            }
+
+            if (_nameOrdinal % NameBucketSize == 0)
+            {
+                _nextNamedCodePoint = ReadUInt24(NameBuckets, _nameOrdinal / NameBucketSize * NameBucketRecordSize);
+                _wordCount = 0;
+            }
+
+            _nextNamedCodePoint += ReadNameEntry(NameEntries, ref _nameEntryPosition, _words, ref _wordCount);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         private string GetNextName(int codePoint)
         {
             if (codePoint == _nextNamedCodePoint)
             {
-                var length = DecodeFrontCodedName(ref _nameEntryPosition, ref _nameTextPosition, _nameBuffer);
-                var name = NameCache[_nameOrdinal / NameBucketSize]?[_nameOrdinal % NameBucketSize] ?? Encoding.UTF8.GetString(_nameBuffer, 0, length);
-                _nameOrdinal++;
-                if (_nameOrdinal == NamedCharacterCount)
+                var name = NameCache[_nameOrdinal / NameBucketSize]?[_nameOrdinal % NameBucketSize];
+                if (name is null)
                 {
-                    _nextNamedCodePoint = int.MaxValue;
-                }
-                else
-                {
-                    if (_nameOrdinal % NameBucketSize == 0)
-                    {
-                        _nextNamedCodePoint = ReadUInt24(NameBuckets, _nameOrdinal / NameBucketSize * NameBucketRecordSize);
-                    }
-
-                    _nextNamedCodePoint += ReadVarInt(NameEntries, ref _nameEntryPosition);
+                    var length = WriteName(_words.AsSpan(0, _wordCount), NameEntries, NameWordOffsets, NameWordText, _nameBuffer);
+                    name = Encoding.ASCII.GetString(_nameBuffer, 0, length);
                 }
 
+                ReadNextNameEntry();
                 return name;
             }
 
-            var rangeNames = RangeNames;
-            while (_rangeOffset < rangeNames.Length && ReadUInt24(rangeNames, _rangeOffset + 3) < codePoint)
+            var ranges = NameRanges;
+            while (_rangeOffset < ranges.Length && ReadUInt24(ranges, _rangeOffset + 3) < codePoint)
             {
-                _rangeOffset += RangeNameRecordSize;
+                _rangeOffset += NameRangeRecordSize;
             }
 
-            if (_rangeOffset < rangeNames.Length && ReadUInt24(rangeNames, _rangeOffset) <= codePoint)
-                return GetString(ReadUInt16(rangeNames, _rangeOffset + 6));
+            if (_rangeOffset < ranges.Length && ReadUInt24(ranges, _rangeOffset) <= codePoint)
+                return GetRangeName(_rangeOffset, codePoint, addToCache: false);
 
             return string.Empty;
         }

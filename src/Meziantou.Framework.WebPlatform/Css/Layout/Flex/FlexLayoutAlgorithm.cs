@@ -464,6 +464,21 @@ internal sealed partial class FlexLayoutAlgorithm
         item.AutoMarginCrossStart = autoCrossStart;
         item.AutoMarginCrossEnd = autoCrossEnd;
 
+        // (an item of a flex line broken by a page of another inline size whose content after the break starts below the one of
+        // the other items is moved down, see LayoutContext.AnchorPushes)
+        // (or, in a single-line column flex container in a broken row, its item after the break)
+        if (_context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
+        {
+            if (_isRow && !_properties.IsCrossReverse)
+            {
+                item.MarginCrossStart += push;
+            }
+            else if (!_isRow && !_properties.IsMainReverse && !_properties.IsMultiLine)
+            {
+                item.MarginMainStart += push;
+            }
+        }
+
         var paddingAndBorder = FormattingContext.ResolvePadding(boxModel, _content.InlineSize).Add(boxModel.BorderWidth);
         var gutters = IntrinsicSizing.GetScrollbarGutters(_context, item.Box, item.WritingDirection);
         item.MainPaddingBorder = _mainIsHorizontal ? paddingAndBorder.HorizontalSum() : paddingAndBorder.VerticalSum();
@@ -476,6 +491,12 @@ internal sealed partial class FlexLayoutAlgorithm
         var alignSelf = _properties.GetAlignSelf(layout);
         item.Safe = alignSelf.Overflow == OverflowAlignment.Safe;
         item.Align = autoCrossStart || autoCrossEnd ? AxisAlignment.Start : ResolveSelfAlignment(item, alignSelf.Keyword);
+
+        // (the items of a flex line broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowItems)
+        if (item.Align != AxisAlignment.Stretch && _context.ResumedRowItems is { } resumedItems && resumedItems.Contains(item.Box))
+        {
+            item.Align = AxisAlignment.Start;
+        }
 
         // https://drafts.csswg.org/css-flexbox-1/#valdef-align-items-stretch: "If the cross size property of the flex item
         // computes to auto, and neither of the cross-axis margins are auto, the flex item is stretched"; otherwise it is
@@ -942,7 +963,11 @@ internal sealed partial class FlexLayoutAlgorithm
         // https://drafts.csswg.org/css-flexbox-1/#algo-available: the available main space is the inner main size of the
         // container; a column container whose block size is indefinite breaks its lines at its maximum block size (as the browsers)
         var available = _definiteMainSize ?? _content.MaxBlockSize ?? double.PositiveInfinity;
-        if (!_properties.IsBalanced || !CollectBalancedLines(available, collapse))
+
+        // The content of a page of another inline size that starts between two flex lines (see LayoutContext.RowResumes):
+        // the items after the break start a new line, the items before it are in the lines before (in the previous pages)
+        var resumed = _properties.IsMultiLine && _context.RowResumes is { } resumes && resumes.TryGetValue(_box, out var following) ? following : null;
+        if (resumed is not null || !_properties.IsBalanced || !CollectBalancedLines(available, collapse))
         {
             var start = 0;
             while (start < _items.Count)
@@ -967,7 +992,12 @@ internal sealed partial class FlexLayoutAlgorithm
                     // "If the very first uncollected item wouldn't fit, collect just it into the line". The computed percentages
                     // are rounded: the items fit with the tolerance of the layout unit of the browsers, 1/64px (the columns of
                     // 16.66666667% and 8.33333333% of a row of Bootstrap fill it)
-                    if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance)
+                    // (the items of the flex line that the break crosses stay in one line, as the content of each one continues
+                    // beside the others: they are flexed in the new inline size)
+                    if (_properties.IsMultiLine && count > 0 && next > available + FitTolerance && resumed?.ContinuesLine(item.Box, _items[end - 1].Box) != true)
+                        break;
+
+                    if (resumed is not null && end > start && resumed.StartsRow(item.Box, _items[end - 1].Box))
                         break;
 
                     used = next;

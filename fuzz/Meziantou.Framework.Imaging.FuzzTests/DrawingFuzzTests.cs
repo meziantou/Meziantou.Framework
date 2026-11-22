@@ -125,7 +125,7 @@ public sealed class DrawingFuzzTests
 
             var caseSeed = random.NextUInt64();
             executed++;
-            var failure = CheckWholePixelRectangle(caseSeed);
+            var failure = RunWithWatchdog(() => CheckWholePixelRectangle(caseSeed));
             if (failure is not null)
             {
                 failures.Add($"case seed {caseSeed}: {failure}");
@@ -156,7 +156,7 @@ public sealed class DrawingFuzzTests
 
             var caseSeed = random.NextUInt64();
             executed++;
-            var failure = CheckStrokeAgainstSeparatePieces(caseSeed);
+            var failure = RunWithWatchdog(() => CheckStrokeAgainstSeparatePieces(caseSeed));
             if (failure is not null)
             {
                 failures.Add($"case seed {caseSeed}: {failure}");
@@ -232,6 +232,19 @@ public sealed class DrawingFuzzTests
             var path = random.Chance(30) ? CreatePolyline(random, canvas) : CreatePath(random, canvas);
             var antialiasing = !random.Chance(20);
             var transform = random.Chance(30) ? CreateTransform(random, canvas) : (AffineTransform?)null;
+            if (transform is { } shrinking && GetSmallestScale(shrinking) is var scale and < 1)
+            {
+                // A scaling by 1e-4, or by 0, brings a path of millions of pixels a few pixels long on the canvas, or onto
+                // a line, with every piece of its stroke: kept apart, the thousands of pieces of a curve of 2^24 pixels all
+                // cross each other there, which took minutes (fuzz regression). A polyline is a few pieces, however long.
+                if (scale < 1e-3)
+                {
+                    path = CreatePolyline(random, canvas);
+                }
+
+                pen = KeepDashLengthsOnTheCanvas(pen, scale);
+            }
+
             canvas.Antialiasing(antialiasing, canvas =>
             {
                 if (transform is { } value)
@@ -244,6 +257,44 @@ public sealed class DrawingFuzzTests
                 }
             });
         }
+    }
+
+    /// <summary>Gets the smallest factor by which a transformation scales a length: its smallest singular value, 0 when it is singular.</summary>
+    private static double GetSmallestScale(AffineTransform transform)
+    {
+        var sum = (transform.M11 * transform.M11) + (transform.M12 * transform.M12) + (transform.M21 * transform.M21) + (transform.M22 * transform.M22);
+        var determinant = transform.Determinant;
+        var largest = Math.Sqrt((sum + Math.Sqrt(Math.Max((sum * sum) - (4 * determinant * determinant), 0))) / 2);
+        return largest > 0 ? Math.Abs(determinant) / largest : 0;
+    }
+
+    /// <summary>
+    /// Lengthens the dashes of a pen that a transformation of the canvas shrinks by <paramref name="scale"/>. The pen
+    /// measures its dashes before the transformation: a scaling by 1e-4 makes them a million slivers on the canvas, which
+    /// all cross each other (fuzz regression: minutes a case). As <see cref="CreateDashedPen"/> keeps them without a
+    /// transformation, the dashes are at least as long on the canvas as in the pattern, within the largest length a
+    /// pattern accepts.
+    /// </summary>
+    private static Pen KeepDashLengthsOnTheCanvas(Pen pen, double scale)
+    {
+        if (pen.DashPattern.IsEmpty)
+            return pen;
+
+        var pattern = pen.DashPattern.ToArray();
+        var factor = Math.Min(1 / scale, MaxCoordinate / pattern.Max());
+        for (var i = 0; i < pattern.Length; i++)
+        {
+            pattern[i] = Math.Min(pattern[i] * factor, MaxCoordinate);
+        }
+
+        return new Pen(pen.Brush, pen.Width)
+        {
+            LineJoin = pen.LineJoin,
+            LineCap = pen.LineCap,
+            MiterLimit = pen.MiterLimit,
+            DashPattern = pattern,
+            DashOffset = pen.DashOffset,
+        };
     }
 
     [Fact]
@@ -268,7 +319,7 @@ public sealed class DrawingFuzzTests
 
             var caseSeed = random.NextUInt64();
             executed++;
-            var failure = CheckSweepWalk(caseSeed);
+            var failure = RunWithWatchdog(() => CheckSweepWalk(caseSeed));
             if (failure is not null)
             {
                 failures.Add($"case seed {caseSeed}: {failure}");
@@ -490,19 +541,26 @@ public sealed class DrawingFuzzTests
     private static string? RunWithWatchdog(ulong seed, out bool changed)
     {
         var caseChanged = false;
-        var task = Task.Run(() =>
+        var outcome = RunWithWatchdog(() =>
         {
             var failure = Check(seed, out var result);
             caseChanged = result;
             return failure;
         });
-        if (!task.Wait(FuzzSettings.CaseTimeout))
-        {
-            changed = false;
-            return $"timeout after {FuzzSettings.CaseTimeout.TotalSeconds:F0} s";
-        }
-
         changed = caseChanged;
+        return outcome;
+    }
+
+    /// <summary>
+    /// Runs one case on another thread: a case that never ends is reported as a failure of its seed, instead of blocking
+    /// the campaign until the hang dump kills the test host (the case keeps running, the campaign stops after a few failures).
+    /// </summary>
+    private static string? RunWithWatchdog(Func<string?> check)
+    {
+        var task = Task.Run(check);
+        if (!task.Wait(FuzzSettings.CaseTimeout))
+            return $"timeout after {FuzzSettings.CaseTimeout.TotalSeconds:F0} s";
+
         return task.Result;
     }
 

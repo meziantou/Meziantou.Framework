@@ -41,6 +41,20 @@ public sealed class XzStreamTests
         return output.ToArray();
     }
 
+    [Fact]
+    public void RoundTrip_NonSeekableStreams()
+    {
+        var data = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "BZip2", "sample.txt"));
+        using var output = new MemoryStream();
+        using (var stream = new XzStream(ZipTestData.CreateNonSeekableWriteStream(output), new XzCompressionOptions { Preset = 1 }))
+        {
+            stream.Write(data);
+        }
+
+        using var decompress = new XzStream(ZipTestData.CreateForwardOnlyStream(output.ToArray(), 1), CompressionMode.Decompress);
+        Assert.Equal(data, LzmaCodecTests.ReadAll(decompress, 1000));
+    }
+
     [Theory]
     [InlineData("xz-check-none.xz")]
     [InlineData("xz-check-crc32.xz")]

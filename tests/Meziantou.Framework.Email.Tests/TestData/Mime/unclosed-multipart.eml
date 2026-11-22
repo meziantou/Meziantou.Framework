@@ -1,0 +1,11 @@
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: Missing close delimiter
+Date: Wed, 9 Jul 2025 10:00:00 +0000
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="open"
+
+--open
+Content-Type: text/plain
+
+The multipart is never closed.

@@ -1,0 +1,2 @@
+title: Winmail.dat (TNEF)
+description: Read and write the TNEF streams Outlook and Exchange attach to messages as winmail.dat, and expand them in MIME messages.

@@ -2084,8 +2084,7 @@ an atomic inline laid out while its parent collects its items rents another inst
   baseline is the one of a horizontal line of 1em (the half-leading is floored as in the lines), so it is painted like a
   `1em` inline-block with a horizontal writing mode. The glyphs are in logical order: a right-to-left composition (an
   override) is painted from its right end.
-- Not done: the spelling changes that replace a character at the start of the next line (the Dutch trema: `zeeën` is
-  `zee-en` at the break) or that need a dictionary (the triple consonants of the Swedish and Norwegian compounds), the hyphenation dictionaries of Uyghur and Cree, the
+- Not done: the spelling changes that need a dictionary (the triple consonants of the Swedish and Norwegian compounds), the hyphenation dictionaries of Uyghur and Cree, the
   hyphenation dictionaries whose license is copyleft (cs, hu, hy, lv), the values of the `halt`/`vhal`/`chws` font features of
   `text-spacing-trim` (the half of a fullwidth glyph of a font that has `halt`/`vhal` is half of its advance), `text-autospace: punctuation`, the half of
   `letter-spacing` on each side of the characters (the spacing is after each character and removed at the end of the line: the
@@ -2841,7 +2840,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     in its track (`align-self: end`, a margin) and does not fit is pushed alone; in a grid, only when it has no possible
     break (as in Blink, a break before the first content of a row is not a possible break: the item is rather broken
     between line boxes that violate `orphans` and `widows`, `ParallelItem.BreaksBeforeAsLastResort`). An item that starts
-    after the end of the fragmentainer where its track started is placed in a next one (the flow continues for it); as in
+    after the end of the fragmentainer where its track started is placed in a next one (the flow continues for it; an item
+    that spans the next tracks and starts in one of them, e.g. aligned at the end of its grid area, does not keep them out of
+    the fragmentainer: their items start there); as in
     Blink, it starts that fragmentainer when its position is before its start (the track grew with monolithic content that
     overflowed the previous one: its offset is truncated). An item that starts before its track (a negative margin) starts with the track, at a negative offset when the track starts a fragmentainer.
     A monolithic item that overflows the fragmentainer ends its track after it (the flow does not break beside it; the items
@@ -3232,16 +3233,87 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   marker nor `text-box-trim`), the content before it being in a virtual first fragmentainer whose fragments are dropped.
   A segment also starts at a break between the rows of a container whose rows are the same in any inline size
   (`IsRowContainer`: a table wrapper box, a table grid box and its row groups, a single-line column flex container, a grid
-  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid), or inside the only row that the break
-  crosses when the rows are stacked (not in a grid: its items are side by side). The anchor is then the container and its
+  whose columns have no `auto-fill`/`auto-fit` repetition and that is not a subgrid of both axes (a subgrid of the columns has
+  rows of its own), a grid whose columns have such a repetition and whose items are placed in rows: `grid-auto-flow: row`,
+  dense or not, not a subgrid, `IsAutoRepeatGridContainer`; its items must be in their order at the break, `IsPlacedInOrder`:
+  the auto-placed items before the break, of the broken row, after it, in order-modified document order, and the items with a
+  definite row before the break; in the next segment, the new rows start after their rows, `RowResume.Preceding`, and the
+  dense packing does not fill the holes before them; an item with a definite column is placed by the auto-placement cursor), a multi-line row flex container whose
+  lines are stacked in the order of the items: `flex-wrap: wrap`, not balanced, not a `-webkit-box`, `IsFlexLineContainer`),
+  or inside the only row that the break crosses when the rows are stacked (not in a grid nor in a flex line: their items are
+  side by side). The flex lines and the rows of such a grid depend on the inline size: in the next segment, the items after
+  a break between two flex lines or rows start a new flex line or row (`LayoutContext.RowResumes`, used by
+  `FlexLayoutAlgorithm.CollectLines`: the first of them in the order of the items ends the line before it; and by
+  `GridPlacement.PlaceItems`: the auto-placement cursor of the first of them moves to the row after the rows of the items
+  before it, or, after the items of a broken row, to the row after that row, `rowsAfterBrokenRow`: the auto-placement skips
+  the cells of its items that span the rows after it), so that the items before it are in the lines or rows before the break. The anchor is then the container and its
   children after the break (`BreakAnchor.Following`): the next segment starts at the first of them, offset by the break,
-  but not before the end of the other children (which may end later in another inline size, e.g. with another alignment).
+  but not before the end of the other children (which may end later in another inline size, e.g. with another alignment; the
+  items of a subgrid of the rows of the grid are children of the grid, not the subgrid, which ends with its last row).
   The rows are parallel flows that break apart from the flow of their container (a row may continue after the break of the
   strip: a grid item that avoids breaks, the cells of a row, an item whose own break is before the one of the strip), so
-  such a page ends the segment only when its content starts with the anchor (`IsAnchorOfPage`, checked on the fragments
+  such a page ends the segment only when its content starts with the anchor (`ResolveAnchorOfPage`, checked on the fragments
   that the slicer placed in the pages: no fragment of a row before the break in it, no fragment of a row after the break
-  nor of the anchor in the previous page, and the first line box of a block container resumed at a line is that line);
-  else the page is laid out in the inline size of the strip and the next page is tried.
+  nor of the anchor in the previous page, and the first line box of a block container resumed at a line is that line, not
+  also in the previous page where a line sliced by the break is); else the page is laid out in the inline size of the strip
+  and the next page is tried.
+  A segment also starts inside a row whose items are side by side (`FindRowBreakAnchor`: a table row, a single-line row flex
+  container, `IsSingleRowContainer`; a flex line, a grid row): the anchor has the anchor of the content after the break of
+  each item that continues after it (`BreakAnchor.Items`: a box, or a block container resumed at a line box; in an item, a
+  line box that the break crosses starts its content after its own break, e.g. when its lines are aligned in the cell or
+  when `widows` moved a line), and the items whose content ends before the break (`BreakAnchor.Finished`: they must have no
+  content in the page after the break, nor be pushed to it, e.g. an item that avoids breaks). The items of a grid row and of a
+  flex line are the items of the track that the break crosses (`GetItemTracks`, from the `ParallelStructure` of the
+  container: an item of the row may end before the break or start after it; an item that starts in that row and spans the
+  rows after it is an item of the row, also in a grid with `auto-fill` columns; the items of a subgrid whose rows are the
+  rows of the grid, `grid-template-rows: subgrid`, are classified by the rows of the subgrid, as items of the grid, when the
+  columns of the grid do not depend on its inline size, `IsRowSubgrid`; an item that spans that row and the rows
+  before it, or the two rows that a break between rows separates, is an item of the row in a grid whose columns do not
+  depend on its inline size, `BreakAnchor.SpanningItems`: it starts before the others, and the content after the break
+  starts after the end of the items of the rows before, `BreakAnchor.Preceding`, which its content may start in; else it
+  leaves the break without anchor). The items start at the start of the row, or are aligned in it (`align-self` other than
+  `normal`, `stretch`, `start`, `self-start`, `flex-start`): an aligned item that starts after the break starts the next
+  page whole (its anchor is the item, at offset 0); in the next segment, the items of the row are not aligned (`LayoutContext.ResumedRowItems`:
+  the contents of the cells of a table, as in Blink, and the items of a flex line or of a grid row that are not stretched
+  start at the start of the row), so that their content after the break does not depend on the block size of the row. A
+  cell that spans the rows after its row continues beside them: the rows after the row are in `BreakAnchor.Following`,
+  and must start after the content after the break. The content of the rows before the break (`BreakAnchor.Preceding`) is
+  in the previous pages: the content after the break starts after its end in the strip of the segment (`MeasureRowBreak`,
+  the content of the cells of a table row, not their boxes: a cell of a row before the broken row that spans it may end its
+  lines later in another inline size). Monolithic content of an item that the break slices (the item, or a
+  monolithic block-level box of its block flow) is the anchor of the item (`BreakAnchor.SliceOffset`): it must have the same
+  size in the strip of the segment (`SlicedContent.HasSameSize`: its position follows the item, whose position depends on the
+  inline size, e.g. a column of a grid), and its rest must start the next page (`ResolveAnchorOfPage`: it is in both pages, at the
+  offset of the break in the page). An item of a flex line or of a grid row whose anchor is the item is moved down by the
+  space added to its block-start margin (`LayoutContext.AnchorPushes`, in `FlexLayoutAlgorithm` and `GridLayoutAlgorithm`;
+  the check that the items are in one row ignores it). The content after the break of an item may start between the rows of
+  a container of the item whose rows can be moved down (`IsPushableRowContainer`: the row groups and the rows of a table,
+  pushed by `TableLayoutAlgorithm` before the row; the items of a single-line column flex container, by their main-start
+  margin; a grid whose rows do not depend on its inline size, a subgrid of the columns, whose items of the first row after the
+  break are all pushed, `BreakAnchor.PushedWith`); `MeasureRowBreak` rejects the strip when a row after that break starts
+  before the first of them. The break may also cross a row of an item (a grid row, a table row, a flex line of a container of
+  the item): its items are items of the broken row (`BreakAnchor.NestedRows`: their anchors are in `BreakAnchor.Items`, so
+  their content after the break starts at the same position as the others; each nested row keeps its own items in one row,
+  its finished items, its items before and after the break, which `MeasureRowBreak` and `ResolveAnchorOfPage` check, and its
+  container is in `LayoutContext.RowResumes` and its items in `LayoutContext.ResumedRowItems`). The content of a finished monolithic
+  item is the item itself (its block-end edge, not the end of its children). A line box of an item that the break crosses
+  is the start of its content after the break (`BreakAnchor.Resume`), as when the break of the item is before it, or its rest
+  when the break slices it (`BreakAnchor.SlicedLineOffset`): only the pages tell (`ResolveAnchorOfPage`: a sliced line is in
+  both pages, and its rest starts the page at the offset of the break; the anchor of the item then has a `SliceOffset`, and
+  the line box must have the same size and content in the strip of the segment). In the next
+  segment, the items of a flex line and of a grid with `auto-fill` columns start a new line or row
+  (`RowResume.Crossed`; the items of the flex line stay in one line, `RowResume.ContinuesLine`, and are flexed in the new
+  inline size), and the content after the break of each item starts at the same position: the lowest of them, not
+  before the end of the content of the finished items (`MeasureRowBreak`), by new layouts of the strip that add space before
+  the content of the others (`LayoutContext.AnchorPushes`: before the first line box of a block container resumed at a line,
+  in `InlineLayoutAlgorithm`; before a block-level box, separating its margins from the margins before it, in
+  `BlockFormattingContext`), at most `MaxRowAlignmentPasses` times (the intrinsic block sizes measured in another layout of a
+  strip are not used, `LayoutContext.StripLayoutCount`: e.g. a flex item of a column flex container whose line boxes are
+  moved down). When the items are not in one row in the strip (e.g. the
+  items of a subgrid with block-start padding), do not reach the same position, or when an item after
+  the break starts before that position (an item aligned in the row in the strip without the tracks of its items), the segment is
+  rejected: `LayoutPages` lays out the previous segment again without ending at that break (`rejectedBreaks`, by the index of
+  the first page of the segment), so the page keeps the inline size of the previous one.
   The breaker starts the parallel flows of the segment from the break (`FlowCursor.ResumeAt`): the items that end before it
   are in the virtual fragmentainer, the item that the break crosses continues from it with its own flow, and the first page
   starts with the space of the edges repeated at the break (`ColumnBreaker.GetDisplayOffsetAt`: a repeated table header,
@@ -3249,9 +3321,40 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   page where the table starts (not when they are taller than a quarter of it): the segment keeps the decisions of the tables
   that start in a previous segment (`PageSegmentStart.RepeatedSectionsDisabled`). The pages of a segment followed by another one are copies of the fragments (the next layout may
   return and move the fragments of the boxes laid out the same way). The boxes fixed to the viewport are laid out once, in
-  the initial containing block of the first page, as in Blink. A page of another inline size that starts inside a line, a
-  multi-column container, a table row, a flex container that wraps or a grid whose columns depend on its inline size... is
-  laid out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  the initial containing block of the first page, as in Blink.
+  A page whose content before the break continues in it does not start a segment (`ContinuesBeforeBreak`: a parallel flow of
+  the strip that ends before the break, such as the cells of a table row whose lines do not fill the pages, ends in the page
+  or after it; the breaks of the strip are then at the same position, and the next page starts the content after it).
+  A segment also starts inside the content that the break slices (`BreakAnchor.SliceOffset`, see above for the items of a row): a
+  monolithic block-level box of that block flow (a replaced element, a box with size containment, not a multi-column
+  container), or a line box of a block container (its line boxes are laid out from its start, as at a break between line
+  boxes). The rest of the content continues the part in the previous page only when it is laid out the same way in the strip
+  of the segment (`SlicedContent`, measured in both strips by `MeasureSlicedContent`: the extent of the box or of the content
+  of the line box in the inline axis, its block size, and the start of the next line box); the segment then starts at the
+  same offset in it (the block-start edge of the content in the strip plus the offset of the break), else it is rejected as
+  a row that does not reach the same position (`rejectedBreaks`).
+  A segment also starts inside a multi-column container nested in the pages (`BreakAnchor.IsInColumns`): the anchor is the
+  content of its strip at the start of its first column in the page (`ResolveColumnAnchor`, from `NestedColumns.Columns`: a
+  box or a block container resumed at a line box, the column continuing the last column of the previous page or starting the
+  row after a column spanner that ends in it; or a column spanner that starts the page, `NestedColumns.Spanners`), found again
+  in the strip of the columns of the segment (`BreakAnchor.ColumnContent`, `FindColumnsStart`). The breaker places the rows of
+  columns from that position (`NestedColumns.ResumeStart`, `NestedColumnsCursor.ResumeAt`: the content before it is in a column
+  of the virtual first fragmentainer, with the column spanners before it, and the rows continue in the row of columns of the
+  position), and the segment starts inside the border box of the container, after its block-start
+  edges (`FlowCursor.ResumeAt` resumes the container). The strips of the nested multi-column containers are laid out once the
+  strip is, with the content after the break of the strip (`LayoutContext.GetSegmentResumes`). This needs one row of columns
+  per page between the spanners (`IsResumableColumns`: no `column-height`, definite or maximum block size, absolutely
+  positioned box or nested multi-column container) and a break outside of a parallel flow (`CrossesParallelFlow`), or between
+  the rows of a container of the columns, in its only row that it crosses, or in a row of items side by side
+  (`BreakAnchor.Items`; not in monolithic content that the break slices): these anchors are checked against the content of the
+  pages (`ResolveAnchorOfPage`), the content of their containers resumes in the strip of the columns (`LayoutContext.RowResumes`,
+  the parallel flows resumed by `FlowCursor.ResumeAt`), and the items of a broken row are measured and aligned in that strip
+  (`MeasureRowBreak` on the strip of the columns, `FindResumableColumns`).
+  A page of another inline size that starts inside a line laid out another way, a multi-column container whose columns
+  cannot continue (see above), a grid whose columns depend on its inline size and whose items are not placed
+  in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the
+  dense packing in a hole before the break), a row whose items cannot continue side by side in another inline size... is laid
+  out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.
@@ -3314,9 +3417,10 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
 - Not done: the layout of the content of a page whose page area has another inline size than the strip when the page starts
-  inside a line box, a multi-column container, a table row, between the lines of a flex container that wraps, inside a row
-  flex container, inside a grid row or in a grid whose columns depend on its inline size (it is laid out in the inline size of
-  the strip), the
+  inside a line box or monolithic content sliced by the break that is not laid out the same way, a multi-column container whose
+  columns cannot continue, a subgrid, a grid whose
+  columns depend on its inline size and whose items are not placed in their order, or a row whose items cannot continue
+  side by side (it is laid out in the inline size of the strip), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 
@@ -6168,7 +6272,8 @@ hyphenator of Android `hyphenator_aosp.cc`):
   language-specific hyphenation character(s) and should apply any appropriate spelling changes just as for automatic
   hyphenation at the same point" ([`hyphens`](https://drafts.csswg.org/css-text-4/#hyphens-property)). At a soft hyphen and at
   an automatic opportunity (`GetHyphenationBreak`): in Dutch (`nl`), the diminutive of a word in -é written with `ee` is `é`
-  again (`cafee|tje` is `café-tje`); in Hungarian (`hu`), a long double consonant written with a digraph is two digraphs
+  again (`cafee|tje` is `café-tje`), and the trema that separates two vowels is removed at the start of the next line (`zee|ën`
+  is `zee-` `en`, also with U+0308 COMBINING DIAERESIS); in Hungarian (`hu`), a long double consonant written with a digraph is two digraphs
   (`Ös|szeg` is `Ösz-szeg`, also `cs`, `dz`, `dzs`, `gy`, `ly`, `ny`, `ty`, `zs`); in Pinyin (`zh-*-pinyin`), the apostrophe that
   separates two syllables is removed at the start of the next line (`tú|’àn` is `tú-` `àn`), and it is a hyphenation
   opportunity of `hyphens: auto` (and of a soft hyphen before it, which UAX #14 forbids before a quotation mark); in Catalan
@@ -6184,6 +6289,13 @@ hyphenator of Android `hyphenator_aosp.cc`):
   in the browsers, which do not repeat it. The letters
   of the spelling change are shaped with the hyphen (the hyphen fragment), the characters they replace are removed from the end
   of the line, the line breaking measures them, and the next line starts after the removed characters (its `ContentStart`).
+  The letters that replace characters at the start of the next line (the vowel without its trema,
+  `HyphenationBreak.InsertedAfter`) are a hyphen leaf in the inline box of these characters, before the first text of the
+  line (`AddLineStartSpellingChange`, `LineLeaf.SpellingChangeLength`; it replaces the empty leaf of that box when the word
+  continues in the next one: `<span>zee&shy;ë</span>n`), that the line breaking measures (`MeasureLineStartSpellingChange`).
+  Its fragment is a text fragment of the characters it replaces (`TextFragment.IsSpellingChange`, not `IsHyphen`): the
+  client rects of a range over any of them are the whole letters (`GetRangeRect`; a collapsed range has no width), their
+  emphasis marks, and a single caret unit.
   No browser implements them (WPT `css/css-text/hyphens/i18n`).
 - The edges of a hyphenated line are shaped again as at the other breaks (`ShapeLineEdges`, as Chrome's
   `ShapingLineBreaker`): when the opportunity is unsafe to break (a kerned pair, a joining) or inside a cluster (a ligature

@@ -121,7 +121,9 @@ internal sealed partial class InlineLayoutAlgorithm
     /// </remarks>
     private LineEnd BreakLine(LinePosition start, double availableSize, bool isFirstLine, IntrinsicSizeMode mode)
     {
-        // (the characters removed by the spelling change of the hyphenation break of the previous line are not on the line)
+        // (the characters removed by the spelling change of the hyphenation break of the previous line are not on the line, the
+        // letters that replace them are)
+        var spellingChangeWidth = MeasureLineStartSpellingChange(start);
         start = SkipHyphenationRemovedCharacters(start);
         _measuredLineLeftFloats = 0;
         _measuredLineRightFloats = 0;
@@ -206,6 +208,8 @@ internal sealed partial class InlineLayoutAlgorithm
         {
             (width, clonedEnd) = GetClonedEdgesAtLineStart(start.Item);
         }
+
+        width += spellingChangeWidth;
 
         for (var index = start.Item; index < items.Length; index++)
         {

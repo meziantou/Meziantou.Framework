@@ -430,7 +430,42 @@ internal sealed partial class GridLayoutAlgorithm
             }
         }
 
-        GridPlacement.PlaceItems(columns, rows, _explicitColumns.TrackCount, _explicitRows.TrackCount, grid.AutoFlow, columnsInput?.Span, rowsInput?.Span);
+        // The content of a page of another inline size that starts between two rows (see LayoutContext.RowResumes): the items after
+        // the break start a new row, the items before it are in the rows before (in the previous pages)
+        // (the items after the broken row start the row after it, beside its items that span the rows after it; the items with a
+        // definite row are before the break, see LayoutEngine.IsPlacedInOrder: the new rows start after their rows)
+        List<int>? newRows = null;
+        HashSet<int>? rowsAfterBrokenRow = null;
+        int? newRowsStart = null;
+        if (_context.RowResumes is { } resumes && resumes.TryGetValue(_box, out var resume))
+        {
+            ContainerBox? previous = null;
+            for (var i = 0; i < count; i++)
+            {
+                if (rows[i].IsDefinite)
+                {
+                    if (resume.Preceding?.Contains(_items[i].Box) == true)
+                    {
+                        newRowsStart = Math.Max(newRowsStart ?? int.MinValue, rows[i].End);
+                    }
+
+                    continue;
+                }
+
+                if (resume.StartsRow(_items[i].Box, previous))
+                {
+                    (newRows ??= []).Add(i);
+                    if (previous is not null && resume.Crossed is { } crossed && crossed.Contains(previous) && resume.Following.Contains(_items[i].Box))
+                    {
+                        (rowsAfterBrokenRow ??= []).Add(i);
+                    }
+                }
+
+                previous = _items[i].Box;
+            }
+        }
+
+        GridPlacement.PlaceItems(columns, rows, _explicitColumns.TrackCount, _explicitRows.TrackCount, grid.AutoFlow, columnsInput?.Span, rowsInput?.Span, newRows, rowsAfterBrokenRow, newRowsStart);
 
         // A subgridded axis has no implicit tracks: the areas of the items are clamped to the explicit grid
         for (var i = 0; i < count; i++)
@@ -586,6 +621,13 @@ internal sealed partial class GridLayoutAlgorithm
 
         var (justify, justifySafe, justifyIsNormal) = ResolveSelfAlignment(item, GetJustifySelf(layout), GridAxis.Columns);
         var (align, alignSafe, alignIsNormal) = ResolveSelfAlignment(item, GetAlignSelf(layout), GridAxis.Rows);
+
+        // (the items of a grid row broken by a page of another inline size are not aligned, see LayoutContext.ResumedRowItems)
+        if (align != AxisAlignment.Stretch && _context.ResumedRowItems is { } resumedItems && resumedItems.Contains(item.Box))
+        {
+            align = AxisAlignment.Start;
+        }
+
         item.JustifySelf = justify;
         item.JustifySafe = justifySafe;
         item.AlignSelf = align;
@@ -1193,7 +1235,18 @@ internal sealed partial class GridLayoutAlgorithm
 
     /// <summary>Returns the margins of an item in the axes of the grid (the <c>auto</c> margins are 0), whose percentages resolve against the inline size of its grid area.</summary>
     private LogicalSides<double> GetMargins(GridItem item, double percentageBasis)
-        => _writingDirection.ToLogical(FormattingContext.ResolveMargins(item.Style.Box, percentageBasis));
+    {
+        var margins = _writingDirection.ToLogical(FormattingContext.ResolveMargins(item.Style.Box, percentageBasis));
+
+        // (an item of a grid row broken by a page of another inline size whose content after the break starts below the one of
+        // the other items is moved down, see LayoutContext.AnchorPushes)
+        if (!item.IsOrthogonal && _context.AnchorPushes is { } pushes && pushes.TryGetValue(item.Box, out var push) && push > 0 && _context.InlineResumes?.ContainsKey(item.Box) != true)
+        {
+            margins = margins with { BlockStart = margins.BlockStart + push };
+        }
+
+        return margins;
+    }
 
     // ------------------------------------------------------------------------------------------------------------------
     // Absolutely positioned children

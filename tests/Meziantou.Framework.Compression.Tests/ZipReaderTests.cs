@@ -9,7 +9,7 @@ public sealed class ZipReaderTests
         foreach (var maxRead in new[] { 1, 7, 100_000 })
         {
             var options = new ArchiveReaderOptions { Password = password };
-            using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), maxRead), options, leaveOpen: false);
+            using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes(fileName), maxRead), options, leaveOpen: false);
             Assert.Equal(ArchiveFormat.Zip, reader.Format);
             var files = new List<string>();
             while (reader.MoveToNextEntry())
@@ -37,7 +37,7 @@ public sealed class ZipReaderTests
         _ = expectedFiles;
         var options = new ArchiveReaderOptions { Password = password };
         using var archive = new ZipArchive(ZipTestData.OpenRead(fileName), System.IO.Compression.ZipArchiveMode.Read, leaveOpen: false, options, compressionOptions: null);
-        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 4096), options, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes(fileName), 4096), options, leaveOpen: false);
         var index = 0;
         while (reader.MoveToNextEntry())
         {
@@ -65,7 +65,7 @@ public sealed class ZipReaderTests
     {
         _ = password;
         using var archive = new ZipArchive(ZipTestData.OpenRead(fileName));
-        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), options: null, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), options: null, leaveOpen: false);
         var names = new List<string>();
         while (reader.MoveToNextEntry())
         {
@@ -86,7 +86,7 @@ public sealed class ZipReaderTests
     public void PartialRead(string fileName)
     {
         using var archive = new ZipArchive(ZipTestData.OpenRead(fileName));
-        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), new ArchiveReaderOptions { Password = "password" }, leaveOpen: false);
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes(fileName), 100), new ArchiveReaderOptions { Password = "password" }, leaveOpen: false);
         var count = 0;
         while (reader.MoveToNextEntry())
         {
@@ -105,7 +105,7 @@ public sealed class ZipReaderTests
     [Fact]
     public async Task ReadEntriesAsync()
     {
-        await using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("descriptor-python.zip"), 100), options: null, leaveOpen: false);
+        await using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes("descriptor-python.zip"), 100), options: null, leaveOpen: false);
         var names = new List<string>();
         while (await reader.MoveToNextEntryAsync(TestContext.Current.CancellationToken))
         {
@@ -160,8 +160,8 @@ public sealed class ZipReaderTests
     public void SplitArchive(string first, string second, string? third)
     {
         var volumes = new[] { first, second, third };
-        var options = new ArchiveReaderOptions { VolumeResolver = index => index < volumes.Length && volumes[index] is { } name ? new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(name), 1000) : null };
-        using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes(first), 1000), options, leaveOpen: false);
+        var options = new ArchiveReaderOptions { VolumeResolver = index => index < volumes.Length && volumes[index] is { } name ? ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes(name), 1000) : null };
+        using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes(first), 1000), options, leaveOpen: false);
         var count = 0;
         while (reader.MoveToNextEntry())
         {
@@ -237,7 +237,7 @@ public sealed class ZipReaderTests
         var directory = Directory.CreateTempSubdirectory();
         try
         {
-            using var reader = ZipArchive.CreateForwardReader(new ZipTestData.ForwardOnlyStream(ZipTestData.ReadBytes("streamed-infozip.zip"), 4096), options: null, leaveOpen: false);
+            using var reader = ZipArchive.CreateForwardReader(ZipTestData.CreateForwardOnlyStream(ZipTestData.ReadBytes("streamed-infozip.zip"), 4096), options: null, leaveOpen: false);
             reader.ExtractToDirectory(directory.FullName);
             Assert.Equal(ZipTestData.GetExpectedHash("dir/nested.txt"), ZipTestData.Hash(File.ReadAllBytes(Path.Combine(directory.FullName, "dir", "nested.txt"))));
             Assert.Equal(ZipTestData.GetExpectedHash("random.bin"), ZipTestData.Hash(File.ReadAllBytes(Path.Combine(directory.FullName, "random.bin"))));

@@ -171,14 +171,15 @@ if (!updatedFiles.IsEmpty)
     Console.WriteLine("One or more steps reported errors, you can fix them and re-run the tool to check that all steps are successful.");
     Console.WriteLine("dotnet run ./eng/update-all.cs");
 
+    // Each step reports a failure by adding the file it failed on or updated, so the list says what failed
+    Console.WriteLine("Updated files or files with errors:");
+    foreach (var file in updatedFiles.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal))
+    {
+        Console.WriteLine($"- {file}");
+    }
+
     if (!isLlm)
     {
-        Console.WriteLine("Updated files:");
-        foreach (var file in updatedFiles)
-        {
-            Console.WriteLine($"- {file}");
-        }
-
         Console.WriteLine("git diff:");
         var psi = new ProcessStartInfo("git", ["--no-pager", "diff", "--ws-error-highlight=all"])
         {
@@ -356,7 +357,7 @@ void RunUpdateBomStep(FullPath rootPath)
                 return;
             }
 
-            WriteIfNotLlm($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
+            Console.WriteLine($"WARNING: File {file} contains a BOM or invalid line endings. Normalizing it.");
             File.WriteAllBytes(file, normalizedContent);
             updatedFiles.Enqueue(FullPath.FromPath(file).MakePathRelativeTo(rootPath));
         }
@@ -469,7 +470,7 @@ void RunUpdateTrimmableStep(FullPath rootPath)
     {
         File.WriteAllText(trimmableCsprojPath, newContent, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
         updatedFiles.Enqueue("eng/Trimmable/Trimmable.csproj");
-        WriteIfNotLlm("WARNING: eng/Trimmable/Trimmable.csproj was not up-to-date");
+        Console.WriteLine("WARNING: eng/Trimmable/Trimmable.csproj was not up-to-date");
     }
 }
 
@@ -1435,7 +1436,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         {
             File.WriteAllText(readmePath, newContent);
             updatedFiles.Enqueue(FullPath.FromPath(readmePath).MakePathRelativeTo(rootPath));
-            WriteIfNotLlm("WARNING: README.md was not up-to-date");
+            Console.WriteLine("WARNING: README.md was not up-to-date");
         }
     }
 
@@ -1489,7 +1490,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
             {
                 File.WriteAllText(update.ToolReadme, update.NewContent);
                 updatedFiles.Enqueue(FullPath.FromPath(update.ToolReadme).MakePathRelativeTo(rootPath));
-                WriteIfNotLlm($"WARNING: {update.ToolReadme} was not up-to-date");
+                Console.WriteLine($"WARNING: {update.ToolReadme} was not up-to-date");
             }
 
             var commandReference = commandReferences[i] ?? throw new InvalidOperationException($"Internal error: missing command reference for index {i}.");
@@ -1572,7 +1573,7 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
 
             File.Delete(path);
             updatedFiles.Enqueue(path.MakePathRelativeTo(rootPath));
-            WriteIfNotLlm($"WARNING: {GetRelativePath(path)} was removed: the command no longer exists");
+            Console.WriteLine($"WARNING: {GetRelativePath(path)} was removed: the command no longer exists");
         }
 
         foreach (var directory in Directory.EnumerateDirectories(slot, "*", SearchOption.AllDirectories).OrderByDescending(path => path.Length))
@@ -1948,11 +1949,12 @@ static List<(string[] CommandPath, string HelpText)> GetToolHelpSections(string 
     return sections;
 }
 
+// The readme files use LF, so the lines do not end with Environment.NewLine (CRLF on Windows)
 static string BuildToolHelpMarkdown(List<(string[] CommandPath, string HelpText)> sections)
 {
     var sb = new StringBuilder();
-    sb.AppendLine("## Help");
-    sb.AppendLine();
+    sb.Append("## Help\n");
+    sb.Append('\n');
 
     for (var i = 0; i < sections.Count; i++)
     {
@@ -1960,21 +1962,21 @@ static string BuildToolHelpMarkdown(List<(string[] CommandPath, string HelpText)
         if (section.CommandPath.Length is not 0)
         {
             sb.Append("### ");
-            sb.AppendLine(string.Join(' ', section.CommandPath));
-            sb.AppendLine();
+            sb.Append(string.Join(' ', section.CommandPath)).Append('\n');
+            sb.Append('\n');
         }
 
-        sb.AppendLine("```");
-        sb.AppendLine(section.HelpText);
-        sb.AppendLine("```");
+        sb.Append("```\n");
+        sb.Append(section.HelpText).Append('\n');
+        sb.Append("```\n");
 
         if (i < sections.Count - 1)
         {
-            sb.AppendLine();
+            sb.Append('\n');
         }
     }
 
-    return sb.ToString().TrimEnd('\r', '\n');
+    return sb.ToString().TrimEnd('\n');
 }
 
 // Renders the command reference of a tool for docs/, laid out like the reference of the .NET CLI: a page per command,
@@ -2312,8 +2314,9 @@ static string GetToolHelpText(string csproj, ToolCommand tool, string? toolName,
     Console.WriteLine($"[update-tool-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: {tool.FileName} {string.Join(' ', runArgs)}");
 
     var (standardOutput, standardError) = RunProcessAndCaptureOutputs(tool.FileName, runArgs, timeout: TimeSpan.FromMinutes(2));
+    // The tool writes CRLF on Windows, and the readme files use LF
     var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
-    helpText = TrimEndOfLines(helpText).TrimEnd('\r', '\n');
+    helpText = TrimEndOfLines(helpText.ReplaceLineEndings("\n")).TrimEnd('\n');
     if (string.IsNullOrWhiteSpace(helpText))
     {
         throw new InvalidOperationException($"Process '{tool.FileName} {string.Join(' ', runArgs)}' produced empty help output.");

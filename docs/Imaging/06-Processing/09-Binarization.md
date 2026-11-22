@@ -1,6 +1,6 @@
 ---
 title: Binarization
-description: Make an image black and white with a global threshold (Otsu, fixed) or an adaptive one (mean, Sauvola) that follows uneven lighting.
+description: Make an image black and white with a global threshold (Otsu, fixed) or an adaptive one (mean, Sauvola, Bradley) that follows uneven lighting.
 ---
 
 [Threshold](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Threshold) makes every frame black and white, in place: a pixel whose luminance is greater than its threshold becomes
@@ -41,6 +41,7 @@ or white. See [TIFF](../10-Formats/10-Tiff.md) and [Netpbm](../10-Formats/09-Net
 | [Fixed](cref:Meziantou.Framework.Imaging.ThresholdMethod.Fixed) | [Level](cref:Meziantou.Framework.Imaging.ThresholdOptions.Level), a fraction of the range (0.5 by default: 128 and above become white on 8-bit samples) | A threshold you know |
 | [Mean](cref:Meziantou.Framework.Imaging.ThresholdMethod.Mean) | The mean of the [WindowSize](cref:Meziantou.Framework.Imaging.ThresholdOptions.WindowSize) square around each pixel, minus [Offset](cref:Meziantou.Framework.Imaging.ThresholdOptions.Offset) | Uneven lighting |
 | [Sauvola](cref:Meziantou.Framework.Imaging.ThresholdMethod.Sauvola) | A threshold computed from the mean and the contrast of the window around each pixel ([SauvolaK](cref:Meziantou.Framework.Imaging.ThresholdOptions.SauvolaK), [SauvolaR](cref:Meziantou.Framework.Imaging.ThresholdOptions.SauvolaR)) | Documents: a blank background stays blank, even in a shadow |
+| [Bradley](cref:Meziantou.Framework.Imaging.ThresholdMethod.Bradley) | A fraction [BradleyT](cref:Meziantou.Framework.Imaging.ThresholdOptions.BradleyT) (0.15 by default) below the mean of the window around each pixel | Uneven lighting, when uniform areas must stay white: a pixel must be darker than its surroundings by that fraction of their mean |
 
 - [ImageHistogram.GetOtsuThreshold()](cref:Meziantou.Framework.Imaging.ImageHistogram.GetOtsuThreshold) returns the Otsu level of any histogram, for example to inspect it before
   thresholding with [Fixed](cref:Meziantou.Framework.Imaging.ThresholdMethod.Fixed) (see [Histograms, levels and curves](07-HistogramsAndLevels.md)).

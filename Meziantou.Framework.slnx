@@ -117,6 +117,7 @@
     <Project Path="src/Meziantou.Framework.DnsClient/Meziantou.Framework.DnsClient.csproj" />
     <Project Path="src/Meziantou.Framework.DnsFilter/Meziantou.Framework.DnsFilter.csproj" />
     <Project Path="src/Meziantou.Framework.DnsServer/Meziantou.Framework.DnsServer.csproj" />
+    <Project Path="src/Meziantou.Framework.Email/Meziantou.Framework.Email.csproj" />
     <Project Path="src/Meziantou.Framework.EmbeddedConstantsGenerator/Meziantou.Framework.EmbeddedConstantsGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator.CodeFixes/Meziantou.Framework.FastEnumGenerator.CodeFixes.csproj" />
     <Project Path="src/Meziantou.Framework.FastEnumGenerator/Meziantou.Framework.FastEnumGenerator.csproj" />
@@ -390,6 +391,7 @@
     <Project Path="src/Meziantou.Framework.Geo.Maps/Meziantou.Framework.Geo.Maps.csproj" />
     <Project Path="src/Meziantou.Framework.Geo/Meziantou.Framework.Geo.csproj" />
     <Project Path="src/Meziantou.Framework.Globbing/Meziantou.Framework.Globbing.csproj" />
+    <Project Path="src/Meziantou.Framework.Graphviz/Meziantou.Framework.Graphviz.csproj" />
     <Project Path="src/Meziantou.Framework.Hashing/Meziantou.Framework.Hashing.csproj" />
     <Project Path="src/Meziantou.Framework.Html.Tool/Meziantou.Framework.Html.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
@@ -558,6 +560,7 @@
     <Project Path="tests/Meziantou.Framework.DnsFilter.Tests/Meziantou.Framework.DnsFilter.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DnsServer.Tests/Meziantou.Framework.DnsServer.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Email.Tests/Meziantou.Framework.Email.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests/Meziantou.Framework.EmbeddedConstantsGenerator.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.InterceptorTests/Meziantou.Framework.FastEnumGenerator.InterceptorTests.csproj" />
     <Project Path="tests/Meziantou.Framework.FastEnumGenerator.Tests/Meziantou.Framework.FastEnumGenerator.Tests.csproj" />
@@ -574,6 +577,7 @@
     <Project Path="tests/Meziantou.Framework.Geo.Tests/Meziantou.Framework.Geo.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests/Meziantou.Framework.GlobalizationSensitivity.Analyzer.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Globbing.Tests/Meziantou.Framework.Globbing.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Graphviz.Tests/Meziantou.Framework.Graphviz.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Hashing.Tests/Meziantou.Framework.Hashing.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Html.Tool.Tests/Meziantou.Framework.Html.Tool.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.HtmlSanitizer.Tests/Meziantou.Framework.HtmlSanitizer.Tests.csproj" />
@@ -771,6 +775,7 @@
     <Project Path="fuzz/Meziantou.Framework.DependencyScanning.Fuzz/Meziantou.Framework.DependencyScanning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Diagrams.Fuzz/Meziantou.Framework.Diagrams.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Dns.Fuzz/Meziantou.Framework.Dns.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Email.Fuzz/Meziantou.Framework.Email.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz/Meziantou.Framework.FastEnumGenerator.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.FastEnumGenerator.FuzzEnums/Meziantou.Framework.FastEnumGenerator.FuzzEnums.csproj" />
     <Project Path="fuzz/Meziantou.Framework.FileConversion.Tool.Fuzz/Meziantou.Framework.FileConversion.Tool.Fuzz.csproj" />
@@ -782,6 +787,7 @@
     <Project Path="fuzz/Meziantou.Framework.Geo.GeoParquet.Fuzz/Meziantou.Framework.Geo.GeoParquet.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Geo.Maps.Fuzz/Meziantou.Framework.Geo.Maps.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Globbing.Fuzz/Meziantou.Framework.Globbing.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Graphviz.Fuzz/Meziantou.Framework.Graphviz.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Hashing.Fuzz/Meziantou.Framework.Hashing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz/Meziantou.Framework.HtmlSanitizer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.HtmlToMarkdown.Fuzz/Meziantou.Framework.HtmlToMarkdown.Fuzz.csproj" />

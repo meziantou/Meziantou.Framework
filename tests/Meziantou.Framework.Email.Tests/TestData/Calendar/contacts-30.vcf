@@ -1,0 +1,21 @@
+BEGIN:VCARD
+VERSION:3.0
+N:O'Brien;Mary;Ann;;
+FN:Mary Ann O'Brien
+NICKNAME:Molly,MA
+ORG:Example\, Ltd.;Sales;EMEA
+TITLE:Sales\; Marketing
+EMAIL;TYPE=INTERNET,WORK,PREF:mary@example.com
+EMAIL;TYPE=INTERNET,HOME:mary.home@example.org
+TEL;TYPE=WORK,VOICE:+1-555-0100
+TEL;TYPE=HOME,FAX:+1-555-0101
+item1.ADR;TYPE=HOME:;Apt 4;12 Main St;Springfield;IL;62701;USA
+item1.X-ABLabel:Home
+URL;TYPE=WORK:https://example.com/mary
+BDAY:1975-12-01
+NOTE:Met at the conference.\nLikes tea.
+CATEGORIES:Customers,VIP
+PHOTO;ENCODING=b;TYPE=PNG:iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M8AAAMBAQAY3Y2wAAAAAElFTkSuQmCC
+UID:urn:uuid:4fbe8971-0bc3-424c-9c26-36c3e1eff6b1
+X-CUSTOM;X-PARAM="a:b":custom value
+END:VCARD

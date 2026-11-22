@@ -74,6 +74,9 @@ internal sealed class IntrinsicBlockSizeCache
     /// <summary>The generation of the layout engine the size is valid for in the next passes, or -1 (see <see cref="LayoutContext.IsCacheOfPreviousPassValid"/>).</summary>
     public int Generation;
 
+    /// <summary>The layout of the strip of the pages the size is valid for (see <see cref="LayoutContext.StripLayoutCount"/>).</summary>
+    public int StripLayout;
+
     public PhysicalSize InitialContainingBlockSize;
 }
 

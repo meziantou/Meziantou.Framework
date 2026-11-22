@@ -254,6 +254,12 @@ namespace Meziantou.Framework.JavaScriptEngine
         public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsEngineScope left, Meziantou.Framework.JavaScriptEngine.JsEngineScope right) => throw null;
     }
 
+    public static class JsEngineTelemetry
+    {
+        public const string ActivitySourceName = "Meziantou.Framework.JavaScriptEngine";
+        public const string MeterName = "Meziantou.Framework.JavaScriptEngine";
+    }
+
     public enum JsErrorType
     {
         Error = 0,

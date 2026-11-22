@@ -369,6 +369,17 @@ internal sealed class CaretLineCollector
             return;
 
         var data = run.Data;
+
+        // The letters of a spelling change at the start of a line (the vowel without its Dutch trema) are a single unit: the
+        // characters they replace
+        if (fragment.IsSpellingChange)
+        {
+            var unit = CreateAtomicUnit(CaretUnitKind.Character, node, new CaretPoint(node, fragment.Start), new CaretPoint(node, fragment.End), rect, fragment.WritingDirection, data[fragment.Start..fragment.End], fragment);
+            unit.LogicalKey = (key, fragment.Start);
+            units.Add(unit);
+            return;
+        }
+
         if (fragment.ShapedText is not { } shaped || fragment.GlyphCount == 0)
         {
             // A preserved segment break

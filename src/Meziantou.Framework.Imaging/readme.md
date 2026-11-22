@@ -79,7 +79,7 @@ conversion, and bounded-memory streaming.
   custom pixel types that convert from and to them (`ICustomPixel<TSelf>`), and two CMYK ones (`Cmyk32`, `Cmyk64`) that keep the inks
   of print images
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, homography estimation (least squares and RANSAC), document deskew, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, homography estimation (least squares and RANSAC), document deskew, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions and resizing (seam carving), inpainting, text watermarks (once, in a corner or tiled), morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians, Canny), Hough line and corner detection (Harris, Shi-Tomasi, FAST), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -809,7 +809,10 @@ public static Image<Rgba64> ToneMapHighlights(Image<RgbaFloat> hdr, string pngPa
 without the `#`), which `ToHexString` writes back. An `Rgba32` converts implicitly to an `Rgba64`.
 
 **No silent loss**. Converting non-opaque pixels to a format without alpha throws
-`UnsupportedImageFeatureException` unless an opaque background is given; fully opaque pixels never need one. The controls:
+`UnsupportedImageFeatureException` unless an opaque background is given; fully opaque pixels never need one. `IsOpaque`
+(on an image, every frame and the poster, or on one frame) reads the pixels and tells whether every alpha is the
+largest value of the pixel format (exactly 1 for floating-point alpha), without allocating; a format without alpha is
+always opaque. The controls:
 
 | Loss | Control |
 | --- | --- |
@@ -877,7 +880,7 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 In-place extension methods (`ImageProcessingExtensions`), applied to every frame and the poster:
 `Crop` (an in-canvas rectangle, never clamped), `AutoCrop` (the detected content), `Resize`, `SeamCarve` (a
 content-aware resize, see [Content-aware resize](#content-aware-resize)), `Inpaint` (a mask filled from the pixels
-around it, see [Inpainting](#inpainting)), `Deskew` and `EstimateSkew` (see the perspective correction below),
+around it, see [Inpainting](#inpainting)), `AddWatermark` (a text drawn once or tiled, see [Watermarks](#watermarks)), `Deskew` and `EstimateSkew` (see the perspective correction below),
 `DetectLines` and `DetectCorners` (analyses of one frame, see
 [Lines and corners](#lines-and-corners)), `Pad` (a border of a given
 width on each side), `ExtendCanvas` (a larger canvas, with the image at one of nine anchors), `Rotate` (exact 90/180/270
@@ -1491,6 +1494,36 @@ public static void RemoveScratches(string photoPath, string maskPath, string out
 ```
 <!-- endref -->
 
+#### Watermarks
+
+`AddWatermark(text, options)` draws a text on every frame and the poster: once, in the center, in a corner or against an
+edge (`WatermarkPosition`, at `Margin` pixels from the edges), or repeated across the image (`IsTiled`, in rows offset by
+half a copy, drawn once in a `PatternBrush`). `ImageWatermarkOptions` takes the fonts (the library never picks one); by
+default the text is gray at 30% opacity, along the diagonal of the image and fitted to 80% of it when centered, and
+horizontal and a twentieth of the diagonal of the image tall when placed against an edge. The text is placed by the box of
+its turned ink. A character in none of the fonts throws an `ArgumentException` before any pixel changes.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/GuideExamples.cs;region=Imaging_AddTiledWatermark;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void AddTiledWatermark(string fontPath, string inputPath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+    var options = new ImageWatermarkOptions(Font.Load(fontPath))
+    {
+        IsTiled = true,
+        FontSize = image.Width / 12.0,
+        Rotation = 30,
+        Color = new Rgba32(255, 255, 255),
+        Opacity = 0.35,
+    };
+
+    // Rows of copies cover the image, each one offset by half a copy: the text cannot be cropped out
+    image.AddWatermark("CONFIDENTIAL", options);
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
 #### Lines and corners
 
 `ImageFrame.DetectLines(options)` returns the straight lines of a frame by the Hough transform (Duda and Hart, 1972): the
@@ -1965,6 +1998,9 @@ thresholds:
 - **Sauvola** (`ThresholdMethod.Sauvola`), for documents, uses `m * (1 + k * (s / R - 1))`, where `m` and `s` are the
   mean and the standard deviation of the window, `k` is `SauvolaK` (0.2) and `R` is `SauvolaR` (0.5 of the range, the
   127.5 of the paper), the formula of scikit-image's `threshold_sauvola`: a blank background stays blank.
+- **Bradley** (`ThresholdMethod.Bradley`) uses `m * (1 - t)`, where `m` is the mean of the window and `t` is `BradleyT`
+  (0.15, the 15% of Bradley and Roth): a pixel must be darker than its surroundings by that fraction of their mean, so a
+  uniform area stays in the upper class. With `t` = 0 it is `Mean` without offset.
 
 The windows read the pixels outside the frame as `EdgeMode` says (`Mirror` by default, scipy's `reflect`). Their sums
 are exact integers and their means and deviations IEEE doubles, so the results are the same on every platform; on the

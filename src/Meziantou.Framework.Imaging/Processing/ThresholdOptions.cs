@@ -13,7 +13,8 @@ namespace Meziantou.Framework.Imaging;
 /// (255 for 8-bit pixel formats, 65,535 for 16-bit ones); the levels of these options are fractions of it.
 /// </para>
 /// <para>
-/// The windows of the adaptive methods (<see cref="ThresholdMethod.Mean"/> and <see cref="ThresholdMethod.Sauvola"/>) are
+/// The windows of the adaptive methods (<see cref="ThresholdMethod.Mean"/>, <see cref="ThresholdMethod.Sauvola"/> and
+/// <see cref="ThresholdMethod.Bradley"/>) are
 /// squares of <see cref="WindowSize"/> pixels centered on each pixel, which read the pixels outside the frame as
 /// <see cref="EdgeMode"/> says. Their sums are exact integers; the means, the deviations and the thresholds are IEEE
 /// doubles, so the result is the same on every platform.
@@ -131,6 +132,25 @@ public sealed class ThresholdOptions
             field = value;
         }
     } = 0.5;
+
+    /// <summary>
+    /// Gets the fraction <c>t</c> of <see cref="ThresholdMethod.Bradley"/>, from 0 to 1: the threshold of a pixel is
+    /// <c>(1 - t)</c> times the mean of its window. Defaults to 0.15, the 15% of the paper. With 0, the threshold is the mean,
+    /// as <see cref="ThresholdMethod.Mean"/> without offset; the larger it is, the darker than its surroundings a pixel must
+    /// be to get <see cref="LowerColor"/>. Ignored by the other methods.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 1.</exception>
+    public double BradleyT
+    {
+        get;
+        init
+        {
+            if (!(value is >= 0 and <= 1))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The Bradley fraction must be between 0 and 1.");
+
+            field = value;
+        }
+    } = 0.15;
 
     /// <summary>
     /// Gets the pixels the windows of the adaptive methods read outside the frame. Defaults to

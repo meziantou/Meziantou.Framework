@@ -59,10 +59,35 @@ internal sealed partial class CodeGenerator
     /// <summary>Compiles a function on its first call: its source text is parsed again and compiled in the scopes that enclose it.</summary>
     public static FunctionTemplate CompileLazyFunction(LazyFunction lazy)
     {
-        var function = JsParser.ParseLazyFunction(lazy.Source, lazy.Scope.IsModule, lazy.Syntax);
-        var analysis = ScopeAnalyzer.AnalyzeLazyFunction(function, lazy.Kind, lazy.Scope);
-        var generator = new CodeGenerator(analysis, lazy.Source, analysis.Root);
-        return generator.CompileFunctionBody(function, lazy.Name, lazy.ExtraFlags);
+        // Measured by the metrics only: a span per function would flood the traces
+        var parse = JsEngineTelemetry.StartParse(JsCodeKind.LazyFunction, traced: false);
+        FunctionNode function;
+        try
+        {
+            function = JsParser.ParseLazyFunction(lazy.Source, lazy.Scope.IsModule, lazy.Syntax);
+        }
+        catch (Exception ex) when (parse.Fail(ex))
+        {
+            throw;
+        }
+
+        parse.Stop();
+
+        var compile = JsEngineTelemetry.StartCompile(JsCodeKind.LazyFunction, traced: false);
+        FunctionTemplate template;
+        try
+        {
+            var analysis = ScopeAnalyzer.AnalyzeLazyFunction(function, lazy.Kind, lazy.Scope);
+            var generator = new CodeGenerator(analysis, lazy.Source, analysis.Root);
+            template = generator.CompileFunctionBody(function, lazy.Name, lazy.ExtraFlags);
+        }
+        catch (Exception ex) when (compile.Fail(ex))
+        {
+            throw;
+        }
+
+        compile.Stop();
+        return template;
     }
 
     /// <summary>

@@ -57,6 +57,15 @@ public sealed class UnixCompressStreamTests
         return Encoding.ASCII.GetBytes(string.Join(' ', parts));
     }
 
+    [Fact]
+    public void Decompress_NonSeekableStream()
+    {
+        using var stream = new UnixCompressStream(ZipTestData.CreateForwardOnlyStream(File.ReadAllBytes(GetTestDataPath("sample-b16.Z")), 1));
+        using var output = new MemoryStream();
+        stream.CopyTo(output);
+        Assert.Equal(GetSampleText(), output.ToArray());
+    }
+
     [Theory]
     [InlineData("sample-b9.Z")]
     [InlineData("sample-b10.Z")]

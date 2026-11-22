@@ -47,8 +47,39 @@ public sealed class JsPreparedScript
     {
         ArgumentNullException.ThrowIfNull(code);
         var source = new SourceText(code, url, lineOffset, columnOffset) { UnboundNameFunctionStart = unboundNameFunctionStart, IsShared = true };
-        var program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
-        return new JsPreparedScript(source, CodeGenerator.CompileProgram(program, source, ProgramKind.Script, isStrict: false));
+        return new JsPreparedScript(source, Compile(source));
+    }
+
+    /// <summary>Parses and compiles the source text of a script, traced by the <c>js.parse</c> and <c>js.compile</c> spans.</summary>
+    /// <exception cref="JsSyntaxErrorException">The script is not valid.</exception>
+    internal static FunctionTemplate Compile(SourceText source)
+    {
+        var parse = JsEngineTelemetry.StartParse(JsCodeKind.Script, traced: true, source.Url, source.Text.Length);
+        Ast.Program program;
+        try
+        {
+            program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
+        }
+        catch (Exception ex) when (parse.Fail(ex))
+        {
+            throw;
+        }
+
+        parse.Stop();
+
+        var compile = JsEngineTelemetry.StartCompile(JsCodeKind.Script, traced: true, source.Url, source.Text.Length);
+        FunctionTemplate template;
+        try
+        {
+            template = CodeGenerator.CompileProgram(program, source, ProgramKind.Script, isStrict: false);
+        }
+        catch (Exception ex) when (compile.Fail(ex))
+        {
+            throw;
+        }
+
+        compile.Stop();
+        return template;
     }
 
     /// <summary>Parses and compiles a script; returns false and the syntax error when the script is not valid.</summary>

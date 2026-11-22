@@ -82,7 +82,19 @@ internal sealed class FunctionTemplate
         if (!IsJitCompilationAttempted)
         {
             IsJitCompilationAttempted = true;
-            if (Interpreter.JitCompiler.Compile(this) is { } jitCode)
+            var compile = Interpreter.JitCompiler.IsSupported ? JsEngineTelemetry.StartCompile(JsCodeKind.Jit, traced: false) : default;
+            Interpreter.JitCode? jitCode;
+            try
+            {
+                jitCode = Interpreter.JitCompiler.Compile(this);
+            }
+            catch (Exception ex) when (compile.Fail(ex))
+            {
+                throw;
+            }
+
+            compile.Stop();
+            if (jitCode is not null)
             {
                 Interlocked.CompareExchange(ref _jitCode, jitCode, comparand: null);
             }

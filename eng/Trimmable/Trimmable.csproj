@@ -36,6 +36,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.DiffEngine\Meziantou.Framework.DiffEngine.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.DnsClient\Meziantou.Framework.DnsClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.DnsFilter\Meziantou.Framework.DnsFilter.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Email\Meziantou.Framework.Email.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.FixedStringBuilder\Meziantou.Framework.FixedStringBuilder.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Fonts\Meziantou.Framework.Fonts.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.FullPath\Meziantou.Framework.FullPath.csproj" />
@@ -302,6 +303,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.Data\Meziantou.Framework.Geo.Maps.Data.Zimbabwe\Meziantou.Framework.Geo.Maps.Data.Zimbabwe.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Geo.Maps.GeoPackage\Meziantou.Framework.Geo.Maps.GeoPackage.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Globbing\Meziantou.Framework.Globbing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.Graphviz\Meziantou.Framework.Graphviz.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.HtmlToMarkdown\Meziantou.Framework.HtmlToMarkdown.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Http\Meziantou.Framework.Http.csproj" />
@@ -403,6 +405,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.DiffEngine" />
     <TrimmerRootAssembly Include="Meziantou.Framework.DnsClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.DnsFilter" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Email" />
     <TrimmerRootAssembly Include="Meziantou.Framework.FixedStringBuilder" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Fonts" />
     <TrimmerRootAssembly Include="Meziantou.Framework.FullPath" />
@@ -669,6 +672,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.Data.Zimbabwe" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Geo.Maps.GeoPackage" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Globbing" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.Graphviz" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Hashing" />
     <TrimmerRootAssembly Include="Meziantou.Framework.HtmlToMarkdown" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Http" />

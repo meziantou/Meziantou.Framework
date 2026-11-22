@@ -108,6 +108,14 @@ An operation that would lose information throws an [UnsupportedImageFeatureExcep
 | Floating-point samples, when saving a format that stores integers | [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion) |
 | Metadata the output cannot store | [ImageEncoder.MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.MetadataHandling): see [Saving images](../05-LoadingAndSaving/04-SavingImages.md) |
 
+To know whether an image needs a background color before you convert or save it, call
+[IsOpaque](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.IsOpaque) on the image or on one frame. It reads
+the pixels, every frame and the poster for an image, and returns `true` when every alpha is the largest value of the
+pixel format (exactly 1 for floating-point alpha). A format without alpha is always opaque. The
+[MayHaveTransparency](cref:Meziantou.Framework.Imaging.ImageInfo.MayHaveTransparency) of an identified file only says
+what its header declares: a PNG file with an alpha channel whose pixels are all opaque reports that it may have
+transparency, while [IsOpaque](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.IsOpaque) returns `true`.
+
 For example, a JPEG stores neither alpha nor 16-bit samples nor every kind of metadata, so exporting a frame of any
 image to JPEG sets the three controls:
 

@@ -499,6 +499,24 @@ internal sealed class BlockFormattingContext : FormattingContext
             var childMarker = marker is not null && !clipsOverflow && childBox.IsBlockContainer && childBox.Kind is ContainerBoxKind.Normal or ContainerBoxKind.Anonymous ? marker : null;
             marker = null;
 
+            // (a box after the break of an item of a row broken by a page of another inline size starts where the content after
+            // the break of the other items of the row starts, see LayoutContext.AnchorPushes: the space before it separates its
+            // margins from the margins before it)
+            if (context.AnchorPushes is { } pushes && pushes.TryGetValue(childBox, out var push) && push > 0 && context.InlineResumes?.ContainsKey(childBox) != true)
+            {
+                var spacer = CollapsedBlockMargins.Create(default, default, collapsedThrough: false, clearance: null);
+                if (collapsesMargins)
+                {
+                    blockFormattingContext.CollapseMargins();
+                    blockFormattingContext.AdvanceBlockPosition(push);
+                    placement.Place(spacer, push);
+                }
+                else
+                {
+                    placement.PlaceWithoutCollapsing(spacer, push);
+                }
+            }
+
             BoxFragment fragment;
             CollapsedBlockMargins childMargins;
             double inlineOffset;

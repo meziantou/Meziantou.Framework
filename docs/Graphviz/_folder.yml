@@ -1,0 +1,4 @@
+title: Graphviz
+description: Read the DOT language of Graphviz into flowcharts, draw them as SVG or images without Graphviz, and write flowcharts as DOT.
+packageIds:
+- Meziantou.Framework.Graphviz

@@ -133,4 +133,5 @@ In [SevenZipArchiveMode.Update](cref:Meziantou.Framework.Compression.SevenZipArc
 [CreateEntry](cref:Meziantou.Framework.Compression.SevenZipArchive.CreateEntry), remove them with
 [Delete](cref:Meziantou.Framework.Compression.SevenZipArchiveEntry.Delete), and change their times and attributes. The
 archive is rewritten when it is disposed: the solid blocks whose entries are all kept are copied as they are, and the
-entries of the other blocks are compressed again.
+entries of the other blocks are compressed again. The new entries are compressed to a temporary file until the archive
+is disposed, and the archive is rewritten through another temporary file, so the content is never kept in memory.

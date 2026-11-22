@@ -79,20 +79,11 @@ internal static partial class ColumnBreaker
         var resumes = flow.IsPaged && baseIndex > 0 && start > Epsilon;
         var startDisplayOffset = resumes ? GetDisplayOffsetAt(flow, start) : 0;
         map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start - startDisplayOffset, isBreak: true);
-        if (flow.IsPaged && baseIndex > 0 && flow.Floats is { } floats)
+        if (flow.IsPaged && baseIndex > 0)
         {
-            // (the pages of another inline size, laid out again from a break: the floats that start before the break are in the
-            // previous pages, see FlowCursor.KeepFloatsBeforeForcedBreak)
-            foreach (var extent in floats)
-            {
-                if (extent.Start < start - Epsilon && extent.End > start + Epsilon && !extent.IsPushed && flow.GetFloatMap(extent.Fragment) is null)
-                {
-                    var floatMap = new FlowMap();
-                    floatMap.Add(double.NegativeInfinity, baseIndex - 1, 0, isBreak: false);
-                    flow.KeepFloat(extent, floatMap, start);
-                }
-            }
+            KeepFloatsBefore(flow, start, baseIndex);
         }
+
         // (at the start of the flow, the contents pulled before it by a negative margin may have a forced break, see GetForcedBreakBefore)
         var cursorStart = start <= Epsilon ? GetForcedBreakBefore(flow, start) : start;
         var cursor = new FlowCursor(flow, map, cursorStart, end, baseIndex, flow.NextGeneration(), canBreakBefore: false, includesStart: start <= Epsilon);
@@ -127,6 +118,26 @@ internal static partial class ColumnBreaker
         }
 
         return violating;
+    }
+
+    /// <summary>
+    /// Keeps the floats that start before the start of a flow laid out again from a break (the pages of another inline size) in the
+    /// fragmentainer before the one of <paramref name="index"/>, see <c>FlowCursor.KeepFloatsBeforeForcedBreak</c>.
+    /// </summary>
+    private static void KeepFloatsBefore(FragmentationFlow flow, double start, int index)
+    {
+        if (flow.Floats is not { } floats)
+            return;
+
+        foreach (var extent in floats)
+        {
+            if (extent.Start < start - Epsilon && extent.End > start + Epsilon && !extent.IsPushed && flow.GetFloatMap(extent.Fragment) is null)
+            {
+                var floatMap = new FlowMap();
+                floatMap.Add(double.NegativeInfinity, index - 1, 0, isBreak: false);
+                flow.KeepFloat(extent, floatMap, start);
+            }
+        }
     }
 
     /// <summary>The result of the placement of the content of a flow in a fragmentainer.</summary>
@@ -331,6 +342,10 @@ internal static partial class ColumnBreaker
                         {
                             Resume(item, start);
                         }
+                        else if (item.Nested.ResumeStart is { } nestedStart)
+                        {
+                            ResumeNested(item, item.Nested, nestedStart);
+                        }
                     }
 
                     if (group.TrackEnds[track] <= start + Epsilon && group.ClosedTracks == track)
@@ -370,6 +385,27 @@ internal static partial class ColumnBreaker
                 item.MaxIndex = (_index, double.NaN);
                 var cursor = new FlowCursor(item.Flow, item.Map, start, item.Flow.ContentEnd, _index, item.Flow.NextGeneration(), canBreakBefore: false);
                 cursor.ResumeAt(start);
+                item.Cursor = cursor;
+                _open.Add(item);
+            }
+
+            // (a multi-column container whose rows of columns continue from a position of its strip, see NestedColumns.ResumeStart)
+            void ResumeNested(ParallelItem item, NestedColumns nested, double nestedStart)
+            {
+                item.Generation = _generation;
+                item.Group!.HasEnded = false;
+                item.PushShift = 0;
+                item.IsBoxDone = false;
+                item.IsFlowDone = false;
+                item.IsContentPlaced = false;
+                item.Map = new FlowMap();
+                item.Map.Add(double.NegativeInfinity, _index - 1, 0, isBreak: false);
+                item.Map.Add(start, _index, start, isBreak: true);
+                item.MaxStart = (_index, 0);
+                item.MaxConsumed = 0;
+                item.MaxIndex = (_index, double.NaN);
+                var cursor = new NestedColumnsCursor(item, nested, 0);
+                cursor.ResumeAt(nestedStart, _index);
                 item.Cursor = cursor;
                 _open.Add(item);
             }
@@ -1204,6 +1240,14 @@ internal static partial class ColumnBreaker
                     var flowStart = Math.Max(item.Start, group.TrackStarts[track]);
                     if (GetOffset(flowStart) - spillover >= blockSize - Epsilon && flowStart > _position + Epsilon)
                     {
+                        // (an item that spans the next tracks and starts in one of them, e.g. aligned at the end of its grid area,
+                        // does not keep them out of the fragmentainer: they are placed, and the item in a next fragmentainer)
+                        if (track + 1 < group.TrackStarts.Length && item.Start >= group.TrackStarts[track + 1] - Epsilon)
+                        {
+                            _hasDeferredItems = true;
+                            continue;
+                        }
+
                         isAfterFragmentainer = true;
                         continue;
                     }

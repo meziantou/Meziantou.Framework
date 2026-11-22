@@ -23,6 +23,8 @@ library measures and draws its own texts, and does not run a browser.
   [Mermaid charts](../Mermaid/04-Charts/01-Overview.md).
 - **Read Mermaid text**, with its front matter, its directives and its themes, and **write diagrams as Mermaid**, for
   instance to embed them in a Markdown page of GitHub. See [Mermaid](../Mermaid/01-Introduction.md).
+- **Read the DOT language of Graphviz** into flowcharts, and **write flowcharts as DOT**, without installing Graphviz.
+  See [Graphviz](../Graphviz/01-Introduction.md).
 - **Theme the diagrams** with the themes of Mermaid, or your own colors. See [themes](05-Theming.md).
 - **Render images**: PNG, WebP, JPEG, or drawing on an existing image. See [image rendering](06-ImageRendering.md).
 

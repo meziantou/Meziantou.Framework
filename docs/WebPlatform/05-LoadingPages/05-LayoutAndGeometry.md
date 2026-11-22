@@ -103,7 +103,8 @@ text are the same on every machine with the bundled fonts.
 The hyphenation (`hyphens`) follows the typographic conventions of the content language (the `lang` attribute), which the
 browsers do not apply:
 
-- The spelling changes at a hyphenation break: Dutch (`cafeetje` is `café-` `tje`), Hungarian (`Összeg` is `Ösz-` `szeg`),
+- The spelling changes at a hyphenation break: Dutch (`cafeetje` is `café-` `tje`, and the trema is removed at the start of
+  the next line: `zeeën` is `zee-` `en`), Hungarian (`Összeg` is `Ösz-` `szeg`),
   Pinyin (`tú’àn` is `tú-` `àn`), Catalan (`col·lecció` is `col-` `lecció`), and the 1901 German orthography (`Zucker` is
   `Zuk-` `ker`).
 - The hyphen of a compound word broken at its hyphen is repeated at the start of the next line in Pinyin and, with

@@ -53,6 +53,8 @@ public static class PdfFuzzTargets
 
     private static readonly string[] HeaderFooterTokens = ["{page}", "{pages}", "{label}", "{date}", "{bates}", "{{", "}}", "{", "}", "Page ", " of "];
 
+    private static readonly string[] WatermarkTokens = ["DRAFT", "CONFIDENTIAL", "COPY", "TOP SECRET", " ", "€", "é", "Ā", "中", "\0", "\t", "\n", "W"];
+
     private static readonly string[] FormScriptTokens =
     [
         "event.value", "event.rc = false;", "event.target", "event.source", "this.getField(\"A\")", "this.getField(\"B\").value", ".value = ", ".valueAsString",
@@ -77,6 +79,7 @@ public static class PdfFuzzTargets
         new("pdf-compare", Compare) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-table", Table) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-header-footer", HeaderFooter) { Seeds = GetHeaderFooterSeeds, Dictionary = HeaderFooterTokens },
+        new("pdf-watermark", Watermark) { Seeds = GetWatermarkSeeds, Dictionary = WatermarkTokens },
         new("pdf-flow-layout", FlowLayout) { Seeds = GetFlowLayoutSeeds, Dictionary = FlowLayoutTokens },
         new("pdf-auto-tag", AutoTag) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-accessibility", Accessibility) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
@@ -854,6 +857,69 @@ public static class PdfFuzzTargets
     }
 
     /// <summary>
+    /// The input is seven option bytes, then the text of a watermark added to a document of three pages rotated by 0, 90
+    /// and 180 degrees: the position, the tiling and the placement; the first page; the last page (255 for none); the
+    /// margin; the font size (0 for none); the spacing of the tiles (0 for none); the rotation (0 for none). The watermark
+    /// either throws <see cref="ArgumentException"/> and leaves the document unchanged, or writes a document that reads
+    /// back with the same pages, the pages outside the range unchanged and those of the range marked.
+    /// </summary>
+    private static void Watermark(ReadOnlySpan<byte> data)
+    {
+        if (data.Length < 7)
+            return;
+
+        var text = FuzzText.Decode(data[7..]);
+        var document = new PdfDocument();
+        for (var i = 0; i < 3; i++)
+        {
+            document.Pages.Add(PdfSize.A5).Rotation = i * 90;
+        }
+
+        var before = document.ToByteArray();
+        var contents = document.Pages.Select(page => page.GetContentData()).ToArray();
+        PdfWatermarkOptions options;
+        try
+        {
+            // The negative values of the margin and the spacing are invalid
+            options = new PdfWatermarkOptions
+            {
+                Position = (PdfWatermarkPosition)((data[0] & 0x0F) % 10),
+                IsTiled = (data[0] & 0x10) != 0,
+                Placement = (data[0] & 0x20) != 0 ? PdfContentPlacement.Under : PdfContentPlacement.Over,
+                FirstPageIndex = data[1] & 3,
+                LastPageIndex = data[2] == 0xFF ? null : data[2] & 3,
+                Margin = (sbyte)data[3],
+                FontSize = data[4] == 0 ? null : data[4] / 2.0,
+                TileSpacing = data[5] == 0 ? null : (sbyte)data[5],
+                Rotation = data[6] == 0 ? null : (sbyte)data[6] * 3,
+            };
+            document.AddWatermark(text, options);
+        }
+        catch (ArgumentException)
+        {
+            FuzzAssert.True(document.ToByteArray().AsSpan().SequenceEqual(before), "A rejected watermark changed the document");
+            return;
+        }
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        FuzzAssert.Equal(3, read.Pages.Count, "The watermarked document lost pages");
+        var last = Math.Min(options.LastPageIndex ?? 2, 2);
+        for (var i = 0; i < 3; i++)
+        {
+            var content = read.Pages[i].GetContentData();
+            if (i < options.FirstPageIndex || i > last)
+            {
+                FuzzAssert.True(content.AsSpan().SequenceEqual(contents[i]), "A page outside the range changed");
+            }
+            else
+            {
+                // Helvetica Bold and the sizes of the input keep the steps of a tiled watermark far above the smallest one written
+                FuzzAssert.True(System.Text.Encoding.Latin1.GetString(content).Contains("/Artifact", StringComparison.Ordinal), "A page of the range has no watermark");
+            }
+        }
+    }
+
+    /// <summary>
     /// The input is an option byte (the page size, the alignment, the columns), then a text whose lines are blocks: a
     /// heading (<c>#</c>), a list item (<c>-</c>), a table row (<c>|</c>), a rule (<c>---</c>), or a paragraph. The text is
     /// laid out without an exception, every line of every page is inside the margins, and the document reads back with
@@ -1082,6 +1148,21 @@ public static class PdfFuzzTargets
         yield return FuzzSeed.FromText("date", "{date} {{label}} {label}");
         yield return FuzzSeed.FromText("bates", "{bates}");
         yield return FuzzSeed.FromText("invalid", "{unknown} }");
+    }
+
+    private static IEnumerable<FuzzSeed> GetWatermarkSeeds()
+    {
+        // The options of the tests of PdfPageTests: option bytes, then the text
+        yield return FuzzSeed.FromText("centered", [0x00, 0x00, 0xFF, 36, 0, 0, 0], "DRAFT");
+        yield return FuzzSeed.FromText("corner", [(byte)PdfWatermarkPosition.TopRight, 0x00, 0xFF, 36, 48, 0, 0], "CONFIDENTIAL");
+        yield return FuzzSeed.FromText("rotated-corner", [(byte)PdfWatermarkPosition.BottomLeft, 0x01, 0x01, 20, 40, 0, 0], "COPY");
+        yield return FuzzSeed.FromText("range", [0x00, 0x01, 0x02, 36, 0, 0, 0], "DRAFT");
+        yield return FuzzSeed.FromText("tiled", [0x10, 0x00, 0xFF, 36, 36, 12, 0], "CONFIDENTIAL");
+        yield return FuzzSeed.FromText("tiled-under", [0x30, 0x00, 0xFF, 36, 0, 0, 0], "DRAFT");
+        yield return FuzzSeed.FromText("rotation", [0x20, 0x00, 0xFF, 36, 40, 0, 30], "TOP SECRET");
+        yield return FuzzSeed.FromText("invalid-margin", [(byte)PdfWatermarkPosition.Left, 0x00, 0xFF, 0xFF, 0, 0, 0], "DRAFT");
+        yield return FuzzSeed.FromText("invalid-spacing", [0x10, 0x00, 0xFF, 36, 0, 0x80, 0], "DRAFT");
+        yield return FuzzSeed.FromText("invalid-text", [0x00, 0x00, 0xFF, 36, 0, 0, 0], "中");
     }
 
     /// <summary>The input is a PDF file: the accessibility inspector reports issues of existing pages only, and does not change the document.</summary>

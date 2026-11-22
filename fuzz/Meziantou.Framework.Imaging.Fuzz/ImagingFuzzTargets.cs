@@ -10,9 +10,9 @@ namespace Meziantou.Framework.Imaging.Fuzz;
 /// reconstruction), the lossy compression of its GIF encoder, the separate planes of its TIFF encoder, the structure of the outputs of its JPEG 2000 encoder, and its processing
 /// operations that read pixels or points
 /// they do not control: custom processors, seam carving, inpainting, line and corner detection, skew estimation,
-/// homography estimation and resizing; the conversions between the pixel formats (and from CMYK inks with the device
+/// homography estimation, resizing, binarization and the opacity check; the conversions between the pixel formats (and from CMYK inks with the device
 /// formulas, with the clones and vertical flips of the inks); the merging of the pieces of strokes;
-/// the optimal line breaking of text layouts; the texts drawn from glyph masks; the ICC profiles that the color conversions read (named colors, the
+/// the optimal line breaking of text layouts; the texts drawn from glyph masks; the text watermarks; the ICC profiles that the color conversions read (named colors, the
 /// processing elements of iccMAX profiles); the options of the WebP encoder that change its pixels or its output
 /// (bit-depth dithering, sharp YUV, non-seekable animations); and the layers of JPEG XL images and the regions of its
 /// optimized animations. The inputs of the processing targets are small images whose pixel format, size, frames and
@@ -69,6 +69,7 @@ public static partial class ImagingFuzzTargets
         new("imaging-device-cmyk", DeviceCmykTarget) { Seeds = GetDeviceCmykSeeds, Dictionary = Tokens },
         new("imaging-line-breaking", LineBreakingTarget) { Seeds = GetLineBreakingSeeds, Dictionary = LineBreakingTokens },
         new("imaging-glyph-masks", GlyphMasksTarget) { Seeds = GetGlyphMaskSeeds, Dictionary = GlyphMaskTokens },
+        new("imaging-watermark", WatermarkTarget) { Seeds = GetWatermarkSeeds, Dictionary = WatermarkTokens },
         new("imaging-color-matrix", ColorMatrixTarget) { Seeds = GetColorMatrixSeeds, Dictionary = Tokens },
         new("imaging-resize-float", ResizeFloatTarget) { Seeds = GetResizeFloatSeeds, Dictionary = Tokens },
         new("imaging-tiff-planes", TiffPlanesTarget) { Seeds = GetTiffPlanesSeeds, Dictionary = Tokens },
@@ -77,6 +78,8 @@ public static partial class ImagingFuzzTargets
         new("imaging-jxl-layers", JpegXlLayersTarget) { Seeds = GetJpegXlLayersSeeds, Dictionary = JpegXlLayerTokens },
         new("imaging-jxl-layers-load", JpegXlLayersLoadTarget) { Seeds = GetJpegXlLayersLoadSeeds, Dictionary = JpegXlLayerTokens },
         new("imaging-jxl-optimized-animation", JpegXlOptimizedAnimationTarget) { Seeds = GetJpegXlOptimizedAnimationSeeds, Dictionary = Tokens },
+        new("imaging-threshold", ThresholdTarget) { Seeds = GetThresholdSeeds, Dictionary = Tokens },
+        new("imaging-opacity", OpacityTarget) { Seeds = GetOpacitySeeds, Dictionary = Tokens },
     ];
 
     /// <summary>

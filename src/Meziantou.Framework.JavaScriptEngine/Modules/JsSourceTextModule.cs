@@ -47,8 +47,29 @@ public sealed class JsSourceTextModule : JsCyclicModule
         CompiledModule code;
         try
         {
-            program = Parsing.JsParser.ParseModule(source);
-            code = CodeGenerator.CompileModule(program, source);
+            var parse = JsEngineTelemetry.StartParse(JsCodeKind.Module, traced: true, source.Url, source.Text.Length);
+            try
+            {
+                program = Parsing.JsParser.ParseModule(source);
+            }
+            catch (Exception ex) when (parse.Fail(ex))
+            {
+                throw;
+            }
+
+            parse.Stop();
+
+            var compile = JsEngineTelemetry.StartCompile(JsCodeKind.Module, traced: true, source.Url, source.Text.Length);
+            try
+            {
+                code = CodeGenerator.CompileModule(program, source);
+            }
+            catch (Exception ex) when (compile.Fail(ex))
+            {
+                throw;
+            }
+
+            compile.Stop();
         }
         catch (JsSyntaxErrorException ex)
         {

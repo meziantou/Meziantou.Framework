@@ -1,0 +1,44 @@
+From alice@example.com Tue Jul  1 08:52:37 2025
+From: Alice <alice@example.com>
+To: Bob <bob@example.com>
+Subject: First
+Date: Tue, 1 Jul 2025 10:52:37 +0200
+Message-ID: <first@example.com>
+
+Hello Bob,
+>From the start of a line.
+>From a quoted line.
+>>From a line quoted twice.
+The word From in the middle: no escape.
+
+From bob@example.com Wed Jul  2 08:00:00 2025
+From: Bob <bob@example.com>
+To: Alice <alice@example.com>
+Subject: =?UTF-8?B?Q2Fmw6k=?=
+Date: Wed, 2 Jul 2025 08:00:00 +0000
+Message-ID: <second@example.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="b1"
+
+--b1
+Content-Type: text/plain; charset=utf-8
+
+Café.
+
+>From here, the attachment.
+--b1
+Content-Type: application/octet-stream; name="data.bin"
+Content-Transfer-Encoding: base64
+
+AAECAwQFBgcICQ==
+--b1--
+
+From carol@example.com Thu Jul  3 23:59:59 2025
+From: Carol <carol@example.com>
+To: Bob <bob@example.com>
+Subject: Last, without a final line break
+Date: Thu, 3 Jul 2025 23:59:59 +0000
+Message-ID: <third@example.com>
+
+The last line.
+

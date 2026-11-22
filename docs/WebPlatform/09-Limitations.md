@@ -22,11 +22,16 @@ fails.
   the web APIs only (CSSOM View, the computed styles, the observers; see [Layout and geometry](05-LoadingPages/05-LayoutAndGeometry.md)).
   It does not implement:
   - the layout of the content of a page whose inline size differs from the previous page when the page starts inside a
-    line box, a multi-column container, a table row, between the lines of a flex container that wraps, inside a row flex
-    container, or inside a grid row or a grid whose number of columns depends on its width (`auto-fill`, `auto-fit`, a
-    subgrid): it keeps the inline size of the previous page;
-  - the spelling changes at a hyphenation break that replace a character at the start of the next line (the Dutch trema)
-    or that need a dictionary (the triple consonants of the Swedish and Norwegian compound words);
+    line box or a monolithic box (an image, taller than the page, which is sliced) that is not laid out the same way in the
+    new inline size, inside a multi-column container whose columns do not fill the pages (`column-height`,
+    a block size, absolutely positioned boxes or nested multi-column containers in the columns) or whose last column ends inside
+    monolithic content that the break slices, inside a grid whose number of columns depends on its width
+    (`auto-fill`, `auto-fit`) and whose items are not placed in their order (an item with a definite row after the break,
+    `grid-auto-flow: column`, an item that `dense` places before the break), or inside a table row, a flex line or a grid row
+    whose items cannot continue side by side in the new width (an item whose line box or image sliced by the break changes
+    size or content): it keeps the inline size of the previous page;
+  - the spelling changes at a hyphenation break that need a dictionary (the triple consonants of the Swedish and Norwegian
+    compound words);
   - the hyphenation dictionaries under copyleft licenses (cs, hu, hy, lv);
   - the scrolling of a `::scroll-marker-group` that is a scroll container;
   - the values of `shape-inside` of CSS Shapes 2 (`display`, `outside-shape`, an image, a shape box): only the shapes of

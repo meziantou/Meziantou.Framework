@@ -2608,11 +2608,30 @@ namespace Meziantou.Framework.Pdf
     {
         public Meziantou.Framework.Pdf.PdfColor Color { get => throw null; init { } }
         public static Meziantou.Framework.Pdf.PdfWatermarkOptions Default { get => throw null; }
+        public int FirstPageIndex { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfFont? Font { get => throw null; init { } }
         public double? FontSize { get => throw null; init { } }
+        public bool IsTiled { get => throw null; init { } }
+        public int? LastPageIndex { get => throw null; init { } }
+        public double Margin { get => throw null; init { } }
         public double Opacity { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfContentPlacement Placement { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfWatermarkPosition Position { get => throw null; init { } }
         public double? Rotation { get => throw null; init { } }
+        public double? TileSpacing { get => throw null; init { } }
+    }
+
+    public enum PdfWatermarkPosition
+    {
+        Center = 0,
+        TopLeft = 1,
+        Top = 2,
+        TopRight = 3,
+        Left = 4,
+        Right = 5,
+        BottomLeft = 6,
+        Bottom = 7,
+        BottomRight = 8,
     }
 
     public sealed class PdfWidgetAnnotation : Meziantou.Framework.Pdf.PdfAnnotation

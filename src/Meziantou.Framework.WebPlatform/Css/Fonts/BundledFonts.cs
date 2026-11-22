@@ -31,7 +31,11 @@ internal sealed class BundledFont
 
     private OpenTypeFont Load()
     {
-        using var stream = typeof(BundledFont).Assembly.GetManifestResourceStream(BundledFonts.ResourcePrefix + FileName) ?? throw new InvalidOperationException($"The bundled font '{FileName}' is missing");
+        // The build compresses the TrueType fonts (see the project file); the WOFF2 fonts are compressed already
+        var assembly = typeof(BundledFont).Assembly;
+        var name = BundledFonts.ResourcePrefix + FileName;
+        using var stream = (FileName.EndsWith(".ttf", StringComparison.Ordinal) ? CompressedResource.TryOpen(assembly, name) : assembly.GetManifestResourceStream(name))
+            ?? throw new InvalidOperationException($"The bundled font '{FileName}' is missing");
         var data = new byte[stream.Length];
         stream.ReadExactly(data);
         return FontFile.Load(data)?.Faces[0] ?? throw new InvalidOperationException($"The bundled font '{FileName}' is invalid");

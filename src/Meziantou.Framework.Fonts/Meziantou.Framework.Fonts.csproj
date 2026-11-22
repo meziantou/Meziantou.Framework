@@ -22,14 +22,18 @@
   <ItemGroup>
     <!--
       The metrics of the 14 standard fonts of PDF, as Adobe published them in Core14_AFMs.zip (see THIRD-PARTY-NOTICES.md):
-      their license forbids distributing the AFM files without MustRead.html
+      their license forbids distributing the AFM files without MustRead.html, which stays readable in the assembly. The build
+      compresses the AFM files (Compression="Deflate")
     -->
-    <EmbeddedResource Include="Afm\StandardFonts\*.afm;Afm\StandardFonts\MustRead.html" LogicalName="Meziantou.Framework.Fonts.Afm.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Afm\StandardFonts\*.afm" LogicalName="Meziantou.Framework.Fonts.Afm.%(Filename)%(Extension)" Compression="Deflate" />
+    <EmbeddedResource Include="Afm\StandardFonts\MustRead.html" LogicalName="Meziantou.Framework.Fonts.Afm.%(Filename)%(Extension)" />
+    <!-- Reads the resources the build compresses -->
+    <Compile Include="../../common/CompressedResource.cs" Link="Utils/CompressedResource.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <!-- The Adobe Glyph List, for the characters of the glyph names of Type 1 fonts (BSD-3-Clause, see Type1/GlyphList/LICENSE.md) -->
-    <EmbeddedResource Include="Type1\GlyphList\glyphlist.txt" LogicalName="Meziantou.Framework.Fonts.Type1.glyphlist.txt" />
+    <!-- The Adobe Glyph List and the list of ITC Zapf Dingbats, for AdobeGlyphList (BSD-3-Clause, see Type1/GlyphList/LICENSE.md) -->
+    <EmbeddedResource Include="Type1\GlyphList\*.txt" LogicalName="Meziantou.Framework.Fonts.Type1.%(Filename)%(Extension)" Compression="Deflate" />
   </ItemGroup>
 
   <ItemGroup>

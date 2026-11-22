@@ -1,6 +1,6 @@
 ---
 title: AFM metrics
-description: Read the metrics of PostScript fonts from AFM files, including the embedded metrics of the 14 standard fonts of PDF, to measure text.
+description: Read the metrics of PostScript fonts from AFM files, including the embedded metrics of the 14 standard fonts of PDF, to measure text, and get the characters of glyph names.
 ---
 
 An AFM file (Adobe Font Metrics) gives the metrics of a PostScript font without its glyphs: the widths and the boxes of
@@ -80,3 +80,32 @@ Assert.Equal(15.168, width);
 
 The [Load](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Load) methods take [FontResourceLimits](cref:Meziantou.Framework.Fonts.FontResourceLimits): a file from an untrusted source is bounded like a font. The multiple master
 (AMFM) and composite (ACFM) metrics files are not supported.
+
+## Get the characters of glyph names
+
+The characters of an AFM file, and the glyphs of Type 1 and CFF fonts, are named after the characters they draw:
+`eacute`, `uni20AC`, `f_f_i`. [AdobeGlyphList](cref:Meziantou.Framework.Fonts.AdobeGlyphList) gives the characters of these names, from the Adobe Glyph List
+and the naming conventions of the Adobe Glyph List Specification.
+
+<!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=AdobeGlyphList_GlyphNames;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The text of the glyph names of PostScript fonts, such as the names of the characters of an AFM file
+Assert.Equal("\u00E9", AdobeGlyphList.ToUnicode("eacute"));
+Assert.Equal("ffi", AdobeGlyphList.ToUnicode("f_f_i")); // a ligature names its components
+Assert.Equal("a", AdobeGlyphList.ToUnicode("a.sc")); // a variant has the characters of its base name
+Assert.Equal("\u2701", AdobeGlyphList.ToUnicode("a1", zapfDingbats: true)); // the names of ITC Zapf Dingbats
+
+// A character map maps one character to a glyph: a ligature or a variant has no character
+Assert.True(AdobeGlyphList.TryGetCodePoint("uni20AC", out var euro));
+Assert.Equal(0x20AC, euro);
+Assert.False(AdobeGlyphList.TryGetCodePoint("f_f_i", out _));
+```
+<!-- endref -->
+
+- [ToUnicode](cref:Meziantou.Framework.Fonts.AdobeGlyphList.ToUnicode) gives the text of a name, which can be several characters: a ligature (`f_f_i`), or a name of the list that
+  maps to a sequence. A suffix after a period is a variant of the same characters (`a.sc`). It returns `null` for a name
+  with no character, such as `g42`.
+- [TryGetCodePoint](cref:Meziantou.Framework.Fonts.AdobeGlyphList.TryGetCodePoint) gives the character of a name of one character only, to build a character map: a ligature or a
+  variant has none, so that the map gives the glyph of the character itself. Its `uniXXXX` and `uXXXX` names take
+  upper-case hexadecimal digits, as the specification requires.
+- The glyphs of ITC Zapf Dingbats have their own names (`a1`, `a2`...): pass `zapfDingbats: true` to read them.

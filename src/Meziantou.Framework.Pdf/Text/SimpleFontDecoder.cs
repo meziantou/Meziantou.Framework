@@ -146,7 +146,7 @@ internal sealed class SimpleFontDecoder : PdfFontDecoder
 
         if (_glyphNames[code] is { } name)
         {
-            if (GlyphList.ToUnicode(name, _isZapfDingbats) is { } fromName)
+            if (AdobeGlyphList.ToUnicode(name, _isZapfDingbats) is { } fromName)
                 return fromName;
 
             // Glyph names such as "g42" or "cid123" say nothing about the character

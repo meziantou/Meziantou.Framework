@@ -1623,7 +1623,7 @@ public sealed class NodeJsHost : IAsyncDisposable
 
     private static string GetBootstrapScript()
     {
-        using var stream = typeof(NodeJsHost).Assembly.GetManifestResourceStream("Meziantou.Framework.NodeJs.bootstrap.mjs") ?? throw new InvalidOperationException("The bootstrap script is missing.");
+        using var stream = CompressedResource.TryOpen(typeof(NodeJsHost).Assembly, "Meziantou.Framework.NodeJs.bootstrap.mjs") ?? throw new InvalidOperationException("The bootstrap script is missing.");
         using var reader = new StreamReader(stream, Encoding.UTF8);
         return reader.ReadToEnd();
     }

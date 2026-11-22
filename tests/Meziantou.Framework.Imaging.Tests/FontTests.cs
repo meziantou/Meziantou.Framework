@@ -4346,6 +4346,70 @@ public sealed class FontTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_AdobeGlyphList()
+    {
+        #region AdobeGlyphList_GlyphNames
+        // The text of the glyph names of PostScript fonts, such as the names of the characters of an AFM file
+        Assert.Equal("\u00E9", AdobeGlyphList.ToUnicode("eacute"));
+        Assert.Equal("ffi", AdobeGlyphList.ToUnicode("f_f_i")); // a ligature names its components
+        Assert.Equal("a", AdobeGlyphList.ToUnicode("a.sc")); // a variant has the characters of its base name
+        Assert.Equal("\u2701", AdobeGlyphList.ToUnicode("a1", zapfDingbats: true)); // the names of ITC Zapf Dingbats
+
+        // A character map maps one character to a glyph: a ligature or a variant has no character
+        Assert.True(AdobeGlyphList.TryGetCodePoint("uni20AC", out var euro));
+        Assert.Equal(0x20AC, euro);
+        Assert.False(AdobeGlyphList.TryGetCodePoint("f_f_i", out _));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("A", "A")]
+    [InlineData("eacute", "\u00E9")]
+    [InlineData("uni20AC", "\u20AC")]
+    [InlineData("uni0041uni0042", null)]
+    [InlineData("uni00410042", "AB")]
+    [InlineData("u1F600", "\U0001F600")]
+    [InlineData("f_f_i", "ffi")]
+    [InlineData("a.sc", "a")]
+    [InlineData("f_i.alt", "fi")]
+    [InlineData("g42", null)]
+    [InlineData("uniD800", null)]
+    [InlineData("u110000", null)]
+    [InlineData("dalethatafpatah", "\u05D3\u05B2")]
+    [InlineData("", null)]
+    public void AdobeGlyphListToUnicode(string name, string? expected) => Assert.Equal(expected, AdobeGlyphList.ToUnicode(name));
+
+    [Fact]
+    public void AdobeGlyphListZapfDingbats()
+    {
+        Assert.Equal("\u2701", AdobeGlyphList.ToUnicode("a1", zapfDingbats: true));
+        Assert.Null(AdobeGlyphList.ToUnicode("a1"));
+        Assert.Equal("A", AdobeGlyphList.ToUnicode("A", zapfDingbats: true));
+    }
+
+    [Theory]
+    [InlineData("A", 0x41)]
+    [InlineData("eacute", 0xE9)]
+    [InlineData("uni20AC", 0x20AC)]
+    [InlineData("u1F600", 0x1F600)]
+    [InlineData("u10FFFF", 0x10FFFF)]
+    [InlineData("uni20ac", null)]
+    [InlineData("u110000", null)]
+    [InlineData("uniD800", null)]
+    [InlineData("uD800", null)]
+    [InlineData("uni00410042", null)]
+    [InlineData("f_f_i", null)]
+    [InlineData("a.sc", null)]
+    [InlineData("dalethatafpatah", null)]
+    [InlineData("g42", null)]
+    [InlineData("", null)]
+    public void AdobeGlyphListTryGetCodePoint(string name, int? expected)
+    {
+        var found = AdobeGlyphList.TryGetCodePoint(name, out var codePoint);
+        Assert.Equal(expected, found ? codePoint : null);
+    }
+
     #region Fonts_SvgPathSink
     // Writes an outline as the data of an SVG path, in font units. The y axis of a font goes up, the one of SVG down.
     private sealed class SvgPathSink : OutlineSink

@@ -62,7 +62,7 @@ internal static class SubstituteFont
             if (name is null)
                 continue;
 
-            text[code] = GlyphList.ToUnicode(name);
+            text[code] = AdobeGlyphList.ToUnicode(name);
             if (text[code] is { Length: > 0 } unicode && Rune.DecodeFromUtf16(unicode, out var rune, out _) == System.Buffers.OperationStatus.Done)
             {
                 glyphs[code] = face.MapCodePoint(rune.Value);

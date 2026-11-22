@@ -117,27 +117,6 @@ public sealed class PdfFontTests
         Assert.Equal([0x21], dingbats.Encode("\u2701"));
     }
 
-    [Theory]
-    [InlineData("A", "A")]
-    [InlineData("eacute", "\u00E9")]
-    [InlineData("uni20AC", "\u20AC")]
-    [InlineData("uni0041uni0042", null)]
-    [InlineData("uni00410042", "AB")]
-    [InlineData("u1F600", "\U0001F600")]
-    [InlineData("f_f_i", "ffi")]
-    [InlineData("a.sc", "a")]
-    [InlineData("g42", null)]
-    [InlineData("uniD800", null)]
-    [InlineData("dalethatafpatah", "\u05D3\u05B2")]
-    public void GlyphNames(string name, string? expected) => Assert.Equal(expected, GlyphList.ToUnicode(name));
-
-    [Fact]
-    public void ZapfDingbatsGlyphNames()
-    {
-        Assert.Equal("\u2701", GlyphList.ToUnicode("a1", zapfDingbats: true));
-        Assert.Null(GlyphList.ToUnicode("a1"));
-    }
-
     [Fact]
     public void Encodings()
     {

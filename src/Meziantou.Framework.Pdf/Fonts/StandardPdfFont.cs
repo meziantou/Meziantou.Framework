@@ -152,7 +152,7 @@ internal sealed class StandardPdfFont : PdfFont
                 continue;
 
             widths[code] = width;
-            var text = GlyphList.ToUnicode(name, isZapfDingbats);
+            var text = AdobeGlyphList.ToUnicode(name, isZapfDingbats);
             if (text is not null && text.EnumerateRunes().Count() == 1)
             {
                 codes.TryAdd(text.EnumerateRunes().First().Value, (byte)code);

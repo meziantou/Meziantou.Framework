@@ -153,8 +153,9 @@ directory and the fixed-size tables, `CmapTable` maps characters, `GlyfOutlineRe
 `Type1/` reads PostScript Type 1 fonts (PFB and PFA files) and converts them to an OpenType font with CFF outlines when
 they are loaded (`Type1FontConverter`), as a WOFF file is expanded: everything after `FontLoader` sees an ordinary
 font. `Type1Font` reads the file (`PostScriptTokenizer`, eexec and charstring decryption), `Type1CharstringConverter`
-runs each charstring into a Type 2 charstring (`Type2CharstringWriter`), `Type1GlyphNames` maps the glyph names with
-the Adobe Glyph List (`Type1/GlyphList`, vendored, see `THIRD-PARTY-NOTICES.md`).
+runs each charstring into a Type 2 charstring (`Type2CharstringWriter`), `AdobeGlyphList` maps the glyph names with
+the Adobe Glyph List (`Type1/GlyphList`, vendored, see `THIRD-PARTY-NOTICES.md`). `AdobeGlyphList` is public: Pdf and
+VectorGraphics use it instead of carrying their own copy of the list.
 
 - Written from the Adobe Type 1 Font Format and Technical Note #5040 (PFB segments). The font program is never run as
   PostScript: the dictionaries are read from the tokens of the usual layout of a font.

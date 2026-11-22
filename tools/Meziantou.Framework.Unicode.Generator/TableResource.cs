@@ -6,19 +6,22 @@ using Meziantou.Framework;
 /// <summary>Collects the tables of a generated class into a file that the library embeds as a resource (<c>Data/*</c>).</summary>
 /// <remarks>
 /// The generated code reads the resources with <c>UnicodeResources</c>. A <c>.bin</c> file is read in place, from the
-/// image of the assembly, and a table is a span with a constant offset and length. A <c>.br</c> file is compressed with
-/// Brotli and decompressed on first use: it holds the tables that most programs never read.
+/// image of the assembly, and a table is a span with a constant offset and length. A <c>.deflate</c> file is compressed
+/// with Deflate and decompressed on first use: it holds the tables that most programs never read. Deflate is the only
+/// compression that Blazor WebAssembly supports.
 /// </remarks>
 internal sealed class TableResource
 {
+    private const string CompressedExtension = ".deflate";
+
     private readonly List<byte> _data = [];
 
-    /// <param name="fileName">The name of the file, in <c>src/Meziantou.Framework.Unicode/Data</c>: <c>.bin</c> or <c>.br</c>.</param>
+    /// <param name="fileName">The name of the file, in <c>src/Meziantou.Framework.Unicode/Data</c>: <c>.bin</c> or <c>.deflate</c>.</param>
     /// <param name="memberName">The name of the member of the generated class that gives access to the content.</param>
     public TableResource(string fileName, string memberName = "Data")
     {
-        if (!fileName.EndsWith(".bin", StringComparison.Ordinal) && !fileName.EndsWith(".br", StringComparison.Ordinal))
-            throw new ArgumentException("The file must be a .bin or a .br file: " + fileName, nameof(fileName));
+        if (!fileName.EndsWith(".bin", StringComparison.Ordinal) && !fileName.EndsWith(CompressedExtension, StringComparison.Ordinal))
+            throw new ArgumentException("The file must be a .bin or a .deflate file: " + fileName, nameof(fileName));
 
         FileName = fileName;
         MemberName = memberName;
@@ -28,7 +31,7 @@ internal sealed class TableResource
 
     public string MemberName { get; }
 
-    public bool IsCompressed => FileName.EndsWith(".br", StringComparison.Ordinal);
+    public bool IsCompressed => FileName.EndsWith(CompressedExtension, StringComparison.Ordinal);
 
     /// <summary>Gets the size of each table, for the header of the generated file.</summary>
     public List<(string Name, int Bytes)> Sizes { get; } = [];
@@ -106,7 +109,7 @@ internal sealed class TableResource
         if (existing is not null && existing.AsSpan().SequenceEqual(content))
             return false;
 
-        // A compressed file is compared by its decompressed content: another version of the Brotli encoder can compress the
+        // A compressed file is compared by its decompressed content: another version of the Deflate encoder can compress the
         // same tables to other bytes, and that is not a change.
         path.CreateParentDirectory();
         await File.WriteAllBytesAsync(path, IsCompressed ? Compress(content) : content);
@@ -121,22 +124,22 @@ internal sealed class TableResource
             return null;
 
         var bytes = await File.ReadAllBytesAsync(path);
-        if (!path.Value.EndsWith(".br", StringComparison.Ordinal))
+        if (!path.Value.EndsWith(CompressedExtension, StringComparison.Ordinal))
             return bytes;
 
         using var input = new MemoryStream(bytes);
-        using var brotli = new BrotliStream(input, CompressionMode.Decompress);
+        using var deflate = new DeflateStream(input, CompressionMode.Decompress);
         using var output = new MemoryStream();
-        await brotli.CopyToAsync(output);
+        await deflate.CopyToAsync(output);
         return output.ToArray();
     }
 
     private static byte[] Compress(byte[] content)
     {
         using var output = new MemoryStream();
-        using (var brotli = new BrotliStream(output, new BrotliCompressionOptions { Quality = 11 }, leaveOpen: true))
+        using (var deflate = new DeflateStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
         {
-            brotli.Write(content);
+            deflate.Write(content);
         }
 
         return output.ToArray();

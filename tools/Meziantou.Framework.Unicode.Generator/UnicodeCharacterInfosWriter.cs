@@ -13,8 +13,8 @@ internal static partial class UnicodeCharacterInfosWriter
     private static readonly (string FileName, string MemberName, string[] Tables)[] Resources =
     [
         ("UnicodeCharacterInfos.bin", "Data", ["PropertyIndexStage1", "PropertyIndexStage2", "PropertyIndexStage3", "Properties"]),
-        ("UnicodeCharacterInfos.Names.br", "NameData", ["NameRanges", "NameRangeText", "NameBuckets", "NameEntries", "NameWordOffsets", "NameWordText"]),
-        ("UnicodeCharacterInfos.Values.br", "ValueData", ["Decompositions", "DecompositionMappings", "NumericValues", "Unicode1Names", "IsoComments", "StringOffsets", "Strings"]),
+        ("UnicodeCharacterInfos.Names.deflate", "NameData", ["NameRanges", "NameRangeText", "NameBuckets", "NameEntries", "NameWordOffsets", "NameWordText"]),
+        ("UnicodeCharacterInfos.Values.deflate", "ValueData", ["Decompositions", "DecompositionMappings", "NumericValues", "Unicode1Names", "IsoComments", "StringOffsets", "Strings"]),
     ];
 
     private static IEnumerable<string> TableNames => Resources.SelectMany(resource => resource.Tables);

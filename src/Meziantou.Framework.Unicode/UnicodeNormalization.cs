@@ -1,5 +1,9 @@
 using System.Buffers;
 
+// FormKC and FormKD are marked unsupported in the browser because string.Normalize does not implement them there; this
+// class implements every form itself, so they are supported on every platform.
+#pragma warning disable CA1416
+
 namespace Meziantou.Framework;
 
 /// <summary>Provides the Unicode normalization forms.</summary>

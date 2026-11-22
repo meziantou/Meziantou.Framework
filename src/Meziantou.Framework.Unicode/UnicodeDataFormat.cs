@@ -7,7 +7,7 @@ namespace Meziantou.Framework;
 /// The tables are embedded resources (<c>Data/UnicodeCharacterInfos.*</c>, see <c>UnicodeResources</c>). The
 /// tables that every lookup reads are read in place, so finding the properties of a character copies nothing, allocates
 /// nothing and parses nothing when the program starts. The names and the text properties, which most programs never
-/// read, are compressed with Brotli in two other resources, decompressed the first time one of their tables is read.
+/// read, are compressed with Deflate in two other resources, decompressed the first time one of their tables is read.
 /// Every table is laid out for random access: a lookup reads the few bytes it needs and the fields of a character are
 /// only decoded when they are asked for.
 /// <para>
@@ -41,7 +41,7 @@ namespace Meziantou.Framework;
 ///     simpleLowercaseDelta     3 bytes        signed, added to the code point when HasLowercaseFlag
 ///     simpleTitlecaseDelta     3 bytes        signed, added to the code point when HasTitlecaseFlag
 ///
-/// UnicodeCharacterInfos.Names.br, compressed:
+/// UnicodeCharacterInfos.Names.deflate, compressed:
 ///
 /// NameRanges                 the names that follow from the code point, sorted
 ///     start                    3 bytes
@@ -67,7 +67,7 @@ namespace Meziantou.Framework;
 /// NameWordOffsets            2 bytes per word of NameWords, plus a last one for the end of the last word
 /// NameWordText               the ASCII characters of the words of NameWords, the most frequent first
 ///
-/// UnicodeCharacterInfos.Values.br, compressed:
+/// UnicodeCharacterInfos.Values.deflate, compressed:
 ///
 /// Decompositions             sorted by code point
 ///     codePoint                3 bytes

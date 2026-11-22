@@ -81,10 +81,10 @@ internal static partial class UnicodeCharacterInfos
         get => UnicodeResources.GetSpan(Data + 37248, 7136);
     }
 
-    // The tables are decompressed from the embedded resource Data/UnicodeCharacterInfos.Names.br the first time one of them is read, see UnicodeResources.
+    // The tables are decompressed from the embedded resource Data/UnicodeCharacterInfos.Names.deflate the first time one of them is read, see UnicodeResources.
     private static byte[]? s_nameData;
 
-    private static ReadOnlySpan<byte> NameData => s_nameData ?? UnicodeResources.Decompress(ref s_nameData, "UnicodeCharacterInfos.Names.br", 279774);
+    private static ReadOnlySpan<byte> NameData => s_nameData ?? UnicodeResources.Decompress(ref s_nameData, "UnicodeCharacterInfos.Names.deflate", 279774);
 
     private static ReadOnlySpan<byte> NameRanges => NameData.Slice(0, 224);
 
@@ -98,10 +98,10 @@ internal static partial class UnicodeCharacterInfos
 
     private static ReadOnlySpan<byte> NameWordText => NameData.Slice(255091, 24683);
 
-    // The tables are decompressed from the embedded resource Data/UnicodeCharacterInfos.Values.br the first time one of them is read, see UnicodeResources.
+    // The tables are decompressed from the embedded resource Data/UnicodeCharacterInfos.Values.deflate the first time one of them is read, see UnicodeResources.
     private static byte[]? s_valueData;
 
-    private static ReadOnlySpan<byte> ValueData => s_valueData ?? UnicodeResources.Decompress(ref s_valueData, "UnicodeCharacterInfos.Values.br", 142645);
+    private static ReadOnlySpan<byte> ValueData => s_valueData ?? UnicodeResources.Decompress(ref s_valueData, "UnicodeCharacterInfos.Values.deflate", 142645);
 
     private static ReadOnlySpan<byte> Decompositions => ValueData.Slice(0, 35892);
 

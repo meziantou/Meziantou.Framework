@@ -14,9 +14,13 @@ namespace Meziantou.Framework;
 /// as a lookup in a table of the source code.
 /// </para>
 /// <para>
-/// A <c>.br</c> resource is compressed with Brotli. It holds tables that most programs never read (the names of the
-/// characters, their decomposition mappings...): the resource is decompressed the first time one of its tables is
+/// A <c>.deflate</c> resource is compressed with Deflate. It holds tables that most programs never read (the names of
+/// the characters, their decomposition mappings...): the resource is decompressed the first time one of its tables is
 /// read, and the result is kept for the lifetime of the program.
+/// </para>
+/// <para>
+/// Deflate is the only compression of <c>System.IO.Compression</c> that Blazor WebAssembly supports: Brotli and
+/// Zstandard throw a <see cref="PlatformNotSupportedException"/> in the browser (.NET 11), whatever the build options.
 /// </para>
 /// </remarks>
 internal static class UnicodeResources
@@ -61,9 +65,9 @@ internal static class UnicodeResources
         }
     }
 
-    /// <summary>Decompresses a Brotli resource, once.</summary>
+    /// <summary>Decompresses a Deflate resource, once.</summary>
     /// <param name="location">The field that caches the content.</param>
-    /// <param name="name">The name of the file of the resource, such as <c>UnicodeCharacterInfos.Names.br</c>.</param>
+    /// <param name="name">The name of the file of the resource, such as <c>UnicodeCharacterInfos.Names.deflate</c>.</param>
     /// <param name="length">The length of the decompressed content.</param>
     /// <returns>The decompressed content.</returns>
     /// <exception cref="InvalidDataException">The resource does not decompress to <paramref name="length"/> bytes.</exception>
@@ -71,25 +75,19 @@ internal static class UnicodeResources
     {
         var data = new byte[length];
         using (var stream = OpenResource(name, expectedLength: -1))
+        using (var deflate = new DeflateStream(stream, CompressionMode.Decompress))
         {
-            if (stream is UnmanagedMemoryStream unmanagedStream)
+            try
             {
-                ReadOnlySpan<byte> compressed;
-                unsafe
-                {
-                    compressed = new ReadOnlySpan<byte>(unmanagedStream.PositionPointer, checked((int)unmanagedStream.Length));
-                }
+                deflate.ReadExactly(data);
+            }
+            catch (EndOfStreamException ex)
+            {
+                throw new InvalidDataException($"The resource '{name}' is invalid", ex);
+            }
 
-                if (!BrotliDecoder.TryDecompress(compressed, data, out var written) || written != length)
-                    throw new InvalidDataException($"The resource '{name}' is invalid");
-            }
-            else
-            {
-                using var brotli = new BrotliStream(stream, CompressionMode.Decompress);
-                brotli.ReadExactly(data);
-                if (brotli.ReadByte() >= 0)
-                    throw new InvalidDataException($"The resource '{name}' is invalid");
-            }
+            if (deflate.ReadByte() >= 0)
+                throw new InvalidDataException($"The resource '{name}' is invalid");
         }
 
         // Two threads may decompress the resource at once; they get the same content, and one of them is kept.

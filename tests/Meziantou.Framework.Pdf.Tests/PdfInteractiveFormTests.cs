@@ -724,6 +724,41 @@ public sealed class PdfInteractiveFormTests
     }
 
     [Fact]
+    public void FormDataWritesNamesOfManyPartsToAFixedPoint()
+    {
+        // The files nest a field per partial name: the readers read 64 levels
+        var name = string.Join('.', Enumerable.Repeat("p", 100));
+        var data = new PdfFormData();
+        data.Fields.Add(new PdfFormDataField(name, "x"));
+
+        var xfdf = PdfFormData.ParseXfdf(data.ToXfdf());
+        var fdf = PdfFormData.ParseFdf(data.ToFdf());
+
+        Assert.Equal([name + " = x"], xfdf.Fields.Select(field => field.ToString()));
+        Assert.Equal([name + " = x"], fdf.Fields.Select(field => field.ToString()));
+        Assert.Equal(data.ToXfdf(), xfdf.ToXfdf());
+    }
+
+    [Fact]
+    public void FieldsWhoseKidsReferToTheFieldAreRead()
+    {
+        var kids = string.Join(' ', Enumerable.Repeat("4 0 R", 8));
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [4 0 R] /CO [4 0 R] >> >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>")
+            .Add(4, "<< /T (a) /Kids [" + kids + "] >>");
+
+        var form = PdfDocument.Open(file.ToArray()).Form;
+
+        var field = Assert.Single(form.Fields);
+        Assert.False(field.IsTerminal);
+        Assert.HasCount(8, field.Children);
+        Assert.Empty(form.GetFields());
+        Assert.Single(form.CalculationOrder);
+    }
+
+    [Fact]
     public void FormScriptsAreRead()
     {
         var data = new HandWrittenPdf()

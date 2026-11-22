@@ -10,11 +10,11 @@ public sealed class PdfTextAnnotation : PdfMarkupAnnotation
     {
     }
 
-    /// <summary>Gets or sets the name of the icon of the note (<c>/Name</c>): <c>Comment</c>, <c>Key</c>, <c>Note</c>, <c>Help</c>, <c>NewParagraph</c>, <c>Paragraph</c>, <c>Insert</c>, or a name a viewer knows. The default is <c>Note</c>.</summary>
+    /// <summary>Gets or sets the name of the icon of the note (<c>/Name</c>): <c>Comment</c>, <c>Key</c>, <c>Note</c>, <c>Help</c>, <c>NewParagraph</c>, <c>Paragraph</c>, <c>Insert</c>, or a name a viewer knows. The default, also for an empty name, is <c>Note</c>.</summary>
     /// <exception cref="ArgumentException">The value is empty.</exception>
     public string Icon
     {
-        get => Dictionary.GetName(PdfNames.Name)?.Value ?? "Note";
+        get => Dictionary.GetName(PdfNames.Name)?.Value is { Length: > 0 } name ? name : "Note";
         set
         {
             ArgumentException.ThrowIfNullOrEmpty(value);

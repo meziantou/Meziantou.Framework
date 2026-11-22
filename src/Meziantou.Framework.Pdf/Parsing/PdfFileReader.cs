@@ -265,6 +265,9 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     public PdfObject Load(IndirectObjectEntry entry)
     {
         var number = entry.Reference.ObjectNumber;
+
+        // Without the scan, an object is parsed up to the end of the file, not up to the next object
+        var bounded = _scanner is not null;
         if (entry.ContainerNumber > 0)
         {
             var value = TryLoadCompressed(entry.ContainerNumber, entry.IndexInContainer, number);
@@ -287,12 +290,18 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                 return value;
         }
 
-        // The cross-reference entry is wrong: look for the object in the file
+        // The cross-reference entry is wrong: look for the object in the file. An object at the offset of its entry is
+        // parsed again up to the next object when the scan did not bound it yet (an unterminated string), so that the
+        // object does not depend on the objects loaded before it
         var scanner = GetScanner();
-        if (scanner.Offsets.TryGetValue(number, out var found) && found.Offset != entry.Offset)
+        if (scanner.Offsets.TryGetValue(number, out var found))
         {
-            var value = TryLoadAt(found.Offset, number, generation: null);
-            if (value is not null)
+            if (found.Offset == entry.Offset)
+            {
+                if (!bounded && TryLoadAt(found.Offset, number, entry.Reference.Generation) is { } value)
+                    return value;
+            }
+            else if (TryLoadAt(found.Offset, number, generation: null) is { } value)
             {
                 Diagnostics.Report(PdfDiagnosticKind.WrongObjectOffset, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The object is not at the offset of its cross-reference entry ({entry.Offset}): it was found by scanning the file"), found.Offset, number);
                 return value;

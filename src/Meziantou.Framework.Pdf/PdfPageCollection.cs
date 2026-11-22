@@ -26,13 +26,17 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
     private readonly List<PdfPage> _pages = [];
     private readonly Dictionary<PdfReference, PdfPage> _pagesByReference = [];
 
+    // The pages whose /Parent is not the node of the page tree that holds them, with that node (null when the page is
+    // the root of the tree): the tree is repaired before it changes, since the pages are inserted next to their parent
+    private List<(PdfPage Page, PdfReference? Parent)>? _misplacedPages;
+
     internal PdfPageCollection(PdfDocument document)
     {
         _document = document;
         if (document.Catalog.Get<PdfDictionary>(PdfNames.Pages) is { } root)
         {
             var visited = new HashSet<PdfObject>(ReferenceEqualityComparer.Instance);
-            Collect(root, document.Catalog[PdfNames.Pages] as PdfReference, visited, depth: 0);
+            Collect(root, document.Catalog[PdfNames.Pages] as PdfReference, parent: null, visited, depth: 0);
         }
     }
 
@@ -109,6 +113,7 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
         if (fromIndex == toIndex)
             return;
 
+        RepairTree();
         var page = _pages[fromIndex];
         MaterializeInherited(page);
         Detach(page);
@@ -134,6 +139,7 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
     /// <param name="index">The index of the page.</param>
     public void RemoveAt(int index)
     {
+        RepairTree();
         var page = _pages[index];
         Detach(page);
         _pages.RemoveAt(index);
@@ -163,6 +169,7 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
 
     private PdfPage InsertDictionary(int index, PdfDictionary dictionary)
     {
+        RepairTree();
         var (parentReference, parent, position) = GetInsertionPoint(index);
         var reference = _document.Objects.Add(dictionary);
         Attach(dictionary, reference, parentReference, parent, position);
@@ -388,7 +395,7 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
         }
     }
 
-    private void Collect(PdfDictionary node, PdfReference? reference, HashSet<PdfObject> visited, int depth)
+    private void Collect(PdfDictionary node, PdfReference? reference, PdfReference? parent, HashSet<PdfObject> visited, int depth)
     {
         if (!visited.Add(node) || depth > MaxTreeDepth)
         {
@@ -402,7 +409,7 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
             {
                 if (PdfReference.ResolveIfReference(kid) is PdfDictionary child)
                 {
-                    Collect(child, kid as PdfReference, visited, depth + 1);
+                    Collect(child, kid as PdfReference, reference, visited, depth + 1);
                 }
                 else
                 {
@@ -424,7 +431,48 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
             var page = new PdfPage(_document, reference, node);
             _pages.Add(page);
             _pagesByReference[reference] = page;
+
+            // A node held by a direct object cannot be the /Parent of its pages
+            if (depth == 0 || (parent is not null && !parent.Equals(node[PdfNames.Parent] as PdfReference)))
+            {
+                (_misplacedPages ??= []).Add((page, parent));
+            }
         }
+    }
+
+    /// <summary>
+    /// Sets the <c>/Parent</c> of the pages to the node of the page tree that holds them, and adds a root to a tree that is
+    /// a page. The pages keep the attributes they inherited from their former parent.
+    /// </summary>
+    private void RepairTree()
+    {
+        if (_misplacedPages is null)
+            return;
+
+        foreach (var (page, parent) in _misplacedPages)
+        {
+            if (!_pagesByReference.ContainsKey(page.Reference))
+                continue;
+
+            MaterializeInherited(page);
+            if (parent is not null)
+            {
+                page.Dictionary[PdfNames.Parent] = parent;
+                continue;
+            }
+
+            var root = new PdfDictionary
+            {
+                [PdfNames.Type] = PdfNames.Pages,
+                [PdfNames.Kids] = new PdfArray(page.Reference),
+                [PdfNames.Count] = PdfInteger.Get(1),
+            };
+            var reference = _document.Objects.Add(root);
+            _document.Catalog[PdfNames.Pages] = reference;
+            page.Dictionary[PdfNames.Parent] = reference;
+        }
+
+        _misplacedPages = null;
     }
 
     private void ReportInvalidNode(PdfReference? reference, string message) => _document.Reader?.Diagnostics.Report(PdfDiagnosticKind.InvalidPageTreeNode, message, objectNumber: reference?.ObjectNumber);

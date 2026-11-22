@@ -122,16 +122,9 @@ public class PdfFormField
         get
         {
             var result = new List<PdfFormField>();
-            if (Dictionary.Get<PdfArray>(PdfNames.Kids) is { } kids && Depth < MaxDepth)
+            foreach (var (child, reference) in GetChildDictionaries())
             {
-                foreach (var kid in kids)
-                {
-                    // A kid without a partial name that is a widget is a widget of this field, not a field
-                    if (PdfReference.ResolveIfReference(kid) is PdfDictionary child && !IsWidgetOnly(child))
-                    {
-                        result.Add(Form.CreateField(child, kid as PdfReference, this));
-                    }
-                }
+                result.Add(Form.CreateField(child, reference, this));
             }
 
             return result;
@@ -139,7 +132,15 @@ public class PdfFormField
     }
 
     /// <summary>Gets a value indicating whether the field is a terminal field: it has no child fields.</summary>
-    public bool IsTerminal => Children.Count == 0;
+    public bool IsTerminal
+    {
+        get
+        {
+            // The kids are not created: creating a field checks whether it is terminal, which would create the whole
+            // hierarchy under it, again for each of its ancestors (exponentially for kids that refer to their ancestors)
+            return !GetChildDictionaries().Any();
+        }
+    }
 
     /// <summary>
     /// Gets the JavaScript actions of the field (<c>/AA</c>, ISO 32000-2, 12.6.3): its keystroke, format, validation and
@@ -174,6 +175,19 @@ public class PdfFormField
             }
 
             return result;
+        }
+    }
+
+    /// <summary>Gets the kids of the field that are fields: a kid without a partial name that is a widget is a widget of this field, not a field.</summary>
+    private IEnumerable<(PdfDictionary Dictionary, PdfReference? Reference)> GetChildDictionaries()
+    {
+        if (Dictionary.Get<PdfArray>(PdfNames.Kids) is not { } kids || Depth >= MaxDepth)
+            yield break;
+
+        foreach (var kid in kids)
+        {
+            if (PdfReference.ResolveIfReference(kid) is PdfDictionary child && !IsWidgetOnly(child))
+                yield return (child, kid as PdfReference);
         }
     }
 

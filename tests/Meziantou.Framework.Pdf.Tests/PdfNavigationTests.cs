@@ -470,6 +470,22 @@ public sealed class PdfNavigationTests
     }
 
     [Fact]
+    public void AnEmptyIconNameIsTheDefaultIcon()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Annots [4 0 R 5 0 R] >>")
+            .Add(4, "<< /Type /Annot /Subtype /Stamp /Rect [0 0 10 10] /Name / >>")
+            .Add(5, "<< /Type /Annot /Subtype /Text /Rect [0 0 10 10] /Name / >>");
+
+        var annotations = PdfDocument.Open(file.ToArray()).Pages[0].Annotations;
+
+        Assert.Equal("Draft", Assert.IsType<PdfStampAnnotation>(annotations[0]).Icon);
+        Assert.Equal("Note", Assert.IsType<PdfTextAnnotation>(annotations[1]).Icon);
+    }
+
+    [Fact]
     public void AnnotationPropertiesAreWritten()
     {
         var document = new PdfDocument();

@@ -23,6 +23,8 @@ document.Pages.Insert(document.Pages.Count, document.Pages[0]);
   the pop-up windows, and it is not tagged.
 - A new page ([Add](cref:Meziantou.Framework.Pdf.PdfPageCollection.Add)) has the size it is created with: it does not inherit the rotation nor the crop box of
   the page tree.
+- The first change repairs a damaged page tree: a page whose `/Parent` is not the node that holds it gets that node (it
+  keeps the attributes it inherited), and a tree whose root is a page gets a new root.
 
 ## Remove pages
 

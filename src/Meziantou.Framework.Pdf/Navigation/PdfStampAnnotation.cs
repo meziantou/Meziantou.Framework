@@ -10,11 +10,11 @@ public sealed class PdfStampAnnotation : PdfMarkupAnnotation
     {
     }
 
-    /// <summary>Gets or sets the name of the stamp (<c>/Name</c>): <c>Approved</c>, <c>Experimental</c>, <c>NotApproved</c>, <c>AsIs</c>, <c>Expired</c>, <c>NotForPublicRelease</c>, <c>Confidential</c>, <c>Final</c>, <c>Sold</c>, <c>Departmental</c>, <c>ForComment</c>, <c>TopSecret</c>, <c>Draft</c>, <c>ForPublicRelease</c>, or a name a viewer knows. The default is <c>Draft</c>.</summary>
+    /// <summary>Gets or sets the name of the stamp (<c>/Name</c>): <c>Approved</c>, <c>Experimental</c>, <c>NotApproved</c>, <c>AsIs</c>, <c>Expired</c>, <c>NotForPublicRelease</c>, <c>Confidential</c>, <c>Final</c>, <c>Sold</c>, <c>Departmental</c>, <c>ForComment</c>, <c>TopSecret</c>, <c>Draft</c>, <c>ForPublicRelease</c>, or a name a viewer knows. The default, also for an empty name, is <c>Draft</c>.</summary>
     /// <exception cref="ArgumentException">The value is empty.</exception>
     public string Icon
     {
-        get => Dictionary.GetName(PdfNames.Name)?.Value ?? "Draft";
+        get => Dictionary.GetName(PdfNames.Name)?.Value is { Length: > 0 } name ? name : "Draft";
         set
         {
             ArgumentException.ThrowIfNullOrEmpty(value);

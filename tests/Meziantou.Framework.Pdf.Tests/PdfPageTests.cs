@@ -43,6 +43,42 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void PagesAreAddedToAPageTreeWhoseRootIsAPage()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 3 0 R >>")
+            .Add(3, "<< /Type /Page /MediaBox [0 0 100 100] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages.Add(new PdfSize(200, 200));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal([100d, 200d], read.Pages.Select(page => page.MediaBox.Width));
+    }
+
+    [Fact]
+    public void PagesAreAddedNextToAPageWhoseParentDoesNotHoldIt()
+    {
+        // The page inherits its media box from its /Parent, which is not the node of the tree that holds it
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 4 0 R >>")
+            .Add(4, "<< /Type /Pages /Kids [] /Count 0 /MediaBox [0 0 100 100] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages.Insert(0, new PdfSize(200, 200));
+        document.Pages.Add(new PdfSize(300, 300));
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal([200d, 100d, 300d], read.Pages.Select(page => page.MediaBox.Width));
+
+        var removed = PdfDocument.Open(file.ToArray());
+        removed.Pages.RemoveAt(0);
+        Assert.Empty(PdfDocument.Open(removed.ToByteArray()).Pages);
+    }
+
+    [Fact]
     public void ANewPageOfAPlainTreeHasNoRotationNorCropBoxEntry()
     {
         var page = new PdfDocument().Pages.Add(PdfSize.A4);

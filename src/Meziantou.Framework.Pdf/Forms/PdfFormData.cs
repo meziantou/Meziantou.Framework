@@ -305,14 +305,18 @@ public sealed class PdfFormData
 
     private static string Combine(string? prefix, string name) => prefix is null ? name : prefix + "." + name;
 
-    /// <summary>Builds the hierarchy of partial names; a name given several times keeps its last value.</summary>
+    /// <summary>
+    /// Builds the hierarchy of partial names; a name given several times keeps its last value. The hierarchy is at most
+    /// <see cref="MaxDepth"/> levels deep, the depth the readers read: the last partial name keeps the dots of the parts
+    /// beyond it.
+    /// </summary>
     private Node BuildTree()
     {
         var root = new Node("");
         foreach (var field in Fields)
         {
             var node = root;
-            foreach (var part in field.Name.Split('.'))
+            foreach (var part in field.Name.Split('.', MaxDepth))
             {
                 node = node.GetChild(part);
             }

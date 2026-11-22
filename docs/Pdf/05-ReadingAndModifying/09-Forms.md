@@ -148,7 +148,7 @@ var result = document.Form.ImportData(data);
 - [PdfFormImportResult](cref:Meziantou.Framework.Pdf.PdfFormImportResult) lists the fields updated, the names the form has no field for, and the values rejected
   with the reason: a read-only field, a value that is not an option, a push button or a signature.
 - The names of [PdfFormDataField](cref:Meziantou.Framework.Pdf.PdfFormDataField) are fully qualified (`address.city`); the files store them as a hierarchy of
-  partial names. A list box with several choices has several [Values](cref:Meziantou.Framework.Pdf.PdfFormDataField.Values). FDF writes the states of check boxes and radio
+  partial names, 64 levels deep at most: the last partial name of a longer name keeps its dots. A list box with several choices has several [Values](cref:Meziantou.Framework.Pdf.PdfFormDataField.Values). FDF writes the states of check boxes and radio
   buttons as names ([IsName](cref:Meziantou.Framework.Pdf.PdfFormDataField.IsName)); XFDF does not make the distinction.
 - Only the values are read and written: the annotations, rich text values and scripts that FDF and XFDF can carry are
   ignored. The XFDF reader does not process document type definitions. The characters XML cannot hold are written as

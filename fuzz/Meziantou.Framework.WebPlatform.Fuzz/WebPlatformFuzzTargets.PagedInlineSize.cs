@@ -16,7 +16,7 @@ namespace Meziantou.Framework.WebPlatform.Fuzz;
 /// fourth one rows whose layout depends on the inline size (see <see cref="PagedInlineSizeReflowedRows"/>), the fifth one a
 /// multi-column container (see <see cref="PagedInlineSizeColumns"/>). Each row is in a page, the first pages of the rows follow their order, each word of
 /// the paragraphs is laid out once, the rectangles of the fragments are finite, and in the fifth target a short row that avoids
-/// breaks has no fragment of 1px. The third target has monolithic content that
+/// breaks is in a single fragment. The third target has monolithic content that
 /// the breaks slice (see <see cref="PagedInlineSizeSliced"/>).
 /// </summary>
 public static partial class WebPlatformFuzzTargets
@@ -137,10 +137,12 @@ public static partial class WebPlatformFuzzTargets
     /// <param name="containers">The containers of the rows.</param>
     /// <param name="rowsFollowTheirOrder">Whether the first pages of the rows follow their order.</param>
     /// <param name="checksAvoidingRows">
-    /// Whether a row that avoids breaks inside it has no fragment of 1px when it is a block of the container (not a grid, flex
-    /// or table item, nor a box with an absolutely positioned child), without a paragraph, taller than 2px and not taller than a
-    /// third of the page (and than 100px): it fits in a column of a page, and the rows of columns that continue after the end of
-    /// the content of a strip are not slivers of 1px (see <c>ColumnBreaker.NestedColumnsCursor</c>).
+    /// Whether a row that avoids breaks inside it is in a single fragment when it is a block of a container whose block size
+    /// is automatic (not a grid, flex or table item, nor a box with an absolutely positioned child, nor in rows of a fixed
+    /// block size), without a paragraph, taller than 2px and not taller than a third of the page (and than 100px): it fits in
+    /// a column of a page. The rows of columns of a nested container that continue after the end of the content of its outer
+    /// strip are not slivers of 1px, and are balanced from where the content of the container continues (see
+    /// <c>ColumnBreaker.NestedColumnsCursor</c>).
     /// </param>
     private static void PagedInlineSize(ReadOnlySpan<byte> data, (string Start, string Row, string End)[] containers, bool rowsFollowTheirOrder, bool checksAvoidingRows = false)
     {
@@ -152,7 +154,8 @@ public static partial class WebPlatformFuzzTargets
         var width = ((Next(data) % 100) + 5) * 5;
         var height = ((Next(data) % 100) + 5) * 5;
         var (start, row, end) = containers[Next(data) % containers.Length];
-        checksAvoidingRows &= row == "<div id={0} style='{1}'>{2}</div>" && !start.Contains("display:", StringComparison.Ordinal) && !start.Contains("<table", StringComparison.Ordinal) && !start.Contains("column-height", StringComparison.Ordinal);
+        checksAvoidingRows &= row == "<div id={0} style='{1}'>{2}</div>" && !start.Contains("display:", StringComparison.Ordinal) && !start.Contains("<table", StringComparison.Ordinal) && !start.Contains("column-height", StringComparison.Ordinal)
+            && !start.Contains("; height:", StringComparison.Ordinal) && !start.Contains("max-height", StringComparison.Ordinal);
         var rowCount = (Next(data) % PagedInlineSizeMaxRows) + 1;
         var rowBlockSizes = new int[rowCount];
         var markup = new StringBuilder(string.Create(CultureInfo.InvariantCulture, $"<!DOCTYPE html><style>body {{ margin: 0; font: 10px/1 Ahem }} @page {{ size: {width}px {height}px; margin: 0 }} @page :first {{ size: {firstWidth}px {height}px }}</style>"));
@@ -187,8 +190,7 @@ public static partial class WebPlatformFuzzTargets
 
         // The first page of each row, and the words of the text fragments
         var firstPages = new int?[rowCount];
-        var smallestFragments = new double[rowCount];
-        Array.Fill(smallestFragments, double.PositiveInfinity);
+        var fragmentCounts = new int[rowCount];
         var avoidsBreaks = new bool[rowCount];
         var laidOutWords = 0;
         foreach (var page in pages)
@@ -203,8 +205,8 @@ public static partial class WebPlatformFuzzTargets
             // (an item aligned in its row may start in a page after the one of the next item)
             FuzzAssert.True(!rowsFollowTheirOrder || firstPages[i] >= previous, string.Create(CultureInfo.InvariantCulture, $"the row {i} starts in a page after the one of the previous row: {markup}"));
             previous = firstPages[i]!.Value;
-            FuzzAssert.True(!checksAvoidingRows || !avoidsBreaks[i] || rowBlockSizes[i] <= 2 || rowBlockSizes[i] > Math.Min(100, height / 3) || smallestFragments[i] > 1 + PagedInlineSizeTolerance,
-                string.Create(CultureInfo.InvariantCulture, $"the row {i} that avoids breaks and fits in a page has no fragment of 1px ({smallestFragments[i]}px): {markup}"));
+            FuzzAssert.True(!checksAvoidingRows || !avoidsBreaks[i] || rowBlockSizes[i] <= 2 || rowBlockSizes[i] > Math.Min(100, height / 3) || fragmentCounts[i] == 1,
+                string.Create(CultureInfo.InvariantCulture, $"the row {i} that avoids breaks and fits in a page is in a single fragment ({fragmentCounts[i]} fragments): {markup}"));
         }
 
         FuzzAssert.Equal(words, laidOutWords, $"the number of words laid out in the pages: {markup}");
@@ -215,7 +217,7 @@ public static partial class WebPlatformFuzzTargets
             if (fragment is BoxFragment { Box: { Element: { } element, PseudoElement: null } box } && element.Id is ['r', .. var number] && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out var rowIndex) && rowIndex < rowCount)
             {
                 firstPages[rowIndex] ??= index;
-                smallestFragments[rowIndex] = Math.Min(smallestFragments[rowIndex], fragment.Size.Height);
+                fragmentCounts[rowIndex]++;
                 avoidsBreaks[rowIndex] = box.Style.Layout.Fragmentation.BreakInside != BreakInside.Auto;
             }
 

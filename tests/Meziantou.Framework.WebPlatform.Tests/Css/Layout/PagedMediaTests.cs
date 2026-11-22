@@ -622,6 +622,27 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Fact]
+    public void Pages_RowsThatAvoidBreaksInAMultiColumnContainerNestedInAMultiColumnContainerAreNotBroken()
+    {
+        // The paragraphs of the nested container need more columns than its block size in the strip of the outer container: the
+        // last row of outer columns is balanced from where the nested container continues, and is tall enough for the rows
+        // that avoid breaks (they are not broken in columns of 18px, nor in halves)
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+        var document = Parse($$"""
+            <style>@page { size: 285px 260px; margin: 0 }</style>
+            <div style='columns: 2'><div style='height: 40px'></div><div style='columns: 2; column-gap: 0'>
+            <div style='break-inside: avoid'>{{Words(31)}}</div><div>{{Words(24)}}</div><div style='height: 38px; break-inside: avoid'></div>
+            <div style='break-inside: avoid'>{{Words(21)}}</div><div style='height: 165px'></div><div style='height: 63px'></div><div style='height: 31px'></div>
+            <div style='height: 55px'></div><div style='height: 29px; break-inside: avoid'></div><div>{{Words(18)}}</div>
+            <div id=a style='height: 73px; break-inside: avoid'></div><div id=b style='height: 163px; break-inside: avoid'></div></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(73, Assert.Single(GetPageRects(pages, document.GetElementById("a")!)).Rect.Height);
+        Assert.Equal(163, Assert.Single(GetPageRects(pages, document.GetElementById("b")!)).Rect.Height);
+    }
+
+    [Fact]
     public void Pages_StretchedMultiColumnContainerNestedInAMultiColumnContainerKeepsItsBlockSize()
     {
         // The nested container is stretched to the block size of its flex line (the 1500px of its sibling): its block size is a

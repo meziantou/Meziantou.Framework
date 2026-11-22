@@ -1474,15 +1474,17 @@ public sealed class PagedMediaTests : IDisposable
         // inline-block) is taller than the 300px tall pages: the break slices it. When it has the same size and content in the
         // 400px wide page area of the second page, its rest continues there, the paragraph of the first item continues beside it
         // in that inline size, from the same position; else (80% of its column, a line that holds a word in a wider column) the
-        // row keeps the layout of the first page
+        // rest of the row keeps the layout of the first page. The content after the row is laid out in that inline size (50%: 200px)
         var tag = start.StartsWith("<table", StringComparison.Ordinal) ? "td style='padding: 0'" : "div";
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
             {{start}}<{{tag}} id=a>{{string.Join(' ', Enumerable.Repeat("XXXX", 80))}}</{{tag.Split(' ')[0]}}>{{item}}{{end}}
+            <div id=after style='width: 50%; height: 10px'></div>
             """);
         using var session = document.BeginPrint(Options);
         var pages = session.GetPages();
         Assert.Equal((1, secondPageWidth), GetPageRects(pages, document.GetElementById("a")!) is [_, var (page, rect), ..] ? (page, rect.Width) : default);
+        Assert.Equal((1, 200d), GetPageRects(pages, document.GetElementById("after")!) is [var (afterPage, afterRect)] ? (afterPage, afterRect.Width) : default);
         Assert.Equal(item.Contains("XXXX", StringComparison.Ordinal) ? 81 : 80, pages.Sum(page => CountWords(page.Content)));
         var sliced = GetPageRects(pages, document.GetElementById("m")!);
         Assert.Equal(2, sliced.Count);
@@ -1509,19 +1511,22 @@ public sealed class PagedMediaTests : IDisposable
     [InlineData("<div id=m style='contain: size; width: 150px; height: 700px'></div>", 200)]
     [InlineData("<svg id=m width=150 height=400 style='display: block'></svg>", 200)]
     [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 200)]
-    [InlineData("<div id=m style='contain: size; width: 50%; height: 400px'></div>", 100)]
-    [InlineData("<div id=m style='contain: size; width: 150px; height: 400px; margin: 0 auto'></div>", 100)]
-    [InlineData("<p style='margin: 0; line-height: 0; text-align: center'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 100)]
+    [InlineData("<div id=m style='contain: size; width: 50%; height: 400px'></div>", 200)]
+    [InlineData("<div id=m style='contain: size; width: 50%; height: 700px'></div>", 200)]
+    [InlineData("<div id=m style='contain: size; width: 150px; height: 400px; margin: 0 auto'></div>", 200)]
+    [InlineData("<p style='margin: 0; line-height: 0; text-align: center'><span id=m style='display: inline-block; width: 150px; height: 400px; vertical-align: top'></span></p>", 200)]
     [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 170px; height: 400px; vertical-align: top'></span> XXXX XXXX</p>", 100)]
-    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 25%; height: 400px; vertical-align: top'></span><span style='display: inline-block; width: calc(150px - 25%); height: 400px; vertical-align: top'></span></p>", 100)]
-    [InlineData("<div id=m style='contain: size; box-sizing: border-box; width: 150px; height: 400px; padding-left: 10%'><div style='height: 10px'></div></div>", 100)]
+    [InlineData("<p style='margin: 0; line-height: 0'><span id=m style='display: inline-block; width: 25%; height: 400px; vertical-align: top'></span><span style='display: inline-block; width: calc(150px - 25%); height: 400px; vertical-align: top'></span></p>", 200)]
+    [InlineData("<div id=m style='contain: size; box-sizing: border-box; width: 150px; height: 400px; padding-left: 10%'><div style='height: 10px'></div></div>", 200)]
     public void Pages_ContentSlicedByTheBreakContinuesInAPageOfAnotherInlineSize(string content, double width)
     {
         // The monolithic content (a box with size containment, an SVG image, an inline-block in a line box) is taller than the 300px
         // tall pages: the break slices it. The rest of it continues in the 400px wide pages after the first one when it is laid
-        // out the same way in them (the same size and inline position, the same line box), and the content after it is laid out
-        // in them (50%: 200px); else the pages keep the layout of the first page (100px), also when only the content of the line
-        // box or of the box changes (inline-blocks whose widths change, a child moved by a percentage padding)
+        // out the same way in them (the same size and inline position, the same line box); else (another size or position, also
+        // when only the content of the line box or of the box changes: inline-blocks whose widths change, a child moved by a
+        // percentage padding) the rest of it keeps the layout of the first page. The content after it is laid out in them (50%:
+        // 200px), unless it starts beside the content before it: the lines of the words after the inline-block have no height,
+        // at the end of the sliced line, so the pages keep the layout of the first page (100px)
         var document = Parse($$"""
             <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
             {{content}}
@@ -1542,6 +1547,32 @@ public sealed class PagedMediaTests : IDisposable
         }
 
         Assert.Equal(content.Contains("XXXX", StringComparison.Ordinal) ? 2 : 0, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Theory]
+    [InlineData("columns: 2; column-gap: 0", "height: 100px; break-inside: avoid", "<div id=p style='position: absolute; width: 20px; height: 150px'></div>", 10, "(1, (100, 100, 100x100))", "(1, (0, 200, 200x10))")]
+    [InlineData("columns: 2; column-gap: 0; position: relative", "height: 100px; break-inside: avoid", "<div style='anchor-name: --k'></div><div id=p style='position: absolute; position-anchor: --k; top: anchor(bottom); width: 20px; height: 10px'></div>", 10, "(1, (100, 100, 100x100))", "(1, (0, 200, 200x10))")]
+    [InlineData("columns: 2; column-gap: 0", "height: 100px; break-inside: avoid", "<div style='columns: 2; column-gap: 0'><div style='height: 1000px'></div></div>", 4, "(1, (100, 0, 100x100))", "(1, (0, 150, 200x10))")]
+    [InlineData("display: grid; grid-template-columns: repeat(auto-fill, 100px); grid-auto-rows: 100px", "", "<div style='grid-column: 1'></div>", 10, "(1, (0, 100, 100x100))", "(1, (0, 200, 200x10))")]
+    [InlineData("display: grid; grid-template-columns: repeat(auto-fill, 100px); grid-template-rows: repeat(5, 100px); grid-auto-flow: column", "", "", 10, "(1, (100, 100, 100x100))", "(1, (0, 200, 200x10))")]
+    [InlineData("display: flex; flex-wrap: wrap", "flex: 0 0 100px; height: 200px", "", 4, "(0, (100, 200, 100x100)) (1, (100, 0, 100x100))", "(1, (0, 100, 200x10))")]
+    public void Pages_ContentAfterAContainerThatCannotContinueIsLaidOutInAPageOfAnotherInlineSize(string containerStyle, string itemStyle, string extra, int count, string expected, string afterExpected)
+    {
+        // The first page is 200px wide, the second one 400px wide. The container cannot continue in the second page in its
+        // inline size (a multi-column container with an absolutely positioned box broken by the first page, an anchored
+        // absolutely positioned box, or a nested multi-column container broken by it; a grid whose columns depend on its width
+        // and whose items are not placed in their order; a flex line broken by the page): the rest of it keeps the layout of the
+        // first page (its last item is 100px wide), and the content after it is laid out in the page area of the second page
+        // (50%: 200px)
+        var items = string.Concat(Enumerable.Range(0, count).Select(i => (i == count - 1 ? $"<div id=last style='{itemStyle}'></div>" : $"<div style='{itemStyle}'></div>") + (i == 1 ? extra : "")));
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: 200px 300px }</style>
+            <div style='{{containerStyle}}'>{{items}}</div>
+            <div id=after style='width: 50%; height: 10px'></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal((expected, afterExpected), (string.Join(' ', GetPageRects(pages, document.GetElementById("last")!)), string.Join(' ', GetPageRects(pages, document.GetElementById("after")!))));
     }
 
     [Fact]

@@ -3320,7 +3320,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   items of a subgrid with block-start padding), do not reach the same position, or when an item after
   the break starts before that position (an item aligned in the row in the strip without the tracks of its items), the segment is
   rejected: `LayoutPages` lays out the previous segment again without ending at that break (`rejectedBreaks`, by the index of
-  the first page of the segment), so the page keeps the inline size of the previous one.
+  the first page of the segment), so the page keeps the inline size of the previous one, or is split after the row (see
+  `PageSplit` below).
   The breaker starts the parallel flows of the segment from the break (`FlowCursor.ResumeAt`): the items that end before it
   are in the virtual fragmentainer, the item that the break crosses continues from it with its own flow, and the first page
   starts with the space of the edges repeated at the break (`ColumnBreaker.GetDisplayOffsetAt`: a repeated table header,
@@ -3373,8 +3374,22 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   A page of another inline size that starts inside a line laid out another way, a multi-column container whose columns
   cannot continue (see above), a grid whose columns depend on its inline size and whose items are not placed
   in their order at the break (an item with a definite row after the break, `grid-auto-flow: column`, an item placed by the
-  dense packing in a hole before the break), a row whose items cannot continue side by side in another inline size... is laid
-  out in the inline size of the strip. The floats and the absolutely positioned boxes of the inline
+  dense packing in a hole before the break), a row whose items cannot continue side by side in another inline size... (the
+  break has no anchor, or its segment is rejected, or its rows do not start the page, `LayoutPageSegment.unresolvedBreaks`) is
+  split after that content (`PageSplit`, `FindPageSplit`): at the first possible break of the page whose content after it is a
+  box of the block flow of the root element or a line box of one of its block containers, outside of the parallel flows
+  (`FindCarriedEnd`, `IsCarriedEnd`). The strip is laid out again with a forced break there (the candidate of the flow becomes
+  `BreakAppeal.Forced`: the page keeps its block size, so the rows of columns of a multi-column container are the same), the
+  boxes broken at that break end there (the block size of the fragmentainer), and the fragments of the page before it, from the
+  strip (`BuildPageContent`, without the boxes fixed to the viewport), are the content that starts the first page of the next
+  segment (`CarriedContent`, copied), which starts at that break: the breaker starts its first page after their block size
+  (`FragmentationFlow.ResumeLeadingBlockSize`, added to the display offset of the start of the flow, as a repeated header), and
+  the page keeps its page selection (`FindPageBreaks`). The split is undone (`RejectSplit`: the floats pushed, the boxes
+  fragmented and the broken boxes laid out again are found again from the start) when the breaker does not end the page there,
+  or when the rest of the page has content before the anchor in the tree order, other than its ancestors
+  (`HasContentBeforeAnchor`: a float or an absolutely positioned box that continues after the break, lines of no height at
+  the end of the content), at most `MaxPageSplitAttempts` times. A page whose content after its break does not end in it is laid
+  out in the inline size of the strip (the next page is tried). The floats and the absolutely positioned boxes of the inline
   content before the position of a block container laid out from a position are not in the next segment (a float that
   starts before the break and continues after it is not continued). Nothing changes (nothing is laid out again) when all the
   pages have the inline size of the first one.
@@ -3436,11 +3451,11 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   the changes of the counters that the page does not reset are kept for the next pages, a counter reset by a page is a
   counter of that page only; a page-margin box applies its own counter properties for itself only. The counters are not
   nested (`counters()` shows one value).
-- Not done: the layout of the content of a page whose page area has another inline size than the strip when the page starts
-  inside a line box or monolithic content sliced by the break that is not laid out the same way, a multi-column container whose
-  columns cannot continue, a subgrid, a grid whose
-  columns depend on its inline size and whose items are not placed in their order, or a row whose items cannot continue
-  side by side (it is laid out in the inline size of the strip), the
+- Not done: the layout again of the content of a page whose page area has another inline size than the strip when the page
+  starts inside a line box or monolithic content sliced by the break that is not laid out the same way, a multi-column
+  container whose columns cannot continue, a subgrid, a grid whose columns depend on its inline size and whose items are not
+  placed in their order, or a row whose items cannot continue side by side (the rest of it keeps the layout of the strip, and
+  the page is split after it when it ends in the page, see `PageSplit`), the
   nested documents of the `iframe` elements (they are painted as on the screen), `window.print()`,
   `beforeprint` and `afterprint`.
 

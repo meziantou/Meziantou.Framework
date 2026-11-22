@@ -53,7 +53,9 @@ var pages = context.RenderPages();
   the new page), or between the rows of a grid. When the number of columns of the grid depends on its width (`auto-fill`,
   `auto-fit`), the items after the break start a new row in the width of the new page; this needs items placed in their
   order (`grid-auto-flow: row`, with `dense` or not, and the items with a definite row before the break; an item with a
-  definite column is placed in it). The items after the break do not fill the holes of the rows before it.
+  definite column is placed in it). The items after the break do not fill the holes of the rows before it. Otherwise
+  (an item with a definite row after the break, `grid-auto-flow: column`, an item that `dense` places before the break),
+  the rest of the grid keeps the layout of the previous page (see below).
 - A page of another width may also start in the middle of a table row, of a flex line or of a grid row: the content of
   each cell or item continues in the width of the new page, from the line or the box where its own break is, and the
   content of all of them starts at the top of the page. As in Chromium, the cells of such a row are not aligned
@@ -67,18 +69,19 @@ var pages = context.RenderPages();
   overflow the container. The content of an item may also continue between the rows of a table, of a grid (also a subgrid
   of the columns) or of a column flex container of the item: its rows after the break are moved down with the content of the
   other items. When the break crosses a row of an item (a row of its grid or of its table, a flex line), the items of that
-  row continue beside the others, as items of the broken row. The items must stay side by side in the new width; otherwise the page keeps the width of the
-  previous one.
+  row continue beside the others, as items of the broken row. The items must stay side by side in the new width; otherwise
+  the rest of the row keeps the layout of the previous page (see below).
 - A page of another width may also start in the middle of content taller than a page, which the break slices: an image, a
   box with size containment, or a line box (an inline-block taller than the page). The rest of the content continues at
   the top of the new page, and the content after it is laid out in the width of the new page. The content must be laid out
   the same way in the new width (the same size and position, and for a line box the same content), so that its rest
-  continues the part printed in the previous page: an image as wide as its container, a centered image, or a line that would
-  hold more words in the new width keeps the width of the previous page.
+  continues the part printed in the previous page. Otherwise (an image as wide as its container, a centered image, a line
+  that would hold more words in the new width), its rest keeps the layout of the previous page, and the content after it
+  is still laid out in the width of the new page (see below).
 - The same applies to an image, a box with size containment or a line box in a table cell, a flex item or a grid item (or
   an image that is the item): the content of the other cells or items continues beside its rest, from the same height.
-  There, the content only needs the same size and content, as it moves with its column; otherwise the page keeps the width
-  of the previous one.
+  There, the content only needs the same size and content, as it moves with its column; otherwise the rest of the row keeps
+  the layout of the previous page.
 - A page of another width may also start in the middle of a multi-column container: its columns in the new page have the
   width of the new page, and continue with the content of the last column of the previous page (a paragraph continues from
   its next line); its last columns are balanced as usual. The new page may also start before or after a column spanner
@@ -91,10 +94,17 @@ var pages = context.RenderPages();
   image or a line taller than a column is not sliced by the columns: it overflows its column. The columns may contain
   multi-column containers and absolutely positioned boxes: the ones whose containing block is in the columns are placed in
   them, the ones placed by `top` or `bottom` follow their offset in their containing block, and the ones at their static
-  position (no `top` nor `bottom`) are in the column of that position, as with pages of the same width. The page keeps the
-  width of the previous one when the container has an anchored absolutely positioned box (CSS Anchor Positioning), when an
-  absolutely positioned box at its static position is broken by the end of the previous page (the part of it already
-  printed is not known in the new width), or when the break is inside a multi-column container of the columns.
+  position (no `top` nor `bottom`) are in the column of that position, as with pages of the same width. The rest of the
+  container keeps the layout of the previous page when the container has an anchored absolutely positioned box (CSS Anchor
+  Positioning), when an absolutely positioned box at its static position is broken by the end of the previous page (the
+  part of it already printed is not known in the new width), or when the break is inside a multi-column container of the
+  columns.
+- When the content at the top of a page of another width cannot be laid out again in that width (the cases above), the
+  rest of it keeps the layout of the previous page: it is printed as it would continue on a page of the previous width,
+  and the content after it, on the same page, is laid out in the width of the new page. When that content does not end on
+  the page, the whole page keeps the width of the previous page, and the next page is tried. The whole page also keeps
+  the width of the previous page when other content continues beside the end of that content (a float or an absolutely
+  positioned box that extends below it, lines without height at its end): the content after it would not start after it.
 - The header (`thead`) and the footer (`tfoot`) of a table are repeated on each page where the table continues, as in
   Chromium, when they are not taller than a quarter of the page area (the page without its margins). A repeated header
   stays with the rows after it; a taller header is printed once, and the rows after it may start the next page (a row with

@@ -56,7 +56,33 @@ internal sealed partial class LayoutEngine
 
         /// <summary>The position of the break in the strip of the previous segment (see <see cref="LayoutPages"/>: a break whose content after it cannot be laid out in the page area of the segment).</summary>
         public double BreakPosition { get; init; }
+
+        /// <summary>
+        /// The content that starts the first page of the segment, before <see cref="Anchor"/>, when the content after the break
+        /// of that page cannot be laid out again in its page area (see <see cref="FindCarriedEnd"/>), or null.
+        /// </summary>
+        public CarriedContent? Carried { get; init; }
     }
+
+    /// <summary>
+    /// The content at the start of a page of another inline size that cannot be laid out again in its page area (a line box or a
+    /// monolithic box sliced by the break, a multi-column container, a grid or a row that cannot continue): its fragments laid out
+    /// in the strip of the previous segment, in the page area (from the break of the page to the break after that content, see
+    /// <see cref="FindCarriedEnd"/>), the block size they take at the start of the page, and the page. The content after it is
+    /// laid out in the page area.
+    /// </summary>
+    private sealed record CarriedContent(BoxFragment Content, double BlockSize, PageSelection Selection);
+
+    /// <summary>
+    /// A page of another inline size split after the content that it continues from the previous page (see
+    /// <see cref="CarriedContent"/>): the index of the page in the content pages of the segment, and the position of its break and
+    /// of the break after that content in the strip (a forced break there ends the page).
+    /// </summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct PageSplit(int ContentIndex, double Start, double Position);
+
+    /// <summary>The number of breaks tried to split the pages of a segment (see <see cref="PageSplit"/>).</summary>
+    private const int MaxPageSplitAttempts = 4;
 
     /// <summary>
     /// Lays out the document into pages: the root element is laid out in the initial containing block (the page area of the
@@ -181,6 +207,14 @@ internal sealed partial class LayoutEngine
         var rowAnchor = (segment?.Anchor.ColumnContent ?? segment?.Anchor) is { Items: not null } brokenRow ? brokenRow : null;
         Dictionary<ContainerBox, double>? anchorPushes = rowAnchor is null ? null : [];
         var alignmentPasses = 0;
+
+        // The page of another inline size split after the content that it continues from the previous page (see PageSplit), the
+        // breaks that could not split it, and the breaks between rows whose content is not the content of the page after them
+        // (see ResolveAnchorOfPage)
+        PageSplit? split = null;
+        HashSet<double>? failedSplits = null;
+        HashSet<double>? unresolvedBreaks = null;
+        var splitAttempts = 0;
         for (var pass = 0; ; pass++)
         {
             // The strip: the root element laid out in the initial containing block, as the content of a fragmentation context
@@ -219,6 +253,7 @@ internal sealed partial class LayoutEngine
             }
 
             icbSize = initialContainingBlock.Size;
+            var stripIcbSize = icbSize;
             BoxFragment? rootFragment = null;
             List<BoxFragment>? fixedBoxes = null;
             List<BoxFragment>? absoluteBoxes = null;
@@ -276,6 +311,10 @@ internal sealed partial class LayoutEngine
             var rules = new PageBreakRules { InitialContainingBlock = initialContainingBlockFragment };
             var flow = FragmentationFlow.Collect(children, stripSize, writingDirection, spannerBoxes: null, viewport, separatesOutOfFlow: true, floatPushes, rules, stripRelayout);
             flow.SlicesMonolithicContent = true;
+
+            // (the first page starts with the content kept from the strip of the previous segment, see CarriedContent)
+            var carried = segment?.Carried;
+            flow.ResumeLeadingBlockSize = carried?.BlockSize ?? 0;
 
             // (the tables that start in a previous segment repeat their header and footer as decided there; the breaker decides it
             // again for the tables that start in this segment)
@@ -404,21 +443,25 @@ internal sealed partial class LayoutEngine
             // The breaks: the block size of a page depends on its page name and on its side, which depend on the breaks (the
             // content that starts the page, the blank pages inserted before the left and right pages)
             var firstName = rootFragment is null ? "" : segment is null ? rules.GetStartPageValue(rootFragment) : FindPageStart(rules, children, stripSize, writingDirection, segmentStart).Name;
-            var firstGeometry = GetPageGeometry(geometries, new PageSelection(firstName, IsFirst: segment is null, IsLeft: segment is null ? rightToLeft : !segment.Previous.IsLeft, IsBlank: false));
+            var firstGeometry = GetPageGeometry(geometries, carried?.Selection ?? new PageSelection(firstName, IsFirst: segment is null, IsLeft: segment is null ? rightToLeft : !segment.Previous.IsLeft, IsBlank: false));
             var sizes = new List<double> { writingDirection.ToLogical(firstGeometry.LayoutAreaSize).Block };
+
+            // (a split page ends at a forced break after the content that it continues, see PageSplit)
+            if (split is { Position: var splitPosition })
+            {
+                var splitCandidate = flow.Candidates.FindIndex(candidate => Math.Abs(candidate.Position - splitPosition) <= BreakAnchorEpsilon && double.IsNaN(candidate.RangeEnd));
+                if (splitCandidate >= 0)
+                {
+                    flow.Candidates[splitCandidate] = flow.Candidates[splitCandidate] with { Appeal = BreakAppeal.Forced };
+                }
+            }
+
             var breaks = new List<FragmentainerBreak>();
             FlowMap map;
             List<(ContentPage Content, PageSelection Selection, bool HasContent)> sequence;
             for (var iteration = 0; ; iteration++)
             {
-                map = new FlowMap();
-                if (baseIndex != 0)
-                {
-                    map.Add(double.NegativeInfinity, 0, 0, isBreak: true);
-                }
-
-                ColumnBreaker.FindBreaks(flow, segmentStart, flow.ContentEnd, new FragmentainerSizes([.. sizes], 1), breaks, out _, out _, map, baseIndex);
-                sequence = GetPageSequence(rules, children, stripSize, writingDirection, breaks, rootFragment, rightToLeft, segmentStart, segment?.Previous);
+                (map, sequence) = FindPageBreaks(sizes);
                 var computed = new List<double>();
                 foreach (var (_, selection, hasContent) in sequence)
                 {
@@ -438,6 +481,53 @@ internal sealed partial class LayoutEngine
                     break;
 
                 sizes = computed;
+            }
+
+            // (the page split after the content that it continues from the previous page, see PageSplit: the breaker ends it at the
+            // break after that content, the page after it, the rest of the same page, starts the next segment)
+            if (split is { ContentIndex: var splitIndex } pageSplit
+                && (breaks.Count <= splitIndex || Math.Abs(breaks[splitIndex - 1].Position - pageSplit.Start) > BreakAnchorEpsilon || Math.Abs(breaks[splitIndex].Position - pageSplit.Position) > BreakAnchorEpsilon
+                    || !IsCarriedEnd(flow, children, stripSize, writingDirection, breaks[splitIndex].Position) || ContinuesBeforeBreak(flow, breaks[splitIndex].Position, baseIndex + splitIndex + 1)))
+            {
+                RejectSplit();
+                continue;
+            }
+
+            // Finds the breaks of the pages from the start of the segment, with the block sizes of the pages (the last one for the
+            // pages after them), and the sequence of the pages
+            (FlowMap Map, List<(ContentPage Content, PageSelection Selection, bool HasContent)> Sequence) FindPageBreaks(List<double> pageSizes)
+            {
+                var pageMap = new FlowMap();
+                if (baseIndex != 0)
+                {
+                    pageMap.Add(double.NegativeInfinity, 0, 0, isBreak: true);
+                }
+
+                ColumnBreaker.FindBreaks(flow, segmentStart, flow.ContentEnd, new FragmentainerSizes([.. pageSizes], 1), breaks, out _, out _, pageMap, baseIndex);
+                var pageSequence = GetPageSequence(rules, children, stripSize, writingDirection, breaks, rootFragment, rightToLeft, segmentStart, segment?.Previous);
+                if (carried is not null)
+                {
+                    // (the first page is the page of the content kept from the previous segment)
+                    var first = pageSequence.FindIndex(page => page.HasContent);
+                    pageSequence[first] = (pageSequence[first].Content, carried.Selection, true);
+                    pageSequence.RemoveRange(0, first);
+                }
+
+                return (pageMap, pageSequence);
+            }
+
+            // The page cannot be split at the break: it is laid out again without the split (the floats pushed and the boxes
+            // fragmented by the layouts of the split page are found again)
+            void RejectSplit()
+            {
+                (failedSplits ??= []).Add(split!.Value.Position);
+                split = null;
+                floatPushes = null;
+                lanesBreaks = null;
+                fragmentedBoxes = null;
+                stripRelayout = new StripRelayout();
+                pass = -1;
+                ClearNestedColumnStates(context);
             }
 
             // The page and the offset of an absolutely positioned box of the initial containing block: a box placed by its insets
@@ -521,13 +611,20 @@ internal sealed partial class LayoutEngine
             for (var i = 0; i <= breaks.Count; i++)
             {
                 var start = i == 0 ? segmentStart : breaks[i - 1].Position;
-                var displayOffset = i > 0 ? breaks[i - 1].DisplayOffset : segment is null ? 0 : ColumnBreaker.GetDisplayOffsetAt(flow, segmentStart);
+                var displayOffset = i > 0 ? breaks[i - 1].DisplayOffset : segment is null ? 0 : ColumnBreaker.GetDisplayOffsetAt(flow, segmentStart) + flow.ResumeLeadingBlockSize;
                 var blockSize = sizes[Math.Min(i, sizes.Count - 1)];
                 blockSizes.Add(blockSize);
 
                 // (a box broken at the end of a page extends to the end of the page area, also when its content overflows it)
                 var end = i < breaks.Count ? breaks[i].Position : double.PositiveInfinity;
                 var fragmentainerBlockSize = i < breaks.Count ? Math.Max(blockSize, breaks[i].ContentEnd - start + displayOffset) : blockSize;
+
+                // (the boxes broken at the end of the part of a split page laid out in the strip end there, see PageSplit)
+                if (split?.ContentIndex == i && i < breaks.Count)
+                {
+                    fragmentainerBlockSize = breaks[i].Position - start + displayOffset;
+                }
+
                 fragmentainers.Add(new Fragmentainer(start, end, fragmentainerBlockSize, displayOffset, LogicalOffset.Zero));
             }
 
@@ -589,31 +686,104 @@ internal sealed partial class LayoutEngine
                 }
             }
 
+            // A page of another inline size whose content after its break cannot be laid out again in its page area (a line box or
+            // a monolithic box sliced by the break that is laid out another way, a multi-column container whose columns cannot
+            // continue, a grid or a row whose items cannot continue...) is split after that content, when it ends in the page: the
+            // content before that break keeps the layout of the strip, the content after it is laid out in the page area (the
+            // strip is laid out again to break the page there, see PageSplit)
+            if (split is null && splitAttempts < MaxPageSplitAttempts && FindPageSplit() is { } newSplit)
+            {
+                split = newSplit;
+                splitAttempts++;
+                pass--;
+                ClearNestedColumnStates(context);
+                continue;
+            }
+
             // The pages that may end the segment: the pages whose page area has another inline size than the strip and that start at
             // a break where the content after it can be found in a strip of their inline size (see FindBreakAnchor: their content is
             // laid out again in a strip of their inline size; the content of the other pages is laid out in the inline size of the
-            // strip). (They are found before the slicer moves the fragments of the strip to the pages.)
-            List<(int SequenceIndex, int Index, BreakAnchor Anchor, PhysicalSize AreaSize, double Position)>? segmentEnds = null;
+            // strip), and the rest of a split page (after its content laid out in the strip, see PageSplit). (They are found before
+            // the slicer moves the fragments of the strip to the pages.)
+            List<(int SequenceIndex, int Index, BreakAnchor Anchor, PhysicalSize AreaSize, double Position, int SplitSequenceIndex)>? segmentEnds = null;
             var contentIndex = 0;
+            var lastContentSequenceIndex = -1;
             for (var i = 0; i < sequence.Count; i++)
             {
                 var (_, selection, hasContent) = sequence[i];
                 if (!hasContent)
                     continue;
 
-                var areaSize = GetPageGeometry(geometries, selection).LayoutAreaSize;
-                if (contentIndex > 0 && contentIndex <= breaks.Count && Math.Abs(writingDirection.ToLogical(areaSize).Inline - icbLogical.Inline) > 0.01
-                    && rejectedBreaks?.Contains(breaks[contentIndex - 1].Position) != true
-                    && !ContinuesBeforeBreak(flow, breaks[contentIndex - 1].Position, baseIndex + contentIndex)
-                    && FindSegmentAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position) is { } found
-                    && (found.IsInColumns ? ResolveColumnAnchor(found, flow, children, stripSize, writingDirection, baseIndex + contentIndex) : found) is { } anchor)
+                if (split is { } currentSplit && contentIndex == currentSplit.ContentIndex + 1)
                 {
-                    (segmentEnds ??= []).Add((i, baseIndex + contentIndex, anchor, areaSize, breaks[contentIndex - 1].Position));
+                    // (the rest of the split page: the page area is the one of the split page)
+                    if (FindSegmentAnchor(children, stripSize, writingDirection, breaks[contentIndex - 1].Position) is { } splitAnchor)
+                    {
+                        (segmentEnds ??= []).Add((i, baseIndex + contentIndex, splitAnchor, GetPageGeometry(geometries, sequence[lastContentSequenceIndex].Selection).LayoutAreaSize, breaks[contentIndex - 1].Position, lastContentSequenceIndex));
+                    }
+
+                    break;
+                }
+
+                var areaSize = GetPageGeometry(geometries, selection).LayoutAreaSize;
+                if (split?.ContentIndex != contentIndex && IsPageOfAnotherInlineSize(contentIndex, areaSize) && FindPageAnchor(contentIndex) is { } anchor)
+                {
+                    (segmentEnds ??= []).Add((i, baseIndex + contentIndex, anchor, areaSize, breaks[contentIndex - 1].Position, -1));
                     if (!anchor.IsInRows && anchor.ColumnContent?.IsInRows != true)
                         break;
                 }
 
+                lastContentSequenceIndex = i;
                 contentIndex++;
+            }
+
+            // Whether a content page (by its index in the content pages of the segment) starts at a break and has another inline size
+            // than the strip
+            bool IsPageOfAnotherInlineSize(int pageIndex, PhysicalSize areaSize)
+                => pageIndex > 0 && pageIndex <= breaks.Count && Math.Abs(writingDirection.ToLogical(areaSize).Inline - icbLogical.Inline) > 0.01;
+
+            // The content after the break of a content page that can be found in a strip of its inline size, or null
+            BreakAnchor? FindPageAnchor(int pageIndex)
+            {
+                var position = breaks[pageIndex - 1].Position;
+                return rejectedBreaks?.Contains(position) != true && unresolvedBreaks?.Contains(position) != true
+                    && !ContinuesBeforeBreak(flow, position, baseIndex + pageIndex)
+                    && FindSegmentAnchor(children, stripSize, writingDirection, position) is { } found
+                    && (found.IsInColumns ? ResolveColumnAnchor(found, flow, children, stripSize, writingDirection, baseIndex + pageIndex) : found) is { } anchor
+                    ? anchor
+                    : null;
+            }
+
+            // The first page of another inline size whose content after its break cannot be found in a strip of its inline size and
+            // that has a break after that content (see FindCarriedEnd), before a page that may end the segment, or null
+            PageSplit? FindPageSplit()
+            {
+                var pageIndex = 0;
+                foreach (var (_, selection, hasContent) in sequence)
+                {
+                    if (!hasContent)
+                        continue;
+
+                    if (IsPageOfAnotherInlineSize(pageIndex, GetPageGeometry(geometries, selection).LayoutAreaSize))
+                    {
+                        if (FindPageAnchor(pageIndex) is { } anchor)
+                        {
+                            if (!anchor.IsInRows && anchor.ColumnContent?.IsInRows != true)
+                                return null;
+                        }
+                        else
+                        {
+                            var start = breaks[pageIndex - 1].Position;
+                            var end = pageIndex < breaks.Count ? breaks[pageIndex].Position : flow.ContentEnd;
+                            if (FindCarriedEnd(flow, children, stripSize, writingDirection, start, end, failedSplits, rejectedBreaks) is { } position)
+                                return new PageSplit(pageIndex, start, position);
+                        }
+                    }
+
+                    pageIndex++;
+                }
+
+                return null;
             }
 
             // The pages of the absolutely positioned boxes placed at their position (before the slicer places the fragments of the
@@ -637,15 +807,47 @@ internal sealed partial class LayoutEngine
             // The page that ends the segment: the first of these pages whose content starts with the anchor (see ResolveAnchorOfPage)
             var segmentEnd = sequence.Count;
             PageSegmentStart? next = null;
+            var nextIndex = int.MaxValue;
+            var unresolvedIndex = int.MaxValue;
+            var isSplitRejected = false;
             if (segmentEnds is not null)
             {
-                foreach (var (sequenceIndex, index, candidate, areaSize, breakPosition) in segmentEnds)
+                foreach (var (sequenceIndex, index, candidate, areaSize, breakPosition, splitSequenceIndex) in segmentEnds)
                 {
                     var anchor = candidate;
+                    if (splitSequenceIndex >= 0)
+                    {
+                        // (the rest of a split page starts with the anchor: no content before it continues there, it would not be laid
+                        // out again in the strip of the next segment)
+                        if (HasContentBeforeAnchor(placedFragments[index], placedBoxPages, index, fragmentainers.Count, anchor.Box))
+                        {
+                            RejectSplit();
+                            isSplitRejected = true;
+                            break;
+                        }
+
+                        // (the content of the split page before the break is kept, with the blank page before it)
+                        segmentEnd = splitSequenceIndex;
+                        var carriedContent = new CarriedContent(
+                            (BoxFragment)BuildPageContent(index - 1, sequence[splitSequenceIndex].Selection, withFixedBoxes: false).CloneSubtree(),
+                            fragmentainers[index].Start - fragmentainers[index - 1].Start + fragmentainers[index - 1].DisplayOffset,
+                            sequence[splitSequenceIndex].Selection);
+                        next = new PageSegmentStart(anchor, areaSize, sequence[segmentEnd - 1].Selection) { FixedBoxes = fixedPlacements, RepeatedSectionsDisabled = GetRepeatedSectionsDisabled(flow), BreakPosition = breakPosition, Carried = carriedContent };
+                        nextIndex = index;
+                        break;
+                    }
+
                     if (candidate.IsInRows)
                     {
                         if (ResolveAnchorOfPage(candidate, placedFragments[index - 1], placedFragments[index], writingDirection) is not { } resolved)
+                        {
+                            if ((unresolvedBreaks ??= []).Add(breakPosition))
+                            {
+                                unresolvedIndex = Math.Min(unresolvedIndex, index);
+                            }
+
                             continue;
+                        }
 
                         anchor = resolved;
                     }
@@ -654,7 +856,14 @@ internal sealed partial class LayoutEngine
                         // (a break between the rows of a container in the columns of a multi-column container, or in its only row that
                         // the break crosses: the rows are checked against the content of the pages, the columns of the container)
                         if (ResolveAnchorOfPage(columnContent, placedFragments[index - 1], placedFragments[index], writingDirection) is not { } resolved)
+                        {
+                            if ((unresolvedBreaks ??= []).Add(breakPosition))
+                            {
+                                unresolvedIndex = Math.Min(unresolvedIndex, index);
+                            }
+
                             continue;
+                        }
 
                         anchor = candidate with { ColumnContent = resolved };
                     }
@@ -662,8 +871,68 @@ internal sealed partial class LayoutEngine
                     // (a blank page before the page is inserted again by the next segment)
                     segmentEnd = sequenceIndex > 0 && !sequence[sequenceIndex - 1].HasContent ? sequenceIndex - 1 : sequenceIndex;
                     next = new PageSegmentStart(anchor, areaSize, sequence[segmentEnd - 1].Selection) { FixedBoxes = fixedPlacements, RepeatedSectionsDisabled = GetRepeatedSectionsDisabled(flow), BreakPosition = breakPosition };
+                    nextIndex = index;
                     break;
                 }
+            }
+
+            // (the split page whose rest has content before the anchor is laid out again without the split; the pages whose content
+            // after the break is not the anchor of their rows, before the end of the segment, may be split after that content)
+            if (isSplitRejected)
+                continue;
+
+            if (unresolvedIndex < nextIndex && split is null && splitAttempts < MaxPageSplitAttempts)
+            {
+                pass--;
+                continue;
+            }
+
+            // The fragments of a content page (by its index in the fragmentainers): the fragments of the strip, the absolutely
+            // positioned boxes of the initial containing block at their position, and the boxes fixed to the viewport
+            BoxFragment BuildPageContent(int index, PageSelection selection, bool withFixedBoxes)
+            {
+                var areaSize = GetPageGeometry(geometries, selection).LayoutAreaSize;
+                var builder = new FragmentBuilder(writingDirection);
+
+                // (the first page of the segment starts with the content kept from the previous segment, see CarriedContent)
+                if (index == baseIndex && carried is not null)
+                {
+                    foreach (var child in ((BoxFragment)carried.Content.CloneSubtree()).ChildrenSpan)
+                    {
+                        builder.AddChild(child, writingDirection.ToLogical(child.Offset - (child is BoxFragment childBox ? childBox.RelativeOffset : default), areaSize, child.Size));
+                    }
+                }
+
+                foreach (var (fragment, offset) in placedFragments[index])
+                {
+                    builder.AddChild(fragment, offset);
+                }
+
+                // The absolutely positioned boxes of the initial containing block at their static position or anchored are on
+                // the page where the content at their position is, unbroken
+                if (placedBoxPages is not null)
+                {
+                    foreach (var (box, boxIndex, offset) in placedBoxPages)
+                    {
+                        var logical = writingDirection.ToLogical(box.Offset - box.RelativeOffset, stripIcbSize, box.Size);
+                        if (Math.Clamp(boxIndex, 0, fragmentainers.Count - 1) == index)
+                        {
+                            builder.AddChild(box, new LogicalOffset(logical.Inline, boxIndex == index ? offset : logical.Block - fragmentainers[index].Start + fragmentainers[index].DisplayOffset));
+                        }
+                    }
+                }
+
+                // https://drafts.csswg.org/css-position-3/#fixed-pos: "the box is positioned relative to the page area of each
+                // page" and repeated on every page
+                if (withFixedBoxes && fixedPlacements is not null)
+                {
+                    foreach (var (box, logical) in fixedPlacements)
+                    {
+                        builder.AddChild(pages.Count == 0 ? box : box.CloneSubtree(), logical);
+                    }
+                }
+
+                return new BoxFragment(viewport, areaSize, default, default, default, builder.Build(areaSize));
             }
 
             contentIndex = 0;
@@ -672,45 +941,19 @@ internal sealed partial class LayoutEngine
                 var (_, selection, hasContent) = sequence[sequenceIndex];
                 var geometry = GetPageGeometry(geometries, selection);
                 var areaSize = geometry.LayoutAreaSize;
-                var builder = new FragmentBuilder(writingDirection);
+                BoxFragment content;
                 if (hasContent)
                 {
-                    var index = baseIndex + contentIndex;
-                    foreach (var (fragment, offset) in placedFragments[index])
-                    {
-                        builder.AddChild(fragment, offset);
-                    }
-
-                    // The absolutely positioned boxes of the initial containing block at their static position or anchored are on
-                    // the page where the content at their position is, unbroken
-                    if (placedBoxPages is not null)
-                    {
-                        foreach (var (box, boxIndex, offset) in placedBoxPages)
-                        {
-                            var logical = writingDirection.ToLogical(box.Offset - box.RelativeOffset, icbSize, box.Size);
-                            if (Math.Clamp(boxIndex, 0, fragmentainers.Count - 1) == index)
-                            {
-                                builder.AddChild(box, new LogicalOffset(logical.Inline, boxIndex == index ? offset : logical.Block - fragmentainers[index].Start + fragmentainers[index].DisplayOffset));
-                            }
-                        }
-                    }
-
-                    // https://drafts.csswg.org/css-position-3/#fixed-pos: "the box is positioned relative to the page area of each
-                    // page" and repeated on every page
-                    if (fixedPlacements is not null)
-                    {
-                        foreach (var (box, logical) in fixedPlacements)
-                        {
-                            builder.AddChild(pages.Count == 0 ? box : box.CloneSubtree(), logical);
-                        }
-                    }
-
+                    content = BuildPageContent(baseIndex + contentIndex, selection, withFixedBoxes: true);
                     contentIndex++;
+                }
+                else
+                {
+                    content = new BoxFragment(viewport, areaSize, default, default, default, children: null);
                 }
 
                 // (the fragments of a segment followed by another one are copied: the layout of the next strip may return and move
                 // the fragments that are laid out the same way)
-                var content = new BoxFragment(viewport, areaSize, default, default, default, builder.Build(areaSize));
                 if (next is not null)
                 {
                     content = (BoxFragment)content.CloneSubtree();
@@ -729,6 +972,90 @@ internal sealed partial class LayoutEngine
             }
 
             return next;
+        }
+    }
+
+    /// <summary>
+    /// Returns the first possible break of the strip in a page of another inline size (after its break, at
+    /// <paramref name="start"/>, and before its end) whose content after it can be found again in a strip of another inline size
+    /// and starts the rest of the page (see <see cref="IsCarriedEnd"/>), or null: the content of the page before that break (the
+    /// content after the break of the page, which cannot be laid out again in its page area) keeps the layout of the strip (see
+    /// <see cref="CarriedContent"/>).
+    /// </summary>
+    private static double? FindCarriedEnd(FragmentationFlow flow, Fragment[] children, PhysicalSize stripSize, WritingDirection writingDirection, double start, double end, HashSet<double>? failedSplits, HashSet<double>? rejectedBreaks)
+    {
+        foreach (var candidate in flow.Candidates)
+        {
+            var position = candidate.Position;
+            if (position <= start + BreakAnchorEpsilon)
+                continue;
+
+            if (position >= end - BreakAnchorEpsilon)
+                break;
+
+            if (failedSplits?.Contains(position) != true && rejectedBreaks?.Contains(position) != true && IsCarriedEnd(flow, children, stripSize, writingDirection, position))
+                return position;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns whether the content after a position of the strip is a box of the block flow of the root element or a line box of
+    /// a block container of that block flow (see <see cref="FindBreakAnchor"/>), outside of the parallel flows: the content
+    /// before it ends there, whatever the inline size.
+    /// </summary>
+    private static bool IsCarriedEnd(FragmentationFlow flow, Fragment[] children, PhysicalSize stripSize, WritingDirection writingDirection, double position)
+    {
+        return !CrossesParallelFlow(flow, position)
+            && FindSegmentAnchor(children, stripSize, writingDirection, position) is { SliceOffset: null, IsInRows: false, IsInColumns: false, Items: null, Container: null };
+    }
+
+    /// <summary>
+    /// Returns whether the fragments of a page have content that is before a box in the tree order (other than its ancestors):
+    /// the content of the previous page that continues in it (e.g. an absolutely positioned box, a float), which a strip laid out
+    /// from that box does not have.
+    /// </summary>
+    private static bool HasContentBeforeAnchor(List<FragmentSlicer.PlacedFragment> page, List<(BoxFragment Box, int Index, double Offset)>? placedBoxPages, int index, int fragmentainerCount, ContainerBox anchor)
+    {
+        var ancestors = new HashSet<ContainerBox>();
+        for (var box = anchor.Parent; box is not null; box = box.Parent)
+        {
+            ancestors.Add(box);
+        }
+
+        foreach (var (fragment, _) in page)
+        {
+            if (IsBefore(fragment))
+                return true;
+        }
+
+        if (placedBoxPages is not null)
+        {
+            foreach (var (box, boxIndex, _) in placedBoxPages)
+            {
+                if (Math.Clamp(boxIndex, 0, fragmentainerCount - 1) == index && IsBefore(box))
+                    return true;
+            }
+        }
+
+        return false;
+
+        bool IsBefore(Fragment fragment)
+        {
+            if (fragment is not BoxFragment box || ReferenceEquals(box.Box, anchor))
+                return false;
+
+            if (!ancestors.Contains(box.Box))
+                return IsBeforeInTreeOrder(box.Box, anchor);
+
+            foreach (var child in box.ChildrenSpan)
+            {
+                if (IsBefore(child))
+                    return true;
+            }
+
+            return false;
         }
     }
 

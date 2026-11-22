@@ -1,4 +1,5 @@
 using System.Numerics;
+using Meziantou.Framework.Imaging.Drawing;
 
 namespace Meziantou.Framework.Imaging.Samples;
 
@@ -76,6 +77,29 @@ internal static class ProcessingExamples
         // The pixels of the mask are filled from the pixels around them; a larger radius gives smoother fills
         photo.Inpaint(mask, new InpaintingOptions { Radius = 4 });
         photo.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>Makes the uniform background of a photo transparent: the pixels of its color connected to two corners.</summary>
+    #region Imaging_RemoveBackground
+    public static void RemoveBackground(string photoPath, string outputPath)
+    {
+        using var photo = Image.Load(photoPath);
+        var frame = photo.Frames[0];
+
+        // The magic wand: the pixels connected to a corner whose samples are within 8% of the color of that corner
+        var options = new ColorSelectionOptions { Tolerance = 0.08 };
+        var background = PixelMask.FromSimilarColors(frame, new Point(0, 0), options);
+        background.UnionWith(PixelMask.FromSimilarColors(frame, new Point(photo.Width - 1, photo.Height - 1), options));
+
+        // The selection as an alpha image, blurred to soften its edges
+        using var mask = background.ToImage();
+        mask.GaussianBlur(1);
+
+        // A copy with alpha, where the mask erases what it covers
+        using var cutout = photo.CloneAs<Rgba32>();
+        cutout.Draw(canvas => canvas.Layer(1, layer => layer.DrawImage(mask.Frames[0], new PointD(0, 0)), CompositeMode.DestinationOut));
+        cutout.Save(outputPath);
     }
     #endregion
 

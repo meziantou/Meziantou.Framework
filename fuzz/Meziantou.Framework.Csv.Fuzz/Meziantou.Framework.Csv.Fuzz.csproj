@@ -9,6 +9,8 @@
   <ItemGroup>
     <!-- The texts of the unit tests are the seeds -->
     <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Csv.Tests\*Tests.cs" LogicalName="%(FileName)%(Extension)" Link="Seeds\%(FileName)%(Extension)" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Csv.Tests\TestData\csv-spectrum\cases.json" LogicalName="csv-spectrum.cases.json" Link="Seeds\csv-spectrum.cases.json" />
+    <EmbeddedResource Include="..\..\tests\Meziantou.Framework.Csv.Tests\TestData\papaparse\cases.json" LogicalName="papaparse.cases.json" Link="Seeds\papaparse.cases.json" />
   </ItemGroup>
 
   <ItemGroup>

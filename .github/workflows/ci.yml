@@ -682,7 +682,8 @@ jobs:
         run: dotnet run eng/pdf/fetch-tests.cs
 
       # The WasmEngine spec tests run the scripts of the official WebAssembly test suite at the commit pinned in
-      # tests/Meziantou.Framework.WasmEngine.SpecTests/testsuite.json: they are fetched, not committed
+      # tests/Meziantou.Framework.WasmEngine.SpecTests/testsuite.json: they are fetched, not committed. The fetch script
+      # checks them out from the snapshot of the mirror of eng/wasmengine/corpus.mirror.json, else from upstream
       - name: Restore the WebAssembly test suite
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WasmEngine.SpecTests')
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6

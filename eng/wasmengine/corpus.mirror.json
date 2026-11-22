@@ -1,0 +1,16 @@
+{
+  "repository": "meziantou/test-corpus-wasmengine",
+  "snapshots": {
+    "testsuite": {
+      "pin": [
+        "WebAssembly/testsuite@92a3d806c7d70f5b63f125e6155b8d76304509f1",
+        "LICENSE",
+        "*.wast",
+        "legacy",
+        "proposals/threads",
+        "proposals/wide-arithmetic"
+      ],
+      "snapshot": "0422dc4420b9218b1783fc6c314ec72e15b7a9e2"
+    }
+  }
+}

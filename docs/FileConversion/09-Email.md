@@ -1,6 +1,6 @@
 ---
 title: Mailboxes and email messages
-description: Convert a mailbox with its folders between Outlook data files (PST, OST), mbox and Maildir, export it to .eml or .msg files, and convert email messages between EML, MSG, EMLX and winmail.dat.
+description: Convert a mailbox with its folders between Outlook data files (PST, OST), mbox and Maildir, export it to .eml or .msg files, convert email messages between EML, MSG, EMLX and winmail.dat, and gather messages in one mbox file.
 ---
 
 The tool converts mailboxes with their folders, and email messages, with
@@ -20,7 +20,7 @@ The first command writes the folder `archive.mbox`, the second the Outlook data 
 | --- | --- | --- | --- | --- |
 | PST | `.pst` | Yes | Yes | An Outlook data file |
 | OST | `.ost` | Yes | Yes | An offline Outlook data file |
-| Mbox | `.mbox`, `.mbx` | Yes | Yes | A folder of mbox files, in the layout of Thunderbird |
+| Mbox | `.mbox`, `.mbx` | Yes | Yes | A folder of mbox files in the layout of Thunderbird for a mailbox, one mbox file for messages |
 | Maildir | `.maildir` | Yes | Yes | A Maildir folder |
 | EML | `.eml` | Yes | Yes | An email message, or a folder of `.eml` files for a mailbox |
 | MSG | `.msg` | Yes | Yes | An Outlook item, or a folder of `.msg` files for a mailbox |
@@ -100,4 +100,25 @@ Meziantou.Framework.FileConversion.Tool message.emlx --output message.eml
 - An Outlook item that is not an email, such as a contact, converts to EML as a message.
 - An EML input is read in an MSG or EMLX output, since the EML format does not store the read state.
 
-A message does not convert to a mailbox: only a mailbox does.
+## Messages to a mailbox
+
+Email messages convert to one mailbox, such as a folder of `.eml` files to one mbox file:
+
+```bash
+Meziantou.Framework.FileConversion.Tool "inbox/*.eml" --output inbox.mbox
+Meziantou.Framework.FileConversion.Tool "inbox/*.eml" "outlook/*.msg" --output archive.pst
+Meziantou.Framework.FileConversion.Tool "inbox/*.eml" --output-format mbox --per-input
+```
+
+- All the inputs go to one mailbox, in the order of the inputs: the files a pattern matches are sorted in natural order
+  (`message2.eml` before `message10.eml`). Set the path of the mailbox with `--output`, or use `--per-input` to write
+  each message to its own mailbox.
+- An mbox output is one mbox file. A mailbox converts to a folder of mbox files because it has folders; messages have
+  none. An mbox file converts back to another mailbox format as a mailbox of one folder.
+- A PST, OST or Maildir output has the messages in its inbox.
+- In an mbox file, an email message keeps its bytes, with LF line breaks, and the date of its `From ` line is the date
+  of the message, or of the file when the message has none. A read MSG, TNEF or EMLX message gets the `Status: RO` header that mutt and Thunderbird read. An EML
+  message has no read state: it is unread in an mbox or Maildir output, and read in a PST or OST output.
+- A message that cannot be read is skipped, and reported on the error output. The conversion fails when no message can
+  be converted.
+- The inputs must all be messages: convert the mailboxes and the messages separately.

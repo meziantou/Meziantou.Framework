@@ -15,7 +15,7 @@ winmail.dat).
 - several PDF documents to one PDF document, and a PDF document to one document per page
 - a PDF document to PDF/A, or to a smaller, linearized or encrypted PDF document
 - a mailbox to another mailbox format with its folders, such as PST to mbox (Thunderbird) or Maildir to PST
-- a mailbox to a folder of .eml or .msg files
+- a mailbox to a folder of .eml or .msg files, and .eml or .msg files to one mailbox, such as one mbox file
 - an email message to another message format, such as MSG to EML or winmail.dat to MSG
 
 ## Install
@@ -73,13 +73,15 @@ Meziantou.Framework.FileConversion.Tool readme.md --output-format html --html-st
 Meziantou.Framework.FileConversion.Tool page.html --output-format md
 ```
 
-Convert a mailbox to another format with its folders, export it to .eml files, or convert an email message:
+Convert a mailbox to another format with its folders, export it to .eml files, convert an email message, or gather .eml
+files in one mbox file:
 
 ```bash
 Meziantou.Framework.FileConversion.Tool archive.pst --output-format mbox
 Meziantou.Framework.FileConversion.Tool ~/Maildir --output mail.pst
 Meziantou.Framework.FileConversion.Tool archive.pst --output-format eml
 Meziantou.Framework.FileConversion.Tool message.msg --output-format eml
+Meziantou.Framework.FileConversion.Tool "inbox/*.eml" --output inbox.mbox
 ```
 
 List the formats and their options:
@@ -106,7 +108,7 @@ Options:
   --input-format <input-format>                                                                                               The format of the inputs, when it must not be detected from their content
   --output-format <output-format>                                                                                             The format of the outputs. Default: the format of the extension of --output
   --overwrite                                                                                                                 Replace the output files that already exist
-  --per-input                                                                                                                 Convert each input to its own PDF, comic book archive or TIFF file, instead of all the inputs to one file
+  --per-input                                                                                                                 Convert each input to its own PDF, comic book archive, TIFF file or mailbox, instead of all the inputs to one file
   --per-page                                                                                                                  Write each page to its own PDF, comic book archive or TIFF file, such as to split a PDF file. The output template needs {page} or {index}
   --pages <pages>                                                                                                             The pages of each input to convert, such as '1-3,7,10-'. Default: all the pages
   --list-formats                                                                                                              List the formats, their extensions and their options

@@ -29,7 +29,7 @@ Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, J
 | `--input-format <input-format>` | The format of the inputs, when it must not be detected from their content |  |
 | `--output-format <output-format>` | The format of the outputs. Default: the format of the extension of --output |  |
 | `--overwrite` | Replace the output files that already exist |  |
-| `--per-input` | Convert each input to its own PDF, comic book archive or TIFF file, instead of all the inputs to one file |  |
+| `--per-input` | Convert each input to its own PDF, comic book archive, TIFF file or mailbox, instead of all the inputs to one file |  |
 | `--per-page` | Write each page to its own PDF, comic book archive or TIFF file, such as to split a PDF file. The output template needs {page} or {index} |  |
 | `--pages <pages>` | The pages of each input to convert, such as '1-3,7,10-'. Default: all the pages |  |
 | `--list-formats` | List the formats, their extensions and their options |  |

@@ -271,18 +271,24 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     /// <summary>Converts each mailbox to another mailbox format or to a folder of message files (EML, MSG), and each message to another message format.</summary>
     private void ConvertEmails(List<FullPath> inputs, FileFormat[] inputFormats, OutputNameTemplate? template, FileFormat outputFormat)
     {
+        for (var i = 0; i < inputs.Count; i++)
+        {
+            if (inputFormats[i].Kind is not (FileFormatKind.Mailbox or FileFormatKind.EmailMessage))
+                throw new ConversionException($"The input '{inputs[i]}' is {WithArticle(inputFormats[i].Name)} file, which cannot be converted to {outputFormat.Name}: only mailboxes and email messages can");
+        }
+
+        if (outputFormat.Kind is FileFormatKind.Mailbox && inputFormats.Any(format => format.Kind is FileFormatKind.EmailMessage))
+        {
+            ConvertMessagesToMailboxes(inputs, inputFormats, template, outputFormat);
+            return;
+        }
+
         template ??= OutputNameTemplate.Parse(SingleOutputTemplate);
         var extension = GetExtension(template, outputFormat);
         for (var i = 0; i < inputs.Count; i++)
         {
             var input = inputs[i];
             var inputFormat = inputFormats[i];
-            if (inputFormat.Kind is not (FileFormatKind.Mailbox or FileFormatKind.EmailMessage))
-                throw new ConversionException($"The input '{input}' is {WithArticle(inputFormat.Name)} file, which cannot be converted to {outputFormat.Name}: only mailboxes and email messages can");
-
-            if (inputFormat.Kind is FileFormatKind.EmailMessage && outputFormat.Kind is FileFormatKind.Mailbox)
-                throw new ConversionException($"The input '{input}' is {WithArticle(inputFormat.Name)} message, which cannot be converted to {outputFormat.Name}: only mailboxes can. A message can be converted to another message format (EML, MSG, OFT, EMLX, TNEF)");
-
             if (inputFormat.Kind is FileFormatKind.Mailbox && outputFormat.MailboxFormat is null)
                 throw new ConversionException($"The input '{input}' is {WithArticle(inputFormat.Name)} mailbox, which cannot be converted to {outputFormat.Name}: a mailbox can be converted to PST, OST, Mbox or Maildir, or to a folder of EML or MSG files");
 
@@ -303,6 +309,37 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
                 EmailOutputWriter.WriteMessage(input, inputFormat, outputPath, outputFormat);
             }
 
+            output.WriteLine(outputPath);
+        }
+    }
+
+    /// <summary>
+    /// Writes messages to a mailbox: an mbox file, or the inbox of an Outlook data file or of a Maildir folder. All the inputs go to
+    /// one mailbox, or each input to its own mailbox with <c>--per-input</c>.
+    /// </summary>
+    private void ConvertMessagesToMailboxes(List<FullPath> inputs, FileFormat[] inputFormats, OutputNameTemplate? template, FileFormat outputFormat)
+    {
+        for (var i = 0; i < inputs.Count; i++)
+        {
+            if (inputFormats[i].Kind is FileFormatKind.Mailbox)
+                throw new ConversionException($"The input '{inputs[i]}' is {WithArticle(inputFormats[i].Name)} mailbox, which cannot be converted to {outputFormat.Name} with email messages: convert the mailboxes and the messages separately");
+        }
+
+        var groups = settings.PerInput || inputs.Count is 1
+            ? inputs.Select((input, index) => (Inputs: (IReadOnlyList<int>)[index], Index: index)).ToList()
+            : [(Inputs: Enumerable.Range(0, inputs.Count).ToArray(), Index: 0)];
+
+        if (groups.Count is 1 && inputs.Count > 1 && template is null)
+            throw new ConversionException($"The {inputs.Count.ToString(CultureInfo.InvariantCulture)} messages go to one {outputFormat.Name} mailbox: set its path with --output, or use --per-input to convert each message to its own mailbox");
+
+        template ??= OutputNameTemplate.Parse(SingleOutputTemplate);
+        var extension = GetExtension(template, outputFormat);
+        foreach (var group in groups)
+        {
+            var first = inputs[group.Inputs[0]];
+            var outputPath = GetOutputPath(template, new OutputNameValues(FileFormat.GetNameWithoutExtension(first.Name), extension[1..], first.Parent, Page: 1, PageCount: 1, group.Index + 1, groups.Count), first);
+            outputPath.CreateParentDirectory();
+            EmailOutputWriter.WriteMessages([.. group.Inputs.Select(index => (inputs[index], inputFormats[index]))], outputPath, outputFormat, settings, error);
             output.WriteLine(outputPath);
         }
     }

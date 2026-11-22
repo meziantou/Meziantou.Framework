@@ -59,7 +59,7 @@ internal static class Program
         };
         var perInputOption = new Option<bool>("--per-input")
         {
-            Description = "Convert each input to its own PDF, comic book archive or TIFF file, instead of all the inputs to one file",
+            Description = "Convert each input to its own PDF, comic book archive, TIFF file or mailbox, instead of all the inputs to one file",
         };
         var perPageOption = new Option<bool>("--per-page")
         {

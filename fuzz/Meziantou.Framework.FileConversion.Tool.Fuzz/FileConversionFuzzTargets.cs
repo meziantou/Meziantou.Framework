@@ -378,8 +378,8 @@ public static class FileConversionFuzzTargets
     }
 
     /// <summary>
-    /// Converts a message to EML, MSG and EMLX: an EML output has only CRLF line breaks, and the lines of an EML input are kept;
-    /// the MSG and EMLX outputs are read back.
+    /// Converts a message to EML, MSG, EMLX and twice to one mbox file: an EML output has only CRLF line breaks, and the lines of an EML input are kept;
+    /// the MSG, EMLX and mbox outputs are read back.
     /// </summary>
     private static void EmailMessage(ReadOnlySpan<byte> data)
     {
@@ -401,11 +401,13 @@ public static class FileConversionFuzzTargets
             var eml = directory / "output.eml";
             var msg = directory / "output.msg";
             var emlx = directory / "output.emlx";
+            var mbox = directory / "output.mbox";
             try
             {
                 EmailOutputWriter.WriteMessage(input, format, eml, FileFormat.Eml);
                 EmailOutputWriter.WriteMessage(input, format, msg, FileFormat.Msg);
                 EmailOutputWriter.WriteMessage(input, format, emlx, FileFormat.Emlx);
+                EmailOutputWriter.WriteMessages([(input, format), (input, format)], mbox, FileFormat.Mbox, new ConversionSettings(), TextWriter.Null);
             }
             catch (EmailException)
             {
@@ -422,6 +424,14 @@ public static class FileConversionFuzzTargets
 
             MsgFile.Load(msg);
             EmlxFile.Load(emlx);
+
+            // The mbox file has the two messages, and the lines of an EML input (the mbox format escapes the lines that start with "From ")
+            var messages = MboxReader.ReadMessages(mbox).ToList();
+            FuzzAssert.Equal(2, messages.Count, "The mbox file does not have a message per input");
+            if (format == FileFormat.Eml && !Encoding.Latin1.GetString(data).ReplaceLineEndings("\n").Contains("\nFrom ", StringComparison.Ordinal) && !data.StartsWith("From "u8))
+            {
+                FuzzAssert.Equal(ToLines(data), ToLines(messages[0].Content.Span), "The mbox file does not have the lines of the EML input");
+            }
         }
         finally
         {

@@ -16,7 +16,7 @@ description: A command-line tool that converts images, PDF documents, EPUB books
 - several PDF documents to one PDF document, and a PDF document to one document per page
 - a PDF document to PDF/A, to a smaller, linearized or encrypted PDF document, or to a PDF document whose form fields are flattened
 - a mailbox to another mailbox format, with its folders: PST, OST, mbox (Thunderbird) and Maildir, such as PST to mbox
-- a mailbox to a folder of .eml or .msg files
+- a mailbox to a folder of .eml or .msg files, and .eml or .msg files to one mailbox, such as one mbox file
 - an email message to another message format: EML, MSG, OFT, EMLX (Apple Mail) and TNEF (winmail.dat)
 
 Each format has its own options, such as `--jpeg-quality`, `--dpi` or `--layout-page-size`.
@@ -51,7 +51,7 @@ The format of the output decides how many files the tool writes:
 - **The other image formats** hold one image: each page gives one file.
 - **Archives** (zip, 7z, tar...) are not made of pages: each input archive gives one archive, with the same files.
 - **Mailboxes and email messages** are not made of pages either: each input mailbox gives one mailbox, or a folder of
-  message files, and each input message gives one message.
+  message files, and each input message gives one message, or all the input messages go to one mailbox.
 
 The tool detects the format of an input from its content, so a file with a wrong extension is still read. The PDF
 pages are copied into a PDF output as they are, so their text stays text; they are rendered to images for the other

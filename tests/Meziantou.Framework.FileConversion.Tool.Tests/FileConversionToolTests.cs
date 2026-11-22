@@ -738,15 +738,92 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
-    public async Task MessageToMailbox_IsRejected()
+    public async Task MessagesToOneMbox()
     {
         await using var temp = TemporaryDirectory.Create();
-        var input = await WriteFileAsync(temp, "hello.eml", TestFiles.CreateEml("Hello"));
+        await WriteFileAsync(temp, "inbox/message10.eml", TestFiles.CreateEml("Ten"));
+        await WriteFileAsync(temp, "inbox/message2.eml", TestFiles.CreateEml("Two"));
+        await WriteFileAsync(temp, "inbox/message1.eml", TestFiles.CreateEml("One"));
 
-        var (exitCode, console) = await RunAsync(input, "--output-format", "mbox");
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("inbox") + "/*.eml", "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(temp.GetFullPath("all.mbox").Value, console.Output.Trim());
+
+        // One mbox file, with the messages in the natural order of the names, as they are (the lines of an mbox file end with LF)
+        var messages = MboxReader.ReadMessages(temp.GetFullPath("all.mbox")).ToList();
+        Assert.Equal(["One", "Two", "Ten"], messages.Select(message => message.Message.Subject));
+        Assert.Equal(Encoding.UTF8.GetString(TestFiles.CreateEml("One")).ReplaceLineEndings("\n"), Encoding.UTF8.GetString(messages[0].Content.Span));
+        Assert.Equal("From alice@example.com Thu Jan 15 09:00:00 2026", messages[0].FromLine);
+
+        // The mbox file is a mailbox of one folder
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("all.mbox"), "--output-format", "maildir")).ExitCode);
+        Assert.HasCount(3, MaildirFolder.Open(temp.GetFullPath("all.maildir")).EnumerateFolders().Single().Folder.EnumerateMessages());
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox_NeedsAnOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.eml", TestFiles.CreateEml("A"));
+        var second = await WriteFileAsync(temp, "b.eml", TestFiles.CreateEml("B"));
+
+        var (exitCode, console) = await RunAsync(first, second, "--output-format", "mbox");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("set its path with --output", console.Error);
+
+        Assert.Equal(0, (await RunAsync(first, second, "--output-format", "mbox", "--per-input")).ExitCode);
+        Assert.Equal("A", MboxReader.ReadMessages(temp.GetFullPath("a.mbox")).Single().Message.Subject);
+        Assert.Equal("B", MboxReader.ReadMessages(temp.GetFullPath("b.mbox")).Single().Message.Subject);
+    }
+
+    [Fact]
+    public async Task MessagesToPstAndMaildir()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var eml = await WriteFileAsync(temp, "a.eml", TestFiles.CreateEml("From EML"));
+        var msg = await WriteFileAsync(temp, "b.msg", TestFiles.CreateMsg("From MSG"));
+
+        Assert.Equal(0, (await RunAsync(eml, msg, "-o", temp.GetFullPath("mail.pst"))).ExitCode);
+        using (var pst = PstFile.Open(temp.GetFullPath("mail.pst")))
+        {
+            Assert.Equal(["From EML", "From MSG"], pst.GetFolder("Inbox")!.EnumerateItems().Select(item => item.Subject));
+        }
+
+        Assert.Equal(0, (await RunAsync(eml, msg, "-o", temp.GetFullPath("mail"), "--output-format", "maildir")).ExitCode);
+        Assert.Equal(["From EML", "From MSG"], MaildirFolder.Open(temp.GetFullPath("mail")).EnumerateMessages().Select(message => message.Load().Subject).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox_SkipsTheInvalidMessages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var valid = await WriteFileAsync(temp, "valid.eml", TestFiles.CreateEml("Valid"));
+        var invalid = await WriteFileAsync(temp, "invalid.msg", "not an Outlook item"u8.ToArray());
+
+        var (exitCode, console) = await RunAsync(valid, invalid, "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains(invalid.Value + ": ", console.Error);
+        Assert.Equal(["Valid"], MboxReader.ReadMessages(temp.GetFullPath("all.mbox")).Select(message => message.Message.Subject));
+
+        (exitCode, console) = await RunAsync(invalid, "-o", temp.GetFullPath("none.mbox"));
+        Assert.Equal(1, exitCode);
+        Assert.Contains("No message can be converted", console.Error);
+        Assert.False(File.Exists(temp.GetFullPath("none.mbox")));
+    }
+
+    [Fact]
+    public async Task MessagesAndMailboxToMailbox_IsRejected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var message = await WriteFileAsync(temp, "hello.eml", TestFiles.CreateEml("Hello"));
+        var mailbox = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        var (exitCode, console) = await RunAsync(message, mailbox, "-o", temp.GetFullPath("all.mbox"));
 
         Assert.Equal(1, exitCode);
-        Assert.Contains("only mailboxes can", console.Error);
+        Assert.Contains("convert the mailboxes and the messages separately", console.Error);
     }
 
     [Fact]

@@ -97,7 +97,7 @@ using (var zip = new ZipArchive(new MemoryStream(archive), ZipArchiveMode.Read))
 
         Console.WriteLine($"{kind}: {words.Count} words, {content.Length} bytes uncompressed, {compressed.Length} bytes compressed");
 
-        // The compressed bytes depend on the version of Brotli: the file is only written when its content changes
+        // The compressed bytes depend on the version of zlib: the file is only written when its content changes
         var path = projectPath / "Data" / (fileName + ".dict");
         if (!IsSameContent(path, content))
         {
@@ -145,15 +145,20 @@ static async Task<string> GetLatestIcuVersionAsync()
     return tag["release-".Length..];
 }
 
-// The format of IcuWordDictionary.LoadCompressed: the length of the content, then the content compressed with Brotli
+// The format of IcuWordDictionary.LoadCompressed: the length of the content, then the content compressed with Deflate,
+// the only compression that the browser (WebAssembly) decompresses
 static byte[] Compress(byte[] content)
 {
-    var compressed = new byte[4 + BrotliEncoder.GetMaxCompressedLength(content.Length)];
-    BinaryPrimitives.WriteInt32LittleEndian(compressed, content.Length);
-    if (!BrotliEncoder.TryCompress(content, compressed.AsSpan(4), out var written, quality: 11, window: 24))
-        throw new InvalidOperationException("Cannot compress a word list");
+    using var output = new MemoryStream();
+    Span<byte> length = stackalloc byte[4];
+    BinaryPrimitives.WriteInt32LittleEndian(length, content.Length);
+    output.Write(length);
+    using (var deflate = new DeflateStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+    {
+        deflate.Write(content);
+    }
 
-    return compressed.AsSpan(0, 4 + written).ToArray();
+    return output.ToArray();
 }
 
 static bool IsSameContent(FullPath path, byte[] content)

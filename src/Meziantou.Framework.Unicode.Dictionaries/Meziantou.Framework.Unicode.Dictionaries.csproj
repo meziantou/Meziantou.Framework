@@ -2,8 +2,6 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
-    <!-- The embedded dictionaries are compressed with Brotli, and the CJK break engine uses NFKC/NFKD, which the browser does not support -->
-    <IsBrowserCompatible>false</IsBrowserCompatible>
     <RootNamespace>Meziantou.Framework</RootNamespace>
     <Version>1.0.5</Version>
     <IsAotCompatible>true</IsAotCompatible>

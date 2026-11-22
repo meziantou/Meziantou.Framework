@@ -12,8 +12,8 @@ The types are in the `Meziantou.Framework` namespace.
 - `IcuWordDictionary`: the word lists. A list is loaded on first use: an application that only segments Thai text only
   loads the Thai list.
 
-The word lists take about 1.5 MB in the assembly (compressed with Brotli): about 930 KB for Chinese and Japanese, 70 KB
-for Thai, 90 KB for Lao, 260 KB for Khmer and 150 KB for Burmese. Once loaded, a list takes from about 0.5 MB of memory
+The word lists take about 1.7 MB in the assembly (compressed with Deflate, which the browser supports): about 1 MB for
+Chinese and Japanese, 75 KB for Thai, 100 KB for Lao, 285 KB for Khmer and 160 KB for Burmese. Once loaded, a list takes from about 0.5 MB of memory
 (Thai) to 3 MB (Chinese and Japanese). The version of ICU of the lists is `IcuWordDictionary.IcuVersion`.
 
 ## Finding the words of a run

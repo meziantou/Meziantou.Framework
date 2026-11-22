@@ -35,6 +35,7 @@ internal sealed class IcuCjkBreakEngine : IcuDictionaryBreakEngine
         return codePoint is 0x30FC or 0xFF70 or 0xFF9E or 0xFF9F || UnicodeScripts.GetScript(codePoint) is UnicodeScript.Han or UnicodeScript.Hiragana or UnicodeScript.Katakana;
     }
 
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "FormKC and FormKD are unsupported by string.Normalize on the browser; UnicodeNormalization implements every form itself")]
     private protected override int FindBreaksCore(ReadOnlySpan<char> text, Span<int> breakPositions)
     {
         // The text of the run, normalized to NFKC; inputMap[index in inString] is the corresponding index in the text
@@ -225,6 +226,7 @@ internal sealed class IcuCjkBreakEngine : IcuDictionaryBreakEngine
 
     // Normalizer2::hasBoundaryBefore of NFKC for the characters of the engine: the decomposition of the character starts
     // with a starter (the halfwidth voiced sound marks decompose to combining marks)
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "FormKC and FormKD are unsupported by string.Normalize on the browser; UnicodeNormalization implements every form itself")]
     private static bool HasNfkcBoundaryBefore(int codePoint)
     {
         if (UnicodeProperties.GetCanonicalCombiningClass(codePoint) != 0)

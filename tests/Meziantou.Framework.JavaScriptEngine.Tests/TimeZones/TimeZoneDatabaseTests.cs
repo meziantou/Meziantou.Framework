@@ -259,10 +259,10 @@ public sealed class TimeZoneDatabaseTests
         // its answer is the reference for the shared zone, queried from several threads in random order.
         byte[] data;
         using (var stream = typeof(TimeZoneDatabase).Assembly.GetManifestResourceStream("Meziantou.Framework.JavaScriptEngine.TimeZones.tzdb.bin")!)
-        using (var brotli = new System.IO.Compression.BrotliStream(stream, System.IO.Compression.CompressionMode.Decompress))
+        using (var deflate = new System.IO.Compression.DeflateStream(stream, System.IO.Compression.CompressionMode.Decompress))
         using (var memory = new MemoryStream())
         {
-            brotli.CopyTo(memory);
+            deflate.CopyTo(memory);
             data = memory.ToArray();
         }
 

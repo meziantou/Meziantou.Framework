@@ -249,6 +249,7 @@ internal static class StringOperations
     /// does not combine with the code points before it. The code points before it then never reorder nor compose with
     /// the code points from it.
     /// </summary>
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "FormKC and FormKD are unsupported by string.Normalize on the browser; UnicodeNormalization implements every form itself")]
     private static bool IsNormalizationBoundary(string value, int index)
     {
         var c = value[index];
@@ -304,6 +305,7 @@ internal static class StringOperations
     /// done code point by code point, and the composition (NFC, NFKC) only makes it shorter, so it bounds the length of
     /// the normalized string.
     /// </summary>
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "FormKC and FormKD are unsupported by string.Normalize on the browser; UnicodeNormalization implements every form itself")]
     private static long GetDecomposedLength(string value, NormalizationForm form)
     {
         var decomposition = form is NormalizationForm.FormC or NormalizationForm.FormD ? NormalizationForm.FormD : NormalizationForm.FormKD;

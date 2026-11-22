@@ -121,9 +121,9 @@ async Task<int> RunTzdbAsync()
     if (!IsSamePayload(binPath, payload))
     {
         using var memory = new MemoryStream();
-        using (var brotli = new BrotliStream(memory, CompressionLevel.SmallestSize, leaveOpen: true))
+        using (var deflate = new DeflateStream(memory, CompressionLevel.SmallestSize, leaveOpen: true))
         {
-            brotli.Write(payload);
+            deflate.Write(payload);
         }
 
         await File.WriteAllBytesAsync(binPath, memory.ToArray());
@@ -242,11 +242,11 @@ static bool IsSamePayload(FullPath path, byte[] payload)
         return false;
 
     using var stream = File.OpenRead(path);
-    using var brotli = new BrotliStream(stream, CompressionMode.Decompress);
+    using var deflate = new DeflateStream(stream, CompressionMode.Decompress);
     using var memory = new MemoryStream();
     try
     {
-        brotli.CopyTo(memory);
+        deflate.CopyTo(memory);
     }
     catch (InvalidDataException)
     {

@@ -81,7 +81,8 @@ An entry includes everything the engine does for it, not only the JavaScript cod
   large array...), which check the limits while they run.
 - `Atomics.wait`: a blocking wait is bounded by the time left to the entry, and stops when the execution is canceled.
   Set [CanBlock](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CanBlock) to `false` to forbid the blocking waits: `Atomics.wait` then throws a `TypeError`, as on the
-  main thread of a browser.
+  main thread of a browser. When the engine itself runs on the browser (WebAssembly), it never blocks, whatever the
+  value.
 
 The straight-line code between two loops or calls is not counted by `MaxStatements`: it is bounded by the length of the
 source, whose parsing is checked.

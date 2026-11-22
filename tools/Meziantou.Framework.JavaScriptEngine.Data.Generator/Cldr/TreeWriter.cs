@@ -311,7 +311,7 @@ internal static class ChunkedFileWriter
         return output.ToArray();
     }
 
-    /// <summary>Gets whether a file contains the same chunks once decompressed (the compressed bytes depend on the version of Brotli).</summary>
+    /// <summary>Gets whether a file contains the same chunks once decompressed (the compressed bytes depend on the version of zlib).</summary>
     public static bool IsSameContent(string path, IReadOnlyList<byte[]> chunks)
     {
         if (!File.Exists(path))
@@ -337,13 +337,18 @@ internal static class ChunkedFileWriter
         }
     }
 
+    // Deflate is the only compression that the browser (WebAssembly) decompresses
     private static byte[] Compress(byte[] content)
     {
-        var compressed = new byte[4 + BrotliEncoder.GetMaxCompressedLength(content.Length)];
-        BinaryPrimitives.WriteInt32LittleEndian(compressed, content.Length);
-        if (!BrotliEncoder.TryCompress(content, compressed.AsSpan(4), out var written, quality: 11, window: 24))
-            throw new InvalidOperationException("Cannot compress a chunk");
+        using var output = new MemoryStream();
+        Span<byte> length = stackalloc byte[4];
+        BinaryPrimitives.WriteInt32LittleEndian(length, content.Length);
+        output.Write(length);
+        using (var deflate = new DeflateStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+        {
+            deflate.Write(content);
+        }
 
-        return compressed.AsSpan(0, 4 + written).ToArray();
+        return output.ToArray();
     }
 }

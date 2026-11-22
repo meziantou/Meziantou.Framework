@@ -5,7 +5,7 @@ every operating system and in invariant-globalization mode (no `TimeZoneInfo`, n
 
 - `src/Meziantou.Framework.JavaScriptEngine/TimeZones/tzdb.bin`: the IANA time zone database, compiled by a small zic
   of this tool, and the CLDR mapping of the Windows time zone identifiers (`windowsZones.xml`, territory `001`). The
-  file is Brotli-compressed; `TimeZoneDatabase` reads it.
+  file is compressed with Deflate; `TimeZoneDatabase` reads it.
 - `src/Meziantou.Framework.JavaScriptEngine/TimeZones/TimeZoneDatabase.g.cs`: the versions of the data.
 - `src/Meziantou.Framework.JavaScriptEngine/Intl/Data/{locales,supplemental,collation}.bin`: the CLDR data of Intl
   (ECMA-402), read by `CldrData`.
@@ -44,7 +44,7 @@ resolves to its zone, and `Etc/UTC`, `Etc/GMT` and their links to `UTC`.
 ## How the CLDR data is compiled
 
 All the files use the same container (`CldrChunkedFile`): a small uncompressed directory, then chunks compressed
-independently with Brotli. A chunk is decompressed on its first use, so a script that does not use Intl reads nothing,
+independently with Deflate, the only compression that the browser (WebAssembly) decompresses. A chunk is decompressed on its first use, so a script that does not use Intl reads nothing,
 and `new Intl.NumberFormat("fr")` decompresses the index and the Numbers chunks of `fr` and of the root only. Most
 chunks are data trees (`CldrTreeChunk`): a string table and a table of tables (keys sorted by ordinal, shared by the
 file), in which identical strings and identical tables are stored once.

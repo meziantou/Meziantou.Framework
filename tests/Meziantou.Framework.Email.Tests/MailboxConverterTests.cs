@@ -189,7 +189,7 @@ public sealed class MailboxConverterTests : IDisposable
         var result = MailboxConverter.Convert(pstPath, eml, MailboxFormat.Eml);
         Assert.Empty(result.Errors);
         Assert.Equal(DescribePst(pstPath, includeNonMail: false), DescribeMessageFiles(eml, "*.eml", path => Normalize(MimeMessage.Load(path).Subject)));
-        Assert.Equal(result.MessageCount, Directory.EnumerateFiles(eml, "*", SearchOption.AllDirectories).Count());
+        Assert.HasCount(result.MessageCount, Directory.EnumerateFiles(eml, "*", SearchOption.AllDirectories));
     }
 
     [Fact]

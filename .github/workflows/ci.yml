@@ -125,6 +125,9 @@ jobs:
       has-tests: ${{ steps.compute-matrix.outputs.has-tests }}
       aot-matrix: ${{ steps.compute-aot-matrix.outputs.matrix }}
       has-aot-projects: ${{ steps.compute-aot-matrix.outputs.has-projects }}
+      trimmable-projects: ${{ steps.compute-trimmable-projects.outputs.projects }}
+      has-trimmable-projects: ${{ steps.compute-trimmable-projects.outputs.has-projects }}
+      has-trimmable-wpf-projects: ${{ steps.compute-trimmable-projects.outputs.has-wpf-projects }}
       base-commit: ${{ steps.base-commit.outputs.base-commit }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -210,6 +213,24 @@ jobs:
           full-rebuild-triggers: |
             .github/workflows/ci.yml
             eng/**/*.proj
+
+      - name: List affected trimmable projects
+        uses: $/.github/actions/deltabuild
+        with:
+          input-project: eng/build.proj
+          properties: SkipUnsupportedPlatforms=false
+          output-project: affected-trimmable-projects.json
+          base-commit: ${{ steps.base-commit.outputs.base-commit }}
+          run-generate: "true"
+          # The trimming harnesses only reference libraries. They are not in eng/build.proj, so
+          # their own files are full rebuild triggers.
+          include: src/**/*.csproj
+          full-rebuild-triggers: |
+            .github/workflows/ci.yml
+            eng/**/*.proj
+            eng/Trimmable.targets
+            eng/Trimmable/**
+            eng/Trimmable.Wpf/**
 
       - name: Compute test matrix
         id: compute-matrix
@@ -510,6 +531,46 @@ jobs:
           "matrix=$matrix" >> $env:GITHUB_OUTPUT
           "has-projects=$(($groups.Count -gt 0).ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
+      - name: Compute trimmable projects
+        id: compute-trimmable-projects
+        run: |
+          $names = @()
+          if (Test-Path -LiteralPath "affected-trimmable-projects.json") {
+            $names = @(
+              Get-Content -Raw -LiteralPath "affected-trimmable-projects.json"
+              | ConvertFrom-Json
+              | ForEach-Object { [System.IO.Path]::GetFileNameWithoutExtension($_.Replace('\', '/')) }
+              | Sort-Object -Unique
+            )
+          }
+
+          Write-Host "Affected libraries: $($names.Count)"
+
+          # eng/Trimmable.targets reads the list when it evaluates a harness and drops the other
+          # references. A harness left without any reference has nothing to validate, so its job is skipped.
+          $env:TrimmableValidationProjects = $names -join ';'
+          function Test-Harness([string] $project) {
+            if ($names.Count -eq 0) {
+              return $false
+            }
+
+            $output = dotnet msbuild $project -getItem:ProjectReference
+            if ($LASTEXITCODE -ne 0) {
+              throw "Cannot evaluate ${project}: $($output -join "`n")"
+            }
+
+            $references = @(($output -join "`n" | ConvertFrom-Json).Items.ProjectReference)
+            Write-Host "${project}: $($references.Count) references"
+            $references | ForEach-Object { Write-Host "  $($_.Identity)" }
+            return $references.Count -gt 0
+          }
+
+          $hasProjects = Test-Harness "eng/Trimmable/Trimmable.csproj"
+          $hasWpfProjects = Test-Harness "eng/Trimmable.Wpf/Trimmable.Wpf.csproj"
+          "projects=$($env:TrimmableValidationProjects)" >> $env:GITHUB_OUTPUT
+          "has-projects=$($hasProjects.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+          "has-wpf-projects=$($hasWpfProjects.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
   build_and_test:
     needs: [ compute_test_matrix ]
     if: needs.compute_test_matrix.outputs.has-tests == 'true'
@@ -779,29 +840,35 @@ jobs:
               path: |
                 **/*.coverage
 
+  # The trimmer only analyzes the code behind an OS check, such as OperatingSystem.IsWindows(), when
+  # it publishes for that OS, so the harness is published for each OS and both architectures. The
+  # libraries do not depend on the runtime: one job builds them once, then each publish only trims.
+  # Each publish is a step of its own, so a failure does not hide the results of the next runtimes.
   test_trimming:
-    if: github.event_name != 'schedule'
-    runs-on: ${{ matrix.runner }}
+    needs: [ compute_test_matrix ]
+    if: needs.compute_test_matrix.outputs.has-trimmable-projects == 'true' && github.event_name != 'schedule'
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
-    strategy:
-      matrix:
-        # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-        include:
-          - runtime: "win-x64"
-            runner: ubuntu-26.04
-          - runtime: "linux-x64"
-            runner: ubuntu-26.04
-          - runtime: "osx-arm64"
-            runner: ubuntu-26.04-arm
-      fail-fast: false
+    env:
+      # Only references and roots the affected libraries, see eng/Trimmable.targets
+      TrimmableValidationProjects: ${{ needs.compute_test_matrix.outputs.trimmable-projects }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
-      - run: dotnet publish -mt --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable/Trimmable.csproj
+      - name: Publish for win-x64
+        if: ${{ !cancelled() }}
+        run: dotnet publish -mt --configuration Release --runtime win-x64 --self-contained eng/Trimmable/Trimmable.csproj
+      - name: Publish for linux-x64
+        if: ${{ !cancelled() }}
+        run: dotnet publish -mt --configuration Release --runtime linux-x64 --self-contained eng/Trimmable/Trimmable.csproj
+      - name: Publish for osx-arm64
+        if: ${{ !cancelled() }}
+        run: dotnet publish -mt --configuration Release --runtime osx-arm64 --self-contained eng/Trimmable/Trimmable.csproj
 
   test_trimming_wpf:
-    if: github.event_name != 'schedule'
+    needs: [ compute_test_matrix ]
+    if: needs.compute_test_matrix.outputs.has-trimmable-wpf-projects == 'true' && github.event_name != 'schedule'
     runs-on: windows-2025-vs2026
     timeout-minutes: 60
     strategy:
@@ -813,6 +880,9 @@ jobs:
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - run: dotnet publish -mt --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
+        env:
+          # Only references and roots the affected libraries, see eng/Trimmable.targets
+          TrimmableValidationProjects: ${{ needs.compute_test_matrix.outputs.trimmable-projects }}
 
   # Building a project that sets PublishAot does not compile it ahead of time. Only a published
   # application is native, and Native AOT cannot target another OS, so each platform publishes

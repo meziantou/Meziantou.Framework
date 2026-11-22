@@ -333,11 +333,19 @@ internal sealed partial class TableLayoutAlgorithm
         var sectionSizes = new double[sections.Length];
         for (var s = 0; s < sections.Length; s++)
         {
+            // (a row group or a row after the break of a row broken by a page of another inline size whose content after the break
+            // starts below the one of the other items is moved down, see LayoutContext.AnchorPushes)
             var section = model.Sections[s];
+            blockPosition += GetAnchorPush(section.Box) + (section.RowCount > 0 ? GetAnchorPush(model.Rows[section.StartRow].Box) : 0);
             sectionStarts[s] = blockPosition;
             var hasVisibleRows = false;
             for (var r = section.StartRow; r < section.EndRow; r++)
             {
+                if (r > section.StartRow)
+                {
+                    blockPosition += GetAnchorPush(model.Rows[r].Box);
+                }
+
                 rows[r].Offset = blockPosition;
                 if (!model.Rows[r].IsCollapsed)
                 {
@@ -481,6 +489,9 @@ internal sealed partial class TableLayoutAlgorithm
         PositionedLayout.LayoutOutOfFlowDescendants(_context, _grid, fragment, builder);
         return fragment;
     }
+
+    /// <summary>The space added before a row group or a row (see <see cref="LayoutContext.AnchorPushes"/>), or 0.</summary>
+    private double GetAnchorPush(ContainerBox? box) => box is not null && _context.AnchorPushes is { } pushes && pushes.TryGetValue(box, out var push) && push > 0 ? push : 0;
 
     /// <summary>The constraint space of the internal table boxes (the basis of their relative offsets): the content box of the table.</summary>
     private ConstraintSpace GetPartSpace(double contentInlineSize, double? blockSize = null) => ConstraintSpace.ForContentBox(_writingDirection, contentInlineSize, blockSize);

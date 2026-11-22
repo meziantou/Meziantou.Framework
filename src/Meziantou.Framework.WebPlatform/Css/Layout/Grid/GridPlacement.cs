@@ -233,7 +233,17 @@ internal static class GridPlacement
     /// The indexes of the items that start a new row (in the major axis), after the tracks of the items before them, or null: the
     /// first items of a row broken by a page of another inline size and after its break (see <c>LayoutContext.RowResumes</c>).
     /// </param>
-    public static void PlaceItems(GridAxisPlacement[] columns, GridAxisPlacement[] rows, int explicitColumns, int explicitRows, GridAutoFlow flow, int? columnLimit = null, int? rowLimit = null, List<int>? newRows = null)
+    /// <param name="rowsAfterBrokenRow">
+    /// The indexes of <paramref name="newRows"/> whose item starts the row after the row of the items before it, from the previous
+    /// index of <paramref name="newRows"/> (the items of the broken row), and not after all their rows: beside the items of the
+    /// broken row that span the rows after it. Null when there are none.
+    /// </param>
+    /// <param name="newRowsStart">
+    /// The line before which the rows of <paramref name="newRows"/> do not start (the end of the rows of the items with a definite
+    /// row before the break), or null. With <c>dense</c> packing, the items from an index of <paramref name="newRows"/> are not
+    /// placed before its row: they do not fill the holes of the rows before the break.
+    /// </param>
+    public static void PlaceItems(GridAxisPlacement[] columns, GridAxisPlacement[] rows, int explicitColumns, int explicitRows, GridAutoFlow flow, int? columnLimit = null, int? rowLimit = null, List<int>? newRows = null, HashSet<int>? rowsAfterBrokenRow = null, int? newRowsStart = null)
     {
         // The algorithm is written for grid-auto-flow: row; with column, the axes are swapped: the "major" axis is the axis in
         // which new tracks are created (the rows for row), the "minor" axis is the other one
@@ -326,17 +336,41 @@ internal static class GridPlacement
         // 4. "Position the remaining grid items" with the auto-placement cursor, from the start-most row and column lines
         var cursorMinor = -minorOffset;
         var cursorMajor = -majorOffset;
+        var denseMajorStart = -majorOffset;
         for (var i = 0; i < count; i++)
         {
-            if (i > 0 && newRows is not null && newRows.Contains(i))
+            if (newRows is not null && newRows.Contains(i))
             {
-                // (the item starts a new row, after the rows of the items before it)
+                // (the item starts a new row, after the rows of the items before it, or after the row of the items of the broken
+                // row: the auto-placement skips the cells of the ones that span the rows after it)
+                var brokenRowStart = 0;
+                if (rowsAfterBrokenRow?.Contains(i) == true)
+                {
+                    foreach (var newRow in newRows)
+                    {
+                        if (newRow < i)
+                        {
+                            brokenRowStart = Math.Max(brokenRowStart, newRow);
+                        }
+                    }
+                }
+                else
+                {
+                    brokenRowStart = i;
+                }
+
                 for (var j = 0; j < i; j++)
                 {
-                    cursorMajor = Math.Max(cursorMajor, major[j].End);
+                    cursorMajor = Math.Max(cursorMajor, j < brokenRowStart ? major[j].End : major[j].Start + 1);
+                }
+
+                if (newRowsStart is { } rowsStart)
+                {
+                    cursorMajor = Math.Max(cursorMajor, rowsStart);
                 }
 
                 cursorMinor = -minorOffset;
+                denseMajorStart = cursorMajor;
             }
 
             if (major[i].IsDefinite)
@@ -351,7 +385,7 @@ internal static class GridPlacement
                 // occupied grid cells" (dense: from the start-most row line)
                 if (flow.IsDense)
                 {
-                    cursorMajor = -majorOffset;
+                    cursorMajor = denseMajorStart;
                 }
                 else if (minor[i].Start < cursorMinor)
                 {
@@ -377,7 +411,7 @@ internal static class GridPlacement
                 if (flow.IsDense)
                 {
                     cursorMinor = -minorOffset;
-                    cursorMajor = -majorOffset;
+                    cursorMajor = denseMajorStart;
                 }
 
                 while (true)

@@ -1291,6 +1291,8 @@ namespace Meziantou.Framework.Email.Storage
         Pst = 0,
         Mbox = 1,
         Maildir = 2,
+        Eml = 3,
+        Msg = 4,
     }
 
     [System.Flags]

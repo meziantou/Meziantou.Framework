@@ -228,6 +228,29 @@ public sealed class MboxTests
     }
 
     [Fact]
+    public void Maildir_EnumeratesTheMessagesInTheOrderTheyWereAdded()
+    {
+        // The microseconds of the names have 6 digits, so that the names sort in the order of the messages
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            var folder = MaildirFolder.Create(directory.FullName);
+            var subjects = Enumerable.Range(0, 300).Select(i => "Message " + i.ToString(CultureInfo.InvariantCulture)).ToList();
+            foreach (var subject in subjects)
+            {
+                folder.AddMessage(Encoding.ASCII.GetBytes("Subject: " + subject + "\n\nBody\n"));
+            }
+
+            Assert.Equal(subjects, folder.EnumerateMessages().Select(message => message.Load().Subject));
+            Assert.All(folder.EnumerateMessages(), message => Assert.Matches(@"^\d+\.M\d{6}P", message.Key));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public void Emlx_Snippet()
     {
         var path = GetPath("message.emlx");

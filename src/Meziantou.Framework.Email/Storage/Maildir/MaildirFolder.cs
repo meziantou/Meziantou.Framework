@@ -244,7 +244,7 @@ public sealed class MaildirFolder
         return builder.ToString();
     }
 
-    /// <summary>Returns a unique name: the time, the microseconds, the process and a counter, then the host (<c>1767254400.M123456P4242Q1.host</c>).</summary>
+    /// <summary>Returns a unique name: the time, the microseconds (6 digits, so that the names sort in the order of the messages), the process and a counter, then the host (<c>1767254400.M012345P4242Q1.host</c>).</summary>
     private static string CreateKey()
     {
         var now = DateTimeOffset.UtcNow;
@@ -256,6 +256,6 @@ public sealed class MaildirFolder
         }
 
         var micro = (now.Ticks / 10) % 1_000_000;
-        return string.Create(CultureInfo.InvariantCulture, $"{now.ToUnixTimeSeconds()}.M{micro}P{Environment.ProcessId}Q{Interlocked.Increment(ref s_counter)}.{host}");
+        return string.Create(CultureInfo.InvariantCulture, $"{now.ToUnixTimeSeconds()}.M{micro:D6}P{Environment.ProcessId}Q{Interlocked.Increment(ref s_counter)}.{host}");
     }
 }

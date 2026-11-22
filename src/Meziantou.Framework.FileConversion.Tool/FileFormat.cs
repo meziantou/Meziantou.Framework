@@ -1,3 +1,4 @@
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.Imaging;
 
 namespace Meziantou.Framework.FileConversionTool;
@@ -5,13 +6,14 @@ namespace Meziantou.Framework.FileConversionTool;
 /// <summary>A format the tool reads or writes.</summary>
 internal sealed class FileFormat
 {
-    private FileFormat(string name, FileFormatKind kind, IReadOnlyList<string> extensions, bool canRead, bool canWrite, bool isMultiPage, ImageFormat imageFormat = ImageFormat.Unknown, ArchiveType archiveType = ArchiveType.None)
+    private FileFormat(string name, FileFormatKind kind, IReadOnlyList<string> extensions, bool canRead, bool canWrite, bool isMultiPage, ImageFormat imageFormat = ImageFormat.Unknown, ArchiveType archiveType = ArchiveType.None, MailboxFormat? mailboxFormat = null)
     {
         Name = name;
         Kind = kind;
         Extensions = extensions;
         ImageFormat = imageFormat;
         ArchiveType = archiveType;
+        MailboxFormat = mailboxFormat;
         CanRead = canRead;
         CanWrite = canWrite;
         IsMultiPage = isMultiPage;
@@ -35,6 +37,30 @@ internal sealed class FileFormat
 
     public static FileFormat Cbt { get; } = Comic("CBT", [".cbt"], ArchiveType.Tar, canWrite: true);
 
+    public static FileFormat Pst { get; } = Mailbox("PST", [".pst"], Email.Storage.MailboxFormat.Pst);
+
+    /// <summary>Gets the offline Outlook data file format: the 4 KB-page format of the OST files of Outlook 2013 and later.</summary>
+    public static FileFormat Ost { get; } = Mailbox("OST", [".ost"], Email.Storage.MailboxFormat.Pst);
+
+    /// <summary>Gets the mbox format: an mbox file, or a folder of mbox files in the layout of Thunderbird, which is what the tool writes.</summary>
+    public static FileFormat Mbox { get; } = Mailbox("Mbox", [".mbox", ".mbx"], Email.Storage.MailboxFormat.Mbox);
+
+    /// <summary>Gets the Maildir format: a folder, whose extension only names the default output.</summary>
+    public static FileFormat Maildir { get; } = Mailbox("Maildir", [".maildir"], Email.Storage.MailboxFormat.Maildir);
+
+    /// <summary>Gets the email message format. A mailbox converted to it gives a folder of .eml files.</summary>
+    public static FileFormat Eml { get; } = new("EML", FileFormatKind.EmailMessage, [".eml"], canRead: true, canWrite: true, isMultiPage: false, mailboxFormat: Email.Storage.MailboxFormat.Eml);
+
+    /// <summary>Gets the Outlook item format. A mailbox converted to it gives a folder of .msg files.</summary>
+    public static FileFormat Msg { get; } = new("MSG", FileFormatKind.EmailMessage, [".msg"], canRead: true, canWrite: true, isMultiPage: false, mailboxFormat: Email.Storage.MailboxFormat.Msg);
+
+    public static FileFormat Oft { get; } = new("OFT", FileFormatKind.EmailMessage, [".oft"], canRead: true, canWrite: true, isMultiPage: false);
+
+    public static FileFormat Emlx { get; } = new("EMLX", FileFormatKind.EmailMessage, [".emlx"], canRead: true, canWrite: true, isMultiPage: false);
+
+    /// <summary>Gets the TNEF format (<c>winmail.dat</c>), which is detected from its content.</summary>
+    public static FileFormat Tnef { get; } = new("TNEF", FileFormatKind.EmailMessage, [".tnef"], canRead: true, canWrite: true, isMultiPage: false);
+
     public static IReadOnlyList<FileFormat> All { get; } = CreateAll();
 
     /// <summary>Gets the name of the format, as accepted by <c>--input-format</c> and <c>--output-format</c>.</summary>
@@ -50,6 +76,9 @@ internal sealed class FileFormat
 
     /// <summary>Gets the container, for the <see cref="FileFormatKind.Archive"/> and <see cref="FileFormatKind.Comic"/> formats.</summary>
     public ArchiveType ArchiveType { get; }
+
+    /// <summary>Gets the format a mailbox is converted to: the <see cref="FileFormatKind.Mailbox"/> formats, and the message formats a mailbox can be exported to (EML, MSG).</summary>
+    public MailboxFormat? MailboxFormat { get; }
 
     public bool CanRead { get; }
 
@@ -155,6 +184,9 @@ internal sealed class FileFormat
     private static FileFormat Comic(string name, string[] extensions, ArchiveType archiveType, bool canWrite)
         => new(name, FileFormatKind.Comic, extensions, canRead: true, canWrite, isMultiPage: true, archiveType: archiveType);
 
+    private static FileFormat Mailbox(string name, string[] extensions, MailboxFormat mailboxFormat)
+        => new(name, FileFormatKind.Mailbox, extensions, canRead: true, canWrite: true, isMultiPage: false, mailboxFormat: mailboxFormat);
+
     private static FileFormat Archive(string name, string[] extensions, ArchiveType archiveType, bool canWrite)
         => new(name, FileFormatKind.Archive, extensions, canRead: true, canWrite, isMultiPage: false, archiveType: archiveType);
 
@@ -193,6 +225,15 @@ internal sealed class FileFormat
         result.Add(Archive("TarLz", [".tar.lz", ".tlz"], ArchiveType.TarLzip, canWrite: true));
         result.Add(Archive("TarZst", [".tar.zst", ".tzst"], ArchiveType.TarZstandard, canWrite: false));
         result.Add(Archive("TarZ", [".tar.Z", ".taz"], ArchiveType.TarUnixCompress, canWrite: false));
+        result.Add(Pst);
+        result.Add(Ost);
+        result.Add(Mbox);
+        result.Add(Maildir);
+        result.Add(Eml);
+        result.Add(Msg);
+        result.Add(Oft);
+        result.Add(Emlx);
+        result.Add(Tnef);
         return result;
     }
 }

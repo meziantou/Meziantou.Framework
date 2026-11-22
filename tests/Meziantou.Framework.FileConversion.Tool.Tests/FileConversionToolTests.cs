@@ -1,4 +1,7 @@
 using System.IO.Compression;
+using Meziantou.Framework.Email;
+using Meziantou.Framework.Email.Mapi;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf;
 
@@ -765,6 +768,302 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("Markdown (.md, .markdown): read, write", console.Output);
         Assert.Contains("HTML (.html, .htm): read, write", console.Output);
         Assert.Contains("--html-stylesheet", console.Output);
+        Assert.Contains("PST (.pst): read, write", console.Output);
+        Assert.Contains("OST (.ost): read, write", console.Output);
+        Assert.Contains("Mbox (.mbox, .mbx): read, write", console.Output);
+        Assert.Contains("MSG (.msg): read, write", console.Output);
+        Assert.Contains("--pst-encryption", console.Output);
+        Assert.Contains("--mbox-format", console.Output);
+        Assert.Contains("--email-include-non-mail-items", console.Output);
+    }
+
+    [Fact]
+    public async Task PstToMbox_WritesAThunderbirdFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "mbox");
+
+        Assert.Equal(0, exitCode);
+        var output = temp.GetFullPath("mail.mbox");
+        Assert.Equal(output.Value, console.Output.Trim());
+        Assert.Equal(["Welcome"], MboxReader.ReadMessages(output / "Inbox").Select(message => message.Message.Subject));
+        Assert.Equal(["Project plan"], MboxReader.ReadMessages(output / "Inbox.sbd" / "Projects").Select(message => message.Message.Subject));
+
+        // The contact is not an email
+        Assert.Contains("skipped the items that are not emails", console.Error);
+    }
+
+    [Fact]
+    public async Task MboxToOst_ToPst()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.mbox", TestFiles.CreateMbox("First", "Second"));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "ost")).ExitCode);
+        using (var ost = PstFile.Open(temp.GetFullPath("mail.ost")))
+        {
+            Assert.True(ost.IsOfflineFile);
+            Assert.Equal(["First", "Second"], ost.GetFolder("mail")!.EnumerateItems().Select(item => item.Subject));
+        }
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("mail.ost"), "-o", temp.GetFullPath("copy.pst"), "--pst-encryption", "None")).ExitCode);
+        using var pst = PstFile.Open(temp.GetFullPath("copy.pst"));
+        Assert.False(pst.IsOfflineFile);
+        Assert.Equal(["First", "Second"], pst.GetFolder("mail")!.EnumerateItems().Select(item => item.Subject));
+    }
+
+    [Theory]
+    [InlineData("ost", "Unicode", "An OST file has the Unicode4K format")]
+    [InlineData("pst", "Unicode4K", "use --output-format ost")]
+    public async Task PstFormat_MustMatchTheOutput(string outputFormat, string pstFormat, string expectedError)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.mbox", TestFiles.CreateMbox("First"));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", outputFormat, "--pst-format", pstFormat);
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains(expectedError, console.Error);
+        Assert.DoesNotContain(Directory.EnumerateFileSystemEntries(temp.FullPath), path => path != input.Value);
+    }
+
+    [Fact]
+    public async Task MaildirFolderToPst()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var maildir = MaildirFolder.Create(temp.GetFullPath("mail"));
+        maildir.AddMessage(TestFiles.CreateEml("Read"), MaildirFlags.Seen);
+        maildir.CreateFolder("Archive").AddMessage(TestFiles.CreateEml("Archived"));
+
+        var (exitCode, _) = await RunAsync(temp.GetFullPath("mail"), "--output-format", "pst");
+
+        Assert.Equal(0, exitCode);
+        using var pst = PstFile.Open(temp.GetFullPath("mail.pst"));
+        Assert.Equal([("Read", true)], pst.GetFolder("Inbox")!.EnumerateItems().Select(item => (item.Subject!, item.IsRead)));
+        Assert.Equal([("Archived", false)], pst.GetFolder("Archive")!.EnumerateItems().Select(item => (item.Subject!, item.IsRead)));
+    }
+
+    [Fact]
+    public async Task PstToMessageFiles()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "eml")).ExitCode);
+        Assert.Equal("Welcome", MimeMessage.Load(temp.GetFullPath("mail.eml/Inbox/Welcome.eml")).Subject);
+        Assert.Equal("Project plan", MimeMessage.Load(temp.GetFullPath("mail.eml/Inbox/Projects/Project plan.eml")).Subject);
+        Assert.Empty(Directory.EnumerateFiles(temp.GetFullPath("mail.eml/Contacts")));
+
+        // An .msg file keeps the contact
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("items"), "--output-format", "msg")).ExitCode);
+        Assert.Equal("Welcome", MsgFile.Load(temp.GetFullPath("items/Inbox/Welcome.msg")).Subject);
+        Assert.IsType<MapiContact>(MsgFile.Load(Assert.Single(Directory.EnumerateFiles(temp.GetFullPath("items/Contacts")))));
+    }
+
+    [Fact]
+    public async Task MailboxOutput_DoesNotReplaceAFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "maildir")).ExitCode);
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "maildir");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("already exists", console.Error);
+
+        (exitCode, console) = await RunAsync(input, "--output-format", "maildir", "--overwrite");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is not empty", console.Error);
+        Assert.Equal(["Welcome"], MaildirFolder.Open(temp.GetFullPath("mail.maildir")).EnumerateMessages().Select(message => message.Load().Subject));
+
+        // An empty folder is filled
+        Directory.CreateDirectory(temp.GetFullPath("empty"));
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("empty"), "--output-format", "maildir", "--overwrite")).ExitCode);
+        Assert.Equal(MailboxFormat.Maildir, MailboxConverter.DetectFormat(temp.GetFullPath("empty")));
+
+        // An Outlook data file is replaced
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("mail.maildir"), "-o", temp.GetFullPath("copy.pst"))).ExitCode);
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("mail.maildir"), "-o", temp.GetFullPath("copy.pst"), "--overwrite")).ExitCode);
+        Assert.Empty(Directory.EnumerateFiles(temp.FullPath, "*.tmp"));
+    }
+
+    [Fact]
+    public async Task MailboxOutput_InTheInputFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        MaildirFolder.Create(temp.GetFullPath("mail")).AddMessage(TestFiles.CreateEml("Hello"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("mail"), "-o", temp.GetFullPath("mail/copy.pst"));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is in the input folder", console.Error);
+    }
+
+    [Fact]
+    public async Task MessageFormats_RoundTrip()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var eml = TestFiles.CreateEml("Hello");
+        var input = await WriteFileAsync(temp, "hello.eml", eml);
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "msg")).ExitCode);
+        var item = MsgFile.Load(temp.GetFullPath("hello.msg"));
+        Assert.Equal("Hello", item.Subject);
+        Assert.True(item.IsRead);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.msg"), "-o", temp.GetFullPath("from-msg.eml"))).ExitCode);
+        Assert.Equal("Hello", MimeMessage.Load(temp.GetFullPath("from-msg.eml")).Subject);
+
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.msg"), "--output-format", "oft")).ExitCode);
+        Assert.True(MsgFile.IsTemplate(await File.ReadAllBytesAsync(temp.GetFullPath("hello.oft"), XunitCancellationToken)));
+
+        // The bytes of an email message are kept through an Apple Mail message
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "emlx")).ExitCode);
+        Assert.True(EmlxFile.Load(temp.GetFullPath("hello.emlx")).Flags.HasFlag(EmlxFlags.Read));
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.emlx"), "-o", temp.GetFullPath("from-emlx.eml"))).ExitCode);
+        Assert.Equal(eml, await File.ReadAllBytesAsync(temp.GetFullPath("from-emlx.eml"), XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WinmailDat_DetectedFromItsContent()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "winmail.dat", TestFiles.CreateTnef("Forwarded"));
+
+        Assert.Equal(0, (await RunAsync(input, "--output-format", "eml")).ExitCode);
+
+        Assert.Equal("Forwarded", MimeMessage.Load(temp.GetFullPath("winmail.eml")).Subject);
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        await WriteFileAsync(temp, "inbox/message10.eml", TestFiles.CreateEml("Ten"));
+        await WriteFileAsync(temp, "inbox/message2.eml", TestFiles.CreateEml("Two"));
+        await WriteFileAsync(temp, "inbox/message1.eml", TestFiles.CreateEml("One"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("inbox") + "/*.eml", "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(temp.GetFullPath("all.mbox").Value, console.Output.Trim());
+
+        // One mbox file, with the messages in the natural order of the names, as they are (the lines of an mbox file end with LF)
+        var messages = MboxReader.ReadMessages(temp.GetFullPath("all.mbox")).ToList();
+        Assert.Equal(["One", "Two", "Ten"], messages.Select(message => message.Message.Subject));
+        Assert.Equal(Encoding.UTF8.GetString(TestFiles.CreateEml("One")).ReplaceLineEndings("\n"), Encoding.UTF8.GetString(messages[0].Content.Span));
+        Assert.Equal("From alice@example.com Thu Jan 15 09:00:00 2026", messages[0].FromLine);
+
+        // The mbox file is a mailbox of one folder
+        Assert.Equal(0, (await RunAsync(temp.GetFullPath("all.mbox"), "--output-format", "maildir")).ExitCode);
+        Assert.HasCount(3, MaildirFolder.Open(temp.GetFullPath("all.maildir")).EnumerateFolders().Single().Folder.EnumerateMessages());
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox_NeedsAnOutput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var first = await WriteFileAsync(temp, "a.eml", TestFiles.CreateEml("A"));
+        var second = await WriteFileAsync(temp, "b.eml", TestFiles.CreateEml("B"));
+
+        var (exitCode, console) = await RunAsync(first, second, "--output-format", "mbox");
+        Assert.Equal(1, exitCode);
+        Assert.Contains("set its path with --output", console.Error);
+
+        Assert.Equal(0, (await RunAsync(first, second, "--output-format", "mbox", "--per-input")).ExitCode);
+        Assert.Equal("A", MboxReader.ReadMessages(temp.GetFullPath("a.mbox")).Single().Message.Subject);
+        Assert.Equal("B", MboxReader.ReadMessages(temp.GetFullPath("b.mbox")).Single().Message.Subject);
+    }
+
+    [Fact]
+    public async Task MessagesToPstAndMaildir()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var eml = await WriteFileAsync(temp, "a.eml", TestFiles.CreateEml("From EML"));
+        var msg = await WriteFileAsync(temp, "b.msg", TestFiles.CreateMsg("From MSG"));
+
+        Assert.Equal(0, (await RunAsync(eml, msg, "-o", temp.GetFullPath("mail.pst"))).ExitCode);
+        using (var pst = PstFile.Open(temp.GetFullPath("mail.pst")))
+        {
+            Assert.Equal(["From EML", "From MSG"], pst.GetFolder("Inbox")!.EnumerateItems().Select(item => item.Subject));
+        }
+
+        Assert.Equal(0, (await RunAsync(eml, msg, "-o", temp.GetFullPath("mail"), "--output-format", "maildir")).ExitCode);
+        Assert.Equal(["From EML", "From MSG"], MaildirFolder.Open(temp.GetFullPath("mail")).EnumerateMessages().Select(message => message.Load().Subject).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task MessagesToOneMbox_SkipsTheInvalidMessages()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var valid = await WriteFileAsync(temp, "valid.eml", TestFiles.CreateEml("Valid"));
+        var invalid = await WriteFileAsync(temp, "invalid.msg", "not an Outlook item"u8.ToArray());
+
+        var (exitCode, console) = await RunAsync(valid, invalid, "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains(invalid.Value + ": ", console.Error);
+        Assert.Equal(["Valid"], MboxReader.ReadMessages(temp.GetFullPath("all.mbox")).Select(message => message.Message.Subject));
+
+        (exitCode, console) = await RunAsync(invalid, "-o", temp.GetFullPath("none.mbox"));
+        Assert.Equal(1, exitCode);
+        Assert.Contains("No message can be converted", console.Error);
+        Assert.False(File.Exists(temp.GetFullPath("none.mbox")));
+    }
+
+    [Fact]
+    public async Task MessagesAndMailboxToMailbox_IsRejected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var message = await WriteFileAsync(temp, "hello.eml", TestFiles.CreateEml("Hello"));
+        var mailbox = await WriteFileAsync(temp, "mail.pst", TestFiles.CreatePst());
+
+        var (exitCode, console) = await RunAsync(message, mailbox, "-o", temp.GetFullPath("all.mbox"));
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("convert the mailboxes and the messages separately", console.Error);
+    }
+
+    [Fact]
+    public async Task FolderToPdf_IsRejected()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        Directory.CreateDirectory(temp.GetFullPath("folder"));
+
+        var (exitCode, console) = await RunAsync(temp.GetFullPath("folder"), "--output-format", "pdf");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains("is a folder", console.Error);
+    }
+
+    [Theory]
+    [InlineData("PST")]
+    [InlineData("MSG")]
+    [InlineData("TNEF")]
+    [InlineData("EML")]
+    [InlineData("Mbox")]
+    public void DetectFormat_Email(string expected)
+    {
+        var content = expected switch
+        {
+            "PST" => TestFiles.CreatePst(),
+            "MSG" => TestFiles.CreateMsg("Hello"),
+            "TNEF" => TestFiles.CreateTnef("Hello"),
+            "EML" => TestFiles.CreateEml("Hello"),
+            _ => TestFiles.CreateMbox("Hello"),
+        };
+        using var stream = new MemoryStream(content);
+        Assert.Equal(expected, Converter.DetectFormat(stream, "file")?.Name);
+        Assert.Equal(0, stream.Position);
+    }
+
+    [Fact]
+    public void DetectFormat_MarkdownThatLooksLikeAMessage()
+    {
+        using var stream = new MemoryStream("Subject: notes\r\n\r\nSome notes"u8.ToArray());
+        Assert.Equal("Markdown", Converter.DetectFormat(stream, "notes.md")?.Name);
     }
 
     [Theory]

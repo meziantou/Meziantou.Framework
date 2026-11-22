@@ -3,6 +3,8 @@ using System.Formats.Tar;
 using System.IO.Compression;
 using System.IO.Hashing;
 using Meziantou.Framework.Compression;
+using Meziantou.Framework.Email.Mapi;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Pdf;
@@ -855,5 +857,50 @@ internal static class TestFiles
         public int? CoverIndex { get; init; }
 
         public uint? Kf8RecordIndex { get; init; }
+    }
+
+    /// <summary>An email message (.eml) with CRLF line breaks.</summary>
+    public static byte[] CreateEml(string subject) => Encoding.UTF8.GetBytes(CreateEmlText(subject, "\r\n"));
+
+    /// <summary>An mbox file of messages, with LF line breaks.</summary>
+    public static byte[] CreateMbox(params string[] subjects) => Encoding.UTF8.GetBytes(string.Concat(subjects.Select(subject => "From alice@example.com Thu Jan 15 09:00:00 2026\n" + CreateEmlText(subject, "\n") + "\n")));
+
+    /// <summary>An Outlook item (.msg).</summary>
+    public static byte[] CreateMsg(string subject) => MsgFile.ToByteArray(CreateMapiMessage(subject));
+
+    /// <summary>A TNEF stream (winmail.dat).</summary>
+    public static byte[] CreateTnef(string subject) => TnefFile.ToByteArray(CreateMapiMessage(subject));
+
+    /// <summary>An Outlook data file with the folders Inbox (message "Welcome"), Inbox/Projects (message "Project plan") and Contacts (a contact).</summary>
+    public static byte[] CreatePst(PstWriterOptions? options = null)
+    {
+        using var stream = new MemoryStream();
+        using (var writer = PstWriter.Create(stream, options, leaveOpen: true))
+        {
+            var inbox = writer.RootFolder.CreateFolder("Inbox", "IPF.Note");
+            inbox.AddItem(CreateMapiMessage("Welcome"));
+            inbox.CreateFolder("Projects", "IPF.Note").AddItem(CreateMapiMessage("Project plan"));
+            writer.RootFolder.CreateFolder("Contacts", "IPF.Contact").AddItem(new MapiContactBuilder { GivenName = "Bob", Surname = "Smith", Email1Address = "bob@example.com" });
+        }
+
+        return stream.ToArray();
+    }
+
+    private static string CreateEmlText(string subject, string newLine) =>
+        string.Join(newLine, "From: Alice <alice@example.com>", "To: bob@example.com", "Subject: " + subject, "Date: Thu, 15 Jan 2026 09:00:00 +0000", "MIME-Version: 1.0", "Content-Type: text/plain; charset=utf-8", "", "Hello from " + subject, "");
+
+    private static MapiMessageBuilder CreateMapiMessage(string subject)
+    {
+        var message = new MapiMessageBuilder
+        {
+            Subject = subject,
+            Body = "Hello from " + subject,
+            SenderName = "Alice",
+            SenderEmailAddress = "alice@example.com",
+            SenderAddressType = "SMTP",
+            ClientSubmitTime = new DateTime(2026, 1, 15, 9, 0, 0, DateTimeKind.Utc),
+        };
+        message.Recipients.Add(new MapiRecipientBuilder("Bob", "bob@example.com"));
+        return message;
     }
 }

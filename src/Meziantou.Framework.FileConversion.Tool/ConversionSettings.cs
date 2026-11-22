@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Meziantou.Framework.Compression;
+using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Pdf;
@@ -141,6 +142,37 @@ internal sealed class ConversionSettings
     public string? SevenZipPassword { get; init; }
 
     public bool SevenZipEncryptHeaders { get; init; }
+
+    // Mailboxes
+    public MboxFormat MboxFormat { get; init; } = MboxFormat.Mboxrd;
+
+    public bool EmailIncludeNonMailItems { get; init; }
+
+    /// <summary>Gets the format of a PST output, or null for the default: Unicode for PST, Unicode4K for OST.</summary>
+    public PstFormat? PstFileFormat { get; init; }
+
+    public PstEncryption PstEncryption { get; init; } = PstEncryption.Permute;
+
+    /// <summary>Gets the options of the conversion of a mailbox to <paramref name="outputFormat"/>.</summary>
+    /// <exception cref="ConversionException">The <c>--pst-format</c> is not one of the output format.</exception>
+    public MailboxConversionOptions CreateMailboxOptions(FileFormat outputFormat)
+    {
+        // The Unicode4K format is the format of the OST files: the writer writes the signature of an OST file
+        var isOst = outputFormat == FileFormat.Ost;
+        var pstFormat = PstFileFormat ?? (isOst ? PstFormat.Unicode4K : PstFormat.Unicode);
+        if (isOst && pstFormat is not PstFormat.Unicode4K)
+            throw new ConversionException("An OST file has the Unicode4K format: remove --pst-format");
+
+        if (!isOst && pstFormat is PstFormat.Unicode4K && outputFormat.MailboxFormat is Email.Storage.MailboxFormat.Pst)
+            throw new ConversionException("The Unicode4K format is the format of the OST files: use --output-format ost, or --pst-format Ansi or Unicode");
+
+        return new MailboxConversionOptions
+        {
+            MboxFormat = MboxFormat,
+            IncludeNonMailItems = EmailIncludeNonMailItems,
+            PstWriterOptions = new PstWriterOptions { Format = pstFormat, Encryption = PstEncryption },
+        };
+    }
 
     /// <summary>Gets a value indicating whether the images are resized, so that the encoded images cannot be copied as they are.</summary>
     public bool ResizesImages => MaxWidth is not null || MaxHeight is not null;

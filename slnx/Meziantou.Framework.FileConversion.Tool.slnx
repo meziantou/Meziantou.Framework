@@ -5,6 +5,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
+    <Project Path="../src/Meziantou.Framework.Email/Meziantou.Framework.Email.csproj" />
     <Project Path="../src/Meziantou.Framework.FileConversion.Tool/Meziantou.Framework.FileConversion.Tool.csproj" />
     <Project Path="../src/Meziantou.Framework.Fonts/Meziantou.Framework.Fonts.csproj" />
     <Project Path="../src/Meziantou.Framework.FullPath.Analyzer/Meziantou.Framework.FullPath.Analyzer.csproj" />

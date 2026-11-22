@@ -28,4 +28,5 @@ model they convert to and from, so that a message read in one format can be writ
 [EmailFormatDetector](cref:Meziantou.Framework.Email.EmailFormatDetector) detects the format of a file from its content
 (see [Getting started](02-GettingStarted.md)), and
 [MailboxConverter](cref:Meziantou.Framework.Email.Storage.MailboxConverter) converts a whole mailbox, with its folders,
-between Outlook data files, mbox files and Maildir folders: see [Convert mailboxes](07-Mailboxes/06-Conversion.md).
+between Outlook data files, mbox files and Maildir folders, or exports its messages to .eml or .msg files: see
+[Convert mailboxes](07-Mailboxes/06-Conversion.md).

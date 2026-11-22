@@ -20,4 +20,10 @@ internal enum FileFormatKind
 
     /// <summary>An HTML document, converted to Markdown, or laid out on pages.</summary>
     Html,
+
+    /// <summary>A mailbox with its folders (PST, OST, mbox, Maildir), converted to another mailbox or to a folder of message files.</summary>
+    Mailbox,
+
+    /// <summary>An email message (EML, EMLX) or an Outlook item (MSG, OFT, TNEF), converted to another message format.</summary>
+    EmailMessage,
 }

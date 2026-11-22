@@ -1,112 +1,62 @@
+using System.Buffers;
+using System.Text;
+
 namespace Meziantou.Framework.Csv.Tests;
 
 public class CsvWriterTests
 {
     [Fact]
-    public async Task ReadmeExample_WriteRows()
+    public void Write()
     {
-        #region CsvWriter_WriteRows
-        using var writer = new StringWriter();
-        var csvWriter = new CsvWriter(writer)
+        #region CsvWriter_Write
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "\n" }))
         {
-            EndOfLine = "\n", // Environment.NewLine by default
-        };
+            writer.WriteRow("Name", "Age", "City");
+            writer.WriteRow("Alice", "30", "New York");
 
-        await csvWriter.WriteRowAsync("Name", "Age", "City");
-        await csvWriter.WriteRowAsync("Alice", "30", "New York");
-        await csvWriter.WriteRowAsync("Bob", "25", "London, UK");
+            // Write a row value by value: numbers are formatted in the buffer, with the invariant culture
+            writer.WriteField("Bob");
+            writer.WriteField(25);
+            writer.WriteField("London, UK"); // Quoted: the value contains the separator
+            writer.EndRow();
+        } // Disposing the writer flushes the data
 
-        Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"", writer.ToString());
+        Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"\n", output.ToString());
         #endregion
     }
 
     [Fact]
-    public async Task ReadmeExample_CustomSeparator()
+    public void Utf8Write()
     {
-        #region CsvWriter_CustomSeparator
-        using var writer = new StringWriter();
-        var csvWriter = new CsvWriter(writer)
+        #region Utf8CsvWriter_Write
+        using var stream = new MemoryStream();
+        using (var writer = Utf8CsvWriter.Create(stream, leaveOpen: true))
         {
-            Separator = ';',
-            EndOfLine = "\n",
-        };
+            writer.WriteRow("Product", "Price");
+            writer.WriteField("Café"u8); // UTF-8 bytes are written as they are
+            writer.WriteField(3.5m, "F2");
+            writer.EndRow();
+        }
 
-        await csvWriter.WriteRowAsync("Column1", "Column2");
-        await csvWriter.WriteRowAsync("Value1", "Value2");
-
-        Assert.Equal("Column1;Column2\nValue1;Value2", writer.ToString());
+        Assert.Equal("Product,Price\r\nCafé,3.50\r\n", Encoding.UTF8.GetString(stream.ToArray()));
         #endregion
     }
 
     [Fact]
-    public async Task ReadmeExample_WriteValuesIncrementally()
-    {
-        #region CsvWriter_WriteValuesIncrementally
-        using var writer = new StringWriter();
-        var csvWriter = new CsvWriter(writer)
-        {
-            EndOfLine = "\n",
-        };
-
-        await csvWriter.BeginRowAsync();
-        await csvWriter.WriteValueAsync("First");
-        await csvWriter.WriteValueAsync("Second");
-        await csvWriter.WriteValueAsync("Third");
-
-        await csvWriter.BeginRowAsync();
-        await csvWriter.WriteValuesAsync("Fourth", "Fifth", "Sixth");
-
-        Assert.Equal("First,Second,Third\nFourth,Fifth,Sixth", writer.ToString());
-        #endregion
-    }
-
-    [Fact]
-    public async Task ReadmeExample_DisableQuotes()
-    {
-        #region CsvWriter_DisableQuotes
-        using var writer = new StringWriter();
-        var csvWriter = new CsvWriter(writer)
-        {
-            Quote = null, // Disable quoting (values won't be escaped)
-        };
-
-        await csvWriter.WriteRowAsync("A\"", "B");
-
-        Assert.Equal("A\",B", writer.ToString());
-        #endregion
-    }
-
-    [Fact]
-    public async Task CsvWriter_DocumentationExample()
-    {
-        #region CsvWriter_WriteRowAsync
-        using var writer = new StringWriter();
-        var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
-
-        await csvWriter.WriteRowAsync("Name", "Age");
-        await csvWriter.WriteRowAsync("John", "30");
-        await csvWriter.WriteRowAsync("Jane", "25");
-
-        Assert.Equal("Name,Age\nJohn,30\nJane,25", writer.ToString());
-        #endregion
-    }
-
-#pragma warning disable xUnit1051 // The documentation examples do not pass the test cancellation token
-    [Fact]
-    public async Task Documentation_WriteFile()
+    public async Task WriteFile()
     {
         try
         {
             #region CsvWriter_WriteFile
-            await using (var writer = new StreamWriter("export.csv"))
+            await using (var writer = CsvWriter.CreateToFile("export.csv"))
             {
-                var csvWriter = new CsvWriter(writer);
-                await csvWriter.WriteRowAsync("Name", "Age");
-                await csvWriter.WriteRowAsync("Alice", "30");
-            } // Disposing the StreamWriter flushes the data to the file
+                writer.WriteRow("Name", "Age");
+                await writer.WriteRowAsync(["Alice", "30"]);
+            } // Disposing the writer flushes the data and closes the file
 
             var content = await File.ReadAllTextAsync("export.csv");
-            Assert.Equal($"Name,Age{Environment.NewLine}Alice,30", content);
+            Assert.Equal("Name,Age\r\nAlice,30\r\n", content);
             #endregion
         }
         finally
@@ -114,190 +64,280 @@ public class CsvWriterTests
             File.Delete("export.csv");
         }
     }
-#pragma warning restore xUnit1051
 
     [Fact]
-    public async Task Documentation_Quoting()
+    public void Quoting()
     {
         #region CsvWriter_Quoting
-        using var writer = new StringWriter();
-        var csvWriter = new CsvWriter(writer) { EndOfLine = "\n" };
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "\n" }))
+        {
+            writer.WriteRow("comma, here", "quote \" here", "line\nbreak", "plain");
+        }
 
-        await csvWriter.WriteRowAsync("plain", "with,comma", "with \"quotes\"", "two\nlines", null, "");
-
-        Assert.Equal(""""
-            plain,"with,comma","with ""quotes""","two
-            lines",,
-            """", writer.ToString(), ignoreLineEndingDifferences: true);
+        Assert.Equal("\"comma, here\",\"quote \"\" here\",\"line\nbreak\",plain\n", output.ToString());
         #endregion
     }
 
     [Fact]
-    public async Task CsvWriterAsync_NoEscape()
+    public void QuoteModes()
     {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("A", "B");
-        await writer.WriteRowAsync("C", "D");
-        Assert.Equal($"A,B{Environment.NewLine}C,D", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueWithSeparator()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("A", "B,");
-        await writer.WriteRowAsync("C", "D");
-        Assert.Equal($@"A,""B,""{Environment.NewLine}C,D", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueWithStartingQuote()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("A", "\"B");
-        Assert.Equal("A,\"\"\"B\"", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_WriteValues()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw)
+        #region CsvWriter_QuoteModes
+        var always = new StringBuilder();
+        using (var writer = CsvWriter.Create(always, new CsvWriterOptions { QuoteMode = CsvQuoteMode.Always, NewLine = "\n" }))
         {
-            EndOfLine = "\n",
-        };
-        await writer.BeginRowAsync();
-        await writer.WriteValuesAsync("A", "B");
-        await writer.WriteValuesAsync("C", "D");
-        await writer.BeginRowAsync();
-        await writer.WriteValuesAsync("E");
-        Assert.Equal("A,B,C,D\nE", sw.ToString());
+            writer.WriteRow("a", "b");
+        }
+
+        var never = new StringBuilder();
+        using (var writer = CsvWriter.Create(never, new CsvWriterOptions { QuoteMode = CsvQuoteMode.Never, NewLine = "\n" }))
+        {
+            writer.WriteRow("a,b", "c");
+        }
+
+        Assert.Equal("\"a\",\"b\"\n", always.ToString());
+        Assert.Equal("a,b,c\n", never.ToString()); // Never: the value is written as it is
+        #endregion
     }
 
     [Fact]
-    public async Task CsvWriterAsync_NoQuoteCharacter()
+    public void EscapeFormulas()
     {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw)
+        #region CsvWriter_EscapeFormulas
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { EscapeFormulas = true, NewLine = "\n" }))
         {
-            Quote = null,
-        };
+            writer.WriteField("=HYPERLINK(\"http://example.com\")");
+            writer.WriteField(-5); // Numbers are not escaped
+            writer.EndRow();
+        }
 
-        await writer.WriteRowAsync("A\"", "B");
-        Assert.Equal("A\",B", sw.ToString());
+        Assert.Equal("\"'=HYPERLINK(\"\"http://example.com\"\")\",-5\n", output.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public void CustomSeparator()
+    {
+        #region CsvWriter_CustomSeparator
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { Separator = ';', NewLine = "\n" }))
+        {
+            writer.WriteRow("Column1", "Column2");
+            writer.WriteField(1.5); // The invariant culture writes a dot, not the separator
+            writer.WriteField("a;b");
+            writer.EndRow();
+        }
+
+        Assert.Equal("Column1;Column2\n1.5;\"a;b\"\n", output.ToString());
+        #endregion
+    }
+
+    [Fact]
+    public async Task WriteAsync()
+    {
+        #region CsvWriter_WriteAsync
+        using var stream = new MemoryStream();
+        await using (var writer = Utf8CsvWriter.Create(stream, leaveOpen: true))
+        {
+            for (var i = 0; i < 1000; i++)
+            {
+                writer.WriteField(i);
+                writer.WriteField("value");
+                await writer.EndRowAsync(); // Sends the buffer to the stream asynchronously when it is mostly full
+            }
+        }
+
+        Assert.HasCount(1000, Encoding.UTF8.GetString(stream.ToArray()).Split("\r\n", StringSplitOptions.RemoveEmptyEntries));
+        #endregion
+    }
+
+    [Fact]
+    public void SingleEmptyValue()
+    {
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "\n" }))
+        {
+            writer.WriteRow("");
+            writer.WriteRow((string?)null);
+            writer.WriteRow("", "");
+        }
+
+        Assert.Equal("\"\"\n\"\"\n,\n", output.ToString());
+    }
+
+    [Fact]
+    public void NoQuoteCharacter()
+    {
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { Quote = null, NewLine = "\n" }))
+        {
+            writer.WriteRow("A\"", "B");
+        }
+
+        Assert.Equal("A\",B\n", output.ToString());
+    }
+
+    [Fact]
+    public void NewLineCharactersAreQuoted()
+    {
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "|\n" }))
+        {
+            writer.WriteRow("a|b", "c");
+        }
+
+        Assert.Equal("\"a|b\",c|\n", output.ToString());
+    }
+
+    [Fact]
+    public void LargeValues()
+    {
+        var value = new string('a', 100_000) + "\"" + new string('b', 100_000);
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { BufferSize = 16 }))
+        {
+            writer.WriteRow(value, "x");
+        }
+
+        using var reader = CsvReader.CreateFromString(output.ToString(), new CsvReaderOptions { HasHeaderRow = false });
+        Assert.True(reader.Read());
+        Assert.Equal(value, reader.Current[0].ToString());
+        Assert.Equal("x", reader.Current[1].ToString());
+    }
+
+    [Fact]
+    public void Utf8_NonAscii()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = Utf8CsvWriter.Create(buffer, new CsvWriterOptions { NewLine = "\n" }))
+        {
+            writer.WriteRow("é,ü", "😀", "\uD800");
+        }
+
+        Assert.Equal("\"é,ü\",😀,\uFFFD\n", Encoding.UTF8.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void Utf8_NonAsciiNewLine()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = Utf8CsvWriter.Create(buffer, new CsvWriterOptions { NewLine = "§" }))
+        {
+            writer.WriteRow("a§b", "c", "é");
+        }
+
+        Assert.Equal("\"a§b\",c,\"é\"§", Encoding.UTF8.GetString(buffer.WrittenSpan));
+    }
+
+    [Fact]
+    public void BufferWriter()
+    {
+        var buffer = new ArrayBufferWriter<char>();
+        using (var writer = CsvWriter.Create(buffer))
+        {
+            writer.WriteRow("a", "b");
+        }
+
+        Assert.Equal("a,b\r\n", buffer.WrittenSpan.ToString());
+    }
+
+    [Fact]
+    public void Stream_Encoding()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = CsvWriter.Create(stream, Encoding.Unicode, leaveOpen: true))
+        {
+            writer.WriteRow("é");
+        }
+
+        Assert.Equal("\uFEFFé\r\n", Encoding.Unicode.GetString(stream.ToArray()));
+    }
+
+    [Fact]
+    public void FormatProvider()
+    {
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { FormatProvider = new NumberFormatInfo { NumberDecimalSeparator = "," },NewLine = "\n" }))
+        {
+            writer.WriteField(1.5);
+            writer.WriteField(2.5, formatProvider: CultureInfo.InvariantCulture);
+            writer.EndRow();
+        }
+
+        Assert.Equal("\"1,5\",2.5\n", output.ToString());
+    }
+
+    [Fact]
+    public void FlushWritesToTarget()
+    {
+        using var stringWriter = new StringWriter();
+        using var writer = CsvWriter.Create(stringWriter, leaveOpen: true);
+        writer.WriteRow("a");
+        Assert.Equal("", stringWriter.ToString());
+        writer.Flush();
+        Assert.Equal("a\r\n", stringWriter.ToString());
     }
 
     [Theory]
-    [InlineData("A;B:D;E")]
-    [InlineData("A,;B:D;E")]
-    [InlineData(",A;B:D;E")]
-    [InlineData("A;\"B:D;E")]
-    [InlineData("A;B\":D;E")]
-    public async Task CsvWriterAsync_CsvReader(string data)
+    [InlineData(',', ',', "\n")]
+    [InlineData('\n', '"', "\n")]
+    [InlineData(',', '"', ",")]
+    [InlineData(',', '"', "")]
+    public void InvalidOptions(char separator, char quote, string newLine)
     {
-        var rows = new List<List<string>>();
-        foreach (var row in data.Split(':'))
+        Assert.Throws<ArgumentException>(() => CsvWriter.Create(new StringBuilder(), new CsvWriterOptions { Separator = separator, Quote = quote, NewLine = newLine }));
+    }
+
+    [Fact]
+    public void RoundTrip_SpecialCharacters()
+    {
+        string?[][] rows =
+        [
+            ["a", "b,c", "d\"e", "f\r\ng", "h\ri", "j\nk"],
+            ["", "\"", "\"\"", ",", "\r\n", " "],
+            [""],
+            ["😀", "é", "x"],
+        ];
+
+        foreach (var utf8 in (bool[])[false, true])
         {
-            rows.Add(new List<string>(row.Split(';')));
+            string text;
+            if (utf8)
+            {
+                var buffer = new ArrayBufferWriter<byte>();
+                using (var writer = Utf8CsvWriter.Create(buffer))
+                {
+                    foreach (var row in rows)
+                    {
+                        writer.WriteRow(row);
+                    }
+                }
+
+                text = Encoding.UTF8.GetString(buffer.WrittenSpan);
+            }
+            else
+            {
+                var output = new StringBuilder();
+                using (var writer = CsvWriter.Create(output))
+                {
+                    foreach (var row in rows)
+                    {
+                        writer.WriteRow(row);
+                    }
+                }
+
+                text = output.ToString();
+            }
+
+            using var reader = CsvReader.CreateFromString(text, new CsvReaderOptions { HasHeaderRow = false });
+            var actual = new List<string[]>();
+            while (reader.Read())
+            {
+                actual.Add(reader.Current.ToStringArray());
+            }
+
+            Assert.Equal(rows.Select(row => string.Join("|", row)), actual.Select(row => string.Join("|", row)));
         }
-
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw);
-        foreach (var row in rows)
-        {
-            await writer.WriteRowAsync(row);
-        }
-
-        var csv = sw.ToString();
-        using var sr = new StringReader(csv);
-        var reader = new CsvReader(sr);
-
-        var rowIndex = -1;
-        CsvRow? csvRow;
-        while ((csvRow = await reader.ReadRowAsync()) is not null)
-        {
-            rowIndex++;
-            Assert.Equal(rows[rowIndex], csvRow.Values.ToList());
-        }
-
-        Assert.Equal(rows.Count - 1, rowIndex);
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueContainingLineFeed()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw) { EndOfLine = "\n" };
-        await writer.WriteRowAsync("a\nb", "c");
-        await writer.WriteRowAsync("d", "e");
-        Assert.Equal("\"a\nb\",c\nd,e", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueContainingCarriageReturn()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw) { EndOfLine = "\n" };
-        await writer.WriteRowAsync("a\r\nb", "c");
-        Assert.Equal("\"a\r\nb\",c", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueWithQuoteInTheMiddle()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("a\"b", "c");
-        Assert.Equal("\"a\"\"b\",c", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueWithQuoteAtTheEnd()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw);
-        await writer.WriteRowAsync("ab\"", "c");
-        Assert.Equal("\"ab\"\"\",c", sw.ToString());
-    }
-
-    [Fact]
-    public async Task CsvWriterAsync_EscapeValueContainingCustomEndOfLine()
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw) { EndOfLine = "|" };
-        await writer.WriteRowAsync("a|b", "c");
-        Assert.Equal("\"a|b\",c", sw.ToString());
-    }
-
-    [Theory]
-    [InlineData("a\nb")]
-    [InlineData("a\r\nb")]
-    [InlineData("a\rb")]
-    [InlineData("a\"b")]
-    [InlineData("a,b")]
-    [InlineData("\"")]
-    [InlineData("a\n\"b\",c")]
-    public async Task CsvWriterAsync_SpecialCharacters_RoundTripThroughCsvReader(string value)
-    {
-        using var sw = new StringWriter();
-        var writer = new CsvWriter(sw) { EndOfLine = "\n" };
-        await writer.WriteRowAsync(value, "next");
-        await writer.WriteRowAsync("second", "row");
-
-        using var sr = new StringReader(sw.ToString());
-        var reader = new CsvReader(sr);
-
-        var row1 = await reader.ReadRowAsync();
-        Assert.NotNull(row1);
-        Assert.Equal([value, "next"], row1.Values);
-
-        var row2 = await reader.ReadRowAsync();
-        Assert.NotNull(row2);
-        Assert.Equal(["second", "row"], row2.Values);
-
-        Assert.Null(await reader.ReadRowAsync());
     }
 }

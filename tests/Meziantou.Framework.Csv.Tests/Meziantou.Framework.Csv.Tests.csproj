@@ -1,12 +1,17 @@
-﻿<Project Sdk="Meziantou.NET.Sdk.Test">
-
+<Project Sdk="Meziantou.NET.Sdk.Test">
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
-    <ProjectReference Include="../../src/Meziantou.Framework.TypeConverter/Meziantou.Framework.TypeConverter.csproj" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Csv.SourceGenerator/Meziantou.Framework.Csv.SourceGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="true"
+                      SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
 </Project>

@@ -1,300 +1,204 @@
+using Meziantou.Framework.Csv.Internals;
+
 namespace Meziantou.Framework.Csv;
 
-/// <summary>Reads CSV data from a text reader and parses it into rows.</summary>
+/// <summary>Reads CSV data as UTF-16 text, one record at a time.</summary>
+/// <remarks>
+/// <para>
+/// The values of the current record are slices of the internal buffer of the reader: the <see cref="CsvRecord"/> returned by <see cref="Current"/> and
+/// the spans of its values are valid until the next call to <see cref="Read"/> or <see cref="ReadAsync"/>. Call <see cref="CsvField.ToString"/> to keep a value.
+/// </para>
+/// <para>To read UTF-8 data from a <see cref="Stream"/> or from bytes without decoding it first, use <see cref="Utf8CsvReader"/>.</para>
+/// <para>This type is not thread-safe.</para>
+/// </remarks>
 /// <example>
-/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs" ref:region="CsvReader_ReadRowAsync" ref:dedent="true">
-/// using var reader = new StringReader("Name,Age\nJohn,30\nJane,25");
-/// var csvReader = new CsvReader(reader) { HasHeaderRow = true };
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs" ref:region="CsvReader_Read" ref:dedent="true">
+/// using var reader = CsvReader.CreateFromString("""
+///     Name,Age
+///     Alice,30
+///     Bob,25
+///     """);
 ///
 /// var lines = new List&lt;string&gt;();
-/// while (await csvReader.ReadRowAsync() is { } row)
+/// while (reader.Read())
 /// {
-///     lines.Add($"{row["Name"]} is {row["Age"]} years old");
+///     var record = reader.Current;
+///     lines.Add($"{record["Name"].Span} is {record["Age"].Parse&lt;int&gt;()} years old");
 /// }
 ///
-/// Assert.Equal(["John is 30 years old", "Jane is 25 years old"], lines);
+/// Assert.Equal(["Alice is 30 years old", "Bob is 25 years old"], lines);
 /// </code>
 /// </example>
-public class CsvReader
+public sealed class CsvReader : IDisposable, IAsyncDisposable
 {
-    /// <summary>The default separator character used in CSV files (comma).</summary>
-    public const char DefaultSeparatorCharacter = ',';
+    private readonly CsvParser<char> _parser;
+    private bool _hasCurrent;
 
-    /// <summary>The default quote character used in CSV files (double quote).</summary>
-    public const char DefaultQuoteCharacter = '"';
+    private CsvReader(CsvParser<char> parser)
+    {
+        _parser = parser;
+    }
 
-    private CsvColumn[]? _columns;
-    private readonly char[] _readBuffer = new char[4096];
-    private int _readBufferOffset;
-    private int _readBufferLength;
-    private bool _hasBufferedChar;
-    private char _bufferedChar;
-    private bool _endOfStreamReached;
-    private bool _hasParsedRow;
+    /// <summary>Creates a reader that reads CSV data from a <see cref="TextReader"/>.</summary>
+    /// <param name="reader">The reader to read the data from.</param>
+    /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvReaderOptions.Default"/>.</param>
+    /// <param name="leaveOpen"><see langword="true"/> to leave <paramref name="reader"/> open when the <see cref="CsvReader"/> is disposed.</param>
+    /// <returns>The new reader.</returns>
+    public static CsvReader Create(TextReader reader, CsvReaderOptions? options = null, bool leaveOpen = false)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        return new CsvReader(new CsvParser<char>(options ?? CsvReaderOptions.Default, new TextReaderCsvSource(reader, leaveOpen), default));
+    }
 
-    /// <summary>Gets or sets the character used to separate values in a row. Default is a comma (,).</summary>
-    public char Separator { get; set; } = DefaultSeparatorCharacter;
+    /// <summary>Creates a reader that reads CSV data from a <see cref="Stream"/>.</summary>
+    /// <param name="stream">The stream to read the data from.</param>
+    /// <param name="encoding">The encoding of the data, or <see langword="null"/> for UTF-8. A byte order mark at the start of the stream overrides it.</param>
+    /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvReaderOptions.Default"/>.</param>
+    /// <param name="leaveOpen"><see langword="true"/> to leave <paramref name="stream"/> open when the <see cref="CsvReader"/> is disposed.</param>
+    /// <returns>The new reader.</returns>
+    /// <remarks>To read UTF-8 data without decoding it to UTF-16, use <see cref="Utf8CsvReader.Create(Stream, CsvReaderOptions?, bool)"/>.</remarks>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reader owns the StreamReader, which leaves the stream open as the caller asked")]
+    public static CsvReader Create(Stream stream, Encoding? encoding = null, CsvReaderOptions? options = null, bool leaveOpen = false)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        var reader = new StreamReader(stream, encoding ?? Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: -1, leaveOpen: leaveOpen);
+        return Create(reader, options, leaveOpen: false);
+    }
 
-    /// <summary>Gets or sets the character used to quote values that contain special characters. Default is a double quote (").</summary>
-    public char? Quote { get; set; } = DefaultQuoteCharacter;
+    /// <summary>Creates a reader that reads CSV data from memory.</summary>
+    /// <param name="csv">The CSV data.</param>
+    /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvReaderOptions.Default"/>.</param>
+    /// <returns>The new reader.</returns>
+    /// <remarks>The data is not copied: the values are slices of <paramref name="csv"/>.</remarks>
+    public static CsvReader Create(ReadOnlyMemory<char> csv, CsvReaderOptions? options = null)
+    {
+        return new CsvReader(new CsvParser<char>(options ?? CsvReaderOptions.Default, source: null, csv));
+    }
 
-    /// <summary>Gets or sets a value indicating whether the first row contains column headers.</summary>
-    public bool HasHeaderRow { get; set; }
+    /// <summary>Creates a reader that reads CSV data from a string.</summary>
+    /// <param name="csv">The CSV data.</param>
+    /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvReaderOptions.Default"/>.</param>
+    /// <returns>The new reader.</returns>
+    public static CsvReader CreateFromString(string csv, CsvReaderOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(csv);
+        return Create(csv.AsMemory(), options);
+    }
 
-    /// <summary>Gets the number of characters read since the beginning of the current row.</summary>
-    /// <remarks>This is a character position, not the index of the field being read. It counts every character consumed by the current row, including the characters of a multi-line quoted value, and it is reset to 0 at the start of each row.</remarks>
-    public int ColumnNumber { get; private set; }
+    /// <summary>Creates a reader that reads CSV data from a file.</summary>
+    /// <param name="path">The path of the file.</param>
+    /// <param name="encoding">The encoding of the file, or <see langword="null"/> for UTF-8. A byte order mark at the start of the file overrides it.</param>
+    /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvReaderOptions.Default"/>.</param>
+    /// <returns>The new reader. Dispose it to close the file.</returns>
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reader owns the stream, and the method disposes it when it throws")]
+    public static CsvReader CreateFromFile(string path, Encoding? encoding = null, CsvReaderOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 1, FileOptions.SequentialScan | FileOptions.Asynchronous);
+        try
+        {
+            return Create(stream, encoding, options, leaveOpen: false);
+        }
+        catch
+        {
+            stream.Dispose();
+            throw;
+        }
+    }
 
-    /// <summary>Gets the number of line terminators consumed so far.</summary>
-    /// <remarks>This is 0 while the first line is being read, and is incremented as each line ends. Line terminators inside a quoted value are counted, so this tracks the physical line in the input rather than the number of rows returned. See <see cref="RowNumber"/> for the row.</remarks>
-    public int LineNumber { get; private set; }
+    /// <summary>Gets the names of the columns, read from the header row, or <see langword="null"/> when the data has no header row or when no record has been read yet.</summary>
+    public CsvHeader? Header => _parser.Header;
 
-    /// <summary>Gets or sets the current row number (0-based).</summary>
-    public int RowNumber { get; set; }
+    /// <summary>Gets the separator character, which is the detected one when <see cref="CsvReaderOptions.Separator"/> is <see langword="null"/>.</summary>
+    /// <remarks>The separator is detected when the first record is read.</remarks>
+    public char Separator => _parser.Separator;
 
-    /// <summary>Gets the underlying <see cref="TextReader"/> used to read the CSV data.</summary>
-    public TextReader BaseReader { get; }
-
-    /// <summary>Gets a value indicating whether the end of the stream has been reached.</summary>
-    /// <remarks>Reading this property can block: when the internal buffer is empty it queries the underlying <see cref="TextReader"/> synchronously, even though the rest of this type is asynchronous. Prefer testing whether <see cref="ReadRowAsync"/> returned <see langword="null"/>.</remarks>
-    public bool EndOfStream
+    /// <summary>Gets the current record.</summary>
+    /// <exception cref="InvalidOperationException"><see cref="Read"/> or <see cref="ReadAsync"/> has not returned <see langword="true"/>.</exception>
+    public CsvRecord Current
     {
         get
         {
-            if (_hasBufferedChar)
-                return false;
+            if (!_hasCurrent)
+                throw new InvalidOperationException("There is no current record: call Read or ReadAsync first.");
 
-            if (_readBufferOffset < _readBufferLength)
-                return false;
-
-            if (_endOfStreamReached)
-                return true;
-
-            if (BaseReader is StreamReader streamReader)
-                return streamReader.EndOfStream;
-
-            return BaseReader.Peek() < 0;
+            return new CsvRecord(_parser);
         }
     }
 
-    /// <summary>Initializes a new instance of the <see cref="CsvReader"/> class with the specified <see cref="TextReader"/>.</summary>
-    /// <param name="textReader">The <see cref="TextReader"/> to read CSV data from.</param>
-    /// <exception cref="ArgumentNullException"><paramref name="textReader"/> is <see langword="null"/>.</exception>
-    public CsvReader(TextReader textReader)
+    /// <summary>Gets the 0-based index of the current record. The header row and the comment lines are not counted.</summary>
+    public long RowIndex => _parser.RecordIndex;
+
+    /// <summary>Gets the 1-based line number where the current record starts. Every line terminator counts, including those inside quoted values.</summary>
+    public long LineNumber => _parser.LineNumber;
+
+    /// <summary>Gets the 0-based position, in characters from the start of the data, where the current record starts.</summary>
+    public long Position => _parser.Position;
+
+    /// <summary>Reads the next record.</summary>
+    /// <returns><see langword="true"/> when a record was read; <see langword="false"/> at the end of the data.</returns>
+    /// <exception cref="CsvException">The data is invalid.</exception>
+    public bool Read()
     {
-        BaseReader = textReader ?? throw new ArgumentNullException(nameof(textReader));
+        return _hasCurrent = _parser.Read();
     }
 
-    private async ValueTask<char?> ReadCharAsync()
+    /// <summary>Reads the next record asynchronously.</summary>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns><see langword="true"/> when a record was read; <see langword="false"/> at the end of the data.</returns>
+    /// <exception cref="CsvException">The data is invalid.</exception>
+    public ValueTask<bool> ReadAsync(CancellationToken cancellationToken = default)
     {
-        if (_hasBufferedChar)
+        var task = _parser.ReadAsync(cancellationToken);
+        if (task.IsCompletedSuccessfully)
         {
-            _hasBufferedChar = false;
-            return _bufferedChar;
+            var result = task.Result;
+            _hasCurrent = result;
+            return new ValueTask<bool>(result);
         }
 
-        return await ReadCharCoreAsync().ConfigureAwait(false);
+        return ReadAsyncCore(task);
     }
 
-    private async ValueTask<char?> PeekCharAsync()
+    private async ValueTask<bool> ReadAsyncCore(ValueTask<bool> task)
     {
-        if (_hasBufferedChar)
-            return _bufferedChar;
-
-        var nextChar = await ReadCharCoreAsync().ConfigureAwait(false);
-        if (!nextChar.HasValue)
-            return null;
-
-        _bufferedChar = nextChar.Value;
-        _hasBufferedChar = true;
-        return nextChar;
+        _hasCurrent = false;
+        return _hasCurrent = await task.ConfigureAwait(false);
     }
 
-    private async ValueTask<char?> ReadCharCoreAsync()
-    {
-        if (_endOfStreamReached)
-            return null;
+    /// <summary>Gets an enumerator that reads the records one by one, for use in a <see langword="foreach"/> loop.</summary>
+    /// <returns>An enumerator over the records.</returns>
+    public Enumerator GetEnumerator() => new(this);
 
-        if (_readBufferOffset >= _readBufferLength)
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        _hasCurrent = false;
+        _parser.Dispose();
+    }
+
+    /// <inheritdoc/>
+    public ValueTask DisposeAsync()
+    {
+        Dispose();
+        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>Enumerates the records of a <see cref="CsvReader"/>.</summary>
+    public ref struct Enumerator
+    {
+        private readonly CsvReader _reader;
+
+        internal Enumerator(CsvReader reader)
         {
-            _readBufferLength = await BaseReader.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
-            _readBufferOffset = 0;
-            if (_readBufferLength <= 0)
-            {
-                _endOfStreamReached = true;
-                return null;
-            }
+            _reader = reader;
         }
 
-        return _readBuffer[_readBufferOffset++];
-    }
+        /// <summary>Gets the current record.</summary>
+        public readonly CsvRecord Current => _reader.Current;
 
-    /// <summary>Reads the next row from the CSV data.</summary>
-    /// <returns>A <see cref="CsvRow"/> representing the next row, or <see langword="null"/> if the end of the stream has been reached.</returns>
-    public async Task<CsvRow?> ReadRowAsync()
-    {
-        var endOfStream = false;
-        var rowValues = new List<string>();
-        if (BaseReader is not null)
-        {
-            var inQuote = false;
-            var value = new StringBuilder();
-            var hasPendingValue = false;
-            ColumnNumber = 0;
-            while (true)
-            {
-                var c = await ReadCharAsync().ConfigureAwait(false);
-                if (!c.HasValue)
-                {
-                    endOfStream = true;
-                    if (hasPendingValue)
-                    {
-                        rowValues.Add(value.ToString());
-                    }
-
-                    break;
-                }
-
-                ColumnNumber++;
-                var next = await PeekCharAsync().ConfigureAwait(false);
-                if (inQuote)
-                {
-                    if (c == '\n')
-                    {
-                        LineNumber++;
-                    }
-                    else if (c == '\r')
-                    {
-                        if (next == '\n')
-                        {
-                            hasPendingValue = true;
-                            value.Append(c.Value);
-                            c = await ReadCharAsync().ConfigureAwait(false);
-                            ColumnNumber++;
-                            if (!c.HasValue)
-                            {
-                                endOfStream = true;
-                                if (hasPendingValue)
-                                {
-                                    rowValues.Add(value.ToString());
-                                }
-
-                                break;
-                            }
-                        }
-
-                        LineNumber++;
-                    }
-
-                    if (Quote.HasValue && c == Quote)
-                    {
-                        if (next == Quote)
-                        {
-                            await ReadCharAsync().ConfigureAwait(false);
-                            ColumnNumber++;
-                            hasPendingValue = true;
-                            value.Append(Quote.Value);
-                        }
-                        else
-                        {
-                            inQuote = false;
-                        }
-                    }
-                    else
-                    {
-                        hasPendingValue = true;
-                        value.Append(c.Value);
-                    }
-                }
-                else if (c == '\n')
-                {
-                    if (hasPendingValue)
-                    {
-                        rowValues.Add(value.ToString());
-                    }
-
-                    LineNumber++;
-                    break;
-                }
-                else if (c == '\r')
-                {
-                    if (next == '\n')
-                    {
-                        await ReadCharAsync().ConfigureAwait(false);
-                        ColumnNumber++;
-                    }
-
-                    if (hasPendingValue)
-                    {
-                        rowValues.Add(value.ToString());
-                    }
-
-                    LineNumber++;
-                    break;
-                }
-                else if (Quote.HasValue && c == Quote)
-                {
-                    if (value.Length == 0)
-                    {
-                        hasPendingValue = true;
-                        inQuote = true;
-                    }
-                    else
-                    {
-                        hasPendingValue = true;
-                        value.Append(c.Value);
-                    }
-                }
-                else if (c == Separator)
-                {
-                    rowValues.Add(value.ToString());
-                    value.Clear();
-                    hasPendingValue = true;
-                }
-                else
-                {
-                    hasPendingValue = true;
-                    value.Append(c.Value);
-                }
-            }
-        }
-
-        if (rowValues.Count == 0 && endOfStream)
-            return null;
-
-        if (_hasParsedRow)
-        {
-            RowNumber++;
-        }
-
-        _hasParsedRow = true;
-
-        var columns = _columns;
-        if (HasHeaderRow && columns is null)
-        {
-            columns = rowValues.Select(CreateColumn).ToArray();
-            _columns = columns;
-            return await ReadRowAsync().ConfigureAwait(false); // Read the first row with data
-        }
-
-        return CreateRow(columns, rowValues);
-    }
-
-    /// <summary>Creates a <see cref="CsvColumn"/> instance. This method can be overridden to create custom column types.</summary>
-    /// <param name="name">The name of the column.</param>
-    /// <param name="index">The zero-based index of the column.</param>
-    /// <returns>A new <see cref="CsvColumn"/> instance.</returns>
-    protected virtual CsvColumn CreateColumn(string name, int index)
-    {
-        return new CsvColumn(name, index);
-    }
-
-    /// <summary>Creates a <see cref="CsvRow"/> instance. This method can be overridden to create custom row types.</summary>
-    /// <param name="columns">The columns of the row, or <see langword="null"/> if the CSV file has no header row.</param>
-    /// <param name="values">The values of the row.</param>
-    /// <returns>A new <see cref="CsvRow"/> instance.</returns>
-    protected virtual CsvRow CreateRow(IReadOnlyList<CsvColumn>? columns, IReadOnlyList<string> values)
-    {
-        return new CsvRow(columns, values);
+        /// <summary>Reads the next record.</summary>
+        /// <returns><see langword="true"/> when a record was read; <see langword="false"/> at the end of the data.</returns>
+        public readonly bool MoveNext() => _reader.Read();
     }
 }

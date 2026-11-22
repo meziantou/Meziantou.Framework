@@ -1,4 +1,4 @@
 title: Csv
-description: Read and write CSV and TSV data from any TextReader or TextWriter, with headers, custom separators and quoted values.
+description: Read and write CSV and TSV data as UTF-16 or UTF-8 with a SIMD parser, and map records to .NET types with a serializer that supports Native AOT.
 packageIds:
 - Meziantou.Framework.Csv

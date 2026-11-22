@@ -3,6 +3,7 @@
     <Project Path="benchmarks/Meziantou.Framework.Assertions.Benchmarks/Meziantou.Framework.Assertions.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Barcodes.Benchmarks/Meziantou.Framework.Barcodes.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.BloomFilters.Benchmarks/Meziantou.Framework.BloomFilters.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Csv.Benchmarks/Meziantou.Framework.Csv.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.DependencyScanning.Benchmarks/Meziantou.Framework.DependencyScanning.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Globbing.Benchmarks/Meziantou.Framework.Globbing.Benchmarks.csproj" />
@@ -107,6 +108,7 @@
     <Project Path="src/Meziantou.Framework.CodeOwners/Meziantou.Framework.CodeOwners.csproj" />
     <Project Path="src/Meziantou.Framework.CommandLine/Meziantou.Framework.CommandLine.csproj" />
     <Project Path="src/Meziantou.Framework.Compression/Meziantou.Framework.Compression.csproj" />
+    <Project Path="src/Meziantou.Framework.Csv.SourceGenerator/Meziantou.Framework.Csv.SourceGenerator.csproj" />
     <Project Path="src/Meziantou.Framework.Csv/Meziantou.Framework.Csv.csproj" />
     <Project Path="src/Meziantou.Framework.DependencyScanning.Tool/Meziantou.Framework.DependencyScanning.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.DependencyScanning/Meziantou.Framework.DependencyScanning.csproj" />
@@ -549,6 +551,7 @@
     <Project Path="tests/Meziantou.Framework.CommandLineTests/Meziantou.Framework.CommandLineTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Compression.InteropTests/Meziantou.Framework.Compression.InteropTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Compression.Tests/Meziantou.Framework.Compression.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.Csv.AotTests/Meziantou.Framework.Csv.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Csv.Tests/Meziantou.Framework.Csv.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tests/Meziantou.Framework.DependencyScanning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.DependencyScanning.Tool.Tests/Meziantou.Framework.DependencyScanning.Tool.Tests.csproj" />

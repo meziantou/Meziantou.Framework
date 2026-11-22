@@ -2,7 +2,8 @@
 
 Small files the tests of `Meziantou.Framework.Pdf` read, committed with their provenance. The large third-party corpora
 are not committed: they are pinned in `tests/Meziantou.Framework.Pdf.Corpus/corpus.json` and fetched by
-`eng/pdf/fetch-tests.cs`.
+`eng/pdf/fetch-tests.cs`, from the snapshots of the mirror repository of `corpus.mirror.json` when it has them, else
+from upstream.
 
 - `manifest.json` — **written by the reviewed generator** `eng/pdf/generate-fixtures.cs`. Every file of this folder except
   this README, the manifest, `sources/` and the license files is listed with its SHA-256 hash, provenance, license,

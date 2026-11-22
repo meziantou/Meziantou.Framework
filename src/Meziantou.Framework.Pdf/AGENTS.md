@@ -180,13 +180,14 @@ Signs and verifies the signatures of documents, with `System.Security.Cryptograp
 | `tests/Meziantou.Framework.Pdf.TestHarness` | The fixture manifest, the template expander (`PdfTemplate`), the validator of the vendored Arlington PDF Model (`ArlingtonValidator`), and the external tools (qpdf, TestGrammar, Poppler) from the release `Meziantou.Prebuilt` pins |
 | `tests/Meziantou.Framework.Pdf.InteropTests` | `qpdf --check` of what the library writes, the objects the parser reads compared with `qpdf --json`, TestGrammar, `pdftotext` and `pdfinfo` |
 | `tests/Meziantou.Framework.Pdf.Fixtures` | The fixtures, their templates and the manifest ([README](../../tests/Meziantou.Framework.Pdf.Fixtures/README.md)) |
-| `tests/Meziantou.Framework.Pdf.Corpus` | No-crash tests over the external corpora pinned in `corpus.json` (`expectations/`, `corpus-skip.txt`) |
+| `tests/Meziantou.Framework.Pdf.Corpus` | No-crash tests over the external corpora pinned in `corpus.json` (`expectations/`, `corpus-skip.txt`), fetched from the snapshots of the mirror of `corpus.mirror.json` |
 | `fuzz/Meziantou.Framework.Pdf.FuzzTests` | Deterministic mutation fuzzing of the fixtures, the filters and the parser, and the committed regressions |
 
 ```shell
 dotnet test --project tests/Meziantou.Framework.Pdf.Tests/Meziantou.Framework.Pdf.Tests.csproj
 dotnet test --project tests/Meziantou.Framework.Pdf.InteropTests/Meziantou.Framework.Pdf.InteropTests.csproj
 dotnet run eng/pdf/fetch-tests.cs
+dotnet run eng/pdf/fetch-tests.cs -- --publish # after a change of corpus.json: publishes the snapshots and writes corpus.mirror.json (tools/Meziantou.Framework.TestCorpus/readme.md)
 dotnet test --project tests/Meziantou.Framework.Pdf.Corpus/Meziantou.Framework.Pdf.Corpus.csproj
 dotnet test --project fuzz/Meziantou.Framework.Pdf.FuzzTests/Meziantou.Framework.Pdf.FuzzTests.csproj
 ```

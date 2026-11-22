@@ -33,6 +33,7 @@
     <Project Path="../tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj" />
   </Folder>
   <Folder Name="/tools/">
+    <Project Path="../tools/Meziantou.Framework.TestCorpus/Meziantou.Framework.TestCorpus.csproj" />
     <Project Path="../tools/Meziantou.Framework.WebPlatform.Analyzers/Meziantou.Framework.WebPlatform.Analyzers.csproj" />
     <Project Path="../tools/Meziantou.Framework.WebPlatform.ChromiumDiff/Meziantou.Framework.WebPlatform.ChromiumDiff.csproj" />
     <Project Path="../tools/Meziantou.Framework.WebPlatform.SpecGen/Meziantou.Framework.WebPlatform.SpecGen.csproj" />

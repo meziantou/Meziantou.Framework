@@ -6,4 +6,9 @@
     <RootNamespace>SpecUpdate</RootNamespace>
     <NoWarn>$(NoWarn);CA1303;CA1515;CA2007;CA1031</NoWarn>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.TestCorpus/Meziantou.Framework.TestCorpus.csproj" />
+  </ItemGroup>
 </Project>
+

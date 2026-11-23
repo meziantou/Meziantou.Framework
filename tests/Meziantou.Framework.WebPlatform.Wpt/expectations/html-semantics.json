@@ -4833,43 +4833,20 @@
     "total": 2
   },
   "html/semantics/forms/the-input-element/input-type-checkbox-switch-activation.window.js": {
-    "total": 9,
-    "failures": {
-      "A required switch suffers from being missing while it is off": "FAIL",
-      "A switch contributes to form data like a checkbox": "FAIL",
-      "A switch keeps its indeterminateness until a click resets it": "FAIL",
-      "Canceling the click event reverts a switch and fires neither input nor change": "FAIL",
-      "Clicking a switch toggles it and fires click, input, and change once": "FAIL",
-      "Clicking a switch whose switch attribute was removed toggles it like a checkbox": "FAIL",
-      "Clicking the label of a switch toggles it": "FAIL",
-      "Dragging across a disabled switch does not toggle it": "FAIL",
-      "click() toggles a switch and fires click, input, and change": "FAIL"
-    }
+    "total": 9
   },
   "html/semantics/forms/the-input-element/input-type-checkbox-switch-drag.optional.window.js": {
     "total": 11,
     "failures": {
-      "Changing the type during a drag stops the drag": "FAIL",
-      "Disabling the switch during a drag stops the drag": "FAIL",
       "Dragging the thumb of a right-to-left switch from right to left toggles it": "FAIL",
       "Dragging the thumb of a switch that is on to the other end and releasing outside the switch toggles it": "FAIL",
       "Dragging the thumb of a vertical switch from top to bottom toggles it": "FAIL",
       "Dragging the thumb to the other end and back does not fire a click event": "FAIL",
-      "Dragging the thumb to the other end and releasing outside the switch toggles it": "FAIL",
-      "Moving the thumb without reaching the other end is a click": "FAIL",
-      "Releasing outside the switch without reaching the other end does not fire a click event": "FAIL",
-      "Removing the switch attribute during a drag stops the drag": "FAIL",
-      "Setting checked during a drag stops the drag": "FAIL"
+      "Dragging the thumb to the other end and releasing outside the switch toggles it": "FAIL"
     }
   },
   "html/semantics/forms/the-input-element/input-type-checkbox-switch.window.js": {
-    "total": 4,
-    "failures": {
-      "Cloning a switch control": "FAIL",
-      "switch IDL attribute, false": "FAIL",
-      "switch IDL attribute, getter": "FAIL",
-      "switch IDL attribute, setter": "FAIL"
-    }
+    "total": 4
   },
   "html/semantics/forms/the-input-element/input-type-checkbox.html": {
     "total": 7
@@ -10237,7 +10214,6 @@
       "Checkbox that becomes a switch control does not match :indeterminate": "FAIL",
       "Checkbox that is no longer a switch control does match :indeterminate": "FAIL",
       "Parent of a checkbox that becomes a switch control does not match :has(:indeterminate)": "FAIL",
-      "Parent of a switch control that becomes a checkbox continues to match :has(:checked)": "FAIL",
       "Switch control does not match :indeterminate": "FAIL"
     }
   },

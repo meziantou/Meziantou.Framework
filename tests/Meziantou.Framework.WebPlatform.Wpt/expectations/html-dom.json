@@ -2152,47 +2152,7 @@
     "total": 1618
   },
   "html/dom/reflection-forms.html": {
-    "total": 8856,
-    "failures": {
-      "input.switch: IDL get with DOM attribute unset": "FAIL",
-      "input.switch: IDL set to \" foo \"": "FAIL",
-      "input.switch: IDL set to \"\"": "FAIL",
-      "input.switch: IDL set to \"+100\"": "FAIL",
-      "input.switch: IDL set to \".5\"": "FAIL",
-      "input.switch: IDL set to \"5%\"": "FAIL",
-      "input.switch: IDL set to \"\\0\"": "FAIL",
-      "input.switch: IDL set to -Infinity": "FAIL",
-      "input.switch: IDL set to 1.5": "FAIL",
-      "input.switch: IDL set to 7": "FAIL",
-      "input.switch: IDL set to Infinity": "FAIL",
-      "input.switch: IDL set to NaN": "FAIL",
-      "input.switch: IDL set to false": "FAIL",
-      "input.switch: IDL set to null": "FAIL",
-      "input.switch: IDL set to object \"[object Object]\"": "FAIL",
-      "input.switch: IDL set to object \"test-toString\"": "FAIL",
-      "input.switch: IDL set to object \"test-valueOf\"": "FAIL",
-      "input.switch: IDL set to undefined": "FAIL",
-      "input.switch: setAttribute() to \" foo \"": "FAIL",
-      "input.switch: setAttribute() to \"\"": "FAIL",
-      "input.switch: setAttribute() to \"+100\"": "FAIL",
-      "input.switch: setAttribute() to \".5\"": "FAIL",
-      "input.switch: setAttribute() to \"5%\"": "FAIL",
-      "input.switch: setAttribute() to \"\\0\"": "FAIL",
-      "input.switch: setAttribute() to \"switch\"": "FAIL",
-      "input.switch: setAttribute() to -Infinity": "FAIL",
-      "input.switch: setAttribute() to 1.5": "FAIL",
-      "input.switch: setAttribute() to 7": "FAIL",
-      "input.switch: setAttribute() to Infinity": "FAIL",
-      "input.switch: setAttribute() to NaN": "FAIL",
-      "input.switch: setAttribute() to false": "FAIL",
-      "input.switch: setAttribute() to null": "FAIL",
-      "input.switch: setAttribute() to object \"[object Object]\"": "FAIL",
-      "input.switch: setAttribute() to object \"test-toString\"": "FAIL",
-      "input.switch: setAttribute() to object \"test-valueOf\"": "FAIL",
-      "input.switch: setAttribute() to true": "FAIL",
-      "input.switch: setAttribute() to undefined": "FAIL",
-      "input.switch: typeof IDL attribute": "FAIL"
-    }
+    "total": 8856
   },
   "html/dom/reflection-grouping.html": {
     "total": 5904

@@ -59,7 +59,7 @@
     {
       "name": "quotes",
       "href": "https://drafts.csswg.org/css-content-3/#propdef-quotes",
-      "value": "auto | none | bikeshed-this | [ <string> <string> ]+",
+      "value": "auto | none | [ <string> <string> ]+",
       "initial": "auto",
       "appliesTo": "all elements",
       "inherited": "yes",

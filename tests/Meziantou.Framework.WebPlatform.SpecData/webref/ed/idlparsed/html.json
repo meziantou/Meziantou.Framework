@@ -11245,7 +11245,7 @@
         "href": "https://html.spec.whatwg.org/multipage/forms.html#htmllabelelement"
       },
       "HTMLInputElement": {
-        "fragment": "[Exposed=Window]\ninterface HTMLInputElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, Reflect] attribute DOMString accept;\n  [CEReactions, Reflect] attribute boolean alpha;\n  [CEReactions, Reflect] attribute DOMString alt;\n  [CEReactions, ReflectSetter] attribute DOMString autocomplete;\n  [CEReactions, Reflect=\"checked\"] attribute boolean defaultChecked;\n  attribute boolean checked;\n  [CEReactions] attribute DOMString colorSpace;\n  [CEReactions, Reflect] attribute DOMString dirName;\n  [CEReactions, Reflect] attribute boolean disabled;\n  readonly attribute HTMLFormElement? form;\n  attribute FileList? files;\n  [CEReactions, ReflectSetter] attribute USVString formAction;\n  [CEReactions] attribute DOMString formEnctype;\n  [CEReactions] attribute DOMString formMethod;\n  [CEReactions, Reflect] attribute boolean formNoValidate;\n  [CEReactions, Reflect] attribute DOMString formTarget;\n  [CEReactions, ReflectSetter] attribute unsigned long height;\n  attribute boolean indeterminate;\n  readonly attribute HTMLDataListElement? list;\n  [CEReactions, Reflect] attribute DOMString max;\n  [CEReactions, ReflectNonNegative] attribute long maxLength;\n  [CEReactions, Reflect] attribute DOMString min;\n  [CEReactions, ReflectNonNegative] attribute long minLength;\n  [CEReactions, Reflect] attribute boolean multiple;\n  [CEReactions, Reflect] attribute DOMString name;\n  [CEReactions, Reflect] attribute DOMString pattern;\n  [CEReactions, Reflect] attribute DOMString placeholder;\n  [CEReactions, Reflect] attribute boolean readOnly;\n  [CEReactions, Reflect] attribute boolean required;\n  [CEReactions, Reflect] attribute unsigned long size;\n  [CEReactions, ReflectURL] attribute USVString src;\n  [CEReactions, Reflect] attribute DOMString step;\n  [CEReactions] attribute DOMString type;\n  [CEReactions, Reflect=\"value\"] attribute DOMString defaultValue;\n  [CEReactions] attribute [LegacyNullToEmptyString] DOMString value;\n  attribute object? valueAsDate;\n  attribute unrestricted double valueAsNumber;\n  [CEReactions, ReflectSetter] attribute unsigned long width;\n\n  undefined stepUp(optional long n = 1);\n  undefined stepDown(optional long n = 1);\n\n  readonly attribute boolean willValidate;\n  readonly attribute ValidityState validity;\n  readonly attribute DOMString validationMessage;\n  boolean checkValidity();\n  boolean reportValidity();\n  undefined setCustomValidity(DOMString error);\n\n  readonly attribute NodeList? labels;\n\n  undefined select();\n  attribute unsigned long? selectionStart;\n  attribute unsigned long? selectionEnd;\n  attribute DOMString? selectionDirection;\n  undefined setRangeText(DOMString replacement);\n  undefined setRangeText(DOMString replacement, unsigned long start, unsigned long end, optional SelectionMode selectionMode = \"preserve\");\n  undefined setSelectionRange(unsigned long start, unsigned long end, optional DOMString direction);\n\n  undefined showPicker();\n\n  // also has obsolete members\n};",
+        "fragment": "[Exposed=Window]\ninterface HTMLInputElement : HTMLElement {\n  [HTMLConstructor] constructor();\n\n  [CEReactions, Reflect] attribute DOMString accept;\n  [CEReactions, Reflect] attribute boolean alpha;\n  [CEReactions, Reflect] attribute DOMString alt;\n  [CEReactions, ReflectSetter] attribute DOMString autocomplete;\n  [CEReactions, Reflect=\"checked\"] attribute boolean defaultChecked;\n  attribute boolean checked;\n  [CEReactions] attribute DOMString colorSpace;\n  [CEReactions, Reflect] attribute DOMString dirName;\n  [CEReactions, Reflect] attribute boolean disabled;\n  readonly attribute HTMLFormElement? form;\n  attribute FileList? files;\n  [CEReactions, ReflectSetter] attribute USVString formAction;\n  [CEReactions] attribute DOMString formEnctype;\n  [CEReactions] attribute DOMString formMethod;\n  [CEReactions, Reflect] attribute boolean formNoValidate;\n  [CEReactions, Reflect] attribute DOMString formTarget;\n  [CEReactions, ReflectSetter] attribute unsigned long height;\n  attribute boolean indeterminate;\n  readonly attribute HTMLDataListElement? list;\n  [CEReactions, Reflect] attribute DOMString max;\n  [CEReactions, ReflectNonNegative] attribute long maxLength;\n  [CEReactions, Reflect] attribute DOMString min;\n  [CEReactions, ReflectNonNegative] attribute long minLength;\n  [CEReactions, Reflect] attribute boolean multiple;\n  [CEReactions, Reflect] attribute DOMString name;\n  [CEReactions, Reflect] attribute DOMString pattern;\n  [CEReactions, Reflect] attribute DOMString placeholder;\n  [CEReactions, Reflect] attribute boolean readOnly;\n  [CEReactions, Reflect] attribute boolean required;\n  [CEReactions, Reflect] attribute unsigned long size;\n  [CEReactions, ReflectURL] attribute USVString src;\n  [CEReactions, Reflect] attribute DOMString step;\n  [CEReactions, Reflect] attribute boolean switch;\n  [CEReactions] attribute DOMString type;\n  [CEReactions, Reflect=\"value\"] attribute DOMString defaultValue;\n  [CEReactions] attribute [LegacyNullToEmptyString] DOMString value;\n  attribute object? valueAsDate;\n  attribute unrestricted double valueAsNumber;\n  [CEReactions, ReflectSetter] attribute unsigned long width;\n\n  undefined stepUp(optional long n = 1);\n  undefined stepDown(optional long n = 1);\n\n  readonly attribute boolean willValidate;\n  readonly attribute ValidityState validity;\n  readonly attribute DOMString validationMessage;\n  boolean checkValidity();\n  boolean reportValidity();\n  undefined setCustomValidity(DOMString error);\n\n  readonly attribute NodeList? labels;\n\n  undefined select();\n  attribute unsigned long? selectionStart;\n  attribute unsigned long? selectionEnd;\n  attribute DOMString? selectionDirection;\n  undefined setRangeText(DOMString replacement);\n  undefined setRangeText(DOMString replacement, unsigned long start, unsigned long end, optional SelectionMode selectionMode = \"preserve\");\n  undefined setSelectionRange(unsigned long start, unsigned long end, optional DOMString direction);\n\n  undefined showPicker();\n\n  // also has obsolete members\n};",
         "type": "interface",
         "name": "HTMLInputElement",
         "inheritance": "HTMLElement",
@@ -12109,6 +12109,35 @@
             "special": "",
             "readonly": false,
             "href": "https://html.spec.whatwg.org/multipage/input.html#dom-input-step"
+          },
+          {
+            "type": "attribute",
+            "name": "switch",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "boolean"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "Reflect",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://html.spec.whatwg.org/multipage/input.html#dom-input-switch"
           },
           {
             "type": "attribute",

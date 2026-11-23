@@ -2492,26 +2492,11 @@ internal sealed partial class IdlModel
 
     /// <summary>
     /// The changes of the WebMCP specification (https://webmachinelearning.github.io/webmcp/) that the IDL of webref does not
-    /// have yet, and that the web-platform-tests of webmcp test (as Chromium implements them):
+    /// have, and that the web-platform-tests of webmcp test (as Chromium implements them):
     /// <code>
     /// partial dictionary ModelContextTool { object outputSchema; };  // webmachinelearning/webmcp#254 (merged)
     ///
-    /// // webmachinelearning/webmcp#348 (merged): the RegisteredTool dictionary becomes the Tool interface
-    /// [Exposed=Window, SecureContext]
-    /// interface Tool {
-    ///   readonly attribute DOMString name;
-    ///   readonly attribute DOMString title;
-    ///   readonly attribute DOMString description;
-    ///   readonly attribute object? inputSchema;
-    ///   readonly attribute object? outputSchema;
-    ///   readonly attribute WindowProxy? source;
-    ///   readonly attribute USVString origin;
-    ///   readonly attribute object? annotations;
-    /// };
     /// partial interface ModelContext {
-    ///   Promise&lt;sequence&lt;Tool&gt;&gt; getTools(optional ModelContextGetToolOptions options = {});
-    ///   Promise&lt;DOMString&gt; executeTool(Tool tool, optional object inputObject, optional ModelContextExecuteToolOptions options = {});
-    ///
     ///   // webmachinelearning/webmcp#373
     ///   readonly attribute boolean toolsReady;
     ///   undefined waitForToolsUntil(Promise&lt;any&gt; promise);
@@ -2520,10 +2505,9 @@ internal sealed partial class IdlModel
     /// </summary>
     private static void AddWebMcpPullRequests(IdlModel model)
     {
-        if (!model.Definitions.TryGetValue("ModelContext", out var modelContext) || model.Definitions.ContainsKey("Tool"))
+        if (!model.Definitions.TryGetValue("ModelContext", out var modelContext))
             return;
 
-        const string ToolHref = "https://webmachinelearning.github.io/webmcp/#tool";
         const string ToolsReadyHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/373.html#dom-modelcontext-toolsready";
         const string WaitForToolsUntilHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/373.html#dom-modelcontext-waitfortoolsuntil";
         var source = modelContext.Source;
@@ -2540,72 +2524,35 @@ internal sealed partial class IdlModel
             });
         }
 
-        List<(string Name, IdlType Type)> attributes =
-        [
-            ("name", new IdlType { Name = "DOMString" }),
-            ("title", new IdlType { Name = "DOMString" }),
-            ("description", new IdlType { Name = "DOMString" }),
-            ("inputSchema", new IdlType { Name = "object", Nullable = true }),
-            ("outputSchema", new IdlType { Name = "object", Nullable = true }),
-            ("source", new IdlType { Name = "WindowProxy", Nullable = true }),
-            ("origin", new IdlType { Name = "USVString" }),
-            ("annotations", new IdlType { Name = "object", Nullable = true }),
-        ];
-        model.Definitions["Tool"] = new IdlDefinition
+        if (!modelContext.Members.Exists(m => m.Name == "toolsReady"))
         {
-            Name = "Tool",
-            Kind = IdlDefinitionKind.Interface,
-            Members = attributes.ConvertAll(attribute => new IdlMember
+            modelContext.Members.Add(new IdlMember
             {
                 Kind = IdlMemberKind.Attribute,
-                Name = attribute.Name,
-                Type = attribute.Type,
+                Name = "toolsReady",
+                Type = new IdlType { Name = "boolean" },
                 Readonly = true,
-                Href = "https://webmachinelearning.github.io/webmcp/#dom-tool-" + attribute.Name.ToLowerInvariant(),
                 Source = source,
-                DeclaringDefinition = "Tool",
-            }),
-            ExtAttrs = [new IdlExtendedAttribute { Name = "Exposed", Value = "Window" }, new IdlExtendedAttribute { Name = "SecureContext" }],
-            Href = ToolHref,
-            Source = source,
-            SpecUrl = modelContext.SpecUrl,
-        };
-        model.Definitions.Remove("RegisteredTool");
-
-        foreach (var member in modelContext.Members)
-        {
-            if (member.Name == "getTools" && member.Type is { Subtypes: [{ Subtypes: [{ Name: "RegisteredTool" } toolType] }] })
-            {
-                toolType.Name = "Tool";
-            }
-            else if (member.Name == "executeTool" && member.Arguments is [{ Type: { Name: "RegisteredTool" } toolType2 }, ..])
-            {
-                toolType2.Name = "Tool";
-            }
+                DeclaringDefinition = modelContext.Name,
+                Href = ToolsReadyHref,
+                ExperimentalApi = "WebMcpToolReadiness",
+            });
         }
 
-        modelContext.Members.Add(new IdlMember
+        if (!modelContext.Members.Exists(m => m.Name == "waitForToolsUntil"))
         {
-            Kind = IdlMemberKind.Attribute,
-            Name = "toolsReady",
-            Type = new IdlType { Name = "boolean" },
-            Readonly = true,
-            Source = source,
-            DeclaringDefinition = modelContext.Name,
-            Href = ToolsReadyHref,
-            ExperimentalApi = "WebMcpToolReadiness",
-        });
-        modelContext.Members.Add(new IdlMember
-        {
-            Kind = IdlMemberKind.Operation,
-            Name = "waitForToolsUntil",
-            Type = new IdlType { Name = "undefined" },
-            Arguments = [new IdlArgument { Name = "promise", Type = new IdlType { Generic = "Promise", Subtypes = [new IdlType { Name = "any" }] } }],
-            Source = source,
-            DeclaringDefinition = modelContext.Name,
-            Href = WaitForToolsUntilHref,
-            ExperimentalApi = "WebMcpToolReadiness",
-        });
+            modelContext.Members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Operation,
+                Name = "waitForToolsUntil",
+                Type = new IdlType { Name = "undefined" },
+                Arguments = [new IdlArgument { Name = "promise", Type = new IdlType { Generic = "Promise", Subtypes = [new IdlType { Name = "any" }] } }],
+                Source = source,
+                DeclaringDefinition = modelContext.Name,
+                Href = WaitForToolsUntilHref,
+                ExperimentalApi = "WebMcpToolReadiness",
+            });
+        }
     }
 
     private static IdlDefinition? ParseDefinition(JsonElement element)

@@ -33,14 +33,14 @@
     },
     "fonts": {
       "pin": [
-        "google/fonts@cc39c4c2c304bc368c9b7c311ea2bcc6013299fe",
+        "google/fonts@06bfe0d62a98375cb09c942fa18e68bd32cff057",
         "ofl/notosanskr",
         "ofl/notosanslao",
         "ofl/notosansmyanmar",
         "ofl/notosansthai",
         "ofl/notoseriftibetan"
       ],
-      "snapshot": "2282d3b738a57b6a89fcacb8dd7525586b5ab08a"
+      "snapshot": "b227fa7d5f4034bb28ea1cce0b031d9b3d0e5b85"
     },
     "html5lib-tests": {
       "pin": [

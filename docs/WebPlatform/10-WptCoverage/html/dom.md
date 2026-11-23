@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of html/dom, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 213 | 218 | 0 | 98% |
+| [Stable](#stable-tests) | 214 | 218 | 0 | 98% |
 | [Tentative](#tentative-tests) | 12 | 24 | 0 | 50% |
 | [Reftests](#reftests) | 127 | 127 | 0 | 100% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **356** | **373** | **0** | **95%** |
+| **All** | **357** | **373** | **0** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 5
-- **NOT IMPLEMENTED**: 12
+- **NOT IMPLEMENTED**: 11
 - **REQUIRES**: 1
   - `layout`: 1
 
@@ -165,7 +165,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`idlharness.https.html`](https://wpt.fyi/results/html/dom/idlharness.https.html) | Fail | 6,109 / 6,131 | NOT IMPLEMENTED | `NotRestoredReasons` |
 | [`reflection-embedded.html`](https://wpt.fyi/results/html/dom/reflection-embedded.html) | Pass | 9,429 / 9,429 |  |  |
 | [`reflection-forms-weekmonth.html`](https://wpt.fyi/results/html/dom/reflection-forms-weekmonth.html) | Pass | 1,618 / 1,618 |  |  |
-| [`reflection-forms.html`](https://wpt.fyi/results/html/dom/reflection-forms.html) | Fail | 8,818 / 8,856 | NOT IMPLEMENTED | 38 of 8856 subtests: the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, merged in the HTML Standard in November 2026): the content attribute is rendered (a track and a thumb), but the IDL attribute is not in the IDL of webref yet, so `input.switch = true` only sets an expando property and the tests that check the support of the switch with it fail |
+| [`reflection-forms.html`](https://wpt.fyi/results/html/dom/reflection-forms.html) | Pass | 8,856 / 8,856 |  |  |
 | [`reflection-grouping.html`](https://wpt.fyi/results/html/dom/reflection-grouping.html) | Pass | 5,904 / 5,904 |  |  |
 | [`reflection-metadata.html`](https://wpt.fyi/results/html/dom/reflection-metadata.html) | Pass | 3,344 / 3,344 |  |  |
 | [`reflection-misc.html`](https://wpt.fyi/results/html/dom/reflection-misc.html) | Pass | 5,345 / 5,345 |  |  |

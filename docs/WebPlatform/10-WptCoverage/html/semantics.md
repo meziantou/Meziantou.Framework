@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,132 | 2,223 | 30 | 97% |
+| [Stable](#stable-tests) | 2,134 | 2,223 | 30 | 97% |
 | [Tentative](#tentative-tests) | 62 | 228 | 35 | 32% |
 | [Reftests](#reftests) | 331 | 436 | 69 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,666** | **3,030** | **136** | **92%** |
+| **All** | **2,668** | **3,030** | **136** | **92%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 57
-- **NOT IMPLEMENTED**: 302
+- **NOT IMPLEMENTED**: 300
 - **REQUIRES**: 2
   - `layout`: 1
   - `media`: 1
@@ -1086,9 +1086,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/the-input-element/input-type-button.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-button.html) | Pass | 5 / 5 |  |  |
 | [`forms/the-input-element/input-type-change-submit.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-change-submit.html) | Pass | 20 / 20 |  |  |
 | [`forms/the-input-element/input-type-change-value.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-change-value.html) | Pass | 2 / 2 |  |  |
-| [`forms/the-input-element/input-type-checkbox-switch-activation.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch-activation.window.js) | Fail | 0 / 9 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, merged in the HTML Standard in November 2026): the content attribute is rendered (a track and a thumb), but the IDL attribute is not in the IDL of webref yet, so `input.switch = true` only sets an expando property and the tests that check the support of the switch with it fail |
-| [`forms/the-input-element/input-type-checkbox-switch-drag.optional.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch-drag.optional.window.js) | Fail | 0 / 11 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, merged in the HTML Standard in November 2026): the content attribute is rendered (a track and a thumb), but the IDL attribute is not in the IDL of webref yet, so `input.switch = true` only sets an expando property and the tests that check the support of the switch with it fail; the optional tests also drag the thumb of the switch, which does not toggle it |
-| [`forms/the-input-element/input-type-checkbox-switch.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch.window.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, merged in the HTML Standard in November 2026): the content attribute is rendered (a track and a thumb), but the IDL attribute is not in the IDL of webref yet, so `input.switch = true` only sets an expando property and the tests that check the support of the switch with it fail |
+| [`forms/the-input-element/input-type-checkbox-switch-activation.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch-activation.window.js) | Pass | 9 / 9 |  |  |
+| [`forms/the-input-element/input-type-checkbox-switch-drag.optional.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch-drag.optional.window.js) | Fail | 6 / 11 | NOT IMPLEMENTED | dragging the thumb of a switch (`<input type=checkbox switch>`, https://github.com/whatwg/html/pull/9546) to the other end of its track does not toggle it: only the drags that end like a click (without reaching the other end) are handled |
+| [`forms/the-input-element/input-type-checkbox-switch.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch.window.js) | Pass | 4 / 4 |  |  |
 | [`forms/the-input-element/input-type-checkbox.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox.html) | Pass | 7 / 7 |  |  |
 | [`forms/the-input-element/input-untrusted-key-event.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-untrusted-key-event.html) | Pass | 44 / 44 |  |  |
 | [`forms/the-input-element/input-validationmessage.html`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-validationmessage.html) | Pass | 1 / 1 |  |  |
@@ -2183,7 +2183,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`selectors/pseudo-classes/indeterminate-radio.html`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/indeterminate-radio.html) | Pass | 1 / 1 |  |  |
 | [`selectors/pseudo-classes/indeterminate-type-change.html`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/indeterminate-type-change.html) | Pass | 1 / 1 |  |  |
 | [`selectors/pseudo-classes/indeterminate.html`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/indeterminate.html) | Pass | 6 / 6 |  |  |
-| [`selectors/pseudo-classes/input-checkbox-switch.window.js`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/input-checkbox-switch.window.js) | Fail | 0 / 6 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, merged in the HTML Standard in November 2026): the content attribute is rendered (a track and a thumb), but the IDL attribute is not in the IDL of webref yet, so `input.switch = true` only sets an expando property and the tests that check the support of the switch with it fail; a switch also matches `:indeterminate` when its `indeterminate` IDL attribute is true |
+| [`selectors/pseudo-classes/input-checkbox-switch.window.js`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/input-checkbox-switch.window.js) | Fail | 1 / 6 | NOT IMPLEMENTED | a switch (`<input type=checkbox switch>`, https://github.com/whatwg/html/pull/9546) matches `:indeterminate` (and its parent `:has(:indeterminate)`) when its `indeterminate` IDL attribute is true |
 | [`selectors/pseudo-classes/inrange-outofrange-time-reversed.html`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/inrange-outofrange-time-reversed.html) | Pass | 4 / 4 |  |  |
 | [`selectors/pseudo-classes/inrange-outofrange-type-change.html`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/inrange-outofrange-type-change.html) | Pass | 2 / 2 |  |  |
 | [`selectors/pseudo-classes/inrange-outofrange.html`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/inrange-outofrange.html) | Pass | 6 / 6 |  |  |

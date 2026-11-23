@@ -14,16 +14,12 @@
       },
       "functions": {
         "Window": [
-          "MediaStreamTrack",
-          "OverconstrainedError",
           "MediaStreamTrackAudioStats",
           "MediaStreamTrackVideoStats",
           "MediaStream",
           "MediaStreamTrackEvent"
         ],
         "DedicatedWorker": [
-          "MediaStreamTrack",
-          "OverconstrainedError",
           "MediaStreamTrackAudioStats",
           "MediaStreamTrackVideoStats",
           "MediaStream",
@@ -1033,38 +1029,6 @@
       ],
       "MediaStreamTrack": [
         {
-          "fragment": "[Exposed=(Window,DedicatedWorker), Transferable]\npartial interface MediaStreamTrack {\n};",
-          "type": "interface",
-          "name": "MediaStreamTrack",
-          "inheritance": null,
-          "members": [],
-          "extAttrs": [
-            {
-              "type": "extended-attribute",
-              "name": "Exposed",
-              "rhs": {
-                "type": "identifier-list",
-                "value": [
-                  {
-                    "value": "Window"
-                  },
-                  {
-                    "value": "DedicatedWorker"
-                  }
-                ]
-              },
-              "arguments": []
-            },
-            {
-              "type": "extended-attribute",
-              "name": "Transferable",
-              "rhs": null,
-              "arguments": []
-            }
-          ],
-          "partial": true
-        },
-        {
           "fragment": "partial interface MediaStreamTrack {\n  [SameObject] readonly attribute\n      (MediaStreamTrackAudioStats or MediaStreamTrackVideoStats)? stats;\n};",
           "type": "interface",
           "name": "MediaStreamTrack",
@@ -1138,34 +1102,6 @@
             }
           ],
           "extAttrs": [],
-          "partial": true
-        }
-      ],
-      "OverconstrainedError": [
-        {
-          "fragment": "[Exposed=(Window,DedicatedWorker)]\npartial interface OverconstrainedError {\n};",
-          "type": "interface",
-          "name": "OverconstrainedError",
-          "inheritance": null,
-          "members": [],
-          "extAttrs": [
-            {
-              "type": "extended-attribute",
-              "name": "Exposed",
-              "rhs": {
-                "type": "identifier-list",
-                "value": [
-                  {
-                    "value": "Window"
-                  },
-                  {
-                    "value": "DedicatedWorker"
-                  }
-                ]
-              },
-              "arguments": []
-            }
-          ],
           "partial": true
         }
       ],
@@ -2202,8 +2138,6 @@
     "globals": {},
     "exposed": {
       "Window": [
-        "MediaStreamTrack",
-        "OverconstrainedError",
         "MediaStreamTrackAudioStats",
         "MediaStreamTrackVideoStats",
         "MediaStream",
@@ -2213,8 +2147,6 @@
         "HTMLUserMediaElement"
       ],
       "DedicatedWorker": [
-        "MediaStreamTrack",
-        "OverconstrainedError",
         "MediaStreamTrackAudioStats",
         "MediaStreamTrackVideoStats",
         "MediaStream",
@@ -2233,7 +2165,6 @@
         "MediaStreamTrackVideoStats",
         "EventHandler"
       ],
-      "OverconstrainedError": [],
       "MediaStreamTrackAudioStats": [
         "DOMHighResTimeStamp"
       ],
@@ -2290,7 +2221,6 @@
       "MediaDevices",
       "MediaStreamConstraints",
       "MediaStreamTrack",
-      "OverconstrainedError",
       "DOMHighResTimeStamp",
       "MediaTrackSupportedConstraints",
       "MediaTrackCapabilities",

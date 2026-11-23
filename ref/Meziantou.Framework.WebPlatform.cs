@@ -1602,7 +1602,6 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string TextAlignLast { get => throw null; set { } }
         public string TextAnchor { get => throw null; set { } }
         public string TextAutospace { get => throw null; set { } }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0013", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
         public string TextAutospaceSize { get => throw null; set { } }
         public string TextBox { get => throw null; set { } }
         public string TextBoxEdge { get => throw null; set { } }
@@ -7815,6 +7814,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint Size { get => throw null; set { } }
         public string Src { get => throw null; set { } }
         public string Step { get => throw null; set { } }
+        public bool Switch { get => throw null; set { } }
         public string Type { get => throw null; set { } }
         public string UseMap { get => throw null; set { } }
         public string ValidationMessage { get => throw null; }

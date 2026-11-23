@@ -345,38 +345,38 @@
       "values": [
         {
           "name": "margin-box",
-          "prose": "The margin-box value defines the shape enclosed by the outside margin edge. The corner radii of this shape are determined by the corresponding border-radius and margin values. If the ratio of border-radius/margin is 1 or more, or margin is negative or zero, then the margin box corner radius is max(border-radius + margin, 0). The margin box’s corners are outset-adjusted given the element’s border box, border-radius, and the margin.",
+          "prose": "Refers to the margin box, inset from the border box by the negated used margin on each side.",
           "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-margin-box",
           "type": "value",
           "value": "margin-box"
         },
         {
           "name": "border-box",
-          "prose": "The border-box value defines the shape enclosed by the outside border edge. This shape follows all of the normal border radius shaping rules for the outside of the border.",
+          "prose": "Refers to the border box, with zero inset on each side (forming the element’s outer contour).",
           "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-border-box",
           "type": "value",
           "value": "border-box"
         },
         {
+          "name": "half-border-box",
+          "prose": "Refers to the box halfway between the border box and the padding box, inset from the border box by half of the used border width on each side.",
+          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-half-border-box",
+          "type": "value",
+          "value": "half-border-box"
+        },
+        {
           "name": "padding-box",
-          "prose": "The padding-box value defines the shape enclosed by the outside padding edge. This shape follows all of the normal border radius shaping rules for the inside of the border.",
+          "prose": "Refers to the padding box, inset from the border box by the used border width on each side (forming the element’s inner contour).",
           "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-padding-box",
           "type": "value",
           "value": "padding-box"
         },
         {
           "name": "content-box",
-          "prose": "The content-box value defines the shape enclosed by the outside content edge. Each corner radius of this box is the larger of 0 or border-radius - border-width - padding.",
+          "prose": "Refers to the content box, inset from the border box by the sum of the used border width and padding on each side.",
           "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-content-box",
           "type": "value",
           "value": "content-box"
-        },
-        {
-          "name": "half-border-box",
-          "prose": "The half-border-box value defines the shape enclosed by a box that is in the middle between the padding-box and the border-box.",
-          "href": "https://drafts.csswg.org/css-shapes-1/#valdef-shape-box-half-border-box",
-          "type": "value",
-          "value": "half-border-box"
         }
       ]
     }

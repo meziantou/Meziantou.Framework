@@ -3,7 +3,7 @@
     "kind": "github-files",
     "repo": "whatwg/encoding",
     "ref": "main",
-    "commit": "be17ac5c49881336538acfc7b40dba3c8009144b",
+    "commit": "7d2e3e08e11f57ba1b080390b490d53648c6f69c",
     "files": {
       "encodings.json": "078212b3697f60b81225b6671bd9da2604497abff0aa8e96e4d46605c02ac9e7",
       "indexes.json": "b7c8961095f0b4cae8f4a16a5011e7c84047a60c1277e28ee8df9e56074ee509"
@@ -14,7 +14,7 @@
     "urls": {
       "entities.json": "https://html.spec.whatwg.org/entities.json"
     },
-    "downloaded": "2026-11-16",
+    "downloaded": "2026-11-23",
     "files": {
       "entities.json": "d741d877ac77c4194c4ad526b5b4a19aef8dfe411ab840a466891cdbb9f362e6"
     }
@@ -23,7 +23,7 @@
     "kind": "github-files",
     "repo": "w3c/webref",
     "ref": "curated",
-    "commit": "19562a741e825925d47c70bd9d038100a2baa9b8",
+    "commit": "6e20685158b7c763617661990954b2585dd2d2d7",
     "files": {
       "ed/css/CSS.json": "67e01f90f2d14596733db891416233204f3adf454d4ddc99aba27ac37b1bb70c",
       "ed/css/SVG.json": "6a46fbaec6a2f8d145dc683359a3bf632558dda09de816e407461bcea640f0f1",
@@ -51,7 +51,7 @@
       "ed/css/css-conditional-5.json": "d35cd38a73fd1545480ac3a099dd3a0c1995587d5b56c18ac68bae29dd67bf7f",
       "ed/css/css-conditional.json": "a1275bbf8a454327859c2089e3cb6bdc3aa70f978ea94f66c17c125a12f19a1e",
       "ed/css/css-contain.json": "9015b6f15827a655d2a5cfe8233a42c511851cf1bab45d4209d52166a8521442",
-      "ed/css/css-content.json": "2b47364a194fbe867c3f411144e5dbec00472bdc8f932ff302846360aa8a5512",
+      "ed/css/css-content.json": "b77151a783b6eff43ec815a96153693f2cdbffcf3d0af5b4047e61e113a5515c",
       "ed/css/css-counter-styles.json": "876955361e5cc495019be3a793350ba68d5f0c191615f5a3c2651604f1016a34",
       "ed/css/css-display.json": "280b55558c923f6597ca565a40577648b40b5c05d744658576739315cc559ce0",
       "ed/css/css-easing.json": "dd64a5920d89a0c5431a93fbf1371af2bd51cb30376a2a8085428c34b8933117",
@@ -67,7 +67,7 @@
       "ed/css/css-gcpm.json": "c25aca281ef45a3d6f28e52550847ec9bb73f456abfa1b1585950b474ff34036",
       "ed/css/css-grid-3.json": "999ca5aeaf54c95f2893314fc452b79992fdad7e4fbd84476d36b99b09a35af8",
       "ed/css/css-grid.json": "70cd3bfa4418ddf3fe4e1c612454ae039fc0ca1500e152598d5244cfcc6b03e3",
-      "ed/css/css-image-animation.json": "13dbea3235f1f2f013593fece5aa742a6b1e867eeb7fc4afba8ad35b55bdea65",
+      "ed/css/css-image-animation.json": "161bbdeeb1ae44119b98aa72d9c62faaf0391df9d9dc66c27c77e86dc36a6b45",
       "ed/css/css-images-4.json": "3f9fcea4ac0eaf3b55879588f7dddf6541587a1b1d71e91ea7adbdaef568abe0",
       "ed/css/css-images-5.json": "8818d452480b2bbd0fa9a1bb4888542ea1be633a6a07eb34650936c51ec18d06",
       "ed/css/css-images.json": "5d975389520f074319c9cf94a9d802e96c69effeb5e4c22c66ae8f3b7e8c5a6a",
@@ -105,14 +105,14 @@
       "ed/css/css-scrollbars.json": "dfc31995b0f38d90929101bc595af3b63c4d4f75c4a71f784ba25b7b32a27d21",
       "ed/css/css-shadow.json": "c8af4c73c338b2c6a0503bfc021b4d68068e9d2b2979d429a7a10843986dc6d9",
       "ed/css/css-shapes-2.json": "0fb6d3f5979cdc77e4cc2588ebd63a281052dae941460863127323c785645b44",
-      "ed/css/css-shapes.json": "7c63b3bc9fee148866baf50f18b065e391ef50cd0a8f6dbaafcb21ead8ace803",
+      "ed/css/css-shapes.json": "64681ac080f579c6989ed23226d0bbadc048791851ff4d7b04693ab0daa737af",
       "ed/css/css-size-adjust.json": "3a995512cefc4df3a3e162e8a302f31fe99d4cbeb3ef9a3482c9f72f51686374",
       "ed/css/css-sizing-4.json": "b4e889140beabcea7ac48a3078f0e30fb33e6659ec926f8fd554a32d33a7a548",
       "ed/css/css-sizing.json": "52ad4ce0c10de6373d33a4b0fd6173bf8db4e66a6c8476f07fb25f5ed880e179",
       "ed/css/css-speech.json": "158aab8dfb7371dc8c53bbf2c93d37ec374dfb81522a9315a5e14f59bd824da0",
       "ed/css/css-syntax.json": "3d20ec368486b938ef114e3eba783c8896ba8cc42cf319439c9f3b08419bf146",
       "ed/css/css-tables.json": "15e12feb1f8dc0a065de6f219e8e9f870ea19a6b907a1788e351e5faa15a992b",
-      "ed/css/css-text-4.json": "57ac1ac3f68e75724944e3356c3508e6833684a53a72aa51488a4420f4b5a7b8",
+      "ed/css/css-text-4.json": "aad535d02405f9a3a219218fdd98ef6c56924cfbf69eb3dcd4c47400e6f426a3",
       "ed/css/css-text-5.json": "15dd1083066278699d4b7efee9d09c58a73a0f4742b7c34883e38cfe5ff41037",
       "ed/css/css-text-decor-4.json": "6982785ee2bd98609d3d3b7d35d1d461d14e704ad56111f327ddbb37c7670952",
       "ed/css/css-text-decor.json": "4c8ea99f9a8ee79a1e0c7507ecbe952a18ff21df7dc0370911fb470874be4ce0",
@@ -148,10 +148,10 @@
       "ed/css/webxr-dom-overlays.json": "52f6b358b5c0c0117ae83b404856daa3cc73211adaab5199f58ccfab60741245",
       "ed/css/window-management.json": "06c5eb9b3c34159b37ed84e56187121fc405b26a4836f10eefa64d80d1201259",
       "ed/elements/SVG11.json": "58646b7bd6086cb8f83af6fbf1b6d2960e6f717179cd4166bbe8851925ef39b5",
-      "ed/elements/SVG2.json": "8aa51573922913851e6537381e5ff94fe6c64f8a0e116ea8c573270e3cf7260c",
+      "ed/elements/SVG2.json": "c166070010fcabfade38b2ff79e108f249a2d13e4e77fd11787f98957c7b546c",
       "ed/elements/css-masking-1.json": "3106227b4af6a1f5ff3133dce28832c0cceb8d5558c22102fa75c9a690763841",
       "ed/elements/epub-33.json": "c270a00b4815345fed2b0dd46fb447accf3829999b09125563cd5b8625233c45",
-      "ed/elements/epub-34.json": "8703ecaa8ea68acae26f35a7560a5d4c4b528148421227418237b768155d5a83",
+      "ed/elements/epub-34.json": "1c5c57faa6f3fde0f7dadb1c03b6258cd8ff30bcd03c82fbc0eac90b3a6558c6",
       "ed/elements/fenced-frame.json": "1926f0cdf389a726ef6b420b658504adc1529da6a03b9d97d9f9500d3cf3470e",
       "ed/elements/filter-effects-1.json": "1c7949b084899b996923a3d74ae9fe8c6e3f2c64c656742063cc9d05b410df49",
       "ed/elements/geolocation-element.json": "eb57a19655eb8f3952fbd853837ba0776efd7bd9e629fafde93d263feb5f5217",
@@ -324,7 +324,6 @@
       "ed/idl/font-metrics-api.idl": "79c8f00b2de85b333f5cd7de02837792b419da33085c5f9c190e5f609277924f",
       "ed/idl/fs.idl": "36ee295608506f633d790276116b2d00394fc8acc984e9c2b456049675fd6989",
       "ed/idl/fullscreen.idl": "ea3cd4ad840e732020e0ecc17dc470d5263dc9520633532239adfc38dc7033a1",
-      "ed/idl/gamepad-extensions.idl": "e7c61d2b50e2d68cd9108f5746c9ce298e2f2ef96fcaf0a98d95fdb5f835b0d7",
       "ed/idl/gamepad.idl": "755209cb89dea92047836abcafdacab69dd7fcbf50762ea6f1d3de020c873673",
       "ed/idl/generic-sensor.idl": "d8d25876199613075fcb478254be41a4c8950ee1c9b867e9a175f299f5abff0e",
       "ed/idl/geolocation-element.idl": "0f751a966b2b53a47d2a0bcc02265598a6dc7390f711282e8e229e49230d0359",
@@ -337,7 +336,7 @@
       "ed/idl/hid.idl": "022d63b204f69f9e66a788b4aa0362e142866396084dbf0c6faf882c9438dd64",
       "ed/idl/hr-time.idl": "39b6c910ab39758b49f6ea94c1896b4c76fe6975d49db84d68cb560e87ab328a",
       "ed/idl/html-media-capture.idl": "a3751d560063b52ce3f052c0cd621f1214dd3ba5fd2ad934e9c169dea8911fa3",
-      "ed/idl/html.idl": "936de2af54db9e2146fb283b108915e4f57b1eda5b37c9014429c51e70abd133",
+      "ed/idl/html.idl": "024e7a73f9055416cd43342eecce6cff16d5d2f02df7cd05f52e2b1e9b3118a1",
       "ed/idl/idle-detection.idl": "77fe92b1b8b93b5984e4d382a6db337ca3bbba0184a4c1cd4d57fa532d1716e5",
       "ed/idl/image-capture.idl": "a6e657df28145aa780be17fba5f8a71728187d75bcbb69078032b073b9f62d94",
       "ed/idl/image-resource.idl": "17baf4a202dc220ecb635136a468432ae9dbfd39879e38d840a5a5fa3215755b",
@@ -368,11 +367,11 @@
       "ed/idl/media-playback-quality.idl": "cfa7ee90536173a6e07dbf3ecd8c005e8d9d8e5c09635b07151b8f9847614299",
       "ed/idl/media-source.idl": "d7a77719bd7ce73df03db2cd84650375a97b7fcb34a46388d2864d2975a5b57d",
       "ed/idl/mediacapture-automation.idl": "abec94b5611aabb2347743eacd6242bf54c773f3d73074f2406e783ab2643479",
-      "ed/idl/mediacapture-extensions.idl": "3fd11923e01b2ab1e195189d85ba4c9524d6b0c7df3a884e7b8c01090b9cca20",
+      "ed/idl/mediacapture-extensions.idl": "c0004670411f87928b08484c05ec4b1af0749033b023f09744a02ce467973ab4",
       "ed/idl/mediacapture-fromelement.idl": "34d4bbe0bb0ce906c58e6ec2523b941c4244e74cfeec11b20513c63f888f7511",
       "ed/idl/mediacapture-handle-actions.idl": "bf8940ce56599f06a820c25e028b0a1ed53483210d748df479179b9fd4eca7b3",
       "ed/idl/mediacapture-region.idl": "77b2aae61a0818cb6501e8a734ac8b8e8149b8030764bc76d959b27b8711064a",
-      "ed/idl/mediacapture-streams.idl": "320ac8238ab71fa992896ee24c0a1dbdfa145e09bd9a0a6069f4a98ac1123fce",
+      "ed/idl/mediacapture-streams.idl": "8443d499fbedf70f5b1c0038069d654dc15ec3827d8ad06307eaedb984ee4c49",
       "ed/idl/mediacapture-surface-control.idl": "84e01856f5a92f95761c0bec9b59fd3d6f77a2ef69a71a9bc923cd9cd1daceba",
       "ed/idl/mediacapture-transform.idl": "ff4965370cb78168307788590b9c991414949dd3e024fa9398f920af0f5e510f",
       "ed/idl/mediacapture-viewport.idl": "f5daf48e65282765bfc26a35b8ddabe746874a60e6250bce19b09fe251c22c35",
@@ -409,7 +408,7 @@
       "ed/idl/prompt-api.idl": "9fb1c1a3c4585e43ce4a9071322cb1967b059963b5e41ff5d2d4239ecde77675",
       "ed/idl/proofreader-api.idl": "44044fe7c097597a3f1ea2f0df41535cf1b65a72f651c8bd513e411e2539e833",
       "ed/idl/proximity.idl": "f831f7b8ac99371d159a07922e168d005bfd6d98cf7b5a6b412d914dc4a58fe4",
-      "ed/idl/push-api.idl": "bfc8fa7fb8ee1bb76f34d6ba9c9ffe2794f13362fe1151f4d66549ed078b3076",
+      "ed/idl/push-api.idl": "c5aaf2ec25066a81d41f59f7a3fe8bf5061616e1ebfe05e9bc6cae4fd3f1b521",
       "ed/idl/raw-camera-access.idl": "46821427e1feda93d4562e66a11779868b323ffea5e003b3df6755dba2ce08a9",
       "ed/idl/real-world-meshing.idl": "a032406aee5199688a08c7195aeb23f9945b88e109d8d882c3a1fae15d7c53f6",
       "ed/idl/referrer-policy.idl": "7788b7cda2e634182f5b5ba9857c13ca1ebb0edea47a4ba50d095c42ef66070f",
@@ -485,9 +484,9 @@
       "ed/idl/webextensions.idl": "56f3c86324f1c3a013c52703a4fcb8333a8133071406415fb5b7be50d49332ae",
       "ed/idl/webgl1.idl": "df3e5627df3d91fb6f0ea52c67251c0778638864f2c32e7c0782b13068a02f65",
       "ed/idl/webgl2.idl": "26df44be182227591a719e50246fc5842854eb852d41263645810818abd18fcf",
-      "ed/idl/webgpu.idl": "fe97eadca7f7571c5ffcd4dbea434208584a5b795bb65a71d99bdd12e5551153",
+      "ed/idl/webgpu.idl": "6b2e44269d600420a8b1edcb8f446ea37b958c7fdb68b72edb5de54e19dd155d",
       "ed/idl/webidl.idl": "4ca946b52a70ff054c5b26f60f974b76b8440b7623611a94bb31f1e2cff35502",
-      "ed/idl/webmcp.idl": "454e6687d5f876aefe8760ebca4ca208e05f014b0d91bb59c588565250bdb4be",
+      "ed/idl/webmcp.idl": "9b0e03915eaeecd7d63eab3adccb04bc0acd3eff34432682e319f70d2f256fe9",
       "ed/idl/webmidi.idl": "8c49e3a904ec5fdabf54a13fb3420376e1e25caa2c27db389fa95e8d3a368ca3",
       "ed/idl/webnn.idl": "df1b24d86db1865506f821e0737d987119bacd48f0f908d0bd59925333b5bd49",
       "ed/idl/webrtc-encoded-transform.idl": "56d142d359220cef376282fed83aea6578cf91f1174aabaab8fb57b65603d0f6",
@@ -689,7 +688,7 @@
       "ed/idlparsed/hid.json": "1b87793819f48f90ef7f61277c08643981b7b8ccde6cb256830e4de1a4a58b83",
       "ed/idlparsed/hr-time-3.json": "63513c23dae3167704e5cb8096ea1b7636ad72a09f0a73524866c4206f2e947e",
       "ed/idlparsed/html-media-capture.json": "607e53a0799bdd257fd085e3d124be7e7fff758d7b4194c1d33315eae5173ddd",
-      "ed/idlparsed/html.json": "d70ec314e86a7baa2abecf9788c86b38fa5621bfb0909bd4eee1f0b9d1f3a60f",
+      "ed/idlparsed/html.json": "c324cee075ee6cfcc3da41efaa9780c09eb9a7c51d8512a1b3925346b03093a1",
       "ed/idlparsed/idle-detection.json": "a4d44d031b948bdee0345ce129b5b9473603eb92681e6502eab1c197bb468007",
       "ed/idlparsed/image-capture.json": "4ace87d084b6e2b13f036996e02445ca6c23cac0dda4e59fe621cf067d2a105a",
       "ed/idlparsed/image-resource.json": "c7f4590164eec1e304b7c28bf6cca9c487b14d4af7b743f485273392ceada2d3",
@@ -720,11 +719,11 @@
       "ed/idlparsed/media-playback-quality.json": "e4726460c0187f30fa7fbbc9de06b6e733c4d6fc96d0b8a0cc6a3bfe44e8864f",
       "ed/idlparsed/media-source-2.json": "67b5cab0e0966ea541c7821b3e0fb98ed784d79e3f3fbcc02fbf22616a5cf95a",
       "ed/idlparsed/mediacapture-automation.json": "d4414b3bf6cd9b5ef6405a651e4bc3bb28119963945d31ce323ea2e50721f444",
-      "ed/idlparsed/mediacapture-extensions.json": "032ba24c221899400785d126591a7072115e615708d62e1976e86e1c96d4f4fd",
+      "ed/idlparsed/mediacapture-extensions.json": "a5419f26086f3facdae625f98a87e396335ba3e5d447632852bd8a9cd60ca8d0",
       "ed/idlparsed/mediacapture-fromelement.json": "76d4ad915802db69a8f40bce34c8f45fad2409db19fedf8e67137b477b212406",
       "ed/idlparsed/mediacapture-handle-actions.json": "227b6a39a0f0c5eba98f9f17dc69c023a2fe1171c91a485559a0f1190626d15e",
       "ed/idlparsed/mediacapture-region.json": "c04ea2e3e8e598a1de76c52597b27f9d23642dbc6b3dd6479176abb381a1346c",
-      "ed/idlparsed/mediacapture-streams.json": "50b62041ec3f6f29776fcf736c8728e84b3c0ae9bfbb6da46c9b849d0b5393c3",
+      "ed/idlparsed/mediacapture-streams.json": "e7fc389348cd36be357a71c7b8058f413538ebf2115011417ca3367dcc8d4692",
       "ed/idlparsed/mediacapture-surface-control.json": "9d6659f92b790c54dc595a2e48427d9c25967063badf446f613682948b2ab7bb",
       "ed/idlparsed/mediacapture-transform.json": "0e2b2ebed1360b104b76219d88ed3a906b814eb8c8eb4bb21ac76276f4f58626",
       "ed/idlparsed/mediacapture-viewport.json": "1c898aac3ef42490729085d0b1a9a42dfa51bc3a619ad7a9ddf0750d608455d5",
@@ -761,7 +760,7 @@
       "ed/idlparsed/prompt-api.json": "9047e76be8e782912b31c842a07c2a85a1f4d5161ca36817b2712bdb7476b7f2",
       "ed/idlparsed/proofreader-api.json": "c519ae407c9d89a3ca70c963b13ed9510c7fba2275681a0ed013c0ce154eef01",
       "ed/idlparsed/proximity.json": "ffad9571fd8f4c97d68321b269f78a1b1e1f50d4b3db9bbf80353b298e437e0b",
-      "ed/idlparsed/push-api.json": "a6f636fc1819df427ab15b1e2c41a77acffa1ef282cf7d63a80af8170cde9ee6",
+      "ed/idlparsed/push-api.json": "cfc55c653b366e9d42e0e519bcd16678f49da9d849af654b10b0f22b600f5933",
       "ed/idlparsed/raw-camera-access.json": "e23ae52625f5beb5bef3ca11668764f1c3968d94d1ccf89dfa0a32e86926ece5",
       "ed/idlparsed/real-world-meshing.json": "473cff66ba994614a7eca7814c2222b3dda1cf1748d39c72387cb3ba2770b0a3",
       "ed/idlparsed/referrer-policy.json": "5661d90048739da61e715563c659b5d87c2a2e7b2dc5d346e796e401ccfc2112",
@@ -837,9 +836,9 @@
       "ed/idlparsed/webextensions.json": "381fa64e4768037d3642f7a5833368cc14ef9219f8900d988647660dd6a287bb",
       "ed/idlparsed/webgl1.json": "08cabb361f0f698339dcaff33c1866c1b076b095e5d3724c82e620ba5f30b12e",
       "ed/idlparsed/webgl2.json": "051e6ce15b30686762bb9c6dc9eb206ee9c5889f6605951a5b0dca1f00505424",
-      "ed/idlparsed/webgpu.json": "97dd71cb9a38ccbe96067d08580c8d77d3062ecf89d2767aa1766c1490be1cea",
+      "ed/idlparsed/webgpu.json": "cd43e389dea5d6d0eeb0422157097e8c673170e8a13d26b1a3682b0c11362870",
       "ed/idlparsed/webidl.json": "4912a9bb82cae9481aa6fb9645d398236612ac314befcc70603c188d03ecb7ef",
-      "ed/idlparsed/webmcp.json": "73f83e15ce4d635807c23765857f34a5b5ed1faf2676c9844a0fdd527816a313",
+      "ed/idlparsed/webmcp.json": "34603fc725794f07e4a18d7593d9d08f7543068f5b5546cf7ea82153b58da328",
       "ed/idlparsed/webmidi.json": "ccffda3acd3cd773bf1642abd51bacef61c7246eefade9ec68c898805343360a",
       "ed/idlparsed/webnn.json": "bac7e03dfc9b40a4380dbd4c9e72d0a048ef929397439b625f5ae3fb9eb65469",
       "ed/idlparsed/webrtc-encoded-transform.json": "5d8338de09a15e0a13f2be6bcb55f7d586c4ba76c7f7a9bc823b0fd859f26bfd",
@@ -876,7 +875,7 @@
     "urls": {
       "UnicodeData.txt": "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt"
     },
-    "downloaded": "2026-11-16",
+    "downloaded": "2026-11-23",
     "files": {
       "UnicodeData.txt": "0736451de439ae7baf1425136617da495e09ee5afbe6e394374db7009ea08950"
     }
@@ -898,9 +897,9 @@
     "kind": "github-files",
     "repo": "whatwg/html",
     "ref": "main",
-    "commit": "0793d3d8544eee95a862e6637130a8106c3d11ca",
+    "commit": "6eac2b50b1af183f30fa2760b0269a0410f58a91",
     "files": {
-      "source": "7fde2f1fad51bfa89356d953864d8661180e168bcf8b58685131033604f0b6a2"
+      "source": "34da99576e546e9594e7f7f0e62b797772d8950093ba6dcf9277de60a8580b3a"
     }
   },
   "css-parsing-tests": {
@@ -1739,7 +1738,7 @@
     "kind": "github-test-suite",
     "repo": "google/fonts",
     "ref": "main",
-    "commit": "cc39c4c2c304bc368c9b7c311ea2bcc6013299fe"
+    "commit": "06bfe0d62a98375cb09c942fa18e68bd32cff057"
   },
   "icu": {
     "kind": "github-files",

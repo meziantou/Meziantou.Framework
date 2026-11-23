@@ -39,7 +39,7 @@
         },
         {
           "name": "running",
-          "prose": "Like normal, the animation of animated images is run normally, as determined by the image format and the host language. However, animation timelines are scoped per element: among all images of a single element with an image-animation computed value of running, any animated images with the same absolute URL and the same image data must be rendered synchronized to the same timeline as a group, distinct from the timeline of images in other elements. If images are added to the element while the computed value is running, the timeline starts at the time of the least recent addition to the group. If the element is created or made visible after having previously been set to display: none, with images already added and with image-animation already set to running, the timeline starts when the element is included in the layout. If this property is switched to running from another value, the beginnig of this timeline is set so that the animation continues from the state that was displayed at the timem of the switch.",
+          "prose": "Like normal, the animation of animated images is run normally, as determined by the image format and the host language. However, animation timelines are scoped per element: among all images of a single element with an image-animation computed value of running, any animated images with the same absolute URL and the same image data must be rendered synchronized to the same timeline as a group, distinct from the timeline of images in other elements. If images are added to the element while the computed value is running, the timeline starts at the time of the least recent addition to the group. If the element is created or made visible after having previously been set to display: none, with images already added and with image-animation already set to running, the timeline starts when the element is included in the layout. If this property is switched to running from another value, the beginning of this timeline is set so that the animation continues from the state that was displayed at the time of the switch.",
           "href": "https://drafts.csswg.org/css-image-animation-1/#valdef-image-animation-running",
           "type": "value",
           "value": "running"
@@ -55,7 +55,7 @@
   "selectors": [
     {
       "name": ":animated-image",
-      "prose": "The :animated-image pseudo-class matches elements representing a declarative image where a animated image has been loaded. For the animated-image pseudo-class to match, the image must not only be in a format that is capable of animation, but must also be an actually animated image.",
+      "prose": "The :animated-image pseudo-class matches elements representing a declarative image where an animated image has been loaded. For the animated-image pseudo-class to match, the image must not only be in a format that is capable of animation, but must also be an actually animated image.",
       "href": "https://drafts.csswg.org/css-image-animation-1/#selectordef-animated-image",
       "value": ":animated-image"
     }

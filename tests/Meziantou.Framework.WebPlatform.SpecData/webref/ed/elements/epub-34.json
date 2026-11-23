@@ -33,6 +33,14 @@
       "href": "https://w3c.github.io/epub-specs/epub34/authoring/#dfn-encrypteddata"
     },
     {
+      "name": "CipherData",
+      "href": "https://w3c.github.io/epub-specs/epub34/authoring/#dfn-cipherdata"
+    },
+    {
+      "name": "CipherReference",
+      "href": "https://w3c.github.io/epub-specs/epub34/authoring/#dfn-cipherreference"
+    },
+    {
       "name": "Compression",
       "href": "https://w3c.github.io/epub-specs/epub34/authoring/#dfn-compression"
     },

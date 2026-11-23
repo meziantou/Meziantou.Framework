@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html/rendering, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 146 | 153 | 0 | 95% |
+| [Stable](#stable-tests) | 147 | 153 | 0 | 96% |
 | [Tentative](#tentative-tests) | 3 | 6 | 0 | 50% |
 | [Reftests](#reftests) | 326 | 346 | 0 | 94% |
 | [Crash tests](#crash-tests) | 24 | 24 | 0 | 100% |
-| **All** | **499** | **529** | **0** | **94%** |
+| **All** | **500** | **529** | **0** | **95%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 14
-- **NOT IMPLEMENTED**: 13
+- **NOT IMPLEMENTED**: 12
 - **OUT OF SCOPE**: 2
 
 ## Stable tests
@@ -170,7 +170,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`widgets/field-sizing-select-contain-size.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-select-contain-size.html) | Pass | 2 / 2 |  |  |
 | [`widgets/field-sizing-select.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-select.html) | Pass | 5 / 5 |  |  |
 | [`widgets/field-sizing-textarea.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-textarea.html) | Pass | 10 / 10 |  |  |
-| [`widgets/input-checkbox-switch.window.js`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-switch.window.js) | Fail | 0 / 4 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, merged in the HTML Standard in November 2026): the content attribute is rendered (a track and a thumb), but the IDL attribute is not in the IDL of webref yet, so `input.switch = true` only sets an expando property and the tests that check the support of the switch with it fail |
+| [`widgets/input-checkbox-switch.window.js`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-switch.window.js) | Pass | 4 / 4 |  |  |
 | [`widgets/input-date-no-resize-on-hover.html`](https://wpt.fyi/results/html/rendering/widgets/input-date-no-resize-on-hover.html) | Pass | 1 / 1 |  |  |
 | [`widgets/input-text-size.html`](https://wpt.fyi/results/html/rendering/widgets/input-text-size.html) | Pass | 5 / 5 |  |  |
 | [`widgets/placeholder-scroll.html`](https://wpt.fyi/results/html/rendering/widgets/placeholder-scroll.html) | Pass | 2 / 2 |  |  |

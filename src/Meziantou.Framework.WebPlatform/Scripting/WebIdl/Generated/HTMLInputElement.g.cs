@@ -81,6 +81,8 @@ internal static class Binding_HTMLInputElement<TAdapter, TValue> where TAdapter 
     private static void Set_src(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToUsvString(v); o.Src = x; }
     private static TValue Get_step(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.Step); }
     private static void Set_step(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToDomString(v); o.Step = x; }
+    private static TValue Get_switch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromBoolean(o.Switch); }
+    private static void Set_switch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToBoolean(v); o.Switch = x; }
     private static TValue Get_type(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.Type); }
     private static void Set_type(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToDomString(v); o.Type = x; }
     private static TValue Get_defaultValue(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.DefaultValue); }
@@ -225,6 +227,7 @@ internal static class Binding_HTMLInputElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "size", Get_size, Set_size);
         r.DefineAttribute(instanceTarget, "src", Get_src, Set_src);
         r.DefineAttribute(instanceTarget, "step", Get_step, Set_step);
+        r.DefineAttribute(instanceTarget, "switch", Get_switch, Set_switch);
         r.DefineAttribute(instanceTarget, "type", Get_type, Set_type);
         r.DefineAttribute(instanceTarget, "defaultValue", Get_defaultValue, Set_defaultValue);
         r.DefineAttribute(instanceTarget, "value", Get_value, Set_value);

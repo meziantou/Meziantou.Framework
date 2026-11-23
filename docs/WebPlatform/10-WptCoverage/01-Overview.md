@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,730 | 30,158 | 1,310 | 96% |
+| [Stable](#stable-tests) | 27,734 | 30,158 | 1,310 | 96% |
 | [Tentative](#tentative-tests) | 1,656 | 3,073 | 635 | 68% |
 | [Reftests](#reftests) | 28,800 | 29,687 | 139 | 97% |
 | [Crash tests](#crash-tests) | 2,122 | 2,144 | 13 | 99.5% |
-| **All** | **60,308** | **65,062** | **2,097** | **96%** |
+| **All** | **60,312** | **65,062** | **2,097** | **96%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 150
 - **TEST BUG**: 1,121
-- **NOT IMPLEMENTED**: 2,671
+- **NOT IMPLEMENTED**: 2,667
 - **REQUIRES**: 634
   - `hardware`: 445
   - `layout`: 22
@@ -243,15 +243,15 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/canvas`](html/canvas.md) | 3,150 | 3,181 | 0 | 99% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 69 | 75 | 0 | 92% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 115 | 115 | 0 | 100% |
-| [`html/dom`](html/dom.md) | 213 | 218 | 0 | 98% |
+| [`html/dom`](html/dom.md) | 214 | 218 | 0 | 98% |
 | [`html/editing`](html/editing.md) | 133 | 139 | 0 | 96% |
 | [`html/infrastructure`](html/infrastructure.md) | 68 | 69 | 0 | 99% |
 | [`html/interaction`](html/interaction.md) | 57 | 59 | 0 | 97% |
 | [`html/links`](html/links.md) | 6 | 6 | 0 | 100% |
 | [`html/meta`](html/meta.md) | 1 | 1 | 0 | 100% |
 | [`html/obsolete`](html/obsolete.md) | 15 | 15 | 0 | 100% |
-| [`html/rendering`](html/rendering.md) | 146 | 153 | 0 | 95% |
-| [`html/semantics`](html/semantics.md) | 2,132 | 2,223 | 30 | 97% |
+| [`html/rendering`](html/rendering.md) | 147 | 153 | 0 | 96% |
+| [`html/semantics`](html/semantics.md) | 2,134 | 2,223 | 30 | 97% |
 | [`html/syntax`](html/syntax.md) | 105 | 107 | 0 | 98% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 44 | 52 | 0 | 85% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,730** | **30,158** | **1,310** | **96%** |
+| **Total (341 sections)** | **27,734** | **30,158** | **1,310** | **96%** |
 
 ## Tentative tests
 

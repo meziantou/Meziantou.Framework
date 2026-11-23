@@ -12,13 +12,14 @@ internal sealed partial class FunctionCompiler
     private readonly ValType[] _locals;
     private readonly bool _isConstant;
     private readonly int _globalLimit;
-    private readonly List<ValType> _stack = [];
-    private readonly List<Control> _controls = [];
-    private readonly List<Instr> _code = [];
-    private readonly List<BranchTarget> _branchTables = [];
-    private readonly List<HandlerInfo> _handlers = [];
+    private readonly Buffers _buffers;
+    private readonly List<ValType> _stack;
+    private readonly List<Control> _controls;
+    private readonly List<Instr> _code;
+    private readonly List<BranchTarget> _branchTables;
+    private readonly List<HandlerInfo> _handlers;
     private readonly bool[] _localInitialized;
-    private readonly List<int> _initializedLocals = [];
+    private readonly List<int> _initializedLocals;
     private int _maxHeight;
 
     // The locals that hold the exceptions of the handlers of the legacy try instructions, after the locals of the function:
@@ -28,8 +29,8 @@ internal sealed partial class FunctionCompiler
 
     // The height of the operand stack before each instruction, and the number of operands it pops (the compiler to
     // .NET code maps the operands to locals)
-    private readonly List<int> _heights = [];
-    private readonly List<int> _pops = [];
+    private readonly List<int> _heights;
+    private readonly List<int> _pops;
     private int _instructionHeight;
     private int _minimumHeight;
 
@@ -41,6 +42,15 @@ internal sealed partial class FunctionCompiler
         _locals = locals;
         _isConstant = isConstant;
         _globalLimit = globalLimit;
+        _buffers = Buffers.Rent();
+        _stack = _buffers.Stack;
+        _controls = _buffers.Controls;
+        _code = _buffers.Code;
+        _branchTables = _buffers.BranchTables;
+        _handlers = _buffers.Handlers;
+        _initializedLocals = _buffers.InitializedLocals;
+        _heights = _buffers.Heights;
+        _pops = _buffers.Pops;
         _localInitialized = new bool[locals.Length];
         for (var i = 0; i < locals.Length; i++)
         {
@@ -113,9 +123,16 @@ internal sealed partial class FunctionCompiler
     public static CompiledCode CompileFunction(ModuleInfo module, ref WasmReader reader, DefinedType type, ValType[] locals)
     {
         var compiler = new FunctionCompiler(module, locals, type.Parameters.Length, isConstant: false, module.Globals.Count);
-        compiler.PushControl(ControlKind.Function, [], type.Results);
-        compiler.Compile(ref reader);
-        return compiler.CreateCode(type.Parameters.Length, type.Results);
+        try
+        {
+            compiler.PushControl(ControlKind.Function, [], type.Results);
+            compiler.Compile(ref reader);
+            return compiler.CreateCode(type.Parameters.Length, type.Results);
+        }
+        finally
+        {
+            compiler._buffers.Return();
+        }
     }
 
     /// <summary>Compiles a constant expression (https://webassembly.github.io/spec/core/valid/instructions.html#constant-expressions) whose type is <paramref name="type"/>.</summary>
@@ -126,9 +143,16 @@ internal sealed partial class FunctionCompiler
     public static CompiledCode CompileConstant(ModuleInfo module, ref WasmReader reader, ValType type, int globalLimit)
     {
         var compiler = new FunctionCompiler(module, [], 0, isConstant: true, globalLimit);
-        compiler.PushControl(ControlKind.Function, [], [type]);
-        compiler.Compile(ref reader);
-        return compiler.CreateCode(0, [type]);
+        try
+        {
+            compiler.PushControl(ControlKind.Function, [], [type]);
+            compiler.Compile(ref reader);
+            return compiler.CreateCode(0, [type]);
+        }
+        finally
+        {
+            compiler._buffers.Return();
+        }
     }
 
     private CompiledCode CreateCode(int parameterCount, ValType[] results) => new()
@@ -145,6 +169,71 @@ internal sealed partial class FunctionCompiler
     };
 
     private static WasmDecodeException Error(string message) => new(message);
+
+    /// <summary>
+    /// The lists of a compiler, which the next compiler of the thread reuses: the growth of the lists of each function is
+    /// most of the memory that the compilation of a module allocates otherwise.
+    /// </summary>
+    private sealed class Buffers
+    {
+        // The lists of a larger function are not kept, so that a thread does not keep the memory of its largest function (each
+        // list grows on its own: a br_table adds a branch target per label for one instruction)
+        private const int MaxRetainedCapacity = 16 * 1024;
+
+        [ThreadStatic]
+        private static Buffers? s_cached;
+
+        public List<ValType> Stack { get; } = [];
+
+        public List<Control> Controls { get; } = [];
+
+        public List<Instr> Code { get; } = [];
+
+        public List<BranchTarget> BranchTables { get; } = [];
+
+        public List<HandlerInfo> Handlers { get; } = [];
+
+        public List<int> InitializedLocals { get; } = [];
+
+        public List<int> Heights { get; } = [];
+
+        public List<int> Pops { get; } = [];
+
+        public static Buffers Rent()
+        {
+            var buffers = s_cached;
+            if (buffers is null)
+                return new Buffers();
+
+            s_cached = null;
+            return buffers;
+        }
+
+        public void Return()
+        {
+            if (Stack.Capacity > MaxRetainedCapacity
+                || Controls.Capacity > MaxRetainedCapacity
+                || Code.Capacity > MaxRetainedCapacity
+                || BranchTables.Capacity > MaxRetainedCapacity
+                || Handlers.Capacity > MaxRetainedCapacity
+                || InitializedLocals.Capacity > MaxRetainedCapacity
+                || Heights.Capacity > MaxRetainedCapacity
+                || Pops.Capacity > MaxRetainedCapacity)
+            {
+                return;
+            }
+
+            Stack.Clear();
+            Controls.Clear();
+            Code.Clear();
+            BranchTables.Clear();
+            Handlers.Clear();
+            InitializedLocals.Clear();
+            Heights.Clear();
+            Pops.Clear();
+            s_cached = this;
+        }
+    }
 
     // ------------------------------------------------------------------------------------------------------------
     // The operand and control stacks

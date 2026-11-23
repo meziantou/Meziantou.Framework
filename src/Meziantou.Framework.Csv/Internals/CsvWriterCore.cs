@@ -178,6 +178,13 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
+        WriteFieldAsNeeded(value, isText);
+    }
+
+    // Not inlined: inlined into the loops of the callers (WriteFields, WriteRow), writing text was 40% slower on x64 (Zen 5), and not faster on Arm64
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void WriteFieldAsNeeded(ReadOnlySpan<T> value, bool isText)
+    {
         // Most values need neither quotes nor an escaped formula: the value is copied after a single capacity check. The value is searched before
         // it is copied: reading the copy right after writing it is slower.
         var destination = BeginField(value.Length, out var start);

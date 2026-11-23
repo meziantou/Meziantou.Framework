@@ -79,6 +79,74 @@ The option is off by default. The library loads the URLs your application gives 
 an upgrade sends a request you did not ask for and changes the URL of the document. The feature is not part of the Fetch
 standard yet, and the browsers that implement it do not all enable it in every mode.
 
+## Upgrade the requests of the HSTS hosts
+
+As in a browser, HTTP Strict Transport Security (HSTS, RFC 6797) is on by default. The `http:` requests to an HSTS
+host are sent to the `https:` URL, and unlike the HTTPS upgrades, they do not fall back to `http:` when the `https:`
+request fails. The HSTS hosts are:
+
+- The hosts of the HSTS preload list of Chromium (<https://hstspreload.org>), such as `github.com` and the `.dev`
+  domains. It is the same list as the one of the [Meziantou.Framework.Http.Hsts](https://www.nuget.org/packages/Meziantou.Framework.Http.Hsts)
+  package, built into the library.
+- The hosts learned from the `Strict-Transport-Security` header of the `https:` responses.
+- The hosts of [IsKnownHost](cref:Meziantou.Framework.WebPlatform.Dom.HstsOptions.IsKnownHost), when you set it.
+
+The rules:
+
+- The navigations, the `iframe` elements, the subresources, the redirects and the `ws:` WebSockets are upgraded. The
+  `http:` port 80 becomes the `https:` port 443; the other ports are kept.
+- A learned host does not upgrade the requests of a third party, so that a third party cannot use HSTS to track the
+  users across sites. A request that is not a top-level navigation is not upgraded when its URL is not on the same
+  site as the top-level page, such as the image or the `iframe` of another site. This is the rule of Safari. Firefox
+  also ignores the third-party headers, and Chrome is experimenting with upgrading the top-level navigations only. The
+  preloaded hosts and the hosts of `IsKnownHost` upgrade every request.
+- The header of an `http:` response is ignored, and so is a header that is not valid. When a response has several
+  headers, only the first one counts. `includeSubDomains` upgrades the subdomains too, `max-age=0` removes the host, and
+  a `max-age` longer than one year is reduced to one year, as in Chromium.
+- The referrer is computed for the `http:` URL, so a `no-referrer-when-downgrade` policy does not send it.
+- The IP addresses, `localhost` and the `*.localhost` hosts are not upgraded.
+- The browsing contexts that share the options share the hosts they learn. The hosts are kept in memory only, up to
+  10,000 of them.
+
+[IsKnownHost](cref:Meziantou.Framework.WebPlatform.Dom.HstsOptions.IsKnownHost) adds hosts, such as the ones of an
+intranet:
+
+<!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_HstsKnownHosts;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var context = new BrowsingContext(new BrowsingContextOptions
+{
+    DocumentLoader = DocumentLoader.Create(),
+    Hsts = new HstsOptions
+    {
+        // The hosts of the preload list are upgraded too
+        IsKnownHost = host => host is "intranet.example" || host.EndsWith(".intranet.example", StringComparison.Ordinal),
+    },
+});
+
+context.Navigate("http://wiki.intranet.example/"); // requests https://wiki.intranet.example/
+await context.EventLoop.RunUntilIdleAsync();
+```
+<!-- endref -->
+
+The function gets the host in lowercase ASCII (an internationalized domain is in its Punycode form), without a
+trailing dot. It must match the parent domains itself, and be thread-safe. To share the policies that an `HttpClient`
+learns with the Meziantou.Framework.Http.Hsts package, set it to
+[HstsDomainPolicyCollection.MustUpgradeRequest](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.MustUpgradeRequest).
+
+The preload list is loaded the first time an `http:` request needs it, which costs about 120 KB of memory and a few
+milliseconds. Set [UsePreloadList](cref:Meziantou.Framework.WebPlatform.Dom.HstsOptions.UsePreloadList) to `false` to
+skip it, [LearnFromResponses](cref:Meziantou.Framework.WebPlatform.Dom.HstsOptions.LearnFromResponses) to `false` to
+use only the lists, or [Hsts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Hsts) to `null` to turn
+HSTS off. An application that never wants the preload list can turn it off everywhere, in the library and in the
+Meziantou.Framework.Http.Hsts package, with a feature switch. The trimmer then removes the code that reads it, but the
+list still ships inside the assembly (about 520 KB):
+
+```xml
+<ItemGroup>
+  <RuntimeHostConfigurationOption Include="Meziantou.Framework.Http.Hsts.IncludePreloadList" Value="false" Trim="true" />
+</ItemGroup>
+```
+
 ## Protect your network from untrusted pages
 
 [DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) requests any URL that a page navigates to or references. With an untrusted page, the requests

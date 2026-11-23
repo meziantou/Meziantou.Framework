@@ -7,7 +7,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.Dom;
 
 /// <summary>
 /// Upgrade Insecure Requests (https://w3c.github.io/webappsec-upgrade-insecure-requests/): the <c>upgrade-insecure-requests</c>
-/// directive; and the HTTPS upgrades of the top-level navigations (https://github.com/whatwg/fetch/pull/1655).
+/// directive; the HTTPS upgrades of the top-level navigations (https://github.com/whatwg/fetch/pull/1655); and HTTP Strict
+/// Transport Security (https://www.rfc-editor.org/rfc/rfc6797).
 /// </summary>
 public sealed class UpgradeInsecureRequestsTests : IDisposable
 {
@@ -45,6 +46,20 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
         _contexts.EventLoop.RunUntilIdle();
         return context;
     }
+
+    /// <summary>A browsing context with the loader and the HSTS settings, whose responses are synchronous.</summary>
+    private BrowsingContext CreateContext(HstsOptions? hsts, HttpsUpgradeOptions? httpsUpgrades = null, TimeProvider? timeProvider = null)
+        => _contexts.Create(new BrowsingContextOptions { ScriptEngine = _engine, DocumentLoader = new Loader(this), Hsts = hsts, HttpsUpgrades = httpsUpgrades, TimeProvider = timeProvider });
+
+    private void Navigate(BrowsingContext context, string url)
+    {
+        context.Navigate(url);
+        _contexts.EventLoop.RunUntilIdle();
+    }
+
+    /// <summary>The loader returns a document with a <c>Strict-Transport-Security</c> header for <paramref name="url"/>.</summary>
+    private void ServeStrictTransportSecurity(string url, string value)
+        => _responses[url] = _ => Task.FromResult<DocumentResource?>(new DocumentResource("<title>page</title>") { Headers = [new("Content-Type", "text/html"), new("Strict-Transport-Security", value)] });
 
     private static DocumentResource Redirect(string location) => new("") { StatusCode = 302, Headers = [new("Location", location)] };
 
@@ -359,5 +374,515 @@ public sealed class UpgradeInsecureRequestsTests : IDisposable
         clock.Advance(TimeSpan.FromDays(7) - TimeSpan.FromSeconds(1));
         Assert.True(allowlist.Contains("host1.example", clock)); // extended by the previous lookup
         Assert.False(allowlist.Contains("host2.example", clock));
+    }
+
+    [Fact]
+    public void Hsts_IsEnabledByDefault()
+    {
+        Assert.Same(HstsOptions.Default, new BrowsingContextOptions().Hsts);
+        Assert.True(HstsOptions.Default.LearnFromResponses);
+        Assert.True(HstsOptions.Default.UsePreloadList);
+        Assert.Null(HstsOptions.Default.IsKnownHost);
+    }
+
+    [Fact]
+    public void Hsts_UpgradesThePreloadedHostsByDefault()
+    {
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "http://github.com/");
+        Navigate(context, "http://api.github.com/");
+        Navigate(context, "http://mail.gmail.com/");
+        Assert.Equal(["Document https://github.com/", "Document https://api.github.com/", "Document http://mail.gmail.com/"], Requests);
+
+        // The preload list upgrades the third-party requests too
+        _requests.Clear();
+        context.Navigate("http://site.example/", _ => DocumentResource.Create("<title>start</title><script src=http://github.com/a.js></script>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["Script https://github.com/a.js"], Requests);
+        Assert.Equal("start executed", context.Document.Title);
+    }
+
+    [Fact]
+    public void Hsts_UsePreloadListFalse_DoesNotUpgradeThePreloadedHosts()
+    {
+        var context = CreateContext(new HstsOptions { UsePreloadList = false });
+        Navigate(context, "http://github.com/");
+        Assert.Equal(["Document http://github.com/"], Requests);
+    }
+
+    [Theory]
+    [InlineData("github.com", true)]
+    [InlineData("api.github.com", true)]
+    [InlineData("gmail.com", true)]
+    [InlineData("www.gmail.com", true)]
+    [InlineData("mail.gmail.com", false)]
+    [InlineData("mail.google.com", true)]
+    [InlineData("a.b.mail.google.com", true)]
+    [InlineData("google.com", false)]
+    [InlineData("dev", true)]
+    [InlineData("my-project.dev", true)]
+    [InlineData("example.com", false)]
+    [InlineData("com", false)]
+    [InlineData("a..github.com", true)]
+    [InlineData("a.b.c.d.e.f.g.h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w.x.y.z.github.com", true)]
+    public void Hsts_IsPreloaded(string host, bool expected)
+    {
+        Assert.Equal(expected, StrictTransportSecurity.IsPreloaded(host));
+    }
+
+    [Fact]
+    public void Hsts_IsPreloaded_AgreesWithEveryEntryOfTheList()
+    {
+        var entries = global::Meziantou.Framework.Http.HstsPreloadList.Shared.GetEntries().ToList();
+        Assert.True(entries.Count > 90_000);
+        foreach (var (host, includeSubdomains) in entries)
+        {
+            Assert.True(StrictTransportSecurity.IsPreloaded(host), host);
+
+            // A subdomain is preloaded by its own entry, by the entry of the host, or by the entry of a superdomain
+            if (includeSubdomains)
+            {
+                Assert.True(StrictTransportSecurity.IsPreloaded("subdomain-of." + host), host);
+            }
+        }
+    }
+
+    [Fact]
+    public void Hsts_LearnsTheHostFromAnHttpsResponse()
+    {
+        ServeStrictTransportSecurity("https://secure.example.com/", "max-age=31536000");
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://secure.example.com/");
+
+        // The navigations, their redirects and the subresources to the host are upgraded; a non-default port is kept
+        _requests.Clear();
+        _responses["https://secure.example.com/redirect"] = _ => Task.FromResult<DocumentResource?>(Redirect("http://secure.example.com/page.html"));
+        Navigate(context, "http://secure.example.com/redirect");
+        Assert.Equal(["Document https://secure.example.com/redirect", "Document https://secure.example.com/page.html"], Requests);
+        Assert.Equal("https://secure.example.com/page.html", context.Document.Url);
+
+        _requests.Clear();
+        context.Navigate("http://other.example.com/", _ => DocumentResource.Create("<title>start</title><script src=http://secure.example.com:8080/a.js></script>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["Script https://secure.example.com:8080/a.js"], Requests);
+        Assert.Equal("start executed", context.Document.Title);
+
+        // The policy does not include the subdomains
+        _requests.Clear();
+        Navigate(context, "http://www.secure.example.com/");
+        Assert.Equal(["Document http://www.secure.example.com/"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_IncludeSubDomains_UpgradesTheSubdomains()
+    {
+        ServeStrictTransportSecurity("https://example.org/", "max-age=60; includeSubDomains");
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://example.org/");
+
+        _requests.Clear();
+        Navigate(context, "http://a.b.example.org/");
+        Navigate(context, "http://other.org/");
+        Assert.Equal(["Document https://a.b.example.org/", "Document http://other.org/"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_IgnoresTheHeaderOfAnHttpResponse()
+    {
+        ServeStrictTransportSecurity("http://insecure.example.com/", "max-age=31536000");
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "http://insecure.example.com/");
+        Navigate(context, "http://insecure.example.com/page.html");
+        Assert.Equal(["Document http://insecure.example.com/", "Document http://insecure.example.com/page.html"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_TheFirstHeaderIsUsed_AndAnInvalidHeaderIsIgnored()
+    {
+        _responses["https://first.example.com/"] = _ => Task.FromResult<DocumentResource?>(new DocumentResource("") { Headers = [new("Strict-Transport-Security", "max-age=60"), new("Strict-Transport-Security", "max-age=0")] });
+        ServeStrictTransportSecurity("https://invalid.example.com/", "max-age=60; max-age=60");
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://first.example.com/");
+        Navigate(context, "https://invalid.example.com/");
+
+        _requests.Clear();
+        Navigate(context, "http://first.example.com/");
+        Navigate(context, "http://invalid.example.com/");
+        Assert.Equal(["Document https://first.example.com/", "Document http://invalid.example.com/"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_MaxAgeZero_RemovesTheHost()
+    {
+        ServeStrictTransportSecurity("https://secure.example.com/", "max-age=60");
+        ServeStrictTransportSecurity("https://secure.example.com/clear", "max-age=0");
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://secure.example.com/");
+        Navigate(context, "https://secure.example.com/clear");
+
+        _requests.Clear();
+        Navigate(context, "http://secure.example.com/");
+        Assert.Equal(["Document http://secure.example.com/"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_ThePolicyExpires()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        ServeStrictTransportSecurity("https://secure.example.com/", "max-age=\"60\"");
+        var context = CreateContext(HstsOptions.Default, timeProvider: clock);
+        Navigate(context, "https://secure.example.com/");
+
+        _requests.Clear();
+        clock.Advance(TimeSpan.FromSeconds(59));
+        Navigate(context, "http://secure.example.com/page.html");
+        clock.Advance(TimeSpan.FromSeconds(1));
+        Navigate(context, "http://secure.example.com/page.html");
+        Assert.Equal(["Document https://secure.example.com/page.html", "Document http://secure.example.com/page.html"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_Null_DisablesHsts()
+    {
+        ServeStrictTransportSecurity("https://secure.example.com/", "max-age=60");
+        var context = CreateContext(hsts: null);
+        Navigate(context, "https://secure.example.com/");
+        Navigate(context, "http://secure.example.com/");
+        Assert.Equal(["Document https://secure.example.com/", "Document http://secure.example.com/"], Requests);
+        Assert.Equal(0, context.Options.HstsHosts.Count);
+    }
+
+    [Fact]
+    public void Hsts_LearnFromResponsesFalse_DoesNotLearnTheHosts()
+    {
+        ServeStrictTransportSecurity("https://secure.example.com/", "max-age=60");
+        var context = CreateContext(new HstsOptions { LearnFromResponses = false });
+        Navigate(context, "https://secure.example.com/");
+        Navigate(context, "http://secure.example.com/");
+        Assert.Equal(["Document https://secure.example.com/", "Document http://secure.example.com/"], Requests);
+    }
+
+    [Fact]
+    public void Hsts_IsKnownHost_UpgradesItsHosts()
+    {
+        var hosts = new List<string>();
+        var context = CreateContext(new HstsOptions
+        {
+            IsKnownHost = host =>
+            {
+                lock (hosts)
+                {
+                    hosts.Add(host);
+                }
+
+                return host is "preloaded.example.com";
+            },
+        });
+
+        Navigate(context, "http://PreLoaded.Example.COM./page.html");
+        Navigate(context, "http://other.example.com/");
+        Navigate(context, "http://localhost/");
+        Navigate(context, "http://app.localhost/");
+        Navigate(context, "http://192.168.1.10/");
+        Assert.Equal(["Document https://preloaded.example.com./page.html", "Document http://other.example.com/", "Document http://localhost/", "Document http://app.localhost/", "Document http://192.168.1.10/"], Requests);
+        Assert.Equal(["preloaded.example.com", "other.example.com"], hosts);
+    }
+
+    [Fact]
+    public void Hsts_TheReferrerIsDeterminedForTheHttpUrl()
+    {
+        var context = CreateContext(new HstsOptions { IsKnownHost = host => host is "preloaded.example.com" });
+        context.Navigate("https://example.com/page.html", _ => DocumentResource.Create("<meta name=referrer content=no-referrer-when-downgrade><a href=http://preloaded.example.com/>link</a>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        ((HtmlElement)context.Document.QuerySelector("a")!).Click();
+        _contexts.EventLoop.RunUntilIdle();
+        var request = Assert.Single(_requests);
+        Assert.Equal("https://preloaded.example.com/", request.Url);
+        Assert.Null(request.Referrer);
+    }
+
+    [Fact]
+    public void Hsts_DoesNotFallBackToHttp_WithHttpsUpgrades()
+    {
+        _responses["https://preloaded.example.com/"] = _ => Task.FromResult<DocumentResource?>(null);
+        var context = CreateContext(new HstsOptions { IsKnownHost = host => host is "preloaded.example.com" }, HttpsUpgradeOptions.Default);
+        Navigate(context, "http://preloaded.example.com/");
+        Assert.Equal(["Document https://preloaded.example.com/"], Requests);
+        Assert.Equal(0, context.Options.HttpsUpgradeAllowlist.Count);
+    }
+
+    [Fact]
+    public void Hsts_TheLearnedHostsDoNotUpgradeTheThirdPartyRequests()
+    {
+        ServeStrictTransportSecurity("https://tracker.example/", "max-age=60");
+        var context = CreateContext(new HstsOptions { IsKnownHost = host => host is "preloaded.example" });
+        Navigate(context, "https://tracker.example/");
+
+        // The iframe and the image of another site are not upgraded, the preloaded hosts are
+        _requests.Clear();
+        context.Navigate("http://site.example/", _ => DocumentResource.Create("<title>start</title><iframe src=http://tracker.example/frame.html></iframe><img src=http://tracker.example/pixel.png><script src=http://preloaded.example/a.js></script>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["Iframe http://tracker.example/frame.html", "Image http://tracker.example/pixel.png", "Script https://preloaded.example/a.js"], Requests.Order(StringComparer.Ordinal));
+
+        // A request to the same site as the top-level document is upgraded
+        _requests.Clear();
+        context.Navigate("http://www.tracker.example/", _ => DocumentResource.Create("<img src=http://tracker.example/pixel.png>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal(["Image https://tracker.example/pixel.png"], Requests);
+    }
+
+    // The Hsts_WebKit_* tests are ported from the HSTS tests of WebKit (Tools/TestWebKitAPI/Tests/WebKit/WKWebView/HSTS.mm,
+    // see THIRD-PARTY-NOTICES.md)
+    [Fact]
+    public void Hsts_WebKit_Basic()
+    {
+        ServeStrictTransportSecurity("http://example.com/", "max-age=31536000");
+        ServeStrictTransportSecurity("https://example.com/", "max-age=31536000");
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "http://example.com/");
+        Assert.Equal("http://example.com/", context.Document.Url);
+        Navigate(context, "http://example.com/");
+        Assert.Equal("http://example.com/", context.Document.Url);
+        Navigate(context, "https://example.com/");
+        Assert.Equal("https://example.com/", context.Document.Url);
+        Navigate(context, "http://example.com/");
+        Assert.Equal("https://example.com/", context.Document.Url);
+    }
+
+    [Fact]
+    public void Hsts_WebKit_ThirdPartyFetch()
+    {
+        ServeStrictTransportSecurity("https://example.com/", "max-age=31536000");
+        _responses["http://example.com/"] = _ => Task.FromResult<DocumentResource?>(new DocumentResource("hi") { Headers = [new("Content-Type", "text/plain"), new("Access-Control-Allow-Origin", "http://example.org")] });
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://example.com/");
+
+        _requests.Clear();
+        context.Navigate("http://example.org/", _ => DocumentResource.Create("<script>fetch('http://example.com/').then(async response => document.title = await response.text() + (response.redirected ? ', redirected' : ', not redirected'))</script>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("hi, not redirected", context.Document.Title);
+        Assert.Equal(["http://example.com/"], _requests.Select(request => request.Url));
+    }
+
+    [Fact]
+    public void Hsts_WebKit_ThirdParty()
+    {
+        ServeStrictTransportSecurity("https://example.com/", "max-age=31536000");
+        _responses["http://example.com/"] = _ => Task.FromResult<DocumentResource?>(new DocumentResource("hi") { Headers = [new("Content-Type", "text/plain"), new("Access-Control-Allow-Origin", "http://example.org")] });
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://example.com/");
+
+        _requests.Clear();
+        context.Navigate("http://example.org/", _ => DocumentResource.Create("<script>var xhr = new XMLHttpRequest(); xhr.open('GET', 'http://example.com/'); xhr.onreadystatechange = () => { if (xhr.readyState == 4) document.title = xhr.responseURL + ' ' + xhr.responseText; }; xhr.send();</script>", "text/html"));
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("http://example.com/ hi", context.Document.Title);
+        Assert.Equal(["http://example.com/"], _requests.Select(request => request.Url));
+    }
+
+    [Fact]
+    public void Hsts_WebKit_CrossOriginRedirect()
+    {
+        ServeStrictTransportSecurity("https://example.com/", "max-age=31536000");
+        _responses["http://example.org/"] = _ => Task.FromResult<DocumentResource?>(new DocumentResource("") { StatusCode = 301, Headers = [new("Location", "http://example.com/")] });
+        var context = CreateContext(HstsOptions.Default);
+        Navigate(context, "https://example.com/");
+
+        _requests.Clear();
+        Navigate(context, "http://example.org/");
+        Assert.Equal("https://example.com/", context.Document.Url);
+        Assert.Equal(["Document http://example.org/", "Document https://example.com/"], Requests);
+    }
+
+    [Theory]
+    [InlineData("max-age=60", 60L, false)]
+    [InlineData("MAX-AGE=60;INCLUDESUBDOMAINS", 60L, true)]
+    [InlineData(" max-age = \"60\" ; includeSubDomains ; preload ", 60L, true)]
+    [InlineData(";;max-age=0;;", 0L, false)]
+    [InlineData("includeSubDomains; max-age=1; ext=\"a;includeSubDomains\"", 1L, true)]
+    [InlineData("max-age=60; ext=\"a;includeSubDomains\"", 60L, false)]
+    [InlineData("max-age=99999999999999999999999", StrictTransportSecurityHeader.MaxMaxAgeSeconds, false)]
+    [InlineData("max-age=31536001", StrictTransportSecurityHeader.MaxMaxAgeSeconds, false)]
+    [InlineData("max-age=\"\\60\"", 60L, false)]
+    [InlineData("max-age=0000000000000000000000060", 60L, false)]
+    [InlineData("max-age=0000000000000000000000000", 0L, false)]
+    public void Hsts_ParsesTheHeader(string value, long maxAge, bool includeSubdomains)
+    {
+        var header = StrictTransportSecurityHeader.Parse(value);
+        Assert.Equal(new StrictTransportSecurityHeader(maxAge, includeSubdomains), header);
+        Assert.Equal(header, StrictTransportSecurityHeader.Parse(header!.Value.Serialize()));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("includeSubDomains")]
+    [InlineData("max-age")]
+    [InlineData("max-age=")]
+    [InlineData("max-age=-1")]
+    [InlineData("max-age=1.5")]
+    [InlineData("max-age=\"60")]
+    [InlineData("max-age=60 60")]
+    [InlineData("max-age=60, max-age=60")]
+    [InlineData("max-age=60; max-age=60")]
+    [InlineData("max-age=60; includeSubDomains; includeSubDomains")]
+    [InlineData("max-age=60; includeSubDomains=1")]
+    [InlineData("max-age=60; =1")]
+    [InlineData("max-age=60; ext=")]
+    public void Hsts_RejectsAnInvalidHeader(string value)
+    {
+        Assert.Null(StrictTransportSecurityHeader.Parse(value));
+    }
+
+    // The cases of the tests of the parser of Chromium (net/http/http_security_headers_unittest.cc, see THIRD-PARTY-NOTICES.md)
+    public static TheoryData<string, long, bool> ChromiumValidHeaders => new()
+    {
+        { "max-age=123", 123L, false },
+        { ";max-age=123", 123L, false },
+        { ";;max-age=123", 123L, false },
+        { ";;;;max-age=123", 123L, false },
+        { "; ;max-age=123", 123L, false },
+        { "; ; max-age=123", 123L, false },
+        { ";max-age=123;", 123L, false },
+        { ";;max-age=123;;", 123L, false },
+        { ";;;;max-age=123;;;;", 123L, false },
+        { "; ;max-age=123; ;", 123L, false },
+        { "; ; max-age=123; ; ", 123L, false },
+        { "max-age=123;", 123L, false },
+        { "max-age=123;;", 123L, false },
+        { "max-age=123;;;;", 123L, false },
+        { "max-age=123; ;", 123L, false },
+        { "max-age=123; ; ", 123L, false },
+        { "max-age=243", 243L, false },
+        { "max-age=3488923;", 3488923L, false },
+        { "  Max-agE    = 567", 567L, false },
+        { "  mAx-aGe    = 890      ", 890L, false },
+        { "max-age=123;incLudesUbdOmains", 123L, true },
+        { "incLudesUbdOmains; max-age=123", 123L, true },
+        { "   incLudesUbdOmains; max-age=123", 123L, true },
+        { "   incLudesUbdOmains; max-age=123; pumpkin=kitten", 123L, true },
+        { "   pumpkin=894; incLudesUbdOmains; max-age=123  ", 123L, true },
+        { "   pumpkin; incLudesUbdOmains; max-age=123  ", 123L, true },
+        { "   pumpkin; incLudesUbdOmains; max-age=\"123\"  ", 123L, true },
+        { "animal=\"squirrel; distinguished\"; incLudesUbdOmains; max-age=123", 123L, true },
+        { "max-age=394082;  incLudesUbdOmains", 394082L, true },
+        { "max-age=39408299  ;incLudesUbdOmains", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+        { "max-age=394082038  ; incLudesUbdOmains", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+        { "max-age=394082038  ; incLudesUbdOmains;", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+        { ";; max-age=394082038  ; incLudesUbdOmains; ;", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+        { ";; max-age=394082038  ;", StrictTransportSecurityHeader.MaxMaxAgeSeconds, false },
+        { ";;    ; ; max-age=394082038;;; includeSubdomains     ;;  ;", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+        { "incLudesUbdOmains   ; max-age=394082038 ;;", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+        { "  max-age=0  ;  incLudesUbdOmains   ", 0L, true },
+        { "  max-age=999999999999999999999999999999999999999999999  ;  incLudesUbdOmains   ", StrictTransportSecurityHeader.MaxMaxAgeSeconds, true },
+    };
+
+    public static TheoryData<string> ChromiumInvalidHeaders => new()
+    {
+        "'max-age'=1",
+        "\"max-age\"=1",
+        "max-age=1; max-age=2",
+        "max-age=1; MaX-AgE=2",
+        "max-age=1; includeSubDomains; iNcLUdEsUbDoMaInS",
+        "max-age=1; \"",
+        "max-age=1; \"includeSubdomains",
+        "max-age=1; in\"cludeSubdomains",
+        "max-age=1; includeSubdomains\"",
+        "max-age=1; \"includeSubdomains\"",
+        "max-age=1; includeSubdomains; non\"token",
+        "max-age=1; includeSubdomains; non@token",
+        "max-age=1; includeSubdomains; non,token",
+        "max-age=1; =2",
+        "max-age=1; =2; unknownDirective",
+        "max-age=",
+        "max-age=@",
+        "max-age=1a;",
+        "max-age=1a2;",
+        "max-age=1##;",
+        "max-age=12\";",
+        "max-age=-1;",
+        "max-age=+1;",
+        "max-age='1';",
+        "max-age=1abc;",
+        "max-age=1 abc;",
+        "max-age=1.5;",
+        "max-age=1; includeSubDomains=true",
+        "max-age=1; includeSubDomains=false",
+        "max-age=1; includeSubDomains=\"\"",
+        "max-age=1; includeSubDomains=''",
+        "max-age=1; includeSubDomains=\"true\"",
+        "max-age=1; includeSubDomains=\"false\"",
+        "max-age=1; unknownDirective=non\"token",
+        "max-age=1; unknownDirective=non@token",
+        "max-age=1; unknownDirective=non,token",
+        "max-age=1; unknownDirective=",
+        "",
+        "    ",
+        "abc",
+        "  abc",
+        "  abc   ",
+        "max-age",
+        "  max-age",
+        "  max-age  ",
+        "   max-age=",
+        "   max-age  =",
+        "   max-age=   ",
+        "   max-age  =     ",
+        "   max-age  =     xy",
+        "   max-age  =     3488a923",
+        "max-age=3488a923  ",
+        "max-ag=3488923",
+        "max-aged=3488923",
+        "max-age==3488923",
+        "amax-age=3488923",
+        "max-age=-3488923",
+        "max-age=+3488923",
+        "max-age=13####",
+        "max-age=9223372036854775807#####",
+        "max-age=18446744073709551615####",
+        "max-age=999999999999999999999999$.&#!",
+        "max-age=3488923     e",
+        "max-age=3488923     includesubdomain",
+        "max-age=3488923includesubdomains",
+        "max-age=3488923=includesubdomains",
+        "max-age=3488923 includesubdomainx",
+        "max-age=3488923 includesubdomain=",
+        "max-age=3488923 includesubdomain=true",
+        "max-age=3488923 includesubdomainsx",
+        "max-age=3488923 includesubdomains x",
+        "max-age=34889.23 includesubdomains",
+        "max-age=34889 includesubdomains",
+        ";;;; ;;;",
+        ";;;; includeSubDomains;;;",
+        "   includeSubDomains;  ",
+        ";",
+        "max-age; ;",
+    };
+
+    [Theory]
+    [MemberData(nameof(ChromiumValidHeaders))]
+    public void Hsts_ParsesTheHeader_Chromium(string value, long maxAge, bool includeSubdomains)
+    {
+        Assert.Equal(new StrictTransportSecurityHeader(maxAge, includeSubdomains), StrictTransportSecurityHeader.Parse(value));
+    }
+
+    [Theory]
+    [MemberData(nameof(ChromiumInvalidHeaders))]
+    public void Hsts_RejectsAnInvalidHeader_Chromium(string value)
+    {
+        Assert.Null(StrictTransportSecurityHeader.Parse(value));
+    }
+
+    [Fact]
+    public void HstsHostStore_IsBounded()
+    {
+        var clock = new FakeTimeProvider(new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero));
+        var store = new HstsHostStore();
+        for (var i = 0; i <= HstsHostStore.MaxCount; i++)
+        {
+            store.Add("host" + i.ToString(System.Globalization.CultureInfo.InvariantCulture) + ".example", new StrictTransportSecurityHeader(60 + i, IncludeSubdomains: false), clock);
+        }
+
+        Assert.Equal(HstsHostStore.MaxCount, store.Count);
+        Assert.False(store.Contains("host0.example", clock));
+        Assert.True(store.Contains("host1.example", clock));
     }
 }

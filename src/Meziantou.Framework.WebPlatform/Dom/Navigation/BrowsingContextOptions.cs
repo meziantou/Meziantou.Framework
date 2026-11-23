@@ -780,6 +780,20 @@ public sealed partial record BrowsingContextOptions
     /// </summary>
     public HttpsUpgradeOptions? HttpsUpgrades { get; init; }
 
+    /// <summary>
+    /// Gets or sets HTTP Strict Transport Security (HSTS, https://www.rfc-editor.org/rfc/rfc6797, https://fetch.spec.whatwg.org/#concept-main-fetch):
+    /// the <c>http:</c> requests (the navigations, the subresources, the redirects and the <c>ws:</c> WebSockets) to a
+    /// Known HSTS Host are sent to its <c>https:</c> URL, without fallback to <c>http:</c>. The hosts are the ones of the
+    /// HSTS preload list of Chromium (<see cref="HstsOptions.UsePreloadList"/>), the ones learned from the
+    /// <c>Strict-Transport-Security</c> header of the <c>https:</c> responses, and the ones of
+    /// <see cref="HstsOptions.IsKnownHost"/>. The IP addresses and <c>localhost</c> are not upgraded. The default is
+    /// <see cref="HstsOptions.Default"/>, as in the browsers; null disables HSTS.
+    /// </summary>
+    public HstsOptions? Hsts { get; init; } = HstsOptions.Default;
+
+    /// <summary>The Known HSTS Hosts learned from the responses (see <see cref="Hsts"/>).</summary>
+    internal HstsHostStore HstsHosts { get; } = new();
+
     /// <summary>The hosts whose HTTPS upgrade failed recently (see <see cref="HttpsUpgrades"/>): their navigations are not upgraded.</summary>
     internal HttpsUpgradeAllowlist HttpsUpgradeAllowlist { get; } = new();
 

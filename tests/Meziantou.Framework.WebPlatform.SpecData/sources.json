@@ -415,6 +415,7 @@
       "x-frame-options",
       "upgrade-insecure-requests",
       "https-upgrades",
+      "hsts",
       "reporting",
       "deprecation-reporting",
       "network-error-logging",

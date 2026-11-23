@@ -574,6 +574,8 @@ public sealed class WptTests
 
     public static TheoryData<string> HttpsUpgradesTests => GetTests("https-upgrades");
 
+    public static TheoryData<string> HstsTests => GetTests("hsts");
+
     public static TheoryData<string> CssColorTests => GetTests("css/css-color", "css/css-color/parsing");
 
     public static TheoryData<string> CssHighlightApiTests => GetTests("css/css-highlight-api");
@@ -1944,6 +1946,10 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(HttpsUpgradesTests))]
     public void HttpsUpgrades(string test) => Run("https-upgrades", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(HstsTests))]
+    public void Hsts(string test) => Run("hsts", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssColorTests))]

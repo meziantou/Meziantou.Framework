@@ -94,7 +94,7 @@ internal static class UpgradeInsecureRequests
     /// <summary>
     /// https://w3c.github.io/webappsec-upgrade-insecure-requests/#upgrade-request (https://fetch.spec.whatwg.org/#main-fetch,
     /// step 4), for each URL of a redirect chain: a navigation request gets the <c>Upgrade-Insecure-Requests: 1</c> header
-    /// (there is no preloaded HSTS host list: it is always sent); the <c>http:</c> URL of a request is upgraded to <c>https:</c>
+    /// (it is also sent to the Known HSTS Hosts, see <see cref="StrictTransportSecurity"/>); the <c>http:</c> URL of a request is upgraded to <c>https:</c>
     /// when the insecure requests policy of its client is "Upgrade" (a navigation must also be a form submission, the
     /// navigation of a nested navigable, or a navigation to the upgrade insecure navigations set of the client).
     /// </summary>

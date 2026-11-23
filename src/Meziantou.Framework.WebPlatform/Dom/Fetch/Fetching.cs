@@ -263,6 +263,9 @@ internal static class Fetching
             request.Referrer = referrer ?? "no-referrer";
         }
 
+        // Step 11: the http: URL of a Known HSTS Host is fetched over https:, after the referrer is determined
+        StrictTransportSecurity.UpgradeRequest(request);
+
         // Step 12
         FetchResponse response;
         var currentUrl = request.CurrentUrl;
@@ -1660,6 +1663,10 @@ internal static class Fetching
             DisposeConnection(resource);
             return FetchResponse.NetworkError();
         }
+
+        // https://www.rfc-editor.org/rfc/rfc6797#section-8.1: the Strict-Transport-Security header of the response, for the
+        // URL of the response (the last URL of the redirects that the loader followed)
+        StrictTransportSecurity.ProcessResponse(request, responseHeaders);
 
         response.UrlList = [.. request.UrlList];
         return response;

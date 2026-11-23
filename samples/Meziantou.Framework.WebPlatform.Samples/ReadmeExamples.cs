@@ -54,6 +54,26 @@ internal static class ReadmeExamples
         Console.WriteLine($"Loaded {context.Document.Url}");
     }
 
+    public static async Task AddHstsHosts()
+    {
+        #region WebPlatform_HstsKnownHosts
+        using var context = new BrowsingContext(new BrowsingContextOptions
+        {
+            DocumentLoader = DocumentLoader.Create(),
+            Hsts = new HstsOptions
+            {
+                // The hosts of the preload list are upgraded too
+                IsKnownHost = host => host is "intranet.example" || host.EndsWith(".intranet.example", StringComparison.Ordinal),
+            },
+        });
+
+        context.Navigate("http://wiki.intranet.example/"); // requests https://wiki.intranet.example/
+        await context.EventLoop.RunUntilIdleAsync();
+        #endregion
+
+        Console.WriteLine($"Loaded {context.Document.Url}");
+    }
+
     public static async Task TakeScreenshots()
     {
         #region WebPlatform_TakeScreenshots

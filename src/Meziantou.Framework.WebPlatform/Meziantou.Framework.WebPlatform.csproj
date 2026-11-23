@@ -76,6 +76,15 @@
     <Compile Include="../Meziantou.Framework.Imaging/Internals/Compression/XxHash64.cs" Link="Compression/Shared/XxHash64.cs" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The HSTS preload list of Meziantou.Framework.Http.Hsts (see Dom/Fetch/StrictTransportSecurity.cs). It is compiled
+         here rather than referenced: that package converts internationalized domain names with IdnMapping, so it is
+         globalization sensitive, while the hosts of WebPlatform are already ASCII. The resource is read in place, so it is
+         not compressed -->
+    <Compile Include="../Meziantou.Framework.Http.Hsts/HstsPreloadList.cs" Link="Dom/Fetch/Shared/HstsPreloadList.cs" />
+    <Compile Include="../Meziantou.Framework.Http.Hsts/HstsPreloadList.g.cs" Link="Dom/Fetch/Shared/HstsPreloadList.g.cs" />
+    <EmbeddedResource Include="../Meziantou.Framework.Http.Hsts/preload.bin" LogicalName="preload.bin" Link="Dom/Fetch/Shared/preload.bin" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Adler32 is only available from 11.0 -->
     <PackageReference Include="System.IO.Hashing" Version="11.0.0" />
   </ItemGroup>

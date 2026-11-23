@@ -13,8 +13,11 @@ internal sealed partial class FunctionCompiler
     private readonly bool _isConstant;
     private readonly int _globalLimit;
     private readonly Buffers _buffers;
-    private readonly List<ValType> _stack;
+    // The operand stack: the types of the values (a list costs more in the validation of each instruction)
+    private ValType[] _stack;
+    private int _stackCount;
     private readonly List<Control> _controls;
+    private int _controlCount;
     private readonly List<Instr> _code;
     private readonly List<BranchTarget> _branchTables;
     private readonly List<HandlerInfo> _handlers;
@@ -86,30 +89,31 @@ internal sealed partial class FunctionCompiler
 
     private readonly record struct Fixup(FixupKind Kind, int Index, HandlerInfo? Handler = null);
 
+    /// <summary>A block of the code: the compilers of a thread reuse the objects (see <see cref="PushControl"/>).</summary>
     private sealed class Control
     {
         public ControlKind Kind { get; set; }
 
-        public ValType[] Parameters { get; init; } = [];
+        public ValType[] Parameters { get; set; } = [];
 
-        public ValType[] Results { get; init; } = [];
+        public ValType[] Results { get; set; } = [];
 
-        public int Height { get; init; }
+        public int Height { get; set; }
 
         public bool Unreachable { get; set; }
 
         /// <summary>The target of the branches to a loop.</summary>
-        public int StartPc { get; init; }
+        public int StartPc { get; set; }
 
         /// <summary>The branches to the end of the block, patched at its end.</summary>
-        public List<Fixup> Fixups { get; } = [];
+        public List<Fixup> Fixups { get; private set; } = [];
 
         /// <summary>The conditional jump of an if, patched at its else or at its end, or -1.</summary>
         public int ElseFixup { get; set; } = -1;
 
-        public int InitHeight { get; init; }
+        public int InitHeight { get; set; }
 
-        public HandlerInfo? Handler { get; init; }
+        public HandlerInfo? Handler { get; set; }
 
         /// <summary>The local that holds the exception of the handlers of a legacy <c>try</c> (for <c>rethrow</c>), or -1.</summary>
         public int ExceptionLocal { get; set; } = -1;
@@ -118,6 +122,25 @@ internal sealed partial class FunctionCompiler
         public List<HandlerInfo>? Delegates { get; set; }
 
         public ValType[] LabelTypes => Kind == ControlKind.Loop ? Parameters : Results;
+
+        /// <summary>Clears the state of the previous block of the object, so that it does not keep its values alive.</summary>
+        public void Reset()
+        {
+            Parameters = [];
+            Results = [];
+            Handler = null;
+            Delegates = null;
+
+            // The list of a block with many branches is not kept (a br_table adds an entry per label)
+            if (Fixups.Capacity > Buffers.MaxRetainedCapacity)
+            {
+                Fixups = [];
+            }
+            else
+            {
+                Fixups.Clear();
+            }
+        }
     }
 
     public static CompiledCode CompileFunction(ModuleInfo module, ref WasmReader reader, DefinedType type, ValType[] locals)
@@ -131,7 +154,7 @@ internal sealed partial class FunctionCompiler
         }
         finally
         {
-            compiler._buffers.Return();
+            compiler.ReturnBuffers();
         }
     }
 
@@ -151,8 +174,17 @@ internal sealed partial class FunctionCompiler
         }
         finally
         {
-            compiler._buffers.Return();
+            compiler.ReturnBuffers();
         }
+    }
+
+    /// <summary>Gives the lists of the compiler to the next compiler of the thread.</summary>
+    private void ReturnBuffers()
+    {
+        // The values that remain on the stack (the code is not valid) do not keep the types of the module alive
+        Array.Clear(_stack, 0, _stackCount);
+        _stackCount = 0;
+        _buffers.Return();
     }
 
     private CompiledCode CreateCode(int parameterCount, ValType[] results) => new()
@@ -178,13 +210,15 @@ internal sealed partial class FunctionCompiler
     {
         // The lists of a larger function are not kept, so that a thread does not keep the memory of its largest function (each
         // list grows on its own: a br_table adds a branch target per label for one instruction)
-        private const int MaxRetainedCapacity = 16 * 1024;
+        public const int MaxRetainedCapacity = 16 * 1024;
 
         [ThreadStatic]
         private static Buffers? s_cached;
 
-        public List<ValType> Stack { get; } = [];
+        /// <summary>The operand stack, whose slots above the height of the stack are empty.</summary>
+        public ValType[] Stack { get; set; } = new ValType[64];
 
+        /// <summary>The blocks of the function, then the objects of the blocks that ended, which the next blocks reuse.</summary>
         public List<Control> Controls { get; } = [];
 
         public List<Instr> Code { get; } = [];
@@ -211,7 +245,7 @@ internal sealed partial class FunctionCompiler
 
         public void Return()
         {
-            if (Stack.Capacity > MaxRetainedCapacity
+            if (Stack.Length > MaxRetainedCapacity
                 || Controls.Capacity > MaxRetainedCapacity
                 || Code.Capacity > MaxRetainedCapacity
                 || BranchTables.Capacity > MaxRetainedCapacity
@@ -223,8 +257,11 @@ internal sealed partial class FunctionCompiler
                 return;
             }
 
-            Stack.Clear();
-            Controls.Clear();
+            foreach (var control in Controls)
+            {
+                control.Reset();
+            }
+
             Code.Clear();
             BranchTables.Clear();
             Handlers.Clear();
@@ -239,17 +276,34 @@ internal sealed partial class FunctionCompiler
     // The operand and control stacks
     // ------------------------------------------------------------------------------------------------------------
 
-    private int Height => _stack.Count;
+    private int Height => _stackCount;
 
-    private Control CurrentControl => _controls[^1];
+    private Control CurrentControl => _controls[_controlCount - 1];
 
     private void Push(ValType type)
     {
-        _stack.Add(type);
-        if (_stack.Count > _maxHeight)
+        var count = _stackCount;
+        var stack = _stack;
+        if ((uint)count >= (uint)stack.Length)
         {
-            _maxHeight = _stack.Count;
+            stack = GrowStack();
         }
+
+        stack[count] = type;
+        count++;
+        _stackCount = count;
+        if (count > _maxHeight)
+        {
+            _maxHeight = count;
+        }
+    }
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private ValType[] GrowStack()
+    {
+        Array.Resize(ref _stack, _stack.Length * 2);
+        _buffers.Stack = _stack;
+        return _stack;
     }
 
     private void Push(ValType[] types)
@@ -263,7 +317,8 @@ internal sealed partial class FunctionCompiler
     private ValType Pop()
     {
         var control = CurrentControl;
-        if (_stack.Count == control.Height)
+        var count = _stackCount;
+        if (count == control.Height)
         {
             if (control.Unreachable)
                 return ValType.Bottom;
@@ -271,11 +326,19 @@ internal sealed partial class FunctionCompiler
             throw Error("type mismatch: operand stack underflow");
         }
 
-        var result = _stack[^1];
-        _stack.RemoveAt(_stack.Count - 1);
-        if (_stack.Count < _minimumHeight)
+        count--;
+        _stackCount = count;
+        ref var slot = ref _stack[count];
+        var result = slot;
+        if (result.Defined is not null)
         {
-            _minimumHeight = _stack.Count;
+            // The slots above the stack do not keep the types of the module alive (the buffers of the thread are reused)
+            slot = default;
+        }
+
+        if (count < _minimumHeight)
+        {
+            _minimumHeight = count;
         }
 
         return result;
@@ -310,17 +373,31 @@ internal sealed partial class FunctionCompiler
 
     private Control PushControl(ControlKind kind, ValType[] parameters, ValType[] results, HandlerInfo? handler = null)
     {
-        var control = new Control
+        // The object of a block that ended at this depth is reused: the code of an ended block does not use it after the block
+        // that ends it (see CompileEnd)
+        Control control;
+        if (_controlCount < _controls.Count)
         {
-            Kind = kind,
-            Parameters = parameters,
-            Results = results,
-            Height = _stack.Count,
-            StartPc = _code.Count,
-            InitHeight = _initializedLocals.Count,
-            Handler = handler,
-        };
-        _controls.Add(control);
+            control = _controls[_controlCount];
+            control.Reset();
+        }
+        else
+        {
+            control = new Control();
+            _controls.Add(control);
+        }
+
+        _controlCount++;
+        control.Kind = kind;
+        control.Parameters = parameters;
+        control.Results = results;
+        control.Height = _stackCount;
+        control.Unreachable = false;
+        control.StartPc = _code.Count;
+        control.ElseFixup = -1;
+        control.InitHeight = _initializedLocals.Count;
+        control.Handler = handler;
+        control.ExceptionLocal = -1;
         Push(parameters);
         return control;
     }
@@ -329,10 +406,10 @@ internal sealed partial class FunctionCompiler
     {
         var control = CurrentControl;
         Pop(control.Results);
-        if (_stack.Count != control.Height)
+        if (_stackCount != control.Height)
             throw Error("type mismatch: values remaining on the stack at the end of the block");
 
-        _controls.RemoveAt(_controls.Count - 1);
+        _controlCount--;
         ResetLocals(control.InitHeight);
         return control;
     }
@@ -340,7 +417,8 @@ internal sealed partial class FunctionCompiler
     private void SetUnreachable()
     {
         var control = CurrentControl;
-        _stack.RemoveRange(control.Height, _stack.Count - control.Height);
+        Array.Clear(_stack, control.Height, _stackCount - control.Height);
+        _stackCount = control.Height;
         control.Unreachable = true;
     }
 
@@ -355,10 +433,10 @@ internal sealed partial class FunctionCompiler
 
     private Control GetLabel(uint depth)
     {
-        if (depth >= (uint)_controls.Count)
+        if (depth >= (uint)_controlCount)
             throw Error("unknown label " + depth);
 
-        return _controls[_controls.Count - 1 - (int)depth];
+        return _controls[_controlCount - 1 - (int)depth];
     }
 
     // ------------------------------------------------------------------------------------------------------------
@@ -597,7 +675,7 @@ internal sealed partial class FunctionCompiler
             if (_isConstant && !IsConstantInstruction(opcode, ref reader))
                 throw Error("constant expression required");
 
-            if (opcode == 0x0B && _controls.Count == 1)
+            if (opcode == 0x0B && _controlCount == 1)
             {
                 CompileEnd();
                 return;
@@ -709,7 +787,7 @@ internal sealed partial class FunctionCompiler
 
         // The end of the previous part of the try, as an else
         Pop(control.Results);
-        if (_stack.Count != control.Height)
+        if (_stackCount != control.Height)
             throw Error("type mismatch: values remaining on the stack at the end of the block");
 
         var jump = Emit(Op.Jump);
@@ -879,7 +957,7 @@ internal sealed partial class FunctionCompiler
                     throw Error("else without if");
 
                 Pop(control.Results);
-                if (_stack.Count != control.Height)
+                if (_stackCount != control.Height)
                     throw Error("type mismatch: values remaining on the stack at the end of the block");
 
                 var jump = Emit(Op.Jump);

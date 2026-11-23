@@ -478,6 +478,46 @@ public sealed class WasmRuntimeTests
     }
 
     [Fact]
+    public void Compile_AfterAnInvalidFunction_ValidatesTheNextModulesFromAnEmptyState()
+    {
+        // The validator reuses its blocks and its operand stack: a function that fails in nested blocks, with a value of a
+        // concrete reference type on the stack, must not change the validation or the branches of the next functions
+        const string Valid = """
+            (module
+              (func (export "run") (param $n i32) (result i32)
+                (block $outer (result i32)
+                  (block $inner (result i32)
+                    (br_if $outer (i32.const 10) (i32.eqz (local.get $n)))
+                    (br_table $inner $outer (i32.const 20) (i32.sub (local.get $n) (i32.const 1))))
+                  (i32.const 1)
+                  (i32.add))))
+            """;
+        const string Invalid = """
+            (module
+              (type $t (func))
+              (func $f (type $t))
+              (elem declare func $f)
+              (func (result i32)
+                (block (result i32)
+                  (loop (result i32)
+                    (if (result i32) (i32.const 1)
+                      (then (ref.func $f) (i32.const 1))
+                      (else (i32.const 2)))))))
+            """;
+
+        using var runtime = new WasmRuntime();
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Throws<WasmCompileException>(() => runtime.Compile(WasmRuntime.WatToWasm(Invalid)));
+            using var store = runtime.CreateStore();
+            var run = store.Instantiate(runtime.Compile(WasmRuntime.WatToWasm(Valid))).GetFunction("run")!;
+            Assert.Equal(10, run.Call(WasmValue.FromI32(0))[0].I32);
+            Assert.Equal(21, run.Call(WasmValue.FromI32(1))[0].I32);
+            Assert.Equal(20, run.Call(WasmValue.FromI32(2))[0].I32);
+        }
+    }
+
+    [Fact]
     public void Options_WhenNotValid_Throw()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new WasmRuntime(new WasmRuntimeOptions { InterruptionCheckInterval = TimeSpan.Zero }));

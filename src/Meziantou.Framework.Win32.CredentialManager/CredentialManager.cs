@@ -11,21 +11,27 @@ namespace Meziantou.Framework.Win32;
 
 /// <summary>Provides methods to manage credentials in the Windows Credential Manager.</summary>
 /// <example>
-/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Win32.CredentialManager.Tests/CredentialManagerTests.cs" ref:region="CredentialManager_WriteReadDelete" ref:dedent="true">
-/// // Save a credential
+/// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../samples/Meziantou.Framework.Win32.CredentialManagerConsole/ReadmeExamples.cs" ref:region="CredentialManager_Usage" ref:dedent="true">
+/// // Save the credential to the credential manager
 /// CredentialManager.WriteCredential(
-///     applicationName: "MyApp",
-///     userName: "user@example.com",
-///     secret: "password123",
-///     comment: "Application credentials",
+///     applicationName: "CredentialManagerTests",
+///     userName: "meziantou",
+///     secret: "Pa$$w0rd",
+///     comment: "Test",
 ///     persistence: CredentialPersistence.LocalMachine);
 ///
-/// // Read a credential
-/// var credential = CredentialManager.ReadCredential("MyApp");
-/// Assert.Equal("user@example.com", credential?.UserName);
+/// // Get a credential from the credential manager.
+/// // ReadCredential returns null when no such credential exists.
+/// var cred = CredentialManager.ReadCredential(applicationName: "CredentialManagerTests");
+/// if (cred is not null)
+/// {
+///     Console.WriteLine(cred.UserName);
+///     Console.WriteLine(cred.Password);
+/// }
 ///
-/// // Delete a credential
-/// CredentialManager.DeleteCredential("MyApp");
+/// // Delete a credential from the credential manager.
+/// // DeleteCredential throws Win32Exception when no such credential exists.
+/// CredentialManager.DeleteCredential(applicationName: "CredentialManagerTests");
 /// </code>
 /// </example>
 [SupportedOSPlatform("windows5.1.2600")]

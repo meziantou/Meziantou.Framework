@@ -31,29 +31,26 @@ public sealed class CredentialManagerTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
-    public void CredentialManager_DocumentationExample()
+    public void CredentialManager_LocalMachinePersistence()
     {
-        // The example uses a fixed credential name, so it must not run concurrently with the other target frameworks
-        using var context = new IsolatedContext(requiresMutex: true);
+        using var context = new IsolatedContext();
+        var credentialName = context.GetCredentialName();
+        CredentialManager.WriteCredential(credentialName, "user@example.com", "password123", "Application credentials", CredentialPersistence.LocalMachine);
+        try
+        {
+            var cred = CredentialManager.ReadCredential(credentialName);
+            Assert.NotNull(cred);
+            Assert.Equal("user@example.com", cred.UserName);
+            Assert.Equal("password123", cred.Password);
+            Assert.Equal("Application credentials", cred.Comment);
 
-        #region CredentialManager_WriteReadDelete
-        // Save a credential
-        CredentialManager.WriteCredential(
-            applicationName: "MyApp",
-            userName: "user@example.com",
-            secret: "password123",
-            comment: "Application credentials",
-            persistence: CredentialPersistence.LocalMachine);
-
-        // Read a credential
-        var credential = CredentialManager.ReadCredential("MyApp");
-        Assert.Equal("user@example.com", credential?.UserName);
-
-        // Delete a credential
-        CredentialManager.DeleteCredential("MyApp");
-        #endregion
-
-        Assert.Null(CredentialManager.ReadCredential("MyApp"));
+            CredentialManager.DeleteCredential(credentialName);
+            Assert.Null(CredentialManager.ReadCredential(credentialName));
+        }
+        finally
+        {
+            CredentialManager.TryDeleteCredential(credentialName);
+        }
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]

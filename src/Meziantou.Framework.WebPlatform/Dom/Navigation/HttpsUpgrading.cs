@@ -78,8 +78,12 @@ internal static class HttpsUpgrading
             }
         }
 
-        if (!IsEligible(request, url, options) || browsingContextOptions.HttpsUpgradeAllowlist.Contains(url.Host!.Value.Serialized, request.Navigable.EventLoop.TimeProvider))
+        // A Known HSTS Host is upgraded by main fetch after the referrer is determined, without fallback to http:
+        if (!IsEligible(request, url, options) || browsingContextOptions.HttpsUpgradeAllowlist.Contains(url.Host!.Value.Serialized, request.Navigable.EventLoop.TimeProvider)
+            || StrictTransportSecurity.IsKnownHost(request, url))
+        {
             return;
+        }
 
         request.HttpsUpgradeFallbackUrl = url;
         request.UrlList[^1] = UpgradeInsecureRequests.Upgrade(url);

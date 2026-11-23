@@ -26,7 +26,6 @@
     "font-access/*": [{ "kind": "NOT IMPLEMENTED", "description": "Local Font Access API" }],
     "gamepad/*": [{ "kind": "REQUIRES", "features": ["hardware"], "description": "Gamepad API" }],
     "graphics-aria/*": [{ "kind": "TEST RUNNER", "description": "needs the platform accessibility API of a browser" }],
-    "hsts/*": [{ "kind": "NOT IMPLEMENTED", "description": "HTTP Strict Transport Security" }],
     "html-media-capture/*": [{ "kind": "REQUIRES", "features": ["hardware"], "description": "HTML Media Capture" }],
     "html/capability-delegation/*": [{ "kind": "NOT IMPLEMENTED", "description": "capability delegation (the `delegate` option of `postMessage()`)" }, { "kind": "REQUIRES", "features": ["user-input"], "description": "activation through `test_driver` clicks" }],
     "html/interaction/focus/focusgroup/*": [{ "kind": "NOT IMPLEMENTED", "description": "the tentative `focusgroup` attribute (arrow-key focus navigation)" }, { "kind": "REQUIRES", "features": ["user-input"], "description": "arrow keys" }],

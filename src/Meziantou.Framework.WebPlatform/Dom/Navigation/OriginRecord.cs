@@ -125,6 +125,15 @@ internal sealed class OriginRecord
         return a.Domain is null && b.Domain is null && IsSameOrigin(a, b);
     }
 
+    /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#schemelessly-same-site</summary>
+    public static bool IsSchemelesslySameSite(OriginRecord a, OriginRecord b)
+    {
+        if (a.IsOpaque || b.IsOpaque)
+            return ReferenceEquals(a, b);
+
+        return IsSameSite(a, CreateTuple(a.Scheme!, b.Host, b.Port));
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#same-site: schemelessly same site, with the same scheme.</summary>
     public static bool IsSameSite(OriginRecord a, OriginRecord b)
     {

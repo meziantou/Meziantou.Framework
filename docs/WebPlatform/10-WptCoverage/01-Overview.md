@@ -50,10 +50,10 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 27,644 | 30,012 | 1,296 | 96% |
-| [Tentative](#tentative-tests) | 1,631 | 3,031 | 626 | 68% |
+| [Tentative](#tentative-tests) | 1,632 | 3,031 | 625 | 68% |
 | [Reftests](#reftests) | 28,681 | 29,567 | 137 | 97% |
 | [Crash tests](#crash-tests) | 2,102 | 2,124 | 13 | 99.5% |
-| **All** | **60,058** | **64,734** | **2,072** | **96%** |
+| **All** | **60,059** | **64,734** | **2,071** | **96%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 112
 - **TEST BUG**: 1,155
-- **NOT IMPLEMENTED**: 2,611
+- **NOT IMPLEMENTED**: 2,610
 - **REQUIRES**: 631
   - `hardware`: 444
   - `layout`: 22
@@ -500,7 +500,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`font-access`](font-access.md#tentative-tests) | 0 | 6 | 6 | – |
 | [`fs`](fs.md#tentative-tests) | 2 | 8 | 0 | 25% |
 | [`fullscreen`](fullscreen.md#tentative-tests) | 2 | 3 | 0 | 67% |
-| [`hsts`](hsts.md#tentative-tests) | 0 | 1 | 1 | – |
+| [`hsts`](hsts.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`html-aam`](html-aam.md#tentative-tests) | 7 | 10 | 0 | 70% |
 | [`html/anonymous-iframe`](html/anonymous-iframe.md#tentative-tests) | 17 | 18 | 0 | 94% |
 | [`html/browsers`](html/browsers.md#tentative-tests) | 11 | 17 | 0 | 65% |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 2 | 2 | 0 | 100% |
-| **Total (164 sections)** | **1,631** | **3,031** | **626** | **68%** |
+| **Total (164 sections)** | **1,632** | **3,031** | **625** | **68%** |
 
 ## Reftests
 

@@ -7,7 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
 /// <summary>
 /// The handlers of <c>common/security-features</c> (the framework of the <c>referrer-policy</c>, <c>mixed-content</c> and
-/// <c>upgrade-insecure-requests</c> tests) and of the <c>referrer-policy</c> tests.
+/// <c>upgrade-insecure-requests</c> tests) and of the <c>referrer-policy</c> and <c>hsts</c> tests.
 /// </summary>
 internal static partial class WptPythonHandlers
 {
@@ -92,6 +92,22 @@ internal static partial class WptPythonHandlers
 
             response.Add("Referrer-Policy", DecodeUtf8(request.Get("policy") ?? ""));
             response.Body = Encoding.UTF8.GetBytes(body);
+        },
+
+        // Sets (max-age=60) or removes (max-age=0) the HSTS policy of the host of the request (hsts/resources/hsts.py)
+        ["/hsts/resources/hsts.py"] = (request, response, _) =>
+        {
+            response.Add("Access-Control-Allow-Origin", "*");
+            if (request.Has("set"))
+            {
+                response.Add("Strict-Transport-Security", "max-age=60");
+                response.Content = "HSTS max-age set to 60.";
+            }
+            else if (request.Has("remove"))
+            {
+                response.Add("Strict-Transport-Security", "max-age=0");
+                response.Content = "HSTS max-age set to 0.";
+            }
         },
     };
 

@@ -91,17 +91,8 @@ internal static class CrossOriginResourcePolicy
             "same-origin" => !OriginRecord.IsSameOrigin(origin, responseOrigin),
 
             // The origin is schemelessly same site with the origin of the response, and an https: origin does not accept an http: response
-            "same-site" => !IsSchemelesslySameSite(origin, responseOrigin) || (origin.Scheme == "https" && responseUrl.Scheme != "https"),
+            "same-site" => !OriginRecord.IsSchemelesslySameSite(origin, responseOrigin) || (origin.Scheme == "https" && responseUrl.Scheme != "https"),
             _ => false,
         };
-    }
-
-    /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#schemelessly-same-site</summary>
-    private static bool IsSchemelesslySameSite(OriginRecord a, OriginRecord b)
-    {
-        if (a.IsOpaque || b.IsOpaque)
-            return ReferenceEquals(a, b);
-
-        return OriginRecord.IsSameSite(a, OriginRecord.CreateTuple(a.Scheme!, b.Host, b.Port));
     }
 }

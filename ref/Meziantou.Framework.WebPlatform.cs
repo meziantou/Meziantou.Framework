@@ -3669,6 +3669,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions? GlobalPrivacyControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.HstsOptions? Hsts { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions? HttpsUpgrades { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IdleDetectionOptions? IdleDetection { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IndexedDBBackend? IndexedDB { get => throw null; init { } }
@@ -7180,6 +7181,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Go(int delta = 0) { }
         public void PushState(object? data, string unused, string? url = null) { }
         public void ReplaceState(object? data, string unused, string? url = null) { }
+    }
+
+    public sealed class HstsOptions
+    {
+        public static Meziantou.Framework.WebPlatform.Dom.HstsOptions Default { get => throw null; }
+        public System.Func<string, bool>? IsKnownHost { get => throw null; init { } }
+        public bool LearnFromResponses { get => throw null; init { } }
+        public bool UsePreloadList { get => throw null; init { } }
     }
 
     public sealed class HtmlAllCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Dom.Element>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Dom.Element>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Element>, System.Collections.IEnumerable

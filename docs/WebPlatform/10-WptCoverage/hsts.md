@@ -10,19 +10,13 @@ description: "The results of the web-platform-tests of hsts, and why the tests t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 1 | 1 | – |
+| [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`third-party-subframe-hsts-upgrade.tentative.sub.html`](https://wpt.fyi/results/hsts/third-party-subframe-hsts-upgrade.tentative.sub.html) | Disabled | – | NOT IMPLEMENTED | HTTP Strict Transport Security |
+| [`third-party-subframe-hsts-upgrade.tentative.sub.html`](https://wpt.fyi/results/hsts/third-party-subframe-hsts-upgrade.tentative.sub.html) | Pass | 1 / 1 |  |  |

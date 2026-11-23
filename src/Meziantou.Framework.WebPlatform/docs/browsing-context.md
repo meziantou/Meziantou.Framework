@@ -851,6 +851,7 @@ of its parent document until the new document is loaded; a reload or a traversal
   | `Refresh` | The declarative refresh of the document (see [Declarative refresh](#declarative-refresh)) |
   | `Speculation-Rules` | The speculation rule sets of a top-level document are fetched (see [Speculative loading](#speculative-loading)) |
   | `No-Vary-Search` | The query parameters that a prefetched or prerendered response does not depend on (see [Speculative loading](#speculative-loading)) |
+  | `Strict-Transport-Security` | The host of an `https:` response becomes a Known HSTS Host: its later `http:` requests are sent to its `https:` URL, without fallback (see [BrowsingContextOptions.Hsts](../../../docs/WebPlatform/05-LoadingPages/02-NetworkRequests.md#upgrade-the-requests-of-the-hsts-hosts)) |
   | `Supports-Loading-Mode` | `credentialed-prerender`: a cross-origin same-site document can be prerendered; `prerender-cross-origin-frames`: the cross-origin frames of the document are loaded while it is prerendered |
   | `X-Content-Type-Options` | `nosniff`: a script whose MIME type is not a JavaScript MIME type, or a style sheet whose MIME type is not `text/css`, is a network error |
   | `X-Frame-Options` | `DENY` and `SAMEORIGIN`: the document of a nested navigable is replaced by an error document (see [Navigations and document directives](#navigations-and-document-directives)) |

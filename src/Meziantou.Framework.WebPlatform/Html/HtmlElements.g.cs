@@ -3281,6 +3281,15 @@ public sealed partial class HtmlInputElement : HtmlElement
         set => Reflection.SetString(this, "step", value);
     }
 
+    /// <summary>Gets or sets a value indicating whether the element has the <c>switch</c> content attribute.</summary>
+    /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-switch"/>
+    [IdlMember("switch", "https://html.spec.whatwg.org/multipage/input.html#dom-input-switch")]
+    public bool Switch
+    {
+        get => Reflection.GetBoolean(this, "switch");
+        set => Reflection.SetBoolean(this, "switch", value);
+    }
+
     /// <summary>Gets or sets the value of the <c>type</c> content attribute, limited to the known values (the canonical keyword, or the default value).</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/input.html#dom-input-type"/>
     [IdlMember("type", "https://html.spec.whatwg.org/multipage/input.html#dom-input-type")]

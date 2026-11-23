@@ -13,13 +13,14 @@
       },
       "functions": {
         "Window": [
-          "ModelContext"
+          "ModelContext",
+          "Tool"
         ]
       }
     },
     "idlNames": {
       "ModelContext": {
-        "fragment": "[Exposed=Window, SecureContext]\ninterface ModelContext : EventTarget {\n  Promise<undefined> registerTool(ModelContextTool tool, optional ModelContextRegisterToolOptions options = {});\n  Promise<sequence<RegisteredTool>> getTools(optional ModelContextGetToolOptions options = {});\n  Promise<DOMString> executeTool(RegisteredTool tool, optional object inputObject, optional ModelContextExecuteToolOptions options = {});\n\n  attribute EventHandler ontoolchange;\n  attribute EventHandler ontoolactivated;\n  attribute EventHandler ontoolcancel;\n};",
+        "fragment": "[Exposed=Window, SecureContext]\ninterface ModelContext : EventTarget {\n  Promise<undefined> registerTool(ModelContextTool tool, optional ModelContextRegisterToolOptions options = {});\n  Promise<sequence<Tool>> getTools(optional ModelContextGetToolOptions options = {});\n  Promise<DOMString> executeTool(Tool tool, optional object inputObject, optional ModelContextExecuteToolOptions options = {});\n\n  attribute EventHandler ontoolchange;\n  attribute EventHandler ontoolactivated;\n  attribute EventHandler ontoolcancel;\n};",
         "type": "interface",
         "name": "ModelContext",
         "inheritance": "EventTarget",
@@ -107,7 +108,7 @@
                       "generic": "",
                       "nullable": false,
                       "union": false,
-                      "idlType": "RegisteredTool"
+                      "idlType": "Tool"
                     }
                   ]
                 }
@@ -168,7 +169,7 @@
                   "generic": "",
                   "nullable": false,
                   "union": false,
-                  "idlType": "RegisteredTool"
+                  "idlType": "Tool"
                 },
                 "default": null,
                 "optional": false,
@@ -692,144 +693,160 @@
         "partial": false,
         "href": "https://webmachinelearning.github.io/webmcp/#dictdef-modelcontextexecutetooloptions"
       },
-      "RegisteredTool": {
-        "fragment": "dictionary RegisteredTool {\n  required DOMString name;\n  // `title` can be exposed as a `DOMString` since it was taken in by a\n  // `USVString`, meaning all unmatched surrogate processing has already been\n  // done, and there's no need to do it again on tool exposure.\n  DOMString title;\n  required DOMString description;\n  object inputSchema;\n  object outputSchema;\n  required Window window;\n  required USVString origin;\n  ToolAnnotations annotations;\n};",
-        "type": "dictionary",
-        "name": "RegisteredTool",
+      "Tool": {
+        "fragment": "[Exposed=Window, SecureContext]\ninterface Tool {\n  readonly attribute DOMString name;\n  // `title` can be exposed as a `DOMString` since it was taken in by a\n  // `USVString`, meaning all unmatched surrogate processing has already been\n  // done, and there's no need to do it again on tool exposure.\n  readonly attribute DOMString title;\n  readonly attribute DOMString description;\n  readonly attribute object? inputSchema;\n  readonly attribute object? outputSchema;\n  readonly attribute WindowProxy? source;\n  readonly attribute USVString origin;\n  readonly attribute object? annotations;\n};",
+        "type": "interface",
+        "name": "Tool",
         "inheritance": null,
         "members": [
           {
-            "type": "field",
+            "type": "attribute",
             "name": "name",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
               "nullable": false,
               "union": false,
               "idlType": "DOMString"
             },
-            "default": null,
-            "required": true,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-name"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-name"
           },
           {
-            "type": "field",
+            "type": "attribute",
             "name": "title",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
               "nullable": false,
               "union": false,
               "idlType": "DOMString"
             },
-            "default": null,
-            "required": false,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-title"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-title"
           },
           {
-            "type": "field",
+            "type": "attribute",
             "name": "description",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
               "nullable": false,
               "union": false,
               "idlType": "DOMString"
             },
-            "default": null,
-            "required": true,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-description"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-description"
           },
           {
-            "type": "field",
+            "type": "attribute",
             "name": "inputSchema",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": false,
+              "nullable": true,
               "union": false,
               "idlType": "object"
             },
-            "default": null,
-            "required": false,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-inputschema"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-inputschema"
           },
           {
-            "type": "field",
+            "type": "attribute",
             "name": "outputSchema",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": false,
+              "nullable": true,
               "union": false,
               "idlType": "object"
             },
-            "default": null,
-            "required": false,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-outputschema"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-outputschema"
           },
           {
-            "type": "field",
-            "name": "window",
-            "extAttrs": [],
+            "type": "attribute",
+            "name": "source",
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": false,
+              "nullable": true,
               "union": false,
-              "idlType": "Window"
+              "idlType": "WindowProxy"
             },
-            "default": null,
-            "required": true,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-window"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-source"
           },
           {
-            "type": "field",
+            "type": "attribute",
             "name": "origin",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
               "nullable": false,
               "union": false,
               "idlType": "USVString"
             },
-            "default": null,
-            "required": true,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-origin"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-origin"
           },
           {
-            "type": "field",
+            "type": "attribute",
             "name": "annotations",
-            "extAttrs": [],
             "idlType": {
-              "type": "dictionary-type",
+              "type": "attribute-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": false,
+              "nullable": true,
               "union": false,
-              "idlType": "ToolAnnotations"
+              "idlType": "object"
             },
-            "default": null,
-            "required": false,
-            "href": "https://webmachinelearning.github.io/webmcp/#dom-registeredtool-annotations"
+            "extAttrs": [],
+            "special": "",
+            "readonly": true,
+            "href": "https://webmachinelearning.github.io/webmcp/#dom-tool-annotations"
           }
         ],
-        "extAttrs": [],
+        "extAttrs": [
+          {
+            "type": "extended-attribute",
+            "name": "Exposed",
+            "rhs": {
+              "type": "identifier",
+              "value": "Window"
+            },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SecureContext",
+            "rhs": null,
+            "arguments": []
+          }
+        ],
         "partial": false,
-        "href": "https://webmachinelearning.github.io/webmcp/#dictdef-registeredtool"
+        "href": "https://webmachinelearning.github.io/webmcp/#tool"
       },
       "ToolActivatedEvent": {
         "fragment": "[Exposed=Window, SecureContext]\ninterface ToolActivatedEvent : Event {\n  constructor(DOMString type, optional ToolActivatedEventInit eventInitDict = {});\n  readonly attribute DOMString toolName;\n};",
@@ -1107,6 +1124,7 @@
     "exposed": {
       "Window": [
         "ModelContext",
+        "Tool",
         "ToolActivatedEvent",
         "ToolCancelEvent"
       ]
@@ -1119,7 +1137,7 @@
         "EventTarget",
         "ModelContextTool",
         "ModelContextRegisterToolOptions",
-        "RegisteredTool",
+        "Tool",
         "ModelContextGetToolOptions",
         "ModelContextExecuteToolOptions",
         "EventHandler"
@@ -1139,9 +1157,8 @@
       "ModelContextExecuteToolOptions": [
         "AbortSignal"
       ],
-      "RegisteredTool": [
-        "Window",
-        "ToolAnnotations"
+      "Tool": [
+        "WindowProxy"
       ],
       "ToolActivatedEvent": [
         "Event",
@@ -1163,7 +1180,7 @@
       "EventTarget",
       "EventHandler",
       "AbortSignal",
-      "Window",
+      "WindowProxy",
       "Event",
       "EventInit"
     ],

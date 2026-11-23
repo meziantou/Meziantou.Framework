@@ -1083,7 +1083,7 @@
         "href": "https://w3c.github.io/push-api/#dom-pushsubscriptionchangeevent"
       },
       "PushSubscriptionChangeEventInit": {
-        "fragment": "dictionary PushSubscriptionChangeEventInit : ExtendableEventInit {\n  PushSubscription newSubscription = null;\n  PushSubscription oldSubscription = null;\n};",
+        "fragment": "dictionary PushSubscriptionChangeEventInit : ExtendableEventInit {\n  PushSubscription? newSubscription = null;\n  PushSubscription? oldSubscription = null;\n};",
         "type": "dictionary",
         "name": "PushSubscriptionChangeEventInit",
         "inheritance": "ExtendableEventInit",
@@ -1096,7 +1096,7 @@
               "type": "dictionary-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": false,
+              "nullable": true,
               "union": false,
               "idlType": "PushSubscription"
             },
@@ -1114,7 +1114,7 @@
               "type": "dictionary-type",
               "extAttrs": [],
               "generic": "",
-              "nullable": false,
+              "nullable": true,
               "union": false,
               "idlType": "PushSubscription"
             },

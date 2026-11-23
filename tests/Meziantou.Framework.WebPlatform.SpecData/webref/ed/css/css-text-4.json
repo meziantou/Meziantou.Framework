@@ -1281,6 +1281,22 @@
       ]
     },
     {
+      "name": "text-autospace-size",
+      "href": "https://drafts.csswg.org/css-text-4/#propdef-text-autospace-size",
+      "value": "<number [0,∞]>",
+      "initial": "0.125",
+      "appliesTo": "text",
+      "inherited": "yes",
+      "percentages": "N/A",
+      "computedValue": "the specified number",
+      "canonicalOrder": "per grammar",
+      "animationType": "by computed value type",
+      "styleDeclaration": [
+        "text-autospace-size",
+        "textAutospaceSize"
+      ]
+    },
+    {
       "name": "text-spacing-trim",
       "href": "https://drafts.csswg.org/css-text-4/#propdef-text-spacing-trim",
       "value": "<spacing-trim> | auto",

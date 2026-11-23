@@ -7008,6 +7008,17 @@ public sealed partial class CssStyleProperties
         set => SetProperty("text-autospace", value ?? "");
     }
 
+    /// <summary>Gets or sets the value of the <c>text-autospace-size</c> property (an empty string removes the declaration).</summary>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
+    /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>
+    [IdlMember("textAutospaceSize", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute")]
+    [IdlMember("text-autospace-size", "https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute")]
+    public string TextAutospaceSize
+    {
+        get => GetPropertyValue("text-autospace-size");
+        set => SetProperty("text-autospace-size", value ?? "");
+    }
+
     /// <summary>Gets or sets the value of the <c>text-box</c> property (an empty string removes the declaration).</summary>
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-camel_cased_attribute"/>
     /// <seealso href="https://drafts.csswg.org/cssom/#dom-cssstyleproperties-dashed_attribute"/>

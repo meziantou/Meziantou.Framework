@@ -11,6 +11,9 @@
           "MediaStreamTrackEvent",
           "OverconstrainedError",
           "DeviceChangeEvent"
+        ],
+        "DedicatedWorker": [
+          "OverconstrainedError"
         ]
       },
       "functions": {
@@ -19,6 +22,9 @@
           "MediaDevices",
           "MediaDeviceInfo",
           "InputDeviceInfo"
+        ],
+        "DedicatedWorker": [
+          "MediaStreamTrack"
         ]
       }
     },
@@ -360,7 +366,7 @@
         "href": "https://w3c.github.io/mediacapture-main/#dom-mediastream"
       },
       "MediaStreamTrack": {
-        "fragment": "[Exposed=Window]\ninterface MediaStreamTrack : EventTarget {\n  readonly attribute DOMString kind;\n  readonly attribute DOMString id;\n  readonly attribute DOMString label;\n  attribute boolean enabled;\n  readonly attribute boolean muted;\n  attribute EventHandler onmute;\n  attribute EventHandler onunmute;\n  readonly attribute MediaStreamTrackState readyState;\n  attribute EventHandler onended;\n  MediaStreamTrack clone();\n  undefined stop();\n  MediaTrackCapabilities getCapabilities();\n  MediaTrackConstraints getConstraints();\n  MediaTrackSettings getSettings();\n  Promise<undefined> applyConstraints(optional MediaTrackConstraints constraints = {});\n};",
+        "fragment": "[Exposed=(Window,DedicatedWorker), Transferable, SameAgentCluster]\ninterface MediaStreamTrack : EventTarget {\n  readonly attribute DOMString kind;\n  readonly attribute DOMString id;\n  readonly attribute DOMString label;\n  attribute boolean enabled;\n  readonly attribute boolean muted;\n  attribute EventHandler onmute;\n  attribute EventHandler onunmute;\n  readonly attribute MediaStreamTrackState readyState;\n  attribute EventHandler onended;\n  MediaStreamTrack clone();\n  undefined stop();\n  MediaTrackCapabilities getCapabilities();\n  MediaTrackConstraints getConstraints();\n  MediaTrackSettings getSettings();\n  Promise<undefined> applyConstraints(optional MediaTrackConstraints constraints = {});\n};",
         "type": "interface",
         "name": "MediaStreamTrack",
         "inheritance": "EventTarget",
@@ -639,9 +645,28 @@
             "type": "extended-attribute",
             "name": "Exposed",
             "rhs": {
-              "type": "identifier",
-              "value": "Window"
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
             },
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "Transferable",
+            "rhs": null,
+            "arguments": []
+          },
+          {
+            "type": "extended-attribute",
+            "name": "SameAgentCluster",
+            "rhs": null,
             "arguments": []
           }
         ],
@@ -2085,7 +2110,7 @@
         "href": "https://w3c.github.io/mediacapture-main/#dom-mediastreamtrackeventinit"
       },
       "OverconstrainedError": {
-        "fragment": "[Exposed=Window]\ninterface OverconstrainedError : DOMException {\n  constructor(DOMString constraint, optional DOMString message = \"\");\n  readonly attribute DOMString constraint;\n};",
+        "fragment": "[Exposed=(Window,DedicatedWorker)]\ninterface OverconstrainedError : DOMException {\n  constructor(DOMString constraint, optional DOMString message = \"\");\n  readonly attribute DOMString constraint;\n};",
         "type": "interface",
         "name": "OverconstrainedError",
         "inheritance": "DOMException",
@@ -2154,8 +2179,15 @@
             "type": "extended-attribute",
             "name": "Exposed",
             "rhs": {
-              "type": "identifier",
-              "value": "Window"
+              "type": "identifier-list",
+              "value": [
+                {
+                  "value": "Window"
+                },
+                {
+                  "value": "DedicatedWorker"
+                }
+              ]
             },
             "arguments": []
           }
@@ -3433,6 +3465,10 @@
         "MediaDeviceInfo",
         "InputDeviceInfo",
         "DeviceChangeEvent"
+      ],
+      "DedicatedWorker": [
+        "MediaStreamTrack",
+        "OverconstrainedError"
       ]
     },
     "dependencies": {

@@ -293,9 +293,10 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   elements (`InitializeDenseElements`).
 - [[Set]] of an ordinary object (`JsObject.OrdinarySet`) without the property walks its prototype chain once
   (`TryAddPropertyForSet`) and adds the property, instead of the steps of the spec that look up the key again (4 times on
-  the receiver for a property table); a setter, a read-only property or an exotic object of the chain takes the steps of
-  the spec. `CreateListFromArrayLike` (`apply`, `Reflect.apply`...) copies the dense elements of the arrays and of the
-  ordinary objects.
+  the receiver for a property table); a setter, a read-only property, a lazy property (its factory is host code, which
+  could define the property on the receiver) or an exotic object of the chain takes the steps of the spec.
+  `CreateListFromArrayLike` (`apply`, `Reflect.apply`...) copies the dense elements of the arrays and of the ordinary
+  objects.
 - Inline caches (`Runtime/InlineCache.cs`, `Interpreter/JsInterpreter.InlineCaches.cs`): GetProperty, GetMethod,
   SetProperty, DefineField, LoadGlobal and LoadGlobalOrUndefined have the index of their cache as last operand
   (`FunctionTemplate.Caches`, shared by the engines that run the code: an entry is immutable, and the entries that apply

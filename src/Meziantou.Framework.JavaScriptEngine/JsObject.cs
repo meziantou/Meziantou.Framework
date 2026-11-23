@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -285,6 +286,26 @@ public partial class JsObject : JsCell
         value = default;
         flags = default;
         return false;
+    }
+
+    /// <summary>Finds the flags of an own named property without evaluating it: a lazy property keeps <see cref="PropertyFlags.Lazy"/>.</summary>
+    private bool TryGetOwnSlotFlags(in PropertyKey key, out PropertyFlags flags)
+    {
+        Debug.Assert(!key.IsArrayIndex);
+        switch (_map)
+        {
+            case Shape shape when shape.Find(key) is var slot and >= 0:
+                flags = shape.GetFlags(slot);
+                return true;
+
+            case PropertyTable properties when properties.Find(key) is var position and >= 0:
+                flags = properties.GetFlags(position);
+                return true;
+
+            default:
+                flags = default;
+                return false;
+        }
     }
 
     internal bool OrdinaryDefineOwnProperty(in PropertyKey key, in PropertyDescriptor descriptor)
@@ -743,10 +764,11 @@ public partial class JsObject : JsCell
                 return false;
             }
 
-            if (obj.TryGetOwnSlot(key, out _, out var flags))
+            if (obj.TryGetOwnSlotFlags(key, out var flags))
             {
-                // A setter or a read-only property: the slow path
-                if ((flags & (PropertyFlags.Accessor | PropertyFlags.Writable)) != PropertyFlags.Writable)
+                // A setter, a read-only property, or a lazy property whose factory (host code) could change the receiver:
+                // the slow path, which looks up the receiver again after the factory ran
+                if ((flags & (PropertyFlags.Accessor | PropertyFlags.Writable | PropertyFlags.Lazy)) != PropertyFlags.Writable)
                 {
                     result = false;
                     return false;

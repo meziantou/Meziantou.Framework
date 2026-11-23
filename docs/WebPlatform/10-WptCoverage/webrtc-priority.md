@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webrtc-priority, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 0 | 2 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,5 +25,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCPeerConnection-ondatachannel.html`](https://wpt.fyi/results/webrtc-priority/RTCPeerConnection-ondatachannel.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-encodings.html`](https://wpt.fyi/results/webrtc-priority/RTCRtpParameters-encodings.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
+| [`RTCPeerConnection-ondatachannel.html`](https://wpt.fyi/results/webrtc-priority/RTCPeerConnection-ondatachannel.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-encodings.html`](https://wpt.fyi/results/webrtc-priority/RTCRtpParameters-encodings.html) | Fail | 0 / 7 | NOT IMPLEMENTED | WebRTC |

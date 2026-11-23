@@ -9,36 +9,36 @@ description: "The results of the web-platform-tests of font-access, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 6 | 6 | – |
-| [Tentative](#tentative-tests) | 0 | 6 | 6 | – |
+| [Stable](#stable-tests) | 1 | 6 | 0 | 17% |
+| [Tentative](#tentative-tests) | 0 | 6 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
+| **All** | **1** | **12** | **0** | **8%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 12
+- **NOT IMPLEMENTED**: 11
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`permissions-policy/local-fonts-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`permissions-policy/local-fonts-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-allowed-by-permissions-policy-attribute.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`permissions-policy/local-fonts-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-allowed-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`permissions-policy/local-fonts-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-default-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`permissions-policy/local-fonts-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-disabled-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`permissions-policy/local-fonts-supported-by-permissions-policy.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-supported-by-permissions-policy.html) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
+| [`permissions-policy/local-fonts-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Fail | 1 / 2 | NOT IMPLEMENTED | Local Font Access API |
+| [`permissions-policy/local-fonts-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-allowed-by-permissions-policy-attribute.https.sub.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Local Font Access API |
+| [`permissions-policy/local-fonts-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-allowed-by-permissions-policy.https.sub.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Local Font Access API |
+| [`permissions-policy/local-fonts-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-default-permissions-policy.https.sub.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Local Font Access API |
+| [`permissions-policy/local-fonts-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-disabled-by-permissions-policy.https.sub.html) | Fail | 2 / 3 | NOT IMPLEMENTED | Local Font Access API |
+| [`permissions-policy/local-fonts-supported-by-permissions-policy.html`](https://wpt.fyi/results/font-access/permissions-policy/local-fonts-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`font_access_basic.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_basic.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`font_access_blob.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_blob.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`font_access_detached_iframe.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_detached_iframe.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`font_access_permission.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_permission.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`font_access_query_select.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_query_select.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
-| [`font_access_sorted.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_sorted.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Local Font Access API |
+| [`font_access_basic.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_basic.tentative.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | Local Font Access API |
+| [`font_access_blob.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_blob.tentative.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | Local Font Access API |
+| [`font_access_detached_iframe.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_detached_iframe.tentative.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Local Font Access API |
+| [`font_access_permission.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_permission.tentative.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Local Font Access API |
+| [`font_access_query_select.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_query_select.tentative.https.window.js) | Fail | 0 / 15 | NOT IMPLEMENTED | Local Font Access API |
+| [`font_access_sorted.tentative.https.window.js`](https://wpt.fyi/results/font-access/font_access_sorted.tentative.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | Local Font Access API |

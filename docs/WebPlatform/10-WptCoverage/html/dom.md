@@ -245,7 +245,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`render-blocking/stylesheet-link-href-change-keeps-blocking.html`](https://wpt.fyi/results/html/dom/render-blocking/stylesheet-link-href-change-keeps-blocking.html) | Pass | 1 / 1 |  |  |
 | [`self-origin.any.js`](https://wpt.fyi/results/html/dom/self-origin.any.js) | Pass | 2 / 2 |  |  |
 | [`self-origin.sub.html`](https://wpt.fyi/results/html/dom/self-origin.sub.html) | Pass | 11 / 11 |  |  |
-| [`usvstring-reflection.https.html`](https://wpt.fyi/results/html/dom/usvstring-reflection.https.html) | Fail | 18 / 19 | NOT IMPLEMENTED | WebRTC (`RTCDataChannel.send()`; `/webrtc/RTCPeerConnection-helper.js` is not fetched) |
+| [`usvstring-reflection.https.html`](https://wpt.fyi/results/html/dom/usvstring-reflection.https.html) | Fail | 18 / 19 | NOT IMPLEMENTED | WebRTC (`RTCDataChannel.send()`) |
 
 ## Tentative tests
 

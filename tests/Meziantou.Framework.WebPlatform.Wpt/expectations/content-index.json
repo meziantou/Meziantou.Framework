@@ -1,0 +1,66 @@
+{
+  "content-index/content-index.https.window.js": {
+    "total": 6,
+    "failures": {
+      "The Content Index API is exposed": "FAIL",
+      "index.add parameters are validated.": "FAIL",
+      "index.add with same ID overwrites existing entry.": "FAIL",
+      "index.delete removes entry.": "FAIL",
+      "index.delete works on invalid ID.": "FAIL",
+      "index.getAll returns the same objects provided.": "FAIL"
+    }
+  },
+  "content-index/idlharness.https.any.js": {
+    "total": 26,
+    "failures": {
+      "ContentIndex interface object length": "FAIL",
+      "ContentIndex interface object name": "FAIL",
+      "ContentIndex interface: calling add(ContentDescription) on registration.index with too few arguments must throw TypeError": "FAIL",
+      "ContentIndex interface: calling delete(DOMString) on registration.index with too few arguments must throw TypeError": "FAIL",
+      "ContentIndex interface: existence and properties of interface object": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ContentIndex interface: operation add(ContentDescription)": "FAIL",
+      "ContentIndex interface: operation delete(DOMString)": "FAIL",
+      "ContentIndex interface: operation getAll()": "FAIL",
+      "ContentIndex interface: registration.index must inherit property \"add(ContentDescription)\" with the proper type": "FAIL",
+      "ContentIndex interface: registration.index must inherit property \"delete(DOMString)\" with the proper type": "FAIL",
+      "ContentIndex interface: registration.index must inherit property \"getAll()\" with the proper type": "FAIL",
+      "ContentIndex must be primary interface of registration.index": "FAIL",
+      "ServiceWorkerRegistration interface: attribute index": "FAIL",
+      "ServiceWorkerRegistration interface: registration must inherit property \"index\" with the proper type": "FAIL",
+      "Stringification of registration.index": "FAIL"
+    }
+  },
+  "content-index/idlharness.https.any.js#dedicatedworker": {
+    "total": 18,
+    "failures": {
+      "ContentIndex interface object length": "FAIL",
+      "ContentIndex interface object name": "FAIL",
+      "ContentIndex interface: existence and properties of interface object": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ContentIndex interface: operation add(ContentDescription)": "FAIL",
+      "ContentIndex interface: operation delete(DOMString)": "FAIL",
+      "ContentIndex interface: operation getAll()": "FAIL",
+      "ServiceWorkerRegistration interface: attribute index": "FAIL"
+    }
+  },
+  "content-index/idlharness.https.any.js#sharedworker": {
+    "total": 18,
+    "failures": {
+      "ContentIndex interface object length": "FAIL",
+      "ContentIndex interface object name": "FAIL",
+      "ContentIndex interface: existence and properties of interface object": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "ContentIndex interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ContentIndex interface: operation add(ContentDescription)": "FAIL",
+      "ContentIndex interface: operation delete(DOMString)": "FAIL",
+      "ContentIndex interface: operation getAll()": "FAIL",
+      "ServiceWorkerRegistration interface: attribute index": "FAIL"
+    }
+  }
+}

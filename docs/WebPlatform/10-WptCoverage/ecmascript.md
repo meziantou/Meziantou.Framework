@@ -9,21 +9,15 @@ description: "The results of the web-platform-tests of ecmascript, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 2 | 2 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **OUT OF SCOPE**: 2
+| **All** | **2** | **2** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`locale-compat.html`](https://wpt.fyi/results/ecmascript/locale-compat.html) | Disabled | – | OUT OF SCOPE | ECMAScript tests are the responsibility of the JavaScript engine: Meziantou.Framework.JavaScriptEngine is tested by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`) |
-| [`regexp-lookbehind.html`](https://wpt.fyi/results/ecmascript/regexp-lookbehind.html) | Disabled | – | OUT OF SCOPE | ECMAScript tests are the responsibility of the JavaScript engine: Meziantou.Framework.JavaScriptEngine is tested by test262 (`tests/Meziantou.Framework.JavaScriptEngine.Test262`) |
+| [`locale-compat.html`](https://wpt.fyi/results/ecmascript/locale-compat.html) | Pass | 4 / 4 |  |  |
+| [`regexp-lookbehind.html`](https://wpt.fyi/results/ecmascript/regexp-lookbehind.html) | Pass | 17 / 17 |  |  |

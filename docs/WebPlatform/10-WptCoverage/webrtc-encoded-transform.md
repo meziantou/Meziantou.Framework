@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webrtc-encoded-transform,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 23 | 23 | – |
-| [Tentative](#tentative-tests) | 0 | 18 | 18 | – |
+| [Stable](#stable-tests) | 0 | 23 | 0 | 0% |
+| [Tentative](#tentative-tests) | 0 | 18 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **41** | **41** | **–** |
+| **All** | **0** | **41** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,49 +25,49 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCEncodedFrame-copy-construction.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCEncodedFrame-copy-construction.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCEncodedFrame-shared-buffer.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCEncodedFrame-shared-buffer.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCRtpScriptTransform-bad-chunk.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-bad-chunk.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCRtpScriptTransform-encoded-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-encoded-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCRtpScriptTransform-late-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-late-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCRtpScriptTransform-padding.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-padding.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCRtpScriptTransform-sender-worker-single-frame.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-sender-worker-single-frame.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`RTCRtpScriptTransform-write-rules.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-write-rules.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/webrtc-encoded-transform/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-audio-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-audio-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-change-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-change-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-late-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-late-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-metadata-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-metadata-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-transform-generateKeyFrame-simulcast.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform-generateKeyFrame-simulcast.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-transform-generateKeyFrame.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform-generateKeyFrame.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-transform-sendKeyFrameRequest.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform-sendKeyFrameRequest.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`script-write-twice-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-write-twice-transform.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`sframe-keys.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-keys.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`sframe-transform-buffer-source.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform-buffer-source.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`sframe-transform-in-worker.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform-in-worker.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`sframe-transform-readable.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform-readable.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`sframe-transform.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCEncodedFrame-copy-construction.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCEncodedFrame-copy-construction.https.html) | Fail | 0 / 49 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCEncodedFrame-shared-buffer.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCEncodedFrame-shared-buffer.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCRtpScriptTransform-bad-chunk.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-bad-chunk.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCRtpScriptTransform-encoded-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-encoded-transform.https.html) | Fail | 0 / 13 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCRtpScriptTransform-late-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-late-transform.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCRtpScriptTransform-padding.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-padding.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCRtpScriptTransform-sender-worker-single-frame.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-sender-worker-single-frame.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`RTCRtpScriptTransform-write-rules.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/RTCRtpScriptTransform-write-rules.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/webrtc-encoded-transform/idlharness.https.window.js) | Fail | 23 / 102 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-audio-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-audio-transform.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-change-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-change-transform.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-late-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-late-transform.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-metadata-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-metadata-transform.https.html) | Fail | 0 / 25 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-transform-generateKeyFrame-simulcast.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform-generateKeyFrame-simulcast.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-transform-generateKeyFrame.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform-generateKeyFrame.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-transform-sendKeyFrameRequest.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform-sendKeyFrameRequest.https.html) | Fail | 0 / 6 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-transform.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`script-write-twice-transform.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/script-write-twice-transform.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`sframe-keys.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-keys.https.html) | Error | 0 / 2 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`sframe-transform-buffer-source.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform-buffer-source.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`sframe-transform-in-worker.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform-in-worker.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`sframe-transform-readable.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform-readable.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`sframe-transform.html`](https://wpt.fyi/results/webrtc-encoded-transform/sframe-transform.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC Encoded Transform |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/RTCEncodedAudioFrame-audiolevel.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-audiolevel.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedAudioFrame-clone.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-clone.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedAudioFrame-constructor.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-constructor.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedAudioFrame-metadata.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-metadata.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedAudioFrame-receive-cloned.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-receive-cloned.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedAudioFrame-send-incoming.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-send-incoming.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedAudioFrame-serviceworker-failure.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-serviceworker-failure.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedFrame-timestamps.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedFrame-timestamps.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedVideoFrame-clone.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-clone.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedVideoFrame-constructor.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-constructor.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedVideoFrame-metadata.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-metadata.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCEncodedVideoFrame-serviceworker-failure.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-serviceworker-failure.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCPeerConnection-insertable-streams-audio.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-audio.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCPeerConnection-insertable-streams-errors.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-errors.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCPeerConnection-insertable-streams-simulcast.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-simulcast.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCPeerConnection-insertable-streams-video-frames.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-video-frames.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCPeerConnection-insertable-streams-video.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-video.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
-| [`tentative/RTCPeerConnection-insertable-streams-worker.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-worker.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-audiolevel.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-audiolevel.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-clone.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-clone.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-constructor.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-constructor.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-metadata.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-metadata.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-receive-cloned.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-receive-cloned.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-send-incoming.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-send-incoming.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedAudioFrame-serviceworker-failure.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-serviceworker-failure.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedFrame-timestamps.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedFrame-timestamps.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedVideoFrame-clone.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-clone.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedVideoFrame-constructor.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-constructor.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedVideoFrame-metadata.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-metadata.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCEncodedVideoFrame-serviceworker-failure.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-serviceworker-failure.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCPeerConnection-insertable-streams-audio.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-audio.https.html) | Fail | 0 / 8 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCPeerConnection-insertable-streams-errors.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-errors.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCPeerConnection-insertable-streams-simulcast.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-simulcast.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCPeerConnection-insertable-streams-video-frames.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-video-frames.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCPeerConnection-insertable-streams-video.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-video.https.html) | Fail | 0 / 6 | NOT IMPLEMENTED | WebRTC Encoded Transform |
+| [`tentative/RTCPeerConnection-insertable-streams-worker.https.html`](https://wpt.fyi/results/webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-worker.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC Encoded Transform |

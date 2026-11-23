@@ -9,34 +9,35 @@ description: "The results of the web-platform-tests of old-tests, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 15 | 15 | – |
+| [Stable](#stable-tests) | 11 | 15 | 0 | 73% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **15** | **15** | **–** |
+| **All** | **11** | **15** | **0** | **73%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **OUT OF SCOPE**: 15
+- **TEST BUG**: 1
+- **OUT OF SCOPE**: 3
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`submission/Microsoft/foreigncontent/foreign_content_014.html`](https://wpt.fyi/results/old-tests/submission/Microsoft/foreigncontent/foreign_content_014.html) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/foreigncontent/foreign_content_015.html`](https://wpt.fyi/results/old-tests/submission/Microsoft/foreigncontent/foreign_content_015.html) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/history/history_000.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/history/history_000.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/RemoveElementContainingSelection.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/RemoveElementContainingSelection.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/collapseToEnd.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/collapseToEnd.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/collapseToStart.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/collapseToStart.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/deleteFromDocument.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/deleteFromDocument.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/getRangeAt.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/getRangeAt.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/insertNodeIntoSelection.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/insertNodeIntoSelection.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/removeAllRanges.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/removeAllRanges.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/removeRange.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/removeRange.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/select.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/select.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/selectAllChildren.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/selectAllChildren.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/selectionStartEnd.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/selectionStartEnd.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
-| [`submission/Microsoft/selection/setSelectionRange.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/setSelectionRange.htm) | Disabled | – | OUT OF SCOPE | legacy tests that are not maintained (old submissions) |
+| [`submission/Microsoft/foreigncontent/foreign_content_014.html`](https://wpt.fyi/results/old-tests/submission/Microsoft/foreigncontent/foreign_content_014.html) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/foreigncontent/foreign_content_015.html`](https://wpt.fyi/results/old-tests/submission/Microsoft/foreigncontent/foreign_content_015.html) | Fail | 0 / 1 | TEST BUG | the test expects the SVG element names to be camelCased outside of an `svg` element (`<AlTglYph>` in a `div` to be `altGlyph`): the HTML parser only adjusts the SVG tag names in foreign content (https://html.spec.whatwg.org/multipage/parsing.html#parsing-main-inforeign) |
+| [`submission/Microsoft/history/history_000.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/history/history_000.htm) | Pass | 25 / 25 |  |  |
+| [`submission/Microsoft/selection/RemoveElementContainingSelection.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/RemoveElementContainingSelection.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/collapseToEnd.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/collapseToEnd.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/collapseToStart.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/collapseToStart.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/deleteFromDocument.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/deleteFromDocument.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/getRangeAt.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/getRangeAt.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/insertNodeIntoSelection.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/insertNodeIntoSelection.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/removeAllRanges.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/removeAllRanges.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/removeRange.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/removeRange.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/select.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/select.htm) | Fail | 0 / 1 | OUT OF SCOPE | legacy test (old-tests, not maintained): it expects `select()` and `setSelectionRange()` on a focused text field to collapse the selection of the document around the field (anchor and focus at its parent) and `getSelection().toString()` to return the selected text of the field, which no specification defines |
+| [`submission/Microsoft/selection/selectAllChildren.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/selectAllChildren.htm) | Pass | 1 / 1 |  |  |
+| [`submission/Microsoft/selection/selectionStartEnd.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/selectionStartEnd.htm) | Fail | 0 / 1 | OUT OF SCOPE | legacy test (old-tests, not maintained): it expects `select()` and `setSelectionRange()` on a focused text field to collapse the selection of the document around the field (anchor and focus at its parent) and `getSelection().toString()` to return the selected text of the field, which no specification defines |
+| [`submission/Microsoft/selection/setSelectionRange.htm`](https://wpt.fyi/results/old-tests/submission/Microsoft/selection/setSelectionRange.htm) | Fail | 0 / 1 | OUT OF SCOPE | legacy test (old-tests, not maintained): it expects `select()` and `setSelectionRange()` on a focused text field to collapse the selection of the document around the field (anchor and focus at its parent) and `getSelection().toString()` to return the selected text of the field, which no specification defines |

@@ -264,7 +264,7 @@ internal static partial class WptCoverage
         ("JS ENGINE", "a limitation of the JavaScript engine (`Meziantou.Framework.JavaScriptEngine`) or of its integration with the library"),
         ("NOT IMPLEMENTED", "the feature is not implemented yet"),
         (RequiresKind, "the feature cannot be implemented, or the test cannot pass, until other features are implemented (listed in parentheses)"),
-        ("TEST RUNNER", "the WPT runner cannot run the test: a `.py` handler of the WPT server is not emulated, or the directory is not fetched"),
+        ("TEST RUNNER", "the WPT runner cannot run the test: a `.py` handler of the WPT server or a feature of the test driver is not emulated"),
         ("OUT OF SCOPE", "the library will not support it"),
         ("FLAKY", "the test passes or fails randomly"),
         ("PERFORMANCE", "the test is too slow to be run by every build"),
@@ -420,7 +420,7 @@ internal static partial class WptCoverage
                 "Visual tests, manual tests, WebDriver tests, the tests that only run in a ShadowRealm, and the tests outside of `service-workers` that only run in service workers are not counted: " +
                 "the library has no ShadowRealm, and the service workers are only tested by the tests of `service-workers`.");
             Line("- **Passing**: the testharness.js tests whose harness status is `OK` and whose subtests all pass with the JavaScript engine (`Meziantou.Framework.JavaScriptEngine`), the reftests whose rendering matches their references, and the crash tests that complete.");
-            Line("- **Disabled**: the tests that are not run: they are skipped, or their directory is not part of the tested directories. The page of the section gives the reason.");
+            Line("- **Disabled**: the tests that are not run: they are skipped, or the runner cannot run them. The page of the section gives the reason.");
             Line("- **Pass rate**: the passing tests among the tests that are run (the tests that are not disabled).");
             Line();
             Line("The pages of the sections give, for each test that does not pass, the **Kind** and the **Description** of the reasons why it does not pass " +

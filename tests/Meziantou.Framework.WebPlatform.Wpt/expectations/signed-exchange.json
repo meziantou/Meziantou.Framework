@@ -1,0 +1,432 @@
+{
+  "signed-exchange/check-cert-request.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Verify that certificate request has correct parameters.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/fallback-to-another-sxg.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Fallback redirect to another SignedHTTPExchange": "TIMEOUT"
+    }
+  },
+  "signed-exchange/nested-sxg.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Nested SignedHTTPExchange": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-cert_fetch_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.cert_fetch_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-cert_fetch_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.cert_fetch_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-cert_parse_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.cert_parse_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-cert_parse_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.cert_parse_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-cert_verification_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.cert_verification_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-cert_verification_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.cert_verification_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-failed-zero-success-fraction.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG error report must be downgraded when the cert URL is different from the reporting origin. And succeeded normal NEL report should not be sent  when success fraction is zero.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-invalid_integrity_header.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.invalid_integrity_header for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-mi_error.tentative.html": {
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.mi_error for navigation.": "FAIL"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-ok-no-referrer.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of ok for navigation with no-referrer.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-ok-origin-referrer.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of ok for navigation with origin referrer.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-ok.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG success report must be sent for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-parse_error.tentative.html": {
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.parse_error for navigation.": "FAIL"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-signature_verification_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.signature_verification_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-navigation-signature_verification_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.signature_verification_error for navigation.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-cert_fetch_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.cert_fetch_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-cert_fetch_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.cert_fetch_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-cert_parse_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.cert_parse_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-cert_parse_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.cert_parse_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-cert_verification_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.cert_verification_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-cert_verification_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.cert_verification_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-failed-zero-success-feaction.tentative.html": {
+    "total": 1,
+    "failures": {
+      "SXG error report must be downgraded when the cert URL is different from the reporting origin. And succeeded normal NEL report should not be sent  when success fraction is zero.": "FAIL"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-invalid_integrity_header.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.invalid_integrity_header for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-mi_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.mi_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-ok.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG success report must be sent for prefetching.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-parse_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.parse_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-signature_verification_error-downgraded.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.failed downgraded from sxg.signature_verification_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/reporting/sxg-reporting-prefetch-signature_verification_error.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SXG reporting test of sxg.signature_verification_error for prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/service-workers/sxg-sw-register-after-fallback.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Service worker registration after fallback": "TIMEOUT"
+    }
+  },
+  "signed-exchange/service-workers/sxg-sw-register.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Service worker registration from signed exchange": "TIMEOUT"
+    }
+  },
+  "signed-exchange/subresource/sxg-subresource-header-integrity-mismatch.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Subresource signed exchange prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/subresource/sxg-subresource.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Subresource signed exchange prefetch.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-data-cert-url.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SignedHTTPExchange using data URL for cert-url": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-double-prefetch.tentative.html": {
+    "total": 1
+  },
+  "signed-exchange/sxg-fallback-with-fragment.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Fallback redirect of SignedHTTPExchange should preserve URL fragment": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-hsts.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Loading SignedHTTPExchange with an uncached header Strict-Transport-Security must fail and fallback redirect.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-inner-url-bom.tentative.html": {
+    "total": 1
+  },
+  "signed-exchange/sxg-invalid-utf8-inner-url.tentative.html": {
+    "total": 1
+  },
+  "signed-exchange/sxg-invalid-validity-url.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Loading SignedHTTPExchange which validity URL is different origin from request URL must fail": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-location-fragment.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Navigating to a Signed Exchange should preserve URL fragment": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-location.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Location of SignedHTTPExchange": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-merkle-integrity-error.tentative.html": {
+    "total": 1
+  },
+  "signed-exchange/sxg-navigation-timing.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Navigation timing of SignedHTTPExchange": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-non-secure-origin.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Loading SignedHTTPExchange from non secure origin must fail": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-noncacheable.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Loading SignedHTTPExchange with non-cacheable response must fail": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-prefetch-merkle-integrity-error.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Prefetching SignedHTTPExchange with payload integrity error should fail": "FAIL"
+    }
+  },
+  "signed-exchange/sxg-prefetch-resource-timing.tentative.html": {
+    "total": 1
+  },
+  "signed-exchange/sxg-prefetch.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Prefetched signed exchange and certificate must not be fetched again.": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-referrer-policy-header.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 7,
+    "failures": {
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,no-referrer)\",\"expectedReferrer\":\"\"}": "TIMEOUT",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,no-referrer-when-downgrade)\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-policy-header.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,origin)\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,same-origin)\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-policy-header.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,strict-origin)\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,strict-origin-when-cross-origin)\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-policy-header.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg?pipe=header(Referrer-Policy,unsafe-url)\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-policy-header.tentative.https.html\"}": "NOTRUN"
+    }
+  },
+  "signed-exchange/sxg-referrer-remote-physical-remote-logical.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "FAIL",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"no-referrer\",\"expectedReferrer\":\"\"}": "FAIL",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"no-referrer-when-downgrade\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-remote-physical-remote-logical.tentative.https.html\"}": "FAIL",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "TIMEOUT",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"same-origin\",\"expectedReferrer\":\"\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"strict-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"strict-origin-when-cross-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"unsafe-url\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-remote-physical-remote-logical.tentative.https.html\"}": "NOTRUN"
+    }
+  },
+  "signed-exchange/sxg-referrer-remote-physical-same-logical.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "TIMEOUT",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"no-referrer\",\"expectedReferrer\":\"\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"no-referrer-when-downgrade\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-remote-physical-same-logical.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"same-origin\",\"expectedReferrer\":\"\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"strict-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"strict-origin-when-cross-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://www1.web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"unsafe-url\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-remote-physical-same-logical.tentative.https.html\"}": "NOTRUN"
+    }
+  },
+  "signed-exchange/sxg-referrer-same-physical-remote-logical.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "FAIL",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"no-referrer\",\"expectedReferrer\":\"\"}": "FAIL",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"no-referrer-when-downgrade\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-remote-logical.tentative.https.html\"}": "FAIL",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "TIMEOUT",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"same-origin\",\"expectedReferrer\":\"\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"strict-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"strict-origin-when-cross-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-remote-origin.sxg\",\"referrerPolicy\":\"unsafe-url\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-remote-logical.tentative.https.html\"}": "NOTRUN"
+    }
+  },
+  "signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 8,
+    "failures": {
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html\"}": "TIMEOUT",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"no-referrer\",\"expectedReferrer\":\"\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"no-referrer-when-downgrade\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"same-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"strict-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"strict-origin-when-cross-origin\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html\"}": "NOTRUN",
+      "Referrer of SignedHTTPExchange test : {\"origin\":\"https://web-platform.test:8443\",\"sxg\":\"sxg-referrer-same-origin.sxg\",\"referrerPolicy\":\"unsafe-url\",\"expectedReferrer\":\"https://web-platform.test:8443/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html\"}": "NOTRUN"
+    }
+  },
+  "signed-exchange/sxg-utf8-inner-url.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SignedHTTPExchange with UTF-8 inner URL": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-variants-match.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SignedHTTPExchange should be loaded if Variants/Variant-Key match the request": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-variants-mismatch.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "SignedHTTPExchange should fallback if Variants/Variant-Key don't match the request": "TIMEOUT"
+    }
+  },
+  "signed-exchange/sxg-version1b2.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Loading SignedHTTPExchange of unsupported version must fail and fallback redirect.": "TIMEOUT"
+    }
+  }
+}

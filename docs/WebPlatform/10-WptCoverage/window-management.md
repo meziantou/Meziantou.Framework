@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of window-management, and wh
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 5 | 5 | – |
+| [Tentative](#tentative-tests) | 0 | 5 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
+| **All** | **0** | **5** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,8 +26,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`additional-windowing-controls.tentative.https.html`](https://wpt.fyi/results/window-management/additional-windowing-controls.tentative.https.html) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
-| [`multi-screen-fullscreen-companion.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-fullscreen-companion.tentative.https.html) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
-| [`multi-screen-fullscreen-enter.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-fullscreen-enter.tentative.https.html) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
-| [`multi-screen-fullscreen-move.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-fullscreen-move.tentative.https.html) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
-| [`multi-screen-window-open.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-window-open.tentative.https.html) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`additional-windowing-controls.tentative.https.html`](https://wpt.fyi/results/window-management/additional-windowing-controls.tentative.https.html) | Fail | 0 / 5 | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`multi-screen-fullscreen-companion.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-fullscreen-companion.tentative.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`multi-screen-fullscreen-enter.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-fullscreen-enter.tentative.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`multi-screen-fullscreen-move.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-fullscreen-move.tentative.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`multi-screen-window-open.tentative.https.html`](https://wpt.fyi/results/window-management/multi-screen-window-open.tentative.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Window Management API, multiple screens |

@@ -1,0 +1,16 @@
+{
+  "installedapp/idlharness.https.window.js": {
+    "total": 16,
+    "failures": {
+      "Navigator interface: navigator must inherit property \"getInstalledRelatedApps()\" with the proper type": "FAIL",
+      "Navigator interface: operation getInstalledRelatedApps()": "FAIL"
+    }
+  },
+  "installedapp/installedapp.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Calling getInstalledrelatedApps from an iframe fails": "FAIL",
+      "Check calling getInstalledRelatedApps works as expected": "FAIL"
+    }
+  }
+}

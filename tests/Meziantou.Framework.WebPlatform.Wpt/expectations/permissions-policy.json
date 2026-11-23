@@ -1,23 +1,33 @@
 {
   "permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load": "FAIL"
+    }
   },
   "permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-allowed-by-permissions-policy-attribute": "FAIL"
+    }
   },
   "permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-allowed-by-permissions-policy": "FAIL"
+    }
   },
   "permissions-policy/bluetooth-default-permissions-policy.https.sub.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-default-permissions-policy": "FAIL"
+    }
   },
   "permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-disabled-by-permissions-policy": "FAIL"
+    }
   },
   "permissions-policy/experimental-features/focus-without-user-activation-click-handler.tentative.html": {
     "total": 2,
@@ -325,12 +335,16 @@
     "total": 1
   },
   "permissions-policy/reporting/bluetooth-report-only.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-report-only": "FAIL"
+    }
   },
   "permissions-policy/reporting/bluetooth-reporting.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "bluetooth-reporting": "FAIL"
+    }
   },
   "permissions-policy/reporting/camera-potential-report-only.https.html": {
     "total": 1

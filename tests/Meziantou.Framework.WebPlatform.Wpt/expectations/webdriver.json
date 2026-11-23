@@ -1,0 +1,9 @@
+{
+  "webdriver/tests/classic/idlharness.window.js": {
+    "total": 14,
+    "failures": {
+      "Navigator interface: attribute webdriver": "FAIL",
+      "Navigator interface: navigator must inherit property \"webdriver\" with the proper type": "FAIL"
+    }
+  }
+}

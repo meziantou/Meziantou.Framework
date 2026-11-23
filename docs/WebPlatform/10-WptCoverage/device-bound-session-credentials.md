@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of device-bound-session-cred
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 27 | 27 | – |
-| [Tentative](#tentative-tests) | 0 | 6 | 6 | – |
+| [Stable](#stable-tests) | 0 | 27 | 0 | 0% |
+| [Tentative](#tentative-tests) | 0 | 6 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **33** | **33** | **–** |
+| **All** | **0** | **33** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,41 +25,41 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`allowed-refresh-initiators.https.html`](https://wpt.fyi/results/device-bound-session-credentials/allowed-refresh-initiators.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`clear-site-data.https.html`](https://wpt.fyi/results/device-bound-session-credentials/clear-site-data.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`create-session.https.html`](https://wpt.fyi/results/device-bound-session-credentials/create-session.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`credentials-matching.https.html`](https://wpt.fyi/results/device-bound-session-credentials/credentials-matching.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`debug-header.https.html`](https://wpt.fyi/results/device-bound-session-credentials/debug-header.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`empty-response.https.html`](https://wpt.fyi/results/device-bound-session-credentials/empty-response.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`federated-session.https.html`](https://wpt.fyi/results/device-bound-session-credentials/federated-session.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`fetch-no-credentials.https.html`](https://wpt.fyi/results/device-bound-session-credentials/fetch-no-credentials.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`include-site.https.html`](https://wpt.fyi/results/device-bound-session-credentials/include-site.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`multiple-credentials.https.html`](https://wpt.fyi/results/device-bound-session-credentials/multiple-credentials.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`multiple-registrations.https.html`](https://wpt.fyi/results/device-bound-session-credentials/multiple-registrations.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`not-secure-connection.html`](https://wpt.fyi/results/device-bound-session-credentials/not-secure-connection.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`refresh-does-not-send-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-does-not-send-challenge.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`refresh-replaces-config.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-replaces-config.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`refresh-with-continue-false.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-with-continue-false.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-no-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-no-challenge.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-sends-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-sends-challenge.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`requests-have-query-params.https.html`](https://wpt.fyi/results/device-bound-session-credentials/requests-have-query-params.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`resolving-urls.https.html`](https://wpt.fyi/results/device-bound-session-credentials/resolving-urls.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`session-cookie-has-no-attributes.https.html`](https://wpt.fyi/results/device-bound-session-credentials/session-cookie-has-no-attributes.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`set-authorization.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-authorization.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`set-early-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-early-challenge.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`set-scope-origin.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-scope-origin.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`set-scope-specification.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-scope-specification.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`subdomain-registration.https.html`](https://wpt.fyi/results/device-bound-session-credentials/subdomain-registration.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`third-party-registration.https.html`](https://wpt.fyi/results/device-bound-session-credentials/third-party-registration.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`websockets.https.html`](https://wpt.fyi/results/device-bound-session-credentials/websockets.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`allowed-refresh-initiators.https.html`](https://wpt.fyi/results/device-bound-session-credentials/allowed-refresh-initiators.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`clear-site-data.https.html`](https://wpt.fyi/results/device-bound-session-credentials/clear-site-data.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`create-session.https.html`](https://wpt.fyi/results/device-bound-session-credentials/create-session.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`credentials-matching.https.html`](https://wpt.fyi/results/device-bound-session-credentials/credentials-matching.https.html) | Fail | 0 / 7 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`debug-header.https.html`](https://wpt.fyi/results/device-bound-session-credentials/debug-header.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`empty-response.https.html`](https://wpt.fyi/results/device-bound-session-credentials/empty-response.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`federated-session.https.html`](https://wpt.fyi/results/device-bound-session-credentials/federated-session.https.html) | Error | 0 / 4 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`fetch-no-credentials.https.html`](https://wpt.fyi/results/device-bound-session-credentials/fetch-no-credentials.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`include-site.https.html`](https://wpt.fyi/results/device-bound-session-credentials/include-site.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`multiple-credentials.https.html`](https://wpt.fyi/results/device-bound-session-credentials/multiple-credentials.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`multiple-registrations.https.html`](https://wpt.fyi/results/device-bound-session-credentials/multiple-registrations.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`not-secure-connection.html`](https://wpt.fyi/results/device-bound-session-credentials/not-secure-connection.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`refresh-does-not-send-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-does-not-send-challenge.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`refresh-replaces-config.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-replaces-config.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`refresh-with-continue-false.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-with-continue-false.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-no-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-no-challenge.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-sends-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-sends-challenge.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`requests-have-query-params.https.html`](https://wpt.fyi/results/device-bound-session-credentials/requests-have-query-params.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`resolving-urls.https.html`](https://wpt.fyi/results/device-bound-session-credentials/resolving-urls.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`session-cookie-has-no-attributes.https.html`](https://wpt.fyi/results/device-bound-session-credentials/session-cookie-has-no-attributes.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`set-authorization.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-authorization.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`set-early-challenge.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-early-challenge.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`set-scope-origin.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-scope-origin.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`set-scope-specification.https.html`](https://wpt.fyi/results/device-bound-session-credentials/set-scope-specification.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`subdomain-registration.https.html`](https://wpt.fyi/results/device-bound-session-credentials/subdomain-registration.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`third-party-registration.https.html`](https://wpt.fyi/results/device-bound-session-credentials/third-party-registration.https.html) | Fail | 0 / 4 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`websockets.https.html`](https://wpt.fyi/results/device-bound-session-credentials/websockets.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`refresh-redirect.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-redirect.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-observer-abort.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-abort.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-observer-cross-subdomain.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-cross-subdomain.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-observer-not-eligible.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-not-eligible.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-observer-opaque-origin.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-opaque-origin.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
-| [`registration-observer.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`refresh-redirect.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/refresh-redirect.tentative.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-observer-abort.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-abort.tentative.https.html) | Error | 0 / 3 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-observer-cross-subdomain.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-cross-subdomain.tentative.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-observer-not-eligible.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-not-eligible.tentative.https.html) | Error | 0 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-observer-opaque-origin.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer-opaque-origin.tentative.https.html) | Fail | 1 / 2 | NOT IMPLEMENTED | Device Bound Session Credentials |
+| [`registration-observer.tentative.https.html`](https://wpt.fyi/results/device-bound-session-credentials/registration-observer.tentative.https.html) | Error | 0 / 5 | NOT IMPLEMENTED | Device Bound Session Credentials |

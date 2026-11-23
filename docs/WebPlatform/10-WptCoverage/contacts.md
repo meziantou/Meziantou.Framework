@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of contacts, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| **All** | **0** | **1** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,4 +26,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`contacts-select.https.window.js`](https://wpt.fyi/results/contacts/contacts-select.https.window.js) | Disabled | – | REQUIRES(hardware) | Contact Picker API |
+| [`contacts-select.https.window.js`](https://wpt.fyi/results/contacts/contacts-select.https.window.js) | Fail | 0 / 9 | REQUIRES(hardware) | Contact Picker API |

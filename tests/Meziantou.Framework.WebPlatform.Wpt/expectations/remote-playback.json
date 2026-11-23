@@ -1,0 +1,82 @@
+{
+  "remote-playback/cancel-watch-availability.html": {
+    "total": 2,
+    "failures": {
+      "Test that calling cancelWatchAvailability() with an id does remove the callback, and calling cancelWatchAvailability with a removed id throws NotFoundError.": "FAIL",
+      "Test that calling cancelWatchAvailability() without an id removes all the callbacks, and calling cancelWatchAvailability() with a removed id throws NotFoundError.": "FAIL"
+    }
+  },
+  "remote-playback/disable-remote-playback-cancel-watch-availability-throws.html": {
+    "total": 1,
+    "failures": {
+      "Test that calling cancelWatchAvailability() when disableRemotePlayback attribute is set throws InvalidStateError.": "FAIL"
+    }
+  },
+  "remote-playback/disable-remote-playback-prompt-throws.html": {
+    "total": 1,
+    "failures": {
+      "Test that calling prompt() when disableRemotePlayback attribute is set throws an exception.": "FAIL"
+    }
+  },
+  "remote-playback/disable-remote-playback-watch-availability-throws.html": {
+    "total": 1,
+    "failures": {
+      "Test that calling watchAvailability() when disableRemotePlayback attribute is set throws an exception.": "FAIL"
+    }
+  },
+  "remote-playback/idlharness.window.js": {
+    "total": 38,
+    "failures": {
+      "HTMLMediaElement interface: attribute disableRemotePlayback": "FAIL",
+      "HTMLMediaElement interface: attribute remote": "FAIL",
+      "RemotePlayback interface object length": "FAIL",
+      "RemotePlayback interface object name": "FAIL",
+      "RemotePlayback interface: attribute onconnect": "FAIL",
+      "RemotePlayback interface: attribute onconnecting": "FAIL",
+      "RemotePlayback interface: attribute ondisconnect": "FAIL",
+      "RemotePlayback interface: attribute state": "FAIL",
+      "RemotePlayback interface: calling cancelWatchAvailability(optional long) on media.remote with too few arguments must throw TypeError": "FAIL",
+      "RemotePlayback interface: calling watchAvailability(RemotePlaybackAvailabilityCallback) on media.remote with too few arguments must throw TypeError": "FAIL",
+      "RemotePlayback interface: existence and properties of interface object": "FAIL",
+      "RemotePlayback interface: existence and properties of interface prototype object": "FAIL",
+      "RemotePlayback interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RemotePlayback interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"cancelWatchAvailability(optional long)\" with the proper type": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"onconnect\" with the proper type": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"onconnecting\" with the proper type": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"ondisconnect\" with the proper type": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"prompt()\" with the proper type": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"state\" with the proper type": "FAIL",
+      "RemotePlayback interface: media.remote must inherit property \"watchAvailability(RemotePlaybackAvailabilityCallback)\" with the proper type": "FAIL",
+      "RemotePlayback interface: operation cancelWatchAvailability(optional long)": "FAIL",
+      "RemotePlayback interface: operation prompt()": "FAIL",
+      "RemotePlayback interface: operation watchAvailability(RemotePlaybackAvailabilityCallback)": "FAIL",
+      "RemotePlayback must be primary interface of media.remote": "FAIL",
+      "Stringification of media.remote": "FAIL"
+    }
+  },
+  "remote-playback/prompt-in-detached-iframe.html": {
+    "total": 1,
+    "failures": {
+      "Calling remote.prompt() in a detached context should throw InvalidAccessError": "FAIL"
+    }
+  },
+  "remote-playback/watch-availability-callback-parameter.html": {
+    "total": 1,
+    "failures": {
+      "Test that the callback is called with boolean parameter when calling watchAvailability().": "FAIL"
+    }
+  },
+  "remote-playback/watch-availability-initial-callback.html": {
+    "total": 1,
+    "failures": {
+      "Test that the callback is called after the Promise returned by watchAvailability() resolves.": "FAIL"
+    }
+  },
+  "remote-playback/watch-availability-promise-return-callback-id.html": {
+    "total": 1,
+    "failures": {
+      "Test that the Promise returned by watchAvailability() resolves with a numeric callback id.": "FAIL"
+    }
+  }
+}

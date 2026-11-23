@@ -1,0 +1,26 @@
+{
+  "trust-tokens/end-to-end/has-trust-token-with-no-top-frame.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "hasPrivateToken in a destroyed document.": "FAIL"
+    }
+  },
+  "trust-tokens/trust-token-parameter-validation-xhr.tentative.https.html": {
+    "total": 8,
+    "failures": {
+      "Setting XHR Private Token parameters requires that the XHR request be open.": "FAIL",
+      "Setting XHR Private Token parameters requires that the XHR request not have been sent.": "FAIL",
+      "Since localhost URLs are potentially trustworthy, setting an issuer to localhost should succeed.": "FAIL"
+    }
+  },
+  "trust-tokens/trust-token-parameter-validation.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "Private Token fetches require secure issuer URLs, if provided.": "FAIL",
+      "Private Token fetches require valid `refreshPolicy:` values, if provided.": "FAIL",
+      "Private Token signing operations require at least one issuer URL": "FAIL",
+      "Private Token signing operations require string issuer URLs, if provided.": "FAIL",
+      "Private Token signing operations require valid issuer URLs, if provided.": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,154 @@
+{
+  "file-system-access/getDirectory.https.any.js": {
+    "total": 2
+  },
+  "file-system-access/getDirectory.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "file-system-access/getDirectory.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "file-system-access/idlharness.https.any.js": {
+    "total": 28,
+    "failures": {
+      "FileSystemHandle interface: operation queryPermission(optional FileSystemHandlePermissionDescriptor)": "FAIL",
+      "FileSystemHandle interface: operation requestPermission(optional FileSystemHandlePermissionDescriptor)": "FAIL",
+      "Window interface: calling showDirectoryPicker(optional DirectoryPickerOptions) on window with too few arguments must throw TypeError": "FAIL",
+      "Window interface: calling showOpenFilePicker(optional OpenFilePickerOptions) on window with too few arguments must throw TypeError": "FAIL",
+      "Window interface: calling showSaveFilePicker(optional SaveFilePickerOptions) on window with too few arguments must throw TypeError": "FAIL",
+      "Window interface: operation showDirectoryPicker(optional DirectoryPickerOptions)": "FAIL",
+      "Window interface: operation showOpenFilePicker(optional OpenFilePickerOptions)": "FAIL",
+      "Window interface: operation showSaveFilePicker(optional SaveFilePickerOptions)": "FAIL",
+      "Window interface: window must inherit property \"showDirectoryPicker(optional DirectoryPickerOptions)\" with the proper type": "FAIL",
+      "Window interface: window must inherit property \"showOpenFilePicker(optional OpenFilePickerOptions)\" with the proper type": "FAIL",
+      "Window interface: window must inherit property \"showSaveFilePicker(optional SaveFilePickerOptions)\" with the proper type": "FAIL"
+    }
+  },
+  "file-system-access/idlharness.https.any.js#dedicatedworker": {
+    "total": 18,
+    "failures": {
+      "FileSystemHandle interface: operation queryPermission(optional FileSystemHandlePermissionDescriptor)": "FAIL",
+      "FileSystemHandle interface: operation requestPermission(optional FileSystemHandlePermissionDescriptor)": "FAIL"
+    }
+  },
+  "file-system-access/opaque-origin.https.window.js": {
+    "total": 4,
+    "failures": {
+      "navigator.storage.getDirectory() and showDirectoryPicker() must reject in a sandboxed iframe.": "FAIL",
+      "navigator.storage.getDirectory() and showDirectoryPicker() must reject in a sandboxed opened window.": "FAIL",
+      "showDirectoryPicker() must be defined for data URI iframes.": "FAIL"
+    }
+  },
+  "file-system-access/sandboxed_FileSystemDirectoryHandle-move.https.any.js": {
+    "total": 17,
+    "failures": {
+      "move(\"\") to rename an empty directory fails": "FAIL",
+      "move(dir) to move a directory within a descendent fails": "FAIL",
+      "move(dir) to move a non-empty directory to a new directory": "FAIL",
+      "move(dir) to move an empty directory to a new directory": "FAIL",
+      "move(dir, name) to move a directory within a descendent fails": "FAIL",
+      "move(dir, name) to move a directory within itself and rename fails": "FAIL",
+      "move(dir, name) to move a directory within itself fails": "FAIL",
+      "move(dir, name) to move a non-empty directory to a new directory": "FAIL",
+      "move(dir, name) to move an empty directory to a new directory": "FAIL",
+      "move(dir, name) to rename a non-empty directory": "FAIL",
+      "move(dir, name) to rename an empty directory": "FAIL",
+      "move(name) to rename a non-empty directory": "FAIL",
+      "move(name) to rename an empty directory": "FAIL"
+    }
+  },
+  "file-system-access/sandboxed_FileSystemDirectoryHandle-move.https.any.js#dedicatedworker": {
+    "total": 17,
+    "failures": {
+      "move(\"\") to rename an empty directory fails": "FAIL",
+      "move(dir) to move a directory within a descendent fails": "FAIL",
+      "move(dir) to move a non-empty directory to a new directory": "FAIL",
+      "move(dir) to move an empty directory to a new directory": "FAIL",
+      "move(dir, name) to move a directory within a descendent fails": "FAIL",
+      "move(dir, name) to move a directory within itself and rename fails": "FAIL",
+      "move(dir, name) to move a directory within itself fails": "FAIL",
+      "move(dir, name) to move a non-empty directory to a new directory": "FAIL",
+      "move(dir, name) to move an empty directory to a new directory": "FAIL",
+      "move(dir, name) to rename a non-empty directory": "FAIL",
+      "move(dir, name) to rename an empty directory": "FAIL",
+      "move(name) to rename a non-empty directory": "FAIL",
+      "move(name) to rename an empty directory": "FAIL"
+    }
+  },
+  "file-system-access/showPicker-errors.https.window.js": {
+    "total": 71,
+    "failures": {
+      "showDirectoryPicker: Showing a picker requires user activation.": "FAIL",
+      "showOpenFilePicker: File picker requires at least one accepted type.": "FAIL",
+      "showOpenFilePicker: MIME type can't be an empty string.": "FAIL",
+      "showOpenFilePicker: MIME type can't have empty subtype.": "FAIL",
+      "showOpenFilePicker: MIME type can't have empty type.": "FAIL",
+      "showOpenFilePicker: MIME type can't have invalid characters in subtype.": "FAIL",
+      "showOpenFilePicker: MIME type can't have invalid characters in type.": "FAIL",
+      "showOpenFilePicker: MIME type can't have parameters.": "FAIL",
+      "showOpenFilePicker: MIME type can't have whitespace in the middle.": "FAIL",
+      "showOpenFilePicker: MIME type must have subtype.": "FAIL",
+      "showOpenFilePicker: Showing a picker requires user activation.": "FAIL",
+      "showOpenFilePicker: invalid extension \" .txt\". illegal whitespace at front of extension.": "FAIL",
+      "showOpenFilePicker: invalid extension \".\txt\". illegal character \"/\".": "FAIL",
+      "showOpenFilePicker: invalid extension \". txt\". illegal whitespace in extension.": "FAIL",
+      "showOpenFilePicker: invalid extension \".$txt\". illegal character \"$\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".extensiontoolong\". extension length more than 16..": "FAIL",
+      "showOpenFilePicker: invalid extension \".t/xt\". illegal character \"\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".t<xt\". illegal character \"<\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".txt \". illegal whitespace at end of extension.": "FAIL",
+      "showOpenFilePicker: invalid extension \".txt*\". illegal character \"*\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".txt.\". extenstion ends with \".\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".txt?\". illegal character \"?\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".txt\\\". illegal characters \"\\\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".txt\uD83D\uDE42\". non-ASCII character \"\uD83D\uDE42\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".tæxt\". non-ASCII character \"æ\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".{txt\". illegal character \"{\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".{txt}\". illegal characters \"{\" and \"}\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".}txt\". illegal character \"}\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".קום\". non-ASCII character \"קום\".": "FAIL",
+      "showOpenFilePicker: invalid extension \".‮txt‮\". illegal RTL character.": "FAIL",
+      "showOpenFilePicker: invalid extension \"txt\". extenstion does not start with \".\".": "FAIL",
+      "showOpenFilePicker: starting directory ID cannot exceed 32 characters.": "FAIL",
+      "showOpenFilePicker: starting directory ID contains invalid characters.": "FAIL",
+      "showOpenFilePicker: starting directory can\t be empty.": "FAIL",
+      "showOpenFilePicker: starting directory can\t be null.": "FAIL",
+      "showOpenFilePicker: unknown well-known starting directory.": "FAIL",
+      "showSaveFilePicker: File picker requires at least one accepted type.": "FAIL",
+      "showSaveFilePicker: MIME type can't be an empty string.": "FAIL",
+      "showSaveFilePicker: MIME type can't have empty subtype.": "FAIL",
+      "showSaveFilePicker: MIME type can't have empty type.": "FAIL",
+      "showSaveFilePicker: MIME type can't have invalid characters in subtype.": "FAIL",
+      "showSaveFilePicker: MIME type can't have invalid characters in type.": "FAIL",
+      "showSaveFilePicker: MIME type can't have parameters.": "FAIL",
+      "showSaveFilePicker: MIME type can't have whitespace in the middle.": "FAIL",
+      "showSaveFilePicker: MIME type must have subtype.": "FAIL",
+      "showSaveFilePicker: Showing a picker requires user activation.": "FAIL",
+      "showSaveFilePicker: invalid extension \" .txt\". illegal whitespace at front of extension.": "FAIL",
+      "showSaveFilePicker: invalid extension \".\txt\". illegal character \"/\".": "FAIL",
+      "showSaveFilePicker: invalid extension \". txt\". illegal whitespace in extension.": "FAIL",
+      "showSaveFilePicker: invalid extension \".$txt\". illegal character \"$\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".extensiontoolong\". extension length more than 16..": "FAIL",
+      "showSaveFilePicker: invalid extension \".t/xt\". illegal character \"\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".t<xt\". illegal character \"<\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".txt \". illegal whitespace at end of extension.": "FAIL",
+      "showSaveFilePicker: invalid extension \".txt*\". illegal character \"*\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".txt.\". extenstion ends with \".\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".txt?\". illegal character \"?\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".txt\\\". illegal characters \"\\\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".txt\uD83D\uDE42\". non-ASCII character \"\uD83D\uDE42\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".tæxt\". non-ASCII character \"æ\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".{txt\". illegal character \"{\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".{txt}\". illegal characters \"{\" and \"}\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".}txt\". illegal character \"}\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".קום\". non-ASCII character \"קום\".": "FAIL",
+      "showSaveFilePicker: invalid extension \".‮txt‮\". illegal RTL character.": "FAIL",
+      "showSaveFilePicker: invalid extension \"txt\". extenstion does not start with \".\".": "FAIL",
+      "showSaveFilePicker: starting directory ID cannot exceed 32 characters.": "FAIL",
+      "showSaveFilePicker: starting directory ID contains invalid characters.": "FAIL",
+      "showSaveFilePicker: starting directory can\t be empty.": "FAIL",
+      "showSaveFilePicker: starting directory can\t be null.": "FAIL",
+      "showSaveFilePicker: unknown well-known starting directory.": "FAIL"
+    }
+  }
+}

@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of background-fetch, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 13 | 13 | – |
+| [Stable](#stable-tests) | 0 | 13 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **13** | **13** | **–** |
+| **All** | **0** | **13** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,16 +25,16 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`abort.https.window.js`](https://wpt.fyi/results/background-fetch/abort.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`content-security-policy.https.window.js`](https://wpt.fyi/results/background-fetch/content-security-policy.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`cors.https.window.js`](https://wpt.fyi/results/background-fetch/cors.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`fetch-uploads.https.window.js`](https://wpt.fyi/results/background-fetch/fetch-uploads.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`fetch.https.window.js`](https://wpt.fyi/results/background-fetch/fetch.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`get-ids.https.window.js`](https://wpt.fyi/results/background-fetch/get-ids.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`get.https.window.js`](https://wpt.fyi/results/background-fetch/get.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/background-fetch/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`match-request-body.https.window.js`](https://wpt.fyi/results/background-fetch/match-request-body.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`match.https.window.js`](https://wpt.fyi/results/background-fetch/match.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`mixed-content-and-allowed-schemes.https.window.js`](https://wpt.fyi/results/background-fetch/mixed-content-and-allowed-schemes.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`port-blocking.https.window.js`](https://wpt.fyi/results/background-fetch/port-blocking.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
-| [`update-ui.https.window.js`](https://wpt.fyi/results/background-fetch/update-ui.https.window.js) | Disabled | – | NOT IMPLEMENTED | Background Fetch |
+| [`abort.https.window.js`](https://wpt.fyi/results/background-fetch/abort.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Background Fetch |
+| [`content-security-policy.https.window.js`](https://wpt.fyi/results/background-fetch/content-security-policy.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | Background Fetch |
+| [`cors.https.window.js`](https://wpt.fyi/results/background-fetch/cors.https.window.js) | Fail | 0 / 5 | NOT IMPLEMENTED | Background Fetch |
+| [`fetch-uploads.https.window.js`](https://wpt.fyi/results/background-fetch/fetch-uploads.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Background Fetch |
+| [`fetch.https.window.js`](https://wpt.fyi/results/background-fetch/fetch.https.window.js) | Fail | 0 / 14 | NOT IMPLEMENTED | Background Fetch |
+| [`get-ids.https.window.js`](https://wpt.fyi/results/background-fetch/get-ids.https.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | Background Fetch |
+| [`get.https.window.js`](https://wpt.fyi/results/background-fetch/get.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Background Fetch |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/background-fetch/idlharness.https.any.js) | Fail | 27 / 135 | NOT IMPLEMENTED | Background Fetch |
+| [`match-request-body.https.window.js`](https://wpt.fyi/results/background-fetch/match-request-body.https.window.js) | Fail | 0 / 8 | NOT IMPLEMENTED | Background Fetch |
+| [`match.https.window.js`](https://wpt.fyi/results/background-fetch/match.https.window.js) | Fail | 0 / 6 | NOT IMPLEMENTED | Background Fetch |
+| [`mixed-content-and-allowed-schemes.https.window.js`](https://wpt.fyi/results/background-fetch/mixed-content-and-allowed-schemes.https.window.js) | Fail | 0 / 8 | NOT IMPLEMENTED | Background Fetch |
+| [`port-blocking.https.window.js`](https://wpt.fyi/results/background-fetch/port-blocking.https.window.js) | Fail | 0 / 6 | NOT IMPLEMENTED | Background Fetch |
+| [`update-ui.https.window.js`](https://wpt.fyi/results/background-fetch/update-ui.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Background Fetch |

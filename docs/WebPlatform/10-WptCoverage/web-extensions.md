@@ -25,10 +25,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`browser.alarms.extension.js`](https://wpt.fyi/results/web-extensions/browser.alarms.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
-| [`browser.bookmarks.extension.js`](https://wpt.fyi/results/web-extensions/browser.bookmarks.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
-| [`browser.browsingData.extension.js`](https://wpt.fyi/results/web-extensions/browser.browsingData.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
-| [`browser.idle.extension.js`](https://wpt.fyi/results/web-extensions/browser.idle.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
-| [`browser.publicSuffix.extension.js`](https://wpt.fyi/results/web-extensions/browser.publicSuffix.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
-| [`browser.runtime.extension.js`](https://wpt.fyi/results/web-extensions/browser.runtime.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
-| [`browser.storage.extension.js`](https://wpt.fyi/results/web-extensions/browser.storage.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs |
+| [`browser.alarms.extension.js`](https://wpt.fyi/results/web-extensions/browser.alarms.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |
+| [`browser.bookmarks.extension.js`](https://wpt.fyi/results/web-extensions/browser.bookmarks.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |
+| [`browser.browsingData.extension.js`](https://wpt.fyi/results/web-extensions/browser.browsingData.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |
+| [`browser.idle.extension.js`](https://wpt.fyi/results/web-extensions/browser.idle.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |
+| [`browser.publicSuffix.extension.js`](https://wpt.fyi/results/web-extensions/browser.publicSuffix.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |
+| [`browser.runtime.extension.js`](https://wpt.fyi/results/web-extensions/browser.runtime.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |
+| [`browser.storage.extension.js`](https://wpt.fyi/results/web-extensions/browser.storage.extension.js) | Disabled | – | OUT OF SCOPE | browser extension APIs: the `.extension.js` tests run in a browser extension, which the runner cannot load |

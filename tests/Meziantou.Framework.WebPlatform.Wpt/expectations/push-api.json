@@ -1,0 +1,192 @@
+{
+  "push-api/cross-origin-nested.tentative.https.sub.window.js": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "nested first party iframe": "NOTRUN",
+      "nested first party worker": "NOTRUN",
+      "third party iframe": "TIMEOUT",
+      "third party worker": "NOTRUN"
+    }
+  },
+  "push-api/cross-origin-same-site-request.tentative.https.sub.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "same-site cross-origin iframe": "TIMEOUT"
+    }
+  },
+  "push-api/cross-origin-serviceworker.tentative.https.sub.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "third party serviceworker": "TIMEOUT"
+    }
+  },
+  "push-api/idlharness.https.any.js": {
+    "total": 59,
+    "failures": {
+      "PushManager interface object length": "FAIL",
+      "PushManager interface object name": "FAIL",
+      "PushManager interface: attribute supportedContentEncodings": "FAIL",
+      "PushManager interface: calling permissionState(optional PushSubscriptionOptionsInit) on registration.pushManager with too few arguments must throw TypeError": "FAIL",
+      "PushManager interface: calling subscribe(optional PushSubscriptionOptionsInit) on registration.pushManager with too few arguments must throw TypeError": "FAIL",
+      "PushManager interface: existence and properties of interface object": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PushManager interface: operation getSubscription()": "FAIL",
+      "PushManager interface: operation permissionState(optional PushSubscriptionOptionsInit)": "FAIL",
+      "PushManager interface: operation subscribe(optional PushSubscriptionOptionsInit)": "FAIL",
+      "PushManager interface: registration.pushManager must inherit property \"getSubscription()\" with the proper type": "FAIL",
+      "PushManager interface: registration.pushManager must inherit property \"permissionState(optional PushSubscriptionOptionsInit)\" with the proper type": "FAIL",
+      "PushManager interface: registration.pushManager must inherit property \"subscribe(optional PushSubscriptionOptionsInit)\" with the proper type": "FAIL",
+      "PushManager interface: registration.pushManager must inherit property \"supportedContentEncodings\" with the proper type": "FAIL",
+      "PushManager must be primary interface of registration.pushManager": "FAIL",
+      "PushSubscription interface object length": "FAIL",
+      "PushSubscription interface object name": "FAIL",
+      "PushSubscription interface: attribute endpoint": "FAIL",
+      "PushSubscription interface: attribute expirationTime": "FAIL",
+      "PushSubscription interface: attribute options": "FAIL",
+      "PushSubscription interface: existence and properties of interface object": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PushSubscription interface: operation getKey(PushEncryptionKeyName)": "FAIL",
+      "PushSubscription interface: operation toJSON()": "FAIL",
+      "PushSubscription interface: operation unsubscribe()": "FAIL",
+      "PushSubscriptionOptions interface object length": "FAIL",
+      "PushSubscriptionOptions interface object name": "FAIL",
+      "PushSubscriptionOptions interface: attribute applicationServerKey": "FAIL",
+      "PushSubscriptionOptions interface: attribute userVisibleOnly": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface object": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ServiceWorkerRegistration interface: attribute pushManager": "FAIL",
+      "ServiceWorkerRegistration interface: registration must inherit property \"pushManager\" with the proper type": "FAIL",
+      "Stringification of registration.pushManager": "FAIL",
+      "Window interface: attribute pushManager": "FAIL"
+    }
+  },
+  "push-api/idlharness.https.any.js#dedicatedworker": {
+    "total": 49,
+    "failures": {
+      "PushManager interface object length": "FAIL",
+      "PushManager interface object name": "FAIL",
+      "PushManager interface: attribute supportedContentEncodings": "FAIL",
+      "PushManager interface: existence and properties of interface object": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PushManager interface: operation getSubscription()": "FAIL",
+      "PushManager interface: operation permissionState(optional PushSubscriptionOptionsInit)": "FAIL",
+      "PushManager interface: operation subscribe(optional PushSubscriptionOptionsInit)": "FAIL",
+      "PushSubscription interface object length": "FAIL",
+      "PushSubscription interface object name": "FAIL",
+      "PushSubscription interface: attribute endpoint": "FAIL",
+      "PushSubscription interface: attribute expirationTime": "FAIL",
+      "PushSubscription interface: attribute options": "FAIL",
+      "PushSubscription interface: existence and properties of interface object": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PushSubscription interface: operation getKey(PushEncryptionKeyName)": "FAIL",
+      "PushSubscription interface: operation toJSON()": "FAIL",
+      "PushSubscription interface: operation unsubscribe()": "FAIL",
+      "PushSubscriptionOptions interface object length": "FAIL",
+      "PushSubscriptionOptions interface object name": "FAIL",
+      "PushSubscriptionOptions interface: attribute applicationServerKey": "FAIL",
+      "PushSubscriptionOptions interface: attribute userVisibleOnly": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface object": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ServiceWorkerRegistration interface: attribute pushManager": "FAIL"
+    }
+  },
+  "push-api/idlharness.https.any.js#sharedworker": {
+    "total": 49,
+    "failures": {
+      "PushManager interface object length": "FAIL",
+      "PushManager interface object name": "FAIL",
+      "PushManager interface: attribute supportedContentEncodings": "FAIL",
+      "PushManager interface: existence and properties of interface object": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PushManager interface: operation getSubscription()": "FAIL",
+      "PushManager interface: operation permissionState(optional PushSubscriptionOptionsInit)": "FAIL",
+      "PushManager interface: operation subscribe(optional PushSubscriptionOptionsInit)": "FAIL",
+      "PushSubscription interface object length": "FAIL",
+      "PushSubscription interface object name": "FAIL",
+      "PushSubscription interface: attribute endpoint": "FAIL",
+      "PushSubscription interface: attribute expirationTime": "FAIL",
+      "PushSubscription interface: attribute options": "FAIL",
+      "PushSubscription interface: existence and properties of interface object": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushSubscription interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PushSubscription interface: operation getKey(PushEncryptionKeyName)": "FAIL",
+      "PushSubscription interface: operation toJSON()": "FAIL",
+      "PushSubscription interface: operation unsubscribe()": "FAIL",
+      "PushSubscriptionOptions interface object length": "FAIL",
+      "PushSubscriptionOptions interface object name": "FAIL",
+      "PushSubscriptionOptions interface: attribute applicationServerKey": "FAIL",
+      "PushSubscriptionOptions interface: attribute userVisibleOnly": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface object": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PushSubscriptionOptions interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "ServiceWorkerRegistration interface: attribute pushManager": "FAIL"
+    }
+  },
+  "push-api/permission.https.html": {
+    "total": 3,
+    "failures": {
+      "Denying permission should disallow subscription": "FAIL",
+      "Granting permission should allow subscription": "FAIL"
+    }
+  },
+  "push-api/subscribe-with-faulty-applicationServerKey.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Reject a key that is not a valid point on P-256 curve": "FAIL",
+      "Reject a string key that can't be decoded by base64url": "FAIL",
+      "Reject empty ArrayBuffer applicationServerKey": "FAIL",
+      "Reject empty Uint8Array applicationServerKey": "FAIL",
+      "Reject empty string applicationServerKey": "FAIL"
+    }
+  },
+  "push-api/supported-encodings.https.any.js": {
+    "total": 2,
+    "failures": {
+      "aes128gcm must be supported": "FAIL",
+      "supportedContentEncodings must be FrozenArray": "FAIL"
+    }
+  },
+  "push-api/supported-encodings.https.any.js#dedicatedworker": {
+    "total": 2,
+    "failures": {
+      "aes128gcm must be supported": "FAIL",
+      "supportedContentEncodings must be FrozenArray": "FAIL"
+    }
+  },
+  "push-api/supported-encodings.https.any.js#sharedworker": {
+    "total": 2,
+    "failures": {
+      "aes128gcm must be supported": "FAIL",
+      "supportedContentEncodings must be FrozenArray": "FAIL"
+    }
+  },
+  "push-api/window-pushManager-non-secure-context.http.html": {
+    "total": 2
+  },
+  "push-api/worker-subscribe.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Subscribing within a worker": "TIMEOUT"
+    }
+  }
+}

@@ -1,0 +1,150 @@
+{
+  "serial/getPorts/sandboxed_iframe.https.window.js": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "GetPorts from a sandboxed iframe is valid.": "TIMEOUT"
+    }
+  },
+  "serial/idlharness.https.any.js": {
+    "total": 57,
+    "failures": {
+      "Navigator interface: attribute serial": "FAIL",
+      "Navigator interface: navigator must inherit property \"serial\" with the proper type": "FAIL",
+      "Serial interface object length": "FAIL",
+      "Serial interface object name": "FAIL",
+      "Serial interface: attribute onconnect": "FAIL",
+      "Serial interface: attribute ondisconnect": "FAIL",
+      "Serial interface: calling requestPort(optional SerialPortRequestOptions) on navigator.serial with too few arguments must throw TypeError": "FAIL",
+      "Serial interface: existence and properties of interface object": "FAIL",
+      "Serial interface: existence and properties of interface prototype object": "FAIL",
+      "Serial interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "Serial interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"getPorts()\" with the proper type": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"onconnect\" with the proper type": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"ondisconnect\" with the proper type": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"requestPort(optional SerialPortRequestOptions)\" with the proper type": "FAIL",
+      "Serial interface: operation getPorts()": "FAIL",
+      "Serial interface: operation requestPort(optional SerialPortRequestOptions)": "FAIL",
+      "Serial must be primary interface of navigator.serial": "FAIL",
+      "SerialPort interface object length": "FAIL",
+      "SerialPort interface object name": "FAIL",
+      "SerialPort interface: attribute connected": "FAIL",
+      "SerialPort interface: attribute onconnect": "FAIL",
+      "SerialPort interface: attribute ondisconnect": "FAIL",
+      "SerialPort interface: attribute readable": "FAIL",
+      "SerialPort interface: attribute writable": "FAIL",
+      "SerialPort interface: existence and properties of interface object": "FAIL",
+      "SerialPort interface: existence and properties of interface prototype object": "FAIL",
+      "SerialPort interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SerialPort interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SerialPort interface: operation close()": "FAIL",
+      "SerialPort interface: operation forget()": "FAIL",
+      "SerialPort interface: operation getInfo()": "FAIL",
+      "SerialPort interface: operation getSignals()": "FAIL",
+      "SerialPort interface: operation open(SerialOptions)": "FAIL",
+      "SerialPort interface: operation setSignals(optional SerialOutputSignals)": "FAIL",
+      "Stringification of navigator.serial": "FAIL"
+    }
+  },
+  "serial/idlharness.https.any.js#dedicatedworker": {
+    "total": 56,
+    "failures": {
+      "Serial interface object length": "FAIL",
+      "Serial interface object name": "FAIL",
+      "Serial interface: attribute onconnect": "FAIL",
+      "Serial interface: attribute ondisconnect": "FAIL",
+      "Serial interface: existence and properties of interface object": "FAIL",
+      "Serial interface: existence and properties of interface prototype object": "FAIL",
+      "Serial interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "Serial interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "Serial interface: member requestPort": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"getPorts()\" with the proper type": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"onconnect\" with the proper type": "FAIL",
+      "Serial interface: navigator.serial must inherit property \"ondisconnect\" with the proper type": "FAIL",
+      "Serial interface: navigator.serial must not have property \"requestPort\"": "FAIL",
+      "Serial interface: operation getPorts()": "FAIL",
+      "Serial must be primary interface of navigator.serial": "FAIL",
+      "SerialPort interface object length": "FAIL",
+      "SerialPort interface object name": "FAIL",
+      "SerialPort interface: attribute connected": "FAIL",
+      "SerialPort interface: attribute onconnect": "FAIL",
+      "SerialPort interface: attribute ondisconnect": "FAIL",
+      "SerialPort interface: attribute readable": "FAIL",
+      "SerialPort interface: attribute writable": "FAIL",
+      "SerialPort interface: existence and properties of interface object": "FAIL",
+      "SerialPort interface: existence and properties of interface prototype object": "FAIL",
+      "SerialPort interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SerialPort interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SerialPort interface: operation close()": "FAIL",
+      "SerialPort interface: operation forget()": "FAIL",
+      "SerialPort interface: operation getInfo()": "FAIL",
+      "SerialPort interface: operation getSignals()": "FAIL",
+      "SerialPort interface: operation open(SerialOptions)": "FAIL",
+      "SerialPort interface: operation setSignals(optional SerialOutputSignals)": "FAIL",
+      "Stringification of navigator.serial": "FAIL",
+      "WorkerNavigator interface: attribute serial": "FAIL",
+      "WorkerNavigator interface: navigator must inherit property \"serial\" with the proper type": "FAIL"
+    }
+  },
+  "serial/requestPort/sandboxed_iframe.https.window.js": {
+    "total": 1,
+    "failures": {
+      "RequestPort from a sandboxed iframe is valid.": "FAIL"
+    }
+  },
+  "serial/serial-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Permissions-Policy allow=\"serial\" allows same-origin relocation.": "TIMEOUT",
+      "Permissions-Policy allow=\"serial\" allows workers in same-origin relocation.": "TIMEOUT",
+      "Permissions-Policy allow=\"serial\" disallows cross-origin relocation.": "TIMEOUT",
+      "Permissions-Policy allow=\"serial\" disallows workers in cross-origin relocation.": "TIMEOUT"
+    }
+  },
+  "serial/serial-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 5,
+    "failures": {
+      "Inherited header permissions policy allows dedicated workers.": "FAIL",
+      "Permissions policy \"serial\" can be enabled in a worker in cross-origin iframe using allow=\"serial\" attribute": "TIMEOUT",
+      "Permissions policy \"serial\" can be enabled in a worker in same-origin iframe using allow=\"serial\" attribute": "TIMEOUT",
+      "Permissions policy \"serial\" can be enabled in cross-origin iframe using allow=\"serial\" attribute": "TIMEOUT",
+      "Permissions policy \"serial\" can be enabled in same-origin iframe using allow=\"serial\" attribute": "TIMEOUT"
+    }
+  },
+  "serial/serial-allowed-by-permissions-policy.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 6,
+    "failures": {
+      "Inherited header permissions policy allows dedicated workers.": "FAIL",
+      "Permissions-Policy header serial=* allows cross-origin iframes.": "TIMEOUT",
+      "Permissions-Policy header serial=* allows same-origin iframes.": "TIMEOUT",
+      "Permissions-Policy header serial=* allows the top-level document.": "FAIL",
+      "Permissions-Policy header serial=* allows workers in cross-origin iframes.": "TIMEOUT",
+      "Permissions-Policy header serial=* allows workers in same-origin iframes.": "TIMEOUT"
+    }
+  },
+  "serial/serial-default-permissions-policy.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "Default \"serial\" permissions policy \"self\" allows same-origin iframes.": "TIMEOUT",
+      "Default \"serial\" permissions policy \"self\" allows the top-level document.": "FAIL",
+      "Default \"serial\" permissions policy \"self\" disallows cross-origin iframes.": "TIMEOUT"
+    }
+  },
+  "serial/serial-disabled-by-permissions-policy.https.sub.html": {
+    "harness": "TIMEOUT",
+    "total": 6,
+    "failures": {
+      "Inherited Permissions-Policy header serial=() disallows dedicated workers.": "FAIL",
+      "Permissions-Policy header serial=() disallows cross-origin iframes.": "TIMEOUT",
+      "Permissions-Policy header serial=() disallows getPorts in the top-level document.": "FAIL",
+      "Permissions-Policy header serial=() disallows same-origin iframes.": "TIMEOUT",
+      "Permissions-Policy header serial=() disallows workers in cross-origin iframes.": "TIMEOUT",
+      "Permissions-Policy header serial=() disallows workers in same-origin iframes.": "TIMEOUT"
+    }
+  }
+}

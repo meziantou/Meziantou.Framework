@@ -1,0 +1,2072 @@
+{
+  "webxr/anchors/ar_anchor_freefloating_create_move.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures free-floating anchor move gets propagated to anchor poses - webgl": "FAIL",
+      "Ensures free-floating anchor move gets propagated to anchor poses - webgl2": "FAIL"
+    }
+  },
+  "webxr/anchors/ar_anchor_freefloating_delay_creation.https.html": {
+    "total": 4,
+    "failures": {
+      "Ensures free-floating anchor creation with delayed failure is handled correctly - webgl": "FAIL",
+      "Ensures free-floating anchor creation with delayed failure is handled correctly - webgl2": "FAIL",
+      "Ensures free-floating anchor creation with delayed success is handled correctly - webgl": "FAIL",
+      "Ensures free-floating anchor creation with delayed success is handled correctly - webgl2": "FAIL"
+    }
+  },
+  "webxr/anchors/ar_anchor_freefloating_failure.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures free-floating anchor creation failure is handled correctly - webgl": "FAIL",
+      "Ensures free-floating anchor creation failure is handled correctly - webgl2": "FAIL"
+    }
+  },
+  "webxr/anchors/ar_anchor_freefloating_pause_resume_stop.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures free-floating anchor state changes get propagated - webgl": "FAIL",
+      "Ensures free-floating anchor state changes get propagated - webgl2": "FAIL"
+    }
+  },
+  "webxr/anchors/ar_anchor_getAnchors.https.html": {
+    "total": 4,
+    "failures": {
+      "XRFrame's trackedAnchors is empty when the feature was not requested - webgl": "FAIL",
+      "XRFrame's trackedAnchors is empty when the feature was not requested - webgl2": "FAIL",
+      "XRFrame's trackedAnchors is empty when the feature was requested - webgl": "FAIL",
+      "XRFrame's trackedAnchors is empty when the feature was requested - webgl2": "FAIL"
+    }
+  },
+  "webxr/anchors/ar_anchor_states.https.html": {
+    "total": 6,
+    "failures": {
+      "Anchor creation fails if the feature was not requested - webgl": "FAIL",
+      "Anchor creation fails if the feature was not requested - webgl2": "FAIL",
+      "Anchor creation fails if the feature was requested but the session already ended - webgl": "FAIL",
+      "Anchor creation fails if the feature was requested but the session already ended - webgl2": "FAIL",
+      "Anchor creation succeeds if the feature was requested - webgl": "FAIL",
+      "Anchor creation succeeds if the feature was requested - webgl2": "FAIL"
+    }
+  },
+  "webxr/anchors/idlharness.https.window.js": {
+    "total": 34,
+    "failures": {
+      "XRAnchor interface object length": "FAIL",
+      "XRAnchor interface object name": "FAIL",
+      "XRAnchor interface: attribute anchorSpace": "FAIL",
+      "XRAnchor interface: existence and properties of interface object": "FAIL",
+      "XRAnchor interface: existence and properties of interface prototype object": "FAIL",
+      "XRAnchor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRAnchor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRAnchor interface: operation delete()": "FAIL",
+      "XRAnchor interface: operation requestPersistentHandle()": "FAIL",
+      "XRAnchorSet interface object length": "FAIL",
+      "XRAnchorSet interface object name": "FAIL",
+      "XRAnchorSet interface: existence and properties of interface object": "FAIL",
+      "XRAnchorSet interface: existence and properties of interface prototype object": "FAIL",
+      "XRAnchorSet interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRAnchorSet interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRAnchorSet interface: setlike<XRAnchor>": "FAIL",
+      "XRFrame interface: attribute trackedAnchors": "FAIL",
+      "XRFrame interface: operation createAnchor(XRRigidTransform, XRSpace)": "FAIL",
+      "XRHitTestResult interface: operation createAnchor()": "FAIL",
+      "XRSession interface: attribute persistentAnchors": "FAIL",
+      "XRSession interface: operation deletePersistentAnchor(DOMString)": "FAIL",
+      "XRSession interface: operation restorePersistentAnchor(DOMString)": "FAIL"
+    }
+  },
+  "webxr/ar-module/idlharness.https.window.js": {
+    "total": 14,
+    "failures": {
+      "XRSession interface: attribute environmentBlendMode": "FAIL",
+      "XRSession interface: attribute interactionMode": "FAIL",
+      "XRSession interface: xrSession must inherit property \"environmentBlendMode\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"interactionMode\" with the proper type": "FAIL",
+      "XRView interface: attribute isFirstPersonObserver": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "webxr/ar-module/xrDevice_isSessionSupported_immersive-ar.https.html": {
+    "total": 2,
+    "failures": {
+      "isSessionSupported resolves to false for immersive-ar on an unsupported device": "FAIL",
+      "isSessionSupported resolves to true for immersive-ar on a supported device": "FAIL"
+    }
+  },
+  "webxr/ar-module/xrDevice_requestSession_immersive-ar.https.html": {
+    "total": 3,
+    "failures": {
+      "Tests requestSession accepts immersive-ar mode - webgl": "FAIL",
+      "Tests requestSession accepts immersive-ar mode - webgl2": "FAIL",
+      "Tests requestSession rejects immersive-ar mode when unsupported": "FAIL"
+    }
+  },
+  "webxr/ar-module/xrSession_environmentBlendMode.https.html": {
+    "total": 4,
+    "failures": {
+      "Tests environmentBlendMode for a VR device - webgl": "FAIL",
+      "Tests environmentBlendMode for a VR device - webgl2": "FAIL",
+      "Tests environmentBlendMode for an AR device - webgl": "FAIL",
+      "Tests environmentBlendMode for an AR device - webgl2": "FAIL"
+    }
+  },
+  "webxr/ar-module/xrSession_interactionMode.https.html": {
+    "total": 10,
+    "failures": {
+      "Tests interactionMode for a INLINE_SCREEN_DEVICE - webgl": "FAIL",
+      "Tests interactionMode for a INLINE_SCREEN_DEVICE - webgl2": "FAIL",
+      "Tests interactionMode for an AR_HMD_DEVICE - webgl": "FAIL",
+      "Tests interactionMode for an AR_HMD_DEVICE - webgl2": "FAIL",
+      "Tests interactionMode for an AR_SCREEN_DEVICE - webgl": "FAIL",
+      "Tests interactionMode for an AR_SCREEN_DEVICE - webgl2": "FAIL",
+      "Tests interactionMode for an VR_HMD_DEVICE - webgl": "FAIL",
+      "Tests interactionMode for an VR_HMD_DEVICE - webgl2": "FAIL",
+      "Tests interactionMode for an VR_SCREEN_DEVICE - webgl": "FAIL",
+      "Tests interactionMode for an VR_SCREEN_DEVICE - webgl2": "FAIL"
+    }
+  },
+  "webxr/camera-access/xrCamera_resolution.https.html": {
+    "total": 2,
+    "failures": {
+      "XRCamera object is present and carries expected dimensions - webgl": "FAIL",
+      "XRCamera object is present and carries expected dimensions - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_dataUnavailable.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures depth data is not available when cleared in the controller, `cpu-optimized` - webgl": "FAIL",
+      "Ensures depth data is not available when cleared in the controller, `cpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_inactiveFrame.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures appropriate depth methods and attributes throw when not run in an active frame, `cpu-optimized` - webgl": "FAIL",
+      "Ensures appropriate depth methods and attributes throw when not run in an active frame, `cpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_incorrectUsage.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures XRWebGLDepthInformation is not obtainable in `cpu-optimized` usage mode - webgl": "FAIL",
+      "Ensures XRWebGLDepthInformation is not obtainable in `cpu-optimized` usage mode - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_luminance_alpha_dataValid.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures depth data is returned and values match expectation, cpu-optimized, luminance-alpha. - webgl": "FAIL",
+      "Ensures depth data is returned and values match expectation, cpu-optimized, luminance-alpha. - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_matchDepthViewDepthData.https.html": {
+    "total": 4,
+    "failures": {
+      "XRDepthInformation.data does NOT match raw device data when matchDepthView is true with offset depth (CPU) - webgl": "FAIL",
+      "XRDepthInformation.data does NOT match raw device data when matchDepthView is true with offset depth (CPU) - webgl2": "FAIL",
+      "XRDepthInformation.data matches raw device data when matchDepthView is false with offset depth (CPU) - webgl": "FAIL",
+      "XRDepthInformation.data matches raw device data when matchDepthView is false with offset depth (CPU) - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_matchDepthViewIdentity.https.html": {
+    "total": 6,
+    "failures": {
+      "Ensures XRViewGeometry values do not match XRView when matchDepthView=false, `cpu-optimized` - webgl": "FAIL",
+      "Ensures XRViewGeometry values do not match XRView when matchDepthView=false, `cpu-optimized` - webgl2": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView is unset, `cpu-optimized` - webgl": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView is unset, `cpu-optimized` - webgl2": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView=true, `cpu-optimized` - webgl": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView=true, `cpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_pauseResume.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures appropriate data availability with (pause|resume)DepthSensing, `cpu-optimized` - webgl": "FAIL",
+      "Ensures appropriate data availability with (pause|resume)DepthSensing, `cpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/cpu/depth_sensing_cpu_staleView.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures getDepthInformation() throws when run with stale XRView, `cpu-optimized` - webgl": "FAIL",
+      "Ensures getDepthInformation() throws when run with stale XRView, `cpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/depth_sensing_attributes_throw_not_enabled.https.html": {
+    "total": 6,
+    "failures": {
+      "XRSession.depthDataFormat rejects if depth sensing is not enabled on a session - webgl": "FAIL",
+      "XRSession.depthDataFormat rejects if depth sensing is not enabled on a session - webgl2": "FAIL",
+      "XRSession.depthType rejects if depth sensing is not enabled on a session - webgl": "FAIL",
+      "XRSession.depthType rejects if depth sensing is not enabled on a session - webgl2": "FAIL",
+      "XRSession.depthUsage rejects if depth sensing is not enabled on a session - webgl": "FAIL",
+      "XRSession.depthUsage rejects if depth sensing is not enabled on a session - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/depth_sensing_notEnabled.https.html": {
+    "total": 4,
+    "failures": {
+      "XRFrame.getDepthInformation() rejects if depth sensing is not enabled on a session - webgl": "FAIL",
+      "XRFrame.getDepthInformation() rejects if depth sensing is not enabled on a session - webgl2": "FAIL",
+      "XRWebGLBinding.getDepthInformation() rejects if depth sensing is not enabled on a session - webgl": "FAIL",
+      "XRWebGLBinding.getDepthInformation() rejects if depth sensing is not enabled on a session - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/depth_sensing_preferences.https.html": {
+    "total": 12,
+    "failures": {
+      "depthSensing - Optional - Missing configuration optional grants session without depth": "FAIL",
+      "depthSensing - Optional - Missing format optional still rejects session": "FAIL",
+      "depthSensing - Optional - Missing usage and format optional still rejects session": "FAIL",
+      "depthSensing - Optional - Missing usage optional still rejects session": "FAIL",
+      "depthSensing - Required - Empty format grants session": "FAIL",
+      "depthSensing - Required - Empty usage and format grants session": "FAIL",
+      "depthSensing - Required - Empty usage grants session": "FAIL",
+      "depthSensing - Required - Fully populated grants session": "FAIL",
+      "depthSensing - Required - Missing configuration rejects session": "FAIL",
+      "depthSensing - Required - Missing format rejects session": "FAIL",
+      "depthSensing - Required - Missing usage and format rejects session": "FAIL",
+      "depthSensing - Required - Missing usage rejects session": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/depth_type_request_respected.https.html": {
+    "total": 12,
+    "failures": {
+      "Can grant sessions that don't request depth type - webgl": "FAIL",
+      "Can grant sessions that don't request depth type - webgl2": "FAIL",
+      "Can grant sessions that request a raw depth type - webgl": "FAIL",
+      "Can grant sessions that request a raw depth type - webgl2": "FAIL",
+      "Can grant sessions that request a smooth depth type - webgl": "FAIL",
+      "Can grant sessions that request a smooth depth type - webgl2": "FAIL",
+      "Can grant sessions that request empty depth type - webgl": "FAIL",
+      "Can grant sessions that request empty depth type - webgl2": "FAIL",
+      "Unsupported depth type does not block creation - raw - webgl": "FAIL",
+      "Unsupported depth type does not block creation - raw - webgl2": "FAIL",
+      "Unsupported depth type does not block creation - smooth - webgl": "FAIL",
+      "Unsupported depth type does not block creation - smooth - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/gpu/depth_sensing_gpu_dataUnavailable.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures depth data is not available when cleared in the controller, `gpu-optimized` - webgl": "FAIL",
+      "Ensures depth data is not available when cleared in the controller, `gpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/gpu/depth_sensing_gpu_inactiveFrame.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures appropriate depth methods and attributes throw when not run in an active frame, `gpu-optimized` - webgl": "FAIL",
+      "Ensures appropriate depth methods and attributes throw when not run in an active frame, `gpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/gpu/depth_sensing_gpu_incorrectUsage.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures XRCPUDepthInformation is not obtainable in `gpu-optimized` usage mode - webgl": "FAIL",
+      "Ensures XRCPUDepthInformation is not obtainable in `gpu-optimized` usage mode - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/gpu/depth_sensing_gpu_matchDepthViewIdentity.https.html": {
+    "total": 6,
+    "failures": {
+      "Ensures XRViewGeometry values do not match XRView when matchDepthView=false, `gpu-optimized` - webgl": "FAIL",
+      "Ensures XRViewGeometry values do not match XRView when matchDepthView=false, `gpu-optimized` - webgl2": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView is unset, `gpu-optimized` - webgl": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView is unset, `gpu-optimized` - webgl2": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView=true, `gpu-optimized` - webgl": "FAIL",
+      "Ensures XRViewGeometry values match XRView when matchDepthView=true, `gpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/gpu/depth_sensing_gpu_pauseResume.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures appropriate data availability with (pause|resume)DepthSensing, `gpu-optimized` - webgl": "FAIL",
+      "Ensures appropriate data availability with (pause|resume)DepthSensing, `gpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/gpu/depth_sensing_gpu_staleView.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures getDepthInformation() throws when not run with stale XRView, `gpu-optimized` - webgl": "FAIL",
+      "Ensures getDepthInformation() throws when not run with stale XRView, `gpu-optimized` - webgl2": "FAIL"
+    }
+  },
+  "webxr/depth-sensing/idlharness.https.window.js": {
+    "total": 55,
+    "failures": {
+      "Partial interface XRGPUBinding: original interface defined": "FAIL",
+      "XRCPUDepthInformation interface object length": "FAIL",
+      "XRCPUDepthInformation interface object name": "FAIL",
+      "XRCPUDepthInformation interface: attribute data": "FAIL",
+      "XRCPUDepthInformation interface: existence and properties of interface object": "FAIL",
+      "XRCPUDepthInformation interface: existence and properties of interface prototype object": "FAIL",
+      "XRCPUDepthInformation interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRCPUDepthInformation interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRCPUDepthInformation interface: operation getDepthInMeters(float, float)": "FAIL",
+      "XRDepthInformation interface object length": "FAIL",
+      "XRDepthInformation interface object name": "FAIL",
+      "XRDepthInformation interface: attribute height": "FAIL",
+      "XRDepthInformation interface: attribute normDepthBufferFromNormView": "FAIL",
+      "XRDepthInformation interface: attribute rawValueToMeters": "FAIL",
+      "XRDepthInformation interface: attribute width": "FAIL",
+      "XRDepthInformation interface: existence and properties of interface object": "FAIL",
+      "XRDepthInformation interface: existence and properties of interface prototype object": "FAIL",
+      "XRDepthInformation interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRDepthInformation interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRFrame interface: operation getDepthInformation(XRView)": "FAIL",
+      "XRGPUDepthInformation interface object length": "FAIL",
+      "XRGPUDepthInformation interface object name": "FAIL",
+      "XRGPUDepthInformation interface: attribute texture": "FAIL",
+      "XRGPUDepthInformation interface: existence and properties of interface object": "FAIL",
+      "XRGPUDepthInformation interface: existence and properties of interface prototype object": "FAIL",
+      "XRGPUDepthInformation interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRGPUDepthInformation interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRGPUDepthInformation interface: operation getViewDescriptor()": "FAIL",
+      "XRSession interface: attribute depthActive": "FAIL",
+      "XRSession interface: attribute depthDataFormat": "FAIL",
+      "XRSession interface: attribute depthType": "FAIL",
+      "XRSession interface: attribute depthUsage": "FAIL",
+      "XRSession interface: operation pauseDepthSensing()": "FAIL",
+      "XRSession interface: operation resumeDepthSensing()": "FAIL",
+      "XRWebGLBinding interface: operation getDepthInformation(XRView)": "FAIL",
+      "XRWebGLDepthInformation interface object length": "FAIL",
+      "XRWebGLDepthInformation interface object name": "FAIL",
+      "XRWebGLDepthInformation interface: attribute imageIndex": "FAIL",
+      "XRWebGLDepthInformation interface: attribute texture": "FAIL",
+      "XRWebGLDepthInformation interface: attribute textureType": "FAIL",
+      "XRWebGLDepthInformation interface: existence and properties of interface object": "FAIL",
+      "XRWebGLDepthInformation interface: existence and properties of interface prototype object": "FAIL",
+      "XRWebGLDepthInformation interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRWebGLDepthInformation interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+    }
+  },
+  "webxr/dom-overlay/ar_dom_overlay.https.html": {
+    "total": 13,
+    "failures": {
+      "Ensures DOM Overlay Fullscreen API doesn't change DOM overlay - webgl": "FAIL",
+      "Ensures DOM Overlay Fullscreen API doesn't change DOM overlay - webgl2": "FAIL",
+      "Ensures DOM Overlay feature works for immersive-ar, body element - webgl": "FAIL",
+      "Ensures DOM Overlay feature works for immersive-ar, body element - webgl2": "FAIL",
+      "Ensures DOM Overlay feature works for immersive-ar, div element - webgl": "FAIL",
+      "Ensures DOM Overlay feature works for immersive-ar, div element - webgl2": "FAIL",
+      "Ensures DOM Overlay input deduplication works - webgl": "FAIL",
+      "Ensures DOM Overlay input deduplication works - webgl2": "FAIL",
+      "Ensures DOM Overlay interactions on cross origin iframe are ignored - webgl": "FAIL",
+      "Ensures DOM Overlay interactions on cross origin iframe are ignored - webgl2": "FAIL",
+      "Ensures DOM Overlay interactions on cross origin object are ignored - webgl": "FAIL",
+      "Ensures DOM Overlay interactions on cross origin object are ignored - webgl2": "FAIL",
+      "Ensures DOM Overlay rejected without root element": "FAIL"
+    }
+  },
+  "webxr/dom-overlay/ar_dom_overlay_hit_test.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/dom-overlay/idlharness.https.window.js": {
+    "total": 41,
+    "failures": {
+      "Document interface: attribute onbeforexrselect": "FAIL",
+      "Document interface: document must inherit property \"onbeforexrselect\" with the proper type": "FAIL",
+      "HTMLElement interface: attribute onbeforexrselect": "FAIL",
+      "HTMLElement interface: document.body must inherit property \"onbeforexrselect\" with the proper type": "FAIL",
+      "SVGElement interface: attribute onbeforexrselect": "FAIL",
+      "SVGElement interface: svgElement must inherit property \"onbeforexrselect\" with the proper type": "FAIL",
+      "Window interface: attribute onbeforexrselect": "FAIL",
+      "Window interface: window must inherit property \"onbeforexrselect\" with the proper type": "FAIL",
+      "XRSession interface: attribute domOverlayState": "FAIL"
+    }
+  },
+  "webxr/dom-overlay/nested_fullscreen.https.html": {
+    "total": 3,
+    "failures": {
+      "Check XR session from fullscreen - webgl": "FAIL",
+      "Check XR session from fullscreen - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_input_source_recreation.https.html": {
+    "total": 2,
+    "failures": {
+      "Input sources are re-created when handedness or target ray mode changes - webgl": "FAIL",
+      "Input sources are re-created when handedness or target ray mode changes - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_input_sources_change.https.html": {
+    "total": 2,
+    "failures": {
+      "Transient input sources fire events in the right order - webgl": "FAIL",
+      "Transient input sources fire events in the right order - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_referenceSpace_reset_immersive.https.html": {
+    "total": 2,
+    "failures": {
+      "XRSession resetpose from a device properly fires off the right events for immersive sessions - webgl": "FAIL",
+      "XRSession resetpose from a device properly fires off the right events for immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_referenceSpace_reset_inline.https.html": {
+    "total": 2,
+    "failures": {
+      "XRSession resetpose from a device properly fires off the right events for non-immersive sessions - webgl": "FAIL",
+      "XRSession resetpose from a device properly fires off the right events for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_session_select.https.html": {
+    "total": 2,
+    "failures": {
+      "XRInputSources primary input presses properly fires off the right events - webgl": "FAIL",
+      "XRInputSources primary input presses properly fires off the right events - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_session_select_subframe.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures that an XRInputSources primary input being pressed and released in the space of a single frame properly fires off the right events - webgl": "FAIL",
+      "Ensures that an XRInputSources primary input being pressed and released in the space of a single frame properly fires off the right events - webgl2": "FAIL"
+    }
+  },
+  "webxr/events_session_squeeze.https.html": {
+    "total": 2,
+    "failures": {
+      "XRInputSources primary input presses properly fires off the right events - webgl": "FAIL",
+      "XRInputSources primary input presses properly fires off the right events - webgl2": "FAIL"
+    }
+  },
+  "webxr/exclusive_requestFrame_nolayer.https.html": {
+    "total": 4,
+    "failures": {
+      "XRSession requestAnimationFrame must fail if the session has no baseLayer for immersive - webgl": "FAIL",
+      "XRSession requestAnimationFrame must fail if the session has no baseLayer for immersive - webgl2": "FAIL",
+      "XRSession requestAnimationFrame must fail if the session has no baseLayer for non immersive - webgl": "FAIL",
+      "XRSession requestAnimationFrame must fail if the session has no baseLayer for non immersive - webgl2": "FAIL"
+    }
+  },
+  "webxr/gamepads-module/idlharness.https.window.js": {
+    "total": 5,
+    "failures": {
+      "XRInputSource interface: attribute gamepad": "FAIL"
+    }
+  },
+  "webxr/gamepads-module/xrInputSource_gamepad_disconnect.https.html": {
+    "total": 2,
+    "failures": {
+      "WebXR InputSource's gamepad gets disconnected when the input source is removed - webgl": "FAIL",
+      "WebXR InputSource's gamepad gets disconnected when the input source is removed - webgl2": "FAIL"
+    }
+  },
+  "webxr/gamepads-module/xrInputSource_gamepad_input_registered.https.html": {
+    "total": 2,
+    "failures": {
+      "WebXR InputSource's gamepad properly registers input - webgl": "FAIL",
+      "WebXR InputSource's gamepad properly registers input - webgl2": "FAIL"
+    }
+  },
+  "webxr/getInputPose_handedness.https.html": {
+    "total": 2,
+    "failures": {
+      "XRInputSources properly communicate their handedness - webgl": "FAIL",
+      "XRInputSources properly communicate their handedness - webgl2": "FAIL"
+    }
+  },
+  "webxr/getInputPose_pointer.https.html": {
+    "total": 2,
+    "failures": {
+      "XRInputSources with a target ray mode of 'tracked-pointer' properly communicate their poses - webgl": "FAIL",
+      "XRInputSources with a target ray mode of 'tracked-pointer' properly communicate their poses - webgl2": "FAIL"
+    }
+  },
+  "webxr/getViewerPose_emulatedPosition.https.html": {
+    "total": 2,
+    "failures": {
+      "XRFrame getViewerPose has emulatedPosition set properly. - webgl": "FAIL",
+      "XRFrame getViewerPose has emulatedPosition set properly. - webgl2": "FAIL"
+    }
+  },
+  "webxr/hand-input/idlharness.https.window.js": {
+    "total": 35,
+    "failures": {
+      "XRFrame interface: operation fillJointRadii(sequence<XRJointSpace>, Float32Array)": "FAIL",
+      "XRFrame interface: operation fillPoses(sequence<XRSpace>, XRSpace, Float32Array)": "FAIL",
+      "XRFrame interface: operation getJointPose(XRJointSpace, XRSpace)": "FAIL",
+      "XRHand interface object length": "FAIL",
+      "XRHand interface object name": "FAIL",
+      "XRHand interface: attribute size": "FAIL",
+      "XRHand interface: existence and properties of interface object": "FAIL",
+      "XRHand interface: existence and properties of interface prototype object": "FAIL",
+      "XRHand interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRHand interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRHand interface: iterable<XRHandJoint, XRJointSpace>": "FAIL",
+      "XRHand interface: operation get(XRHandJoint)": "FAIL",
+      "XRInputSource interface: attribute hand": "FAIL",
+      "XRJointPose interface object length": "FAIL",
+      "XRJointPose interface object name": "FAIL",
+      "XRJointPose interface: attribute radius": "FAIL",
+      "XRJointPose interface: existence and properties of interface object": "FAIL",
+      "XRJointPose interface: existence and properties of interface prototype object": "FAIL",
+      "XRJointPose interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRJointPose interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRJointSpace interface object length": "FAIL",
+      "XRJointSpace interface object name": "FAIL",
+      "XRJointSpace interface: attribute jointName": "FAIL",
+      "XRJointSpace interface: existence and properties of interface object": "FAIL",
+      "XRJointSpace interface: existence and properties of interface prototype object": "FAIL",
+      "XRJointSpace interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRJointSpace interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+    }
+  },
+  "webxr/historical.html": {
+    "total": 17
+  },
+  "webxr/hit-test/ar_hittest_source_cancel.https.html": {
+    "total": 8,
+    "failures": {
+      "Ensures hit test source cancellation works when the session has ended - webgl": "FAIL",
+      "Ensures hit test source cancellation works when the session has ended - webgl2": "FAIL",
+      "Ensures hit test source cancellation works when the session has not ended. - webgl": "FAIL",
+      "Ensures hit test source cancellation works when the session has not ended. - webgl2": "FAIL",
+      "Ensures transient input hit test source cancellation works when the session has ended - webgl": "FAIL",
+      "Ensures transient input hit test source cancellation works when the session has ended - webgl2": "FAIL",
+      "Ensures transient input hit test source cancellation works when the session has not ended. - webgl": "FAIL",
+      "Ensures transient input hit test source cancellation works when the session has not ended. - webgl2": "FAIL"
+    }
+  },
+  "webxr/hit-test/ar_hittest_subscription_inputSources.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/hit-test/ar_hittest_subscription_inputSources_gripSpace.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/hit-test/ar_hittest_subscription_optional_offsetRay.https.html": {
+    "total": 8,
+    "failures": {
+      "Ensures a null offsetRay is rejected - webgl": "FAIL",
+      "Ensures a null offsetRay is rejected - webgl2": "FAIL",
+      "Ensures a null offsetRay is rejected for transient input - webgl": "FAIL",
+      "Ensures a null offsetRay is rejected for transient input - webgl2": "FAIL",
+      "Ensures an omitted offsetRay hit tests along the default ray - webgl": "FAIL",
+      "Ensures an omitted offsetRay hit tests along the default ray - webgl2": "FAIL",
+      "Ensures an omitted offsetRay hit tests along the default ray for transient input - webgl": "FAIL",
+      "Ensures an omitted offsetRay hit tests along the default ray for transient input - webgl2": "FAIL"
+    }
+  },
+  "webxr/hit-test/ar_hittest_subscription_refSpaces.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/hit-test/ar_hittest_subscription_states_regular.https.html": {
+    "total": 6,
+    "failures": {
+      "Hit test subscription fails if the feature was not requested - webgl": "FAIL",
+      "Hit test subscription fails if the feature was not requested - webgl2": "FAIL",
+      "Hit test subscription fails if the feature was requested but the session already ended - webgl": "FAIL",
+      "Hit test subscription fails if the feature was requested but the session already ended - webgl2": "FAIL",
+      "Hit test subscription succeeds if the feature was requested - webgl": "FAIL",
+      "Hit test subscription succeeds if the feature was requested - webgl2": "FAIL"
+    }
+  },
+  "webxr/hit-test/ar_hittest_subscription_states_transient.https.html": {
+    "total": 6,
+    "failures": {
+      "Transient hit test subscription fails if the feature was not requested - webgl": "FAIL",
+      "Transient hit test subscription fails if the feature was not requested - webgl2": "FAIL",
+      "Transient hit test subscription succeeds if the feature was requested - webgl": "FAIL",
+      "Transient hit test subscription succeeds if the feature was requested - webgl2": "FAIL",
+      "Transient test subscription fails if the feature was requested but the session already ended - webgl": "FAIL",
+      "Transient test subscription fails if the feature was requested but the session already ended - webgl2": "FAIL"
+    }
+  },
+  "webxr/hit-test/ar_hittest_subscription_transientInputSources.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/hit-test/ar_hittest_subscription_unlocalizable.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/hit-test/idlharness.https.html": {
+    "total": 57,
+    "failures": {
+      "Stringification of new XRRay()": "FAIL",
+      "XRFrame interface: operation getHitTestResults(XRHitTestSource)": "FAIL",
+      "XRFrame interface: operation getHitTestResultsForTransientInput(XRTransientInputHitTestSource)": "FAIL",
+      "XRHitTestResult interface object length": "FAIL",
+      "XRHitTestResult interface object name": "FAIL",
+      "XRHitTestResult interface: existence and properties of interface object": "FAIL",
+      "XRHitTestResult interface: existence and properties of interface prototype object": "FAIL",
+      "XRHitTestResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRHitTestResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRHitTestResult interface: operation getPose(XRSpace)": "FAIL",
+      "XRHitTestSource interface object length": "FAIL",
+      "XRHitTestSource interface object name": "FAIL",
+      "XRHitTestSource interface: existence and properties of interface object": "FAIL",
+      "XRHitTestSource interface: existence and properties of interface prototype object": "FAIL",
+      "XRHitTestSource interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRHitTestSource interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRHitTestSource interface: operation cancel()": "FAIL",
+      "XRRay interface object length": "FAIL",
+      "XRRay interface object name": "FAIL",
+      "XRRay interface: attribute direction": "FAIL",
+      "XRRay interface: attribute matrix": "FAIL",
+      "XRRay interface: attribute origin": "FAIL",
+      "XRRay interface: existence and properties of interface object": "FAIL",
+      "XRRay interface: existence and properties of interface prototype object": "FAIL",
+      "XRRay interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRRay interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRRay interface: new XRRay() must inherit property \"direction\" with the proper type": "FAIL",
+      "XRRay interface: new XRRay() must inherit property \"matrix\" with the proper type": "FAIL",
+      "XRRay interface: new XRRay() must inherit property \"origin\" with the proper type": "FAIL",
+      "XRRay must be primary interface of new XRRay()": "FAIL",
+      "XRSession interface: calling requestHitTestSource(XRHitTestOptionsInit) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: calling requestHitTestSourceForTransientInput(XRTransientInputHitTestOptionsInit) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: operation requestHitTestSource(XRHitTestOptionsInit)": "FAIL",
+      "XRSession interface: operation requestHitTestSourceForTransientInput(XRTransientInputHitTestOptionsInit)": "FAIL",
+      "XRSession interface: xrSession must inherit property \"requestHitTestSource(XRHitTestOptionsInit)\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"requestHitTestSourceForTransientInput(XRTransientInputHitTestOptionsInit)\" with the proper type": "FAIL",
+      "XRTransientInputHitTestResult interface object length": "FAIL",
+      "XRTransientInputHitTestResult interface object name": "FAIL",
+      "XRTransientInputHitTestResult interface: attribute inputSource": "FAIL",
+      "XRTransientInputHitTestResult interface: attribute results": "FAIL",
+      "XRTransientInputHitTestResult interface: existence and properties of interface object": "FAIL",
+      "XRTransientInputHitTestResult interface: existence and properties of interface prototype object": "FAIL",
+      "XRTransientInputHitTestResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRTransientInputHitTestResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRTransientInputHitTestSource interface object length": "FAIL",
+      "XRTransientInputHitTestSource interface object name": "FAIL",
+      "XRTransientInputHitTestSource interface: existence and properties of interface object": "FAIL",
+      "XRTransientInputHitTestSource interface: existence and properties of interface prototype object": "FAIL",
+      "XRTransientInputHitTestSource interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRTransientInputHitTestSource interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRTransientInputHitTestSource interface: operation cancel()": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "webxr/hit-test/xrRay_constructor.https.html": {
+    "total": 1,
+    "failures": {
+      "XRRay constructors work": "FAIL"
+    }
+  },
+  "webxr/hit-test/xrRay_matrix.https.html": {
+    "total": 1,
+    "failures": {
+      "XRRay matrix works": "FAIL"
+    }
+  },
+  "webxr/idlharness.https.window.js": {
+    "total": 317,
+    "failures": {
+      "Navigator interface: attribute xr": "FAIL",
+      "Navigator interface: navigator must inherit property \"xr\" with the proper type": "FAIL",
+      "Stringification of new XRRigidTransform()": "FAIL",
+      "Stringification of xrInputSourceArray": "FAIL",
+      "Stringification of xrInputSourcesChangeEvent": "FAIL",
+      "Stringification of xrReferenceSpace": "FAIL",
+      "Stringification of xrRenderState": "FAIL",
+      "Stringification of xrSession": "FAIL",
+      "Stringification of xrSessionEvent": "FAIL",
+      "Stringification of xrWebGLLayer": "FAIL",
+      "WebGLRenderingContext includes WebGLRenderingContextOverloads: member names are unique": "FAIL",
+      "WebGLRenderingContext interface: operation makeXRCompatible()": "FAIL",
+      "WebGLRenderingContextBase interface: webGLRenderingContextBase must inherit property \"makeXRCompatible()\" with the proper type": "FAIL",
+      "XRBoundedReferenceSpace interface object length": "FAIL",
+      "XRBoundedReferenceSpace interface object name": "FAIL",
+      "XRBoundedReferenceSpace interface: attribute boundsGeometry": "FAIL",
+      "XRBoundedReferenceSpace interface: existence and properties of interface object": "FAIL",
+      "XRBoundedReferenceSpace interface: existence and properties of interface prototype object": "FAIL",
+      "XRBoundedReferenceSpace interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRBoundedReferenceSpace interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRFrame interface object length": "FAIL",
+      "XRFrame interface object name": "FAIL",
+      "XRFrame interface: attribute predictedDisplayTime": "FAIL",
+      "XRFrame interface: attribute session": "FAIL",
+      "XRFrame interface: existence and properties of interface object": "FAIL",
+      "XRFrame interface: existence and properties of interface prototype object": "FAIL",
+      "XRFrame interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRFrame interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRFrame interface: operation getPose(XRSpace, XRSpace)": "FAIL",
+      "XRFrame interface: operation getViewerPose(XRReferenceSpace)": "FAIL",
+      "XRInputSource interface object length": "FAIL",
+      "XRInputSource interface object name": "FAIL",
+      "XRInputSource interface: attribute gripSpace": "FAIL",
+      "XRInputSource interface: attribute handedness": "FAIL",
+      "XRInputSource interface: attribute profiles": "FAIL",
+      "XRInputSource interface: attribute skipRendering": "FAIL",
+      "XRInputSource interface: attribute targetRayMode": "FAIL",
+      "XRInputSource interface: attribute targetRaySpace": "FAIL",
+      "XRInputSource interface: existence and properties of interface object": "FAIL",
+      "XRInputSource interface: existence and properties of interface prototype object": "FAIL",
+      "XRInputSource interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRInputSource interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRInputSourceArray interface object length": "FAIL",
+      "XRInputSourceArray interface object name": "FAIL",
+      "XRInputSourceArray interface: attribute length": "FAIL",
+      "XRInputSourceArray interface: existence and properties of interface object": "FAIL",
+      "XRInputSourceArray interface: existence and properties of interface prototype object": "FAIL",
+      "XRInputSourceArray interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRInputSourceArray interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRInputSourceArray interface: iterable<XRInputSource>": "FAIL",
+      "XRInputSourceArray interface: xrInputSourceArray must inherit property \"length\" with the proper type": "FAIL",
+      "XRInputSourceArray must be primary interface of xrInputSourceArray": "FAIL",
+      "XRInputSourceEvent interface object length": "FAIL",
+      "XRInputSourceEvent interface object name": "FAIL",
+      "XRInputSourceEvent interface: attribute frame": "FAIL",
+      "XRInputSourceEvent interface: attribute inputSource": "FAIL",
+      "XRInputSourceEvent interface: existence and properties of interface object": "FAIL",
+      "XRInputSourceEvent interface: existence and properties of interface prototype object": "FAIL",
+      "XRInputSourceEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRInputSourceEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRInputSourcesChangeEvent interface object length": "FAIL",
+      "XRInputSourcesChangeEvent interface object name": "FAIL",
+      "XRInputSourcesChangeEvent interface: attribute added": "FAIL",
+      "XRInputSourcesChangeEvent interface: attribute removed": "FAIL",
+      "XRInputSourcesChangeEvent interface: attribute session": "FAIL",
+      "XRInputSourcesChangeEvent interface: existence and properties of interface object": "FAIL",
+      "XRInputSourcesChangeEvent interface: existence and properties of interface prototype object": "FAIL",
+      "XRInputSourcesChangeEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRInputSourcesChangeEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRInputSourcesChangeEvent interface: xrInputSourcesChangeEvent must inherit property \"added\" with the proper type": "FAIL",
+      "XRInputSourcesChangeEvent interface: xrInputSourcesChangeEvent must inherit property \"removed\" with the proper type": "FAIL",
+      "XRInputSourcesChangeEvent interface: xrInputSourcesChangeEvent must inherit property \"session\" with the proper type": "FAIL",
+      "XRInputSourcesChangeEvent must be primary interface of xrInputSourcesChangeEvent": "FAIL",
+      "XRLayer interface object length": "FAIL",
+      "XRLayer interface object name": "FAIL",
+      "XRLayer interface: existence and properties of interface object": "FAIL",
+      "XRLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRPermissionStatus interface object length": "FAIL",
+      "XRPermissionStatus interface object name": "FAIL",
+      "XRPermissionStatus interface: attribute granted": "FAIL",
+      "XRPermissionStatus interface: existence and properties of interface object": "FAIL",
+      "XRPermissionStatus interface: existence and properties of interface prototype object": "FAIL",
+      "XRPermissionStatus interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRPermissionStatus interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRPose interface object length": "FAIL",
+      "XRPose interface object name": "FAIL",
+      "XRPose interface: attribute angularVelocity": "FAIL",
+      "XRPose interface: attribute emulatedPosition": "FAIL",
+      "XRPose interface: attribute linearVelocity": "FAIL",
+      "XRPose interface: attribute transform": "FAIL",
+      "XRPose interface: existence and properties of interface object": "FAIL",
+      "XRPose interface: existence and properties of interface prototype object": "FAIL",
+      "XRPose interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRPose interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRReferenceSpace interface object length": "FAIL",
+      "XRReferenceSpace interface object name": "FAIL",
+      "XRReferenceSpace interface: attribute onreset": "FAIL",
+      "XRReferenceSpace interface: calling getOffsetReferenceSpace(XRRigidTransform) on xrReferenceSpace with too few arguments must throw TypeError": "FAIL",
+      "XRReferenceSpace interface: existence and properties of interface object": "FAIL",
+      "XRReferenceSpace interface: existence and properties of interface prototype object": "FAIL",
+      "XRReferenceSpace interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRReferenceSpace interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRReferenceSpace interface: operation getOffsetReferenceSpace(XRRigidTransform)": "FAIL",
+      "XRReferenceSpace interface: xrReferenceSpace must inherit property \"getOffsetReferenceSpace(XRRigidTransform)\" with the proper type": "FAIL",
+      "XRReferenceSpace interface: xrReferenceSpace must inherit property \"onreset\" with the proper type": "FAIL",
+      "XRReferenceSpace must be primary interface of xrReferenceSpace": "FAIL",
+      "XRReferenceSpaceEvent interface object length": "FAIL",
+      "XRReferenceSpaceEvent interface object name": "FAIL",
+      "XRReferenceSpaceEvent interface: attribute referenceSpace": "FAIL",
+      "XRReferenceSpaceEvent interface: attribute transform": "FAIL",
+      "XRReferenceSpaceEvent interface: existence and properties of interface object": "FAIL",
+      "XRReferenceSpaceEvent interface: existence and properties of interface prototype object": "FAIL",
+      "XRReferenceSpaceEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRReferenceSpaceEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRRenderState interface object length": "FAIL",
+      "XRRenderState interface object name": "FAIL",
+      "XRRenderState interface: attribute baseLayer": "FAIL",
+      "XRRenderState interface: attribute depthFar": "FAIL",
+      "XRRenderState interface: attribute depthNear": "FAIL",
+      "XRRenderState interface: attribute inlineVerticalFieldOfView": "FAIL",
+      "XRRenderState interface: attribute passthroughFullyObscured": "FAIL",
+      "XRRenderState interface: existence and properties of interface object": "FAIL",
+      "XRRenderState interface: existence and properties of interface prototype object": "FAIL",
+      "XRRenderState interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRRenderState interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRRenderState interface: xrRenderState must inherit property \"baseLayer\" with the proper type": "FAIL",
+      "XRRenderState interface: xrRenderState must inherit property \"depthFar\" with the proper type": "FAIL",
+      "XRRenderState interface: xrRenderState must inherit property \"depthNear\" with the proper type": "FAIL",
+      "XRRenderState interface: xrRenderState must inherit property \"inlineVerticalFieldOfView\" with the proper type": "FAIL",
+      "XRRenderState interface: xrRenderState must inherit property \"passthroughFullyObscured\" with the proper type": "FAIL",
+      "XRRenderState must be primary interface of xrRenderState": "FAIL",
+      "XRRigidTransform interface object length": "FAIL",
+      "XRRigidTransform interface object name": "FAIL",
+      "XRRigidTransform interface: attribute inverse": "FAIL",
+      "XRRigidTransform interface: attribute matrix": "FAIL",
+      "XRRigidTransform interface: attribute orientation": "FAIL",
+      "XRRigidTransform interface: attribute position": "FAIL",
+      "XRRigidTransform interface: existence and properties of interface object": "FAIL",
+      "XRRigidTransform interface: existence and properties of interface prototype object": "FAIL",
+      "XRRigidTransform interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRRigidTransform interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRRigidTransform interface: new XRRigidTransform() must inherit property \"inverse\" with the proper type": "FAIL",
+      "XRRigidTransform interface: new XRRigidTransform() must inherit property \"matrix\" with the proper type": "FAIL",
+      "XRRigidTransform interface: new XRRigidTransform() must inherit property \"orientation\" with the proper type": "FAIL",
+      "XRRigidTransform interface: new XRRigidTransform() must inherit property \"position\" with the proper type": "FAIL",
+      "XRRigidTransform must be primary interface of new XRRigidTransform()": "FAIL",
+      "XRSession interface object length": "FAIL",
+      "XRSession interface object name": "FAIL",
+      "XRSession interface: attribute enabledFeatures": "FAIL",
+      "XRSession interface: attribute frameRate": "FAIL",
+      "XRSession interface: attribute inputSources": "FAIL",
+      "XRSession interface: attribute isSystemKeyboardSupported": "FAIL",
+      "XRSession interface: attribute onend": "FAIL",
+      "XRSession interface: attribute onframeratechange": "FAIL",
+      "XRSession interface: attribute oninputsourceschange": "FAIL",
+      "XRSession interface: attribute onselect": "FAIL",
+      "XRSession interface: attribute onselectend": "FAIL",
+      "XRSession interface: attribute onselectstart": "FAIL",
+      "XRSession interface: attribute onsqueeze": "FAIL",
+      "XRSession interface: attribute onsqueezeend": "FAIL",
+      "XRSession interface: attribute onsqueezestart": "FAIL",
+      "XRSession interface: attribute onvisibilitychange": "FAIL",
+      "XRSession interface: attribute renderState": "FAIL",
+      "XRSession interface: attribute supportedFrameRates": "FAIL",
+      "XRSession interface: attribute trackedSources": "FAIL",
+      "XRSession interface: attribute visibilityState": "FAIL",
+      "XRSession interface: calling cancelAnimationFrame(unsigned long) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: calling requestAnimationFrame(XRFrameRequestCallback) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: calling requestReferenceSpace(XRReferenceSpaceType) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: calling updateRenderState(optional XRRenderStateInit) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: calling updateTargetFrameRate(float) on xrSession with too few arguments must throw TypeError": "FAIL",
+      "XRSession interface: existence and properties of interface object": "FAIL",
+      "XRSession interface: existence and properties of interface prototype object": "FAIL",
+      "XRSession interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRSession interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRSession interface: operation cancelAnimationFrame(unsigned long)": "FAIL",
+      "XRSession interface: operation end()": "FAIL",
+      "XRSession interface: operation requestAnimationFrame(XRFrameRequestCallback)": "FAIL",
+      "XRSession interface: operation requestReferenceSpace(XRReferenceSpaceType)": "FAIL",
+      "XRSession interface: operation updateRenderState(optional XRRenderStateInit)": "FAIL",
+      "XRSession interface: operation updateTargetFrameRate(float)": "FAIL",
+      "XRSession interface: xrSession must inherit property \"cancelAnimationFrame(unsigned long)\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"enabledFeatures\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"end()\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"frameRate\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"inputSources\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"isSystemKeyboardSupported\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onend\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onframeratechange\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"oninputsourceschange\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onselect\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onselectend\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onselectstart\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onsqueeze\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onsqueezeend\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onsqueezestart\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"onvisibilitychange\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"renderState\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"requestAnimationFrame(XRFrameRequestCallback)\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"requestReferenceSpace(XRReferenceSpaceType)\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"supportedFrameRates\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"trackedSources\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"updateRenderState(optional XRRenderStateInit)\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"updateTargetFrameRate(float)\" with the proper type": "FAIL",
+      "XRSession interface: xrSession must inherit property \"visibilityState\" with the proper type": "FAIL",
+      "XRSession must be primary interface of xrSession": "FAIL",
+      "XRSessionEvent interface object length": "FAIL",
+      "XRSessionEvent interface object name": "FAIL",
+      "XRSessionEvent interface: attribute session": "FAIL",
+      "XRSessionEvent interface: existence and properties of interface object": "FAIL",
+      "XRSessionEvent interface: existence and properties of interface prototype object": "FAIL",
+      "XRSessionEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRSessionEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRSessionEvent interface: xrSessionEvent must inherit property \"session\" with the proper type": "FAIL",
+      "XRSessionEvent must be primary interface of xrSessionEvent": "FAIL",
+      "XRSpace interface object length": "FAIL",
+      "XRSpace interface object name": "FAIL",
+      "XRSpace interface: existence and properties of interface object": "FAIL",
+      "XRSpace interface: existence and properties of interface prototype object": "FAIL",
+      "XRSpace interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRSpace interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRSystem interface object length": "FAIL",
+      "XRSystem interface object name": "FAIL",
+      "XRSystem interface: attribute ondevicechange": "FAIL",
+      "XRSystem interface: existence and properties of interface object": "FAIL",
+      "XRSystem interface: existence and properties of interface prototype object": "FAIL",
+      "XRSystem interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRSystem interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRSystem interface: operation isSessionSupported(XRSessionMode)": "FAIL",
+      "XRSystem interface: operation requestSession(XRSessionMode, optional XRSessionInit)": "FAIL",
+      "XRView interface object length": "FAIL",
+      "XRView interface object name": "FAIL",
+      "XRView interface: attribute eye": "FAIL",
+      "XRView interface: attribute index": "FAIL",
+      "XRView interface: attribute projectionMatrix": "FAIL",
+      "XRView interface: attribute recommendedViewportScale": "FAIL",
+      "XRView interface: attribute transform": "FAIL",
+      "XRView interface: existence and properties of interface object": "FAIL",
+      "XRView interface: existence and properties of interface prototype object": "FAIL",
+      "XRView interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRView interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRView interface: operation requestViewportScale(double?)": "FAIL",
+      "XRViewerPose interface object length": "FAIL",
+      "XRViewerPose interface object name": "FAIL",
+      "XRViewerPose interface: attribute views": "FAIL",
+      "XRViewerPose interface: existence and properties of interface object": "FAIL",
+      "XRViewerPose interface: existence and properties of interface prototype object": "FAIL",
+      "XRViewerPose interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRViewerPose interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRViewport interface object length": "FAIL",
+      "XRViewport interface object name": "FAIL",
+      "XRViewport interface: attribute height": "FAIL",
+      "XRViewport interface: attribute width": "FAIL",
+      "XRViewport interface: attribute x": "FAIL",
+      "XRViewport interface: attribute y": "FAIL",
+      "XRViewport interface: existence and properties of interface object": "FAIL",
+      "XRViewport interface: existence and properties of interface prototype object": "FAIL",
+      "XRViewport interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRViewport interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRVisibilityMaskChangeEvent interface object length": "FAIL",
+      "XRVisibilityMaskChangeEvent interface object name": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: attribute eye": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: attribute index": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: attribute indices": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: attribute session": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: attribute vertices": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: existence and properties of interface object": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: existence and properties of interface prototype object": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRVisibilityMaskChangeEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRWebGLLayer interface object length": "FAIL",
+      "XRWebGLLayer interface object name": "FAIL",
+      "XRWebGLLayer interface: attribute antialias": "FAIL",
+      "XRWebGLLayer interface: attribute fixedFoveation": "FAIL",
+      "XRWebGLLayer interface: attribute framebuffer": "FAIL",
+      "XRWebGLLayer interface: attribute framebufferHeight": "FAIL",
+      "XRWebGLLayer interface: attribute framebufferWidth": "FAIL",
+      "XRWebGLLayer interface: attribute ignoreDepthValues": "FAIL",
+      "XRWebGLLayer interface: calling getNativeFramebufferScaleFactor(XRSession) on xrWebGLLayer with too few arguments must throw TypeError": "FAIL",
+      "XRWebGLLayer interface: calling getViewport(XRView) on xrWebGLLayer with too few arguments must throw TypeError": "FAIL",
+      "XRWebGLLayer interface: existence and properties of interface object": "FAIL",
+      "XRWebGLLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRWebGLLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRWebGLLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRWebGLLayer interface: operation getNativeFramebufferScaleFactor(XRSession)": "FAIL",
+      "XRWebGLLayer interface: operation getViewport(XRView)": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"antialias\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"fixedFoveation\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"framebuffer\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"framebufferHeight\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"framebufferWidth\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"getNativeFramebufferScaleFactor(XRSession)\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"getViewport(XRView)\" with the proper type": "FAIL",
+      "XRWebGLLayer interface: xrWebGLLayer must inherit property \"ignoreDepthValues\" with the proper type": "FAIL",
+      "XRWebGLLayer must be primary interface of xrWebGLLayer": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "webxr/layers/idlharness.https.window.js": {
+    "total": 134,
+    "failures": {
+      "XRCompositionLayer interface object length": "FAIL",
+      "XRCompositionLayer interface object name": "FAIL",
+      "XRCompositionLayer interface: attribute blendTextureSourceAlpha": "FAIL",
+      "XRCompositionLayer interface: attribute forceMonoPresentation": "FAIL",
+      "XRCompositionLayer interface: attribute layout": "FAIL",
+      "XRCompositionLayer interface: attribute mipLevels": "FAIL",
+      "XRCompositionLayer interface: attribute needsRedraw": "FAIL",
+      "XRCompositionLayer interface: attribute opacity": "FAIL",
+      "XRCompositionLayer interface: attribute quality": "FAIL",
+      "XRCompositionLayer interface: existence and properties of interface object": "FAIL",
+      "XRCompositionLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRCompositionLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRCompositionLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRCompositionLayer interface: operation destroy()": "FAIL",
+      "XRCubeLayer interface object length": "FAIL",
+      "XRCubeLayer interface object name": "FAIL",
+      "XRCubeLayer interface: attribute onredraw": "FAIL",
+      "XRCubeLayer interface: attribute orientation": "FAIL",
+      "XRCubeLayer interface: attribute space": "FAIL",
+      "XRCubeLayer interface: existence and properties of interface object": "FAIL",
+      "XRCubeLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRCubeLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRCubeLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRCylinderLayer interface object length": "FAIL",
+      "XRCylinderLayer interface object name": "FAIL",
+      "XRCylinderLayer interface: attribute aspectRatio": "FAIL",
+      "XRCylinderLayer interface: attribute centralAngle": "FAIL",
+      "XRCylinderLayer interface: attribute onredraw": "FAIL",
+      "XRCylinderLayer interface: attribute radius": "FAIL",
+      "XRCylinderLayer interface: attribute space": "FAIL",
+      "XRCylinderLayer interface: attribute transform": "FAIL",
+      "XRCylinderLayer interface: existence and properties of interface object": "FAIL",
+      "XRCylinderLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRCylinderLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRCylinderLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XREquirectLayer interface object length": "FAIL",
+      "XREquirectLayer interface object name": "FAIL",
+      "XREquirectLayer interface: attribute centralHorizontalAngle": "FAIL",
+      "XREquirectLayer interface: attribute lowerVerticalAngle": "FAIL",
+      "XREquirectLayer interface: attribute onredraw": "FAIL",
+      "XREquirectLayer interface: attribute radius": "FAIL",
+      "XREquirectLayer interface: attribute space": "FAIL",
+      "XREquirectLayer interface: attribute transform": "FAIL",
+      "XREquirectLayer interface: attribute upperVerticalAngle": "FAIL",
+      "XREquirectLayer interface: existence and properties of interface object": "FAIL",
+      "XREquirectLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XREquirectLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XREquirectLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRLayerEvent interface object length": "FAIL",
+      "XRLayerEvent interface object name": "FAIL",
+      "XRLayerEvent interface: attribute layer": "FAIL",
+      "XRLayerEvent interface: existence and properties of interface object": "FAIL",
+      "XRLayerEvent interface: existence and properties of interface prototype object": "FAIL",
+      "XRLayerEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRLayerEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRMediaBinding interface object length": "FAIL",
+      "XRMediaBinding interface object name": "FAIL",
+      "XRMediaBinding interface: existence and properties of interface object": "FAIL",
+      "XRMediaBinding interface: existence and properties of interface prototype object": "FAIL",
+      "XRMediaBinding interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRMediaBinding interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRMediaBinding interface: operation createCylinderLayer(HTMLVideoElement, optional XRMediaCylinderLayerInit)": "FAIL",
+      "XRMediaBinding interface: operation createEquirectLayer(HTMLVideoElement, optional XRMediaEquirectLayerInit)": "FAIL",
+      "XRMediaBinding interface: operation createQuadLayer(HTMLVideoElement, optional XRMediaQuadLayerInit)": "FAIL",
+      "XRProjectionLayer interface object length": "FAIL",
+      "XRProjectionLayer interface object name": "FAIL",
+      "XRProjectionLayer interface: attribute deltaPose": "FAIL",
+      "XRProjectionLayer interface: attribute fixedFoveation": "FAIL",
+      "XRProjectionLayer interface: attribute ignoreDepthValues": "FAIL",
+      "XRProjectionLayer interface: attribute textureArrayLength": "FAIL",
+      "XRProjectionLayer interface: attribute textureHeight": "FAIL",
+      "XRProjectionLayer interface: attribute textureWidth": "FAIL",
+      "XRProjectionLayer interface: existence and properties of interface object": "FAIL",
+      "XRProjectionLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRProjectionLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRProjectionLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRQuadLayer interface object length": "FAIL",
+      "XRQuadLayer interface object name": "FAIL",
+      "XRQuadLayer interface: attribute height": "FAIL",
+      "XRQuadLayer interface: attribute onredraw": "FAIL",
+      "XRQuadLayer interface: attribute space": "FAIL",
+      "XRQuadLayer interface: attribute transform": "FAIL",
+      "XRQuadLayer interface: attribute width": "FAIL",
+      "XRQuadLayer interface: existence and properties of interface object": "FAIL",
+      "XRQuadLayer interface: existence and properties of interface prototype object": "FAIL",
+      "XRQuadLayer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRQuadLayer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRRenderState interface: attribute layers": "FAIL",
+      "XRSession interface: attribute maxRenderLayers": "FAIL",
+      "XRSubImage interface object length": "FAIL",
+      "XRSubImage interface object name": "FAIL",
+      "XRSubImage interface: attribute viewport": "FAIL",
+      "XRSubImage interface: existence and properties of interface object": "FAIL",
+      "XRSubImage interface: existence and properties of interface prototype object": "FAIL",
+      "XRSubImage interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRSubImage interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRWebGLBinding interface object length": "FAIL",
+      "XRWebGLBinding interface object name": "FAIL",
+      "XRWebGLBinding interface: attribute nativeProjectionScaleFactor": "FAIL",
+      "XRWebGLBinding interface: attribute usesDepthValues": "FAIL",
+      "XRWebGLBinding interface: existence and properties of interface object": "FAIL",
+      "XRWebGLBinding interface: existence and properties of interface prototype object": "FAIL",
+      "XRWebGLBinding interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRWebGLBinding interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRWebGLBinding interface: operation createCubeLayer(optional XRCubeLayerInit)": "FAIL",
+      "XRWebGLBinding interface: operation createCylinderLayer(optional XRCylinderLayerInit)": "FAIL",
+      "XRWebGLBinding interface: operation createEquirectLayer(optional XREquirectLayerInit)": "FAIL",
+      "XRWebGLBinding interface: operation createProjectionLayer(optional XRProjectionLayerInit)": "FAIL",
+      "XRWebGLBinding interface: operation createQuadLayer(optional XRQuadLayerInit)": "FAIL",
+      "XRWebGLBinding interface: operation foveateBoundTexture(GLenum, float)": "FAIL",
+      "XRWebGLBinding interface: operation getSubImage(XRCompositionLayer, XRFrame, optional XREye)": "FAIL",
+      "XRWebGLBinding interface: operation getViewSubImage(XRProjectionLayer, XRView)": "FAIL",
+      "XRWebGLSubImage interface object length": "FAIL",
+      "XRWebGLSubImage interface object name": "FAIL",
+      "XRWebGLSubImage interface: attribute colorTexture": "FAIL",
+      "XRWebGLSubImage interface: attribute colorTextureHeight": "FAIL",
+      "XRWebGLSubImage interface: attribute colorTextureWidth": "FAIL",
+      "XRWebGLSubImage interface: attribute depthStencilTexture": "FAIL",
+      "XRWebGLSubImage interface: attribute depthStencilTextureHeight": "FAIL",
+      "XRWebGLSubImage interface: attribute depthStencilTextureWidth": "FAIL",
+      "XRWebGLSubImage interface: attribute imageIndex": "FAIL",
+      "XRWebGLSubImage interface: attribute motionVectorTexture": "FAIL",
+      "XRWebGLSubImage interface: existence and properties of interface object": "FAIL",
+      "XRWebGLSubImage interface: existence and properties of interface prototype object": "FAIL",
+      "XRWebGLSubImage interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRWebGLSubImage interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+    }
+  },
+  "webxr/layers/xrCompositionLayer_destroy.https.html": {
+    "total": 16,
+    "failures": {
+      "A destroyed layer is removed from a pending render state that has not been applied yet - webgl": "FAIL",
+      "A destroyed layer is removed from a pending render state that has not been applied yet - webgl2": "FAIL",
+      "A destroyed layer is removed from renderState.layers on the next frame - webgl": "FAIL",
+      "A destroyed layer is removed from renderState.layers on the next frame - webgl2": "FAIL",
+      "A layer destroyed synchronously inside the animation frame callback is removed from renderState.layers - webgl": "FAIL",
+      "A layer destroyed synchronously inside the animation frame callback is removed from renderState.layers - webgl2": "FAIL",
+      "Destroying a layer does not affect the other layers of the session - webgl": "FAIL",
+      "Destroying a layer does not affect the other layers of the session - webgl2": "FAIL",
+      "XRCompositionLayer.destroy() can be called on a layer that was never rendered to - webgl": "FAIL",
+      "XRCompositionLayer.destroy() can be called on a layer that was never rendered to - webgl2": "FAIL",
+      "XRCompositionLayer.destroy() does not generate a WebGL error and can be called more than once - webgl": "FAIL",
+      "XRCompositionLayer.destroy() does not generate a WebGL error and can be called more than once - webgl2": "FAIL",
+      "XRSession.updateRenderState() throws InvalidStateError when given a destroyed layer - webgl": "FAIL",
+      "XRSession.updateRenderState() throws InvalidStateError when given a destroyed layer - webgl2": "FAIL",
+      "XRWebGLBinding.getSubImage() throws InvalidStateError for a destroyed layer - webgl": "FAIL",
+      "XRWebGLBinding.getSubImage() throws InvalidStateError for a destroyed layer - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrCylinderLayer_paramValidation.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XRCylinderLayer init and setter parameters are validated - webgl": "FAIL",
+      "Ensure XRCylinderLayer init and setter parameters are validated - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrCylinderLayer_textureType.https.html": {
+    "total": 4,
+    "failures": {
+      "createCylinderLayer with textureType 'texture-array' requires WebGL2 and keeps stereo as stereo - webgl": "FAIL",
+      "createCylinderLayer with textureType 'texture-array' requires WebGL2 and keeps stereo as stereo - webgl2": "FAIL",
+      "createCylinderLayer with the default textureType resolves stereo to a concrete stereo packing - webgl": "FAIL",
+      "createCylinderLayer with the default textureType resolves stereo to a concrete stereo packing - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrEquirectLayer_paramValidation.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XREquirectLayer init and setter parameters are validated - webgl": "FAIL",
+      "Ensure XREquirectLayer init and setter parameters are validated - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrEquirectLayer_textureType.https.html": {
+    "total": 4,
+    "failures": {
+      "createEquirectLayer with textureType 'texture-array' requires WebGL2 and keeps stereo as stereo - webgl": "FAIL",
+      "createEquirectLayer with textureType 'texture-array' requires WebGL2 and keeps stereo as stereo - webgl2": "FAIL",
+      "createEquirectLayer with the default textureType resolves stereo to a concrete stereo packing - webgl": "FAIL",
+      "createEquirectLayer with the default textureType resolves stereo to a concrete stereo packing - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrGPUProjectionLayer_destroy.https.html": {
+    "total": 3,
+    "failures": {
+      "A session keeps rendering with a new WebGPU projection layer after the old one is destroyed": "FAIL",
+      "XRGPUBinding.getSubImage() throws InvalidStateError for a destroyed layer": "FAIL",
+      "XRGPUBinding.getViewSubImage() throws InvalidStateError for a destroyed layer": "FAIL"
+    }
+  },
+  "webxr/layers/xrGPUProjectionLayer_ignoreDepthValues.https.html": {
+    "total": 1,
+    "failures": {
+      "XRGPUBinding projection layers report ignoreDepthValues per layer": "FAIL"
+    }
+  },
+  "webxr/layers/xrLayerInit.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XrWebGLBinding's create layer methods throw the appropriate errors. - webgl": "FAIL",
+      "Ensure XrWebGLBinding's create layer methods throw the appropriate errors. - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrMediaBinding_createCylinderLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XRMediaBinding::createCylinderLayer throws the appropriate errors - webgl": "FAIL",
+      "Ensure XRMediaBinding::createCylinderLayer throws the appropriate errors - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrMediaBinding_createEquirectLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XRMediaBinding::createEquirectLayer throws the appropriate errors - webgl": "FAIL",
+      "Ensure XRMediaBinding::createEquirectLayer throws the appropriate errors - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrMediaBinding_createQuadLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XRMediaBinding::createQuadLayer works. - webgl": "FAIL",
+      "Ensure XRMediaBinding::createQuadLayer works. - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrProjectionLayer_ignoreDepthValues.https.html": {
+    "total": 2,
+    "failures": {
+      "XRProjectionLayer.ignoreDepthValues reflects whether the layer has a depth buffer - webgl": "FAIL",
+      "XRProjectionLayer.ignoreDepthValues reflects whether the layer has a depth buffer - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrProjectionLayer_initialTextureSize.https.html": {
+    "total": 2,
+    "failures": {
+      "XRProjectionLayer reports a non-zero texture size before the first XR animation frame, scaled by scaleFactor - webgl": "FAIL",
+      "XRProjectionLayer reports a non-zero texture size before the first XR animation frame, scaled by scaleFactor - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrProjectionLayer_textureType.https.html": {
+    "total": 4,
+    "failures": {
+      "createProjectionLayer succeeds with the default textureType - webgl": "FAIL",
+      "createProjectionLayer succeeds with the default textureType - webgl2": "FAIL",
+      "createProjectionLayer with textureType 'texture-array' requires WebGL2 - webgl": "FAIL",
+      "createProjectionLayer with textureType 'texture-array' requires WebGL2 - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrQuadLayer_textureType.https.html": {
+    "total": 4,
+    "failures": {
+      "createQuadLayer with textureType 'texture-array' requires WebGL2 and keeps stereo as stereo - webgl": "FAIL",
+      "createQuadLayer with textureType 'texture-array' requires WebGL2 and keeps stereo as stereo - webgl2": "FAIL",
+      "createQuadLayer with the default textureType resolves stereo to a concrete stereo packing - webgl": "FAIL",
+      "createQuadLayer with the default textureType resolves stereo to a concrete stereo packing - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrSession_updateRenderState.https.html": {
+    "total": 4,
+    "failures": {
+      "Ensure XRSession throws appropriate errors when updating render state with layers feature enabled - webgl": "FAIL",
+      "Ensure XRSession throws appropriate errors when updating render state with layers feature enabled - webgl2": "FAIL",
+      "Ensure XRSession throws appropriate errors when updating render state without layers feature enabled - webgl": "FAIL",
+      "Ensure XRSession throws appropriate errors when updating render state without layers feature enabled - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrSession_updateRenderState_preservesLayers.https.html": {
+    "total": 2,
+    "failures": {
+      "Layers installed via updateRenderState are preserved across subsequent partial updates - webgl": "FAIL",
+      "Layers installed via updateRenderState are preserved across subsequent partial updates - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_constructor.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure that XRWebGLBinding's constructor throws appropriate errors using webgl": "FAIL",
+      "Ensure that XRWebGLBinding's constructor throws appropriate errors using webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_context_loss.https.html": {
+    "total": 4,
+    "failures": {
+      "Losing WebGL context during an XR animation frame rejects getViewSubImage and does not crash - webgl": "FAIL",
+      "Losing WebGL context during an XR animation frame rejects getViewSubImage and does not crash - webgl2": "FAIL",
+      "getViewSubImage rejects inactive frames, ended sessions, and layers created by another context - webgl": "FAIL",
+      "getViewSubImage rejects inactive frames, ended sessions, and layers created by another context - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_createCubeLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XrWebGLBinding::createCubeLayer throws the appropriate errors - webgl": "FAIL",
+      "Ensure XrWebGLBinding::createCubeLayer throws the appropriate errors - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_createCylinderLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XrWebGLBinding::createCylinderLayer throws the appropriate errors - webgl": "FAIL",
+      "Ensure XrWebGLBinding::createCylinderLayer throws the appropriate errors - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_createEquirectLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XrWebGLBinding::createEquirectLayer throws the appropriate errors - webgl": "FAIL",
+      "Ensure XrWebGLBinding::createEquirectLayer throws the appropriate errors - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_createQuadLayer.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure XrWebGLBinding::createQuadLayer throws the appropriate errors. - webgl": "FAIL",
+      "Ensure XrWebGLBinding::createQuadLayer throws the appropriate errors. - webgl2": "FAIL"
+    }
+  },
+  "webxr/layers/xrWebGLBinding_maxLayers.https.html": {
+    "total": 4,
+    "failures": {
+      "Ensure XRSession throws appropriate errors when updating render state with more layers than maxRenderLayers with layers feature enabled - webgl": "FAIL",
+      "Ensure XRSession throws appropriate errors when updating render state with more layers than maxRenderLayers with layers feature enabled - webgl2": "FAIL",
+      "Ensure XRSession throws appropriate errors when updating render state with more layers than maxRenderLayers without layers feature enabled - webgl": "FAIL",
+      "Ensure XRSession throws appropriate errors when updating render state with more layers than maxRenderLayers without layers feature enabled - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/idlharness.https.window.js": {
+    "total": 29,
+    "failures": {
+      "XRFrame interface: operation getLightEstimate(XRLightProbe)": "FAIL",
+      "XRLightEstimate interface object length": "FAIL",
+      "XRLightEstimate interface object name": "FAIL",
+      "XRLightEstimate interface: attribute primaryLightDirection": "FAIL",
+      "XRLightEstimate interface: attribute primaryLightIntensity": "FAIL",
+      "XRLightEstimate interface: attribute sphericalHarmonicsCoefficients": "FAIL",
+      "XRLightEstimate interface: existence and properties of interface object": "FAIL",
+      "XRLightEstimate interface: existence and properties of interface prototype object": "FAIL",
+      "XRLightEstimate interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRLightEstimate interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRLightProbe interface object length": "FAIL",
+      "XRLightProbe interface object name": "FAIL",
+      "XRLightProbe interface: attribute onreflectionchange": "FAIL",
+      "XRLightProbe interface: attribute probeSpace": "FAIL",
+      "XRLightProbe interface: existence and properties of interface object": "FAIL",
+      "XRLightProbe interface: existence and properties of interface prototype object": "FAIL",
+      "XRLightProbe interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRLightProbe interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRSession interface: attribute preferredReflectionFormat": "FAIL",
+      "XRSession interface: operation requestLightProbe(optional XRLightProbeInit)": "FAIL",
+      "XRWebGLBinding interface: operation getReflectionCubeMap(XRLightProbe)": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrFrame_getLightEstimate_oldSession.https.html": {
+    "total": 2,
+    "failures": {
+      "getLightEstimate rejects if probe is from wrong session - webgl": "FAIL",
+      "getLightEstimate rejects if probe is from wrong session - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrFrame_getLightEstimate_staleFrame.https.html": {
+    "total": 2,
+    "failures": {
+      "Cannot get XrLightEstimate from stale frame - webgl": "FAIL",
+      "Cannot get XrLightEstimate from stale frame - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrFrame_getLightEstimate_valid.https.html": {
+    "total": 2,
+    "failures": {
+      "Can get XRLightEstimates during frame - webgl": "FAIL",
+      "Can get XRLightEstimates during frame - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrSession_getLightProbe_ended.https.html": {
+    "total": 2,
+    "failures": {
+      "getLightProbe rejects on an ended session - webgl": "FAIL",
+      "getLightProbe rejects on an ended session - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrSession_getLightProbe_notEnabled.https.html": {
+    "total": 2,
+    "failures": {
+      "getLightProbe rejects if not enabled on session - webgl": "FAIL",
+      "getLightProbe rejects if not enabled on session - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrSession_getLightProbe_valid.https.html": {
+    "total": 2,
+    "failures": {
+      "Can create valid XRLightProbe objects - webgl": "FAIL",
+      "Can create valid XRLightProbe objects - webgl2": "FAIL"
+    }
+  },
+  "webxr/light-estimation/xrWebGLBinding_getReflectionCubeMap.https.html": {
+    "total": 2,
+    "failures": {
+      "Test that getReflectionCubeMap returns or throws appropriately without a reflection map. - webgl": "FAIL",
+      "Test that getReflectionCubeMap returns or throws appropriately without a reflection map. - webgl2": "FAIL"
+    }
+  },
+  "webxr/navigator_xr_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "Navigator.xr meets [SameObject] requirement - webgl": "FAIL",
+      "Navigator.xr meets [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/plane-detection/idlharness.https.window.js": {
+    "total": 26,
+    "failures": {
+      "XRFrame interface: attribute detectedPlanes": "FAIL",
+      "XRPlane interface object length": "FAIL",
+      "XRPlane interface object name": "FAIL",
+      "XRPlane interface: attribute lastChangedTime": "FAIL",
+      "XRPlane interface: attribute orientation": "FAIL",
+      "XRPlane interface: attribute planeSpace": "FAIL",
+      "XRPlane interface: attribute polygon": "FAIL",
+      "XRPlane interface: attribute semanticLabel": "FAIL",
+      "XRPlane interface: existence and properties of interface object": "FAIL",
+      "XRPlane interface: existence and properties of interface prototype object": "FAIL",
+      "XRPlane interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRPlane interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRPlaneSet interface object length": "FAIL",
+      "XRPlaneSet interface object name": "FAIL",
+      "XRPlaneSet interface: existence and properties of interface object": "FAIL",
+      "XRPlaneSet interface: existence and properties of interface prototype object": "FAIL",
+      "XRPlaneSet interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "XRPlaneSet interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "XRPlaneSet interface: setlike<XRPlane>": "FAIL",
+      "XRSession interface: operation initiateRoomCapture()": "FAIL"
+    }
+  },
+  "webxr/plane-detection/xrFrame_detectedPlanes_inactive_frame.https.html": {
+    "total": 2,
+    "failures": {
+      "Accessing detectedPlanes on inactive frame throws InvalidStateError - webgl": "FAIL",
+      "Accessing detectedPlanes on inactive frame throws InvalidStateError - webgl2": "FAIL"
+    }
+  },
+  "webxr/plane-detection/xrFrame_detectedPlanes_incomplete_update.https.html": {
+    "total": 2,
+    "failures": {
+      "XRFrame tolerates incomplete plane detection updates - webgl": "FAIL",
+      "XRFrame tolerates incomplete plane detection updates - webgl2": "FAIL"
+    }
+  },
+  "webxr/plane-detection/xrFrame_detectedPlanes_plumbing.https.html": {
+    "total": 2,
+    "failures": {
+      "XRFrame.detectedPlanes plumbing works - webgl": "FAIL",
+      "XRFrame.detectedPlanes plumbing works - webgl2": "FAIL"
+    }
+  },
+  "webxr/plane-detection/xrPlane_identity.https.html": {
+    "total": 2,
+    "failures": {
+      "XRPlane objects are the same across frames - webgl": "FAIL",
+      "XRPlane objects are the same across frames - webgl2": "FAIL"
+    }
+  },
+  "webxr/plane-detection/xrPlane_lastChangedTime_no_change.https.html": {
+    "total": 2,
+    "failures": {
+      "XRPlane.lastChangedTime does not update if plane does not change - webgl": "FAIL",
+      "XRPlane.lastChangedTime does not update if plane does not change - webgl2": "FAIL"
+    }
+  },
+  "webxr/plane-detection/xrSession_initiateRoomCapture.https.html": {
+    "total": 6,
+    "failures": {
+      "initiateRoomCapture behavior - webgl": "FAIL",
+      "initiateRoomCapture behavior - webgl2": "FAIL",
+      "initiateRoomCapture throws InvalidStateError if session ended - webgl": "FAIL",
+      "initiateRoomCapture throws InvalidStateError if session ended - webgl2": "FAIL",
+      "initiateRoomCapture throws NotSupportedError if feature not requested - webgl": "FAIL",
+      "initiateRoomCapture throws NotSupportedError if feature not requested - webgl2": "FAIL"
+    }
+  },
+  "webxr/render_state_update.https.html": {
+    "total": 12,
+    "failures": {
+      "updateRenderState clamps appropriately near/far clipping planes - webgl": "FAIL",
+      "updateRenderState clamps appropriately near/far clipping planes - webgl2": "FAIL",
+      "updateRenderState handles appropriately XRRenderStateInit with no params - webgl": "FAIL",
+      "updateRenderState handles appropriately XRRenderStateInit with no params - webgl2": "FAIL",
+      "updateRenderState handles appropriately baseLayers created with different sessions - webgl": "FAIL",
+      "updateRenderState handles appropriately baseLayers created with different sessions - webgl2": "FAIL",
+      "updateRenderState handles appropriately ended sessions - webgl": "FAIL",
+      "updateRenderState handles appropriately ended sessions - webgl2": "FAIL",
+      "updateRenderState handles appropriately immersive sessions with specified inlineVerticalFieldOfView - webgl": "FAIL",
+      "updateRenderState handles appropriately immersive sessions with specified inlineVerticalFieldOfView - webgl2": "FAIL",
+      "updateRenderState is applied after the frame callbacks - webgl": "FAIL",
+      "updateRenderState is applied after the frame callbacks - webgl2": "FAIL"
+    }
+  },
+  "webxr/render_state_update_inline.https.html": {
+    "total": 2,
+    "failures": {
+      "updateRenderState handles appropriately XRRenderStateInit params - webgl": "FAIL",
+      "updateRenderState handles appropriately XRRenderStateInit params - webgl2": "FAIL"
+    }
+  },
+  "webxr/render_state_vertical_fov_immersive.https.html": {
+    "total": 2,
+    "failures": {
+      "inlineVerticalFieldOfView is set appropriately on immersively sessions - webgl": "FAIL",
+      "inlineVerticalFieldOfView is set appropriately on immersively sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/render_state_vertical_fov_inline.https.html": {
+    "total": 2,
+    "failures": {
+      "inlineVerticalFieldOfView is set appropriately on inline sessions - webgl": "FAIL",
+      "inlineVerticalFieldOfView is set appropriately on inline sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/webGLCanvasContext_create_xrcompatible.https.html": {
+    "total": 4,
+    "failures": {
+      "An XR-compatible webgl context can be created": "FAIL",
+      "An XR-compatible webgl2 context can be created": "FAIL",
+      "Creating a webgl context with no device": "FAIL",
+      "Creating a webgl2 context with no device": "FAIL"
+    }
+  },
+  "webxr/webGLCanvasContext_makecompatible_contextlost.https.html": {
+    "total": 2,
+    "failures": {
+      "A lost webgl context should not be able to set xr compatibility": "FAIL",
+      "A lost webgl2 context should not be able to set xr compatibility": "FAIL"
+    }
+  },
+  "webxr/webGLCanvasContext_makecompatible_reentrant.https.html": {
+    "total": 4,
+    "failures": {
+      "Verify promise from a non-reentrant call to makeXRCompatible() is resolved for webgl": "FAIL",
+      "Verify promise from a non-reentrant call to makeXRCompatible() is resolved for webgl2": "FAIL",
+      "Verify promises from reentrant calls to makeXRCompatible() are resolved for webgl": "FAIL",
+      "Verify promises from reentrant calls to makeXRCompatible() are resolved for webgl2": "FAIL"
+    }
+  },
+  "webxr/webxr_availability.http.sub.html": {
+    "total": 2
+  },
+  "webxr/webxr_permissions_policy.https.html": {
+    "total": 4,
+    "failures": {
+      "Validate devicechange event behavior without xr-spatial-tracking policy": "FAIL",
+      "Validate isSessionSupported behavior without xr-spatial-tracking policy": "FAIL",
+      "Validate requestSession behavior without xr-spatial-tracking policy": "FAIL",
+      "Validate xr compatibility requests without xr-spatial-tracking policy": "FAIL"
+    }
+  },
+  "webxr/xrBoundedReferenceSpace_updates.https.html": {
+    "total": 2,
+    "failures": {
+      "'XRBoundedReferenceSpace updates properly when the changes are applied - webgl": "FAIL",
+      "'XRBoundedReferenceSpace updates properly when the changes are applied - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrDevice_disconnect_ends.https.html": {
+    "total": 2,
+    "failures": {
+      "Immersive session ends when device is disconnected - webgl": "FAIL",
+      "Immersive session ends when device is disconnected - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrDevice_isSessionSupported_immersive.https.html": {
+    "total": 1,
+    "failures": {
+      "isSessionSupported resolves to true when immersive options supported": "FAIL"
+    }
+  },
+  "webxr/xrDevice_isSessionSupported_immersive_unsupported.https.html": {
+    "total": 1,
+    "failures": {
+      "isSessionSupported resolves to false when options not supported": "FAIL"
+    }
+  },
+  "webxr/xrDevice_isSessionSupported_inline.https.html": {
+    "total": 1,
+    "failures": {
+      "isSessionSupported resolves to true when inline options supported": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_immersive.https.html": {
+    "total": 6,
+    "failures": {
+      "Tests requestSession accepts XRSessionInit dictionary - webgl": "FAIL",
+      "Tests requestSession accepts XRSessionInit dictionary - webgl2": "FAIL",
+      "Tests requestSession ignores unknown optionalFeatures - webgl": "FAIL",
+      "Tests requestSession ignores unknown optionalFeatures - webgl2": "FAIL",
+      "Tests requestSession resolves when supported - webgl": "FAIL",
+      "Tests requestSession resolves when supported - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_immersive_no_gesture.https.html": {
+    "total": 1,
+    "failures": {
+      "Requesting immersive session outside of a user gesture rejects": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_immersive_unsupported.https.html": {
+    "total": 1,
+    "failures": {
+      "Requesting an immersive session when unsupported rejects": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_no_mode.https.html": {
+    "total": 1,
+    "failures": {
+      "Requesting a session with no mode rejects": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_non_immersive_no_gesture.https.html": {
+    "total": 1,
+    "failures": {
+      "Requesting non-immersive session outside of a user gesture succeeds": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_optionalFeatures.https.html": {
+    "total": 8,
+    "failures": {
+      "Tests requestSession accepts XRSessionInit dictionary - webgl": "FAIL",
+      "Tests requestSession accepts XRSessionInit dictionary - webgl2": "FAIL",
+      "Tests requestSession accepts XRSessionInit dictionary with empty feature lists - webgl": "FAIL",
+      "Tests requestSession accepts XRSessionInit dictionary with empty feature lists - webgl2": "FAIL",
+      "Tests requestSession ignores unknown objects in optionalFeatures - webgl": "FAIL",
+      "Tests requestSession ignores unknown objects in optionalFeatures - webgl2": "FAIL",
+      "Tests requestSession ignores unknown strings in optionalFeatures - webgl": "FAIL",
+      "Tests requestSession ignores unknown strings in optionalFeatures - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrDevice_requestSession_requiredFeatures_unknown.https.html": {
+    "total": 1,
+    "failures": {
+      "Tests requestSession rejects for unknown requiredFeatures": "FAIL"
+    }
+  },
+  "webxr/xrFrame_getPose.https.html": {
+    "total": 4,
+    "failures": {
+      "XRFrame.getPose works for immersive sessions - webgl": "FAIL",
+      "XRFrame.getPose works for immersive sessions - webgl2": "FAIL",
+      "XRFrame.getPose works for non-immersive sessions - webgl": "FAIL",
+      "XRFrame.getPose works for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrFrame_getViewerPose_getPose.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/xrFrame_getViewerPose_getPose_identities.https.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "webxr/xrFrame_lifetime.https.html": {
+    "total": 4,
+    "failures": {
+      "XRFrame methods throw exceptions outside of the requestAnimationFrame callback for immersive sessions - webgl": "FAIL",
+      "XRFrame methods throw exceptions outside of the requestAnimationFrame callback for immersive sessions - webgl2": "FAIL",
+      "XRFrame methods throw exceptions outside of the requestAnimationFrame callback for non-immersive sessions - webgl": "FAIL",
+      "XRFrame methods throw exceptions outside of the requestAnimationFrame callback for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrFrame_session_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRFrame.session meets [SameObject] requirement - webgl": "FAIL",
+      "XRFrame.session meets [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrInputSource_add_remove.https.html": {
+    "total": 2,
+    "failures": {
+      "XRInputSources can be properly added and removed from the session - webgl": "FAIL",
+      "XRInputSources can be properly added and removed from the session - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrInputSource_emulatedPosition.https.html": {
+    "total": 2,
+    "failures": {
+      "Poses from XRInputSource.gripSpace have emulatedPosition set properly - webgl": "FAIL",
+      "Poses from XRInputSource.gripSpace have emulatedPosition set properly - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrInputSource_getPose_targetRay_grip.https.html": {
+    "total": 2,
+    "failures": {
+      "Poses between targetRaySpace and gripSpace can be obtained and behave correctly - webgl": "FAIL",
+      "Poses between targetRaySpace and gripSpace can be obtained and behave correctly - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrInputSource_profiles.https.html": {
+    "total": 2,
+    "failures": {
+      "WebXR InputSource's profiles list can be set - webgl": "FAIL",
+      "WebXR InputSource's profiles list can be set - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrInputSource_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRInputSource attributes meet [SameObject] requirement - webgl": "FAIL",
+      "XRInputSource attributes meet [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrPose_transform_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRPose.transform meets [SameObject] requirement - webgl": "FAIL",
+      "XRPose.transform meets [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrReferenceSpace_originOffset.https.html": {
+    "total": 2,
+    "failures": {
+      "Updating XRReferenceSpace origin offset updates view and input matrices. - webgl": "FAIL",
+      "Updating XRReferenceSpace origin offset updates view and input matrices. - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrReferenceSpace_originOffsetBounded.https.html": {
+    "total": 2,
+    "failures": {
+      "Updating XRBoundedReferenceSpace origin offset updates view, input matrices, and bounds geometry. - webgl": "FAIL",
+      "Updating XRBoundedReferenceSpace origin offset updates view, input matrices, and bounds geometry. - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrReferenceSpace_originOffset_viewer.https.html": {
+    "total": 2,
+    "failures": {
+      "Creating XRReferenceSpace origin offset off of `viewer` space works. - webgl": "FAIL",
+      "Creating XRReferenceSpace origin offset off of `viewer` space works. - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrReferenceSpace_relationships.https.html": {
+    "total": 2,
+    "failures": {
+      "Bounded space, viewer space, local and local-floor space have correct poses w.r.t. each other - webgl": "FAIL",
+      "Bounded space, viewer space, local and local-floor space have correct poses w.r.t. each other - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrRigidTransform_constructor.https.html": {
+    "total": 2,
+    "failures": {
+      "XRRigidTransform constructor works - webgl": "FAIL",
+      "XRRigidTransform constructor works - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrRigidTransform_inverse.https.html": {
+    "total": 2,
+    "failures": {
+      "XRRigidTransform inverse works - webgl": "FAIL",
+      "XRRigidTransform inverse works - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrRigidTransform_matrix.https.html": {
+    "total": 1,
+    "failures": {
+      "XRRigidTransform matrix works": "FAIL"
+    }
+  },
+  "webxr/xrRigidTransform_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRRigidTransform position and orientation meet [SameObject] requirements - webgl": "FAIL",
+      "XRRigidTransform position and orientation meet [SameObject] requirements - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_cancelAnimationFrame.https.html": {
+    "total": 4,
+    "failures": {
+      "XRSession requestAnimationFrame callbacks can be unregistered with cancelAnimationFrame for immersive sessions - webgl": "FAIL",
+      "XRSession requestAnimationFrame callbacks can be unregistered with cancelAnimationFrame for immersive sessions - webgl2": "FAIL",
+      "XRSession requestAnimationFrame callbacks can be unregistered with cancelAnimationFrame for non-immersive sessions - webgl": "FAIL",
+      "XRSession requestAnimationFrame callbacks can be unregistered with cancelAnimationFrame for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_cancelAnimationFrame_invalidhandle.https.html": {
+    "total": 4,
+    "failures": {
+      "XRSession cancelAnimationFrame does not have unexpected behavior when given invalid handles on immersive testSession - webgl": "FAIL",
+      "XRSession cancelAnimationFrame does not have unexpected behavior when given invalid handles on immersive testSession - webgl2": "FAIL",
+      "XRSession cancelAnimationFrame does not have unexpected behavior when given invalid handles on non-immersive testSession - webgl": "FAIL",
+      "XRSession cancelAnimationFrame does not have unexpected behavior when given invalid handles on non-immersive testSession - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_enabledFeatures.https.html": {
+    "total": 2,
+    "failures": {
+      "Validate enabledFeatures on XRSession - webgl": "FAIL",
+      "Validate enabledFeatures on XRSession - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_end.https.html": {
+    "total": 4,
+    "failures": {
+      "end event fires when immersive session ends - webgl": "FAIL",
+      "end event fires when immersive session ends - webgl2": "FAIL",
+      "end event fires when non-immersive session ends - webgl": "FAIL",
+      "end event fires when non-immersive session ends - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_features_deviceSupport.https.html": {
+    "total": 1,
+    "failures": {
+      "Immersive XRSession requests with no supported device should reject": "FAIL"
+    }
+  },
+  "webxr/xrSession_input_events_end.https.html": {
+    "total": 2,
+    "failures": {
+      "Calling end during an input callback stops processing at the right time - webgl": "FAIL",
+      "Calling end during an input callback stops processing at the right time - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_prevent_multiple_exclusive.https.html": {
+    "total": 1,
+    "failures": {
+      "Test prevention of multiple simultaneous immersive sessions": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestAnimationFrame_callback_calls.https.html": {
+    "total": 4,
+    "failures": {
+      "XRSession requestAnimationFrame calls the provided callback a non-immersive session - webgl": "FAIL",
+      "XRSession requestAnimationFrame calls the provided callback a non-immersive session - webgl2": "FAIL",
+      "XRSession requestAnimationFrame calls the provided callback for an immersive session - webgl": "FAIL",
+      "XRSession requestAnimationFrame calls the provided callback for an immersive session - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestAnimationFrame_data_valid.https.html": {
+    "total": 2,
+    "failures": {
+      "RequestAnimationFrame resolves with good data - webgl": "FAIL",
+      "RequestAnimationFrame resolves with good data - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestAnimationFrame_getViewerPose.https.html": {
+    "total": 4,
+    "failures": {
+      "XRFrame getViewerPose updates on the next frame for immersive sessions - webgl": "FAIL",
+      "XRFrame getViewerPose updates on the next frame for immersive sessions - webgl2": "FAIL",
+      "XRFrame getViewerPose updates on the next frame for non-immersive sessions - webgl": "FAIL",
+      "XRFrame getViewerPose updates on the next frame for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestAnimationFrame_timestamp.https.html": {
+    "total": 4,
+    "failures": {
+      "XRFrame getViewerPose updates on the next frame for immersive - webgl": "FAIL",
+      "XRFrame getViewerPose updates on the next frame for immersive - webgl2": "FAIL",
+      "XRFrame getViewerPose updates on the next frame for non-immersive - webgl": "FAIL",
+      "XRFrame getViewerPose updates on the next frame for non-immersive - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestReferenceSpace.https.html": {
+    "total": 4,
+    "failures": {
+      "Immersive XRSession requestReferenceSpace returns expected objects - webgl": "FAIL",
+      "Immersive XRSession requestReferenceSpace returns expected objects - webgl2": "FAIL",
+      "Non-immersive XRSession requestReferenceSpace returns expected objects - webgl": "FAIL",
+      "Non-immersive XRSession requestReferenceSpace returns expected objects - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestReferenceSpace_features.https.html": {
+    "total": 24,
+    "failures": {
+      "Immersive session rejects local-floor space if not requested - webgl": "FAIL",
+      "Immersive session rejects local-floor space if not requested - webgl2": "FAIL",
+      "Immersive session supports local space by default - webgl": "FAIL",
+      "Immersive session supports local space by default - webgl2": "FAIL",
+      "Immersive session supports local-floor space when optional - webgl": "FAIL",
+      "Immersive session supports local-floor space when optional - webgl2": "FAIL",
+      "Immersive session supports local-floor space when required - webgl": "FAIL",
+      "Immersive session supports local-floor space when required - webgl2": "FAIL",
+      "Immersive session supports viewer space by default - webgl": "FAIL",
+      "Immersive session supports viewer space by default - webgl2": "FAIL",
+      "Non-immersive session rejects bounded-floor space even when requested - webgl": "FAIL",
+      "Non-immersive session rejects bounded-floor space even when requested - webgl2": "FAIL",
+      "Non-immersive session rejects local space if not requested - webgl": "FAIL",
+      "Non-immersive session rejects local space if not requested - webgl2": "FAIL",
+      "Non-immersive session rejects unbounded space even when requested - webgl": "FAIL",
+      "Non-immersive session rejects unbounded space even when requested - webgl2": "FAIL",
+      "Non-immersive session supports local space when optional - webgl": "FAIL",
+      "Non-immersive session supports local space when optional - webgl2": "FAIL",
+      "Non-immersive session supports local space when required - webgl": "FAIL",
+      "Non-immersive session supports local space when required - webgl2": "FAIL",
+      "Non-immersive session supports local-floor space when required - webgl": "FAIL",
+      "Non-immersive session supports local-floor space when required - webgl2": "FAIL",
+      "Non-immersive session supports viewer space by default - webgl": "FAIL",
+      "Non-immersive session supports viewer space by default - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_requestSessionDuringEnd.https.html": {
+    "total": 4,
+    "failures": {
+      "Create mew session in end promise - webgl": "FAIL",
+      "Create mew session in end promise - webgl2": "FAIL",
+      "Create new session in OnSessionEnded event - webgl": "FAIL",
+      "Create new session in OnSessionEnded event - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRSession attributes meet [SameObject] requirement - webgl": "FAIL",
+      "XRSession attributes meet [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_viewer_availability.https.html": {
+    "total": 1,
+    "failures": {
+      "Inline viewer support with no device": "FAIL"
+    }
+  },
+  "webxr/xrSession_viewer_referenceSpace.https.html": {
+    "total": 4,
+    "failures": {
+      "Identity reference space provides correct poses for immersive sessions - webgl": "FAIL",
+      "Identity reference space provides correct poses for immersive sessions - webgl2": "FAIL",
+      "Identity reference space provides correct poses for inline sessions - webgl": "FAIL",
+      "Identity reference space provides correct poses for inline sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_visibilityState.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensures that the XRSession's visibilityState is correctly reported and that the associated visibilitychange event fires. - webgl": "FAIL",
+      "Ensures that the XRSession's visibilityState is correctly reported and that the associated visibilitychange event fires. - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrSession_visibilityState_inline.https.html": {
+    "total": 3,
+    "failures": {
+      "Ensures that the XRSession's visibilityState is correctly reported and that the associated visibilitychange event fires for non-immersive sessions. - webgl": "FAIL",
+      "Ensures that the XRSession's visibilityState is correctly reported and that the associated visibilitychange event fires for non-immersive sessions. - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrStationaryReferenceSpace_floorlevel_updates.https.html": {
+    "total": 4,
+    "failures": {
+      "'floor-level' XRStationaryReferenceSpace updates properly when the transform changes for immersive sessions - webgl": "FAIL",
+      "'floor-level' XRStationaryReferenceSpace updates properly when the transform changes for immersive sessions - webgl2": "FAIL",
+      "'floor-level' XRStationaryReferenceSpace updates properly when the transform changes for non-immersive sessions - webgl": "FAIL",
+      "'floor-level' XRStationaryReferenceSpace updates properly when the transform changes for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrView_eyes.https.html": {
+    "total": 4,
+    "failures": {
+      "XRView.eye is correct for immersive sessions - webgl": "FAIL",
+      "XRView.eye is correct for immersive sessions - webgl2": "FAIL",
+      "XRView.eye is correct for non-immersive sessions - webgl": "FAIL",
+      "XRView.eye is correct for non-immersive sessions - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrView_match.https.html": {
+    "total": 2,
+    "failures": {
+      "XRFrame contains the expected views - webgl": "FAIL",
+      "XRFrame contains the expected views - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrView_oneframeupdate.https.html": {
+    "total": 2,
+    "failures": {
+      "XRView projection matrices update near and far depths on the next frame - webgl": "FAIL",
+      "XRView projection matrices update near and far depths on the next frame - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrView_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRView attributes meet [SameObject] requirement - webgl": "FAIL",
+      "XRView attributes meet [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrView_visibility_mask_change.https.html": {
+    "total": 2,
+    "failures": {
+      "VisibilityMaskChangeEvent properly fires with expected values - webgl": "FAIL",
+      "VisibilityMaskChangeEvent properly fires with expected values - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrViewerPose_secondaryViews.https.html": {
+    "total": 8,
+    "failures": {
+      "Only primary views are returned if secondary views are not requested for immersive - webgl": "FAIL",
+      "Only primary views are returned if secondary views are not requested for immersive - webgl2": "FAIL",
+      "Only primary views are returned if secondary views are not requested for non-immersive - webgl": "FAIL",
+      "Only primary views are returned if secondary views are not requested for non-immersive - webgl2": "FAIL",
+      "Requesting secondary views only returns primary views for non-immersive - webgl": "FAIL",
+      "Requesting secondary views only returns primary views for non-immersive - webgl2": "FAIL",
+      "Requesting secondary views returns both primary and secondary views for immersive - webgl": "FAIL",
+      "Requesting secondary views returns both primary and secondary views for immersive - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrViewerPose_views_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRViewerPose.views meets [SameObject] requirement - webgl": "FAIL",
+      "XRViewerPose.views meets [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrViewport_valid.https.html": {
+    "total": 4,
+    "failures": {
+      "XRViewport attributes are valid - webgl": "FAIL",
+      "XRViewport attributes are valid - webgl2": "FAIL",
+      "XRViewport attributes are valid with secondary views requested - webgl": "FAIL",
+      "XRViewport attributes are valid with secondary views requested - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_constructor.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure that XRWebGLLayer's constructor throws appropriate errors using webgl": "FAIL",
+      "Ensure that XRWebGLLayer's constructor throws appropriate errors using webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_framebuffer_draw.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure a WebGL layer's framebuffer can only be drawn to inside a XR frame - webgl": "FAIL",
+      "Ensure a WebGL layer's framebuffer can only be drawn to inside a XR frame - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_framebuffer_sameObject.https.html": {
+    "total": 2,
+    "failures": {
+      "XRWebGLLayer.framebuffer meets [SameObject] requirement - webgl": "FAIL",
+      "XRWebGLLayer.framebuffer meets [SameObject] requirement - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_framebuffer_scale.https.html": {
+    "total": 2,
+    "failures": {
+      "Ensure framebuffer scaling works as expected. - webgl": "FAIL",
+      "Ensure framebuffer scaling works as expected. - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_opaque_framebuffer.https.html": {
+    "total": 4,
+    "failures": {
+      "Ensure that the framebuffer given by the WebGL layer is opaque for immersive - webgl": "FAIL",
+      "Ensure that the framebuffer given by the WebGL layer is opaque for immersive - webgl2": "FAIL",
+      "Ensure that the framebuffer given by the WebGL layer is opaque for non-immersive - webgl": "FAIL",
+      "Ensure that the framebuffer given by the WebGL layer is opaque for non-immersive - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_opaque_framebuffer_stencil.https.html": {
+    "total": 4,
+    "failures": {
+      "Ensure that the framebuffer given by the WebGL layer works with stencil for immersive - webgl": "FAIL",
+      "Ensure that the framebuffer given by the WebGL layer works with stencil for immersive - webgl2": "FAIL",
+      "Ensure that the framebuffer given by the WebGL layer works with stencil for non-immersive - webgl": "FAIL",
+      "Ensure that the framebuffer given by the WebGL layer works with stencil for non-immersive - webgl2": "FAIL"
+    }
+  },
+  "webxr/xrWebGLLayer_viewports.https.html": {
+    "total": 8,
+    "failures": {
+      "XRWebGLLayer reports a valid viewports for immersive sessions - webgl": "FAIL",
+      "XRWebGLLayer reports a valid viewports for immersive sessions - webgl2": "FAIL",
+      "XRWebGLLayer reports a valid viewports for immersive sessions with secondary views requested - webgl": "FAIL",
+      "XRWebGLLayer reports a valid viewports for immersive sessions with secondary views requested - webgl2": "FAIL",
+      "XRWebGLLayer reports a valid viewports for inline sessions - webgl": "FAIL",
+      "XRWebGLLayer reports a valid viewports for inline sessions - webgl2": "FAIL",
+      "XRWebGLLayer reports a valid viewports for inline sessions with secondary views requested - webgl": "FAIL",
+      "XRWebGLLayer reports a valid viewports for inline sessions with secondary views requested - webgl2": "FAIL"
+    }
+  },
+  "webxr/xr_viewport_scale.https.html": {
+    "total": 28,
+    "failures": {
+      "recommendedViewportScale for immersive-vr session - webgl": "FAIL",
+      "recommendedViewportScale for immersive-vr session - webgl2": "FAIL",
+      "recommendedViewportScale for inline session - webgl": "FAIL",
+      "recommendedViewportScale for inline session - webgl2": "FAIL",
+      "requestViewportScale applied next frame for immersive-vr session - webgl": "FAIL",
+      "requestViewportScale applied next frame for immersive-vr session - webgl2": "FAIL",
+      "requestViewportScale applied next frame for inline session - webgl": "FAIL",
+      "requestViewportScale applied next frame for inline session - webgl2": "FAIL",
+      "requestViewportScale same frame for immersive-vr session - webgl": "FAIL",
+      "requestViewportScale same frame for immersive-vr session - webgl2": "FAIL",
+      "requestViewportScale same frame for inline session - webgl": "FAIL",
+      "requestViewportScale same frame for inline session - webgl2": "FAIL",
+      "requestViewportScale valid viewport for immersive-vr session - webgl": "FAIL",
+      "requestViewportScale valid viewport for immersive-vr session - webgl2": "FAIL",
+      "requestViewportScale valid viewport for inline session - webgl": "FAIL",
+      "requestViewportScale valid viewport for inline session - webgl2": "FAIL",
+      "requestViewportScale valid viewport w/ null scale for immersive-vr session - webgl": "FAIL",
+      "requestViewportScale valid viewport w/ null scale for immersive-vr session - webgl2": "FAIL",
+      "requestViewportScale valid viewport w/ null scale for inline session - webgl": "FAIL",
+      "requestViewportScale valid viewport w/ null scale for inline session - webgl2": "FAIL",
+      "requestViewportScale valid viewport w/ undefined scale for immersive-vr session - webgl": "FAIL",
+      "requestViewportScale valid viewport w/ undefined scale for immersive-vr session - webgl2": "FAIL",
+      "requestViewportScale valid viewport w/ undefined scale for inline session - webgl": "FAIL",
+      "requestViewportScale valid viewport w/ undefined scale for inline session - webgl2": "FAIL",
+      "requestViewportScale valid viewport w/ very small scale for immersive-vr session - webgl": "FAIL",
+      "requestViewportScale valid viewport w/ very small scale for immersive-vr session - webgl2": "FAIL",
+      "requestViewportScale valid viewport w/ very small scale for inline session - webgl": "FAIL",
+      "requestViewportScale valid viewport w/ very small scale for inline session - webgl2": "FAIL"
+    }
+  }
+}

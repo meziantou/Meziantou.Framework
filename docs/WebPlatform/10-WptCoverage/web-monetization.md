@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of web-monetization, and why
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 1 | 1 | – |
+| [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| **All** | **0** | **1** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,4 +25,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`rellist-supports.tentative.html`](https://wpt.fyi/results/web-monetization/rellist-supports.tentative.html) | Disabled | – | NOT IMPLEMENTED | Web Monetization (the `monetization` link type); the `web-monetization` directory is not fetched |
+| [`rellist-supports.tentative.html`](https://wpt.fyi/results/web-monetization/rellist-supports.tentative.html) | Fail | 3 / 5 | NOT IMPLEMENTED | Web Monetization (the `monetization` link type) |

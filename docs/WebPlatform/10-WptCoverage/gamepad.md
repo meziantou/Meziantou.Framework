@@ -9,26 +9,26 @@ description: "The results of the web-platform-tests of gamepad, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 6 | 6 | – |
+| [Stable](#stable-tests) | 1 | 6 | 0 | 17% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **6** | **6** | **–** |
+| **All** | **1** | **6** | **0** | **17%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 6
-  - `hardware`: 6
+- **REQUIRES**: 5
+  - `hardware`: 5
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`gamepad-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/gamepad/gamepad-default-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Gamepad API |
-| [`gamepad-permissions-policy-event-listener.html`](https://wpt.fyi/results/gamepad/gamepad-permissions-policy-event-listener.html) | Disabled | – | REQUIRES(hardware) | Gamepad API |
-| [`gamepad-supported-by-permissions-policy.html`](https://wpt.fyi/results/gamepad/gamepad-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | Gamepad API |
-| [`idlharness-extensions.https.window.js`](https://wpt.fyi/results/gamepad/idlharness-extensions.https.window.js) | Disabled | – | REQUIRES(hardware) | Gamepad API |
-| [`idlharness.window.js`](https://wpt.fyi/results/gamepad/idlharness.window.js) | Disabled | – | REQUIRES(hardware) | Gamepad API |
-| [`not-fully-active.html`](https://wpt.fyi/results/gamepad/not-fully-active.html) | Disabled | – | REQUIRES(hardware) | Gamepad API |
+| [`gamepad-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/gamepad/gamepad-default-permissions-policy.https.sub.html) | Timeout | 0 / 3 | REQUIRES(hardware) | Gamepad API |
+| [`gamepad-permissions-policy-event-listener.html`](https://wpt.fyi/results/gamepad/gamepad-permissions-policy-event-listener.html) | Pass | 1 / 1 |  |  |
+| [`gamepad-supported-by-permissions-policy.html`](https://wpt.fyi/results/gamepad/gamepad-supported-by-permissions-policy.html) | Fail | 0 / 1 | REQUIRES(hardware) | Gamepad API |
+| [`idlharness-extensions.https.window.js`](https://wpt.fyi/results/gamepad/idlharness-extensions.https.window.js) | Fail | 0 / 1 | REQUIRES(hardware) | Gamepad API |
+| [`idlharness.window.js`](https://wpt.fyi/results/gamepad/idlharness.window.js) | Fail | 34 / 85 | REQUIRES(hardware) | Gamepad API |
+| [`not-fully-active.html`](https://wpt.fyi/results/gamepad/not-fully-active.html) | Fail | 0 / 1 | REQUIRES(hardware) | Gamepad API |

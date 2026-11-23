@@ -1,0 +1,56 @@
+{
+  "fenced-frame/add-fencedframe-to-detached-iframe.https.html": {
+    "total": 2
+  },
+  "fenced-frame/fenced-frame-stub.https.html": {
+    "total": 2,
+    "failures": {
+      "Fenced frame elements and config should behave as layout-preserving stubs": "FAIL",
+      "window.fence and Fence should behave as stubs": "FAIL"
+    }
+  },
+  "fenced-frame/intersection-observer.https.html": {
+    "total": 1,
+    "failures": {
+      "Intersection Observer Test": "FAIL"
+    }
+  },
+  "fenced-frame/key-value-store.https.html": {
+    "total": 1,
+    "failures": {
+      "Test the key-value store, specifically with empty strings": "FAIL"
+    }
+  },
+  "fenced-frame/parse-from-string-sandboxed-iframe.https.html": {
+    "total": 1
+  },
+  "fenced-frame/script-focus.https.html": {
+    "total": 9,
+    "failures": {
+      "A fenced frame can pull window.focus() after user activation": "FAIL",
+      "A fenced frame cannot pull window.focus() without user activation": "FAIL",
+      "A fenced frame nested in another fenced frame cannot pull focus": "FAIL",
+      "An cross-origin iframe can pull focus back and forth without activation": "FAIL",
+      "An embedder can focus out of a fenced frame": "FAIL",
+      "Another fenced frame cannot pull focus out of a focused fenced frame": "FAIL",
+      "Fenced frames can't pull script focus until getting user activation": "FAIL",
+      "Focused fenced frames can move programmatic focus within frame": "FAIL",
+      "Script focus into a fenced frame consumes user activation": "FAIL"
+    }
+  },
+  "fenced-frame/setting-null-config-navigates-to-about-blank.https.html": {
+    "total": 1,
+    "failures": {
+      "Test that a fenced frame with a config explicitly set to null navigates to about:blank": "FAIL"
+    }
+  },
+  "fenced-frame/subframe-loading.https.html": {
+    "total": 1
+  },
+  "fenced-frame/user-activation.https.html": {
+    "total": 1,
+    "failures": {
+      "user-activation": "FAIL"
+    }
+  }
+}

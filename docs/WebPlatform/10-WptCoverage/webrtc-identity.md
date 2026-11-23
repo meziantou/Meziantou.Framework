@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webrtc-identity, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 0 | 4 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **0** | **4** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCPeerConnection-constructor.html`](https://wpt.fyi/results/webrtc-identity/RTCPeerConnection-constructor.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Identity |
-| [`RTCPeerConnection-getIdentityAssertion.sub.https.html`](https://wpt.fyi/results/webrtc-identity/RTCPeerConnection-getIdentityAssertion.sub.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Identity |
-| [`RTCPeerConnection-peerIdentity.https.html`](https://wpt.fyi/results/webrtc-identity/RTCPeerConnection-peerIdentity.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC Identity |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/webrtc-identity/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebRTC Identity |
+| [`RTCPeerConnection-constructor.html`](https://wpt.fyi/results/webrtc-identity/RTCPeerConnection-constructor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC Identity |
+| [`RTCPeerConnection-getIdentityAssertion.sub.https.html`](https://wpt.fyi/results/webrtc-identity/RTCPeerConnection-getIdentityAssertion.sub.https.html) | Fail | 0 / 12 | NOT IMPLEMENTED | WebRTC Identity |
+| [`RTCPeerConnection-peerIdentity.https.html`](https://wpt.fyi/results/webrtc-identity/RTCPeerConnection-peerIdentity.https.html) | Fail | 0 / 6 | NOT IMPLEMENTED | WebRTC Identity |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/webrtc-identity/idlharness.https.window.js) | Fail | 21 / 49 | NOT IMPLEMENTED | WebRTC Identity |

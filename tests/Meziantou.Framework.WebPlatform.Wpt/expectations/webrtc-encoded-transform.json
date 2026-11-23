@@ -1,0 +1,486 @@
+{
+  "webrtc-encoded-transform/RTCEncodedFrame-copy-construction.https.html": {
+    "total": 49,
+    "failures": {
+      "RTCEncodedAudioFrame cannot be serialized for storage on main thread.": "FAIL",
+      "RTCEncodedAudioFrame clone works with buffer from a different window": "FAIL",
+      "RTCEncodedAudioFrame copy c'tor using transferred frame throws DataCloneError on main thread.": "FAIL",
+      "RTCEncodedAudioFrame copy c'tor works with buffer from a different window": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override on main thread.": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (audioLevel).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (captureTime).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (contributingSources).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (mimeType).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (payloadType).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (receiveTime).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (rtpTimestamp).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (senderCaptureTimeOffset).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (sequenceNumber).": "FAIL",
+      "RTCEncodedAudioFrame copy construction metadata override/addition on main thread (synchronizationSource).": "FAIL",
+      "RTCEncodedAudioFrame copy construction on main thread.": "FAIL",
+      "RTCEncodedAudioFrame copying leaves original data buffer alone on main thread.": "FAIL",
+      "RTCEncodedAudioFrame data rejects buffers it cannot take on main thread.": "FAIL",
+      "RTCEncodedAudioFrame structuredClone after in-place modification on main thread.": "FAIL",
+      "RTCEncodedAudioFrame structuredClone keeps a buffer shared between frames shared on main thread.": "FAIL",
+      "RTCEncodedAudioFrame structuredClone of transferred frame throws DataCloneError on main thread.": "FAIL",
+      "RTCEncodedAudioFrame structuredClone on main thread.": "FAIL",
+      "RTCEncodedVideoFrame cannot be serialized for storage on main thread.": "FAIL",
+      "RTCEncodedVideoFrame clone works with buffer from a different window": "FAIL",
+      "RTCEncodedVideoFrame copy c'tor using transferred frame throws DataCloneError on main thread.": "FAIL",
+      "RTCEncodedVideoFrame copy c'tor works with buffer from a different window": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override on main thread.": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (captureTime).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (contributingSources).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (dependencies).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (frameId).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (height).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (mimeType).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (payloadType).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (receiveTime).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (rtpTimestamp).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (senderCaptureTimeOffset).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (spatialIndex).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (synchronizationSource).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (temporalIndex).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (timestamp).": "FAIL",
+      "RTCEncodedVideoFrame copy construction metadata override/addition on main thread (width).": "FAIL",
+      "RTCEncodedVideoFrame copy construction on main thread.": "FAIL",
+      "RTCEncodedVideoFrame copying leaves original data buffer alone on main thread.": "FAIL",
+      "RTCEncodedVideoFrame data rejects buffers it cannot take on main thread.": "FAIL",
+      "RTCEncodedVideoFrame structuredClone after in-place modification on main thread.": "FAIL",
+      "RTCEncodedVideoFrame structuredClone keeps a buffer shared between frames shared on main thread.": "FAIL",
+      "RTCEncodedVideoFrame structuredClone of transferred frame throws DataCloneError on main thread.": "FAIL",
+      "RTCEncodedVideoFrame structuredClone on main thread.": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCEncodedFrame-shared-buffer.https.html": {
+    "total": 2,
+    "failures": {
+      "RTCEncodedAudioFrame data rejects a SharedArrayBuffer.": "FAIL",
+      "RTCEncodedVideoFrame data rejects a SharedArrayBuffer.": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCRtpScriptTransform-bad-chunk.https.html": {
+    "total": 1,
+    "failures": {
+      "Writing bad chunks should error the stream": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCRtpScriptTransform-encoded-transform.https.html": {
+    "total": 13,
+    "failures": {
+      "Once a transform has been attached, it cannot be reused elsewhere.": "FAIL",
+      "Receiver and sender read, modifiy and write audio frames.": "FAIL",
+      "Receiver and sender read, modifiy and write video frames.": "FAIL",
+      "Receiver and sender read/write frames (clone-frame, audio).": "FAIL",
+      "Receiver and sender read/write frames (clone-frame, video).": "FAIL",
+      "Receiver and sender read/write frames (detach, audio).": "FAIL",
+      "Receiver and sender read/write frames (detach, video).": "FAIL",
+      "Receiver and sender read/write frames (inplace, audio).": "FAIL",
+      "Receiver and sender read/write frames (inplace, video).": "FAIL",
+      "Receiver and sender read/write frames (overwrite, audio).": "FAIL",
+      "Receiver and sender read/write frames (overwrite, video).": "FAIL",
+      "Sender reads frames but doesn't write them back. Receiver doesn't receive any frames.": "FAIL",
+      "Sender skips some frames and only writes one back. Receiver only receives that frame.": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCRtpScriptTransform-late-transform.https.html": {
+    "total": 5,
+    "failures": {
+      "audio receiver transform set in the offerer's track event gets frames": "FAIL",
+      "audio sender transform set after negotiation gets frames": "FAIL",
+      "video passes through untransformed once the sender transform is cleared": "FAIL",
+      "video receiver transform set in the offerer's track event gets frames": "FAIL",
+      "video sender transform set after negotiation gets frames": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCRtpScriptTransform-padding.https.html": {
+    "total": 1,
+    "failures": {
+      "Padding is not delivered to a receive-side transform as an empty frame.": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCRtpScriptTransform-sender-worker-single-frame.https.html": {
+    "total": 2,
+    "failures": {
+      "RTCRtpSender initializes its transform attribute and the Worker sends an RTCEncodedAudioFrame back": "FAIL",
+      "RTCRtpSender initializes its transform attribute and the Worker sends an RTCEncodedVideoFrame back": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/RTCRtpScriptTransform-write-rules.https.html": {
+    "total": 10,
+    "failures": {
+      "writeEncodedData only passes on frames it accepts (clone, audio).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (clone, video).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (constructed, audio).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (constructed, video).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (control, audio).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (control, video).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (reordered, audio).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (reordered, video).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (twice, audio).": "FAIL",
+      "writeEncodedData only passes on frames it accepts (twice, video).": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/idlharness.https.window.js?exclude=.*SFrame.*": {
+    "total": 53,
+    "failures": {
+      "RTCEncodedAudioFrame interface object length": "FAIL",
+      "RTCEncodedAudioFrame interface object name": "FAIL",
+      "RTCEncodedAudioFrame interface: attribute data": "FAIL",
+      "RTCEncodedAudioFrame interface: existence and properties of interface object": "FAIL",
+      "RTCEncodedAudioFrame interface: existence and properties of interface prototype object": "FAIL",
+      "RTCEncodedAudioFrame interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RTCEncodedAudioFrame interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RTCEncodedAudioFrame interface: idlTestObjects.audioFrame must inherit property \"data\" with the proper type": "FAIL",
+      "RTCEncodedAudioFrame interface: idlTestObjects.audioFrame must inherit property \"getMetadata()\" with the proper type": "FAIL",
+      "RTCEncodedAudioFrame interface: operation getMetadata()": "FAIL",
+      "RTCEncodedAudioFrame must be primary interface of idlTestObjects.audioFrame": "FAIL",
+      "RTCEncodedVideoFrame interface object length": "FAIL",
+      "RTCEncodedVideoFrame interface object name": "FAIL",
+      "RTCEncodedVideoFrame interface: attribute data": "FAIL",
+      "RTCEncodedVideoFrame interface: attribute type": "FAIL",
+      "RTCEncodedVideoFrame interface: existence and properties of interface object": "FAIL",
+      "RTCEncodedVideoFrame interface: existence and properties of interface prototype object": "FAIL",
+      "RTCEncodedVideoFrame interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RTCEncodedVideoFrame interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RTCEncodedVideoFrame interface: idlTestObjects.videoFrame must inherit property \"data\" with the proper type": "FAIL",
+      "RTCEncodedVideoFrame interface: idlTestObjects.videoFrame must inherit property \"getMetadata()\" with the proper type": "FAIL",
+      "RTCEncodedVideoFrame interface: idlTestObjects.videoFrame must inherit property \"type\" with the proper type": "FAIL",
+      "RTCEncodedVideoFrame interface: operation getMetadata()": "FAIL",
+      "RTCEncodedVideoFrame must be primary interface of idlTestObjects.videoFrame": "FAIL",
+      "RTCRtpReceiver interface: attribute transform": "FAIL",
+      "RTCRtpReceiver interface: new RTCPeerConnection().addTransceiver('audio').receiver must inherit property \"transform\" with the proper type": "FAIL",
+      "RTCRtpScriptTransform interface object length": "FAIL",
+      "RTCRtpScriptTransform interface object name": "FAIL",
+      "RTCRtpScriptTransform interface: existence and properties of interface object": "FAIL",
+      "RTCRtpScriptTransform interface: existence and properties of interface prototype object": "FAIL",
+      "RTCRtpScriptTransform interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RTCRtpScriptTransform interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RTCRtpSender interface: attribute transform": "FAIL",
+      "RTCRtpSender interface: new RTCPeerConnection().addTransceiver('audio').sender must inherit property \"transform\" with the proper type": "FAIL",
+      "Stringification of idlTestObjects.audioFrame": "FAIL",
+      "Stringification of idlTestObjects.videoFrame": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/idlharness.https.window.js?include=.*SFrame.*": {
+    "total": 49,
+    "failures": {
+      "RTCRtpSFrameDecryptor interface object length": "FAIL",
+      "RTCRtpSFrameDecryptor interface object name": "FAIL",
+      "RTCRtpSFrameDecryptor interface: attribute onerror": "FAIL",
+      "RTCRtpSFrameDecryptor interface: existence and properties of interface object": "FAIL",
+      "RTCRtpSFrameDecryptor interface: existence and properties of interface prototype object": "FAIL",
+      "RTCRtpSFrameDecryptor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RTCRtpSFrameDecryptor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RTCRtpSFrameDecryptor interface: operation addDecryptionKey(CryptoKey, CryptoKeyID)": "FAIL",
+      "RTCRtpSFrameDecryptor interface: operation removeDecryptionKey(CryptoKeyID)": "FAIL",
+      "RTCRtpSFrameEncryptor interface object length": "FAIL",
+      "RTCRtpSFrameEncryptor interface object name": "FAIL",
+      "RTCRtpSFrameEncryptor interface: existence and properties of interface object": "FAIL",
+      "RTCRtpSFrameEncryptor interface: existence and properties of interface prototype object": "FAIL",
+      "RTCRtpSFrameEncryptor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RTCRtpSFrameEncryptor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RTCRtpSFrameEncryptor interface: operation setEncryptionKey(CryptoKey, CryptoKeyID)": "FAIL",
+      "SFrameDecryptorStream interface object length": "FAIL",
+      "SFrameDecryptorStream interface object name": "FAIL",
+      "SFrameDecryptorStream interface: attribute onerror": "FAIL",
+      "SFrameDecryptorStream interface: existence and properties of interface object": "FAIL",
+      "SFrameDecryptorStream interface: existence and properties of interface prototype object": "FAIL",
+      "SFrameDecryptorStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SFrameDecryptorStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SFrameDecryptorStream interface: operation addDecryptionKey(CryptoKey, CryptoKeyID)": "FAIL",
+      "SFrameDecryptorStream interface: operation removeDecryptionKey(CryptoKeyID)": "FAIL",
+      "SFrameEncryptorStream interface object length": "FAIL",
+      "SFrameEncryptorStream interface object name": "FAIL",
+      "SFrameEncryptorStream interface: existence and properties of interface object": "FAIL",
+      "SFrameEncryptorStream interface: existence and properties of interface prototype object": "FAIL",
+      "SFrameEncryptorStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SFrameEncryptorStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SFrameEncryptorStream interface: operation setEncryptionKey(CryptoKey, CryptoKeyID)": "FAIL",
+      "SFrameTransformErrorEvent interface object length": "FAIL",
+      "SFrameTransformErrorEvent interface object name": "FAIL",
+      "SFrameTransformErrorEvent interface: attribute errorType": "FAIL",
+      "SFrameTransformErrorEvent interface: attribute frame": "FAIL",
+      "SFrameTransformErrorEvent interface: attribute keyID": "FAIL",
+      "SFrameTransformErrorEvent interface: existence and properties of interface object": "FAIL",
+      "SFrameTransformErrorEvent interface: existence and properties of interface prototype object": "FAIL",
+      "SFrameTransformErrorEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SFrameTransformErrorEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "idl_test setup": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-audio-transform.https.html": {
+    "total": 1,
+    "failures": {
+      "script-audio-transform": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-change-transform.https.html": {
+    "total": 1,
+    "failures": {
+      "change sender transform": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-late-transform.https.html": {
+    "total": 1,
+    "failures": {
+      "video exchange with late receiver transform": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-metadata-transform.https.html": {
+    "total": 25,
+    "failures": {
+      "audio frame: timestamp (renamed to metadata.rtpTimestamp": "FAIL",
+      "audio metadata: audioLevel": "FAIL",
+      "audio metadata: captureTime": "FAIL",
+      "audio metadata: contributingSources": "FAIL",
+      "audio metadata: mimeType": "FAIL",
+      "audio metadata: payloadType": "FAIL",
+      "audio metadata: receiveTime": "FAIL",
+      "audio metadata: rtpTimestamp": "FAIL",
+      "audio metadata: senderCaptureTimeOffset": "FAIL",
+      "audio metadata: sequenceNumber": "FAIL",
+      "audio metadata: synchronizationSource": "FAIL",
+      "video frame: timestamp (renamed to metadata.rtpTimestamp": "FAIL",
+      "video frame: type": "FAIL",
+      "video metadata: captureTime": "FAIL",
+      "video metadata: contributingSources": "FAIL",
+      "video metadata: dependencies": "FAIL",
+      "video metadata: frameId": "FAIL",
+      "video metadata: mimeType": "FAIL",
+      "video metadata: payloadType": "FAIL",
+      "video metadata: receiveTime": "FAIL",
+      "video metadata: rtpTimestamp": "FAIL",
+      "video metadata: senderCaptureTimeOffset": "FAIL",
+      "video metadata: spatial and temporal index": "FAIL",
+      "video metadata: synchronizationSource": "FAIL",
+      "video metadata: width and height": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-transform-generateKeyFrame-simulcast.https.html": {
+    "total": 3,
+    "failures": {
+      "generateKeyFrame for rid that was negotiated away fails": "FAIL",
+      "generateKeyFrame with rid after simulcast->unicast negotiation fails": "FAIL",
+      "generateKeyFrame works with simulcast rids": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-transform-generateKeyFrame.https.html": {
+    "total": 10,
+    "failures": {
+      "await generateKeyFrame, await generateKeyFrame should see an increase in count of keyframes": "FAIL",
+      "generateKeyFrame does not reject when the sender is negotiated inactive, and resumes succeeding when negotiated back to active": "FAIL",
+      "generateKeyFrame does not reject when the sender is stopped, even without negotiation": "FAIL",
+      "generateKeyFrame does not reject with a null track": "FAIL",
+      "generateKeyFrame does not throw for unset transforms": "FAIL",
+      "generateKeyFrame throws NotAllowedError for invalid rid": "FAIL",
+      "generateKeyFrame throws NotFoundError for unknown rid": "FAIL",
+      "generateKeyFrame timestamp should advance": "FAIL",
+      "generateKeyFrame() throws for audio": "FAIL",
+      "generateKeyFrame(null) resolves for video sender, and throws for video receiver": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-transform-sendKeyFrameRequest.https.html": {
+    "total": 6,
+    "failures": {
+      "sendKeyFrameRequest does not reject when the receiver is negotiated inactive, and resumes succeeding when negotiated back to active": "FAIL",
+      "sendKeyFrameRequest does not reject when the receiver is stopped": "FAIL",
+      "sendKeyFrameRequest does not throw for unset transforms": "FAIL",
+      "sendKeyFrameRequest resolves for video receiver, and throws for video sender": "FAIL",
+      "sendKeyFrameRequest throws for audio sender/receiver": "FAIL",
+      "sendKeyFrameRequest throws for unused transforms": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-transform.https.html": {
+    "total": 4,
+    "failures": {
+      "Cannot reuse attached transforms": "FAIL",
+      "audio exchange with transform": "FAIL",
+      "transform messaging": "FAIL",
+      "video exchange with transform": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/script-write-twice-transform.https.html": {
+    "total": 1,
+    "failures": {
+      "video exchange with write twice transform": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/sframe-keys.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Audio exchange with SFrame setup": "FAIL",
+      "Passing various key IDs": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/sframe-transform-buffer-source.html": {
+    "total": 1,
+    "failures": {
+      "Uint8Array as input to SFrameEncrypterStream": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/sframe-transform-in-worker.https.html": {
+    "total": 1,
+    "failures": {
+      "video exchange with SFrame transform in worker": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/sframe-transform-readable.html": {
+    "total": 1,
+    "failures": {
+      "sframe-transform-readable": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/sframe-transform.html": {
+    "total": 5,
+    "failures": {
+      "Cannot reuse attached transforms": "FAIL",
+      "SFrame decryption with array buffer that is too small": "FAIL",
+      "SFrame transform gets errored if trying to process unexpected value types": "FAIL",
+      "SFrame with array buffer - AES_128_CTR_HMAC_SHA256_80": "FAIL",
+      "SFrameEncrypterStream exposes readable and writable": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-audiolevel.html": {
+    "total": 2,
+    "failures": {
+      "audioLevel present in audio receiver": "FAIL",
+      "audioLevel present in audio sender": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-clone.https.html": {
+    "total": 1,
+    "failures": {
+      "Cloning before sending works": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-constructor.html": {
+    "total": 4,
+    "failures": {
+      "Constructing a new receiver audio frame explicitly using metadata from a previous frame works": "FAIL",
+      "Constructing a new receiver audio frame explicitly using metadata from a previous frame works, absCaptureTime extension enabled": "FAIL",
+      "Constructing a new sender audio frame explicitly using metadata from a previous frame works": "FAIL",
+      "Constructing a new sender audio frame explicitly using metadata from a previous frame works, absCaptureTime extension enabled": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-metadata.https.html": {
+    "total": 4,
+    "failures": {
+      "Basic simulcast setup with three spatial layers": "FAIL",
+      "Constructing audio frame before sending works": "FAIL",
+      "Constructing audio frame with bad metadata argument before sending does not work": "FAIL",
+      "Constructing audio frame with metadata argument before sending works": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-receive-cloned.https.html": {
+    "total": 1,
+    "failures": {
+      "Cloning before sending works": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-send-incoming.https.html": {
+    "total": 1,
+    "failures": {
+      "Send endoded incoming frame": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedAudioFrame-serviceworker-failure.https.html": {
+    "total": 1,
+    "failures": {
+      "RTCEncodedVideoFrame cannot cross agent clusters, service worker edition": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedFrame-timestamps.html": {
+    "total": 4,
+    "failures": {
+      "captureTime and senderCaptureTimeOffset not present in audio receiver if extension not used": "FAIL",
+      "captureTime and senderCaptureTimeOffset not present in video receiver if extension not used": "FAIL",
+      "captureTime and senderCaptureTimeOffset present in audio receiver if extension is used": "FAIL",
+      "captureTime and senderCaptureTimeOffset present in video receiver if extension is used": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-clone.https.html": {
+    "total": 1,
+    "failures": {
+      "Cloning before sending works": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-constructor.html": {
+    "total": 4,
+    "failures": {
+      "Constructing a new receiver audio frame explicitly using metadata from an existing frame works": "FAIL",
+      "Constructing a new receiver audio frame explicitly using metadata from an existing frame works, absCaptureTime extension enabled": "FAIL",
+      "Constructing a new sender audio frame explicitly using metadata from an existing frame works": "FAIL",
+      "Constructing a new sender audio frame explicitly using metadata from an existing frame works, absCaptureTime extension enabled": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-metadata.https.html": {
+    "total": 4,
+    "failures": {
+      "[VP8] constructor carries over codec-specific properties": "FAIL",
+      "[VP8] constructor with metadata carries over codec-specific properties": "FAIL",
+      "[VP8] constructor without metadata does not carry over modified metadata ": "FAIL",
+      "[VP8] setMetadata() carries over codec-specific properties": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCEncodedVideoFrame-serviceworker-failure.https.html": {
+    "total": 1,
+    "failures": {
+      "RTCEncodedVideoFrame cannot cross agent clusters, service worker edition": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-audio.https.html": {
+    "total": 8,
+    "failures": {
+      "Creating streams twice throws": "FAIL",
+      "Encoded frames serialize and deserialize into a deep clone": "FAIL",
+      "Enqueuing the same frame twice fails": "FAIL",
+      "Frames flow correctly using insertable streams": "FAIL",
+      "Frames flow correctly using insertable streams when receiver starts negotiation": "FAIL",
+      "Frames flow correctly using insertable streams when receiver starts negotiation with param": "FAIL",
+      "Frames flow correctly using insertable streams with param": "FAIL",
+      "Modifying rtp timestamp": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-errors.https.html": {
+    "total": 1,
+    "failures": {
+      "Enqueuing the same frame twice fails": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-simulcast.https.html": {
+    "total": 1,
+    "failures": {
+      "Basic simulcast setup with three spatial layers": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-video-frames.https.html": {
+    "total": 1,
+    "failures": {
+      "Key and Delta frames are sent and received": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-video.https.html": {
+    "total": 6,
+    "failures": {
+      "Creating streams twice throws": "FAIL",
+      "Encoded frames serialize and deserialize into a deep clone": "FAIL",
+      "Frames flow correctly using insertable streams": "FAIL",
+      "Frames flow correctly using insertable streams when receiver starts negotiation": "FAIL",
+      "Frames flow correctly using insertable streams when receiver starts negotiation with param": "FAIL",
+      "Frames flow correctly using insertable streams with param": "FAIL"
+    }
+  },
+  "webrtc-encoded-transform/tentative/RTCPeerConnection-insertable-streams-worker.https.html": {
+    "total": 4,
+    "failures": {
+      "Audio RTCRtpSender insertable streams transferred to a worker, which tries to write an invalid frame": "FAIL",
+      "RTCRtpSender readable stream transferred to a Worker and the Worker sends an RTCEncodedAudioFrame back": "FAIL",
+      "RTCRtpSender readable stream transferred to a Worker and the Worker sends an RTCEncodedVideoFrame back": "FAIL",
+      "Video RTCRtpSender insertable streams transferred to a worker, which tries to write an invalid frame": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "direct-sockets/disabled-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "TCPServerSocket disabled by permissions-policy": "FAIL",
+      "TCPSocket disabled by permissions-policy": "FAIL",
+      "UDPSocket disabled by permissions-policy": "FAIL"
+    }
+  },
+  "direct-sockets/tcp_socket.https.html": {
+    "total": 1,
+    "failures": {
+      "TCPSocket exchanges packets with TCPServerSocket": "FAIL"
+    }
+  },
+  "direct-sockets/udp_socket.https.html": {
+    "total": 1,
+    "failures": {
+      "UDPSocket (connected) exchanges datagrams with UDPSocket (bound)": "FAIL"
+    }
+  },
+  "direct-sockets/udp_socket_multicast.https.html": {
+    "total": 1,
+    "failures": {
+      "UDPSocket sends messages to a multicast group that has 2 subscribers": "FAIL"
+    }
+  }
+}

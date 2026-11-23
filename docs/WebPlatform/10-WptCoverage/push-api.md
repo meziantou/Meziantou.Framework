@@ -9,35 +9,36 @@ description: "The results of the web-platform-tests of push-api, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 8 | 8 | – |
-| [Tentative](#tentative-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 1 | 8 | 2 | 17% |
+| [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **11** | **11** | **–** |
+| **All** | **1** | **11** | **2** | **11%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 11
+- **NOT IMPLEMENTED**: 10
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.any.js`](https://wpt.fyi/results/push-api/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`permission.https.html`](https://wpt.fyi/results/push-api/permission.https.html) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`push-event.https.any.js`](https://wpt.fyi/results/push-api/push-event.https.any.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`subscribe-with-faulty-applicationServerKey.https.window.js`](https://wpt.fyi/results/push-api/subscribe-with-faulty-applicationServerKey.https.window.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`supported-encodings.https.any.js`](https://wpt.fyi/results/push-api/supported-encodings.https.any.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`window-pushManager-non-secure-context.http.html`](https://wpt.fyi/results/push-api/window-pushManager-non-secure-context.http.html) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`window-pushManager.https.any.js`](https://wpt.fyi/results/push-api/window-pushManager.https.any.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`worker-subscribe.https.window.js`](https://wpt.fyi/results/push-api/worker-subscribe.https.window.js) | Disabled | – | NOT IMPLEMENTED | Push API |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/push-api/idlharness.https.any.js) | Fail | 54 / 157 | NOT IMPLEMENTED | Push API |
+| [`permission.https.html`](https://wpt.fyi/results/push-api/permission.https.html) | Fail | 1 / 3 | NOT IMPLEMENTED | Push API |
+| [`push-event.https.any.js`](https://wpt.fyi/results/push-api/push-event.https.any.js) | Disabled | – | NOT IMPLEMENTED, TEST RUNNER | Push API; the `window-module` global of the `.any.js` tests (`.any.window-module.html`, the test is run as a module script of a window) is not supported by the runner |
+| [`subscribe-with-faulty-applicationServerKey.https.window.js`](https://wpt.fyi/results/push-api/subscribe-with-faulty-applicationServerKey.https.window.js) | Fail | 0 / 5 | NOT IMPLEMENTED | Push API |
+| [`supported-encodings.https.any.js`](https://wpt.fyi/results/push-api/supported-encodings.https.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | Push API |
+| [`window-pushManager-non-secure-context.http.html`](https://wpt.fyi/results/push-api/window-pushManager-non-secure-context.http.html) | Pass | 2 / 2 |  |  |
+| [`window-pushManager.https.any.js`](https://wpt.fyi/results/push-api/window-pushManager.https.any.js) | Disabled | – | NOT IMPLEMENTED, TEST RUNNER | Push API; the `window-module` global of the `.any.js` tests (`.any.window-module.html`, the test is run as a module script of a window) is not supported by the runner |
+| [`worker-subscribe.https.window.js`](https://wpt.fyi/results/push-api/worker-subscribe.https.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED | Push API |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`cross-origin-nested.tentative.https.sub.window.js`](https://wpt.fyi/results/push-api/cross-origin-nested.tentative.https.sub.window.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`cross-origin-same-site-request.tentative.https.sub.window.js`](https://wpt.fyi/results/push-api/cross-origin-same-site-request.tentative.https.sub.window.js) | Disabled | – | NOT IMPLEMENTED | Push API |
-| [`cross-origin-serviceworker.tentative.https.sub.window.js`](https://wpt.fyi/results/push-api/cross-origin-serviceworker.tentative.https.sub.window.js) | Disabled | – | NOT IMPLEMENTED | Push API |
+| [`cross-origin-nested.tentative.https.sub.window.js`](https://wpt.fyi/results/push-api/cross-origin-nested.tentative.https.sub.window.js) | Timeout | 0 / 4 | NOT IMPLEMENTED | Push API |
+| [`cross-origin-same-site-request.tentative.https.sub.window.js`](https://wpt.fyi/results/push-api/cross-origin-same-site-request.tentative.https.sub.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED | Push API |
+| [`cross-origin-serviceworker.tentative.https.sub.window.js`](https://wpt.fyi/results/push-api/cross-origin-serviceworker.tentative.https.sub.window.js) | Timeout | 0 / 1 | NOT IMPLEMENTED | Push API |

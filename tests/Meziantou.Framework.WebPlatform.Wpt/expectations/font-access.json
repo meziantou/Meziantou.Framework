@@ -1,0 +1,92 @@
+{
+  "font-access/font_access_basic.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "font_access_basic": "FAIL"
+    }
+  },
+  "font-access/font_access_blob.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "font_access_blob": "FAIL"
+    }
+  },
+  "font-access/font_access_detached_iframe.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "font_access_detached_iframe": "FAIL",
+      "font_access_detached_iframe 1": "FAIL",
+      "font_access_detached_iframe 2": "FAIL"
+    }
+  },
+  "font-access/font_access_permission.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "queryLocalFonts(): permission denied": "FAIL",
+      "queryLocalFonts(): permission granted": "FAIL",
+      "queryLocalFonts(): permission not given": "FAIL"
+    }
+  },
+  "font-access/font_access_query_select.tentative.https.window.js": {
+    "total": 15,
+    "failures": {
+      "font_access_query_select": "FAIL",
+      "font_access_query_select 1": "FAIL",
+      "font_access_query_select 10": "FAIL",
+      "font_access_query_select 11": "FAIL",
+      "font_access_query_select 12": "FAIL",
+      "font_access_query_select 13": "FAIL",
+      "font_access_query_select 14": "FAIL",
+      "font_access_query_select 2": "FAIL",
+      "font_access_query_select 3": "FAIL",
+      "font_access_query_select 4": "FAIL",
+      "font_access_query_select 5": "FAIL",
+      "font_access_query_select 6": "FAIL",
+      "font_access_query_select 7": "FAIL",
+      "font_access_query_select 8": "FAIL",
+      "font_access_query_select 9": "FAIL"
+    }
+  },
+  "font-access/font_access_sorted.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "font_access_sorted": "FAIL"
+    }
+  },
+  "font-access/permissions-policy/local-fonts-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "permissions policy allow=\"local-fonts\" allows same-origin navigation in an iframe.": "FAIL"
+    }
+  },
+  "font-access/permissions-policy/local-fonts-allowed-by-permissions-policy-attribute.https.sub.html": {
+    "total": 2,
+    "failures": {
+      "permissions policy \"local-fonts\" can be enabled in cross-origin iframe using allow=\"local-fonts\" attribute": "FAIL",
+      "permissions policy \"local-fonts\" can be enabled in same-origin iframe using allow=\"local-fonts\" attribute": "FAIL"
+    }
+  },
+  "font-access/permissions-policy/local-fonts-allowed-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "local-fonts-allowed-by-permissions-policy": "FAIL",
+      "permissions policy header: local-fonts * allows same-origin iframes.": "FAIL"
+    }
+  },
+  "font-access/permissions-policy/local-fonts-default-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "Default \"local-fonts\" permissions policy [\"self\"] allows same-origin iframes.": "FAIL",
+      "local-fonts-default-permissions-policy": "FAIL"
+    }
+  },
+  "font-access/permissions-policy/local-fonts-disabled-by-permissions-policy.https.sub.html": {
+    "total": 3,
+    "failures": {
+      "local-fonts-disabled-by-permissions-policy": "FAIL"
+    }
+  },
+  "font-access/permissions-policy/local-fonts-supported-by-permissions-policy.html": {
+    "total": 1
+  }
+}

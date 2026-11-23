@@ -1,0 +1,795 @@
+{
+  "infrastructure/assumptions/ahem.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/assumptions/allowed-to-play.html": {
+    "total": 2
+  },
+  "infrastructure/assumptions/blank.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/assumptions/canvas-background.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/assumptions/cookie.html": {
+    "total": 1
+  },
+  "infrastructure/assumptions/document-fonts-ready.html": {
+    "total": 1
+  },
+  "infrastructure/assumptions/html-elements.html": {
+    "total": 11
+  },
+  "infrastructure/assumptions/initial-color.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/assumptions/medium-font-size.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/assumptions/min-font-size.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/assumptions/non-local-ports.sub.window.js": {
+    "total": 5,
+    "failures": {
+      "Fetch from http-public to local http fails.": "FAIL"
+    }
+  },
+  "infrastructure/assumptions/non-secure-context.any.js": {
+    "total": 2
+  },
+  "infrastructure/assumptions/non-secure-context.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "infrastructure/channels/test_call.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "call method": "NOTRUN"
+    }
+  },
+  "infrastructure/channels/test_postMessage.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "postMessage method": "NOTRUN"
+    }
+  },
+  "infrastructure/channels/test_serialize.html": {
+    "harness": "TIMEOUT",
+    "total": 24,
+    "failures": {
+      "Serialize -Infinity": "NOTRUN",
+      "Serialize Date": "NOTRUN",
+      "Serialize Error": "NOTRUN",
+      "Serialize Infinity": "NOTRUN",
+      "Serialize NaN": "NOTRUN",
+      "Serialize RegExp": "NOTRUN",
+      "Serialize RemoteObject": "NOTRUN",
+      "Serialize TypeError": "NOTRUN",
+      "Serialize array": "NOTRUN",
+      "Serialize bigint": "NOTRUN",
+      "Serialize cyclic array": "NOTRUN",
+      "Serialize cyclic map": "NOTRUN",
+      "Serialize cyclic object": "NOTRUN",
+      "Serialize false": "NOTRUN",
+      "Serialize int": "NOTRUN",
+      "Serialize map": "NOTRUN",
+      "Serialize nested array": "NOTRUN",
+      "Serialize nested object": "NOTRUN",
+      "Serialize null": "TIMEOUT",
+      "Serialize object": "NOTRUN",
+      "Serialize set": "NOTRUN",
+      "Serialize string": "NOTRUN",
+      "Serialize true": "NOTRUN",
+      "Serialize undefined": "NOTRUN"
+    }
+  },
+  "infrastructure/crash-tests/crashtests/test.html": {
+    "crashtest": "PASS"
+  },
+  "infrastructure/crash-tests/test-crash.html": {
+    "crashtest": "PASS"
+  },
+  "infrastructure/crashtests/example.html": {
+    "crashtest": "PASS"
+  },
+  "infrastructure/crashtests/testdriver.html": {
+    "crashtest": "PASS"
+  },
+  "infrastructure/expected-fail/failing-test.html": {
+    "total": 1,
+    "failures": {
+      "Failing test": "FAIL"
+    }
+  },
+  "infrastructure/expected-fail/timeout.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Test that should time out": "NOTRUN"
+    }
+  },
+  "infrastructure/expected-fail/uncaught-exception-following-subtest.html": {
+    "harness": "ERROR",
+    "total": 1
+  },
+  "infrastructure/expected-fail/uncaught-exception-single-test.html": {
+    "total": 1,
+    "failures": {
+      "Uncaught exception in single-page test": "FAIL"
+    }
+  },
+  "infrastructure/expected-fail/uncaught-exception.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "infrastructure/expected-fail/unhandled-rejection-following-subtest.html": {
+    "harness": "ERROR",
+    "total": 1
+  },
+  "infrastructure/expected-fail/unhandled-rejection-single-test.html": {
+    "total": 1,
+    "failures": {
+      "Unhandled rejection in single-page test": "FAIL"
+    }
+  },
+  "infrastructure/expected-fail/unhandled-rejection.html": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "infrastructure/expected-fail/user-prompt.html?type=alert": {
+    "total": 1
+  },
+  "infrastructure/expected-fail/user-prompt.html?type=alert&wait": {
+    "total": 1
+  },
+  "infrastructure/expected-fail/user-prompt.html?type=confirm": {
+    "total": 1
+  },
+  "infrastructure/expected-fail/user-prompt.html?type=confirm&wait": {
+    "total": 1
+  },
+  "infrastructure/expected-fail/user-prompt.html?type=prompt": {
+    "total": 1
+  },
+  "infrastructure/expected-fail/user-prompt.html?type=prompt&wait": {
+    "total": 1
+  },
+  "infrastructure/expected-fail/window-onload-test.html": {
+    "total": 6,
+    "failures": {
+      "promise 1": "FAIL",
+      "promise 2": "FAIL",
+      "promise 3": "FAIL",
+      "test 2": "FAIL",
+      "test 3": "FAIL"
+    }
+  },
+  "infrastructure/reftest-wait.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/devicePixelRatio.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/green-ref.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/legacy/reftest_and_fail.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/legacy/reftest_and_fail_0-ref.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/legacy/reftest_and_mismatch.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/legacy/reftest_and_mismatch_0.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/legacy/reftest_cycle.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/legacy/reftest_cycle_0-ref.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/legacy/reftest_cycle_1-ref.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/legacy/reftest_cycle_fail.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/legacy/reftest_cycle_fail_0-ref.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest.https.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest.www.sub.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_fuzzy_1.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_fuzzy_no_differences.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_fuzzy_no_differences_1.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_match-print.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_match.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-0.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-1.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-2.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-3.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-4.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-5.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-6.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_and_mismatch-7.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_fail-print.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_match_fail.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_mismatch-num-pages-print.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_mismatch-print.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_mismatch.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_mismatch_fail-print.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_mismatch_fail.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_mismatch_page_margins-print.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_multiple_match-0.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_multiple_match-1.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_multiple_mismatch-0.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_multiple_mismatch-1.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/reftest/reftest_ref_timeout.html": {
+    "reftest": "TIMEOUT"
+  },
+  "infrastructure/reftest/reftest_timeout.html": {
+    "reftest": "TIMEOUT"
+  },
+  "infrastructure/reftest/reftest_wait_0-print.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_wait_0.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_wait_TestRendered.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/reftest_window_load.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/size.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/testdriver-iframe.sub.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/testdriver-in-ref.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/testdriver-print.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/reftest/testdriver.html": {
+    "reftest": "PASS"
+  },
+  "infrastructure/server/context.any.js": {
+    "total": 1
+  },
+  "infrastructure/server/context.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "infrastructure/server/context.any.js#dedicatedworker-module": {
+    "total": 1
+  },
+  "infrastructure/server/context.any.js#sharedworker": {
+    "total": 1
+  },
+  "infrastructure/server/context.any.js#sharedworker-module": {
+    "total": 1
+  },
+  "infrastructure/server/http2-context.sub.h2.any.js": {
+    "total": 3
+  },
+  "infrastructure/server/http2-context.sub.h2.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "infrastructure/server/http2-context.sub.h2.any.js#sharedworker": {
+    "total": 3
+  },
+  "infrastructure/server/http2-websocket.sub.h2.any.js": {
+    "total": 1,
+    "failures": {
+      "WSS over h2": "FAIL"
+    }
+  },
+  "infrastructure/server/http2-websocket.sub.h2.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "WSS over h2": "FAIL"
+    }
+  },
+  "infrastructure/server/order-of-metas.any.js": {
+    "total": 5
+  },
+  "infrastructure/server/order-of-metas.any.js#dedicatedworker": {
+    "total": 3
+  },
+  "infrastructure/server/order-of-metas.any.js#sharedworker": {
+    "total": 3
+  },
+  "infrastructure/server/order-of-metas.window.js": {
+    "total": 4
+  },
+  "infrastructure/server/secure-context.https.any.js": {
+    "total": 2
+  },
+  "infrastructure/server/secure-context.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "infrastructure/server/secure-context.https.any.js#sharedworker": {
+    "total": 2
+  },
+  "infrastructure/server/subdomain-flag.www.sub.window.js": {
+    "total": 1,
+    "failures": {
+      "Use of .www. file name flag implies www subdomain": "FAIL"
+    }
+  },
+  "infrastructure/server/test-pac.sub.html": {
+    "total": 2,
+    "failures": {
+      "test that PAC metadata is respected for HTTP requests": "FAIL",
+      "test that PAC metadata is respected for HTTPS requests": "FAIL"
+    }
+  },
+  "infrastructure/server/title.any.js": {
+    "total": 1
+  },
+  "infrastructure/server/title.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "infrastructure/server/title.any.js#sharedworker": {
+    "total": 1
+  },
+  "infrastructure/server/webtransport-h3.https.sub.any.js": {
+    "total": 1,
+    "failures": {
+      "WebTransport server should be running and should handle a bidirectional stream": "FAIL"
+    }
+  },
+  "infrastructure/server/webtransport-h3.https.sub.any.js#dedicatedworker": {
+    "total": 1,
+    "failures": {
+      "WebTransport server should be running and should handle a bidirectional stream": "FAIL"
+    }
+  },
+  "infrastructure/server/webtransport-h3.https.sub.any.js#sharedworker": {
+    "total": 1,
+    "failures": {
+      "WebTransport server should be running and should handle a bidirectional stream": "FAIL"
+    }
+  },
+  "infrastructure/server/wpt-server-http.sub.html": {
+    "total": 29,
+    "failures": {
+      "H2 protocol, no subdomain": "FAIL",
+      "HTTP protocol, no subdomain, port #1": "FAIL",
+      "HTTP protocol, no subdomain, port #2": "FAIL",
+      "HTTPS protocol, no subdomain": "FAIL"
+    }
+  },
+  "infrastructure/server/wpt-server-websocket.sub.html": {
+    "total": 12,
+    "failures": {
+      "WS protocol, no subdomain": "FAIL",
+      "WSS protocol, no subdomain": "FAIL"
+    }
+  },
+  "infrastructure/server/wpt-server-wpt-flags.sub.html?no_flag": {
+    "total": 1
+  },
+  "infrastructure/server/wpt-server-wpt-flags.sub.html?wpt_flags=h2": {
+    "total": 1
+  },
+  "infrastructure/server/wpt-server-wpt-flags.sub.html?wpt_flags=https": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/actionsWithKeyPressed.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/crossOrigin.sub.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/elementPosition.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/elementTiming.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/eventOrder.html": {
+    "total": 2,
+    "failures": {
+      "TestDriver actions: event order": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/actions/iframe.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/mouseClickCount.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiDevice.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiTouchPoints.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiTouchPointsReleaseFirstPoint.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiTouchPointsReleaseSecondPoint.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiTouchPointsSimultaneousMove.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiTouchPointsTwoTouchStarts.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/multiTouchPointsWithPause.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/pause.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/penPointerEventProperties.html": {
+    "total": 1,
+    "failures": {
+      "TestDriver actions: pointerevent properties of pen type": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/actions/penPointerEvents.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/popup.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/textEditCommands.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/touchPointerEventProperties.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/actions/wheelScroll.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/bidi/bluetooth/handle_request_device_prompt.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "accept upon request_device_prompt_updated event": "NOTRUN",
+      "cancel upon request_device_prompt_updated event": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_adapter.https.html": {
+    "total": 3,
+    "failures": {
+      "simulate bluetooth adapter 'absent'": "FAIL",
+      "simulate bluetooth adapter 'powered-off'": "FAIL",
+      "simulate bluetooth adapter 'powered-on'": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_characteristic.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT characteristic.": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_characteristic_response.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT characteristic response": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_descriptor.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT descriptor.": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_descriptor_response.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT descriptor response": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_gatt_connection_response.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT connection response.": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_gatt_disconnection.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT disconnection.": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_preconnected_peripheral.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a preconnected peripheral.": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/bluetooth/simulate_service.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "simulate a GATT service.": "NOTRUN"
+    }
+  },
+  "infrastructure/testdriver/bidi/browsing_context/set_viewport.https.html": {
+    "total": 2,
+    "failures": {
+      "resolution media queries reflect a BiDi devicePixelRatio override": "FAIL",
+      "window.devicePixelRatio reflects a BiDi devicePixelRatio override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_geolocation_override.https.html": {
+    "total": 3,
+    "failures": {
+      "cannot set `coordinates` and `error` simultaneously": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_locale_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate locale and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_media_features_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate media features and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_screen_orientation_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate screen orientation and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_scrollbar_type_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate scrollbar type and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_text_layout_mode_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate text layout mode and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_touch_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate touch and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/emulation/set_viewport_meta_override.https.html": {
+    "total": 1,
+    "failures": {
+      "emulate viewport meta and clear override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/permissions/set_permission.https.html": {
+    "total": 3,
+    "failures": {
+      "Grant Permissions for different origins": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/speculation/prefetch_status_updated.https.html": {
+    "total": 3,
+    "failures": {
+      "prefetch_status_updated event subscription and structure validation": "FAIL",
+      "prefetch_status_updated event with navigation to success": "FAIL",
+      "prefetch_status_updated event with prefetch failure": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bidi/subscription.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "Assert testdriver can subscribe for another window": "FAIL",
+      "Assert testdriver can subscribe globally": "TIMEOUT"
+    }
+  },
+  "infrastructure/testdriver/bidi/subscription.window.js": {
+    "total": 1
+  },
+  "infrastructure/testdriver/bidi/user_agent_client_hints/set_client_hints_override.https.html": {
+    "total": 1,
+    "failures": {
+      "test_driver.bidi.user_agent_client_hints.set_client_hints_override": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/bless.html": {
+    "total": 7
+  },
+  "infrastructure/testdriver/click-multiple.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/click.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/click_iframe.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/click_iframe_crossorigin.sub.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/click_nested.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/click_nested_crossorigin.sub.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/click_window.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/create_window.html": {
+    "total": 2,
+    "failures": {
+      "create_window returns a distinct handle for each created window": "FAIL",
+      "create_window returns a window handle": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/delete_all_cookies.html": {
+    "total": 2
+  },
+  "infrastructure/testdriver/file_upload.sub.html": {
+    "total": 1,
+    "failures": {
+      "File upload using testdriver": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/generate_test_report.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/get_all_cookies.sub.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/get_all_cookies.sub.https.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/get_named_cookie.sub.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/get_named_cookie.sub.https.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/key-source-pause.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/minimize_restore_popup.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/navigate.html": {
+    "total": 2,
+    "failures": {
+      "navigate accepts a WebDriver window handle as the context": "FAIL",
+      "navigate accepts a WindowProxy as the context": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/refresh.html": {
+    "total": 1,
+    "failures": {
+      "refresh reloads the document of the given context": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/send_keys.html": {
+    "total": 1
+  },
+  "infrastructure/testdriver/set_get_window_rect.html": {
+    "total": 2,
+    "failures": {
+      "Window Position": "FAIL",
+      "Window Size": "FAIL"
+    }
+  },
+  "infrastructure/testdriver/set_permission.https.html": {
+    "total": 2
+  },
+  "infrastructure/testdriver/virtual_authenticator.html": {
+    "total": 8
+  },
+  "infrastructure/testharness/full.stop/full-stop.html": {
+    "total": 1
+  },
+  "infrastructure/testharness/lone-surrogates.html": {
+    "total": 4,
+    "failures": {
+      "failing test with lone surrogate U+d800 in name": "FAIL",
+      "failing test with lone surrogate in assert": "FAIL"
+    }
+  },
+  "infrastructure/window/minimize-1.html": {
+    "total": 1
+  },
+  "infrastructure/window/minimize-2.html": {
+    "total": 1
+  },
+  "infrastructure/wpt-metadata/fuzzy/fuzzy-ref-2.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/wpt-metadata/fuzzy/reftest_fuzzy_chain_ini.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/wpt-metadata/fuzzy/reftest_fuzzy_ini_full.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/wpt-metadata/fuzzy/reftest_fuzzy_ini_ref_only.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/wpt-metadata/fuzzy/reftest_fuzzy_ini_short.html": {
+    "reftest": "FAIL"
+  },
+  "infrastructure/wpt-metadata/prefs/gecko.html": {
+    "total": 1,
+    "failures": {
+      "Ensure that setting gecko prefs works": "FAIL"
+    }
+  }
+}

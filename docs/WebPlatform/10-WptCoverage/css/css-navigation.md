@@ -10,54 +10,54 @@ description: "The results of the web-platform-tests of css/css-navigation, and w
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 20 | 20 | – |
-| [Reftests](#reftests) | 0 | 3 | 3 | – |
-| [Crash tests](#crash-tests) | 0 | 3 | 3 | – |
-| **All** | **0** | **26** | **26** | **–** |
+| [Tentative](#tentative-tests) | 3 | 20 | 0 | 15% |
+| [Reftests](#reftests) | 0 | 3 | 0 | 0% |
+| [Crash tests](#crash-tests) | 3 | 3 | 0 | 100% |
+| **All** | **6** | **26** | **0** | **23%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 26
+- **NOT IMPLEMENTED**: 20
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/crossdoc-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/crossdoc-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/crossdoc-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/crossdoc-002.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/function-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/function-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/function-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/function-002.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/if-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/if-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/link-to-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/navigation-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/navigation-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-002.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/navigation-003.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-003.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/navigation-004.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-004.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/navigation-source-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-source-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/link-to-invalid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/link-to-invalid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/link-to-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/link-to-valid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/location-invalid-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/location-invalid-001.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/location-invalid-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/location-invalid-002.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/location-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/location-valid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/navigation-rule-invalid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/navigation-rule-invalid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/navigation-rule-location-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/navigation-rule-location-valid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/url-pattern-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/url-pattern-valid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/parsing/url-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/url-valid.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/crossdoc-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/crossdoc-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/crossdoc-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/crossdoc-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/function-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/function-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/function-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/function-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/if-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/if-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/link-to-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/navigation-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/navigation-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/navigation-003.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-003.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/navigation-004.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/navigation-source-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/navigation-source-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/parsing/link-to-invalid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/link-to-invalid.html) | Pass | 8 / 8 |  |  |
+| [`tentative/parsing/link-to-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/link-to-valid.html) | Fail | 3 / 9 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/parsing/location-invalid-001.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/location-invalid-001.html) | Pass | 6 / 6 |  |  |
+| [`tentative/parsing/location-invalid-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/location-invalid-002.html) | Pass | 1 / 1 |  |  |
+| [`tentative/parsing/location-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/location-valid.html) | Fail | 8 / 21 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/parsing/navigation-rule-invalid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/navigation-rule-invalid.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/parsing/navigation-rule-location-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/navigation-rule-location-valid.html) | Fail | 6 / 18 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/parsing/url-pattern-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/url-pattern-valid.html) | Fail | 1 / 3 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/parsing/url-valid.html`](https://wpt.fyi/results/css/css-navigation/tentative/parsing/url-valid.html) | Fail | 1 / 4 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`tentative/link-to-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-002.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/link-to-003.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-003.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`tentative/link-to-004.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-004.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/link-to-002.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/link-to-003.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-003.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`tentative/link-to-004.html`](https://wpt.fyi/results/css/css-navigation/tentative/link-to-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`crashtests/invalid-location-descriptor-value.html`](https://wpt.fyi/results/css/css-navigation/crashtests/invalid-location-descriptor-value.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`crashtests/invalid-url-pattern-argument.html`](https://wpt.fyi/results/css/css-navigation/crashtests/invalid-url-pattern-argument.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
-| [`crashtests/url-pattern-null-document.html`](https://wpt.fyi/results/css/css-navigation/crashtests/url-pattern-null-document.html) | Disabled | – | NOT IMPLEMENTED | CSS navigation (`@navigation` rule, `navigation()`/`link-to()` conditions and the related at-rules) |
+| [`crashtests/invalid-location-descriptor-value.html`](https://wpt.fyi/results/css/css-navigation/crashtests/invalid-location-descriptor-value.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/invalid-url-pattern-argument.html`](https://wpt.fyi/results/css/css-navigation/crashtests/invalid-url-pattern-argument.html) | Pass | 1 / 1 |  |  |
+| [`crashtests/url-pattern-null-document.html`](https://wpt.fyi/results/css/css-navigation/crashtests/url-pattern-null-document.html) | Pass | 1 / 1 |  |  |

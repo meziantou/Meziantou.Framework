@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of subapps, and why the test
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 8 | 8 | – |
+| [Tentative](#tentative-tests) | 0 | 8 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **8** | **8** | **–** |
+| **All** | **0** | **8** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,11 +25,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`add-error.tentative.https.html`](https://wpt.fyi/results/subapps/add-error.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`add-success.tentative.https.html`](https://wpt.fyi/results/subapps/add-success.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`disabled-by-permissions-policy.tentative.https.html`](https://wpt.fyi/results/subapps/disabled-by-permissions-policy.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`idlharness.tentative.https.window.js`](https://wpt.fyi/results/subapps/idlharness.tentative.https.window.js) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`list-error.tentative.https.html`](https://wpt.fyi/results/subapps/list-error.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`list-success.tentative.https.html`](https://wpt.fyi/results/subapps/list-success.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`remove-error.tentative.https.html`](https://wpt.fyi/results/subapps/remove-error.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
-| [`remove-success.tentative.https.html`](https://wpt.fyi/results/subapps/remove-success.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Sub Apps API |
+| [`add-error.tentative.https.html`](https://wpt.fyi/results/subapps/add-error.tentative.https.html) | Error | 0 / 6 | NOT IMPLEMENTED | Sub Apps API |
+| [`add-success.tentative.https.html`](https://wpt.fyi/results/subapps/add-success.tentative.https.html) | Error | 0 / 2 | NOT IMPLEMENTED | Sub Apps API |
+| [`disabled-by-permissions-policy.tentative.https.html`](https://wpt.fyi/results/subapps/disabled-by-permissions-policy.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Sub Apps API |
+| [`idlharness.tentative.https.window.js`](https://wpt.fyi/results/subapps/idlharness.tentative.https.window.js) | Fail | 11 / 29 | NOT IMPLEMENTED | Sub Apps API |
+| [`list-error.tentative.https.html`](https://wpt.fyi/results/subapps/list-error.tentative.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Sub Apps API |
+| [`list-success.tentative.https.html`](https://wpt.fyi/results/subapps/list-success.tentative.https.html) | Error | 0 / 2 | NOT IMPLEMENTED | Sub Apps API |
+| [`remove-error.tentative.https.html`](https://wpt.fyi/results/subapps/remove-error.tentative.https.html) | Error | 0 / 5 | NOT IMPLEMENTED | Sub Apps API |
+| [`remove-success.tentative.https.html`](https://wpt.fyi/results/subapps/remove-success.tentative.https.html) | Error | 0 / 2 | NOT IMPLEMENTED | Sub Apps API |

@@ -9,28 +9,28 @@ description: "The results of the web-platform-tests of screen-details, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
+| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **3** | **3** | **–** |
+| **All** | **1** | **3** | **0** | **33%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 3
-  - `hardware`: 3
+- **REQUIRES**: 2
+  - `hardware`: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`permission.https.window.js`](https://wpt.fyi/results/screen-details/permission.https.window.js) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`permission.https.window.js`](https://wpt.fyi/results/screen-details/permission.https.window.js) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`getScreenDetails.tentative.https.window.js`](https://wpt.fyi/results/screen-details/getScreenDetails.tentative.https.window.js) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
-| [`isExtended.tentative.https.window.js`](https://wpt.fyi/results/screen-details/isExtended.tentative.https.window.js) | Disabled | – | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`getScreenDetails.tentative.https.window.js`](https://wpt.fyi/results/screen-details/getScreenDetails.tentative.https.window.js) | Fail | 0 / 5 | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`isExtended.tentative.https.window.js`](https://wpt.fyi/results/screen-details/isExtended.tentative.https.window.js) | Fail | 0 / 2 | REQUIRES(hardware) | Window Management API, multiple screens |

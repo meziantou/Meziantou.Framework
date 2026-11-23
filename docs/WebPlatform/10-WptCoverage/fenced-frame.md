@@ -9,28 +9,28 @@ description: "The results of the web-platform-tests of fenced-frame, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 9 | 9 | – |
+| [Stable](#stable-tests) | 3 | 9 | 0 | 33% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **9** | **9** | **–** |
+| **All** | **3** | **9** | **0** | **33%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 9
+- **NOT IMPLEMENTED**: 6
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`add-fencedframe-to-detached-iframe.https.html`](https://wpt.fyi/results/fenced-frame/add-fencedframe-to-detached-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`fenced-frame-stub.https.html`](https://wpt.fyi/results/fenced-frame/fenced-frame-stub.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`intersection-observer.https.html`](https://wpt.fyi/results/fenced-frame/intersection-observer.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`key-value-store.https.html`](https://wpt.fyi/results/fenced-frame/key-value-store.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`parse-from-string-sandboxed-iframe.https.html`](https://wpt.fyi/results/fenced-frame/parse-from-string-sandboxed-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`script-focus.https.html`](https://wpt.fyi/results/fenced-frame/script-focus.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`setting-null-config-navigates-to-about-blank.https.html`](https://wpt.fyi/results/fenced-frame/setting-null-config-navigates-to-about-blank.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`subframe-loading.https.html`](https://wpt.fyi/results/fenced-frame/subframe-loading.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
-| [`user-activation.https.html`](https://wpt.fyi/results/fenced-frame/user-activation.https.html) | Disabled | – | NOT IMPLEMENTED | fenced frames |
+| [`add-fencedframe-to-detached-iframe.https.html`](https://wpt.fyi/results/fenced-frame/add-fencedframe-to-detached-iframe.https.html) | Pass | 2 / 2 |  |  |
+| [`fenced-frame-stub.https.html`](https://wpt.fyi/results/fenced-frame/fenced-frame-stub.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | fenced frames |
+| [`intersection-observer.https.html`](https://wpt.fyi/results/fenced-frame/intersection-observer.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | fenced frames |
+| [`key-value-store.https.html`](https://wpt.fyi/results/fenced-frame/key-value-store.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | fenced frames |
+| [`parse-from-string-sandboxed-iframe.https.html`](https://wpt.fyi/results/fenced-frame/parse-from-string-sandboxed-iframe.https.html) | Pass | 1 / 1 |  |  |
+| [`script-focus.https.html`](https://wpt.fyi/results/fenced-frame/script-focus.https.html) | Fail | 0 / 9 | NOT IMPLEMENTED | fenced frames |
+| [`setting-null-config-navigates-to-about-blank.https.html`](https://wpt.fyi/results/fenced-frame/setting-null-config-navigates-to-about-blank.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | fenced frames |
+| [`subframe-loading.https.html`](https://wpt.fyi/results/fenced-frame/subframe-loading.https.html) | Pass | 1 / 1 |  |  |
+| [`user-activation.https.html`](https://wpt.fyi/results/fenced-frame/user-activation.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | fenced frames |

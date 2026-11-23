@@ -1,0 +1,43 @@
+{
+  "audio-session/audiosession-default-values.https.html": {
+    "total": 4,
+    "failures": {
+      "AudioSession.state defaults to 'inactive'": "FAIL",
+      "AudioSession.type defaults to 'auto'": "FAIL",
+      "navigator.audioSession exposes an AudioSession instance": "FAIL",
+      "navigator.audioSession is [SameObject]": "FAIL"
+    }
+  },
+  "audio-session/audiosession-type-setter.https.html": {
+    "total": 6,
+    "failures": {
+      "AudioSession.type round-trips for \"ambient\"": "FAIL",
+      "AudioSession.type round-trips for \"auto\"": "FAIL",
+      "AudioSession.type round-trips for \"play-and-record\"": "FAIL",
+      "AudioSession.type round-trips for \"playback\"": "FAIL",
+      "AudioSession.type round-trips for \"transient\"": "FAIL",
+      "AudioSession.type round-trips for \"transient-solo\"": "FAIL"
+    }
+  },
+  "audio-session/idlharness.window.js": {
+    "total": 30,
+    "failures": {
+      "AudioSession interface object length": "FAIL",
+      "AudioSession interface object name": "FAIL",
+      "AudioSession interface: attribute onstatechange": "FAIL",
+      "AudioSession interface: attribute state": "FAIL",
+      "AudioSession interface: attribute type": "FAIL",
+      "AudioSession interface: existence and properties of interface object": "FAIL",
+      "AudioSession interface: existence and properties of interface prototype object": "FAIL",
+      "AudioSession interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "AudioSession interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "AudioSession interface: navigator.audioSession must inherit property \"onstatechange\" with the proper type": "FAIL",
+      "AudioSession interface: navigator.audioSession must inherit property \"state\" with the proper type": "FAIL",
+      "AudioSession interface: navigator.audioSession must inherit property \"type\" with the proper type": "FAIL",
+      "AudioSession must be primary interface of navigator.audioSession": "FAIL",
+      "Navigator interface: attribute audioSession": "FAIL",
+      "Navigator interface: navigator must inherit property \"audioSession\" with the proper type": "FAIL",
+      "Stringification of navigator.audioSession": "FAIL"
+    }
+  }
+}

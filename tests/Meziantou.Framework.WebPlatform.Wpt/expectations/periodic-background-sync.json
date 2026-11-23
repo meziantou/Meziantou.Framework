@@ -1,0 +1,65 @@
+{
+  "periodic-background-sync/idlharness.https.any.js": {
+    "total": 33,
+    "failures": {
+      "PeriodicSyncEvent interface: new PeriodicSyncEvent(\"tag\") must not have property \"tag\"": "FAIL",
+      "PeriodicSyncEvent interface: new PeriodicSyncEvent(\"tag\") must not have property \"undefined\"": "FAIL",
+      "PeriodicSyncEvent must be primary interface of new PeriodicSyncEvent(\"tag\")": "FAIL",
+      "PeriodicSyncManager interface object length": "FAIL",
+      "PeriodicSyncManager interface object name": "FAIL",
+      "PeriodicSyncManager interface: calling register(DOMString, optional BackgroundSyncOptions) on registration.periodicSync with too few arguments must throw TypeError": "FAIL",
+      "PeriodicSyncManager interface: calling unregister(DOMString) on registration.periodicSync with too few arguments must throw TypeError": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface object": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface prototype object": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PeriodicSyncManager interface: operation getTags()": "FAIL",
+      "PeriodicSyncManager interface: operation register(DOMString, optional BackgroundSyncOptions)": "FAIL",
+      "PeriodicSyncManager interface: operation unregister(DOMString)": "FAIL",
+      "PeriodicSyncManager interface: registration.periodicSync must inherit property \"getTags()\" with the proper type": "FAIL",
+      "PeriodicSyncManager interface: registration.periodicSync must inherit property \"register(DOMString, optional BackgroundSyncOptions)\" with the proper type": "FAIL",
+      "PeriodicSyncManager interface: registration.periodicSync must inherit property \"unregister(DOMString)\" with the proper type": "FAIL",
+      "PeriodicSyncManager must be primary interface of registration.periodicSync": "FAIL",
+      "ServiceWorkerGlobalScope interface: onperiodicsync must not have property \"onperiodicsync\"": "FAIL",
+      "ServiceWorkerRegistration interface: attribute periodicSync": "FAIL",
+      "ServiceWorkerRegistration interface: registration must inherit property \"periodicSync\" with the proper type": "FAIL",
+      "Stringification of new PeriodicSyncEvent(\"tag\")": "FAIL",
+      "Stringification of registration.periodicSync": "FAIL"
+    }
+  },
+  "periodic-background-sync/idlharness.https.any.js#dedicatedworker": {
+    "total": 33,
+    "failures": {
+      "PeriodicSyncEvent interface: new PeriodicSyncEvent(\"tag\") must not have property \"tag\"": "FAIL",
+      "PeriodicSyncEvent interface: new PeriodicSyncEvent(\"tag\") must not have property \"undefined\"": "FAIL",
+      "PeriodicSyncEvent must be primary interface of new PeriodicSyncEvent(\"tag\")": "FAIL",
+      "PeriodicSyncManager interface object length": "FAIL",
+      "PeriodicSyncManager interface object name": "FAIL",
+      "PeriodicSyncManager interface: calling register(DOMString, optional BackgroundSyncOptions) on registration.periodicSync with too few arguments must throw TypeError": "FAIL",
+      "PeriodicSyncManager interface: calling unregister(DOMString) on registration.periodicSync with too few arguments must throw TypeError": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface object": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface prototype object": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "PeriodicSyncManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "PeriodicSyncManager interface: operation getTags()": "FAIL",
+      "PeriodicSyncManager interface: operation register(DOMString, optional BackgroundSyncOptions)": "FAIL",
+      "PeriodicSyncManager interface: operation unregister(DOMString)": "FAIL",
+      "PeriodicSyncManager interface: registration.periodicSync must inherit property \"getTags()\" with the proper type": "FAIL",
+      "PeriodicSyncManager interface: registration.periodicSync must inherit property \"register(DOMString, optional BackgroundSyncOptions)\" with the proper type": "FAIL",
+      "PeriodicSyncManager interface: registration.periodicSync must inherit property \"unregister(DOMString)\" with the proper type": "FAIL",
+      "PeriodicSyncManager must be primary interface of registration.periodicSync": "FAIL",
+      "ServiceWorkerGlobalScope interface: onperiodicsync must not have property \"onperiodicsync\"": "FAIL",
+      "ServiceWorkerRegistration interface: attribute periodicSync": "FAIL",
+      "ServiceWorkerRegistration interface: registration must inherit property \"periodicSync\" with the proper type": "FAIL",
+      "Stringification of new PeriodicSyncEvent(\"tag\")": "FAIL",
+      "Stringification of registration.periodicSync": "FAIL"
+    }
+  },
+  "periodic-background-sync/periodicsync.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Periodic Background Sync requires an activated Service Worker": "FAIL",
+      "Periodic Background Sync unregister silently succeeds when Service Worker is unactivated": "FAIL"
+    }
+  }
+}

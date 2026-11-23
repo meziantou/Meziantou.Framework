@@ -1,0 +1,186 @@
+{
+  "webrtc-extensions/RTCConfiguration-alwaysNegotiateDataChannels.html": {
+    "total": 11,
+    "failures": {
+      "alwaysNegotiateDataChannels adds the datachannel m-line after an associated m-line without negotiationneeded": "FAIL",
+      "alwaysNegotiateDataChannels creates a datachannel m-line": "FAIL",
+      "alwaysNegotiateDataChannels defaults to false": "FAIL",
+      "alwaysNegotiateDataChannels does not require negotiation when creating a datachannel": "FAIL",
+      "alwaysNegotiateDataChannels is returned by getConfiguration": "FAIL",
+      "alwaysNegotiateDataChannels puts the datachannel m-line before other new m-lines in a reoffer": "FAIL",
+      "alwaysNegotiateDataChannels puts the datachannel m-line first when createDataChannel is called after addTransceiver": "FAIL",
+      "alwaysNegotiateDataChannels requires negotiation when a datachannel is created after negotiating without one": "FAIL",
+      "setConfiguration cannot modify alwaysNegotiateDataChannels from false to true": "FAIL",
+      "setConfiguration cannot modify alwaysNegotiateDataChannels from true to false": "FAIL",
+      "setConfiguration with an unchanged alwaysNegotiateDataChannels is allowed": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCConfiguration-rtpHeaderEncryptionPolicy.html": {
+    "total": 22,
+    "failures": {
+      "media flows between \"disable\" and \"negotiate\" rtpHeaderEncryptionPolicy endpoints": "FAIL",
+      "media flows between \"negotiate\" and \"disable\" rtpHeaderEncryptionPolicy endpoints": "FAIL",
+      "media flows between \"negotiate\" and \"negotiate\" rtpHeaderEncryptionPolicy endpoints": "FAIL",
+      "media flows between \"require\" and \"require\" rtpHeaderEncryptionPolicy endpoints": "FAIL",
+      "rtpHeaderEncryptionPolicy \"disable\" does not include a=cryptex in the answer to an offer with a=cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy \"disable\" does not include a=cryptex in the offer": "FAIL",
+      "rtpHeaderEncryptionPolicy \"disable\" ignores a=cryptex in the answer": "FAIL",
+      "rtpHeaderEncryptionPolicy \"disable\" is returned by getConfiguration": "FAIL",
+      "rtpHeaderEncryptionPolicy \"negotiate\" accepts an answer without a=cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy \"negotiate\" includes a=cryptex in the answer to an offer with a=cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy \"negotiate\" includes a=cryptex in the offer for all RTP m= sections": "FAIL",
+      "rtpHeaderEncryptionPolicy \"negotiate\" is returned by getConfiguration": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" accepts an offer with media-level a=cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" does not require datachannels to have a cryptex line": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" drops RTP packets not encrypted with cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" fails if cryptex is not negotiated": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" includes a=cryptex in the answer to an offer with a=cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" includes a=cryptex in the offer for all RTP m= sections": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" is returned by getConfiguration": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" rejects an answer from a \"disable\" endpoint": "FAIL",
+      "rtpHeaderEncryptionPolicy \"require\" rejects an answer without a=cryptex": "FAIL",
+      "rtpHeaderEncryptionPolicy defaults to \"negotiate\"": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCOAuthCredential.html": {
+    "total": 4,
+    "failures": {
+      "new RTCPeerConnection(config) - with turns server, credential type and credential from spec should not throw": "FAIL",
+      "new RTCPeerConnection(config) - with turns server, credentialType oauth, and string credential should throw InvalidAccessError": "FAIL",
+      "setConfiguration(config) - with turns server, credential type and credential from spec should not throw": "FAIL",
+      "setConfiguration(config) - with turns server, credentialType oauth, and string credential should throw InvalidAccessError": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpCorruptionDetection-headerExtensionControl.html": {
+    "total": 4,
+    "failures": {
+      "Corruption metrics must not exists for audio.": "FAIL",
+      "Each measurement added to totalCorruptionProbability MUST be in the range [0.0, 1.0].": "FAIL",
+      "If the corruption-detection header extension is present in the RTP packets,corruption metrics must be present, both ways.": "FAIL",
+      "If the corruption-detection header extension is present in the RTP packets,corruption metrics must be present.": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpEncodingParameters-scaleResolutionDownTo.https.html": {
+    "total": 14,
+    "failures": {
+      "addTransceiver: Invalid scaling throws": "FAIL",
+      "addTransceiver: Specifying scaling on a subset of active encodings throws": "FAIL",
+      "addTransceiver: Specifying scaling on inactive encodings is optional": "FAIL",
+      "addTransceiver: scaleResolutionDownBy is ignored when scaleResolutionDownTo is specified": "FAIL",
+      "addTransceiver: scaleResolutionDownTo with half resolution": "FAIL",
+      "getParameters reflect the current scaleResolutionDownTo": "FAIL",
+      "scaleResolutionDownTo does not change aspect ratio": "FAIL",
+      "scaleResolutionDownTo is orientation agnostic": "FAIL",
+      "scaleResolutionDownTo with simulcast": "FAIL",
+      "setParameters: Invalid scaling throws": "FAIL",
+      "setParameters: Modify scaleResolutionDownTo while sending": "FAIL",
+      "setParameters: Specifying scaling on a subset of active encodings throws": "FAIL",
+      "setParameters: Specifying scaling on inactive encodings is optional": "FAIL",
+      "setParameters: scaleResolutionDownBy is ignored when scaleResolutionDownTo is specified": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpParameters-adaptivePtime.html": {
+    "total": 2,
+    "failures": {
+      "Setting adaptivePtime should be accepted": "FAIL",
+      "adaptivePtime should be default false": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpParameters-encodingComplexity-stream.https.html": {
+    "total": 1,
+    "failures": {
+      "Active video stream continues encoding across encodingComplexity updates and reset": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpParameters-encodingComplexity.html": {
+    "total": 11,
+    "failures": {
+      "Audio transceiver ignores valid encodingComplexity in addTransceiver and setParameters": "FAIL",
+      "addTransceiver('video') preserves encodingComplexity 'high'": "FAIL",
+      "addTransceiver('video') preserves encodingComplexity 'low'": "FAIL",
+      "addTransceiver('video') preserves encodingComplexity 'maximum'": "FAIL",
+      "addTransceiver('video') preserves encodingComplexity 'normal'": "FAIL",
+      "addTransceiver('video') preserves encodingComplexity 'very-high'": "FAIL",
+      "addTransceiver() with invalid encodingComplexity throws TypeError": "FAIL",
+      "encodingComplexity can be configured independently per simulcast encoding": "FAIL",
+      "encodingComplexity is omitted by default": "FAIL",
+      "setParameters() can set, update, and clear encodingComplexity on video sender": "FAIL",
+      "setParameters() with invalid encodingComplexity rejects with TypeError": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpSender-setParameters-keyFrame.html": {
+    "total": 5,
+    "failures": {
+      "setParameters() accepts empty encodingOptions regardless of encodings length": "FAIL",
+      "setParameters() ignores encodingOptions for audio": "FAIL",
+      "setParameters() rejects when encodingOptions length does not match encodings": "FAIL",
+      "setParameters() second argument can be used to trigger keyFrame generation": "FAIL",
+      "setParameters() second argument can be used to trigger keyFrame generation (simulcast)": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpSynchronizationSource-captureTimestamp.html": {
+    "total": 7,
+    "failures": {
+      "Audio and video RTCRtpSynchronizationSource.captureTimestamp are comparable": "FAIL",
+      "[audio] getSynchronizationSources() should contain captureTimestamp if absolute capture time RTP header extension is negotiated": "FAIL",
+      "[audio] getSynchronizationSources() should not contain captureTimestamp if absolute capture time RTP header extension is not offered": "FAIL",
+      "[audio] getSynchronizationSources() should not contain captureTimestamp if absolute capture time RTP header extension is offered, but not answered": "FAIL",
+      "[video] getSynchronizationSources() should contain captureTimestamp if absolute capture time RTP header extension is negotiated": "FAIL",
+      "[video] getSynchronizationSources() should not contain captureTimestamp if absolute capture time RTP header extension is not offered": "FAIL",
+      "[video] getSynchronizationSources() should not contain captureTimestamp if absolute capture time RTP header extension is offered, but not answered": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpSynchronizationSource-senderCaptureTimeOffset.html": {
+    "total": 7,
+    "failures": {
+      "Audio and video RTCRtpSynchronizationSource.senderCaptureTimeOffset must be zero": "FAIL",
+      "[audio] getSynchronizationSources() should contain senderCaptureTimeOffset if absolute capture time RTP header extension is negotiated": "FAIL",
+      "[audio] getSynchronizationSources() should not contain senderCaptureTimeOffset if absolute capture time RTP header extension is not offered": "FAIL",
+      "[audio] getSynchronizationSources() should not contain senderCaptureTimeOffset if absolute capture time RTP header extension is offered, but not answered": "FAIL",
+      "[video] getSynchronizationSources() should contain senderCaptureTimeOffset if absolute capture time RTP header extension is negotiated": "FAIL",
+      "[video] getSynchronizationSources() should not contain senderCaptureTimeOffset if absolute capture time RTP header extension is not offered": "FAIL",
+      "[video] getSynchronizationSources() should not contain senderCaptureTimeOffset if absolute capture time RTP header extension is offered, but not answered": "FAIL"
+    }
+  },
+  "webrtc-extensions/RTCRtpTransceiver-headerExtensionControl.html": {
+    "total": 21,
+    "failures": {
+      "A subsequent offer from the other side will not reoffer extensions not negotiated by the initial offerer": "FAIL",
+      "Answer header extensions are a subset of the offered header extensions": "FAIL",
+      "Extensions not negotiated by the peer are `stopped` in getNegotiatedHeaderExtensions": "FAIL",
+      "Header extensions can be deactivated on a per-mline basis": "FAIL",
+      "Header extensions can be reactivated in subsequent offers": "FAIL",
+      "Prior to negotiation, getNegotiatedHeaderExtensions() returns `stopped` for all extensions.": "FAIL",
+      "Stopped extensions do not turn up in offers": "FAIL",
+      "The set of negotiated extensions has the same size as the set of extensions to negotiate": "FAIL",
+      "Unstopped extensions turn up in offer": "FAIL",
+      "addTransceiver copies header extensions from the first non-stopping transceiver of the same kind": "FAIL",
+      "addTransceiver copies header extensions from the first transceiver of the same kind": "FAIL",
+      "copies the direction of header extensions from the first transceiver of the same kind when the extension is rejected": "FAIL",
+      "modified direction set by setHeaderExtensionsToNegotiate is visible in subsequent getHeaderExtensionsToNegotiate": "FAIL",
+      "setHeaderExtensionsToNegotiate throws InvalidModificationError on encountering unknown URI": "FAIL",
+      "setHeaderExtensionsToNegotiate throws InvalidModificationError when adding elements to the list": "FAIL",
+      "setHeaderExtensionsToNegotiate throws InvalidModificationError when removing elements from the list": "FAIL",
+      "setHeaderExtensionsToNegotiate throws InvalidModificationError when setting a mandatory header extension's direction to something else than \"sendrecv\"": "FAIL",
+      "setHeaderExtensionsToNegotiate throws TypeError on encountering missing URI": "FAIL",
+      "setHeaderExtensionsToNegotiate throws TypeError on encountering missing direction": "FAIL",
+      "the audio transceiver.getHeaderExtensionsToNegotiate() includes mandatory extensions": "FAIL",
+      "the video transceiver.getHeaderExtensionsToNegotiate() includes mandatory extensions": "FAIL"
+    }
+  },
+  "webrtc-extensions/targetLatency.html": {
+    "total": 3,
+    "failures": {
+      "Changing targetLatency": "FAIL",
+      "Invalid targetLatency": "FAIL",
+      "Valid targetLatency": "FAIL"
+    }
+  },
+  "webrtc-extensions/transfer-datachannel-service-worker.https.html": {
+    "harness": "ERROR",
+    "total": 1,
+    "failures": {
+      "offerer data channel in service worker": "TIMEOUT"
+    }
+  }
+}

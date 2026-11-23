@@ -9,24 +9,24 @@ description: "The results of the web-platform-tests of file-system-access, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 5 | 5 | – |
+| [Stable](#stable-tests) | 1 | 5 | 0 | 20% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
+| **All** | **1** | **5** | **0** | **20%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 4
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`getDirectory.https.any.js`](https://wpt.fyi/results/file-system-access/getDirectory.https.any.js) | Disabled | – | NOT IMPLEMENTED | File System Access API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/file-system-access/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | File System Access API |
-| [`opaque-origin.https.window.js`](https://wpt.fyi/results/file-system-access/opaque-origin.https.window.js) | Disabled | – | NOT IMPLEMENTED | File System Access API |
-| [`sandboxed_FileSystemDirectoryHandle-move.https.any.js`](https://wpt.fyi/results/file-system-access/sandboxed_FileSystemDirectoryHandle-move.https.any.js) | Disabled | – | NOT IMPLEMENTED | File System Access API |
-| [`showPicker-errors.https.window.js`](https://wpt.fyi/results/file-system-access/showPicker-errors.https.window.js) | Disabled | – | NOT IMPLEMENTED | File System Access API |
+| [`getDirectory.https.any.js`](https://wpt.fyi/results/file-system-access/getDirectory.https.any.js) | Pass | 6 / 6 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/file-system-access/idlharness.https.any.js) | Fail | 33 / 46 | NOT IMPLEMENTED | File System Access API |
+| [`opaque-origin.https.window.js`](https://wpt.fyi/results/file-system-access/opaque-origin.https.window.js) | Fail | 1 / 4 | NOT IMPLEMENTED | File System Access API |
+| [`sandboxed_FileSystemDirectoryHandle-move.https.any.js`](https://wpt.fyi/results/file-system-access/sandboxed_FileSystemDirectoryHandle-move.https.any.js) | Fail | 8 / 34 | NOT IMPLEMENTED | File System Access API |
+| [`showPicker-errors.https.window.js`](https://wpt.fyi/results/file-system-access/showPicker-errors.https.window.js) | Fail | 0 / 71 | NOT IMPLEMENTED | File System Access API |

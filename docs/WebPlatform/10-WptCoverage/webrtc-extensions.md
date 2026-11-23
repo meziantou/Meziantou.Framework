@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webrtc-extensions, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 14 | 14 | – |
+| [Stable](#stable-tests) | 0 | 14 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **14** | **14** | **–** |
+| **All** | **0** | **14** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,17 +25,17 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCConfiguration-alwaysNegotiateDataChannels.html`](https://wpt.fyi/results/webrtc-extensions/RTCConfiguration-alwaysNegotiateDataChannels.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCConfiguration-rtpHeaderEncryptionPolicy.html`](https://wpt.fyi/results/webrtc-extensions/RTCConfiguration-rtpHeaderEncryptionPolicy.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCOAuthCredential.html`](https://wpt.fyi/results/webrtc-extensions/RTCOAuthCredential.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpCorruptionDetection-headerExtensionControl.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpCorruptionDetection-headerExtensionControl.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpEncodingParameters-scaleResolutionDownTo.https.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpEncodingParameters-scaleResolutionDownTo.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-adaptivePtime.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpParameters-adaptivePtime.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-encodingComplexity-stream.https.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpParameters-encodingComplexity-stream.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-encodingComplexity.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpParameters-encodingComplexity.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpSender-setParameters-keyFrame.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpSender-setParameters-keyFrame.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpSynchronizationSource-captureTimestamp.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpSynchronizationSource-captureTimestamp.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpSynchronizationSource-senderCaptureTimeOffset.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpSynchronizationSource-senderCaptureTimeOffset.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpTransceiver-headerExtensionControl.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpTransceiver-headerExtensionControl.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`targetLatency.html`](https://wpt.fyi/results/webrtc-extensions/targetLatency.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`transfer-datachannel-service-worker.https.html`](https://wpt.fyi/results/webrtc-extensions/transfer-datachannel-service-worker.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
+| [`RTCConfiguration-alwaysNegotiateDataChannels.html`](https://wpt.fyi/results/webrtc-extensions/RTCConfiguration-alwaysNegotiateDataChannels.html) | Fail | 0 / 11 | NOT IMPLEMENTED | WebRTC |
+| [`RTCConfiguration-rtpHeaderEncryptionPolicy.html`](https://wpt.fyi/results/webrtc-extensions/RTCConfiguration-rtpHeaderEncryptionPolicy.html) | Fail | 0 / 22 | NOT IMPLEMENTED | WebRTC |
+| [`RTCOAuthCredential.html`](https://wpt.fyi/results/webrtc-extensions/RTCOAuthCredential.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpCorruptionDetection-headerExtensionControl.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpCorruptionDetection-headerExtensionControl.html) | Fail | 0 / 4 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpEncodingParameters-scaleResolutionDownTo.https.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpEncodingParameters-scaleResolutionDownTo.https.html) | Fail | 0 / 14 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-adaptivePtime.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpParameters-adaptivePtime.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-encodingComplexity-stream.https.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpParameters-encodingComplexity-stream.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-encodingComplexity.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpParameters-encodingComplexity.html) | Fail | 0 / 11 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpSender-setParameters-keyFrame.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpSender-setParameters-keyFrame.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpSynchronizationSource-captureTimestamp.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpSynchronizationSource-captureTimestamp.html) | Fail | 0 / 7 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpSynchronizationSource-senderCaptureTimeOffset.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpSynchronizationSource-senderCaptureTimeOffset.html) | Fail | 0 / 7 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpTransceiver-headerExtensionControl.html`](https://wpt.fyi/results/webrtc-extensions/RTCRtpTransceiver-headerExtensionControl.html) | Fail | 0 / 21 | NOT IMPLEMENTED | WebRTC |
+| [`targetLatency.html`](https://wpt.fyi/results/webrtc-extensions/targetLatency.html) | Fail | 0 / 3 | NOT IMPLEMENTED | WebRTC |
+| [`transfer-datachannel-service-worker.https.html`](https://wpt.fyi/results/webrtc-extensions/transfer-datachannel-service-worker.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | WebRTC |

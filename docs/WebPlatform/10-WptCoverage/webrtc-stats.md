@@ -9,30 +9,30 @@ description: "The results of the web-platform-tests of webrtc-stats, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 11 | 11 | – |
+| [Stable](#stable-tests) | 1 | 11 | 0 | 9% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **11** | **11** | **–** |
+| **All** | **1** | **11** | **0** | **9%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 11
+- **NOT IMPLEMENTED**: 10
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCDataChannel-stats.html`](https://wpt.fyi/results/webrtc-stats/RTCDataChannel-stats.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`getStats-RTCAudioSourceStats.https.html`](https://wpt.fyi/results/webrtc-stats/getStats-RTCAudioSourceStats.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`getStats-remote-candidate-address.html`](https://wpt.fyi/results/webrtc-stats/getStats-remote-candidate-address.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`getStats-remote-candidate-ufrag.html`](https://wpt.fyi/results/webrtc-stats/getStats-remote-candidate-ufrag.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`hardware-capability-stats.https.html`](https://wpt.fyi/results/webrtc-stats/hardware-capability-stats.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`idlharness.window.js`](https://wpt.fyi/results/webrtc-stats/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`outbound-rtp.https.html`](https://wpt.fyi/results/webrtc-stats/outbound-rtp.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`rtp-stats-creation.html`](https://wpt.fyi/results/webrtc-stats/rtp-stats-creation.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`stats-creation.html`](https://wpt.fyi/results/webrtc-stats/stats-creation.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`supported-stats.https.html`](https://wpt.fyi/results/webrtc-stats/supported-stats.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`video-psnr.https.html`](https://wpt.fyi/results/webrtc-stats/video-psnr.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
+| [`RTCDataChannel-stats.html`](https://wpt.fyi/results/webrtc-stats/RTCDataChannel-stats.html) | Fail | 0 / 15 | NOT IMPLEMENTED | WebRTC |
+| [`getStats-RTCAudioSourceStats.https.html`](https://wpt.fyi/results/webrtc-stats/getStats-RTCAudioSourceStats.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | WebRTC |
+| [`getStats-remote-candidate-address.html`](https://wpt.fyi/results/webrtc-stats/getStats-remote-candidate-address.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC |
+| [`getStats-remote-candidate-ufrag.html`](https://wpt.fyi/results/webrtc-stats/getStats-remote-candidate-ufrag.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC |
+| [`hardware-capability-stats.https.html`](https://wpt.fyi/results/webrtc-stats/hardware-capability-stats.https.html) | Fail | 0 / 12 | NOT IMPLEMENTED | WebRTC |
+| [`idlharness.window.js`](https://wpt.fyi/results/webrtc-stats/idlharness.window.js) | Pass | 2 / 2 |  |  |
+| [`outbound-rtp.https.html`](https://wpt.fyi/results/webrtc-stats/outbound-rtp.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC |
+| [`rtp-stats-creation.html`](https://wpt.fyi/results/webrtc-stats/rtp-stats-creation.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC |
+| [`stats-creation.html`](https://wpt.fyi/results/webrtc-stats/stats-creation.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC |
+| [`supported-stats.https.html`](https://wpt.fyi/results/webrtc-stats/supported-stats.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC |
+| [`video-psnr.https.html`](https://wpt.fyi/results/webrtc-stats/video-psnr.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | WebRTC |

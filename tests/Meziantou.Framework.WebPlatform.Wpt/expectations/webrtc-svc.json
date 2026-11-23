@@ -1,0 +1,94 @@
+{
+  "webrtc-svc/RTCRtpParameters-scalability-av1.html": {
+    "total": 28,
+    "failures": {
+      "video/AV1 - L1T1 should produce valid video content": "FAIL",
+      "video/AV1 - L1T2 should produce valid video content": "FAIL",
+      "video/AV1 - L1T3 should produce valid video content": "FAIL",
+      "video/AV1 - L2T1 should produce valid video content": "FAIL",
+      "video/AV1 - L2T1h should produce valid video content": "FAIL",
+      "video/AV1 - L2T2 should produce valid video content": "FAIL",
+      "video/AV1 - L2T2_KEY should produce valid video content": "FAIL",
+      "video/AV1 - L2T2h should produce valid video content": "FAIL",
+      "video/AV1 - L2T3 should produce valid video content": "FAIL",
+      "video/AV1 - L2T3_KEY should produce valid video content": "FAIL",
+      "video/AV1 - L2T3h should produce valid video content": "FAIL",
+      "video/AV1 - L3T1 should produce valid video content": "FAIL",
+      "video/AV1 - L3T2 should produce valid video content": "FAIL",
+      "video/AV1 - L3T2_KEY should produce valid video content": "FAIL",
+      "video/AV1 - L3T3 should produce valid video content": "FAIL",
+      "video/AV1 - L3T3_KEY should produce valid video content": "FAIL",
+      "video/AV1 - S2T1 should produce valid video content": "FAIL",
+      "video/AV1 - S2T1h should produce valid video content": "FAIL",
+      "video/AV1 - S2T2 should produce valid video content": "FAIL",
+      "video/AV1 - S2T2h should produce valid video content": "FAIL",
+      "video/AV1 - S2T3 should produce valid video content": "FAIL",
+      "video/AV1 - S2T3h should produce valid video content": "FAIL",
+      "video/AV1 - S3T1 should produce valid video content": "FAIL",
+      "video/AV1 - S3T1h should produce valid video content": "FAIL",
+      "video/AV1 - S3T2 should produce valid video content": "FAIL",
+      "video/AV1 - S3T2h should produce valid video content": "FAIL",
+      "video/AV1 - S3T3 should produce valid video content": "FAIL",
+      "video/AV1 - S3T3h should produce valid video content": "FAIL"
+    }
+  },
+  "webrtc-svc/RTCRtpParameters-scalability-h264.html": {
+    "total": 3,
+    "failures": {
+      "video/H264 - L1T1 should produce valid video content": "FAIL",
+      "video/H264 - L1T2 should produce valid video content": "FAIL",
+      "video/H264 - L1T3 should produce valid video content": "FAIL"
+    }
+  },
+  "webrtc-svc/RTCRtpParameters-scalability-vp8.html": {
+    "total": 3,
+    "failures": {
+      "video/VP8 - L1T1 should produce valid video content": "FAIL",
+      "video/VP8 - L1T2 should produce valid video content": "FAIL",
+      "video/VP8 - L1T3 should produce valid video content": "FAIL"
+    }
+  },
+  "webrtc-svc/RTCRtpParameters-scalability-vp9.html": {
+    "total": 28,
+    "failures": {
+      "video/VP9 - L1T1 should produce valid video content": "FAIL",
+      "video/VP9 - L1T2 should produce valid video content": "FAIL",
+      "video/VP9 - L1T3 should produce valid video content": "FAIL",
+      "video/VP9 - L2T1 should produce valid video content": "FAIL",
+      "video/VP9 - L2T1h should produce valid video content": "FAIL",
+      "video/VP9 - L2T2 should produce valid video content": "FAIL",
+      "video/VP9 - L2T2_KEY should produce valid video content": "FAIL",
+      "video/VP9 - L2T2h should produce valid video content": "FAIL",
+      "video/VP9 - L2T3 should produce valid video content": "FAIL",
+      "video/VP9 - L2T3_KEY should produce valid video content": "FAIL",
+      "video/VP9 - L2T3h should produce valid video content": "FAIL",
+      "video/VP9 - L3T1 should produce valid video content": "FAIL",
+      "video/VP9 - L3T2 should produce valid video content": "FAIL",
+      "video/VP9 - L3T2_KEY should produce valid video content": "FAIL",
+      "video/VP9 - L3T3 should produce valid video content": "FAIL",
+      "video/VP9 - L3T3_KEY should produce valid video content": "FAIL",
+      "video/VP9 - S2T1 should produce valid video content": "FAIL",
+      "video/VP9 - S2T1h should produce valid video content": "FAIL",
+      "video/VP9 - S2T2 should produce valid video content": "FAIL",
+      "video/VP9 - S2T2h should produce valid video content": "FAIL",
+      "video/VP9 - S2T3 should produce valid video content": "FAIL",
+      "video/VP9 - S2T3h should produce valid video content": "FAIL",
+      "video/VP9 - S3T1 should produce valid video content": "FAIL",
+      "video/VP9 - S3T1h should produce valid video content": "FAIL",
+      "video/VP9 - S3T2 should produce valid video content": "FAIL",
+      "video/VP9 - S3T2h should produce valid video content": "FAIL",
+      "video/VP9 - S3T3 should produce valid video content": "FAIL",
+      "video/VP9 - S3T3h should produce valid video content": "FAIL"
+    }
+  },
+  "webrtc-svc/RTCRtpParameters-scalability.html": {
+    "total": 5,
+    "failures": {
+      "L3T3 on VP8 should return something other than L3T3": "FAIL",
+      "Not setting a scalability mode results in no mode set before negotiation": "FAIL",
+      "Not setting sendEncodings results in no mode info before negotiation": "FAIL",
+      "Setting a scalability mode to nonsense throws an exception": "FAIL",
+      "Setting and updating scalabilityMode to a legal value should be accepted": "FAIL"
+    }
+  }
+}

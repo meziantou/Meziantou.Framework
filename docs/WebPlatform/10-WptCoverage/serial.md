@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of serial, and why the tests
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 8 | 8 | – |
+| [Stable](#stable-tests) | 0 | 8 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **8** | **8** | **–** |
+| **All** | **0** | **8** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,11 +26,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`getPorts/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/serial/getPorts/sandboxed_iframe.https.window.js) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/serial/idlharness.https.any.js) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`requestPort/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/serial/requestPort/sandboxed_iframe.https.window.js) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`serial-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/serial/serial-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`serial-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/serial/serial-allowed-by-permissions-policy-attribute.https.sub.html) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`serial-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/serial/serial-allowed-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`serial-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/serial/serial-default-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Web Serial API |
-| [`serial-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/serial/serial-disabled-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | Web Serial API |
+| [`getPorts/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/serial/getPorts/sandboxed_iframe.https.window.js) | Timeout | 0 / 1 | REQUIRES(hardware) | Web Serial API |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/serial/idlharness.https.any.js) | Fail | 42 / 113 | REQUIRES(hardware) | Web Serial API |
+| [`requestPort/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/serial/requestPort/sandboxed_iframe.https.window.js) | Fail | 0 / 1 | REQUIRES(hardware) | Web Serial API |
+| [`serial-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/serial/serial-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Timeout | 0 / 4 | REQUIRES(hardware) | Web Serial API |
+| [`serial-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/serial/serial-allowed-by-permissions-policy-attribute.https.sub.html) | Timeout | 0 / 5 | REQUIRES(hardware) | Web Serial API |
+| [`serial-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/serial/serial-allowed-by-permissions-policy.https.sub.html) | Timeout | 0 / 6 | REQUIRES(hardware) | Web Serial API |
+| [`serial-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/serial/serial-default-permissions-policy.https.sub.html) | Timeout | 0 / 3 | REQUIRES(hardware) | Web Serial API |
+| [`serial-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/serial/serial-disabled-by-permissions-policy.https.sub.html) | Timeout | 0 / 6 | REQUIRES(hardware) | Web Serial API |

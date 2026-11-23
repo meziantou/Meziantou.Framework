@@ -1,0 +1,66 @@
+{
+  "css/css-exclusions/css3-exclusions/exclusions-wrap-flow-01.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-exclusions/css3-exclusions/exclusions-wrap-flow-02.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-exclusions/css3-exclusions/exclusions-wrap-flow-03.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-exclusions/css3-exclusions/exclusions-wrap-flow-04.xht": {
+    "reftest": "FAIL"
+  },
+  "css/css-exclusions/inheritance.html": {
+    "total": 4
+  },
+  "css/css-exclusions/wrap-flow-001.html": {
+    "total": 1,
+    "failures": {
+      "Verify top of the 'linesBelow' span is positioned correctly": "FAIL"
+    }
+  },
+  "css/css-exclusions/wrap-flow-002.html": {
+    "total": 4,
+    "failures": {
+      "Verify right of the 'lineLeft2' span is positioned correctly": "FAIL",
+      "Verify top of the 'lineLeft2' span is positioned correctly": "FAIL",
+      "Verify top of the 'linesBelow' span is positioned correctly": "FAIL"
+    }
+  },
+  "css/css-exclusions/wrap-flow-003.html": {
+    "total": 5
+  },
+  "css/css-exclusions/wrap-flow-004.html": {
+    "total": 10,
+    "failures": {
+      "Verify left of the 'line2' span is positioned correctly": "FAIL",
+      "Verify left of the 'line3' span is positioned correctly": "FAIL",
+      "Verify left of the 'line4' span is positioned correctly": "FAIL"
+    }
+  },
+  "css/css-exclusions/wrap-flow-005.html": {
+    "total": 10,
+    "failures": {
+      "Verify left of the 'line2' span is positioned correctly": "FAIL",
+      "Verify left of the 'line3' span is positioned correctly": "FAIL",
+      "Verify left of the 'line4' span is positioned correctly": "FAIL"
+    }
+  },
+  "css/css-exclusions/wrap-flow-006.html": {
+    "total": 8,
+    "failures": {
+      "Verify left of the 'line2' span is positioned correctly": "FAIL",
+      "Verify left of the 'line3' span is positioned correctly": "FAIL",
+      "Verify top of the 'line3' span is positioned correctly": "FAIL",
+      "Verify top of the 'line4' span is positioned correctly": "FAIL"
+    }
+  },
+  "css/css-exclusions/wrap-through-001.html": {
+    "total": 8,
+    "failures": {
+      "Verify left of the second line on the right of the exclusion": "FAIL",
+      "Verify left of the third line on the right of the exclusion": "FAIL"
+    }
+  }
+}

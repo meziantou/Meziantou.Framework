@@ -9,42 +9,42 @@ description: "The results of the web-platform-tests of speech-api, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 16 | 16 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 1 | 16 | 0 | 6% |
+| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **18** | **18** | **–** |
+| **All** | **1** | **18** | **0** | **6%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 18
+- **NOT IMPLEMENTED**: 17
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`SpeechGrammarList-item.https.html`](https://wpt.fyi/results/speech-api/SpeechGrammarList-item.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-availableOnDevice.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-availableOnDevice.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-basics.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-basics.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-detached-iframe.window.js`](https://wpt.fyi/results/speech-api/SpeechRecognition-detached-iframe.window.js) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-installOnDevice.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-installOnDevice.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-non-secure-context.http.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-non-secure-context.http.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-onerror.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-onerror.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechRecognition-onstart-onend.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-onstart-onend.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesis-speak-events.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-speak-events.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesis-speak-twice.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-speak-twice.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesisErrorEvent-constructor.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisErrorEvent-constructor.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesisEvent-constructor.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisEvent-constructor.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesisEvent-properties.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisEvent-properties.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesisUtterance-basics.https.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisUtterance-basics.https.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`historical.html`](https://wpt.fyi/results/speech-api/historical.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/speech-api/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechGrammarList-item.https.html`](https://wpt.fyi/results/speech-api/SpeechGrammarList-item.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechRecognition-availableOnDevice.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-availableOnDevice.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechRecognition-basics.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-basics.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechRecognition-detached-iframe.window.js`](https://wpt.fyi/results/speech-api/SpeechRecognition-detached-iframe.window.js) | Fail | 1 / 2 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechRecognition-installOnDevice.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-installOnDevice.https.html) | Fail | 0 / 5 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechRecognition-non-secure-context.http.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-non-secure-context.http.html) | Pass | 8 / 8 |  |  |
+| [`SpeechRecognition-onerror.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-onerror.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechRecognition-onstart-onend.https.html`](https://wpt.fyi/results/speech-api/SpeechRecognition-onstart-onend.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesis-speak-events.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-speak-events.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesis-speak-twice.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-speak-twice.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesisErrorEvent-constructor.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisErrorEvent-constructor.html) | Fail | 0 / 8 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesisEvent-constructor.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisEvent-constructor.html) | Fail | 0 / 6 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesisEvent-properties.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisEvent-properties.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesisUtterance-basics.https.html`](https://wpt.fyi/results/speech-api/SpeechSynthesisUtterance-basics.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | Web Speech API |
+| [`historical.html`](https://wpt.fyi/results/speech-api/historical.html) | Fail | 6 / 9 | NOT IMPLEMENTED | Web Speech API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/speech-api/idlharness.https.window.js) | Fail | 11 / 255 | NOT IMPLEMENTED | Web Speech API |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`SpeechSynthesis-pause-resume.tentative.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-pause-resume.tentative.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
-| [`SpeechSynthesis-speak-without-activation-fails.tentative.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-speak-without-activation-fails.tentative.html) | Disabled | – | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesis-pause-resume.tentative.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-pause-resume.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |
+| [`SpeechSynthesis-speak-without-activation-fails.tentative.html`](https://wpt.fyi/results/speech-api/SpeechSynthesis-speak-without-activation-fails.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Speech API |

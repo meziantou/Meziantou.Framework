@@ -1,0 +1,59 @@
+{
+  "old-tests/submission/Microsoft/foreigncontent/foreign_content_014.html": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/foreigncontent/foreign_content_015.html": {
+    "total": 1,
+    "failures": {
+      "HTML 5 Foreign Content SVG in HTML ": "FAIL"
+    }
+  },
+  "old-tests/submission/Microsoft/history/history_000.htm": {
+    "total": 25
+  },
+  "old-tests/submission/Microsoft/selection/RemoveElementContainingSelection.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/collapseToEnd.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/collapseToStart.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/deleteFromDocument.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/getRangeAt.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/insertNodeIntoSelection.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/removeAllRanges.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/removeRange.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/select.htm": {
+    "total": 1,
+    "failures": {
+      "HTML5 Selection: Call select() on a text field": "FAIL"
+    }
+  },
+  "old-tests/submission/Microsoft/selection/selectAllChildren.htm": {
+    "total": 1
+  },
+  "old-tests/submission/Microsoft/selection/selectionStartEnd.htm": {
+    "total": 1,
+    "failures": {
+      "HTML5 Selection: Set selectionStart and selectionEnd on a text field": "FAIL"
+    }
+  },
+  "old-tests/submission/Microsoft/selection/setSelectionRange.htm": {
+    "total": 1,
+    "failures": {
+      "HTML5 Selection: Call setSelectionRange() on a text field": "FAIL"
+    }
+  }
+}

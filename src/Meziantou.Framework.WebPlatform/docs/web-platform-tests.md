@@ -414,7 +414,11 @@ dotnet run --project tools/Meziantou.Framework.WebPlatform.SpecUpdate -- wpt-cov
 ```
 
 
-The pinned WPT paths are listed in `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`. Each group of `WptTests` runs the tests of a directory, e.g.
+The pinned WPT paths are listed in `tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`. Every directory that
+contains a testharness.js test, a reftest or a crash test of the manifest is fetched, including the directories of the
+features that are not implemented (e.g. `webrtc`, `webnn`) and the ones that need hardware (e.g. `bluetooth`, `webxr`):
+their tests run and stay in the expectations as failures, with their reasons, so a test that starts passing is noticed.
+When the update of the test suite adds a directory, add it to the paths and to a group. Each group of `WptTests` runs the tests of a directory, e.g.
 `dom`, `css/selectors`, `html/semantics/forms`. The `CssParsing` group runs the `css/*/parsing` directories (except
 `css/selectors/parsing`, which is part of `CssSelectors`): the parsing and serialization of the values of the CSS
 properties (`*-valid.html`, `*-invalid.html`), their computed values (`*-computed.html`) and the shorthands. The
@@ -427,11 +431,8 @@ in parallel with the server garbage collector (the workstation GC pauses all the
 The `css/*/parsing` directories are fetched for every CSS specification (the `CssParsing` group). The whole directory of
 most specifications is fetched too (`tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`): its testharness.js tests are run by its own group (e.g.
 `CssImages` runs `css/css-images` without its `parsing` directory) and its reftests by `WptReftests`. The tests that
-need what the library does not have stay in the expectations as failures, with their reasons. The following tests are not
-run (see the disabled tests of [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) and their reasons):
-
-- The specifications that are not implemented: `css-layout-api`, `css-paint-api`,
-  `css-navigation`, `css-exclusions`, `css-device-adapt`.
+need what the library does not have stay in the expectations as failures, with their reasons, including the ones of the
+specifications that are not implemented (e.g. `css-exclusions`, `css-navigation`).
 
 ## Forced colors mode
 
@@ -642,7 +643,7 @@ decoded-body path.
 Every test that does not pass has a reason in the [coverage pages](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md):
 
 - The tests that are not run: the reason of `wpt-skip.json`, or else the `notRun` reason of `wpt-reasons.json` (e.g. a
-  directory that is not fetched).
+  test that the runner cannot load, such as the `.extension.js` tests of `web-extensions`).
 - The tests that are run and do not pass (a failing subtest, or a harness status other than `OK`): the `failing`
   reason of `wpt-reasons.json`, or the `failingReftests` reason for a reftest (separate from the testharness.js tests of the
   same directories, so a directory can share a reason for its reftests, e.g. a painting feature of a later issue).

@@ -1,0 +1,42 @@
+{
+  "web-install/navigator-install-bad-inputs.tentative.https.html": {
+    "total": 10,
+    "failures": {
+      "navigator.install(url) rejects with TypeError.": "FAIL",
+      "navigator.install(url, manifestId) rejects with TypeError.": "FAIL",
+      "navigator.install({installurl}) rejects with TypeError when manifest is missing.": "FAIL",
+      "navigator.install({manifest, manifestId: \" \\t\\n \"}) rejects with TypeError for whitespace-only manifestId.": "FAIL",
+      "navigator.install({manifest, manifestId: \"\"}) rejects with TypeError for empty manifestId.": "FAIL",
+      "navigator.install({manifest, manifestId: \"https://[\"}) rejects with TypeError for invalid manifestId.": "FAIL",
+      "navigator.install({manifest: \" \\t\\n \"}) rejects with TypeError for a whitespace-only manifest URL.": "FAIL",
+      "navigator.install({manifest: \"\"}) rejects with TypeError for empty manifest URL.": "FAIL",
+      "navigator.install({manifest: \"https://[\"}) rejects with TypeError for invalid manifest URL.": "FAIL",
+      "navigator.install({}) rejects with TypeError when manifest is missing.": "FAIL"
+    }
+  },
+  "web-install/navigator-install-defined.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "navigator.install() is defined.": "FAIL"
+    }
+  },
+  "web-install/navigator-install-not-defined.tentative.http.html": {
+    "total": 2
+  },
+  "web-install/navigator-install-sandboxed-iframe.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "navigator.install() in a same-origin iframe should throw InvalidStateError.": "FAIL",
+      "navigator.install() in sandboxed iframe (allow-scripts allow-same-origin) should throw SecurityError.": "FAIL",
+      "navigator.install() in sandboxed iframe (allow-scripts) should throw SecurityError.": "FAIL"
+    }
+  },
+  "web-install/navigator-install-user-activation.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "navigator.install() rejects with NotAllowedError without a user activation.": "FAIL",
+      "navigator.install({manifest, installurl}) ignores installurl and rejects with NotAllowedError without a user activation.": "FAIL",
+      "navigator.install({manifest}) rejects with NotAllowedError without a user activation.": "FAIL"
+    }
+  }
+}

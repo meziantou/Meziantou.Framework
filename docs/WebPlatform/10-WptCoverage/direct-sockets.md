@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of direct-sockets, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 0 | 4 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **0** | **4** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,7 +25,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/direct-sockets/disabled-by-permissions-policy.https.sub.html) | Disabled | – | NOT IMPLEMENTED | Direct Sockets API |
-| [`tcp_socket.https.html`](https://wpt.fyi/results/direct-sockets/tcp_socket.https.html) | Disabled | – | NOT IMPLEMENTED | Direct Sockets API |
-| [`udp_socket.https.html`](https://wpt.fyi/results/direct-sockets/udp_socket.https.html) | Disabled | – | NOT IMPLEMENTED | Direct Sockets API |
-| [`udp_socket_multicast.https.html`](https://wpt.fyi/results/direct-sockets/udp_socket_multicast.https.html) | Disabled | – | NOT IMPLEMENTED | Direct Sockets API |
+| [`disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/direct-sockets/disabled-by-permissions-policy.https.sub.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Direct Sockets API |
+| [`tcp_socket.https.html`](https://wpt.fyi/results/direct-sockets/tcp_socket.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Direct Sockets API |
+| [`udp_socket.https.html`](https://wpt.fyi/results/direct-sockets/udp_socket.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Direct Sockets API |
+| [`udp_socket_multicast.https.html`](https://wpt.fyi/results/direct-sockets/udp_socket_multicast.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Direct Sockets API |

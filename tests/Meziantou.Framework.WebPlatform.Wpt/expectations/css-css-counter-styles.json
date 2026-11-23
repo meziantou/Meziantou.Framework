@@ -212,6 +212,9 @@
   "css/css-counter-styles/counter-style-at-rule/system-cyclic-invalid.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/counter-style-at-rule/system-cyclic-negative.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/counter-style-at-rule/system-cyclic.html": {
     "reftest": "PASS"
   },

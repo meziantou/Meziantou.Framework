@@ -237,7 +237,7 @@
     "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/3_tracks.html": {
-    "reftest": "TIMEOUT"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/align_center.html": {
     "reftest": "PASS"
@@ -511,6 +511,9 @@
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-shadow.html": {
     "reftest": "FAIL"
+  },
+  "webvtt/rendering/cues-with-video/processing-model/selectors/cue/text-wrap_not_allowed.html": {
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue/vertical_ruby-position.html": {
     "reftest": "FAIL"

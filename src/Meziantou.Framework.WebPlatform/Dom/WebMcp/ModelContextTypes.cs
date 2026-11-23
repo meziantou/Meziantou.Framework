@@ -221,8 +221,8 @@ public sealed class ToolCancelEvent : Event
 /// <see cref="BrowsingContext.GetModelContextTools"/> discovered it, which identifies this registration of the tool: once
 /// the tool is unregistered, it cannot be executed anymore, even when a tool with the same name is registered again.
 /// </summary>
-/// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#tool"/>
-[IdlInterface("Tool", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#tool")]
+/// <seealso href="https://webmachinelearning.github.io/webmcp/#tool"/>
+[IdlInterface("Tool", "https://webmachinelearning.github.io/webmcp/#tool")]
 public sealed class Tool
 {
     private readonly Window _window;
@@ -244,7 +244,7 @@ public sealed class Tool
         OriginRecord = origin;
     }
 
-    /// <summary>The tool id of the registration (https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#tool-tool-id).</summary>
+    /// <summary>The tool id of the registration (https://webmachinelearning.github.io/webmcp/#tool-tool-id).</summary>
     internal object Id { get; }
 
     /// <summary>The window of the document that registered the tool, even when its browsing context was destroyed.</summary>
@@ -256,55 +256,55 @@ public sealed class Tool
     internal OriginRecord OriginRecord { get; }
 
     /// <summary>Gets the name of the tool.</summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-name"/>
-    [IdlMember("name", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-name")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-name"/>
+    [IdlMember("name", "https://webmachinelearning.github.io/webmcp/#dom-tool-name")]
     public string Name { get; }
 
     /// <summary>Gets the human-readable title of the tool, or the empty string when it has none.</summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-title"/>
-    [IdlMember("title", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-title")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-title"/>
+    [IdlMember("title", "https://webmachinelearning.github.io/webmcp/#dom-tool-title")]
     public string Title { get; }
 
     /// <summary>Gets the natural language description of the tool.</summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-description"/>
-    [IdlMember("description", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-description")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-description"/>
+    [IdlMember("description", "https://webmachinelearning.github.io/webmcp/#dom-tool-description")]
     public string Description { get; }
 
     /// <summary>
     /// Gets the JSON Schema of the input arguments as a value for the scripts (a JavaScript object, parsed by the script engine
     /// once), or null. The .NET code reads <see cref="InputSchemaJson"/>.
     /// </summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-inputschema"/>
-    [IdlMember("inputSchema", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-inputschema")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-inputschema"/>
+    [IdlMember("inputSchema", "https://webmachinelearning.github.io/webmcp/#dom-tool-inputschema")]
     public object? InputSchema => InputSchemaJson is null ? null : _inputSchemaValue ??= new Scripting.JsonText(InputSchemaJson);
 
     /// <summary>
     /// Gets the JSON Schema of the result as a value for the scripts (a JavaScript object, parsed by the script engine once), or
     /// null. The .NET code reads <see cref="OutputSchemaJson"/>.
     /// </summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-outputschema"/>
-    [IdlMember("outputSchema", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-outputschema")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-outputschema"/>
+    [IdlMember("outputSchema", "https://webmachinelearning.github.io/webmcp/#dom-tool-outputschema")]
     public object? OutputSchema => OutputSchemaJson is null ? null : _outputSchemaValue ??= new Scripting.JsonText(OutputSchemaJson);
 
     /// <summary>
-    /// Gets the window of the document that registered the tool, or null when its browsing context was destroyed (e.g. its
-    /// iframe was removed).
+    /// Gets the window of the document that registered the tool, or null when that document is not fully active anymore (e.g.
+    /// it was navigated away from, or its iframe was removed).
     /// </summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-window"/>
-    [IdlMember("window", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-window")]
-    public Window? Window => _window.BrowsingContext is null ? null : _window;
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-source"/>
+    [IdlMember("source", "https://webmachinelearning.github.io/webmcp/#dom-tool-source")]
+    public Window? Source => _window.Document.IsFullyActive ? _window : null;
 
     /// <summary>Gets the serialization of the origin of the document that registered the tool (<c>null</c> for an opaque origin).</summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-origin"/>
-    [IdlMember("origin", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-origin")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-origin"/>
+    [IdlMember("origin", "https://webmachinelearning.github.io/webmcp/#dom-tool-origin")]
     public string Origin => OriginRecord.Serialize();
 
     /// <summary>
     /// Gets the annotations of the tool as a value for the scripts (a JavaScript object, created by the script engine once), or
     /// null when the tool was registered without annotations. The .NET code reads <see cref="ToolAnnotations"/>.
     /// </summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-annotations"/>
-    [IdlMember("annotations", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-annotations")]
+    /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-annotations"/>
+    [IdlMember("annotations", "https://webmachinelearning.github.io/webmcp/#dom-tool-annotations")]
     public object? Annotations => ToolAnnotations is null ? null : _annotationsValue ??= new Scripting.JsonText(ToolAnnotations.ToJson());
 
     /// <summary>Gets the JSON Schema of the input arguments, as JSON text, or null when the tool was registered without one.</summary>

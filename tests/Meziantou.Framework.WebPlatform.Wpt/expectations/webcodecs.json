@@ -87,7 +87,7 @@
     }
   },
   "webcodecs/audio-encoder.https.any.js": {
-    "total": 24
+    "total": 27
   },
   "webcodecs/audio-serialization.crossAgentCluster.https.html": {
     "total": 7
@@ -1539,10 +1539,10 @@
     }
   },
   "webcodecs/video-encoder.https.any.js": {
-    "total": 10
+    "total": 12
   },
   "webcodecs/video-encoder.https.any.js#dedicatedworker": {
-    "total": 10
+    "total": 12
   },
   "webcodecs/video-frame-serialization.any.js": {
     "total": 7
@@ -2070,10 +2070,10 @@
     }
   },
   "webcodecs/videoFrame-construction.any.js": {
-    "total": 52
+    "total": 54
   },
   "webcodecs/videoFrame-construction.any.js#dedicatedworker": {
-    "total": 52
+    "total": 54
   },
   "webcodecs/videoFrame-construction.crossOriginIsolated.https.any.js": {
     "total": 2
@@ -2109,16 +2109,16 @@
     "total": 354
   },
   "webcodecs/videoFrame-copyTo-rgbx.any.js": {
-    "total": 10
+    "total": 14
   },
   "webcodecs/videoFrame-copyTo-rgbx.any.js#dedicatedworker": {
-    "total": 10
+    "total": 14
   },
   "webcodecs/videoFrame-copyTo.any.js": {
-    "total": 22
+    "total": 24
   },
   "webcodecs/videoFrame-copyTo.any.js#dedicatedworker": {
-    "total": 22
+    "total": 24
   },
   "webcodecs/videoFrame-copyTo.crossOriginIsolated.https.any.js": {
     "total": 2
@@ -2185,6 +2185,12 @@
       "Encoding a NV12 VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED",
       "Encoding a RGBA VideoFrame with avc1.42001E preserves its input pixels": "PRECONDITION_FAILED"
     }
+  },
+  "webcodecs/videoFrame-imageBitmap-crop.any.js": {
+    "total": 15
+  },
+  "webcodecs/videoFrame-imageBitmap-crop.any.js#dedicatedworker": {
+    "total": 14
   },
   "webcodecs/videoFrame-metadata-rtpTimestamp.https.html": {
     "total": 1,

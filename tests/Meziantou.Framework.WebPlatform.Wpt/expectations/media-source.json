@@ -247,6 +247,12 @@
   "media-source/mediasource-liveseekable.html": {
     "total": 10
   },
+  "media-source/mediasource-mpeg-audio-metadata.html": {
+    "total": 3,
+    "failures": {
+      "Metadata frames add no coded frames": "FAIL"
+    }
+  },
   "media-source/mediasource-multiple-attach.html": {
     "total": 3
   },

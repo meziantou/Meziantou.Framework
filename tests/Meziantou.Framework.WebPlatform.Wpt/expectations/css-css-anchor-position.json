@@ -44,6 +44,9 @@
   "css/css-anchor-position/anchor-center-htb-vrl.html": {
     "total": 10
   },
+  "css/css-anchor-position/anchor-center-no-default-static-position.html": {
+    "reftest": "PASS"
+  },
   "css/css-anchor-position/anchor-center-no-default.html": {
     "reftest": "PASS"
   },
@@ -793,6 +796,9 @@
   },
   "css/css-anchor-position/anchored-child-transition-with-selection.html": {
     "total": 1
+  },
+  "css/css-anchor-position/anchored-popover-display-overlay-transition-reshow-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-anchor-position/anchored-transition-display-none-001.html": {
     "reftest": "PASS"

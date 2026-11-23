@@ -1262,6 +1262,9 @@
   "css/css-conditional/container-rule-malformed-prelude.html": {
     "total": 1
   },
+  "css/css-conditional/crashtests/abspos-remove-after-container-query-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-conditional/crashtests/supports-malformed.html": {
     "crashtest": "PASS"
   },

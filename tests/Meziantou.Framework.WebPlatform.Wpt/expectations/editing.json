@@ -1,4 +1,7 @@
 {
+  "editing/crashtests/backcolor-style-element-in-head.html": {
+    "crashtest": "PASS"
+  },
   "editing/crashtests/blur-from-rtl-editing-host-containing-big-video.html": {
     "crashtest": "PASS"
   },
@@ -2848,10 +2851,7 @@
     }
   },
   "editing/other/typing-around-link-element-at-collapsed-selection.tentative.html?target=ContentEditable&parent=b": {
-    "total": 37,
-    "failures": {
-      "Replacing text in a link in <b> with \"XY\" in <p><b>[abc]</b></p>": "FAIL"
-    }
+    "total": 37
   },
   "editing/other/typing-around-link-element-at-collapsed-selection.tentative.html?target=ContentEditable&parent=b&child=i": {
     "total": 30,
@@ -2883,10 +2883,7 @@
     }
   },
   "editing/other/typing-around-link-element-at-collapsed-selection.tentative.html?target=DesignMode&parent=b": {
-    "total": 37,
-    "failures": {
-      "Replacing text in a link in <b> with \"XY\" in <p><b>[abc]</b></p>": "FAIL"
-    }
+    "total": 37
   },
   "editing/other/typing-around-link-element-at-collapsed-selection.tentative.html?target=DesignMode&parent=b&child=i": {
     "total": 30,

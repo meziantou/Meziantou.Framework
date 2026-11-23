@@ -942,6 +942,9 @@
   "service-workers/service-worker/static-router-main-resource.https.html": {
     "total": 9
   },
+  "service-workers/service-worker/static-router-multiple-caches.https.html": {
+    "total": 5
+  },
   "service-workers/service-worker/static-router-multiple-router-registrations.https.html": {
     "total": 2
   },

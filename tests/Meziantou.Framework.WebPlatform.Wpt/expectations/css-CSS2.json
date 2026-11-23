@@ -4820,6 +4820,9 @@
   "css/CSS2/floats/float-in-block-in-inline-position-001.html": {
     "total": 6
   },
+  "css/CSS2/floats/float-in-block-inside-inline-paint-order.html": {
+    "reftest": "PASS"
+  },
   "css/CSS2/floats/float-in-inline-001.html": {
     "reftest": "PASS"
   },
@@ -5160,6 +5163,9 @@
     "reftest": "PASS"
   },
   "css/CSS2/floats/new-fc-separates-from-float.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/non-overhanging-float-paint-order.html": {
     "reftest": "PASS"
   },
   "css/CSS2/floats/overflow-scroll-float-paint-order.html": {

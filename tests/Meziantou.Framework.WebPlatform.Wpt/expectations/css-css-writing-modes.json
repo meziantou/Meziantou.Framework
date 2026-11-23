@@ -2477,6 +2477,9 @@
   "css/css-writing-modes/orthogonal-cell-rowspan-003.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/orthogonal-cell-rowspan-004.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/orthogonal-child-with-border.html": {
     "reftest": "PASS"
   },

@@ -932,6 +932,9 @@
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-type-change-from-image-1.html": {
     "reftest": "PASS"
   },
+  "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/input-type-change-hspace-vspace-border.html": {
+    "total": 12
+  },
   "html/rendering/replaced-elements/attributes-for-embedded-content-and-images/number-placeholder-right-aligned.html": {
     "reftest": "PASS"
   },
@@ -1457,40 +1460,52 @@
   "html/rendering/widgets/input-checkbox-subpixel-paint-size.html": {
     "reftest": "PASS"
   },
-  "html/rendering/widgets/input-checkbox-switch-indeterminate.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-indeterminate.html": {
     "reftest": "PASS"
   },
-  "html/rendering/widgets/input-checkbox-switch-rtl.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-other-types.html": {
     "reftest": "PASS"
   },
-  "html/rendering/widgets/input-checkbox-switch-states-checked-disabled.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-states-checked-disabled.html": {
     "reftest": "FAIL"
   },
-  "html/rendering/widgets/input-checkbox-switch-states-checked.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-states-checked.html": {
     "reftest": "FAIL"
   },
-  "html/rendering/widgets/input-checkbox-switch-states-disabled.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-states-disabled.html": {
     "reftest": "FAIL"
   },
-  "html/rendering/widgets/input-checkbox-switch-states-rtl-checked.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-states-rtl-checked.html": {
     "reftest": "FAIL"
   },
-  "html/rendering/widgets/input-checkbox-switch-states-rtl-disabled.tentative.html": {
+  "html/rendering/widgets/input-checkbox-switch-states-rtl-disabled.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-rtl.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-vertical-checked.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-vertical-rtl.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states-vertical.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch-states.html": {
+    "reftest": "FAIL"
+  },
+  "html/rendering/widgets/input-checkbox-switch.html": {
     "reftest": "PASS"
   },
-  "html/rendering/widgets/input-checkbox-switch-states-rtl.tentative.html": {
-    "reftest": "FAIL"
-  },
-  "html/rendering/widgets/input-checkbox-switch-states.tentative.html": {
-    "reftest": "FAIL"
-  },
-  "html/rendering/widgets/input-checkbox-switch.tentative.html": {
-    "reftest": "PASS"
-  },
-  "html/rendering/widgets/input-checkbox-switch.tentative.window.js": {
+  "html/rendering/widgets/input-checkbox-switch.window.js": {
     "total": 4,
     "failures": {
-      "appearance:none should work: display gets its initial value": "FAIL"
+      "Default appearance value": "FAIL",
+      "Default appearance value: display:none": "FAIL",
+      "appearance:none should work": "FAIL",
+      "appearance:none should work: display is inline-block": "FAIL"
     }
   },
   "html/rendering/widgets/input-checkbox-zero-size.html": {

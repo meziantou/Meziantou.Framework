@@ -90,7 +90,8 @@ Their behavior follows the specification and the proposals that Chromium impleme
 
 - `getTools()` returns `Tool` objects, which identify a registration of a tool
   ([webmcp#348](https://github.com/webmachinelearning/webmcp/pull/348)): executing a tool that was unregistered fails,
-  even when a tool with the same name was registered again.
+  even when a tool with the same name was registered again. Their `source` is the window of the document that registered
+  the tool, or `null` once that document is not fully active.
 - `waitForToolsUntil()` and `toolsReady`
   ([webmcp#373](https://github.com/webmachinelearning/webmcp/pull/373)).
 - `executeTool()` resolves with the JSON serialization of the result of the tool: a string is quoted, and `undefined` is

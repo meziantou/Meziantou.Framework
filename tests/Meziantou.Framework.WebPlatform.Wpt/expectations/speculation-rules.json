@@ -69,6 +69,9 @@
   "speculation-rules/prefetch/different-initiators.sub.https.html?same-site": {
     "total": 1
   },
+  "speculation-rules/prefetch/document-rules-dangling-markup.tentative.https.html": {
+    "total": 2
+  },
   "speculation-rules/prefetch/document-rules-details-element.https.html": {
     "total": 2
   },

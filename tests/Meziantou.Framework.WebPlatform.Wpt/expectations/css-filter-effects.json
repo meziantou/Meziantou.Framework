@@ -212,6 +212,12 @@
   "css/filter-effects/backdrop-filter-important.html": {
     "total": 1
   },
+  "css/filter-effects/backdrop-filter-in-backface-hidden-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-in-transform-clip-surface-content.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/backdrop-filter-in-transform-clip-surface.html": {
     "reftest": "PASS"
   },
@@ -669,10 +675,10 @@
     "reftest": "PASS"
   },
   "css/filter-effects/filter-cb-abspos-inline-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/filter-cb-abspos-inline-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/filter-cb-abspos-inline-003.html": {
     "reftest": "PASS"

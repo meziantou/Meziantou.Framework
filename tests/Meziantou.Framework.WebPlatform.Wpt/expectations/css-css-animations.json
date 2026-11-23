@@ -378,6 +378,13 @@
   "css/css-animations/display-interpolation.html": {
     "total": 138
   },
+  "css/css-animations/display-none-animation-finished.html": {
+    "total": 2,
+    "failures": {
+      "CSS animation keeping display:none element visible finishes without canceling": "FAIL",
+      "On-demand style flush to display:none after CSS animation reaches end does not cancel it": "FAIL"
+    }
+  },
   "css/css-animations/display-none-dont-cancel-pseudo.tentative.html": {
     "total": 1
   },
@@ -635,6 +642,9 @@
   },
   "css/css-animations/svg-color-visited-currentcolor.html": {
     "total": 3
+  },
+  "css/css-animations/svg-transform-animation-zoom.html": {
+    "reftest": "PASS"
   },
   "css/css-animations/svg-transform-animation.html": {
     "reftest": "PASS"

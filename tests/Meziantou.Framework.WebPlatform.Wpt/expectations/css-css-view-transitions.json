@@ -293,6 +293,9 @@
   "css/css-view-transitions/iframe-transition-destroyed-document-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-view-transitions/iframe-transition-with-compositor-animation.html": {
+    "total": 1
+  },
   "css/css-view-transitions/iframe-transition.sub.html": {
     "reftest": "PASS"
   },
@@ -307,6 +310,9 @@
   },
   "css/css-view-transitions/inline-element-size.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/inline-fragmented-in-stacking-context-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-view-transitions/inline-with-block-child-new.html": {
     "reftest": "FAIL"
@@ -1346,6 +1352,9 @@
   "css/css-view-transitions/scoped/new-content.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/scoped/occlusion-zero-opacity-scope.html": {
+    "total": 1
+  },
   "css/css-view-transitions/scoped/old-content.html": {
     "reftest": "PASS"
   },
@@ -1369,6 +1378,9 @@
   },
   "css/css-view-transitions/scoped/run_in_parallel.html": {
     "total": 3
+  },
+  "css/css-view-transitions/scoped/scope-background-stable-under-ancestor-clip.html": {
+    "reftest": "PASS"
   },
   "css/css-view-transitions/scoped/scope-becomes-document-element.html": {
     "total": 2,
@@ -1421,6 +1433,56 @@
   },
   "css/css-view-transitions/scoped/shadow-dom.html": {
     "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/shadow-roots-auto-and-match-element.tentative.html": {
+    "total": 4,
+    "failures": {
+      "::part() rule with view-transition-name: auto does not use shadow element id even when ShadowRoot is in shadowRoots": "FAIL",
+      "Cross-tree auto pairs by id across participating trees and collides when active simultaneously": "FAIL",
+      "view-transition-name: auto inside opted-in ShadowRoot pairs replaced elements by id": "FAIL",
+      "view-transition-name: match-element in ShadowRoot works via <style>, inline style, and CSS Typed OM": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/shadow-roots-classes-groups-scopes.tentative.html": {
+    "total": 3,
+    "failures": {
+      "view-transition-class from ShadowRoot applies if and only if ShadowRoot is in shadowRoots": "FAIL",
+      "view-transition-group (contain, nearest, custom-ident) resolves across participating trees and <slot> boundaries": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/shadow-roots-cross-tree-morph.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/shadow-roots-discovery.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Element inside ShadowRoot sr1 includes sr1 by default and opts into nested sr2 via shadowRoots": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/shadow-roots-flat-tree-descendants.tentative.html": {
+    "total": 4,
+    "failures": {
+      "Nested ShadowRoots participate independently based on explicit membership in shadowRoots": "FAIL",
+      "Sibling, disconnected, and cross-document ShadowRoots do not throw and their non-descendant elements are ignored": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/shadow-roots-nested-groups.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-view-transitions/scoped/shadow-roots-options.tentative.html": {
+    "harness": "ERROR",
+    "total": 5,
+    "failures": {
+      "Default empty shadowRoots does not expose shadow tree view-transition-names": "FAIL",
+      "Invalid shadowRoots values throw TypeError on both Document and Element": "FAIL",
+      "Mutating the passed shadowRoots array after startViewTransition() has no effect": "FAIL"
+    }
+  },
+  "css/css-view-transitions/scoped/shadow-roots-pairing-and-collisions.tentative.html": {
+    "total": 5,
+    "failures": {
+      "Same view-transition-name in an unopted-in ShadowRoot does not collide with participating trees": "FAIL"
+    }
   },
   "css/css-view-transitions/scoped/start-view-transition-on-disconnected-element.html": {
     "total": 4

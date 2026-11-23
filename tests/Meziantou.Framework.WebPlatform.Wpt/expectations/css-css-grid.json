@@ -2811,6 +2811,9 @@
   "css/css-grid/grid-items/grid-item-percentage-height-auto-height-grid-001.html": {
     "total": 8
   },
+  "css/css-grid/grid-items/grid-item-percentage-padding-auto-row-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-items/grid-item-percentage-resolution-writing-modes-001.html": {
     "total": 4
   },
@@ -3285,28 +3288,28 @@
   "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-align-content-003.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-fill-reverse-001.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-fill-reverse-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-fill-reverse-002.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-fill-reverse-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-fill-reverse-003.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-fill-reverse-003.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-justify-content-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-001.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-002.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-003.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-rtl-001.html": {
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-rtl-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/abspos/column-grid-lanes-out-of-flow-001.html": {
@@ -3333,13 +3336,13 @@
   "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-align-content-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-fill-reverse-001.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-fill-reverse-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-fill-reverse-002.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-fill-reverse-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-fill-reverse-003.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-fill-reverse-003.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-justify-content-001.html": {
@@ -3348,16 +3351,16 @@
   "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-justify-content-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-001.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-002.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-003.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-rtl-001.html": {
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-rtl-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/abspos/row-grid-lanes-out-of-flow-001.html": {
@@ -3393,34 +3396,34 @@
   "css/css-grid/grid-lanes/alignment/column-align-items-007.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-008.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-008.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-009.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-009.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-010.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-010.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-011.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-011.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-012.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-012.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-013.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-013.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-014.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-014.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-015.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-015.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/column-align-items-016.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-align-items-017.html": {
+  "css/css-grid/grid-lanes/alignment/column-align-items-017.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/column-align-self-001.html": {
@@ -3462,64 +3465,64 @@
   "css/css-grid/grid-lanes/alignment/column-dense-packing-align-self-multi-span-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-002.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-003.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-safe-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-content-safe-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-items-multi-span-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-items-multi-span-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-items-stretch-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-align-items-stretch-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-dense-packing-align-items-multi-span-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-dense-packing-align-items-multi-span-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-dense-packing-align-items-multi-span-002.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-dense-packing-align-items-multi-span-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-dense-packing-align-items-multi-span-003.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-dense-packing-align-items-multi-span-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-content-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-content-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-content-002.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-content-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-content-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-content-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-002.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-003.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-indefinite-size-002.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-items-indefinite-size-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-self-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-self-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-self-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-justify-self-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-fill-reverse-stacking-alignment-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-fill-reverse-stacking-alignment-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/column-grid-lanes-alignment-positioned-items-001.html": {
@@ -3543,7 +3546,7 @@
   "css/css-grid/grid-lanes/alignment/column-grid-lanes-justify-self-003.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-justify-items-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-justify-items-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/column-justify-items-center-001.html": {
@@ -3555,16 +3558,16 @@
   "css/css-grid/grid-lanes/alignment/column-overflow-alignment-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-track-reverse-dense-packing-align-items-multi-span-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-track-reverse-dense-packing-align-items-multi-span-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-track-reverse-justify-content-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-track-reverse-justify-content-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-track-reverse-justify-items-001.html": {
+  "css/css-grid/grid-lanes/alignment/column-track-reverse-justify-items-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/column-track-reverse-justify-items-002.html": {
+  "css/css-grid/grid-lanes/alignment/column-track-reverse-justify-items-002.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/grid-lanes-align-content-001.html": {
@@ -3639,55 +3642,55 @@
   "css/css-grid/grid-lanes/alignment/row-dense-packing-justify-self-multi-span-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-content-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-content-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-content-002.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-content-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-content-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-content-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-002.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-003.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-indefinite-size-002.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-items-indefinite-size-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-self-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-self-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-self-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-align-self-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-dense-packing-justify-items-multi-span-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-dense-packing-justify-items-multi-span-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-002.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-003.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-indefinite-size-002.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-indefinite-size-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-safe-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-fill-reverse-justify-content-safe-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/row-grid-lanes-align-self-001.html": {
@@ -3729,34 +3732,34 @@
   "css/css-grid/grid-lanes/alignment/row-justify-items-006.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-007.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-007.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-008.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-008.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-009.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-009.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-010.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-010.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-011.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-011.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-012.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-012.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-013.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-013.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-014.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-014.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/row-justify-items-015.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-justify-items-016.html": {
+  "css/css-grid/grid-lanes/alignment/row-justify-items-016.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/alignment/row-justify-self-001.html": {
@@ -3774,16 +3777,16 @@
   "css/css-grid/grid-lanes/alignment/row-overflow-alignment-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-track-reverse-align-content-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-track-reverse-align-content-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-track-reverse-align-items-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-track-reverse-align-items-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-track-reverse-dense-packing-justify-items-multi-span-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-track-reverse-dense-packing-justify-items-multi-span-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/alignment/row-track-reverse-dense-packing-justify-self-multi-span-001.html": {
+  "css/css-grid/grid-lanes/alignment/row-track-reverse-dense-packing-justify-self-multi-span-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/animation/fit-tolerance-interpolation.html": {
@@ -3918,7 +3921,7 @@
   "css/css-grid/grid-lanes/baseline/row-grid-lanes-item-baseline-cyclic-dependency-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/baseline/row-grid-lanes-item-baseline-cyclic-dependency-003.html": {
+  "css/css-grid/grid-lanes/baseline/row-grid-lanes-item-baseline-cyclic-dependency-003.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/column-empty-grid-lanes-container-001.html": {
@@ -3981,25 +3984,25 @@
   "css/css-grid/grid-lanes/grid-placement/grid-lanes-grid-placement-named-lines-dense-packing-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-001.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-002.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-003.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-004.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-004.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-005.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-005.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-006.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-006.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-007.html": {
+  "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-007.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/grid-placement/row-explicit-placement-008.html": {
@@ -4221,13 +4224,13 @@
   "css/css-grid/grid-lanes/invalidation/grid-lanes-column-tracks-recompute-child-positions-001.html": {
     "total": 3
   },
-  "css/css-grid/grid-lanes/invalidation/grid-lanes-direction-dynamic-change-001.html": {
+  "css/css-grid/grid-lanes/invalidation/grid-lanes-direction-dynamic-change-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/invalidation/grid-lanes-direction-dynamic-change-002.html": {
+  "css/css-grid/grid-lanes/invalidation/grid-lanes-direction-dynamic-change-002.tentative.html": {
     "total": 3
   },
-  "css/css-grid/grid-lanes/invalidation/grid-lanes-direction-dynamic-change-003.html": {
+  "css/css-grid/grid-lanes/invalidation/grid-lanes-direction-dynamic-change-003.tentative.html": {
     "total": 3
   },
   "css/css-grid/grid-lanes/invalidation/grid-lanes-grid-template-columns-changes-001.html": {
@@ -4236,7 +4239,7 @@
   "css/css-grid/grid-lanes/invalidation/grid-lanes-grid-template-rows-changes-001.html": {
     "total": 12
   },
-  "css/css-grid/grid-lanes/invalidation/grid-lanes-pack-dynamic-change.html": {
+  "css/css-grid/grid-lanes/invalidation/grid-lanes-pack-dynamic-change.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/invalidation/grid-lanes-remove-child-dynamic-change.html": {
@@ -4332,19 +4335,19 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-multi-span-013.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-definite-size-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-definite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-fit-tolerance-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-fit-tolerance-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-002.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-002.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-001.html": {
@@ -4386,16 +4389,16 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-multi-span-006.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-definite-size-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-definite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-001.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-002.html": {
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-002.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/fit-tolerance/column-fit-tolerance-infinite.html": {
@@ -4644,25 +4647,25 @@
   "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-modes-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-001.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-002.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-003.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-004.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-004.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-005.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-005.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-baseline-001.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-baseline-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-baseline-002.html": {
+  "css/css-grid/grid-lanes/overflow/grid-lanes-overflow-reverse-baseline-002.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/overflow/grid-lanes-overflowing-container-001.html": {
@@ -4726,7 +4729,16 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-002a.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-002c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-002d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-002f.html": {
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/grid-lanes-subgrid-003a.html": {
     "reftest": "PASS"
@@ -4735,13 +4747,58 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/column/independent-formatting-context.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/column-line-names-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/column-line-names-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/column-line-names-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/column-line-names-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/column-line-names-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/column-line-names-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/row-line-names-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/row-line-names-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/row-line-names-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/row-line-names-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/row-line-names-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/line-names/row-line-names-006.html": {
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-001a.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-002a.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-002c.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-002d.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-002f.html": {
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/grid-lanes-subgrid-003a.html": {
     "reftest": "PASS"
@@ -4753,7 +4810,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/row/independent-formatting-context.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-lanes-subgridded-to-grid-lanes/track-sizing/column-auto-placed-subgrid-standalone-rows-001.html": {
     "reftest": "PASS"
@@ -5275,10 +5332,10 @@
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-item-percentage-height-001.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-scrollbar-gutter-001.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-scrollbar-gutter-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-scrollbar-gutter-002.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-scrollbar-gutter-002.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-subgrid-abs-pos-001.html": {
@@ -5302,7 +5359,7 @@
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-subgrid-orthogonal-writing-mode-003.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-subgrid-orthogonal-writing-mode-004.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-subgrid-orthogonal-writing-mode-004.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/row-subgrid-placement-invalidation-001.html": {
@@ -5356,7 +5413,7 @@
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/subgrid-sticky-item.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/auto-track-sizing-001.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/auto-track-sizing-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/auto-track-sizing-002.html": {
@@ -5539,10 +5596,10 @@
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-auto-fill-007.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-auto-fill-008.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-auto-fill-008.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-auto-fit-001.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-auto-fit-001.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-auto-fit-002.html": {
@@ -5590,31 +5647,31 @@
   "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-extra-margin-009.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-001.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-001.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-002.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-002.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-003.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-003.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-004.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-004.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-005.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-005.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-006.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-006.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-007.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-007.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-008.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-008.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-009.html": {
+  "css/css-grid/grid-lanes/subgrid/grid-subgridded-to-grid-lanes/track-sizing/row-subgrid-with-column-standalone-axis-size-009.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/tentative/grid-lanes-direction-style-map-crash.html": {
@@ -6091,7 +6148,7 @@
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-auto-004.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-auto-005.html": {
+  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-auto-005.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-auto-006.html": {
@@ -6184,7 +6241,7 @@
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-fit-content-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-fit-content-003.html": {
+  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-fit-content-003.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-fit-content-004.html": {
@@ -6199,7 +6256,7 @@
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-max-content-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-max-content-003.html": {
+  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-max-content-003.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-max-content-004.html": {
@@ -6214,7 +6271,7 @@
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-min-content-002.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-min-content-003.html": {
+  "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-min-content-003.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/track-sizing/auto-repeat/intrinsic-auto-repeat/row-auto-repeat-min-content-004.html": {
@@ -6343,7 +6400,7 @@
   "css/css-grid/grid-lanes/track-sizing/column-track-sizing-005.html": {
     "reftest": "PASS"
   },
-  "css/css-grid/grid-lanes/track-sizing/dynamic-grid-track-direction.html": {
+  "css/css-grid/grid-lanes/track-sizing/dynamic-grid-track-direction.tentative.html": {
     "total": 1
   },
   "css/css-grid/grid-lanes/track-sizing/grid-lanes-flex-sizing-rows-min-max-height-001.html": {

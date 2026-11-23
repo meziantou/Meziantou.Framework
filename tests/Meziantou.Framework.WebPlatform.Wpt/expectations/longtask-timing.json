@@ -2,6 +2,12 @@
   "longtask-timing/buffered-flag.window.js": {
     "total": 1
   },
+  "longtask-timing/container-attributes-cross-origin-parent.html": {
+    "total": 3,
+    "failures": {
+      "Same-origin child iframe observing its own long task receives parent container attributes.": "FAIL"
+    }
+  },
   "longtask-timing/containerNames.html": {
     "total": 1
   },
@@ -30,7 +36,10 @@
     "total": 1
   },
   "longtask-timing/longtask-in-childiframe-crossorigin.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Performance longtask entries in cross-origin child iframe are observable in parent.": "FAIL"
+    }
   },
   "longtask-timing/longtask-in-childiframe.html": {
     "total": 1

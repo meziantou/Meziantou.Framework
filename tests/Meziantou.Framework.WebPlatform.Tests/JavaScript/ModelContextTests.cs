@@ -196,7 +196,7 @@ public sealed class ModelContextTests : IDisposable
             document.modelContext.getTools().then(async tools => {
               const add = tools.find(tool => tool.name === 'add');
               const result = await document.modelContext.executeTool(add, { a: 1, b: 2 });
-              document.title = [tools.map(tool => tool.name).join(), add instanceof Tool, add.window === window, add.origin, JSON.stringify(add.annotations), add.inputSchema === add.inputSchema, result].join('|');
+              document.title = [tools.map(tool => tool.name).join(), add instanceof Tool, add.source === window, add.origin, JSON.stringify(add.annotations), add.inputSchema === add.inputSchema, result].join('|');
             });
             </script>
             """);

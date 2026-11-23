@@ -1,9 +1,28 @@
 {
+  "css/css-ui/accent-color-accentcolor-is-parent-accent-color.html": {
+    "total": 4,
+    "failures": {
+      "accent-color: AccentColor when parent has accent-color: auto should result in the system default accent color": "FAIL",
+      "accent-color: AccentColor when parent has no accent-color set should result in the system default accent color": "FAIL"
+    }
+  },
+  "css/css-ui/accent-color-accentcolortext-is-parent-accentcolortext.html": {
+    "total": 4
+  },
   "css/css-ui/accent-color-checkbox-checked-001.html": {
     "reftest": "PASS"
   },
   "css/css-ui/accent-color-computed.html": {
     "total": 7
+  },
+  "css/css-ui/accent-color-current-color.html": {
+    "total": 2
+  },
+  "css/css-ui/accent-color-currentcolor-color-accentcolor-rendering-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ui/accent-color-currentcolor-color-accentcolor.html": {
+    "total": 1
   },
   "css/css-ui/accent-color-invalidation-currentcolor.html": {
     "reftest": "PASS"
@@ -15,7 +34,10 @@
     "total": 4
   },
   "css/css-ui/accent-color-keyword-resolution.html": {
-    "total": 6
+    "total": 7
+  },
+  "css/css-ui/accent-color-keyword-resolves-at-computed-time.html": {
+    "total": 2
   },
   "css/css-ui/accent-color-parent-currentcolor.html": {
     "reftest": "PASS"
@@ -31,6 +53,15 @@
   },
   "css/css-ui/accent-color-visited.html": {
     "reftest": "PASS"
+  },
+  "css/css-ui/accentcolor-comes-from-accent-color.html": {
+    "total": 4
+  },
+  "css/css-ui/accentcolor-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ui/accentcolor-in-relative-colors.html": {
+    "total": 1
   },
   "css/css-ui/animation/accent-color-interpolation.html": {
     "total": 204

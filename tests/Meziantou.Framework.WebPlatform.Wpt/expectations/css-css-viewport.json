@@ -197,8 +197,32 @@
   "css/css-viewport/zoom/iframe-very-small-zoom-001-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-viewport/zoom/iframe-zoom-child-viewport-dynamic.html": {
+    "total": 4
+  },
+  "css/css-viewport/zoom/iframe-zoom-child-viewport-scrolling.html": {
+    "total": 4
+  },
+  "css/css-viewport/zoom/iframe-zoom-child-viewport-size.html": {
+    "total": 5
+  },
+  "css/css-viewport/zoom/iframe-zoom-fixed-root-background.html": {
+    "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/iframe-zoom-intersection-observer.html": {
+    "total": 3,
+    "failures": {
+      "IntersectionObserver entries in an iframe at zoom 0.5": "FAIL"
+    }
+  },
   "css/css-viewport/zoom/iframe-zoom-nested.html": {
     "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/iframe-zoom-scrollable-content-sharp.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-viewport/zoom/iframe-zoom-webgl-fills-frame.html": {
+    "reftest": "TIMEOUT"
   },
   "css/css-viewport/zoom/iframe-zoom.sub.html": {
     "reftest": "PASS"
@@ -370,6 +394,9 @@
   },
   "css/css-viewport/zoom/text-underline-offset.html": {
     "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/textarea-placeholder-overflow.html": {
+    "total": 4
   },
   "css/css-viewport/zoom/textarea-very-small-zoom-crash.html": {
     "crashtest": "PASS"

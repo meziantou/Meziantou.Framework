@@ -1,6 +1,9 @@
 {
+  "hr-time/audioworklet-cross-origin-isolated.https.html": {
+    "total": 1
+  },
   "hr-time/audioworklet.https.html": {
-    "total": 6
+    "total": 7
   },
   "hr-time/basic.any.js": {
     "total": 5

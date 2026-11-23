@@ -189,10 +189,10 @@
     "total": 8
   },
   "url/urlsearchparams-foreach.any.js": {
-    "total": 6
+    "total": 8
   },
   "url/urlsearchparams-foreach.any.js#dedicatedworker": {
-    "total": 6
+    "total": 8
   },
   "url/urlsearchparams-get.any.js": {
     "total": 2
@@ -231,9 +231,9 @@
     "total": 17
   },
   "url/urlsearchparams-stringifier.any.js": {
-    "total": 14
+    "total": 15
   },
   "url/urlsearchparams-stringifier.any.js#dedicatedworker": {
-    "total": 14
+    "total": 15
   }
 }

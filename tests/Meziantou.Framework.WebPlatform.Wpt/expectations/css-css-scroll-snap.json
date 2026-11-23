@@ -499,6 +499,9 @@
   "css/css-scroll-snap/snap-after-relayout/remove-current-target.html": {
     "total": 1
   },
+  "css/css-scroll-snap/snap-after-relayout/resnap-equidistant-snap-positions.html": {
+    "total": 3
+  },
   "css/css-scroll-snap/snap-after-relayout/resnap-on-oveflow-hidden-container.html": {
     "total": 1
   },
@@ -577,8 +580,35 @@
   "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-root-scroll.tentative.html": {
     "total": 7
   },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-root-scroll.tentative.html?include=keyboard": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-root-scroll.tentative.html?include=scrollbar": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-root-scroll.tentative.html?include=touch": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-root-scroll.tentative.html?include=wheel": {
+    "total": 2
+  },
   "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html": {
     "total": 7
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html?include=keyboard": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html?include=scrollbar": {
+    "total": 1
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html?include=touch": {
+    "total": 3
+  },
+  "css/css-scroll-snap/snap-events/scrollsnapchanging/scrollsnapchanging-on-user-scroll.tentative.html?include=wheel": {
+    "total": 2,
+    "failures": {
+      "scrollsnapchanging doesn't fire if scroll doesn't reach different snap targets.": "FAIL"
+    }
   },
   "css/css-scroll-snap/snap-events/snap-events-with-disposed-pseudo-target.tentative.html": {
     "total": 1

@@ -152,6 +152,12 @@
   "close-watcher/user-activation/y-popover-disconnected.html": {
     "total": 1
   },
+  "close-watcher/user-activation/y-preventDefault-consume-transient-activation.html?CloseWatcher": {
+    "total": 1
+  },
+  "close-watcher/user-activation/y-preventDefault-consume-transient-activation.html?dialog": {
+    "total": 1
+  },
   "close-watcher/user-activation/y.html?CloseWatcher": {
     "total": 1
   },

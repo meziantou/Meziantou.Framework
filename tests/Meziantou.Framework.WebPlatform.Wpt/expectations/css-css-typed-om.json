@@ -1293,6 +1293,13 @@
   "css/css-typed-om/the-stylepropertymap/properties/offset.html": {
     "total": 6
   },
+  "css/css-typed-om/the-stylepropertymap/properties/opacity-auto.tentative.html": {
+    "total": 2,
+    "failures": {
+      "A specified auto keyword computes to numeric one": "FAIL",
+      "Parsing opacity auto produces a keyword": "FAIL"
+    }
+  },
   "css/css-typed-om/the-stylepropertymap/properties/opacity.html": {
     "total": 31
   },

@@ -152,6 +152,9 @@
   "svg/animations/animate-path-animation-qQ-tT-inverse.tentative.html": {
     "total": 1
   },
+  "svg/animations/animate-path-arc-zero-radius.html": {
+    "total": 5
+  },
   "svg/animations/animate-path-by-animation-accumulate-mismatch.tentative.html": {
     "total": 1
   },
@@ -331,6 +334,20 @@
   },
   "svg/animations/begin-attribute-mutation.html": {
     "total": 1
+  },
+  "svg/animations/begin-end-accesskey-keypress.tentative.html": {
+    "total": 4,
+    "failures": {
+      "begin='accessKey(a)' does not begin when the user presses 'a'": "FAIL",
+      "end='accessKey(a)' does not end when the user presses 'a'": "FAIL"
+    }
+  },
+  "svg/animations/begin-end-accesskey-not-event-name.html": {
+    "total": 7,
+    "failures": {
+      "begin='accesskey(a)' does not begin on a script event named 'accesskey(a)'": "FAIL",
+      "end='accesskey(a)' does not end on a script event named 'accesskey(a)'": "FAIL"
+    }
   },
   "svg/animations/begin-event.svg": {
     "total": 1
@@ -595,6 +612,9 @@
   },
   "svg/animations/set-dynamic-attributeName-css-property-cleanup.html": {
     "total": 1
+  },
+  "svg/animations/set-target-inserted-after-animation.html": {
+    "total": 2
   },
   "svg/animations/short-simple-duration-and-fractional-repeatcount.html": {
     "total": 1
@@ -961,6 +981,13 @@
   },
   "svg/animations/syncbase-escaped-dots.html": {
     "total": 2
+  },
+  "svg/animations/syncbase-offset-overflow.html": {
+    "total": 2,
+    "failures": {
+      "Adding two finite times beyond the largest finite time yields a resolved begin": "FAIL",
+      "Multiplying a finite duration by a repeat count beyond the largest finite time yields a resolved end": "FAIL"
+    }
   },
   "svg/animations/syncbase-remove-add-while-running.html": {
     "total": 1
@@ -1693,7 +1720,7 @@
     "total": 1
   },
   "svg/interact/focus-inside-hidden-svg-containers-04.html": {
-    "total": 8
+    "total": 13
   },
   "svg/interact/image-load-error-events.html": {
     "total": 5
@@ -1742,6 +1769,13 @@
   },
   "svg/interact/scripted/ellipse-hittest.html": {
     "total": 24
+  },
+  "svg/interact/scripted/embedded-document-root-focus.html": {
+    "total": 4,
+    "failures": {
+      "Root svg element is focusable in an SVG document in <iframe>": "FAIL",
+      "Root svg element is focusable in an SVG document in <object>": "FAIL"
+    }
   },
   "svg/interact/scripted/focus-events.svg": {
     "total": 2
@@ -2041,6 +2075,9 @@
   },
   "svg/linking/scripted/a-hyperlinkutils-getter.html": {
     "total": 30
+  },
+  "svg/linking/scripted/a-hyperlinkutils-setter-href-xlink-href.html": {
+    "total": 18
   },
   "svg/linking/scripted/a-referrerpolicy-navigation.html": {
     "total": 5
@@ -2411,6 +2448,9 @@
   "svg/painting/reftests/marker-implicit-subpaths.html": {
     "reftest": "PASS"
   },
+  "svg/painting/reftests/marker-orient-auto-closepath.svg": {
+    "reftest": "PASS"
+  },
   "svg/painting/reftests/marker-path-001.svg": {
     "reftest": "PASS"
   },
@@ -2747,6 +2787,13 @@
   "svg/path/animations/path-length-interpolation.tentative.html": {
     "total": 32
   },
+  "svg/path/arc-tiny-radii.html": {
+    "total": 6,
+    "failures": {
+      "huge rx with tiny ry": "FAIL",
+      "tiny rx with huge ry": "FAIL"
+    }
+  },
   "svg/path/bearing/absolute.svg": {
     "reftest": "FAIL"
   },
@@ -2924,6 +2971,9 @@
   "svg/path/parsing/whitespace-basic.html": {
     "total": 14
   },
+  "svg/path/property/d-interpolation-arc-zero-radius.svg": {
+    "total": 14
+  },
   "svg/path/property/d-interpolation-discrete.svg": {
     "total": 28
   },
@@ -2952,7 +3002,7 @@
     "reftest": "PASS"
   },
   "svg/path/property/serialization.svg": {
-    "total": 10
+    "total": 16
   },
   "svg/path/property/test_style_flush_on_dom_api_with_d_property.html": {
     "total": 4
@@ -3038,10 +3088,19 @@
   "svg/pservers/reftests/linear-gradient-transform-empty-attr.svg": {
     "reftest": "PASS"
   },
+  "svg/pservers/reftests/pattern-ancestor-transform-scale-change.svg": {
+    "reftest": "PASS"
+  },
   "svg/pservers/reftests/pattern-inheritance-template-pattern-removed.svg": {
     "reftest": "PASS"
   },
+  "svg/pservers/reftests/pattern-nested-different-scales.svg": {
+    "reftest": "PASS"
+  },
   "svg/pservers/reftests/pattern-opacity-01.svg": {
+    "reftest": "PASS"
+  },
+  "svg/pservers/reftests/pattern-target-bbox-change.svg": {
     "reftest": "PASS"
   },
   "svg/pservers/reftests/pattern-text-01.svg": {
@@ -3107,6 +3166,18 @@
   "svg/render/foreignObject-in-non-rendered-getComputedStyle.html": {
     "total": 1
   },
+  "svg/render/never-rendered-element-computed-display.html": {
+    "total": 26
+  },
+  "svg/render/never-rendered-element-descendants.html": {
+    "total": 74,
+    "failures": {
+      "clipPath with display: inline !important: a shape inside does not contribute to the bounding box of an ancestor": "FAIL",
+      "clipPath: a shape inside does not contribute to the bounding box of an ancestor": "FAIL",
+      "symbol with display: inline !important: a shape inside does not contribute to the bounding box of an ancestor": "FAIL",
+      "symbol: a shape inside does not contribute to the bounding box of an ancestor": "FAIL"
+    }
+  },
   "svg/render/order/clip-path-filter-order.svg": {
     "reftest": "PASS"
   },
@@ -3119,11 +3190,32 @@
   "svg/render/reftests/blending-002.svg": {
     "reftest": "PASS"
   },
+  "svg/render/reftests/blending-svg-2d-transform.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/blending-svg-3d-to-2d-transform-dynamic.html": {
+    "reftest": "PASS"
+  },
   "svg/render/reftests/blending-svg-foreign-object.html": {
     "reftest": "PASS"
   },
+  "svg/render/reftests/blending-svg-root-contain-paint.html": {
+    "reftest": "FAIL"
+  },
+  "svg/render/reftests/blending-svg-root-flex-item-z-index.html": {
+    "reftest": "FAIL"
+  },
+  "svg/render/reftests/blending-svg-root-position-sticky.html": {
+    "reftest": "FAIL"
+  },
   "svg/render/reftests/blending-svg-root.html": {
     "reftest": "PASS"
+  },
+  "svg/render/reftests/blending-svg-stacking-context.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/blending-svg-will-change-opacity.html": {
+    "reftest": "FAIL"
   },
   "svg/render/reftests/change-sync-for-nested-use.html": {
     "reftest": "PASS"
@@ -3132,6 +3224,12 @@
     "reftest": "PASS"
   },
   "svg/render/reftests/nested-svg-overflow-clip.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/never-rendered-element-display-attribute.svg": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/never-rendered-element-display-important.svg": {
     "reftest": "PASS"
   },
   "svg/render/reftests/outer-svg-mask.html": {
@@ -3427,6 +3525,9 @@
     "reftest": "PASS"
   },
   "svg/struct/reftests/use-external-svg-resource-no-fragment-id.html": {
+    "reftest": "PASS"
+  },
+  "svg/struct/reftests/use-external-then-data-url-href.html": {
     "reftest": "PASS"
   },
   "svg/struct/reftests/use-external-use.svg": {
@@ -3954,11 +4055,7 @@
     "total": 3
   },
   "svg/text/inheritance.svg": {
-    "total": 10,
-    "failures": {
-      "Property shape-subtract does not inherit": "FAIL",
-      "Property shape-subtract has initial value auto": "FAIL"
-    }
+    "total": 6
   },
   "svg/text/parsing/inline-size-invalid.svg": {
     "total": 5
@@ -3966,31 +4063,11 @@
   "svg/text/parsing/inline-size-valid.svg": {
     "total": 5
   },
-  "svg/text/parsing/shape-inside-invalid.svg": {
-    "total": 4
-  },
-  "svg/text/parsing/shape-inside-valid.svg": {
-    "total": 6
-  },
   "svg/text/parsing/shape-margin-invalid.svg": {
     "total": 5
   },
   "svg/text/parsing/shape-margin-valid.svg": {
     "total": 4
-  },
-  "svg/text/parsing/shape-subtract-invalid.svg": {
-    "total": 4
-  },
-  "svg/text/parsing/shape-subtract-valid.svg": {
-    "total": 6,
-    "failures": {
-      "e.style['shape-subtract'] = \"auto\" should set the property value": "FAIL",
-      "e.style['shape-subtract'] = \"circle(10px at 20px -30px) url(\\\"https://example.com/\\\") ellipse(10px 20px at -30px 40px)\" should set the property value": "FAIL",
-      "e.style['shape-subtract'] = \"circle(10px at 20px -30px)\" should set the property value": "FAIL",
-      "e.style['shape-subtract'] = \"ellipse(10px 20px at -30px 40px)\" should set the property value": "FAIL",
-      "e.style['shape-subtract'] = \"polygon(10px 20px, -30px 40px, 50px 60px)\" should set the property value": "FAIL",
-      "e.style['shape-subtract'] = \"url(\\\"https://example.com/\\\")\" should set the property value": "FAIL"
-    }
   },
   "svg/text/parsing/text-anchor-computed.svg": {
     "total": 3
@@ -4070,12 +4147,6 @@
   "svg/text/reftests/text-clipped-offscreen-move-onscreen.html": {
     "reftest": "PASS"
   },
-  "svg/text/reftests/text-complex-001.svg": {
-    "reftest": "FAIL"
-  },
-  "svg/text/reftests/text-complex-002.svg": {
-    "reftest": "FAIL"
-  },
   "svg/text/reftests/text-context-fill.svg": {
     "reftest": "PASS"
   },
@@ -4132,12 +4203,6 @@
   },
   "svg/text/reftests/text-positioning-list-combining-marks.html": {
     "reftest": "PASS"
-  },
-  "svg/text/reftests/text-shape-inside-001.svg": {
-    "reftest": "FAIL"
-  },
-  "svg/text/reftests/text-shape-inside-002.svg": {
-    "reftest": "FAIL"
   },
   "svg/text/reftests/text-transform-001.html": {
     "reftest": "PASS"
@@ -4283,6 +4348,9 @@
   "svg/text/reftests/xml-lang-attribute.svg": {
     "reftest": "FAIL"
   },
+  "svg/text/scripted/getcharnumatposition-edges.html": {
+    "total": 2
+  },
   "svg/text/scripted/getcharnumatposition-slr.tentative.html": {
     "total": 1
   },
@@ -4292,6 +4360,12 @@
   "svg/text/scripted/getcharnumatposition.html": {
     "total": 4
   },
+  "svg/text/scripted/getcomputedtextlength.html": {
+    "total": 9
+  },
+  "svg/text/scripted/getendpositionofchar.html": {
+    "total": 6
+  },
   "svg/text/scripted/getextentofchar-zoomed.html": {
     "total": 1
   },
@@ -4299,7 +4373,7 @@
     "total": 2
   },
   "svg/text/scripted/getnumberofchars.html": {
-    "total": 4
+    "total": 5
   },
   "svg/text/scripted/getrotationofchar.html": {
     "total": 25
@@ -4316,6 +4390,9 @@
   "svg/text/scripted/getsubstringlength-emoji-ligatures.html": {
     "total": 1
   },
+  "svg/text/scripted/getsubstringlength.html": {
+    "total": 6
+  },
   "svg/text/scripted/lengthadjust-char-positions.html": {
     "total": 7
   },
@@ -4328,8 +4405,44 @@
   "svg/text/scripted/reattach-crash.html": {
     "crashtest": "PASS"
   },
+  "svg/text/scripted/selectsubstring.html": {
+    "total": 2
+  },
+  "svg/text/scripted/shaped-text-metrics-bidi.html": {
+    "total": 11
+  },
+  "svg/text/scripted/shaped-text-metrics.html": {
+    "total": 7,
+    "failures": {
+      "Letter spacing breaks the shaping of a text chunk": "FAIL"
+    }
+  },
+  "svg/text/scripted/svgtextcontentelement-equality-methods-parameters.html": {
+    "total": 1
+  },
+  "svg/text/scripted/text-query-bidi.html": {
+    "total": 80
+  },
+  "svg/text/scripted/text-query-fragments.html": {
+    "total": 2
+  },
+  "svg/text/scripted/text-query-ligature-dx.html": {
+    "total": 1,
+    "failures": {
+      "The dx of the second character of a ligature moves the characters after it": "FAIL"
+    }
+  },
   "svg/text/scripted/textlength-inconsistent.svg": {
     "total": 1
+  },
+  "svg/text/scripted/textpath-href-basic-shape-direction.html": {
+    "total": 12
+  },
+  "svg/text/scripted/textpath-href-basic-shape-targets.html": {
+    "total": 9
+  },
+  "svg/text/scripted/textpath-href-basic-shape-transform.html": {
+    "total": 13
   },
   "svg/text/scripted/textpath-href-path-mutated.html": {
     "total": 1
@@ -4358,11 +4471,34 @@
   "svg/text/scripted/textpath-textlength-text-anchor-001.tentative.svg": {
     "total": 1
   },
+  "svg/text/scripted/textpath-textlength-text-anchor-002.tentative.svg": {
+    "total": 1,
+    "failures": {
+      "'textLength' on <textPath> with 'text-anchor' adjustments, right-to-left": "FAIL"
+    }
+  },
+  "svg/text/scripted/textpath-textlength-text-anchor-003.tentative.svg": {
+    "total": 1
+  },
   "svg/text/scripted/transform-dynamic-update.html": {
     "total": 1
   },
   "svg/text/scripted/tspan-xml-space-preserve-position.html": {
     "total": 4
+  },
+  "svg/text/scripted/typographic-character-position-methods.html": {
+    "total": 11,
+    "failures": {
+      "every mark of a typographic character with two marks returns the same start and end": "FAIL",
+      "getCharNumAtPosition returns the first character of the typographic character": "FAIL",
+      "getEndPositionOfChar on a Devanagari consonant and its vowel sign returns the end of the typographic character": "FAIL",
+      "getEndPositionOfChar on a base and on its combining mark returns the end of the typographic character": "FAIL",
+      "getExtentOfChar on a Devanagari vowel sign returns the extent of the typographic character": "FAIL",
+      "getExtentOfChar on a combining mark returns the extent of the typographic character": "FAIL"
+    }
+  },
+  "svg/text/scripted/xml-space-dynamic-text-change.html": {
+    "total": 6
   },
   "svg/top-level-document/svg-image-document-svg-xml-mime-type.tentative.html": {
     "reftest": "PASS"
@@ -4603,6 +4739,82 @@
   },
   "svg/types/scripted/SVGLength-ic.html": {
     "total": 2
+  },
+  "svg/types/scripted/SVGLength-invalid-value-initial-value.html": {
+    "total": 108,
+    "failures": {
+      "circle r: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "circle r: value = -20 reads back like markup": "FAIL",
+      "circle r: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "circle r: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "ellipse rx: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "ellipse rx: value = -20 reads back like markup": "FAIL",
+      "ellipse rx: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "ellipse rx: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "ellipse ry: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "ellipse ry: value = -20 reads back like markup": "FAIL",
+      "ellipse ry: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "ellipse ry: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "image height: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "image height: value = -20 reads back like markup": "FAIL",
+      "image height: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "image height: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "image width: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "image width: value = -20 reads back like markup": "FAIL",
+      "image width: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "image width: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "outermost svg height: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "outermost svg height: value = -20 reads back like markup": "FAIL",
+      "outermost svg height: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "outermost svg height: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "outermost svg width: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "outermost svg width: value = -20 reads back like markup": "FAIL",
+      "outermost svg width: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "outermost svg width: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "pattern height: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "pattern height: value = -20 reads back like markup": "FAIL",
+      "pattern height: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "pattern height: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "pattern width: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "pattern width: value = -20 reads back like markup": "FAIL",
+      "pattern width: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "pattern width: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "rect height: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "rect height: value = -20 reads back like markup": "FAIL",
+      "rect height: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "rect height: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "rect rx: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "rect rx: value = -20 reads back like markup": "FAIL",
+      "rect rx: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "rect rx: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "rect ry: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "rect ry: value = -20 reads back like markup": "FAIL",
+      "rect ry: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "rect ry: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "rect width: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "rect width: value = -20 reads back like markup": "FAIL",
+      "rect width: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "rect width: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "svg height: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "svg height: value = -20 reads back like markup": "FAIL",
+      "svg height: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "svg height: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "svg width: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "svg width: value = -20 reads back like markup": "FAIL",
+      "svg width: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "svg width: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "use height: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "use height: value = -20 reads back like markup": "FAIL",
+      "use height: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "use height: valueInSpecifiedUnits = -20 reads back like markup": "FAIL",
+      "use width: newValueSpecifiedUnits(PX, -20) reads back like markup": "FAIL",
+      "use width: value = -20 reads back like markup": "FAIL",
+      "use width: valueAsString = \"-20\" reads back like markup": "FAIL",
+      "use width: valueInSpecifiedUnits = -20 reads back like markup": "FAIL"
+    }
+  },
+  "svg/types/scripted/SVGLength-invalid-value-no-throw.html": {
+    "total": 28
   },
   "svg/types/scripted/SVGLength-lh.html": {
     "total": 2

@@ -1425,6 +1425,9 @@
   "html/browsers/history/the-location-interface/location-ancestor-origins-new-object.html": {
     "total": 1
   },
+  "html/browsers/history/the-location-interface/location-ancestor-origins-object.sub.html": {
+    "total": 2
+  },
   "html/browsers/history/the-location-interface/location-ancestor-origins-redirect-still-mask.sub.html": {
     "total": 16
   },
@@ -2640,6 +2643,9 @@
   },
   "html/browsers/windows/browsing-context.html": {
     "total": 3
+  },
+  "html/browsers/windows/clear-window-name-csp-sandbox.https.html": {
+    "total": 2
   },
   "html/browsers/windows/clear-window-name.https.html": {
     "harness": "TIMEOUT",

@@ -538,6 +538,14 @@
   "fetch/api/credentials/authentication-basic.any.js#sharedworker": {
     "total": 4
   },
+  "fetch/api/credentials/authentication-redirection-stored-credentials.window.js": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Stored credentials are not sent after a same-origin redirect with credentials \"omit\"": "NOTRUN",
+      "Stored credentials are sent after a same-origin redirect with credentials \"include\"": "NOTRUN"
+    }
+  },
   "fetch/api/credentials/authentication-redirection.any.js": {
     "total": 3
   },

@@ -70,6 +70,39 @@ public class CsvSerializerTests
     }
 
     [Fact]
+    public void Serialize_TextIsWrittenAsTheWriterWritesIt()
+    {
+        // The text of the default converter is written by the writer: quoted and escaped as needed, in every quote mode, as UTF-16 and as UTF-8, with
+        // long values that grow a small buffer while they are converted
+        string?[] names = [null, "", "a", "plain text of 20 ch", "a,b", "\"", "x\ny", new string('a', 17) + "\r", "=1", "é", "日\"本😀", "\u012C" + new string('b', 20), new string('a', 5000), new string('é', 3000), new string('a', 4000) + "é,"];
+        CsvSerializerOptions[] allOptions = [new(), new() { QuoteMode = CsvQuoteMode.Always }, new() { EscapeFormulas = true }, new() { Separator = ';', Quote = '\'' }, new() { BufferSize = 16 }, new() { BufferSize = 16, QuoteMode = CsvQuoteMode.Always }];
+        foreach (var options in allOptions)
+        {
+            var writerOption = new CsvWriterOptions { Separator = options.Separator, Quote = options.Quote, QuoteMode = options.QuoteMode, EscapeFormulas = options.EscapeFormulas };
+            var people = names.Select(name => new Person { Name = name, Age = 1 }).ToArray();
+
+            var expected = new StringBuilder();
+            using (var writer = CsvWriter.Create(expected, writerOption))
+            {
+                writer.WriteRow("Name", "Age", "BirthDate");
+                foreach (var person in people)
+                {
+                    writer.WriteField(person.Name);
+                    writer.WriteField(person.Age);
+                    writer.WriteField("");
+                    writer.EndRow();
+                }
+            }
+
+            Assert.Equal(expected.ToString(), CsvSerializer.Serialize(people, options));
+
+            using var stream = new MemoryStream();
+            CsvSerializer.Serialize(stream, people, options);
+            Assert.Equal(expected.ToString(), Encoding.UTF8.GetString(stream.ToArray()));
+        }
+    }
+
+    [Fact]
     public async Task AllOutputs()
     {
         Person[] people = [new() { Name = "Alice", Age = 30 }];

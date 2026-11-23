@@ -252,6 +252,50 @@ public class CsvWriterTests
     }
 
     [Fact]
+    public void WriteField_SpecialCharacterAtEveryPosition()
+    {
+        // The plain values are checked while they are copied, by blocks of 8 or 16 elements and an overlapping last block: a special character at
+        // every position of values of every length around the block sizes. U+012C and U+0A0D narrow to the bytes of ',' and CR, which must not match.
+        char[] specials = [',', '"', '\r', '\n', ';', '\'', 'é', 'Ĭ', '਍'];
+        CsvWriterOptions[] options = [new() { NewLine = "\n" }, new() { Separator = ';', Quote = '\'' }, new() { NewLine = "\n", EscapeFormulas = true }];
+        foreach (var option in options)
+        {
+            for (var length = 0; length <= 48; length++)
+            {
+                var plain = new string('a', length);
+                string[] values = [plain, .. specials.SelectMany(special => Enumerable.Range(0, length).Select(position => string.Concat(plain.AsSpan(0, position), [special], plain.AsSpan(position + 1))))];
+                foreach (var value in values)
+                {
+                    string[] row = [value, value];
+                    var expected = Reference(row, option);
+
+                    var output = new StringBuilder();
+                    using (var writer = CsvWriter.Create(output, option))
+                    {
+                        writer.WriteRow(row);
+                    }
+
+                    Assert.Equal(expected, output.ToString());
+
+                    var buffer = new ArrayBufferWriter<byte>();
+                    using (var writer = Utf8CsvWriter.Create(buffer, option))
+                    {
+                        writer.WriteRow(row);
+                        foreach (var field in row)
+                        {
+                            writer.WriteField(Encoding.UTF8.GetBytes(field));
+                        }
+
+                        writer.EndRow();
+                    }
+
+                    Assert.Equal(expected + expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void WriteField_SpecialCharactersOfNumbers()
     {
         // Numbers and dates written with the invariant culture are not searched for characters that need quotes, unless one of their characters is

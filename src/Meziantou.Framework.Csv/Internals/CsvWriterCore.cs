@@ -27,6 +27,7 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     private readonly bool _alwaysQuote;
     private readonly bool _escapeFormulas;
     private readonly bool _quoteInvariantNumbers;
+    private readonly bool _canCopyPlain;
     private readonly T[] _newLine;
     private readonly SearchValues<T> _specialValues;
     private readonly SearchValues<char>? _utf16SpecialValues;
@@ -55,6 +56,10 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         _escapeFormulas = options.EscapeFormulas;
         FormatProvider = options.FormatProvider ?? CultureInfo.InvariantCulture;
         (_newLine, _specialValues, _utf16SpecialValues) = GetTables(options.Separator, options.Quote, options.NewLine);
+
+        // The characters that require quotes are the separator, the quote, CR and LF, unless the new line has other characters: the values are then
+        // checked while they are copied (see CsvSimd.TryCopyPlain)
+        _canCopyPlain = _canQuote && !options.NewLine.AsSpan().ContainsAnyExcept('\r', '\n');
 
         // Numbers and dates written with the invariant culture need quotes only when every value is quoted, or when one of their characters is special
         _quoteInvariantNumbers = _canQuote &&
@@ -193,18 +198,29 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void WriteFieldAsNeeded(ReadOnlySpan<T> value, bool isText)
     {
-        // Most values need neither quotes nor an escaped formula: the value is copied after a single capacity check. The value is searched before
-        // it is copied: reading the copy right after writing it is slower.
+        // Most values need neither quotes nor an escaped formula: the value is copied after a single capacity check. The value is checked while it
+        // is copied, or searched before it is copied: reading the copy right after writing it is slower.
         var destination = BeginField(value.Length, out var start);
         _lastFieldLength = value.Length;
-        if ((isText && _escapeFormulas) || (_canQuote && value.ContainsAny(_specialValues)))
+        if (!(isText && _escapeFormulas))
         {
-            WriteContent(value, isText);
-            return;
+            if (_canCopyPlain)
+            {
+                if (CsvSimd.TryCopyPlain(value, destination, _separator, _quote))
+                {
+                    _position = start + value.Length;
+                    return;
+                }
+            }
+            else if (!_canQuote || !value.ContainsAny(_specialValues))
+            {
+                value.CopyTo(destination);
+                _position = start + value.Length;
+                return;
+            }
         }
 
-        value.CopyTo(destination);
-        _position = start + value.Length;
+        WriteContent(value, isText);
     }
 
     // A value quoted because every value is: the quotes are doubled while the value is copied between them, after a single capacity check
@@ -240,13 +256,14 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         }
 
         // When every value is quoted, a value without a quote to double is converted between the quotes. The quote is ASCII: it is the same byte in UTF-8.
+        // The space of ASCII text is reserved first: 3 bytes per character only when the text is not ASCII.
         if (_alwaysQuote && _canQuote && !_escapeFormulas && !value.Contains((char)ushort.CreateTruncating(_quote)))
         {
-            var quoted = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked((value.Length * 3) + 2), out var quotedStart)));
-            var content = quoted[1..];
-            if (Ascii.FromUtf16(value, content, out var length) is not OperationStatus.Done)
+            var quoted = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length + 2), out var quotedStart)));
+            if (Ascii.FromUtf16(value, quoted[1..], out var length) is not OperationStatus.Done)
             {
-                Utf8.FromUtf16(value, content, out _, out length, replaceInvalidSequences: true);
+                quoted = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked((value.Length * 3) + 2))));
+                Utf8.FromUtf16(value, quoted[1..], out _, out length, replaceInvalidSequences: true);
             }
 
             quoted[0] = byte.CreateTruncating(_quote);
@@ -256,14 +273,24 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
-        // Most values need neither quotes nor an escaped formula. When the characters that require quotes are ASCII, they are the same bytes in UTF-8:
-        // the text is searched before it is converted, as WriteFieldAsNeeded searches before it copies, and the converted text is not read again.
+        // Most values are ASCII and need neither quotes nor an escaped formula: they are checked while they are converted. The space of ASCII text is
+        // reserved first: 3 bytes per character only when the text is not ASCII, so that a long ASCII value does not grow the buffer 3 times its size.
+        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(value.Length, out var start)));
+        if (_canCopyPlain && !_escapeFormulas && !_alwaysQuote && CsvSimd.TryCopyPlainAscii(value, destination, byte.CreateTruncating(_separator), byte.CreateTruncating(_quote)))
+        {
+            _lastFieldLength = value.Length;
+            _position = start + value.Length;
+            return;
+        }
+
+        // When the characters that require quotes are ASCII, they are the same bytes in UTF-8: the text is searched before it is converted, as
+        // WriteFieldAsNeeded searches before it copies, and the converted text is not read again.
         var isPlain = _utf16SpecialValues is not null && !_escapeFormulas && !_alwaysQuote && !(_canQuote && value.ContainsAny(_utf16SpecialValues));
-        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length * 3), out var start)));
 
         // Most text is ASCII, which is converted faster than UTF-8 in general
         if (Ascii.FromUtf16(value, destination, out var bytesWritten) is not OperationStatus.Done)
         {
+            destination = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked(value.Length * 3))));
             Utf8.FromUtf16(value, destination, out _, out bytesWritten, replaceInvalidSequences: true);
         }
 

@@ -176,8 +176,9 @@ internal sealed partial class FunctionCompiler
     /// </summary>
     private sealed class Buffers
     {
-        // The lists of a larger function are not kept, so that a thread does not keep the memory of its largest function
-        private const int MaxRetainedInstructions = 16 * 1024;
+        // The lists of a larger function are not kept, so that a thread does not keep the memory of its largest function (each
+        // list grows on its own: a br_table adds a branch target per label for one instruction)
+        private const int MaxRetainedCapacity = 16 * 1024;
 
         [ThreadStatic]
         private static Buffers? s_cached;
@@ -210,8 +211,17 @@ internal sealed partial class FunctionCompiler
 
         public void Return()
         {
-            if (Code.Capacity > MaxRetainedInstructions || Heights.Capacity > MaxRetainedInstructions || Stack.Capacity > MaxRetainedInstructions)
+            if (Stack.Capacity > MaxRetainedCapacity
+                || Controls.Capacity > MaxRetainedCapacity
+                || Code.Capacity > MaxRetainedCapacity
+                || BranchTables.Capacity > MaxRetainedCapacity
+                || Handlers.Capacity > MaxRetainedCapacity
+                || InitializedLocals.Capacity > MaxRetainedCapacity
+                || Heights.Capacity > MaxRetainedCapacity
+                || Pops.Capacity > MaxRetainedCapacity)
+            {
                 return;
+            }
 
             Stack.Clear();
             Controls.Clear();

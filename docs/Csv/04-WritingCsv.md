@@ -115,6 +115,22 @@ Assert.Equal("\"'=HYPERLINK(\"\"http://example.com\"\")\",-5\n", output.ToString
 
 The values written from numbers and other formattable values are not escaped, so negative numbers stay numbers.
 
+When the quote character is the single quote, the prefix would start a quoted value. An escaped value is then always quoted
+and its prefix is doubled, like any quote in a quoted value, so a reader gets the value back with its prefix:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_EscapeFormulasSingleQuote;format=md-fenced-code-block;dedent=true -->
+```csharp
+var output = new StringBuilder();
+using (var writer = CsvWriter.Create(output, new CsvWriterOptions { EscapeFormulas = true, Quote = '\'', NewLine = "\n" }))
+{
+    writer.WriteRow("=1", "+a'b", "plain");
+}
+
+// The escaped values are quoted and their prefix is doubled, so they read back with the prefix
+Assert.Equal("'''=1','''+a''b',plain\n", output.ToString());
+```
+<!-- endref -->
+
 ## Buffering and asynchronous writing
 
 The writer keeps the data in a buffer of [BufferSize](cref:Meziantou.Framework.Csv.CsvWriterOptions.BufferSize) characters or bytes. [EndRow](cref:Meziantou.Framework.Csv.CsvWriter.EndRow) sends the buffer to the

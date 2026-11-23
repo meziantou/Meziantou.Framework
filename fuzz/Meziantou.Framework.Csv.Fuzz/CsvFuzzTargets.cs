@@ -40,7 +40,7 @@ public static partial class CsvFuzzTargets
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("csv-reader", Reader) { Seeds = GetReaderSeeds, Dictionary = Tokens },
-        new("csv-roundtrip", RoundTrip) { Seeds = GetRoundTripSeeds, Dictionary = Tokens },
+        new("csv-roundtrip", RoundTrip) { Seeds = GetRoundTripSeeds, Dictionary = [.. Tokens, "=", "+", "-", "@", "=1+1"] },
         new("csv-serializer-roundtrip", SerializerRoundTrip) { Seeds = GetSerializerRoundTripSeeds, Dictionary = Tokens },
         new("csv-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("csv-iso8601", ParseIso8601) { Seeds = GetIso8601Seeds, Dictionary = ["-", ":", "T", "Z", ".", "+", "2024", "02", "29", "23", "59", "0000000", "+02:00", "+14:00", "0001-01-01", "9999-12-31"] },
@@ -109,8 +109,9 @@ public static partial class CsvFuzzTargets
 
     /// <summary>
     /// <c>dialect, options, rows</c>: <c>dialect</c> picks the separator (bits 0-2), the quote (bits 3-4), the end of line (bits 5-6), and whether
-    /// the UTF-8 writer writes the rows (bit 7); <c>options</c> says whether the first row is a header (bit 0), whether every value is quoted (bit 7),
-    /// and gives the number of characters each read returns (the other bits). The rows are separated by <c>FF</c> and their values by <c>FE</c>;
+    /// the UTF-8 writer writes the rows (bit 7); <c>options</c> says whether the first row is a header (bit 0), whether formulas are escaped (bit 6),
+    /// whether every value is quoted (bit 7), and gives the number of characters each read returns (bits 1-5). An escaped formula reads back with its
+    /// apostrophe prefix. The rows are separated by <c>FF</c> and their values by <c>FE</c>;
     /// <c>FD</c> alone is <see langword="null"/>. Without a quote, the values lose the separator and the line terminators, which cannot be written.
     /// </summary>
     private static void RoundTrip(ReadOnlySpan<byte> data)
@@ -122,6 +123,7 @@ public static partial class CsvFuzzTargets
         var newLine = EndOfLines[(dialect >> 5) & 0x03];
         var utf8 = (dialect & 0x80) != 0 && separator <= 0x7F && quote is null or <= (char)0x7F;
         var hasHeaderRow = (options & 1) != 0;
+        var escapeFormulas = (options & 0x40) != 0;
         var quoteMode = (options & 0x80) != 0 ? CsvQuoteMode.Always : CsvQuoteMode.AsNeeded;
 
         var rows = new List<string?[]>();
@@ -144,7 +146,7 @@ public static partial class CsvFuzzTargets
             firstRow[0] = first.TrimStart('\uFEFF');
         }
 
-        var writerOptions = new CsvWriterOptions { Separator = separator, Quote = quote, NewLine = newLine, QuoteMode = quoteMode };
+        var writerOptions = new CsvWriterOptions { Separator = separator, Quote = quote, NewLine = newLine, QuoteMode = quoteMode, EscapeFormulas = escapeFormulas };
         string text;
         if (utf8)
         {
@@ -175,14 +177,18 @@ public static partial class CsvFuzzTargets
 
         var expected = rows.Select(row =>
         {
-            var values = row.Select(value => utf8 ? Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(value ?? "")) : value ?? "").ToArray();
+            var values = row.Select(value =>
+            {
+                var text = utf8 ? Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(value ?? "")) : value ?? "";
+                return escapeFormulas && text is ['=' or '+' or '-' or '@' or '\t' or '\r', ..] ? "'" + text : text;
+            }).ToArray();
 
             // Without a quote character, a row with one empty value is an empty line, which has no value
             return quote is null && values is [""] ? [] : values;
         }).ToList();
 
         var readerOptions = new CsvReaderOptions { Separator = separator, Quote = quote, HasHeaderRow = hasHeaderRow };
-        using var reader = CsvReader.Create(new ChunkedTextReader(text, new ChunkSizer((byte)((options >> 1) & 0x3F))), readerOptions);
+        using var reader = CsvReader.Create(new ChunkedTextReader(text, new ChunkSizer((byte)((options >> 1) & 0x1F))), readerOptions);
         var actual = new List<string[]>();
         while (reader.Read())
         {
@@ -508,6 +514,10 @@ public static partial class CsvFuzzTargets
         yield return new FuzzSeed("no-quote", (byte[])[0x10 | 0x80, 0x22, .. "a,b"u8, 0xFE, .. "c\nd"u8, 0xFF, .. "e\"f"u8]);
         yield return new FuzzSeed("utf8-always", (byte[])[0x80, 0x80, .. "é"u8, 0xFE, .. "😀"u8, 0xFF, 0xFD]);
         yield return new FuzzSeed("surrogates", (byte[])[0x07 | 0x18 | 0x40, 0x03, .. FuzzText.Encode("\uD800x\uDC00"), 0xFE, .. FuzzText.Encode("\uDC00\uDC00"), 0xFF, .. FuzzText.Encode("😀")]);
+        yield return new FuzzSeed("formulas", (byte[])[0x00, 0x40, .. "=1+1"u8, 0xFE, .. "+a"u8, 0xFE, .. "-"u8, 0xFE, .. "@x,y"u8, 0xFE, .. "\t\"q\""u8, 0xFF, .. "\rz"u8, 0xFE, .. "'=x"u8]);
+        yield return new FuzzSeed("formulas-apostrophe-quote", (byte[])[0x08, 0x40, .. "=1"u8, 0xFE, .. "+a'b"u8, 0xFE, .. "plain"u8, 0xFE, .. "@x"u8, 0xFE, .. "-"u8, 0xFE, .. "="u8]);
+        yield return new FuzzSeed("formulas-apostrophe-quote-utf8-always", (byte[])[0x08 | 0x80, 0x40 | 0x80, .. "=1"u8, 0xFE, .. "a"u8, 0xFF, .. "-'"u8]);
+        yield return new FuzzSeed("formulas-no-quote", (byte[])[0x10, 0x40, .. "=1"u8, 0xFE, .. "@a"u8]);
     }
 
     private static IEnumerable<FuzzSeed> GetSerializerRoundTripSeeds()

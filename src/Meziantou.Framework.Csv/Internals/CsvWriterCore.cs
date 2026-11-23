@@ -323,7 +323,10 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     private bool NeedsEscaping(ReadOnlySpan<T> value, bool isText, out bool formula, out bool quote)
     {
         formula = isText && _escapeFormulas && !value.IsEmpty && IsFormulaStart(value[0]);
-        quote = _canQuote && (_alwaysQuote || value.ContainsAny(_specialValues));
+
+        // When the quote character is the apostrophe, the prefix of an escaped formula would open a quoted value: the value is quoted, and the
+        // prefix is doubled as any quote
+        quote = _canQuote && (_alwaysQuote || (formula && _quote == SingleQuote) || value.ContainsAny(_specialValues));
         return formula || quote;
     }
 
@@ -351,11 +354,12 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
 
         var quoteChar = _quote;
         var quoteCount = value.Count(quoteChar);
-        EnsureCapacity(checked(value.Length + quoteCount + 2 + (formula ? 1 : 0)));
+        var prefixLength = !formula ? 0 : quoteChar == SingleQuote ? 2 : 1;
+        EnsureCapacity(checked(value.Length + quoteCount + 2 + prefixLength));
         var destination = Buffer.AsSpan(_position);
         var written = 0;
         destination[written++] = quoteChar;
-        if (formula)
+        for (var i = 0; i < prefixLength; i++)
         {
             destination[written++] = SingleQuote;
         }

@@ -27,7 +27,8 @@ public sealed record CsvWriterOptions
     /// <remarks>
     /// When <see langword="true"/>, a text value that starts with <c>=</c>, <c>+</c>, <c>-</c>, <c>@</c>, a tab or a carriage return is prefixed with
     /// a single quote, which prevents CSV injection when the file is opened in a spreadsheet. Values written from numbers and other formattable values
-    /// are not escaped.
+    /// are not escaped. When <see cref="Quote"/> is a single quote, an escaped value is always quoted and its prefix is doubled, so that it reads
+    /// back with the prefix.
     /// </remarks>
     public bool EscapeFormulas { get; init; }
 

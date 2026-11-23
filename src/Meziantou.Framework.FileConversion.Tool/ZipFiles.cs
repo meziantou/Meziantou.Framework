@@ -26,10 +26,22 @@ internal static class ZipFiles
     }
 
     /// <summary>Reads the decompressed content of an entry.</summary>
-    /// <exception cref="InvalidDataException">The entry is larger than <paramref name="maxLength"/>, or its data is not valid.</exception>
+    /// <exception cref="InvalidDataException">The entry is larger than <paramref name="maxLength"/>, its data is not valid, or it is encrypted (the container of an EPUB book cannot be encrypted).</exception>
     public static byte[] ReadEntry(ZipArchiveEntry entry, int maxLength = MaxEntryLength)
     {
-        using var stream = entry.Open();
-        return ArchiveFiles.ReadBounded(stream, entry.FullName, entry.Length, maxLength);
+        Stream stream;
+        try
+        {
+            stream = entry.Open();
+        }
+        catch (NotSupportedException ex)
+        {
+            throw new InvalidDataException($"The entry '{entry.FullName}' of the book is encrypted or uses a compression method that is not supported", ex);
+        }
+
+        using (stream)
+        {
+            return ArchiveFiles.ReadBounded(stream, entry.FullName, entry.Length, maxLength);
+        }
     }
 }

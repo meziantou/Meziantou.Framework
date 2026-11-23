@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.IO.Compression;
 using Meziantou.Framework.Email;
 using Meziantou.Framework.Email.Mapi;
@@ -684,6 +685,27 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     }
 
     [Fact]
+    public void MobiFont_CompressedFontWithPresetDictionary_IsNotValid()
+    {
+        // A zlib stream that needs a preset dictionary (FDICT): zlib reports it as its own exception
+        byte[] compressed = [0x78, 0x20, 0, 0, 0, 1, 0x63, 0, 0];
+        var record = new byte[24 + compressed.Length];
+        "FONT"u8.CopyTo(record);
+        BinaryPrimitives.WriteUInt32BigEndian(record.AsSpan(4), 10);
+        BinaryPrimitives.WriteUInt32BigEndian(record.AsSpan(8), 1);
+        BinaryPrimitives.WriteUInt32BigEndian(record.AsSpan(12), 24);
+        compressed.CopyTo(record, 24);
+
+        Assert.Throws<InvalidDataException>(() => Mobi.MobiFont.Decode(record));
+    }
+
+    [Fact]
+    public void HuffCdic_NoRecord_IsNotValid()
+    {
+        Assert.Throws<InvalidDataException>(() => Mobi.HuffCdicDecoder.Create([]));
+    }
+
+    [Fact]
     public async Task Error_ExistingOutput()
     {
         await using var temp = TemporaryDirectory.Create();
@@ -924,6 +946,19 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.True(EmlxFile.Load(temp.GetFullPath("hello.emlx")).Flags.HasFlag(EmlxFlags.Read));
         Assert.Equal(0, (await RunAsync(temp.GetFullPath("hello.emlx"), "-o", temp.GetFullPath("from-emlx.eml"))).ExitCode);
         Assert.Equal(eml, await File.ReadAllBytesAsync(temp.GetFullPath("from-emlx.eml"), XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task MessageFormats_EmlKeepsTheBytesOfAnEmlInput()
+    {
+        await using var temp = TemporaryDirectory.Create();
+
+        // A header line without a colon: the reader ends the headers there, so writing the parsed message would add a line
+        var eml = "From: alice@example.com\r\nSubject: Hello\r\nMIME-Version: 1.0\r\nContent-Type: text/plain\r\nContent-Transfer-\r\nEncoding: 7bit\r\n\r\nHello\r\n"u8.ToArray();
+        var input = await WriteFileAsync(temp, "hello.eml", eml);
+
+        Assert.Equal(0, (await RunAsync(input, "-o", temp.GetFullPath("copy.eml"))).ExitCode);
+        Assert.Equal(eml, await File.ReadAllBytesAsync(temp.GetFullPath("copy.eml"), XunitCancellationToken));
     }
 
     [Fact]
@@ -1380,6 +1415,41 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         string[] names = ["page10.jpg", "Page2.jpg", "page1.jpg", "page01.jpg", "cover.jpg"];
 
         Assert.Equal(["cover.jpg", "page1.jpg", "page01.jpg", "Page2.jpg", "page10.jpg"], names.Order(NaturalStringComparer.Instance).ToArray());
+    }
+
+    [Fact]
+    public void EpubPackage_EncryptedEntry_IsNotValid()
+    {
+        // The container of an EPUB book cannot use the encryption of the zip format, here the strong encryption (bits 0 and 6)
+        var epub = TestFiles.PatchZipEntry(TestFiles.CreateTextEpub(), "META-INF/container.xml", flags: 0x41);
+        using var archive = new ZipArchive(new MemoryStream(epub), ZipArchiveMode.Read);
+
+#if NET11_0_OR_GREATER
+        Assert.Throws<InvalidDataException>(() => Epub.EpubPackage.Read(archive));
+#else
+        // ZipArchive of .NET 10 ignores the encryption flags: it reads the content as is
+        Assert.NotNull(Epub.EpubPackage.Read(archive));
+#endif
+    }
+
+    [Fact]
+    public void ArchiveInput_LinksThatAreNotPagesAreNotRead()
+    {
+        // Symbolic links whose content cannot be read: only the link whose name is the name of an image is read
+        var image = TestFiles.CreateImage(2, 2, ImageFormat.Png);
+        var zip = TestFiles.CreateZip(("page1.png", image), ("notes.txt", "page1.png"u8.ToArray()), ("__MACOSX/page2.png", "page1.png"u8.ToArray()));
+        zip = TestFiles.PatchZipEntry(zip, "notes.txt", method: 17496, unixMode: 0xA1FF);
+        zip = TestFiles.PatchZipEntry(zip, "__MACOSX/page2.png", method: 17496, unixMode: 0xA1FF);
+        using (var archive = Compression.ArchiveFile.Open(new MemoryStream(zip)))
+        {
+            Assert.Equal(["page1.png"], Inputs.ArchiveInputDocument.GetPageEntries(archive).Select(entry => entry.FullName).ToArray());
+        }
+
+        zip = TestFiles.PatchZipEntry(TestFiles.CreateZip(("page1.png", image), ("page2.png", "page1.png"u8.ToArray())), "page2.png", method: 17496, unixMode: 0xA1FF);
+        using (var archive = Compression.ArchiveFile.Open(new MemoryStream(zip)))
+        {
+            Assert.Throws<NotSupportedException>(() => Inputs.ArchiveInputDocument.GetPageEntries(archive).ToArray());
+        }
     }
 
     [Theory]

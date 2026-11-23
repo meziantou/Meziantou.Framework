@@ -49,7 +49,8 @@ internal static class EmailOutputWriter
         {
             if (outputFormat == FileFormat.Eml)
             {
-                stream.Write(ToCrLf(message.GetMime().ToByteArray()));
+                // The bytes of an EML input: writing the parsed message changes the headers the reader does not keep as they are
+                stream.Write(ToCrLf(message.Content ?? message.GetMime().ToByteArray()));
             }
             else if (outputFormat == FileFormat.Emlx)
             {

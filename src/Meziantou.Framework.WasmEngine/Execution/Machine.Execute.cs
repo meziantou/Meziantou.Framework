@@ -9,7 +9,7 @@ internal sealed unsafe partial class Machine
     private void Execute(CodeFunction function, int fp, int entryFrames)
     {
         var code = function.Code;
-        var instrs = code.Code;
+        var instrs = code.Interpreted;
         var instance = function.Instance;
         var sp = EnterFrame(code, fp);
         var ob = sp;
@@ -672,6 +672,482 @@ internal sealed unsafe partial class Machine
                     break;
                 }
 
+                // ------------------------------------------------------------------------------------------------
+                // Fused operations (see InstructionFuser): pc skips the other instructions of the sequence
+                // ------------------------------------------------------------------------------------------------
+                case Op.LocalGetLocalGet:
+                    CopySlot(ref stack[fp + ins.I0], ref stack[sp]);
+                    CopySlot(ref stack[fp + ins.I1], ref stack[sp + 1]);
+                    sp += 2;
+                    pc++;
+                    break;
+
+                case Op.LocalGetConst:
+                    CopySlot(ref stack[fp + ins.I0], ref stack[sp]);
+                    SetNumber(ref stack[sp + 1], ins.L0);
+                    sp += 2;
+                    pc++;
+                    break;
+
+                case Op.LocalGetI32ConstI32Add:
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A + (int)ins.L0);
+                    pc += 2;
+                    break;
+
+                case Op.I32ConstI32Add:
+                    stack[sp - 1].A = (int)stack[sp - 1].A + (int)ins.L0;
+                    pc++;
+                    break;
+
+                case Op.LocalGetI32Load:
+                {
+                    var memory = instance.Memories[ins.I1];
+                    SetNumber(ref stack[sp++], Unsafe.ReadUnaligned<int>(memory.GetAddress(Address(memory, stack[fp + ins.I0].A), (ulong)ins.L0, 4)));
+                    pc++;
+                    break;
+                }
+
+                case Op.LocalSetLocalGet:
+                    CopySlot(ref stack[sp - 1], ref stack[fp + ins.I0]);
+                    CopySlot(ref stack[fp + ins.I1], ref stack[sp - 1]);
+                    pc++;
+                    break;
+
+                case Op.LocalTeeLocalGet:
+                    CopySlot(ref stack[sp - 1], ref stack[fp + ins.I0]);
+                    CopySlot(ref stack[fp + ins.I1], ref stack[sp++]);
+                    pc++;
+                    break;
+
+                case Op.I32CompareBrIfFirst: // i32.eqz, br_if
+                    sp--;
+                    pc++;
+                    if ((int)stack[sp].A == 0)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 1: // i32.eq, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((int)stack[sp].A == (int)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 2: // i32.ne, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((int)stack[sp].A != (int)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 3: // i32.lt_s, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((int)stack[sp].A < (int)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 4: // i32.lt_u, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((uint)stack[sp].A < (uint)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 5: // i32.gt_s, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((int)stack[sp].A > (int)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 6: // i32.gt_u, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((uint)stack[sp].A > (uint)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 7: // i32.le_s, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((int)stack[sp].A <= (int)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 8: // i32.le_u, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((uint)stack[sp].A <= (uint)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 9: // i32.ge_s, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((int)stack[sp].A >= (int)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.I32CompareBrIfFirst + 10: // i32.ge_u, br_if
+                    sp -= 2;
+                    pc++;
+                    if ((uint)stack[sp].A >= (uint)stack[sp + 1].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                // The jump of an if is taken when the condition is false
+                case Op.I32CompareJumpIfZeroFirst: // i32.eqz, if
+                    sp--;
+                    pc = (int)stack[sp].A == 0 ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 1: // i32.eq, if
+                    sp -= 2;
+                    pc = (int)stack[sp].A == (int)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 2: // i32.ne, if
+                    sp -= 2;
+                    pc = (int)stack[sp].A != (int)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 3: // i32.lt_s, if
+                    sp -= 2;
+                    pc = (int)stack[sp].A < (int)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 4: // i32.lt_u, if
+                    sp -= 2;
+                    pc = (uint)stack[sp].A < (uint)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 5: // i32.gt_s, if
+                    sp -= 2;
+                    pc = (int)stack[sp].A > (int)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 6: // i32.gt_u, if
+                    sp -= 2;
+                    pc = (uint)stack[sp].A > (uint)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 7: // i32.le_s, if
+                    sp -= 2;
+                    pc = (int)stack[sp].A <= (int)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 8: // i32.le_u, if
+                    sp -= 2;
+                    pc = (uint)stack[sp].A <= (uint)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 9: // i32.ge_s, if
+                    sp -= 2;
+                    pc = (int)stack[sp].A >= (int)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.I32CompareJumpIfZeroFirst + 10: // i32.ge_u, if
+                    sp -= 2;
+                    pc = (uint)stack[sp].A >= (uint)stack[sp + 1].A ? pc + 1 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst: // local.get, local.get, i32.add
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A + (int)stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 1: // local.get, local.get, i32.sub
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A - (int)stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 2: // local.get, local.get, i32.mul
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A * (int)stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 3: // local.get, local.get, i32.and
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A & (int)stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 4: // local.get, local.get, i32.or
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A | (int)stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 5: // local.get, local.get, i32.xor
+                    SetNumber(ref stack[sp++], (int)stack[fp + ins.I0].A ^ (int)stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 6: // local.get, local.get, i64.add
+                    SetNumber(ref stack[sp++], stack[fp + ins.I0].A + stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 7: // local.get, local.get, i64.sub
+                    SetNumber(ref stack[sp++], stack[fp + ins.I0].A - stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 8: // local.get, local.get, i64.mul
+                    SetNumber(ref stack[sp++], stack[fp + ins.I0].A * stack[fp + ins.I1].A);
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 9: // local.get, local.get, f64.add
+                    SetNumber(ref stack[sp++], Numerics.Bits(Numerics.F64(stack[fp + ins.I0].A) + Numerics.F64(stack[fp + ins.I1].A)));
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 10: // local.get, local.get, f64.sub
+                    SetNumber(ref stack[sp++], Numerics.Bits(Numerics.F64(stack[fp + ins.I0].A) - Numerics.F64(stack[fp + ins.I1].A)));
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 11: // local.get, local.get, f64.mul
+                    SetNumber(ref stack[sp++], Numerics.Bits(Numerics.F64(stack[fp + ins.I0].A) * Numerics.F64(stack[fp + ins.I1].A)));
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetBinaryFirst + 12: // local.get, local.get, f64.div
+                    SetNumber(ref stack[sp++], Numerics.Bits(Numerics.F64(stack[fp + ins.I0].A) / Numerics.F64(stack[fp + ins.I1].A)));
+                    pc += 2;
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst: // local.get, local.get, i32.eq, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A == (int)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 1: // local.get, local.get, i32.ne, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A != (int)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 2: // local.get, local.get, i32.lt_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A < (int)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 3: // local.get, local.get, i32.lt_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A < (uint)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 4: // local.get, local.get, i32.gt_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A > (int)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 5: // local.get, local.get, i32.gt_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A > (uint)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 6: // local.get, local.get, i32.le_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A <= (int)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 7: // local.get, local.get, i32.le_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A <= (uint)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 8: // local.get, local.get, i32.ge_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A >= (int)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareBrIfFirst + 9: // local.get, local.get, i32.ge_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A >= (uint)stack[fp + ins.I2].A)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst: // local.get, i32.const, i32.eq, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A == (int)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 1: // local.get, i32.const, i32.ne, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A != (int)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 2: // local.get, i32.const, i32.lt_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A < (int)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 3: // local.get, i32.const, i32.lt_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A < (uint)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 4: // local.get, i32.const, i32.gt_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A > (int)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 5: // local.get, i32.const, i32.gt_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A > (uint)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 6: // local.get, i32.const, i32.le_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A <= (int)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 7: // local.get, i32.const, i32.le_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A <= (uint)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 8: // local.get, i32.const, i32.ge_s, br_if
+                    pc += 3;
+                    if ((int)stack[fp + ins.I1].A >= (int)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetConstCompareBrIfFirst + 9: // local.get, i32.const, i32.ge_u, br_if
+                    pc += 3;
+                    if ((uint)stack[fp + ins.I1].A >= (uint)ins.L1)
+                        goto FusedBrIf;
+
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst: // local.get, local.get, i32.eq, if
+                    pc = (int)stack[fp + ins.I1].A == (int)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 1: // local.get, local.get, i32.ne, if
+                    pc = (int)stack[fp + ins.I1].A != (int)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 2: // local.get, local.get, i32.lt_s, if
+                    pc = (int)stack[fp + ins.I1].A < (int)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 3: // local.get, local.get, i32.lt_u, if
+                    pc = (uint)stack[fp + ins.I1].A < (uint)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 4: // local.get, local.get, i32.gt_s, if
+                    pc = (int)stack[fp + ins.I1].A > (int)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 5: // local.get, local.get, i32.gt_u, if
+                    pc = (uint)stack[fp + ins.I1].A > (uint)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 6: // local.get, local.get, i32.le_s, if
+                    pc = (int)stack[fp + ins.I1].A <= (int)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 7: // local.get, local.get, i32.le_u, if
+                    pc = (uint)stack[fp + ins.I1].A <= (uint)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 8: // local.get, local.get, i32.ge_s, if
+                    pc = (int)stack[fp + ins.I1].A >= (int)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetLocalGetCompareJumpIfZeroFirst + 9: // local.get, local.get, i32.ge_u, if
+                    pc = (uint)stack[fp + ins.I1].A >= (uint)stack[fp + ins.I2].A ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst: // local.get, i32.const, i32.eq, if
+                    pc = (int)stack[fp + ins.I1].A == (int)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 1: // local.get, i32.const, i32.ne, if
+                    pc = (int)stack[fp + ins.I1].A != (int)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 2: // local.get, i32.const, i32.lt_s, if
+                    pc = (int)stack[fp + ins.I1].A < (int)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 3: // local.get, i32.const, i32.lt_u, if
+                    pc = (uint)stack[fp + ins.I1].A < (uint)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 4: // local.get, i32.const, i32.gt_s, if
+                    pc = (int)stack[fp + ins.I1].A > (int)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 5: // local.get, i32.const, i32.gt_u, if
+                    pc = (uint)stack[fp + ins.I1].A > (uint)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 6: // local.get, i32.const, i32.le_s, if
+                    pc = (int)stack[fp + ins.I1].A <= (int)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 7: // local.get, i32.const, i32.le_u, if
+                    pc = (uint)stack[fp + ins.I1].A <= (uint)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 8: // local.get, i32.const, i32.ge_s, if
+                    pc = (int)stack[fp + ins.I1].A >= (int)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
+                case Op.LocalGetConstCompareJumpIfZeroFirst + 9: // local.get, i32.const, i32.ge_u, if
+                    pc = (uint)stack[fp + ins.I1].A >= (uint)ins.L1 ? pc + 3 : ins.I0;
+                    break;
+
                 default:
                 {
                     // A copy of sp is passed by reference: the address of sp would make the JIT keep it in memory in the whole loop
@@ -683,6 +1159,24 @@ internal sealed unsafe partial class Machine
                 }
             }
 
+            continue;
+
+        FusedBrIf:
+            // A comparison followed by a br_if whose branch is taken: pc is after the br_if, the operation has the target of the
+            // br_if (I0) and, when L0 is not 0, the values it keeps (I1 values at the height I2)
+            if (ins.L0 != 0)
+            {
+                CopySlots(stack, sp - ins.I1, ob + ins.I2, ins.I1);
+                sp = ob + ins.I2 + ins.I1;
+            }
+
+            if (ins.I0 < pc)
+            {
+                pc = ins.I0;
+                goto BackEdge;
+            }
+
+            pc = ins.I0;
             continue;
 
         BackEdge:
@@ -712,7 +1206,7 @@ internal sealed unsafe partial class Machine
                 fp = sp - interpreted.DefinedType.Parameters.Length;
                 function = interpreted;
                 code = interpreted.Code;
-                instrs = code.Code;
+                instrs = code.Interpreted;
                 instance = interpreted.Instance;
                 sp = EnterFrame(code, fp);
                 ob = sp;
@@ -741,7 +1235,7 @@ internal sealed unsafe partial class Machine
                 {
                     function = tailInterpreted;
                     code = tailInterpreted.Code;
-                    instrs = code.Code;
+                    instrs = code.Interpreted;
                     instance = tailInterpreted.Instance;
                     sp = EnterFrame(code, fp);
                     ob = sp;
@@ -776,7 +1270,7 @@ internal sealed unsafe partial class Machine
                 function = frame.Function;
                 frame.Function = null!;
                 code = function.Code;
-                instrs = code.Code;
+                instrs = code.Interpreted;
                 instance = function.Instance;
                 pc = frame.Pc;
                 fp = frame.Fp;
@@ -820,7 +1314,7 @@ internal sealed unsafe partial class Machine
                 function = frame.Function;
                 frame.Function = null!;
                 code = function.Code;
-                instrs = code.Code;
+                instrs = code.Interpreted;
                 instance = function.Instance;
                 pc = frame.Pc;
                 fp = frame.Fp;

@@ -73,7 +73,16 @@ internal sealed class HandlerInfo
 /// <summary>The compiled code of a function or of a constant expression.</summary>
 internal sealed class CompiledCode
 {
+    private Instr[]? _interpreted;
+
     public Instr[] Code { get; set; } = [];
+
+    /// <summary>
+    /// The instructions that the interpreter runs: <see cref="Code"/> with fused operations (see <see cref="InstructionFuser"/>),
+    /// at the same indexes. They are created when the interpreter runs the function the first time, so that the functions
+    /// that are not interpreted do not have them.
+    /// </summary>
+    public Instr[] Interpreted => _interpreted ?? CreateInterpreted();
 
     public BranchTarget[] BranchTables { get; set; } = [];
 
@@ -91,6 +100,15 @@ internal sealed class CompiledCode
 
     /// <summary>The number of slots of a frame: the locals and the operands.</summary>
     public int FrameSize => Locals.Length + MaxStackHeight;
+
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private Instr[] CreateInterpreted()
+    {
+        // Two threads can create them at the same time: the instructions are the same
+        var interpreted = InstructionFuser.Fuse(Code);
+        Volatile.Write(ref _interpreted, interpreted);
+        return interpreted;
+    }
 
     /// <summary>The height of the operand stack before each instruction (empty when dynamic code is not supported).</summary>
     public int[] Heights { get; set; } = [];

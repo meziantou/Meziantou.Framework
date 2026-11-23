@@ -3,14 +3,14 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Csv.Internals;
 
-/// <summary>The values whose text has no character that can require quotes in CSV data: numbers and dates written with the invariant culture.</summary>
+/// <summary>The values whose text has no character that can require quotes in CSV data: numbers and dates written with the invariant culture, and Boolean values.</summary>
 internal static class InvariantNumbers
 {
     /// <summary>
-    /// The characters of the integers and the decimals in the default format of the invariant culture, and of the dates and times in the round-trip
-    /// format (<c>O</c>) or the constant format of <see cref="TimeSpan"/> (<c>c</c>).
+    /// The characters of the integers and the decimals in the default format of the invariant culture, of the dates and times in the round-trip
+    /// format (<c>O</c>) or the constant format of <see cref="TimeSpan"/> (<c>c</c>), and of <c>true</c> and <c>false</c>.
     /// </summary>
-    public const string Characters = "0123456789+-.:TZ";
+    public const string Characters = "0123456789+-.:TZaeflrstu";
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static bool IsInvariant(IFormatProvider provider) => ReferenceEquals(provider, CultureInfo.InvariantCulture) || ReferenceEquals(provider, NumberFormatInfo.InvariantInfo);

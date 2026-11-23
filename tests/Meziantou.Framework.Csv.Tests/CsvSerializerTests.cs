@@ -325,11 +325,11 @@ public class CsvSerializerTests
     [Fact]
     public void BuiltInTypes_SpecialCharactersOfNumbers()
     {
-        // The numbers and the dates of the default converters are not searched for characters that need quotes, unless one of their characters is
-        // special: a separator or a quote that is a digit, a sign, a dot, a colon, T or Z still quotes them
+        // The numbers, the dates and the Boolean values of the default converters are not searched for characters that need quotes, unless one of
+        // their characters is special: a separator or a quote that is a digit, a sign, a dot, a colon, T, Z or a letter of true or false still quotes them
         var value = AllTypes.CreateSample();
         List<CsvSerializerOptions> options = [new() { QuoteMode = CsvQuoteMode.Always }];
-        foreach (var c in "0123456789+-.:TZ")
+        foreach (var c in "0123456789+-.:TZaeflrstu")
         {
             options.Add(new() { Separator = c });
             options.Add(new() { Quote = c });

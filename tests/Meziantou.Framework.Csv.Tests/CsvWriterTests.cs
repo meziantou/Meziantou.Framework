@@ -117,6 +117,58 @@ public class CsvWriterTests
     }
 
     [Fact]
+    public void EscapeFormulas_SingleQuote()
+    {
+        #region CsvWriter_EscapeFormulasSingleQuote
+        var output = new StringBuilder();
+        using (var writer = CsvWriter.Create(output, new CsvWriterOptions { EscapeFormulas = true, Quote = '\'', NewLine = "\n" }))
+        {
+            writer.WriteRow("=1", "+a'b", "plain");
+        }
+
+        // The escaped values are quoted and their prefix is doubled, so they read back with the prefix
+        Assert.Equal("'''=1','''+a''b',plain\n", output.ToString());
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(CsvQuoteMode.AsNeeded, false)]
+    [InlineData(CsvQuoteMode.AsNeeded, true)]
+    [InlineData(CsvQuoteMode.Always, false)]
+    [InlineData(CsvQuoteMode.Always, true)]
+    public void EscapeFormulas_SingleQuote_RoundTrip(CsvQuoteMode quoteMode, bool utf8)
+    {
+        string?[] values = ["=1", "+a'b", "-", "@x", "\tt", "\rr", "plain", "'", "=", ""];
+        var options = new CsvWriterOptions { EscapeFormulas = true, Quote = '\'', QuoteMode = quoteMode, NewLine = "\n" };
+        string text;
+        if (utf8)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = Utf8CsvWriter.Create(buffer, options))
+            {
+                writer.WriteRow(values);
+            }
+
+            text = Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+        else
+        {
+            var builder = new StringBuilder();
+            using (var writer = CsvWriter.Create(builder, options))
+            {
+                writer.WriteRow(values);
+            }
+
+            text = builder.ToString();
+        }
+
+        using var reader = CsvReader.CreateFromString(text, new CsvReaderOptions { Quote = '\'', HasHeaderRow = false });
+        Assert.True(reader.Read());
+        Assert.Equal(["'=1", "'+a'b", "'-", "'@x", "'\tt", "'\rr", "plain", "'", "'=", ""], reader.Current.ToStringArray());
+        Assert.False(reader.Read());
+    }
+
+    [Fact]
     public void CustomSeparator()
     {
         #region CsvWriter_CustomSeparator

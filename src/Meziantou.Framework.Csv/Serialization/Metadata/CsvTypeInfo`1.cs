@@ -67,6 +67,10 @@ public sealed class CsvTypeInfo<T> : CsvTypeInfo
             }
         }
 
+        // With a header row, the columns are found by name: a column without a value to write is left out. Without a header row, the columns are
+        // found by position: every column of the layout is written, empty when it has no value.
+        WrittenLayout = options.HasHeaderRow ? Array.FindAll(Layout, property => property is { CanSerialize: true }) : Layout;
+
         HasOnDeserializing = typeof(ICsvOnDeserializing).IsAssignableFrom(typeof(T));
         HasOnDeserialized = typeof(ICsvOnDeserialized).IsAssignableFrom(typeof(T));
         HasOnSerializing = typeof(ICsvOnSerializing).IsAssignableFrom(typeof(T));
@@ -77,6 +81,9 @@ public sealed class CsvTypeInfo<T> : CsvTypeInfo
 
     // The member of each column, null for a column that no member uses
     internal CsvPropertyInfo<T>?[] Layout { get; }
+
+    // The member of each column the serializer writes, null for an empty column
+    internal CsvPropertyInfo<T>?[] WrittenLayout { get; }
 
     internal Func<T>? ObjectCreator { get; }
 

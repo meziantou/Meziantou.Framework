@@ -891,8 +891,8 @@
     "kind": "github-test-suite",
     "repo": "web-platform-tests/wpt",
     "ref": "master",
-    "commit": "c8fa86fb13d4596dad4c5367cb4555b585c05f8a",
-    "manifest": "https://github.com/web-platform-tests/wpt/releases/download/merge_pr_65166/MANIFEST-c8fa86fb13d4596dad4c5367cb4555b585c05f8a.json.gz"
+    "commit": "e00a7b14e8e3d9c04933e29ed247baf76c60706e",
+    "manifest": "https://github.com/web-platform-tests/wpt/releases/download/merge_pr_65578/MANIFEST-e00a7b14e8e3d9c04933e29ed247baf76c60706e.json.gz"
   },
   "html-source": {
     "kind": "github-files",

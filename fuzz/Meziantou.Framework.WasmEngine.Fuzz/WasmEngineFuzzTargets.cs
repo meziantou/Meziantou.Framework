@@ -11,6 +11,8 @@ namespace Meziantou.Framework.WasmEngine.Fuzz;
 /// <item>The instantiation of a compiled module, with imports created from their types, and the calls of its exported
 /// functions, only throw the exceptions of the engine (or the interruption of the store).</item>
 /// <item>The functions compiled to .NET code behave as the interpreted ones: the same results, traps, memories and globals.</item>
+/// <item>The code cache of a module loads the same code, and a changed cache is not used; the reader of the code of a
+/// cache only throws a <see cref="CodeCacheFormatException"/>.</item>
 /// <item>The readers of the source generator agree with the engine (<see cref="WasmSourceGeneratorFuzzTargets"/>).</item>
 /// </list>
 /// </summary>
@@ -27,12 +29,19 @@ public static class WasmEngineFuzzTargets
 
     private static readonly WasmRuntime Runtime = new(new WasmRuntimeOptions { MaxMemorySize = MaxMemorySize, MaxStackSize = 256 * 1024 });
 
+    // Loads the code caches: its registry canonicalizes the types again
+    private static readonly WasmRuntime CodeCacheRuntime = new(new WasmRuntimeOptions { MaxMemorySize = MaxMemorySize, MaxStackSize = 256 * 1024 });
+
+    private static byte[]? s_codeCacheReaderModule;
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("wasm-validate-compile", ValidateCompileTarget) { Seeds = GetSeeds, Dictionary = BinaryTokens },
         new("wasm-wat2wasm", WatToWasmTarget) { Seeds = GetTextSeeds, Dictionary = TextTokens },
         new("wasm-instantiate", InstantiateTarget) { Seeds = GetSeeds, Dictionary = BinaryTokens },
         new("wasm-compiled-interpreted", CompiledInterpretedTarget) { Seeds = GetSeeds, Dictionary = BinaryTokens },
+        new("wasm-code-cache", CodeCacheTarget) { Seeds = GetSeeds, Dictionary = BinaryTokens },
+        new("wasm-code-cache-reader", CodeCacheReaderTarget) { Seeds = GetCodeCacheSeeds },
         new("wasm-generator-binary", WasmSourceGeneratorFuzzTargets.BinaryTarget) { Seeds = () => GetSeeds().Concat(WasmSourceGeneratorFuzzTargets.GetBinarySeeds()), Dictionary = BinaryTokens },
         new("wasm-generator-text", WasmSourceGeneratorFuzzTargets.TextTarget) { Seeds = () => GetTextSeeds().Concat(WasmSourceGeneratorFuzzTargets.GetTextSeeds()), Dictionary = TextTokens },
     ];
@@ -43,6 +52,17 @@ public static class WasmEngineFuzzTargets
         {
             yield return new FuzzSeed(name, WasmRuntime.WatToWasm(text));
         }
+    }
+
+    /// <summary>The module whose code the reader target reads: its types are used by the code of the cache.</summary>
+    private static byte[] CodeCacheReaderModule => s_codeCacheReaderModule ??= WasmRuntime.WatToWasm(Modules.Single(module => module.Name == "code-cache").Text);
+
+    /// <summary>The code of the caches of the code-cache module (the bytes between the header and the hash).</summary>
+    private static IEnumerable<FuzzSeed> GetCodeCacheSeeds()
+    {
+        var cache = Runtime.Compile(CodeCacheReaderModule).CreateCodeCache();
+        yield return new FuzzSeed("code-cache", cache.AsMemory(CodeCache.HeaderSize, cache.Length - CodeCache.HeaderSize - CodeCache.HashSize));
+        yield return new FuzzSeed("empty", new byte[] { 0 });
     }
 
     private static IEnumerable<FuzzSeed> GetTextSeeds()
@@ -89,6 +109,47 @@ public static class WasmEngineFuzzTargets
         {
             FuzzAssert.True(section.Length <= module.Bytes.Length, "A custom section is larger than the module");
         }
+    }
+
+    private static void CodeCacheTarget(ReadOnlySpan<byte> data)
+    {
+        var bytes = data.ToArray();
+        WasmModule module;
+        try
+        {
+            module = Runtime.Compile(bytes);
+        }
+        catch (WasmCompileException)
+        {
+            return;
+        }
+
+        var cache = module.CreateCodeCache();
+        var loaded = CodeCacheRuntime.Compile(bytes, cache);
+        FuzzAssert.True(loaded.IsLoadedFromCodeCache, "The code cache of the module is not used");
+        FuzzAssert.True(loaded.CreateCodeCache().AsSpan().SequenceEqual(cache), "The code cache of the module loaded from its cache is not the same");
+        FuzzAssert.Equal(module.Imports.Count, loaded.Imports.Count, "The module loaded from its cache does not have the imports of the module");
+        FuzzAssert.Equal(module.Exports.Count, loaded.Exports.Count, "The module loaded from its cache does not have the exports of the module");
+
+        // A changed cache is not used: the module is compiled from its binary
+        cache[cache.Length / 2] ^= 1;
+        FuzzAssert.False(CodeCacheRuntime.Compile(bytes, cache).IsLoadedFromCodeCache, "A changed code cache is used");
+    }
+
+    /// <summary>The reader of the code of a cache, without the checks of the header and of the hash: a malformed code only throws a <see cref="CodeCacheFormatException"/>.</summary>
+    private static void CodeCacheReaderTarget(ReadOnlySpan<byte> data)
+    {
+        var module = ModuleDecoder.DecodeWithoutCode(CodeCacheReaderModule, CodeCacheRuntime.Registry);
+        try
+        {
+            CodeCache.ReadPayload(data, module);
+        }
+        catch (CodeCacheFormatException)
+        {
+            return;
+        }
+
+        FuzzAssert.Equal(module.Functions.Count - module.ImportedFunctionCount, module.Code.Count, "The cache does not have the code of every function");
     }
 
     private static void WatToWasmTarget(ReadOnlySpan<byte> data)
@@ -645,6 +706,31 @@ public static class WasmEngineFuzzTargets
             (module
               (func (export "trap") unreachable)
               (func (export "div") (param i32) (result i32) (i32.div_s (i32.const 1) (local.get 0))))
+            """),
+        ("code-cache", """
+            (module
+              (type $point (struct (field $x (mut i32)) (field $y i32)))
+              (type $bin (func (param i32 i32) (result i32)))
+              (global $g (mut i32) (i32.const 7))
+              (table 2 funcref)
+              (elem (i32.const 0) $add $sub)
+              (tag $e (param i32))
+              (func $add (type $bin) (i32.add (local.get 0) (local.get 1)))
+              (func $sub (type $bin) (i32.sub (local.get 0) (local.get 1)))
+              (func (export "run") (param i32) (result i32)
+                (local $p (ref null $point))
+                (local.set $p (struct.new $point (i32.mul (local.get 0) (i32.const 10)) (i32.const 3)))
+                (block $default
+                  (block $one
+                    (block $zero
+                      (br_table $zero $one $default (local.get 0)))
+                    (return (call_indirect (type $bin) (i32.const 1) (i32.const 2) (i32.const 0))))
+                  (return (call_indirect (type $bin) (global.get $g) (i32.const 2) (i32.const 1))))
+                (block $caught (result i32)
+                  (try_table (catch $e $caught)
+                    (throw $e (i32.add (struct.get $point $x (local.get $p)) (struct.get $point $y (local.get $p)))))
+                  (i32.const -1)))
+              (func (export "big") (result i64) (i64.const -81985529216486896)))
             """),
         ("globals-tables", """
             (module

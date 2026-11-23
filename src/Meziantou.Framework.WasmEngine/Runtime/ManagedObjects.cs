@@ -475,6 +475,12 @@ internal sealed class ManagedModule : WasmModule
 
     public ModuleInfo Info { get; }
 
+    public bool LoadedFromCodeCache { get; init; }
+
+    public override bool IsLoadedFromCodeCache => LoadedFromCodeCache;
+
+    public override byte[] CreateCodeCache() => CodeCache.Serialize(Info, SourceBytes);
+
     public override IReadOnlyList<WasmImport> Imports => _imports ??= Info.Imports.ConvertAll(import => new WasmImport(import.Module, import.Name, GetExternType(import.Kind, import.Index)));
 
     public override IReadOnlyList<WasmExport> Exports => _exports ??= Info.Exports.ConvertAll(export => new WasmExport(export.Name, GetExternType(export.Kind, export.Index)));

@@ -208,8 +208,8 @@ public class CsvWriterTests
     public void WriteField_MatchesReference()
     {
         // Every option that changes how a value is escaped, with values that need quotes, escaped quotes or an escaped formula, of lengths around the
-        // vector sizes, and small buffers that grow while a value is written
-        string[] values = ["", "a", "plain", "a,b", "a\"b", "\"", "\"\"", "line\nbreak", "cr\r", "=1+1", "+1", "-1", "@a", "\tx", "\rx", "x;y", "a|b", new string('a', 15), new string('a', 16) + ",", new string('"', 33), new string('b', 70) + "\"" + new string('c', 70)];
+        // vector sizes, values that are not ASCII, and small buffers that grow while a value is written
+        string[] values = ["", "a", "plain", "a,b", "a\"b", "\"", "\"\"", "line\nbreak", "cr\r", "=1+1", "+1", "-1", "@a", "\tx", "\rx", "x;y", "a|b", new string('a', 15), new string('a', 16) + ",", new string('"', 33), new string('b', 70) + "\"" + new string('c', 70), "é", "é,ü", "日\"本😀"];
         CsvWriterOptions[] options =
         [
             new() { NewLine = "\n" },

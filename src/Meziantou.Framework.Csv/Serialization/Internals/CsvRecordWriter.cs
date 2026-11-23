@@ -12,12 +12,9 @@ internal static class CsvRecordWriter
         if (!typeInfo.Options.HasHeaderRow)
             return;
 
-        foreach (var property in typeInfo.Layout)
+        foreach (var property in typeInfo.WrittenLayout)
         {
-            if (IsWritten(property, hasHeaderRow: true))
-            {
-                writer.WriteUtf16Field(property is null ? "" : property.Name);
-            }
+            writer.WriteUtf16Field(property is null ? "" : property.Name);
         }
 
         writer.EndRow();
@@ -34,12 +31,8 @@ internal static class CsvRecordWriter
             ((ICsvOnSerializing)value).OnSerializing();
         }
 
-        var hasHeaderRow = typeInfo.Options.HasHeaderRow;
-        foreach (var property in typeInfo.Layout)
+        foreach (var property in typeInfo.WrittenLayout)
         {
-            if (!IsWritten(property, hasHeaderRow))
-                continue;
-
             if (property is null)
             {
                 writer.WriteField([], isText: false);
@@ -61,8 +54,4 @@ internal static class CsvRecordWriter
             ((ICsvOnSerialized)value).OnSerialized();
         }
     }
-
-    // With a header row, the columns are found by name: a column without a value to write is left out. Without a header row, the columns are
-    // found by position: every column of the layout is written, empty when it has no value.
-    private static bool IsWritten(CsvPropertyInfo? property, bool hasHeaderRow) => !hasHeaderRow || property is { CanSerialize: true };
 }

@@ -66,6 +66,22 @@ public class WriteBenchmark
         return buffer.WrittenCount;
     }
 
+    /// <summary>Writes rows of string values as UTF-8, all quoted.</summary>
+    [Benchmark]
+    public int Utf8_Strings_AlwaysQuote()
+    {
+        var buffer = new ArrayBufferWriter<byte>();
+        using (var writer = Utf8CsvWriter.Create(buffer, new CsvWriterOptions { QuoteMode = CsvQuoteMode.Always }))
+        {
+            foreach (var row in _rows)
+            {
+                writer.WriteRow(row);
+            }
+        }
+
+        return buffer.WrittenCount;
+    }
+
     [Benchmark]
     public int Utf16_Formatted()
     {

@@ -673,9 +673,14 @@ internal sealed unsafe partial class Machine
                 }
 
                 default:
-                    ExecuteExtended(in ins, instance, stack, ref sp);
+                {
+                    // A copy of sp is passed by reference: the address of sp would make the JIT keep it in memory in the whole loop
+                    var extendedSp = sp;
+                    ExecuteExtended(in ins, instance, stack, ref extendedSp);
+                    sp = extendedSp;
                     stack = _stack;
                     break;
+                }
             }
 
             continue;

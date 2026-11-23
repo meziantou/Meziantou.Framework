@@ -135,7 +135,7 @@ A navigator answers the questions the evaluator asks about a value:
 | [CopyElements](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.CopyElements) | Copies array elements in index order when indexed access is not constant time |
 | [HasConstantTimePropertyLookup](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.HasConstantTimePropertyLookup) | Whether looking up an object member by name takes constant time |
 | [TryGetString](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetString), [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber), [TryGetBoolean](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetBoolean) | The scalar value, and whether the value has that type |
-| [TryGetNumberText](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumberText) | Optional: the exact text of a number, to compare numbers that round to the same `double` |
+| [TryGetNumberText](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumberText) | Optional: the exact text of a number, to compare numbers whose `double` values are equal or adjacent |
 
 ## Rules for a navigator
 
@@ -147,7 +147,7 @@ A navigator answers the questions the evaluator asks about a value:
 - **Give the text of numbers that a `double` does not hold.** [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber) returns a `double`. When your model holds
   numbers that a `double` rounds, such as `long`, `decimal` or `BigInteger` values, also override
   [TryGetNumberText](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumberText) to return their exact text, such as `value.ToString(CultureInfo.InvariantCulture)`. Filters use it
-  to compare the numbers that round to the same `double`; without it, they compare as equal. See
+  to compare the numbers whose `double` values are equal or adjacent; without it, they compare as `double` values. See
   [Number precision](09-Limitations.md#number-precision).
 - **Expose a tree, not a graph.** A cycle, such as a back-reference to the parent, is reported as a depth error
   ([JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException)) when a descendant segment or a comparison walks it, instead of looping forever.

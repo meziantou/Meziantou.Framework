@@ -296,8 +296,8 @@ back-reference, for example — is reported as this same depth error rather than
 ### Number precision
 
 Filter expressions compare numbers, both the literals in the query and the values in the document, by their exact
-value. They are compared as `double` values first, and the numbers that round to the same `double` are compared by
-their text: `$[?@ == 9007199254740993]` does not match `9007199254740992`, and `$[?@ == 1e400]` does not match
+value. They are compared as `double` values first, and the numbers whose `double` values are equal or adjacent are compared
+by their text: `$[?@ == 9007199254740993]` does not match `9007199254740992`, and `$[?@ == 1e400]` does not match
 `1e500`. A custom `JsonPathNavigator<TValue>` gives the text of its numbers by overriding `TryGetNumberText`; without
 it, its numbers compare as `double` values.
 

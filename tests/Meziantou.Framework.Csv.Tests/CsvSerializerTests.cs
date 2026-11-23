@@ -70,6 +70,38 @@ public class CsvSerializerTests
     }
 
     [Fact]
+    public void Serialize_TextIsWrittenAsTheWriterWritesIt()
+    {
+        // The text of the default converter is written by the writer: quoted and escaped as needed, in every quote mode, as UTF-16 and as UTF-8
+        string?[] names = [null, "", "a", "plain text of 20 ch", "a,b", "\"", "x\ny", new string('a', 17) + "\r", "=1", "é", "日\"本😀", "Ĭ" + new string('b', 20)];
+        CsvSerializerOptions[] allOptions = [new(), new() { QuoteMode = CsvQuoteMode.Always }, new() { EscapeFormulas = true }, new() { Separator = ';', Quote = '\'' }];
+        foreach (var options in allOptions)
+        {
+            var writerOption = new CsvWriterOptions { Separator = options.Separator, Quote = options.Quote, QuoteMode = options.QuoteMode, EscapeFormulas = options.EscapeFormulas };
+            var people = names.Select(name => new Person { Name = name, Age = 1 }).ToArray();
+
+            var expected = new StringBuilder();
+            using (var writer = CsvWriter.Create(expected, writerOption))
+            {
+                writer.WriteRow("Name", "Age", "BirthDate");
+                foreach (var person in people)
+                {
+                    writer.WriteField(person.Name);
+                    writer.WriteField(person.Age);
+                    writer.WriteField("");
+                    writer.EndRow();
+                }
+            }
+
+            Assert.Equal(expected.ToString(), CsvSerializer.Serialize(people, options));
+
+            using var stream = new MemoryStream();
+            CsvSerializer.Serialize(stream, people, options);
+            Assert.Equal(expected.ToString(), Encoding.UTF8.GetString(stream.ToArray()));
+        }
+    }
+
+    [Fact]
     public async Task AllOutputs()
     {
         Person[] people = [new() { Name = "Alice", Age = 30 }];

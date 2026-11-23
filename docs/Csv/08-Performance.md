@@ -35,6 +35,9 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
   Integers and decimals in the default format of the invariant culture, and dates in the round-trip format (`O`), are not
   searched for characters that need quotes.
 - **Write UTF-8 with [Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter)** when the output is a file, a stream or a network response.
+- **Keep a new line made of `\r` and `\n`.** Text values are then checked for characters that need quotes while they are
+  copied, or converted to UTF-8 when they are ASCII, in blocks of 8 or 16 characters. A [NewLine](cref:Meziantou.Framework.Csv.CsvWriterOptions.NewLine) with
+  other characters makes the writer search each value before copying it.
 - **Use [EndRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.EndRowAsync)** with an asynchronous output: the writer only awaits when its buffer is mostly full.
 
 ## Serialization

@@ -1,17 +1,22 @@
 using System.Numerics;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Csv.Internals;
+using Meziantou.Framework.Csv.Serialization.Converters;
 
 namespace Meziantou.Framework.Csv.Serialization.Metadata;
 
 internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDeclaring>
 {
+    // The writer reserves 3 bytes per character to convert text to UTF-8: longer text goes through the converter, which grows its buffer as needed
+    private const int MaxDirectTextLength = 64 * 1024 * 1024;
+
     private readonly Func<TDeclaring, TValue>? _getter;
     private readonly CsvPropertySetter<TDeclaring, TValue>? _setter;
     private readonly CsvConverter<TValue> _converter;
     private readonly CsvConverterContext _context;
     private readonly bool _isText;
     private readonly bool _isInvariantNumber;
+    private readonly bool _isDefaultString;
 
     public CsvPropertyInfo(string name, CsvPropertyInfoValues<TDeclaring, TValue> values, CsvConverter<TValue> converter, CsvConverterContext context)
         : base(name, values.MemberName, typeof(TValue), values.Order, values.ColumnIndex, values.IsRequired, values.Format, converter, values.ParameterIndex)
@@ -22,6 +27,7 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         _context = context;
         _isText = typeof(TValue) == typeof(string);
         _isInvariantNumber = converter.IsInvariantNumber(context);
+        _isDefaultString = converter is StringCsvConverter;
     }
 
     public override bool CanSerialize => _getter is not null;
@@ -91,6 +97,17 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         {
             writer.WriteField([], isText: false);
             return;
+        }
+
+        // The text of the default converter is written as the writer writes text: it is checked while it is copied, instead of searched after
+        if (_isDefaultString)
+        {
+            var text = (string?)(object?)value;
+            if (text is null || text.Length <= MaxDirectTextLength)
+            {
+                writer.WriteUtf16Field(text);
+                return;
+            }
         }
 
         var sizeHint = 64;

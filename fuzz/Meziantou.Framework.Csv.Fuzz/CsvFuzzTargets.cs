@@ -208,7 +208,7 @@ public static partial class CsvFuzzTargets
     /// <c>dialect, options, rows</c>: <c>dialect</c> picks the separator (bits 0-2), the quote (bits 3-4), the end of line (bits 5-6), and whether
     /// the UTF-8 writer writes the rows (bit 7); <c>options</c> picks the quote mode (bits 0-1), whether formulas are escaped (bit 2) and the size of
     /// the buffer (the other bits). The rows are separated by <c>FF</c> and their values by <c>FE</c>; <c>FD</c> alone is <see langword="null"/>.
-    /// The writers write what a reference escaper writes, value by value.
+    /// The writers write what a reference escaper writes, value by value; the UTF-8 writer writes the same data from the values as UTF-8 bytes.
     /// </summary>
     private static void Writer(ReadOnlySpan<byte> data)
     {
@@ -254,6 +254,23 @@ public static partial class CsvFuzzTargets
             }
 
             text = Encoding.UTF8.GetString(buffer.WrittenSpan);
+
+            // The values written as UTF-8 bytes are escaped as the same values written as text
+            var bytesBuffer = new ArrayBufferWriter<byte>();
+            using (var writer = Utf8CsvWriter.Create(bytesBuffer, writerOptions))
+            {
+                foreach (var row in rows)
+                {
+                    foreach (var value in row)
+                    {
+                        writer.WriteField(Encoding.UTF8.GetBytes(value ?? ""));
+                    }
+
+                    writer.EndRow();
+                }
+            }
+
+            FuzzAssert.Equal(FuzzAssert.Format(text), FuzzAssert.Format(Encoding.UTF8.GetString(bytesBuffer.WrittenSpan)), "The values written as UTF-8 bytes are not written as the same text");
         }
         else
         {

@@ -34,7 +34,7 @@ public abstract class CsvConverter<T> : CsvConverter
 
     /// <summary>Gets a value indicating whether the text the converter writes only has characters of <see cref="InvariantNumbers.Characters"/>, so that the writer does not search it for characters that need quotes.</summary>
     /// <param name="context">The context of the conversion of the column.</param>
-    /// <returns><see langword="true"/> for the integers, the decimals and the dates written by the default converters with the invariant culture.</returns>
+    /// <returns><see langword="true"/> for the integers, the decimals and the dates written by the default converters with the invariant culture, and for the Boolean values.</returns>
     internal virtual bool IsInvariantNumber(CsvConverterContext context) => false;
 
     /// <summary>Converts a value read from the data.</summary>

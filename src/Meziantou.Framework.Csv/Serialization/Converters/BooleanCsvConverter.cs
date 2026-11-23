@@ -28,6 +28,9 @@ internal sealed class BooleanCsvConverter : CsvConverter<bool>
         return base.Read(utf8Value, context);
     }
 
+    // The converter writes true or false, whatever the format
+    internal override bool IsInvariantNumber(CsvConverterContext context) => true;
+
     public override bool TryFormat(bool value, Span<char> destination, out int charsWritten, CsvConverterContext context)
     {
         var text = value ? "true" : "false";

@@ -9,17 +9,11 @@ description: "The results of the web-platform-tests of encoding, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 151 | 153 | 0 | 99% |
+| [Stable](#stable-tests) | 153 | 153 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
 | [Crash tests](#crash-tests) | 2 | 2 | 0 | 100% |
-| **All** | **157** | **159** | **0** | **99%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 2
+| **All** | **159** | **159** | **0** | **100%** |
 
 ## Stable tests
 
@@ -165,11 +159,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`textdecoder-copy.any.js`](https://wpt.fyi/results/encoding/textdecoder-copy.any.js) | Pass | 6 / 6 |  |  |
 | [`textdecoder-eof.any.js`](https://wpt.fyi/results/encoding/textdecoder-eof.any.js) | Pass | 4 / 4 |  |  |
 | [`textdecoder-fatal-single-byte.any.js`](https://wpt.fyi/results/encoding/textdecoder-fatal-single-byte.any.js) | Pass | 14,336 / 14,336 |  |  |
-| [`textdecoder-fatal-streaming.any.js`](https://wpt.fyi/results/encoding/textdecoder-fatal-streaming.any.js) | Fail | 10 / 16 | NOT IMPLEMENTED | 3 of 8 subtests: resetting a `TextDecoder` when `decode()` throws (https://github.com/whatwg/encoding/pull/369, merged in the Encoding Standard in November 2026): the next call keeps the state from before the error, so a BOM that follows the error is not removed |
+| [`textdecoder-fatal-streaming.any.js`](https://wpt.fyi/results/encoding/textdecoder-fatal-streaming.any.js) | Pass | 16 / 16 |  |  |
 | [`textdecoder-fatal.any.js`](https://wpt.fyi/results/encoding/textdecoder-fatal.any.js) | Pass | 72 / 72 |  |  |
 | [`textdecoder-ignorebom.any.js`](https://wpt.fyi/results/encoding/textdecoder-ignorebom.any.js) | Pass | 8 / 8 |  |  |
 | [`textdecoder-labels.any.js`](https://wpt.fyi/results/encoding/textdecoder-labels.any.js) | Pass | 444 / 444 |  |  |
-| [`textdecoder-mistakes.any.js`](https://wpt.fyi/results/encoding/textdecoder-mistakes.any.js) | Fail | 212 / 216 | NOT IMPLEMENTED | 2 of 108 subtests: resetting a `TextDecoder` when `decode()` throws (https://github.com/whatwg/encoding/pull/369, merged in the Encoding Standard in November 2026): the next call keeps the state of the decoder from before the error (the ISO-2022-JP mode, the EUC-JP JIS X 0212 flag) |
+| [`textdecoder-mistakes.any.js`](https://wpt.fyi/results/encoding/textdecoder-mistakes.any.js) | Pass | 216 / 216 |  |  |
 | [`textdecoder-streaming.any.js`](https://wpt.fyi/results/encoding/textdecoder-streaming.any.js) | Pass | 96 / 96 |  |  |
 | [`textdecoder-utf16-surrogates.any.js`](https://wpt.fyi/results/encoding/textdecoder-utf16-surrogates.any.js) | Pass | 20 / 20 |  |  |
 | [`textencoder-constructor-non-utf.any.js`](https://wpt.fyi/results/encoding/textencoder-constructor-non-utf.any.js) | Pass | 158 / 158 |  |  |

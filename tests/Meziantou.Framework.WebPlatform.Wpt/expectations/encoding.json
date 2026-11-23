@@ -3927,20 +3927,10 @@
     "total": 168
   },
   "encoding/textdecoder-fatal-streaming.any.js": {
-    "total": 8,
-    "failures": {
-      "Fatal flag, streaming error resets BOM handling: utf-16be": "FAIL",
-      "Fatal flag, streaming error resets BOM handling: utf-16le": "FAIL",
-      "Fatal flag, streaming error resets BOM handling: utf-8": "FAIL"
-    }
+    "total": 8
   },
   "encoding/textdecoder-fatal-streaming.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "Fatal flag, streaming error resets BOM handling: utf-16be": "FAIL",
-      "Fatal flag, streaming error resets BOM handling: utf-16le": "FAIL",
-      "Fatal flag, streaming error resets BOM handling: utf-8": "FAIL"
-    }
+    "total": 8
   },
   "encoding/textdecoder-fatal.any.js": {
     "total": 36
@@ -3961,18 +3951,10 @@
     "total": 222
   },
   "encoding/textdecoder-mistakes.any.js": {
-    "total": 108,
-    "failures": {
-      "EUC-JP JIS0212 state after a fatal streaming error": "FAIL",
-      "fatal stream: iso-2022-jp": "FAIL"
-    }
+    "total": 108
   },
   "encoding/textdecoder-mistakes.any.js#dedicatedworker": {
-    "total": 108,
-    "failures": {
-      "EUC-JP JIS0212 state after a fatal streaming error": "FAIL",
-      "fatal stream: iso-2022-jp": "FAIL"
-    }
+    "total": 108
   },
   "encoding/textdecoder-streaming.any.js": {
     "total": 32

@@ -53,7 +53,7 @@
     },
     "wpt": {
       "pin": [
-        "web-platform-tests/wpt@c8fa86fb13d4596dad4c5367cb4555b585c05f8a",
+        "web-platform-tests/wpt@e00a7b14e8e3d9c04933e29ed247baf76c60706e",
         "resources",
         "common",
         "url",
@@ -118,7 +118,6 @@
         "html/infrastructure/common-microsyntaxes",
         "html/infrastructure/safe-passing-of-structured-data",
         "html/obsolete",
-        "html/scripting",
         "html/browsers/offline",
         "svg/types",
         "svg/path",
@@ -240,7 +239,6 @@
         "html/meta",
         "wasm",
         "webvtt",
-        "html/select",
         "html/rendering",
         "css/cssom-view",
         "css/CSS2/normal-flow",
@@ -466,7 +464,7 @@
         "client-hints",
         "ua-client-hints"
       ],
-      "snapshot": "b51a6cbfed5497763d85f6ca126422a466f6c345"
+      "snapshot": "0f844effc80074b6e6e290bf3feade711aea780d"
     }
   }
 }

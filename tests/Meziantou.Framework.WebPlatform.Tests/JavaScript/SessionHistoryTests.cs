@@ -521,4 +521,100 @@ public sealed class SessionHistoryTests : IDisposable
         Assert.NotSame(a, context.Document);
         Assert.Equal(["https://example.com/a.html"], _loader.Requests.ConvertAll(request => request.Url));
     }
+
+    // Records the user activation of the window when its first script runs: [transient, sticky]
+    private const string UserActivationRecorder = "<script>var firstScript = [navigator.userActivation.isActive, navigator.userActivation.hasBeenActive].join();</script>";
+
+    [Theory]
+    [InlineData("location.href = 'b.html'", "https://example.com/b.html", "false,true")]
+    [InlineData("location.replace('b.html')", "https://example.com/b.html", "false,true")]
+    [InlineData("location.reload()", "https://example.com/a.html", "false,true")]
+    [InlineData("location.href = 'same-origin-redirect.html'", "https://example.com/b.html", "false,true")]
+    [InlineData("location.href = 'https://other.example/b.html'", "https://other.example/b.html", "false,false")]
+    [InlineData("location.href = 'https://other.example/redirect.html'", "https://example.com/b.html", "false,false")]
+    public void StickyActivation_IsCarriedOverBySameOriginNavigations(string navigation, string expectedUrl, string expectedActivation)
+    {
+        _loader.Resources["https://example.com/a.html"] = new DocumentResource(UserActivationRecorder);
+        _loader.Resources["https://example.com/b.html"] = new DocumentResource(UserActivationRecorder);
+        _loader.Resources["https://other.example/b.html"] = new DocumentResource(UserActivationRecorder);
+        _loader.Resources["https://example.com/same-origin-redirect.html"] = new DocumentResource("") { StatusCode = 302, Headers = [new("Location", "https://example.com/b.html")] };
+        _loader.Resources["https://other.example/redirect.html"] = new DocumentResource("") { StatusCode = 302, Headers = [new("Location", "https://example.com/b.html")] };
+        var context = CreateBackForwardCacheContext(backForwardCacheSize: 0);
+        var a = context.Navigate("https://example.com/a.html", _ => UserActivationRecorder);
+        RunEventLoop();
+        Window.NotifyActivation(a);
+        Assert.Equal("true", TestScriptEngines.Evaluate(_engine, context.Window, "navigator.userActivation.hasBeenActive"));
+
+        TestScriptEngines.Evaluate(_engine, context.Window, navigation);
+        RunEventLoop();
+
+        // The transient activation is not carried over. A cross-origin document cannot give the activation by redirecting to
+        // a same-origin document.
+        Assert.Empty(_errors);
+        Assert.NotSame(a, context.Document);
+        Assert.Equal(expectedUrl, context.Document.Url);
+        Assert.Equal(expectedActivation, TestScriptEngines.Evaluate(_engine, context.Window, "firstScript"));
+    }
+
+    [Fact]
+    public void StickyActivation_IsNotCarriedOverByANavigationWithoutInitiator()
+    {
+        var context = CreateBackForwardCacheContext(backForwardCacheSize: 0);
+        var a = context.Navigate("https://example.com/a.html", _ => UserActivationRecorder);
+        RunEventLoop();
+        Window.NotifyActivation(a);
+
+        // The application navigates the browsing context, as the user of a browser does with its user interface
+        context.Navigate("https://example.com/b.html", _ => UserActivationRecorder);
+        RunEventLoop();
+
+        Assert.Empty(_errors);
+        Assert.Equal("false,false", TestScriptEngines.Evaluate(_engine, context.Window, "firstScript"));
+    }
+
+    [Theory]
+    [InlineData(true, "false false,true true")]
+    [InlineData(false, "false false,true false")]
+    public void StickyActivation_IsCarriedOverToADocumentRestoredFromTheBackForwardCache(bool initiatedByADocument, string expectedPageShows)
+    {
+        const string Page = UserActivationRecorder + """
+            <script>
+              var pageShows = [];
+              addEventListener('pageshow', e => pageShows.push(e.persisted + ' ' + navigator.userActivation.hasBeenActive));
+            </script>
+            """;
+        _loader.Resources["https://example.com/a.html"] = new DocumentResource(Page);
+        _loader.Resources["https://example.com/b.html"] = new DocumentResource("b");
+        var context = CreateBackForwardCacheContext();
+        if (initiatedByADocument)
+        {
+            context.Navigate("https://example.com/", _ => "start");
+            RunEventLoop();
+            TestScriptEngines.Evaluate(_engine, context.Window, "location.href = 'a.html'");
+        }
+        else
+        {
+            context.Navigate("https://example.com/a.html", _ => Page);
+        }
+
+        RunEventLoop();
+        var a = context.Document;
+        Assert.Equal("https://example.com/a.html", a.Url);
+        TestScriptEngines.Evaluate(_engine, context.Window, "location.href = 'b.html'");
+        RunEventLoop();
+        var b = context.Document;
+        Assert.Equal("https://example.com/b.html", b.Url);
+        Window.NotifyActivation(b);
+
+        context.Window.History.Back();
+        RunEventLoop();
+
+        // The activation is set before the pageshow event of the reactivation. It is not carried over to the entry of a
+        // navigation that no document initiated (its initiator origin is null).
+        Assert.Empty(_errors);
+        Assert.Same(a, context.Document);
+        Assert.Equal("false,false", TestScriptEngines.Evaluate(_engine, context.Window, "firstScript"));
+        Assert.Equal(expectedPageShows, TestScriptEngines.Evaluate(_engine, context.Window, "pageShows.join()"));
+        Assert.Equal("false", TestScriptEngines.Evaluate(_engine, context.Window, "navigator.userActivation.isActive"));
+    }
 }

@@ -4355,6 +4355,15 @@
       "texStorage3D rejects depth formats for TEXTURE_3D": "FAIL"
     }
   },
+  "webgl/texSubImage2D-region-size.html": {
+    "total": 4,
+    "failures": {
+      "webgl2: non-power-of-two region above level 0": "FAIL",
+      "webgl2: non-square region of a cube map face": "FAIL",
+      "webgl: non-power-of-two region above level 0": "FAIL",
+      "webgl: non-square region of a cube map face": "FAIL"
+    }
+  },
   "webgl/texSubImage2D.html": {
     "total": 1,
     "failures": {

@@ -14,6 +14,9 @@ internal sealed class ModuleDecoder
     private readonly bool _skipCode;
     private int _functionCount = -1;
 
+    // The locals of the function being read, reused by the functions of the module
+    private readonly List<ValType> _locals = [];
+
     private ModuleDecoder(byte[] bytes, TypeRegistry registry, bool skipCode)
     {
         _bytes = bytes;
@@ -722,7 +725,9 @@ internal sealed class ModuleDecoder
             var body = new WasmReader(_bytes, reader.Position, end);
             var functionIndex = _module.ImportedFunctionCount + i;
             var type = _module.Functions[functionIndex];
-            var locals = new List<ValType>(type.Parameters);
+            var locals = _locals;
+            locals.Clear();
+            locals.AddRange(type.Parameters);
             var groupCount = body.ReadCount();
             long total = 0;
             for (var j = 0; j < groupCount; j++)
@@ -740,7 +745,7 @@ internal sealed class ModuleDecoder
             }
 
             var code = FunctionCompiler.CompileFunction(_module, ref body, type, [.. locals]);
-            code.Name = "func" + functionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            code.FunctionIndex = functionIndex;
             if (body.Position != end)
                 throw new WasmDecodeException("section size mismatch");
 

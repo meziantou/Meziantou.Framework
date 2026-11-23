@@ -352,7 +352,7 @@ internal static partial class JsInterpreter
             switch (entry.Kind)
             {
                 case PropertyCacheKind.OwnSlot:
-                    obj.Slots![entry.Position] = value;
+                    JsValue.Store(ref obj.Slots![entry.Position], value);
                     return;
                 case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == frame.Realm.Engine.InlineCacheEpoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine):
                     obj.AddPropertyForCache(entry.NextShape!, value);
@@ -375,7 +375,7 @@ internal static partial class JsInterpreter
         switch (entry.Kind)
         {
             case PropertyCacheKind.OwnSlot:
-                obj.Slots![entry.Position] = value;
+                JsValue.Store(ref obj.Slots![entry.Position], value);
                 return true;
             case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == engine.InlineCacheEpoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, engine):
                 obj.AddPropertyForCache(entry.NextShape!, value);
@@ -521,6 +521,7 @@ internal static partial class JsInterpreter
     // Globals
     // ------------------------------------------------------------------------------------------------------------------
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static JsValue LoadGlobal(Frame frame, int name, int cache)
     {
         var entry = frame.Caches[cache];
@@ -582,6 +583,7 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>PutValue of a global reference (a name that is not declared in the code, or a global declaration).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void StoreGlobal(Frame frame, int name, int cache, JsValue value, bool strict)
     {
         var entry = frame.Caches[cache];
@@ -594,7 +596,7 @@ internal static partial class JsInterpreter
                 var binding = entry.Binding!;
                 if (!binding.IsConstant && !binding.Value.IsHole)
                 {
-                    binding.Value = value;
+                    JsValue.Store(ref binding.Value, value);
                     return;
                 }
             }

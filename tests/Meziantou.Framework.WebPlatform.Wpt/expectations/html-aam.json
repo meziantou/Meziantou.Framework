@@ -87,14 +87,15 @@
   "html-aam/roles-contextual.tentative.html": {
     "total": 4
   },
-  "html-aam/roles-dynamic-switch.tentative.window.js": {
-    "total": 6,
+  "html-aam/roles-dynamic-switch.window.js": {
+    "total": 7,
     "failures": {
       "Connected <input type=checkbox switch>": "FAIL",
       "Connected <input type=checkbox switch>: adding switch attribute": "FAIL",
       "Connected <input type=checkbox switch>: adding type attribute": "FAIL",
       "Connected <input type=checkbox switch>: removing switch attribute": "FAIL",
       "Connected <input type=checkbox switch>: removing type attribute": "FAIL",
+      "Connected <input type=checkbox switch>: role attribute overrides switch": "FAIL",
       "Disconnected <input type=checkbox switch>": "FAIL"
     }
   },
@@ -120,13 +121,13 @@
     }
   },
   "html-aam/roles.html": {
-    "total": 60
-  },
-  "html-aam/roles.tentative.html": {
-    "total": 4,
+    "total": 63,
     "failures": {
       "el-input-checkbox-switch": "FAIL"
     }
+  },
+  "html-aam/roles.tentative.html": {
+    "total": 3
   },
   "html-aam/summary.html": {
     "total": 3

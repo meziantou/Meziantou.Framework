@@ -132,7 +132,7 @@ internal static class CodeCache
         {
             var functionIndex = module.ImportedFunctionCount + i;
             var code = ReadCode(ref reader, module, module.Functions[functionIndex]);
-            code.Name = "func" + functionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            code.FunctionIndex = functionIndex;
             module.Code.Add(code);
         }
 

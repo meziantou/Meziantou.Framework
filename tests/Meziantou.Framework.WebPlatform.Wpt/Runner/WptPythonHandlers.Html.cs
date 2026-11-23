@@ -787,6 +787,26 @@ internal static partial class WptPythonHandlers
         // executor of RemoteContextHelper
         ["/html/browsers/browsing-the-web/remote-context-helper/resources/executor-window.py"] = ExecutorWindow,
 
+        // html/user-activation/resources/slow-remote-executor.py: a remote executor (the uuid parameter) whose headers are
+        // sent after the delay parameter (in seconds, 4 by default)
+        ["/html/user-activation/resources/slow-remote-executor.py"] = (request, response, _) =>
+        {
+            response.Delay = TimeSpan.FromSeconds(double.TryParse(request.Get("delay"), NumberStyles.Float, CultureInfo.InvariantCulture, out var delay) ? delay : 4);
+            response.Set("Content-Type", "text/html");
+            response.Set("Cache-Control", "no-store");
+            response.Content = """
+                <!DOCTYPE html>
+                <meta charset="utf-8">
+                <body>
+                <script src="/common/dispatcher/dispatcher.js"></script>
+                <script>
+                  const uuid = new URLSearchParams(location.search).get("uuid");
+                  new Executor(uuid);
+                </script>
+
+                """;
+        },
+
         // html/infrastructure/urls/terminology-0/resources/echo-referrer-text.py: the Referer header of the request
         ["/html/infrastructure/urls/terminology-0/resources/echo-referrer-text.py"] = (request, response, _) => TextResponse(response, request.Header("Referer") ?? ""),
 
@@ -997,6 +1017,10 @@ internal static partial class WptPythonHandlers
         // key, when the continue action puts "continue" in the stash; check_chunk1 tells whether the first chunk was sent)
         ["/html/dom/partial-updates/tentative/resources/chunked-html.py"] = ChunkedHtml,
 
+        // html/syntax/parsing: a response of the content_type parameter in two chunks, the second one sent when the continue
+        // action puts "continue" in the stash (the handler gives up after 5 seconds)
+        ["/html/syntax/parsing/resources/chunked-response.py"] = ChunkedResponse,
+
         // html/dom/partial-updates: a document whose buffered template content is completed after 500 ms
         ["/html/dom/partial-updates/tentative/fragment/buffer-streaming-reflection.py"] = (_, response, _) =>
         {
@@ -1077,6 +1101,29 @@ internal static partial class WptPythonHandlers
         response.StatusText = "Moved";
         response.Set("Location", "../gamma/" + script);
         response.Content = "postMessage('executed redirecting script');";
+    }
+
+    private static void ChunkedResponse(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        var stashKey = "chunked-response|" + request.Get("key");
+        if (request.Get("action") == "continue")
+        {
+            stash.Take(stashKey);
+            stash.Put(stashKey, "continue");
+            response.Set("Content-Type", "text/plain");
+            response.Set("Cache-Control", "no-store");
+            response.Content = "ok";
+            return;
+        }
+
+        response.Set("Content-Type", request.Get("content_type") ?? "text/html; charset=utf-8");
+        response.Set("Cache-Control", "no-store");
+        response.Set("X-Content-Type-Options", "nosniff");
+        response.Streamed = true;
+        response.Body = Encoding.UTF8.GetBytes(request.Get("chunk1") ?? "");
+        response.Chunks.Add((TimeSpan.Zero, Encoding.UTF8.GetBytes(request.Get("chunk2") ?? "")));
+        response.ChunksCondition = () => stash.TakeValue(stashKey) as string == "continue";
+        response.ChunksTimeout = TimeSpan.FromSeconds(5);
     }
 
     private static void ChunkedHtml(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)

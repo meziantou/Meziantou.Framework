@@ -60,7 +60,54 @@ internal static partial class WptPythonHandlers
             response.Add("Content-Type", "text/javascript");
             response.Content = "var header = " + FetchMetadataJson(request) + ";";
         },
+
+        ["/fetch/metadata/resources/redirect-stashed.py"] = RedirectStashed,
     };
+
+    private static readonly Lock RedirectStashedLock = new();
+
+    // fetch/metadata/resources/redirect-stashed.py: redirects to the first URL of the JSON list of the location parameter
+    // (query or form) and stashes the others, then each request without the parameter redirects to the next stashed URL, so
+    // the intermediate hops have no query. The key is shared by every user of the handler, as in the Python handler.
+    private static void RedirectStashed(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        const string StashKey = "fetch-metadata-stashed-redirect";
+        response.Set("Content-Type", "text/plain");
+        response.Set("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.Set("Pragma", "no-cache");
+
+        string nextUrl;
+        lock (RedirectStashedLock)
+        {
+            List<string>? locations;
+            if ((request.Get("location") ?? GetPost(request, "location")) is { } rawLocations)
+            {
+                locations = System.Text.Json.JsonSerializer.Deserialize<List<string>>(rawLocations);
+                stash.TakeValue(StashKey, FetchMetadataStashPath);
+            }
+            else
+            {
+                locations = stash.TakeValue(StashKey, FetchMetadataStashPath) as List<string>;
+            }
+
+            if (locations is not { Count: > 0 })
+            {
+                response.Status = 400;
+                response.Content = "Missing stashed redirect location";
+                return;
+            }
+
+            nextUrl = locations[0];
+            locations.RemoveAt(0);
+            if (locations.Count > 0)
+            {
+                stash.Put(StashKey, locations, FetchMetadataStashPath);
+            }
+        }
+
+        response.Status = 302;
+        response.Set("Location", nextUrl);
+    }
 
     /// <summary>The Fetch Metadata headers of a request as JSON (json.dumps() of the dest, mode, site and user members).</summary>
     private static string FetchMetadataJson(WptHandlerRequest request)

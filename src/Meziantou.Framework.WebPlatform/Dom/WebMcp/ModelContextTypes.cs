@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>The hints that describe the behavior of a tool (https://webmachinelearning.github.io/webmcp/#dictdef-toolannotations).</summary>
@@ -218,8 +216,8 @@ public sealed class ToolCancelEvent : Event
 
 /// <summary>
 /// A tool registered by a document and exposed to another document, or to the application
-/// (https://webmachinelearning.github.io/webmcp/#tool, which replaces the <c>RegisteredTool</c> dictionary
-/// since webmachinelearning/webmcp#348): a snapshot of the tool when <see cref="ModelContext.GetTools"/> or
+/// (https://webmachinelearning.github.io/webmcp/#tool-interface, as defined by webmachinelearning/webmcp#348, which
+/// replaces the <c>RegisteredTool</c> dictionary): a snapshot of the tool when <see cref="ModelContext.GetTools"/> or
 /// <see cref="BrowsingContext.GetModelContextTools"/> discovered it, which identifies this registration of the tool: once
 /// the tool is unregistered, it cannot be executed anymore, even when a tool with the same name is registered again.
 /// </summary>
@@ -289,22 +287,12 @@ public sealed class Tool
     public object? OutputSchema => OutputSchemaJson is null ? null : _outputSchemaValue ??= new Scripting.JsonText(OutputSchemaJson);
 
     /// <summary>
-    /// Gets the window of the document that registered the tool, or null when the document of the window is not fully active
-    /// (e.g. its iframe was removed, or it was navigated). The scripts do not see the <c>source</c> attribute of the
-    /// specification yet: as in Chromium and the web-platform-tests of webmcp, they see its former name, <see cref="Window"/>.
+    /// Gets the window of the document that registered the tool, or null when that document is not fully active anymore (e.g.
+    /// it was navigated away from, or its iframe was removed).
     /// </summary>
     /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-source"/>
-    [NotInIdl]
+    [IdlMember("source", "https://webmachinelearning.github.io/webmcp/#dom-tool-source")]
     public Window? Source => _window.Document.IsFullyActive ? _window : null;
-
-    /// <summary>
-    /// Gets the window of the document that registered the tool, or null when its browsing context was destroyed (e.g. its
-    /// iframe was removed): the former name of <see cref="Source"/>, kept because the web-platform-tests still use it.
-    /// </summary>
-    /// <seealso href="https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-window"/>
-    [IdlMember("window", "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-window")]
-    [Experimental(ExperimentalApis.WebMcpToolWindow, UrlFormat = ExperimentalApis.UrlFormat)]
-    public Window? Window => _window.BrowsingContext is null ? null : _window;
 
     /// <summary>Gets the serialization of the origin of the document that registered the tool (<c>null</c> for an opaque origin).</summary>
     /// <seealso href="https://webmachinelearning.github.io/webmcp/#dom-tool-origin"/>

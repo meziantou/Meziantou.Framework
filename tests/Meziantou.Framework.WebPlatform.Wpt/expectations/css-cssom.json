@@ -263,6 +263,13 @@
   "css/cssom/caretPositionFromPoint-in-flex-container.html": {
     "total": 3
   },
+  "css/cssom/caretPositionFromPoint-svg-text-scaled.html": {
+    "total": 2,
+    "failures": {
+      "Point on the first glyph of a scaled SVG text resolves to that glyph": "FAIL",
+      "Point on the second glyph of a scaled SVG text resolves to that glyph": "FAIL"
+    }
+  },
   "css/cssom/caretPositionFromPoint-textarea.html": {
     "total": 4
   },

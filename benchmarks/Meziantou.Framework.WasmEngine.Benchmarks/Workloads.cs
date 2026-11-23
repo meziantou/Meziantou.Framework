@@ -138,6 +138,32 @@ internal static class Workloads
             (i64.extend_i32_u (local.get $n))))
         """;
 
+    private static string CreateLargeText(int functionCount)
+    {
+        var text = new System.Text.StringBuilder();
+        text.Append("(module (memory 1)");
+        for (var i = 0; i < functionCount; i++)
+        {
+            text.Append(System.Globalization.CultureInfo.InvariantCulture, $$"""
+                (func $f{{i}} (param $n i32) (result i32)
+                  (local $i i32) (local $acc i32)
+                  (block $done
+                    (loop $l
+                      (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+                      (if (i32.and (local.get $i) (i32.const 1))
+                        (then (local.set $acc (i32.add (local.get $acc) (i32.load (i32.and (local.get $i) (i32.const 1020))))))
+                        (else (i32.store (i32.and (local.get $acc) (i32.const 1020)) (local.get $i))))
+                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                      (br $l)))
+                  (call $f{{Math.Max(i - 1, 0)}} (i32.const 0))
+                  (i32.add (local.get $acc)))
+                """);
+        }
+
+        text.Append(')');
+        return text.ToString();
+    }
+
     /// <summary>The module whose function the module of the workloads imports (<c>lib.inc</c>).</summary>
     public const string LibraryText = """
         (module
@@ -146,6 +172,9 @@ internal static class Workloads
         """;
 
     public static byte[] Binary { get; } = WasmRuntime.WatToWasm(Text);
+
+    /// <summary>A module of many functions with loops, branches, calls and memory accesses: the cost of the compilation of a large module.</summary>
+    public static byte[] LargeBinary { get; } = WasmRuntime.WatToWasm(CreateLargeText(functionCount: 2000));
 
     public static byte[] LibraryBinary { get; } = WasmRuntime.WatToWasm(LibraryText);
 }

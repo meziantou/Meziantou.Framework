@@ -2097,7 +2097,7 @@
     "reftest": "PASS"
   },
   "css/css-text/line-breaking/line-breaking-text-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/line-breaking/segment-break-transformation-currency-001.html": {
     "reftest": "PASS"
@@ -3927,6 +3927,9 @@
   "css/css-text/text-transform/crashtests/first-line-text-transform-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-text/text-transform/crashtests/text-transform-full-width-capitalize-eszett-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-text/text-transform/math/text-transform-math-auto-001.html": {
     "reftest": "PASS"
   },
@@ -4054,6 +4057,12 @@
     "reftest": "PASS"
   },
   "css/css-text/text-transform/text-transform-fullwidth-010.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/text-transform/text-transform-fullwidth-011.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/text-transform/text-transform-fullwidth-012.html": {
     "reftest": "PASS"
   },
   "css/css-text/text-transform/text-transform-georgian.html": {
@@ -5095,6 +5104,9 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/text-wrap-balance-bidi-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/text-wrap-balance-bidi-002.html": {
     "reftest": "PASS"
   },
   "css/css-text/white-space/text-wrap-balance-dynamic-001.html": {

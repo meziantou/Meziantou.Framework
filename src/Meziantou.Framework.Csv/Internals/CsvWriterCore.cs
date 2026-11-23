@@ -17,7 +17,7 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     where T : unmanaged, IBinaryInteger<T>
 {
     private const int MaxFormatLength = 1024 * 1024 * 1024;
-    private static readonly ConcurrentDictionary<(char Separator, char? Quote, string NewLine), (T[] NewLine, SearchValues<T> SpecialValues)> TablesCache = new();
+    private static readonly ConcurrentDictionary<(char Separator, char? Quote, string NewLine), (T[] NewLine, SearchValues<T> SpecialValues, SearchValues<char>? Utf16SpecialValues)> TablesCache = new();
     private static readonly T SingleQuote = T.CreateTruncating('\'');
 
     private readonly CsvTarget<T>? _target;
@@ -27,8 +27,10 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     private readonly bool _alwaysQuote;
     private readonly bool _escapeFormulas;
     private readonly bool _quoteInvariantNumbers;
+    private readonly bool _canCopyPlain;
     private readonly T[] _newLine;
     private readonly SearchValues<T> _specialValues;
+    private readonly SearchValues<char>? _utf16SpecialValues;
     private const int MaxChunkSize = 1024 * 1024;
 
     private int _flushThreshold;
@@ -53,7 +55,11 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         _alwaysQuote = options.QuoteMode is CsvQuoteMode.Always;
         _escapeFormulas = options.EscapeFormulas;
         FormatProvider = options.FormatProvider ?? CultureInfo.InvariantCulture;
-        (_newLine, _specialValues) = GetTables(options.Separator, options.Quote, options.NewLine);
+        (_newLine, _specialValues, _utf16SpecialValues) = GetTables(options.Separator, options.Quote, options.NewLine);
+
+        // The characters that require quotes are the separator, the quote, CR and LF, unless the new line has other characters: the values are then
+        // checked while they are copied (see CsvSimd.TryCopyPlain)
+        _canCopyPlain = _canQuote && !options.NewLine.AsSpan().ContainsAnyExcept('\r', '\n');
 
         // Numbers and dates written with the invariant culture need quotes only when every value is quoted, or when one of their characters is special
         _quoteInvariantNumbers = _canQuote &&
@@ -65,8 +71,9 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     private static int GetFlushThreshold(int bufferSize) => Math.Max(1, bufferSize - (bufferSize / 4));
 
     // The new line and the characters that require quoting, shared by the writers with the same separator, quote and new line: creating SearchValues
-    // is costly compared to writing a few rows. The new line array is never modified.
-    private static (T[] NewLine, SearchValues<T> SpecialValues) GetTables(char separator, char? quote, string newLine)
+    // is costly compared to writing a few rows. The new line array is never modified. The UTF-8 writer also gets the characters that require quoting
+    // as UTF-16, to search the text before converting it, when they are ASCII.
+    private static (T[] NewLine, SearchValues<T> SpecialValues, SearchValues<char>? Utf16SpecialValues) GetTables(char separator, char? quote, string newLine)
     {
         var key = (separator, quote, newLine);
         if (TablesCache.TryGetValue(key, out var result))
@@ -111,11 +118,11 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
                 }
             }
 
-            result = ((T[])(object)Encoding.UTF8.GetBytes(newLine), (SearchValues<T>)(object)SearchValues.Create(bytes.ToArray()));
+            result = ((T[])(object)Encoding.UTF8.GetBytes(newLine), (SearchValues<T>)(object)SearchValues.Create(bytes.ToArray()), hasNonAscii ? null : SearchValues.Create(specials.ToArray()));
         }
         else
         {
-            result = ((T[])(object)newLine.ToCharArray(), (SearchValues<T>)(object)SearchValues.Create(specials.ToArray()));
+            result = ((T[])(object)newLine.ToCharArray(), (SearchValues<T>)(object)SearchValues.Create(specials.ToArray()), null);
         }
 
         if (TablesCache.Count < 64)
@@ -172,6 +179,12 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         // When every value is quoted, the value is escaped while it is copied
         if (_alwaysQuote && _canQuote)
         {
+            if (!(isText && _escapeFormulas))
+            {
+                WriteQuoted(value);
+                return;
+            }
+
             BeginField();
             WriteContent(value, isText);
             _lastFieldLength = value.Length;
@@ -185,18 +198,53 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     [MethodImpl(MethodImplOptions.NoInlining)]
     private void WriteFieldAsNeeded(ReadOnlySpan<T> value, bool isText)
     {
-        // Most values need neither quotes nor an escaped formula: the value is copied after a single capacity check. The value is searched before
-        // it is copied: reading the copy right after writing it is slower.
+        // Most values need neither quotes nor an escaped formula: the value is copied after a single capacity check. The value is checked while it
+        // is copied, or searched before it is copied: reading the copy right after writing it is slower.
         var destination = BeginField(value.Length, out var start);
         _lastFieldLength = value.Length;
-        if ((isText && _escapeFormulas) || (_canQuote && value.ContainsAny(_specialValues)))
+        if (!(isText && _escapeFormulas))
         {
-            WriteContent(value, isText);
-            return;
+            if (_canCopyPlain)
+            {
+                if (CsvSimd.TryCopyPlain(value, destination, _separator, _quote))
+                {
+                    _position = start + value.Length;
+                    return;
+                }
+            }
+            else if (!_canQuote || !value.ContainsAny(_specialValues))
+            {
+                value.CopyTo(destination);
+                _position = start + value.Length;
+                return;
+            }
         }
 
-        value.CopyTo(destination);
-        _position = start + value.Length;
+        WriteContent(value, isText);
+    }
+
+    // A value quoted because every value is: the quotes are doubled while the value is copied between them, after a single capacity check
+    private void WriteQuoted(ReadOnlySpan<T> value)
+    {
+        var quote = _quote;
+        var quoteCount = value.Count(quote);
+        var destination = BeginField(checked(value.Length + quoteCount + 2), out var start);
+        destination[0] = quote;
+        var written = 1;
+        for (; quoteCount > 0; quoteCount--)
+        {
+            var index = value.IndexOf(quote);
+            value[..(index + 1)].CopyTo(destination[written..]);
+            written += index + 1;
+            destination[written++] = quote;
+            value = value[(index + 1)..];
+        }
+
+        value.CopyTo(destination[written..]);
+        written += value.Length;
+        destination[written++] = quote;
+        _lastFieldLength = written - 2;
+        _position = start + written;
     }
 
     public void WriteUtf16Field(ReadOnlySpan<char> value)
@@ -207,13 +255,52 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
-        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length * 3), out var start)));
+        // When every value is quoted, a value without a quote to double is converted between the quotes. The quote is ASCII: it is the same byte in UTF-8.
+        // The space of ASCII text is reserved first: 3 bytes per character only when the text is not ASCII.
+        if (_alwaysQuote && _canQuote && !_escapeFormulas && !value.Contains((char)ushort.CreateTruncating(_quote)))
+        {
+            var quoted = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length + 2), out var quotedStart)));
+            if (Ascii.FromUtf16(value, quoted[1..], out var length) is not OperationStatus.Done)
+            {
+                quoted = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked((value.Length * 3) + 2))));
+                Utf8.FromUtf16(value, quoted[1..], out _, out length, replaceInvalidSequences: true);
+            }
+
+            quoted[0] = byte.CreateTruncating(_quote);
+            quoted[length + 1] = byte.CreateTruncating(_quote);
+            _lastFieldLength = length;
+            _position = quotedStart + length + 2;
+            return;
+        }
+
+        // Most values are ASCII and need neither quotes nor an escaped formula: they are checked while they are converted. The space of ASCII text is
+        // reserved first: 3 bytes per character only when the text is not ASCII, so that a long ASCII value does not grow the buffer 3 times its size.
+        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(value.Length, out var start)));
+        if (_canCopyPlain && !_escapeFormulas && !_alwaysQuote && CsvSimd.TryCopyPlainAscii(value, destination, byte.CreateTruncating(_separator), byte.CreateTruncating(_quote)))
+        {
+            _lastFieldLength = value.Length;
+            _position = start + value.Length;
+            return;
+        }
+
+        // When the characters that require quotes are ASCII, they are the same bytes in UTF-8: the text is searched before it is converted, as
+        // WriteFieldAsNeeded searches before it copies, and the converted text is not read again.
+        var isPlain = _utf16SpecialValues is not null && !_escapeFormulas && !_alwaysQuote && !(_canQuote && value.ContainsAny(_utf16SpecialValues));
 
         // Most text is ASCII, which is converted faster than UTF-8 in general
         if (Ascii.FromUtf16(value, destination, out var bytesWritten) is not OperationStatus.Done)
         {
+            destination = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked(value.Length * 3))));
             Utf8.FromUtf16(value, destination, out _, out bytesWritten, replaceInvalidSequences: true);
         }
+
+        if (isPlain)
+        {
+            _lastFieldLength = bytesWritten;
+            _position = start + bytesWritten;
+            return;
+        }
+
         CommitField(start, bytesWritten, isText: true);
     }
 
@@ -432,22 +519,18 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             destination[written++] = SingleQuote;
         }
 
-        while (true)
+        // Most quoted values have no quote to double: the count says it, without searching the value again
+        for (; quoteCount > 0; quoteCount--)
         {
             var index = value.IndexOf(quoteChar);
-            if (index < 0)
-            {
-                value.CopyTo(destination[written..]);
-                written += value.Length;
-                break;
-            }
-
             value[..(index + 1)].CopyTo(destination[written..]);
             written += index + 1;
             destination[written++] = quoteChar;
             value = value[(index + 1)..];
         }
 
+        value.CopyTo(destination[written..]);
+        written += value.Length;
         destination[written++] = quoteChar;
         _position += written;
     }

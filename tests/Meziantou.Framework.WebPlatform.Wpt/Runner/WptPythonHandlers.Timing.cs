@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 
-/// <summary>The handlers of the <c>resource-timing</c> and <c>navigation-timing</c> tests, and the ones of the <c>import-maps</c> tests and of <c>fetch/content-type</c> that they use.</summary>
+/// <summary>The handlers of the <c>resource-timing</c>, <c>navigation-timing</c> and <c>long-animation-frame</c> tests, and the ones of the <c>import-maps</c> tests and of <c>fetch/content-type</c> that they use.</summary>
 internal static partial class WptPythonHandlers
 {
     private static readonly Dictionary<string, Handler> TimingHandlers = new(StringComparer.Ordinal)
@@ -101,8 +101,19 @@ internal static partial class WptPythonHandlers
                 response.Set("Content-Encoding", contentEncoding);
             }
         },
+        ["/long-animation-frame/resources/streamed-promise-detach.py"] = StreamedPromiseDetach,
         ["/resource-timing/resources/content-type.py"] = (request, response, _) =>
         {
+            if (request.Get("status") is { } status)
+            {
+                response.Status = ParseInt(status, 200);
+            }
+
+            if (request.Get("tao_value") is { } taoValue)
+            {
+                response.Set("timing-allow-origin", taoValue);
+            }
+
             if (request.Get("content_type") is { } contentType)
             {
                 response.Set("content-type", contentType);
@@ -637,5 +648,90 @@ internal static partial class WptPythonHandlers
         }
 
         return result.ToString();
+    }
+
+    // long-animation-frame/resources/streamed-promise-detach.py: a page streamed in two chunks (stream_html, the second one sent
+    // when continue_stream puts "continue" in the stash) whose cross-origin iframe (cross_origin_html) runs a script
+    // (cross_origin_js) that starts a fetch (hang_fetch) whose response waits until release_fetch; check_fetch tells whether
+    // that fetch is in flight
+    private static void StreamedPromiseDetach(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        const string StashPrefix = "streamed-promise-detach|";
+        switch (request.Get("mode"))
+        {
+            case "cross_origin_html":
+                response.Set("Content-Type", "text/html; charset=utf-8");
+                response.Set("Origin-Agent-Cluster", "?0");
+                response.Set("Cache-Control", "no-store");
+                response.Content = "<!doctype html><meta charset=utf-8><script src=\"streamed-promise-detach.py?mode=cross_origin_js&fetch_key=" + request.Get("fetch_key") + "&release_key=" + request.Get("release_key") + "\"></script>";
+                break;
+
+            case "cross_origin_js":
+                response.Set("Content-Type", "text/javascript; charset=utf-8");
+                response.Set("Cache-Control", "no-store");
+                response.Content = "/* padding before fetch call */\nfetch(\"streamed-promise-detach.py?mode=hang_fetch&key=" + request.Get("fetch_key") + "&release_key=" + request.Get("release_key") + "\").catch(() => {});\n";
+                break;
+
+            case "hang_fetch":
+                var releaseKey = StashPrefix + request.Get("release_key");
+                stash.Put(StashPrefix + request.Get("key"), "in_flight");
+                response.Set("Content-Type", "text/plain");
+                response.HeadersCondition = () => stash.TakeValue(releaseKey) is not null;
+                response.Content = "done";
+                break;
+
+            case "check_fetch":
+                var fetchKey = StashPrefix + request.Get("key");
+                response.Set("Content-Type", "text/plain");
+                response.Set("Access-Control-Allow-Origin", "*");
+                response.Set("Cache-Control", "no-store");
+                if (stash.TakeValue(fetchKey) as string == "in_flight")
+                {
+                    stash.Put(fetchKey, "in_flight");
+                    response.Content = "in_flight";
+                }
+                else
+                {
+                    response.Content = "waiting";
+                }
+
+                break;
+
+            case "release_fetch":
+                var key = StashPrefix + request.Get("release_key");
+                stash.TakeValue(key);
+                stash.Put(key, "done");
+                response.Set("Content-Type", "text/plain");
+                response.Set("Access-Control-Allow-Origin", "*");
+                response.Content = "ok";
+                break;
+
+            case "continue_stream":
+                var streamKey = StashPrefix + request.Get("key");
+                stash.TakeValue(streamKey);
+                stash.Put(streamKey, "continue");
+                response.Set("Content-Type", "text/plain");
+                response.Content = "ok";
+                break;
+
+            case "stream_html":
+                var continueKey = StashPrefix + request.Get("key");
+                response.Set("Content-Type", "text/html; charset=utf-8");
+                response.Set("Origin-Agent-Cluster", "?0");
+                response.Set("Cache-Control", "no-store");
+                response.Streamed = true;
+                response.Body = Encoding.UTF8.GetBytes("<!doctype html>\n<meta charset=utf-8>\n<!-- " + new string('x', 4096) + " -->\n<body><b><p><iframe id=\"cross-origin\" src=\"" + request.Get("cross_origin_url") + "\"></iframe>\n");
+                response.Chunks.Add((TimeSpan.Zero, """
+                    </b><script>
+                      const start = performance.now();
+                      while (performance.now() - start < 40) {}
+                      parent.detachReferenceTime = parent.performance.now();
+                      while (performance.now() - start < 80) {}
+                    </script>
+                    """u8.ToArray()));
+                response.ChunksCondition = () => stash.TakeValue(continueKey) as string == "continue";
+                response.ChunksTimeout = TimeSpan.FromSeconds(10);
+                break;
+        }
     }
 }

@@ -88,6 +88,9 @@ public class CompileBenchmarks
     public WasmModule Compile() => _runtime!.Compile(Workloads.Binary);
 
     [Benchmark]
+    public WasmModule CompileLarge() => _runtime!.Compile(Workloads.LargeBinary);
+
+    [Benchmark]
     public void Instantiate()
     {
         using var store = _runtime!.CreateStore();

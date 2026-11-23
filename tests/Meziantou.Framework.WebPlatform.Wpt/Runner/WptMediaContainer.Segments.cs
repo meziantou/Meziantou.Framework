@@ -741,6 +741,8 @@ internal static partial class WptMediaContainer
     /// </summary>
     private sealed class MpegAudioSegmentParser(bool isAdts) : MediaSegmentParser
     {
+        private const int Id3v1Size = 128;
+
         private bool _initialized;
 
         public override bool GeneratesTimestamps => true;
@@ -755,6 +757,17 @@ internal static partial class WptMediaContainer
 
                 var tagSize = GetId3v2Size(data);
                 return tagSize > data.Length ? MediaSegmentParseResult.NeedMoreData() : MediaSegmentParseResult.Ignore(tagSize);
+            }
+
+            // The other metadata frames (https://w3c.github.io/mse-byte-stream-format-mpeg-audio/#metadata-frames): an ID3v1 tag
+            // ("TAG" and 125 bytes), and an Icecast header ("ICY" up to an empty line)
+            if (data.Length >= 3 && data[..3].SequenceEqual("TAG"u8))
+                return data.Length < Id3v1Size ? MediaSegmentParseResult.NeedMoreData() : MediaSegmentParseResult.Ignore(Id3v1Size);
+
+            if (data.Length >= 3 && data[..3].SequenceEqual("ICY"u8))
+            {
+                var end = data.IndexOf("\r\n\r\n"u8);
+                return end < 0 ? MediaSegmentParseResult.NeedMoreData() : MediaSegmentParseResult.Ignore(end + 4);
             }
 
             var headerSize = isAdts ? 7 : 4;

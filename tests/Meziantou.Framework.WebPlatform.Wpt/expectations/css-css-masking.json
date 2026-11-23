@@ -446,9 +446,6 @@
   "css/css-masking/clip-path/animations/clip-path-animation-linear-easing.html": {
     "reftest": "PASS"
   },
-  "css/css-masking/clip-path/animations/clip-path-animation-missing-0-percent.html": {
-    "reftest": "PASS"
-  },
   "css/css-masking/clip-path/animations/clip-path-animation-mixed-calc.html": {
     "reftest": "PASS"
   },
@@ -456,6 +453,12 @@
     "reftest": "PASS"
   },
   "css/css-masking/clip-path/animations/clip-path-animation-neutral-keyframe-svg-smil.html": {
+    "reftest": "PASS"
+  },
+  "css/css-masking/clip-path/animations/clip-path-animation-neutral-keyframe-update.html": {
+    "reftest": "PASS"
+  },
+  "css/css-masking/clip-path/animations/clip-path-animation-neutral-keyframe.html": {
     "reftest": "PASS"
   },
   "css/css-masking/clip-path/animations/clip-path-animation-no-inherit-clip-after-remove.html?force-repaint": {
@@ -1220,6 +1223,16 @@
   "css/css-masking/hit-test/clip-path-element-objectboundingbox-002.html": {
     "total": 1
   },
+  "css/css-masking/hit-test/clip-path-element-pointer-events-bounding-box-text.html": {
+    "total": 2,
+    "failures": {
+      "pointer-events: bounding-box on <text> in <clipPath>": "FAIL",
+      "pointer-events: bounding-box on <tspan> in <clipPath>": "FAIL"
+    }
+  },
+  "css/css-masking/hit-test/clip-path-element-pointer-events-bounding-box.html": {
+    "total": 1
+  },
   "css/css-masking/hit-test/clip-path-element-userspaceonuse-001.html": {
     "total": 1
   },
@@ -1598,7 +1611,13 @@
   "css/css-masking/mask-shorthand-subproperties-reset.html": {
     "total": 14
   },
+  "css/css-masking/mask-svg-content/mask-ancestor-transform-scale-change.svg": {
+    "reftest": "PASS"
+  },
   "css/css-masking/mask-svg-content/mask-empty-container-with-filter.svg": {
+    "reftest": "PASS"
+  },
+  "css/css-masking/mask-svg-content/mask-in-pattern-different-scales.svg": {
     "reftest": "PASS"
   },
   "css/css-masking/mask-svg-content/mask-invalid-reference.svg": {
@@ -1611,6 +1630,9 @@
     "reftest": "PASS"
   },
   "css/css-masking/mask-svg-content/mask-on-thin-stroked-path-userspaceonuse.svg": {
+    "reftest": "PASS"
+  },
+  "css/css-masking/mask-svg-content/mask-target-bbox-change.svg": {
     "reftest": "PASS"
   },
   "css/css-masking/mask-svg-content/mask-text-001.svg": {

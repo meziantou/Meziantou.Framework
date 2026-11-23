@@ -304,6 +304,69 @@ internal static class Op
     /// <summary>The end of a function: returns its results (the I1 top values).</summary>
     public const ushort End = 0x704;
 
+    // The fused operations of the interpreter (see InstructionFuser): an operation replaces the first instruction of a
+    // sequence, the next instructions of the sequence stay in place (a branch to one of them runs them one by one). They are
+    // after the operations of the prefix 0xFB, so that the switch of the interpreter has one jump table for them and the
+    // single-byte opcodes (the operations of the compiler, from 0x700, are reached after a few comparisons)
+
+    /// <summary>The first fused operation.</summary>
+    public const int FusedFirst = 0x130;
+
+    /// <summary><c>local.get I0</c>, <c>local.get I1</c>.</summary>
+    public const ushort LocalGetLocalGet = 0x130;
+
+    /// <summary><c>local.get I0</c>, then a constant L0 (<c>i32.const</c>, <c>i64.const</c>, <c>f32.const</c> or <c>f64.const</c>).</summary>
+    public const ushort LocalGetConst = 0x131;
+
+    /// <summary><c>local.get I0</c>, <c>i32.const L0</c>, <c>i32.add</c>.</summary>
+    public const ushort LocalGetI32ConstI32Add = 0x132;
+
+    /// <summary><c>i32.const L0</c>, <c>i32.add</c>.</summary>
+    public const ushort I32ConstI32Add = 0x133;
+
+    /// <summary><c>local.get I0</c>, <c>i32.load</c> of the memory I1 at the offset L0.</summary>
+    public const ushort LocalGetI32Load = 0x134;
+
+    /// <summary><c>local.set I0</c>, <c>local.get I1</c>.</summary>
+    public const ushort LocalSetLocalGet = 0x135;
+
+    /// <summary><c>local.tee I0</c>, <c>local.get I1</c>.</summary>
+    public const ushort LocalTeeLocalGet = 0x136;
+
+    /// <summary>
+    /// The first of the 11 operations <c>i32.eqz</c>, <c>i32.eq</c>, ... <c>i32.ge_u</c> followed by <c>br_if</c> (in the
+    /// order of their opcodes): the operation has the operands of the <c>br_if</c>.
+    /// </summary>
+    public const ushort I32CompareBrIfFirst = 0x137;
+
+    /// <summary>The first of the 11 operations <c>i32.eqz</c>, <c>i32.eq</c>, ... <c>i32.ge_u</c> followed by the jump of an <c>if</c> (<see cref="JumpIfZero"/>, whose target is I0).</summary>
+    public const ushort I32CompareJumpIfZeroFirst = 0x142;
+
+    /// <summary>
+    /// The first of the 13 operations <c>local.get I0</c>, <c>local.get I1</c> followed by <c>i32.add</c>, <c>i32.sub</c>,
+    /// <c>i32.mul</c>, <c>i32.and</c>, <c>i32.or</c>, <c>i32.xor</c>, <c>i64.add</c>, <c>i64.sub</c>, <c>i64.mul</c>,
+    /// <c>f64.add</c>, <c>f64.sub</c>, <c>f64.mul</c> or <c>f64.div</c> (see <see cref="InstructionFuser"/>).
+    /// </summary>
+    public const ushort LocalGetLocalGetBinaryFirst = 0x14D;
+
+    /// <summary>
+    /// The first of the 10 operations <c>local.get I1</c>, <c>local.get I2</c>, <c>i32.eq</c> ... <c>i32.ge_u</c> (in the
+    /// order of their opcodes), <c>br_if</c> to I0 (a br_if that keeps no value).
+    /// </summary>
+    public const ushort LocalGetLocalGetCompareBrIfFirst = 0x15A;
+
+    /// <summary>The first of the 10 operations <c>local.get I1</c>, <c>i32.const L1</c>, <c>i32.eq</c> ... <c>i32.ge_u</c>, <c>br_if</c> to I0 (a br_if that keeps no value).</summary>
+    public const ushort LocalGetConstCompareBrIfFirst = 0x164;
+
+    /// <summary>The first of the 10 operations <c>local.get I1</c>, <c>local.get I2</c>, <c>i32.eq</c> ... <c>i32.ge_u</c>, then the jump to I0 of an <c>if</c>.</summary>
+    public const ushort LocalGetLocalGetCompareJumpIfZeroFirst = 0x16E;
+
+    /// <summary>The first of the 10 operations <c>local.get I1</c>, <c>i32.const L1</c>, <c>i32.eq</c> ... <c>i32.ge_u</c>, then the jump to I0 of an <c>if</c>.</summary>
+    public const ushort LocalGetConstCompareJumpIfZeroFirst = 0x178;
+
+    /// <summary>The last fused operation.</summary>
+    public const int FusedLast = LocalGetConstCompareJumpIfZeroFirst + 9;
+
     public static int Simd(int opcode) => SimdPrefix + opcode;
 
     public static bool IsSimd(int op) => op is >= SimdPrefix and < AtomicPrefix;
@@ -316,6 +379,7 @@ internal static class OpNames
     public static string GetName(int op) => op switch
     {
         >= Op.Jump => "internal:0x" + op.ToString("X", CultureInfo.InvariantCulture),
+        >= Op.FusedFirst and <= Op.FusedLast => "fused:0x" + op.ToString("X", CultureInfo.InvariantCulture),
         >= Op.AtomicPrefix => "0xFE 0x" + (op - Op.AtomicPrefix).ToString("X2", CultureInfo.InvariantCulture),
         >= Op.SimdPrefix => "0xFD 0x" + (op - Op.SimdPrefix).ToString("X2", CultureInfo.InvariantCulture),
         >= Op.MiscPrefix => "0xFC 0x" + (op - Op.MiscPrefix).ToString("X2", CultureInfo.InvariantCulture),

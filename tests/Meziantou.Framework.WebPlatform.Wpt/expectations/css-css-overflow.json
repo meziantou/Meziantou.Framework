@@ -464,6 +464,27 @@
   "css/css-overflow/line-clamp/line-clamp-043.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/line-clamp/line-clamp-044.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-045.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-046.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-047.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-048.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-049.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-050.html": {
+    "reftest": "PASS"
+  },
   "css/css-overflow/line-clamp/line-clamp-atomic-inline-after-clamp-point-crash.html": {
     "crashtest": "PASS"
   },
@@ -677,15 +698,6 @@
   "css/css-overflow/line-clamp/line-clamp-auto-069.html": {
     "reftest": "PASS"
   },
-  "css/css-overflow/line-clamp/line-clamp-auto-alt-writingmode-001.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-alt-writingmode-002.html": {
-    "reftest": "PASS"
-  },
-  "css/css-overflow/line-clamp/line-clamp-auto-alt-writingmode-003.html": {
-    "reftest": "PASS"
-  },
   "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-001.html": {
     "reftest": "PASS"
   },
@@ -699,6 +711,15 @@
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-auto-with-ruby-005.tentative.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-wm-vlr-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-wm-vrl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-auto-wm-vrl-002.html": {
     "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/line-clamp-balance-001.html": {
@@ -1096,6 +1117,15 @@
   },
   "css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-010-crash.html": {
     "crashtest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-wm-vlr-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-wm-vrl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-overflow/line-clamp/line-clamp-wm-vrl-002.html": {
+    "reftest": "PASS"
   },
   "css/css-overflow/line-clamp/webkit-line-clamp-001.html": {
     "reftest": "PASS"
@@ -1847,6 +1877,18 @@
   "css/css-overflow/scroll-markers/column-scroll-marker-015-crash.html": {
     "crashtest": "PASS"
   },
+  "css/css-overflow/scroll-markers/column-scroll-marker-016-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-017-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-018-crash.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-019-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/column-scroll-marker-activation-target-current.html": {
     "reftest": "PASS"
   },
@@ -1871,6 +1913,9 @@
   "css/css-overflow/scroll-markers/column-scroll-marker-group-style-remove.html": {
     "reftest": "PASS"
   },
+  "css/css-overflow/scroll-markers/column-scroll-marker-hidden-event-target-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-overflow/scroll-markers/column-scroll-marker-manual-slot-recalc-crash.html": {
     "crashtest": "PASS"
   },
@@ -1879,6 +1924,9 @@
   },
   "css/css-overflow/scroll-markers/column-scroll-marker-reattach-target-current.html": {
     "reftest": "PASS"
+  },
+  "css/css-overflow/scroll-markers/column-scroll-marker-reentrant-remove-crash.html": {
+    "crashtest": "PASS"
   },
   "css/css-overflow/scroll-markers/html-scroll-marker-target-before-after.html": {
     "total": 6

@@ -29,18 +29,13 @@ internal static partial class JsInterpreter
             }
 
             obj = new JsArgumentsObject(intrinsics.ObjectPrototype, environment, map);
-        }
-        else
-        {
-            obj = new JsObject(intrinsics.ObjectPrototype, ObjectClass.Arguments);
+            InitializeArgumentsObject(obj, frame, arguments, realm.Engine.ArgumentsShapes.MappedCallee, exposeCallee: true);
+            return obj;
         }
 
-        for (var i = 0; i < arguments.Length; i++)
-        {
-            obj.SetOwnSlot(new PropertyKey((uint)i), arguments[i], PropertyFlags.Default);
-        }
-
-        DefineArgumentsProperties(obj, frame, arguments.Length, mapped);
+        obj = new JsObject(intrinsics.ObjectPrototype, ObjectClass.Arguments);
+        var shapes = realm.Engine.ArgumentsShapes;
+        InitializeArgumentsObject(obj, frame, arguments, mapped ? shapes.Callee : shapes.ThrowingCallee, exposeCallee: mapped);
         return obj;
     }
 
@@ -58,32 +53,26 @@ internal static partial class JsInterpreter
     /// <summary>The value of the arguments own property of a sloppy function: a new arguments object of a running call (its indices are not mapped).</summary>
     internal static JsValue CreateArgumentsCopy(Frame frame)
     {
-        var arguments = frame.Arguments;
         var obj = new JsObject(frame.Realm.Intrinsics.ObjectPrototype, ObjectClass.Arguments);
-        for (var i = 0; i < arguments.Length; i++)
-        {
-            obj.SetOwnSlot(new PropertyKey((uint)i), arguments[i], PropertyFlags.Default);
-        }
-
-        DefineArgumentsProperties(obj, frame, arguments.Length, exposeCallee: true);
+        InitializeArgumentsObject(obj, frame, frame.Arguments, frame.Realm.Engine.ArgumentsShapes.Callee, exposeCallee: true);
         return obj;
     }
 
-    private static void DefineArgumentsProperties(JsObject obj, Frame frame, int length, bool exposeCallee)
+    /// <summary>
+    /// Gives its properties to a new arguments object: the arguments as its elements, then length, @@iterator and callee
+    /// (in their final shape at once: the same shape as the one their definitions one by one give).
+    /// </summary>
+    private static void InitializeArgumentsObject(JsObject obj, Frame frame, ReadOnlySpan<JsValue> arguments, Shape shape, bool exposeCallee)
     {
-        var intrinsics = frame.Realm.Intrinsics;
-        obj.DefineBuiltIn("length", length);
-        obj.DefineBuiltIn(WellKnownSymbols.Iterator, intrinsics.ArrayPrototypeValues);
+        // The arguments are never holes: they are the dense elements an index-by-index definition gives
+        obj.InitializeDenseElements(arguments);
 
         // A function with a mapped arguments object (sloppy, simple parameters) exposes itself as callee
-        if (exposeCallee)
-        {
-            obj.DefineBuiltIn("callee", frame.Function is { } function ? new JsValue(function) : default);
-        }
-        else
-        {
-            obj.DefineBuiltInAccessor("callee", intrinsics.ThrowTypeError, intrinsics.ThrowTypeError, PropertyFlags.None);
-        }
+        var intrinsics = frame.Realm.Intrinsics;
+        var callee = exposeCallee
+            ? frame.Function is { } function ? new JsValue(function) : default
+            : new JsValue(new AccessorPair(new JsValue(intrinsics.ThrowTypeError), new JsValue(intrinsics.ThrowTypeError)));
+        obj.InitializeProperties(shape, [arguments.Length, new JsValue(intrinsics.ArrayPrototypeValues), callee]);
     }
 
     /// <summary>import.meta: the object of the module of the running code.</summary>

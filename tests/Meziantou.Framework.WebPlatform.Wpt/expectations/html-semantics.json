@@ -215,6 +215,16 @@
       "A module link retries a failed fetch after the server recovers.": "FAIL"
     }
   },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-cached-csp.html": {
+    "harness": "TIMEOUT",
+    "total": 4,
+    "failures": {
+      "document: a CSP-rejected cached module link exposes and applies only an approved sheet.": "TIMEOUT",
+      "document: a permitted cached module link exposes and applies only an approved sheet.": "NOTRUN",
+      "shadowRoot: a CSP-rejected cached module link exposes and applies only an approved sheet.": "NOTRUN",
+      "shadowRoot: a permitted cached module link exposes and applies only an approved sheet.": "NOTRUN"
+    }
+  },
   "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-classic-sharing.html": {
     "harness": "TIMEOUT",
     "total": 4,
@@ -246,6 +256,27 @@
     "failures": {
       "@import is ignored (dropped, not fetched) in CSS module sheets.": "NOTRUN",
       "Module sheets are ownerless; classic sheets are link-owned.": "TIMEOUT"
+    }
+  },
+  "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-disabled.html": {
+    "harness": "ERROR",
+    "total": 15,
+    "failures": {
+      "A detached link enabled while classified as a module link can later load a classic stylesheet.": "NOTRUN",
+      "A parser-created initially disabled module link can be enabled.": "NOTRUN",
+      "Adding and removing the disabled attribute disconnects and reconnects the same module sheet.": "NOTRUN",
+      "Becoming ineligible while disabled supersedes a pending module load.": "NOTRUN",
+      "Changing import while disabled supersedes an in-flight module fetch before re-enabling.": "NOTRUN",
+      "Disabling and re-enabling during a module fetch does not restart it.": "NOTRUN",
+      "Enabling a classic link after adding import loads and applies its module stylesheet.": "NOTRUN",
+      "Enabling a detached module link preserves explicitly enabled state when it becomes an alternate classic link.": "NOTRUN",
+      "Initially disabled module links defer fetching until enabled and can finish loading while disabled.": "NOTRUN",
+      "Initially disabled module links report errors only after enabling, including retries.": "NOTRUN",
+      "Re-enabling a module link retries a failed fetch and can recover.": "NOTRUN",
+      "Re-enabling a module link with rel='stylesheet expect' does not load it.": "NOTRUN",
+      "Toggling disabled before a cached module's completion reconnects it immediately.": "NOTRUN",
+      "document: disabled removes only one link's association and enabling restores its cached sheet in DOM order.": "FAIL",
+      "shadowRoot: disabled removes only one link's association and enabling restores its cached sheet in DOM order.": "NOTRUN"
     }
   },
   "html/semantics/document-metadata/the-link-element/tentative/module-stylesheet-document-context.html": {
@@ -2148,6 +2179,9 @@
   },
   "html/semantics/embedded-content/media-elements/volumechange-ratechange-queue-task.html": {
     "total": 4
+  },
+  "html/semantics/embedded-content/media-elements/xml-empty-element-loadedmetadata.xhtml": {
+    "total": 2
   },
   "html/semantics/embedded-content/the-area-element/area-coords.html": {
     "total": 32
@@ -4520,12 +4554,6 @@
   "html/semantics/forms/the-form-element/form-requestsubmit.html": {
     "total": 10
   },
-  "html/semantics/forms/the-input-element/anchor-active-contenteditable.html": {
-    "total": 1
-  },
-  "html/semantics/forms/the-input-element/anchor-contenteditable-navigate.html": {
-    "total": 1
-  },
   "html/semantics/forms/the-input-element/auto-direction-dynamic.html": {
     "reftest": "PASS"
   },
@@ -4556,6 +4584,29 @@
   "html/semantics/forms/the-input-element/checkbox-click-events.html": {
     "total": 4
   },
+  "html/semantics/forms/the-input-element/checkbox-defaultIndeterminate.tentative.html": {
+    "total": 21,
+    "failures": {
+      "Canceling a click with preventDefault leaves indeterminateness dirty": "FAIL",
+      "Clicking a checkbox makes both checkedness and indeterminateness dirty": "FAIL",
+      "Content attribute changes update indeterminate while it is not dirty": "FAIL",
+      "Form reset restores checkedness and indeterminateness after checkbox activation": "FAIL",
+      "Form reset restores indeterminate=false from the current default and clears its dirty state": "FAIL",
+      "Form reset restores indeterminate=true from the current default and clears its dirty state": "FAIL",
+      "Parsed defaultindeterminate=\"\" initializes indeterminate": "FAIL",
+      "Parsed defaultindeterminate=\"defaultindeterminate\" initializes indeterminate": "FAIL",
+      "Parsed defaultindeterminate=\"false\" initializes indeterminate": "FAIL",
+      "cloneNode() preserves dirty indeterminate=false with defaultIndeterminate=false": "FAIL",
+      "cloneNode() preserves dirty indeterminate=false with defaultIndeterminate=true": "FAIL",
+      "cloneNode() preserves dirty indeterminate=true with defaultIndeterminate=false": "FAIL",
+      "cloneNode() preserves dirty indeterminate=true with defaultIndeterminate=true": "FAIL",
+      "cloneNode() preserves non-dirty indeterminate=false": "FAIL",
+      "cloneNode() preserves non-dirty indeterminate=true": "FAIL",
+      "defaultIndeterminate is exposed": "FAIL",
+      "defaultIndeterminate reflects a boolean content attribute": "FAIL",
+      "dirty checkedness doesn't trigger dirty indeterminateness": "FAIL"
+    }
+  },
   "html/semantics/forms/the-input-element/checkbox.html": {
     "total": 6
   },
@@ -4575,7 +4626,7 @@
     "total": 2
   },
   "html/semantics/forms/the-input-element/color.html": {
-    "total": 27
+    "total": 28
   },
   "html/semantics/forms/the-input-element/color.window.js": {
     "total": 196
@@ -4781,8 +4832,21 @@
   "html/semantics/forms/the-input-element/input-type-change-value.html": {
     "total": 2
   },
-  "html/semantics/forms/the-input-element/input-type-checkbox-switch.tentative.window.js": {
-    "total": 3
+  "html/semantics/forms/the-input-element/input-type-checkbox-switch-activation.window.js": {
+    "total": 9
+  },
+  "html/semantics/forms/the-input-element/input-type-checkbox-switch-drag.optional.window.js": {
+    "total": 11,
+    "failures": {
+      "Dragging the thumb of a right-to-left switch from right to left toggles it": "FAIL",
+      "Dragging the thumb of a switch that is on to the other end and releasing outside the switch toggles it": "FAIL",
+      "Dragging the thumb of a vertical switch from top to bottom toggles it": "FAIL",
+      "Dragging the thumb to the other end and back does not fire a click event": "FAIL",
+      "Dragging the thumb to the other end and releasing outside the switch toggles it": "FAIL"
+    }
+  },
+  "html/semantics/forms/the-input-element/input-type-checkbox-switch.window.js": {
+    "total": 4
   },
   "html/semantics/forms/the-input-element/input-type-checkbox.html": {
     "total": 7
@@ -4833,7 +4897,7 @@
     "total": 4
   },
   "html/semantics/forms/the-input-element/input-valueasnumber.html": {
-    "total": 64
+    "total": 66
   },
   "html/semantics/forms/the-input-element/input-whitespace.html": {
     "total": 1
@@ -5867,7 +5931,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-csp-strict-dynamic.html": {
-    "total": 1
+    "total": 3
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-removal-script-runs-once.html": {
     "total": 1
@@ -5879,7 +5943,7 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
-    "total": 10
+    "total": 11
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2
@@ -5962,6 +6026,9 @@
   "html/semantics/forms/the-select-element/option-selectedness-script-mutation.html": {
     "total": 5
   },
+  "html/semantics/forms/the-select-element/options-length-too-large.html": {
+    "total": 5
+  },
   "html/semantics/forms/the-select-element/reset-algorithm-rendering.html": {
     "reftest": "PASS"
   },
@@ -5988,6 +6055,9 @@
   },
   "html/semantics/forms/the-select-element/select-attribute-crash.html": {
     "crashtest": "PASS"
+  },
+  "html/semantics/forms/the-select-element/select-capitalize-sizing.html": {
+    "reftest": "PASS"
   },
   "html/semantics/forms/the-select-element/select-clear-reappend.tentative.html": {
     "total": 1
@@ -7285,8 +7355,19 @@
   "html/semantics/interestfor/interestfor-pseudo-element-multiline-link-appearance.tentative.html": {
     "reftest": "FAIL"
   },
-  "html/semantics/interestfor/interestfor-pseudo-element-popover-anchor-already-open.tentative.html": {
-    "reftest": "FAIL"
+  "html/semantics/interestfor/interestfor-pseudo-element-popover-anchor-methods.tentative.html": {
+    "total": 10,
+    "failures": {
+      "Clicking the ::interest-button anchors the popover to the ::interest-button": "FAIL",
+      "Clicking the ::interest-button does not re-anchor a popover already opened via hovering the invoker": "FAIL",
+      "Clicking the ::interest-button does not re-anchor a popover already opened via showPopover({source: invoker})": "FAIL",
+      "Hovering the ::interest-button anchors the popover to the ::interest-button": "FAIL",
+      "Hovering the ::interest-button does not re-anchor a popover already opened via hovering the invoker": "FAIL",
+      "Hovering the invoker anchors the popover to the invoker": "FAIL",
+      "Long-pressing the ::interest-button anchors the popover to the ::interest-button": "FAIL",
+      "Long-pressing the ::interest-button does not re-anchor a popover already opened via hovering the invoker": "FAIL",
+      "Long-pressing the ::interest-button does not re-anchor a popover already opened via showPopover({source: invoker})": "FAIL"
+    }
   },
   "html/semantics/interestfor/interestfor-pseudo-element-popover-anchor.tentative.html": {
     "reftest": "FAIL"
@@ -8221,10 +8302,16 @@
   "html/semantics/scripting-1/the-script-element/async_011.htm": {
     "total": 1
   },
+  "html/semantics/scripting-1/the-script-element/attr-script-fetchpriority.html": {
+    "total": 2
+  },
   "html/semantics/scripting-1/the-script-element/change-src-attr-prepare-a-script.html": {
     "total": 1
   },
   "html/semantics/scripting-1/the-script-element/changing-src.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-script-element/classic-external-unknown-scheme.html": {
     "total": 1
   },
   "html/semantics/scripting-1/the-script-element/css-module/charset-2.html": {
@@ -8957,6 +9044,9 @@
     "total": 1
   },
   "html/semantics/scripting-1/the-script-element/microtasks/evaluation-order-4.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-script-element/module-script-disabled-scripting.html": {
     "total": 1
   },
   "html/semantics/scripting-1/the-script-element/module/charset-01.html": {
@@ -9718,6 +9808,9 @@
   "html/semantics/scripting-1/the-script-element/text-module/integrity.html": {
     "total": 2
   },
+  "html/semantics/scripting-1/the-script-element/text-module/large-import.window.js": {
+    "total": 1
+  },
   "html/semantics/scripting-1/the-script-element/text-module/load-error-events.html": {
     "total": 8
   },
@@ -10087,6 +10180,9 @@
   "html/semantics/selectors/pseudo-classes/dir01.html": {
     "total": 1
   },
+  "html/semantics/selectors/pseudo-classes/disabled-fieldset-dynamic.html": {
+    "total": 9
+  },
   "html/semantics/selectors/pseudo-classes/disabled.html": {
     "total": 7
   },
@@ -10111,7 +10207,7 @@
   "html/semantics/selectors/pseudo-classes/indeterminate.html": {
     "total": 6
   },
-  "html/semantics/selectors/pseudo-classes/input-checkbox-switch.tentative.window.js": {
+  "html/semantics/selectors/pseudo-classes/input-checkbox-switch.window.js": {
     "total": 6,
     "failures": {
       "A switch control that becomes a checkbox in a roundabout way": "FAIL",

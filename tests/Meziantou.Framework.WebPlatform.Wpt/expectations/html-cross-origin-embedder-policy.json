@@ -92,6 +92,9 @@
   "html/cross-origin-embedder-policy/credentialless/link.https.window.js": {
     "total": 7
   },
+  "html/cross-origin-embedder-policy/credentialless/no-cors-omit.https.window.js": {
+    "total": 3
+  },
   "html/cross-origin-embedder-policy/credentialless/redirect.window.js": {
     "total": 5
   },

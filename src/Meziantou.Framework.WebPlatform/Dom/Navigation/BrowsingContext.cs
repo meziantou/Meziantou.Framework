@@ -1883,6 +1883,10 @@ public sealed partial class BrowsingContext : IDisposable
             Referrer = document.Referrer,
             ReferrerPolicy = document.ReferrerPolicy,
             OriginDocument = initiatorOrigin ?? Document.GetOriginDocument(document),
+
+            // https://html.spec.whatwg.org/multipage/browsing-the-web.html#navigate-to-a-javascript:-url: the initiator origin
+            // of the document state of the new entry
+            InitiatorOrigin = sourceDocument?.Origin,
             AboutBaseUrl = document.AboutBaseUrl,
             OpenerPolicy = document.OpenerPolicy,
             OpenerPolicyReportingDocument = document.OpenerPolicyReportingDocument,
@@ -2369,6 +2373,7 @@ public sealed partial class BrowsingContext : IDisposable
         // The referrer of the document is the referrer of the request, which is determined again for each URL of the redirect
         // chain (https://fetch.spec.whatwg.org/#main-fetch, step 9)
         parameters.Referrer = request.Referrer is "no-referrer" or "client" ? "" : request.Referrer;
+        parameters.HasCrossOriginRedirects = HasCrossOriginRedirects(request.RedirectChain);
         if (parameters.Timing is { } timing)
         {
             // The request was handled by a service worker: its fetch event is dispatched once the worker is running and activated
@@ -2960,6 +2965,7 @@ public sealed partial class BrowsingContext : IDisposable
         document.OriginDocument = parameters.OriginDocument;
         document.OpaqueOrigin = parameters.OpaqueOrigin;
         document.IsNetworkErrorDocument = parameters.IsNetworkError;
+        document.WasCreatedViaCrossOriginRedirects = parameters.HasCrossOriginRedirects;
         document.ProcessNavigationResponseEndOfBody = parameters.ProcessResponseEndOfBody;
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#determining-the-origin: a sandboxed document has a new
@@ -3213,6 +3219,18 @@ public sealed partial class BrowsingContext : IDisposable
     {
         var prerenderActivation = prerenderedEntry is not null;
         var oldDocument = Document;
+        var navigationType = traversalEntry is null
+            ? (historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace)
+            : (ReferenceEquals(traversalEntry, ActiveEntry) ? NavigationType.Reload : NavigationType.Traverse);
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#apply-the-history-step: whether the sticky activation is
+        // carried over is decided before the displayed document is deactivated. The document state of an entry that a
+        // traversal or a reload loads again is kept; a new entry gets a new document state, whose initiator origin is the one
+        // of the navigation.
+        var reusedTraversalEntry = traversalEntry is not null && GetSessionHistoryEntries()?.Contains(traversalEntry) == true ? traversalEntry : null;
+        var stickyActivationToCarryOver = oldDocument is not null && (reusedTraversalEntry is { DocumentState: var reusedDocumentState }
+            ? ShouldCarryOverStickyActivation(oldDocument, document, navigationType, reusedDocumentState.RequestInitiatorOrigin, reusedDocumentState.WasCreatedViaCrossOriginRedirects || document.WasCreatedViaCrossOriginRedirects)
+            : ShouldCarryOverStickyActivation(oldDocument, document, navigationType, parameters?.InitiatorOrigin, document.WasCreatedViaCrossOriginRedirects));
 
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#finalize-a-cross-document-navigation, step 4 (and the
         // same step of a traversal): the target name of a top-level traversable that is not an auxiliary browsing context with
@@ -3269,10 +3287,10 @@ public sealed partial class BrowsingContext : IDisposable
             entry = new SessionHistoryEntry(document.UrlRecord, new DocumentState(document) { SrcdocResource = srcdoc, PostResource = parameters?.PostResource });
             SetInitialSessionHistoryEntry(entry);
         }
-        else if (traversalEntry is not null && GetSessionHistoryEntries()?.Contains(traversalEntry) == true)
+        else if (reusedTraversalEntry is not null)
         {
             // A traversal (or a reload) to an entry whose document was not kept: the entry gets the new document
-            entry = traversalEntry;
+            entry = reusedTraversalEntry;
             entry.DocumentState.Document = document;
             entry.DocumentState.Origin = document.Origin;
             SetActiveEntry(entry);
@@ -3320,6 +3338,12 @@ public sealed partial class BrowsingContext : IDisposable
         if (requestReferrerPolicy.Length > 0)
         {
             entry.DocumentState.RequestReferrerPolicy = requestReferrerPolicy;
+        }
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#attempt-to-populate-the-history-entry's-document
+        if (document.WasCreatedViaCrossOriginRedirects)
+        {
+            entry.DocumentState.WasCreatedViaCrossOriginRedirects = true;
         }
 
         // The initiator origin and the referrer of the navigation are stored in the document state of a new entry: a
@@ -3371,6 +3395,13 @@ public sealed partial class BrowsingContext : IDisposable
             Container.NodeDocument.InvalidateLayout();
         }
 
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application: the sticky
+        // activation is carried over before the document runs scripts
+        if (stickyActivationToCarryOver)
+        {
+            window.CarryOverStickyActivation();
+        }
+
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application, step 6.3:
         // the state of the history object of the new document (e.g. the document of an entry added by pushState() loaded again)
         if (entry.ClassicHistoryApiState is not null)
@@ -3398,9 +3429,6 @@ public sealed partial class BrowsingContext : IDisposable
                 navigation.InitializeEntriesForNewDocument(GetSessionHistoryEntriesForNavigationApi(entry), entry);
             }
 
-            var navigationType = traversalEntry is null
-                ? (historyHandling == NavigationHistoryBehavior.Push ? NavigationType.Push : NavigationType.Replace)
-                : (ReferenceEquals(traversalEntry, previousEntry) ? NavigationType.Reload : NavigationType.Traverse);
             navigation.UpdateActivation(previousEntry, navigationType, document, prerenderActivation);
         }
 
@@ -3455,6 +3483,45 @@ public sealed partial class BrowsingContext : IDisposable
         {
             EventLoop.RequestReveal(document);
         }
+    }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#apply-the-history-step: whether the sticky activation of the
+    /// displayed document is carried over to the document that a cross-document navigation, reload or traversal reaches. The
+    /// documents are same origin, the target document was not created via cross-origin redirects, and the navigation is a
+    /// reload, or the document state of the target entry has a same-origin initiator and was not created via cross-origin
+    /// redirects (a cross-origin document cannot give the activation by initiating the navigation, or by redirecting to it).
+    /// </summary>
+    /// <param name="displayedDocument">The document that the navigation replaces.</param>
+    /// <param name="targetDocument">The document of the target entry.</param>
+    /// <param name="navigationType">The type of the navigation.</param>
+    /// <param name="initiatorOrigin">The initiator origin of the document state of the target entry, or null.</param>
+    /// <param name="documentStateWasCreatedViaCrossOriginRedirects">The "was created via cross-origin redirects" of the document state of the target entry.</param>
+    private static bool ShouldCarryOverStickyActivation(Document displayedDocument, Document targetDocument, NavigationType navigationType, OriginRecord? initiatorOrigin, bool documentStateWasCreatedViaCrossOriginRedirects)
+    {
+        if (displayedDocument.RelevantWindow is not { HasStickyActivation: true })
+            return false;
+
+        if (!OriginRecord.IsSameOrigin(displayedDocument.Origin, targetDocument.Origin) || targetDocument.WasCreatedViaCrossOriginRedirects)
+            return false;
+
+        return navigationType == NavigationType.Reload
+            || (initiatorOrigin is not null && OriginRecord.IsSameOrigin(initiatorOrigin, targetDocument.Origin) && !documentStateWasCreatedViaCrossOriginRedirects);
+    }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching: whether a redirect of
+    /// the URLs of a navigation goes to another origin.
+    /// </summary>
+    private static bool HasCrossOriginRedirects(IReadOnlyList<UrlRecord> urls)
+    {
+        for (var i = 1; i < urls.Count; i++)
+        {
+            if (!OriginRecord.IsSameOrigin(OriginRecord.FromUrl(urls[i - 1]), OriginRecord.FromUrl(urls[i])))
+                return true;
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -4332,6 +4399,13 @@ public sealed partial class BrowsingContext : IDisposable
 
         /// <summary>The origin of the document that initiated the navigation, or null.</summary>
         public OriginRecord? InitiatorOrigin { get; init; }
+
+        /// <summary>
+        /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#create-navigation-params-by-fetching: whether the
+        /// response followed a redirect from a URL to a URL of another origin (the "was created via cross-origin redirects"
+        /// of the document).
+        /// </summary>
+        public bool HasCrossOriginRedirects { get; set; }
 
         /// <summary>The origin of the top-level document of the document that started the navigation, or null (the partition of the visited links).</summary>
         public OriginRecord? InitiatorTopLevelOrigin { get; init; }

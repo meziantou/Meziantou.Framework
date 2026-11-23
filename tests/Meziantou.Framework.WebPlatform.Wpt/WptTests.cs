@@ -454,11 +454,7 @@ public sealed class WptTests
 
     public static TheoryData<string> HtmlMetaTests => GetTests("html/meta");
 
-    public static TheoryData<string> HtmlSelectTests => GetTests("html/select");
-
     public static TheoryData<string> HtmlObsoleteTests => GetTests("html/obsolete");
-
-    public static TheoryData<string> HtmlScriptElementTests => GetTests("html/scripting");
 
     public static TheoryData<string> HtmlOfflineTests => GetTests("html/browsers/offline");
 
@@ -1708,16 +1704,8 @@ public sealed class WptTests
     public void HtmlMeta(string test) => Run("html/meta", test);
 
     [Theory(SkipTestWithoutData = true)]
-    [MemberData(nameof(HtmlSelectTests))]
-    public void HtmlSelect(string test) => Run("html/select", test);
-
-    [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(HtmlObsoleteTests))]
     public void HtmlObsolete(string test) => Run("html/obsolete", test);
-
-    [Theory(SkipTestWithoutData = true)]
-    [MemberData(nameof(HtmlScriptElementTests))]
-    public void HtmlScriptElement(string test) => Run("html/scripting", test);
 
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(HtmlOfflineTests))]

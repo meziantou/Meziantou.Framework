@@ -15458,8 +15458,6 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Window? Source { get => throw null; }
         public string Title { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ToolAnnotations? ToolAnnotations { get => throw null; }
-        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0030", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
-        public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
         public override string ToString() => throw null;
     }
 

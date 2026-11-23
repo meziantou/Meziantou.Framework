@@ -95,7 +95,7 @@ internal sealed class Frame
     /// <summary>Gets the position of the bottom of the operand stack in <see cref="Values"/>.</summary>
     public int StackBase => Code.RegisterCount + ArgumentCount;
 
-    /// <summary>Gets or sets the caller frame in the same run of the interpreter (the next free frame in the pool).</summary>
+    /// <summary>Gets or sets the caller frame in the same run of the interpreter.</summary>
     public Frame? Parent { get; set; }
 
     public IScriptOrModule? Script { get; set; }
@@ -138,18 +138,17 @@ internal sealed class FramePool
     // The frames beyond this number are left to the GC (a deep recursion does not keep its frames forever)
     private const int MaxFreeFrames = 128;
 
-    private Frame? _free;
+    // A stack of free frames (an array: returning a frame writes one reference)
+    private readonly Frame?[] _free = new Frame?[MaxFreeFrames];
     private int _freeCount;
 
     public Frame Rent(FunctionTemplate code, JsRealm realm, Environment environment, ReadOnlySpan<JsValue> arguments)
     {
-        var frame = _free;
-        if (frame is null)
+        if (_freeCount == 0)
             return new Frame(code, realm, environment, arguments) { IsPooled = true };
 
-        _free = frame.Parent;
-        _freeCount--;
-        frame.Parent = null;
+        var frame = _free[--_freeCount]!;
+        _free[_freeCount] = null;
         var length = Frame.GetValueCount(code, arguments.Length);
         if (frame.Values.Length < length)
         {
@@ -170,8 +169,6 @@ internal sealed class FramePool
         if (_freeCount >= MaxFreeFrames)
             return;
 
-        frame.Parent = _free;
-        _free = frame;
-        _freeCount++;
+        _free[_freeCount++] = frame;
     }
 }

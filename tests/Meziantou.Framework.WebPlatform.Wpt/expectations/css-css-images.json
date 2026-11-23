@@ -146,6 +146,9 @@
   "css/css-images/gradient/css-color-4-colors-default-to-oklab-gradient.html": {
     "reftest": "PASS"
   },
+  "css/css-images/gradient/css-color-4-colors-with-calc-default-to-oklab-gradient.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/gradient/display-p3-linear-gradient.html": {
     "reftest": "PASS"
   },
@@ -359,10 +362,16 @@
   "css/css-images/gradient/legacy-color-gradient.html": {
     "reftest": "PASS"
   },
+  "css/css-images/gradient/legacy-color-with-calc-gradient.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/gradient/linear-gradient-relative-currentcolor-stop.html": {
     "reftest": "PASS"
   },
   "css/css-images/gradient/oklab-gradient.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/gradient/relative-color-default-to-oklab-gradient.html": {
     "reftest": "PASS"
   },
   "css/css-images/gradient/repeating-gradient-hsl-and-oklch.html": {

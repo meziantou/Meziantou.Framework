@@ -193,11 +193,11 @@ public partial class JsObject
     {
         if (inTable)
         {
-            ((PropertyTable)_map!).GetValue(position) = value;
+            JsValue.Store(ref ((PropertyTable)_map!).GetValue(position), value);
         }
         else
         {
-            _slots![position] = value;
+            JsValue.Store(ref _slots![position], value);
         }
     }
 

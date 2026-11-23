@@ -538,6 +538,9 @@
   "fetch/api/credentials/authentication-basic.any.js#sharedworker": {
     "total": 4
   },
+  "fetch/api/credentials/authentication-redirection-stored-credentials.window.js": {
+    "total": 2
+  },
   "fetch/api/credentials/authentication-redirection.any.js": {
     "total": 3
   },

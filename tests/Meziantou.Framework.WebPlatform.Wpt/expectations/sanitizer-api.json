@@ -30,7 +30,7 @@
     "total": 14
   },
   "sanitizer-api/sanitizer-custom-elements-is.html": {
-    "total": 20
+    "total": 32
   },
   "sanitizer-api/sanitizer-default-config.html": {
     "total": 1
@@ -42,7 +42,7 @@
     "total": 9
   },
   "sanitizer-api/sanitizer-in-adoption-agency.html": {
-    "total": 55
+    "total": 60
   },
   "sanitizer-api/sanitizer-in-noahs-ark.html": {
     "total": 22
@@ -86,6 +86,9 @@
   "sanitizer-api/sethtml-noscript.html": {
     "total": 6
   },
+  "sanitizer-api/sethtml-quirks-mode.html": {
+    "total": 6
+  },
   "sanitizer-api/sethtml-replace-with-children.html": {
     "total": 6
   },
@@ -99,10 +102,10 @@
     "total": 126
   },
   "sanitizer-api/sethtml-with-custom-elements.html": {
-    "total": 24
+    "total": 23
   },
   "sanitizer-api/sethtml-with-declarative-shadow-root.html": {
-    "total": 14,
+    "total": 15,
     "failures": {
       "shadowRoot.referenceTarget does not propagate to the shadow root when shadowrootreferencetarget is removed by sanitizer": "FAIL"
     }

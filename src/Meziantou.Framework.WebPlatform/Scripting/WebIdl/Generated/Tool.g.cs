@@ -23,11 +23,9 @@ internal static class Binding_Tool<TAdapter, TValue> where TAdapter : struct, gl
     private static TValue Get_description(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.FromString(o.Description); }
     private static TValue Get_inputSchema(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.ToJs((object?)o.InputSchema); }
     private static TValue Get_outputSchema(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.ToJs((object?)o.OutputSchema); }
+    private static TValue Get_source(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.Wrap(o.Source); }
     private static TValue Get_origin(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.FromString(o.Origin); }
     private static TValue Get_annotations(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.ToJs((object?)o.Annotations); }
-    #pragma warning disable WEBPLATEXP0030 // The binding exposes the experimental Web IDL member
-    private static TValue Get_window(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Tool>(t, Binding); return r.Wrap(o.Window); }
-    #pragma warning restore WEBPLATEXP0030
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "name", Get_name, null);
@@ -35,8 +33,8 @@ internal static class Binding_Tool<TAdapter, TValue> where TAdapter : struct, gl
         r.DefineAttribute(instanceTarget, "description", Get_description, null);
         r.DefineAttribute(instanceTarget, "inputSchema", Get_inputSchema, null);
         r.DefineAttribute(instanceTarget, "outputSchema", Get_outputSchema, null);
+        r.DefineAttribute(instanceTarget, "source", Get_source, null);
         r.DefineAttribute(instanceTarget, "origin", Get_origin, null);
         r.DefineAttribute(instanceTarget, "annotations", Get_annotations, null);
-        r.DefineAttribute(instanceTarget, "window", Get_window, null);
     }
 }

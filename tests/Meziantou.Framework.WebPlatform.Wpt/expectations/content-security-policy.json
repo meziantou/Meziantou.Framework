@@ -1449,6 +1449,13 @@
   "content-security-policy/inheritance/history-iframe.sub.html": {
     "total": 8
   },
+  "content-security-policy/inheritance/history-multi-frame-navigation.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "Same-document navigation in parent frame during pending history navigation preserves child FrameNavigationEntry": "TIMEOUT"
+    }
+  },
   "content-security-policy/inheritance/history.sub.html": {
     "total": 6
   },

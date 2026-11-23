@@ -208,8 +208,8 @@ public class CsvWriterTests
     public void WriteField_MatchesReference()
     {
         // Every option that changes how a value is escaped, with values that need quotes, escaped quotes or an escaped formula, of lengths around the
-        // vector sizes, and small buffers that grow while a value is written
-        string[] values = ["", "a", "plain", "a,b", "a\"b", "\"", "\"\"", "line\nbreak", "cr\r", "=1+1", "+1", "-1", "@a", "\tx", "\rx", "x;y", "a|b", new string('a', 15), new string('a', 16) + ",", new string('"', 33), new string('b', 70) + "\"" + new string('c', 70)];
+        // vector sizes, values that are not ASCII, and small buffers that grow while a value is written
+        string[] values = ["", "a", "plain", "a,b", "a\"b", "\"", "\"\"", "line\nbreak", "cr\r", "=1+1", "+1", "-1", "@a", "\tx", "\rx", "x;y", "a|b", new string('a', 15), new string('a', 16) + ",", new string('"', 33), new string('b', 70) + "\"" + new string('c', 70), "é", "é,ü", "日\"本😀"];
         CsvWriterOptions[] options =
         [
             new() { NewLine = "\n" },
@@ -246,6 +246,50 @@ public class CsvWriterTests
                     var expected = Reference(row, option);
                     Assert.Equal(expected, output.ToString());
                     Assert.Equal(expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void WriteField_SpecialCharacterAtEveryPosition()
+    {
+        // The plain values are checked while they are copied, by blocks of 8 or 16 elements and an overlapping last block: a special character at
+        // every position of values of every length around the block sizes. U+012C and U+0A0D narrow to the bytes of ',' and CR, which must not match.
+        char[] specials = [',', '"', '\r', '\n', ';', '\'', 'é', 'Ĭ', '਍'];
+        CsvWriterOptions[] options = [new() { NewLine = "\n" }, new() { Separator = ';', Quote = '\'' }, new() { NewLine = "\n", EscapeFormulas = true }];
+        foreach (var option in options)
+        {
+            for (var length = 0; length <= 48; length++)
+            {
+                var plain = new string('a', length);
+                string[] values = [plain, .. specials.SelectMany(special => Enumerable.Range(0, length).Select(position => string.Concat(plain.AsSpan(0, position), [special], plain.AsSpan(position + 1))))];
+                foreach (var value in values)
+                {
+                    string[] row = [value, value];
+                    var expected = Reference(row, option);
+
+                    var output = new StringBuilder();
+                    using (var writer = CsvWriter.Create(output, option))
+                    {
+                        writer.WriteRow(row);
+                    }
+
+                    Assert.Equal(expected, output.ToString());
+
+                    var buffer = new ArrayBufferWriter<byte>();
+                    using (var writer = Utf8CsvWriter.Create(buffer, option))
+                    {
+                        writer.WriteRow(row);
+                        foreach (var field in row)
+                        {
+                            writer.WriteField(Encoding.UTF8.GetBytes(field));
+                        }
+
+                        writer.EndRow();
+                    }
+
+                    Assert.Equal(expected + expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
                 }
             }
         }

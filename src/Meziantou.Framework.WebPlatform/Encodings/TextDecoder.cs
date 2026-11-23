@@ -91,8 +91,9 @@ public sealed class TextDecoder
         var builder = new StringBuilder(input.Length);
         if (!_decoder.DecodeTo(input, builder, flush: !_doNotFlush))
         {
-            // The do not flush flag is kept: in stream mode, the next call continues with the state of the decoder (e.g. the
-            // mode of ISO-2022-JP, https://encoding.spec.whatwg.org/#dom-textdecoder-decode)
+            // The decoder is reset by the next call, so that it does not continue where the error occurred (the mode of
+            // ISO-2022-JP, whether a BOM was seen...)
+            _doNotFlush = false;
             throw new TypeErrorException("The encoded data is not valid");
         }
 

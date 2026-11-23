@@ -5,6 +5,14 @@
   "accname/basic.html": {
     "total": 2
   },
+  "accname/name/comp_content_visibility.tentative.html": {
+    "total": 6,
+    "failures": {
+      "Label: HTML button element under content-visibility auto condition": "FAIL",
+      "Label: HTML heading element under content-visibility auto condition": "FAIL",
+      "Label: HTML link element under content-visibility auto condition": "FAIL"
+    }
+  },
   "accname/name/comp_embedded_control.html": {
     "total": 29
   },

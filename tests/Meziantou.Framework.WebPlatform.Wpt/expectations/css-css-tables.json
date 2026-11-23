@@ -161,6 +161,12 @@
   "css/css-tables/col-definite-size-001.html": {
     "reftest": "PASS"
   },
+  "css/css-tables/col-offsetwidth-span-starting-inside-spanning-cell.html": {
+    "total": 22
+  },
+  "css/css-tables/col-offsetwidth-spanning-cell.html": {
+    "total": 6
+  },
   "css/css-tables/col_removal.html": {
     "total": 1
   },
@@ -373,6 +379,12 @@
   },
   "css/css-tables/fixed-layout-excess-width-distribution-001.html": {
     "total": 1
+  },
+  "css/css-tables/fixed-table-layout-collapsed-border-rtl-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-tables/fixed-table-layout-collapsed-border-rtl-002.html": {
+    "reftest": "PASS"
   },
   "css/css-tables/fixup-dynamic-anonymous-inline-table-001.html": {
     "reftest": "PASS"

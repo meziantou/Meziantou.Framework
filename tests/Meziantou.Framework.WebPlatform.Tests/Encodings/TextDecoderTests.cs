@@ -168,12 +168,23 @@ public sealed class TextDecoderTests
     }
 
     [Fact]
-    public void Decode_FatalErrorInStreamMode_KeepsTheStateOfTheDecoder()
+    public void Decode_FatalErrorInStreamMode_ResetsTheDecoder()
     {
-        // The do not flush flag is kept after an error: ISO-2022-JP stays in the Roman mode (encoding/textdecoder-mistakes.any.js)
+        // A decode() that throws resets the decoder (whatwg/encoding#369): ISO-2022-JP does not stay in the Roman mode
         var decoder = new TextDecoder("iso-2022-jp", new TextDecoderOptions { Fatal = true });
-        Assert.Equal("~", decoder.Decode([0x7E]));
         Assert.Throws<TypeErrorException>(() => decoder.Decode([0x1B, 0x28, 0x4A, 0xFF], new TextDecodeOptions { Stream = true }));
-        Assert.Equal("\U0000203E", decoder.Decode([0x7E]));
+        Assert.Equal("~", decoder.Decode([0x7E], new TextDecodeOptions { Stream = true }));
+    }
+
+    [Theory]
+    [InlineData("utf-8", new byte[] { 0xEF, 0xBB, 0xBF, 0x41 }, new byte[] { 0xFF })]
+    [InlineData("utf-16le", new byte[] { 0xFF, 0xFE, 0x41, 0x00 }, new byte[] { 0x00, 0xD8, 0x41, 0x00 })]
+    public void Decode_FatalErrorInStreamMode_ResetsTheBomHandling(string encoding, byte[] bomAndText, byte[] invalid)
+    {
+        var decoder = new TextDecoder(encoding, new TextDecoderOptions { Fatal = true });
+        var stream = new TextDecodeOptions { Stream = true };
+        Assert.Equal("A", decoder.Decode(bomAndText, stream));
+        Assert.Throws<TypeErrorException>(() => decoder.Decode(invalid, stream));
+        Assert.Equal("A", decoder.Decode(bomAndText, stream));
     }
 }

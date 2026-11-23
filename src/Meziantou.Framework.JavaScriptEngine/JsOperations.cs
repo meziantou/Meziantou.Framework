@@ -326,6 +326,11 @@ internal static class JsOperations
         if (value is >= int.MinValue and <= int.MaxValue)
             return (int)value;
 
+        // In [-2^63, 2^63), the conversion to long truncates exactly, and its low 32 bits are the value modulo 2^32: no
+        // floating-point modulo (fmod costs more than the rest of an operator such as (a * 31 + b) | 0)
+        if (value is >= -9223372036854775808.0 and < 9223372036854775808.0)
+            return (int)(long)value;
+
         if (double.IsNaN(value) || double.IsInfinity(value))
             return 0;
 

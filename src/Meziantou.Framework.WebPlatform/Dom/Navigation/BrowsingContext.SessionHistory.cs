@@ -129,6 +129,13 @@ internal sealed class DocumentState(Document? document)
     public string RequestReferrer { get; set; } = "";
 
     /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#document-state-created-via-cross-origin-redirects: set
+    /// when a document created via cross-origin redirects is stored in the document state, and never reset (it also applies
+    /// when a traversal or a reload loads the document again).
+    /// </summary>
+    public bool WasCreatedViaCrossOriginRedirects { get; set; }
+
+    /// <summary>
     /// The required CSP (https://w3c.github.io/webappsec-cspee/#navigation-params-required-csp) enforced by a <c>blob:</c>
     /// document, whose policy container is not stored in the session history: a traversal enforces it again.
     /// </summary>

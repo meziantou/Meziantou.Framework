@@ -146,6 +146,16 @@
   "css/css-transitions/display-none-no-animations.html": {
     "total": 1
   },
+  "css/css-transitions/display-none-transition-finished.html": {
+    "total": 7,
+    "failures": {
+      "Closing dialog allow-discrete transitions finish cleanly without canceling": "FAIL",
+      "Hiding popover allow-discrete transitions finish cleanly without canceling": "FAIL",
+      "Light-dismissing popover via pointer click finishes allow-discrete transitions without canceling": "FAIL",
+      "On-demand style flush to display:none after popover transitions reach end does not cancel them": "FAIL",
+      "On-demand style flush to display:none after transitions reach end does not cancel them": "FAIL"
+    }
+  },
   "css/css-transitions/dynamic-root-element.html": {
     "total": 1
   },

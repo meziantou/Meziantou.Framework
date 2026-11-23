@@ -1359,6 +1359,9 @@
       "document.onreadystatechange is not shadowed": "FAIL"
     }
   },
+  "html/dom/documents/dom-tree-accessors/nameditem-sandboxed-iframe.html": {
+    "total": 2
+  },
   "html/dom/documents/dom-tree-accessors/nameditem-setattribute-attr-mutation.html": {
     "total": 4
   },
@@ -2076,13 +2079,6 @@
   "html/dom/idlharness.https.html?include=HTML.+": {
     "total": 3955
   },
-  "html/dom/partial-updates/tentative/fragment/empty-for-streaming.html": {
-    "total": 2,
-    "failures": {
-      "In-place template moving and removal during streaming": "FAIL",
-      "In-place template with empty for attribute is removed and its children are inserted before it": "FAIL"
-    }
-  },
   "html/dom/partial-updates/tentative/fragment/sanitize-default.html": {
     "harness": "TIMEOUT",
     "total": 1,
@@ -2156,7 +2152,7 @@
     "total": 1618
   },
   "html/dom/reflection-forms.html": {
-    "total": 8817
+    "total": 8856
   },
   "html/dom/reflection-grouping.html": {
     "total": 5904

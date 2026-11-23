@@ -926,6 +926,9 @@
   "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.inherited.html": {
     "total": 1
   },
+  "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.notcached.html": {
+    "total": 1
+  },
   "html/canvas/element/fill-and-stroke-styles/2d.fillStyle.parse.current.removed.html": {
     "total": 1
   },
@@ -1579,6 +1582,9 @@
   },
   "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.gradient.arc.html": {
     "reftest": "PASS"
+  },
+  "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.parse.current.notcached.html": {
+    "total": 1
   },
   "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.pattern.arc.html": {
     "reftest": "PASS"
@@ -2469,6 +2475,9 @@
   "html/canvas/element/manual/draw-element-image/onpaint-invalidation-crash.tentative.html": {
     "crashtest": "PASS"
   },
+  "html/canvas/element/manual/draw-element-image/onpaint-offscreen-canvas-invalidation.tentative.html": {
+    "total": 2
+  },
   "html/canvas/element/manual/draw-element-image/onpaint-outside-invalidation-crash.tentative.html": {
     "crashtest": "PASS"
   },
@@ -2483,6 +2492,12 @@
     "failures": {
       "onpaint should fire and report drawable ancestor when a nested drawable element is removed": "FAIL"
     }
+  },
+  "html/canvas/element/manual/draw-element-image/onpaint-remove-iframe-crash.tentative.html": {
+    "crashtest": "PASS"
+  },
+  "html/canvas/element/manual/draw-element-image/onpaint-remove-iframe.tentative.html": {
+    "total": 2
   },
   "html/canvas/element/manual/draw-element-image/onpaint-remove-non-drawable-element.tentative.html": {
     "total": 4
@@ -3343,6 +3358,9 @@
       "createImageBitmap from a Video, and drawImage on the created ImageBitmap with colorSpaceConversion: none": "FAIL"
     }
   },
+  "html/canvas/element/manual/imagebitmap/createImageBitmap-crop-outside-source.html": {
+    "total": 4
+  },
   "html/canvas/element/manual/imagebitmap/createImageBitmap-drawImage-closed.html": {
     "total": 1
   },
@@ -3433,6 +3451,12 @@
   },
   "html/canvas/element/manual/imagebitmap/imagebitmap-replication-exif-orientation.html": {
     "total": 8
+  },
+  "html/canvas/element/manual/imagedata/imagedata-data-attribute.any.js": {
+    "total": 3
+  },
+  "html/canvas/element/manual/imagedata/imagedata-data-attribute.any.js#dedicatedworker": {
+    "total": 3
   },
   "html/canvas/element/manual/layers/unclosed-layers.html": {
     "reftest": "PASS"
@@ -3727,6 +3751,12 @@
     "total": 1
   },
   "html/canvas/element/path-objects/2d.path.arc.angle.6.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.arc.angle.7.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.arc.angle.8.html": {
     "total": 1
   },
   "html/canvas/element/path-objects/2d.path.arc.default.html": {
@@ -5288,10 +5318,16 @@
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-font-change.tentative.html": {
     "reftest": "PASS"
   },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRun-leading-spaces.tentative.html": {
+    "reftest": "PASS"
+  },
   "html/canvas/element/text/2d.text.shape.fillGlyphRun-range.tentative.html": {
     "total": 1
   },
   "html/canvas/element/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/element/text/2d.text.shape.fillGlyphRuns-shadow.tentative.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/text/2d.text.shape.glyph-clusters-exceptions.tentative.html": {
@@ -9253,6 +9289,15 @@
       "Test offscreen context creation attributes toneMapping: {}": "FAIL"
     }
   },
+  "html/canvas/offscreen/manual/context-attributes/getContextAttributes.worker.js": {
+    "total": 16,
+    "failures": {
+      "Test default offscreen context creation attributes in a worker": "FAIL",
+      "Test offscreen context creation attributes toneMapping: {mode: 'extended'} in a worker": "FAIL",
+      "Test offscreen context creation attributes toneMapping: {mode: 'standard'} in a worker": "FAIL",
+      "Test offscreen context creation attributes toneMapping: {} in a worker": "FAIL"
+    }
+  },
   "html/canvas/offscreen/manual/convert-to-blob/offscreencanvas.convert.to.blob.html": {
     "total": 8
   },
@@ -9474,6 +9519,18 @@
     "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.arc.angle.6.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.arc.angle.7.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.arc.angle.7.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.arc.angle.8.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.arc.angle.8.worker.js": {
     "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.arc.default.html": {
@@ -12433,6 +12490,12 @@
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-font-change.tentative.w.html": {
     "reftest": "PASS"
   },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-leading-spaces.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-leading-spaces.tentative.w.html": {
+    "reftest": "PASS"
+  },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRun-range.tentative.html": {
     "total": 1
   },
@@ -12443,6 +12506,12 @@
     "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-and-strokeGlyphRuns.tentative.w.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-shadow.tentative.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/offscreen/text/2d.text.shape.fillGlyphRuns-shadow.tentative.w.html": {
     "reftest": "PASS"
   },
   "html/canvas/offscreen/text/2d.text.shape.glyph-clusters-exceptions.tentative.html": {

@@ -7,8 +7,7 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// linearly; larger ones have a hash index (open addressing over the positions of the entries). A deleted entry leaves a
 /// tombstone in the entries (not in the index), removed when the table is compacted, or at once when it is the last
 /// entry (so that adding and deleting a property again and again does not fill the table). An entry is 32 bytes: the fields of its key are stored without the
-/// padding of <see cref="PropertyKey"/>, and the hash codes are not stored (the keys are mostly the same string
-/// instances, compared by reference first).
+/// padding of <see cref="PropertyKey"/>. The hash codes are stored next to the index (the small tables search without them).
 /// </summary>
 internal sealed class PropertyTable : PropertyMap
 {
@@ -20,6 +19,10 @@ internal sealed class PropertyTable : PropertyMap
     // is a power of 2, and it is rebuilt when it is two-thirds full. A removal shifts the next slots of its probe sequence
     // back, so the index has no tombstone.
     private int[]? _index;
+
+    // The hash codes of the keys of the entries, by position (allocated with the index): a probe compares them before the
+    // keys, and a removal or a rebuild of the index does not hash the keys again (a string key is hashed in full)
+    private int[]? _hashes;
     private int _count;
     private int _deletedCount;
 
@@ -47,7 +50,7 @@ internal sealed class PropertyTable : PropertyMap
     {
         var entries = _entries;
         if (_index is { } index)
-            return FindIndexed(index, entries, key);
+            return FindIndexed(index, _hashes!, entries, key);
 
         for (var i = 0; i < _count; i++)
         {
@@ -59,14 +62,18 @@ internal sealed class PropertyTable : PropertyMap
         return -1;
     }
 
-    private static int FindIndexed(int[] index, Entry[] entries, in PropertyKey key)
+    private static int FindIndexed(int[] index, int[] hashes, Entry[] entries, in PropertyKey key)
     {
         var mask = index.Length - 1;
-        for (var i = key.GetHashCode() & mask; ; i = (i + 1) & mask)
+        var hash = key.GetHashCode();
+        for (var i = hash & mask; ; i = (i + 1) & mask)
         {
             var slot = index[i];
             if (slot == 0)
                 return -1;
+
+            if (hashes[slot - 1] != hash)
+                continue;
 
             ref var entry = ref entries[slot - 1];
             if (key.EqualsRaw(entry.KeyValue, entry.KeyIndex) && !entry.IsDeleted)
@@ -95,6 +102,10 @@ internal sealed class PropertyTable : PropertyMap
         if (capacity > _entries.Length)
         {
             Array.Resize(ref _entries, capacity);
+            if (_hashes is not null)
+            {
+                Array.Resize(ref _hashes, capacity);
+            }
         }
 
         if (capacity > IndexThreshold && (_index is null || _index.Length < capacity * 2))
@@ -116,6 +127,10 @@ internal sealed class PropertyTable : PropertyMap
             if (_count == _entries.Length)
             {
                 Array.Resize(ref _entries, _entries.Length * 2);
+                if (_hashes is not null)
+                {
+                    Array.Resize(ref _hashes, _entries.Length);
+                }
             }
         }
 
@@ -133,13 +148,15 @@ internal sealed class PropertyTable : PropertyMap
 
         if (_index is not null)
         {
+            var hash = key.GetHashCode();
+            _hashes![position] = hash;
             if (Count * 3 > _index.Length * 2)
             {
                 BuildIndex();
             }
             else
             {
-                Insert(_index, key.GetHashCode(), position);
+                Insert(_index, hash, position);
             }
         }
         else if (_count > IndexThreshold)
@@ -157,7 +174,7 @@ internal sealed class PropertyTable : PropertyMap
         var key = PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex);
         if (_index is not null)
         {
-            RemoveFromIndex(_index, key.GetHashCode(), position);
+            RemoveFromIndex(_index, _hashes![position], position);
         }
 
         if (key.IsArrayIndex && _sortedIndices is not null)
@@ -175,6 +192,7 @@ internal sealed class PropertyTable : PropertyMap
             _count = 0;
             _deletedCount = 0;
             _index = null;
+            _hashes = null;
             _sortedIndices = null;
             return;
         }
@@ -248,6 +266,7 @@ internal sealed class PropertyTable : PropertyMap
 
     private void Compact()
     {
+        var hashes = _hashes;
         var target = 0;
         for (var i = 0; i < _count; i++)
         {
@@ -255,6 +274,11 @@ internal sealed class PropertyTable : PropertyMap
                 continue;
 
             _entries[target] = _entries[i];
+            if (hashes is not null)
+            {
+                hashes[target] = hashes[i];
+            }
+
             target++;
         }
 
@@ -265,6 +289,10 @@ internal sealed class PropertyTable : PropertyMap
         if (_count > IndexThreshold)
         {
             BuildIndex();
+        }
+        else
+        {
+            _hashes = null;
         }
     }
 
@@ -278,12 +306,29 @@ internal sealed class PropertyTable : PropertyMap
         }
 
         var index = new int[length];
+
+        // The hashes are valid when the table already has them (a growth of the index, a compaction)
+        var hashes = _hashes;
+        if (hashes is null)
+        {
+            hashes = new int[_entries.Length];
+            for (var i = 0; i < _count; i++)
+            {
+                ref var entry = ref _entries[i];
+                if (!entry.IsDeleted)
+                {
+                    hashes[i] = PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex).GetHashCode();
+                }
+            }
+
+            _hashes = hashes;
+        }
+
         for (var i = 0; i < _count; i++)
         {
-            ref var entry = ref _entries[i];
-            if (!entry.IsDeleted)
+            if (!_entries[i].IsDeleted)
             {
-                Insert(index, PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex).GetHashCode(), i);
+                Insert(index, hashes[i], i);
             }
         }
 
@@ -300,10 +345,10 @@ internal sealed class PropertyTable : PropertyMap
             empty = (empty + 1) & mask;
         }
 
+        var hashes = _hashes!;
         for (var i = (empty + 1) & mask; index[i] != 0; i = (i + 1) & mask)
         {
-            ref var entry = ref _entries[index[i] - 1];
-            var home = PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex).GetHashCode() & mask;
+            var home = hashes[index[i] - 1] & mask;
 
             // The slot can move to the empty slot when its home slot is not in (empty, i] (cyclically)
             var stays = empty <= i ? home > empty && home <= i : home > empty || home <= i;

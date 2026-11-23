@@ -314,13 +314,3 @@ ignored.
 specification defines: the node that the pointer leaves and the node that it enters (the target or the related target of
 the event, depending on its type). They are null for the pointer events, as
 [Pointer Events](https://w3c.github.io/pointerevents/#attributes-and-default-actions) recommends.
-
-<a id="WEBPLATEXP0030"></a>
-
-## WEBPLATEXP0030: Tool.window of WebMCP
-
-`Tool.Window` implements the `window` attribute of the `Tool` objects of WebMCP, as the
-[pull request](https://github.com/webmachinelearning/webmcp/pull/348) that introduced the `Tool` interface defined it. The
-specification renamed it to [`source`](https://webmachinelearning.github.io/webmcp/#dom-tool-source), but Chromium and the
-web-platform-tests of `webmcp` still use `window`, so the scripts see `window`. The .NET code uses `Tool.Source`, which
-returns null when the document that registered the tool is not fully active.

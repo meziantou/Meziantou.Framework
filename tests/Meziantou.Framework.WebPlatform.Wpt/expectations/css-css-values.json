@@ -155,7 +155,28 @@
     "total": 9
   },
   "css/css-values/attr-security-if.html": {
-    "total": 14
+    "total": 20,
+    "failures": {
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) if(style(--condition-val: attr(data-foo type(*))): 1x; else: 3x), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"1\"": "FAIL",
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) if(style(--condition-val: attr(data-foo type(*))): 1x; else: 3x), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"3\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) if(style(--condition-val: attr(data-foo type(*))): 1x; else: 3x), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"1\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) if(style(--condition-val: attr(data-foo type(*))): 1x; else: 3x), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"3\"": "FAIL"
+    }
+  },
+  "css/css-values/attr-security-image-set.html": {
+    "total": 16,
+    "failures": {
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) 1x type(attr(data-foo)), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"image/png\"": "FAIL",
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) 1x, url(https://does-not-exist-2.test/404.png) type(attr(data-foo)))' with data-foo=\"text/plain\"": "FAIL",
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) attr(data-foo type(<resolution>)), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"1dppx\"": "FAIL",
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) calc((attr(data-foo type(<number>)) + 1000) * 1dppx), url(https://does-not-exist-2.test/404.png) 1008dppx)' with data-foo=\"7\"": "FAIL",
+      "'background-image: -webkit-image-set(url(https://does-not-exist.test/404.png) type(attr(data-foo)) 1x, url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"image/png\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) 1x type(attr(data-foo)), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"image/png\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) 1x, url(https://does-not-exist-2.test/404.png) type(attr(data-foo)))' with data-foo=\"text/plain\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) attr(data-foo type(<resolution>)), url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"1dppx\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) calc((attr(data-foo type(<number>)) + 1000) * 1dppx), url(https://does-not-exist-2.test/404.png) 1008dppx)' with data-foo=\"7\"": "FAIL",
+      "'background-image: image-set(url(https://does-not-exist.test/404.png) type(attr(data-foo)) 1x, url(https://does-not-exist-2.test/404.png) 2x)' with data-foo=\"image/png\"": "FAIL"
+    }
   },
   "css/css-values/attr-security-transition-2.html": {
     "total": 1
@@ -832,13 +853,25 @@
     "reftest": "PASS"
   },
   "css/css-values/ident-function-computed.html": {
-    "total": 14
+    "total": 15
   },
   "css/css-values/ident-function-parsing.html": {
-    "total": 19
+    "total": 23
+  },
+  "css/css-values/ident-function-shorthand.html": {
+    "total": 13
   },
   "css/css-values/ident-function-substitution.html": {
-    "total": 13
+    "total": 14,
+    "failures": {
+      "ident('') valid, but generating IACVT value, fallback when used as var() name": "FAIL"
+    }
+  },
+  "css/css-values/ident-function-taint-animation.html": {
+    "total": 3,
+    "failures": {
+      "ident() preserves animation taint so animation-name uses its fallback": "FAIL"
+    }
   },
   "css/css-values/if-conditionals.html": {
     "total": 203
@@ -1095,7 +1128,10 @@
     "total": 14
   },
   "css/css-values/random-item-nested.html": {
-    "total": 4
+    "total": 5,
+    "failures": {
+      "auto random-item() nested inside auto random-item() have independent random base values": "FAIL"
+    }
   },
   "css/css-values/random-item-serialize.html": {
     "total": 15

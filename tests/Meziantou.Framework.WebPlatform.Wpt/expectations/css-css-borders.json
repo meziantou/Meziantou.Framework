@@ -503,6 +503,12 @@
   "css/css-borders/border-shape/border-shape-outline-auto.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/border-shape/border-shape-outline-dashed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-dotted.html": {
+    "reftest": "FAIL"
+  },
   "css/css-borders/border-shape/border-shape-outline-double-path.html": {
     "reftest": "PASS"
   },
@@ -512,11 +518,23 @@
   "css/css-borders/border-shape/border-shape-outline-double.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/border-shape/border-shape-outline-groove.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/border-shape/border-shape-outline-inset.html": {
+    "reftest": "FAIL"
+  },
   "css/css-borders/border-shape/border-shape-outline-invalidation.html": {
     "reftest": "PASS"
   },
   "css/css-borders/border-shape/border-shape-outline-offset.html": {
     "reftest": "PASS"
+  },
+  "css/css-borders/border-shape/border-shape-outline-outset.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/border-shape/border-shape-outline-ridge.html": {
+    "reftest": "FAIL"
   },
   "css/css-borders/border-shape/border-shape-outline-with-border-double-ellipse.html": {
     "reftest": "PASS"

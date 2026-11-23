@@ -2496,10 +2496,6 @@ internal sealed partial class IdlModel
     /// <code>
     /// partial dictionary ModelContextTool { object outputSchema; };  // webmachinelearning/webmcp#254 (merged)
     ///
-    /// partial interface Tool {
-    ///   // webmachinelearning/webmcp#348: the former name of source
-    ///   readonly attribute Window? window;
-    /// };
     /// partial interface ModelContext {
     ///   // webmachinelearning/webmcp#373
     ///   readonly attribute boolean toolsReady;
@@ -2512,7 +2508,6 @@ internal sealed partial class IdlModel
         if (!model.Definitions.TryGetValue("ModelContext", out var modelContext))
             return;
 
-        const string ToolWindowHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-window";
         const string ToolsReadyHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/373.html#dom-modelcontext-toolsready";
         const string WaitForToolsUntilHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/373.html#dom-modelcontext-waitfortoolsuntil";
         var source = modelContext.Source;
@@ -2526,21 +2521,6 @@ internal sealed partial class IdlModel
                 Source = source,
                 DeclaringDefinition = modelContextTool.Name,
                 Href = "https://webmachinelearning.github.io/webmcp/#dom-modelcontexttool-outputschema",
-            });
-        }
-
-        if (model.Definitions.TryGetValue("Tool", out var tool) && !tool.Members.Exists(m => m.Name == "window"))
-        {
-            tool.Members.Add(new IdlMember
-            {
-                Kind = IdlMemberKind.Attribute,
-                Name = "window",
-                Type = new IdlType { Name = "Window", Nullable = true },
-                Readonly = true,
-                Source = tool.Source,
-                DeclaringDefinition = tool.Name,
-                Href = ToolWindowHref,
-                ExperimentalApi = "WebMcpToolWindow",
             });
         }
 

@@ -478,6 +478,46 @@ public sealed class WasmRuntimeTests
     }
 
     [Fact]
+    public void Compile_AfterAnInvalidFunction_ValidatesTheNextModulesFromAnEmptyState()
+    {
+        // The validator reuses its blocks and its operand stack: a function that fails in nested blocks, with a value of a
+        // concrete reference type on the stack, must not change the validation or the branches of the next functions
+        const string Valid = """
+            (module
+              (func (export "run") (param $n i32) (result i32)
+                (block $outer (result i32)
+                  (block $inner (result i32)
+                    (br_if $outer (i32.const 10) (i32.eqz (local.get $n)))
+                    (br_table $inner $outer (i32.const 20) (i32.sub (local.get $n) (i32.const 1))))
+                  (i32.const 1)
+                  (i32.add))))
+            """;
+        const string Invalid = """
+            (module
+              (type $t (func))
+              (func $f (type $t))
+              (elem declare func $f)
+              (func (result i32)
+                (block (result i32)
+                  (loop (result i32)
+                    (if (result i32) (i32.const 1)
+                      (then (ref.func $f) (i32.const 1))
+                      (else (i32.const 2)))))))
+            """;
+
+        using var runtime = new WasmRuntime();
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.Throws<WasmCompileException>(() => runtime.Compile(WasmRuntime.WatToWasm(Invalid)));
+            using var store = runtime.CreateStore();
+            var run = store.Instantiate(runtime.Compile(WasmRuntime.WatToWasm(Valid))).GetFunction("run")!;
+            Assert.Equal(10, run.Call(WasmValue.FromI32(0))[0].I32);
+            Assert.Equal(21, run.Call(WasmValue.FromI32(1))[0].I32);
+            Assert.Equal(20, run.Call(WasmValue.FromI32(2))[0].I32);
+        }
+    }
+
+    [Fact]
     public void Options_WhenNotValid_Throw()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new WasmRuntime(new WasmRuntimeOptions { InterruptionCheckInterval = TimeSpan.Zero }));
@@ -513,6 +553,140 @@ public sealed class WasmRuntimeTests
         var run = store.Instantiate(module).GetFunction("run")!;
         Assert.Equal(5050, run.Call(WasmValue.FromI32(100))[0].I32);
         Assert.Equal(threshold >= 0 && System.Runtime.CompilerServices.RuntimeFeature.IsDynamicCodeSupported, ((CodeFunction)run).Code.Compiled is not null);
+    }
+
+    [Fact]
+    public void Operations_HaveDistinctValues()
+    {
+        // The fused operations use values that WebAssembly does not use yet: an operation added later must not reuse one
+        var operations = typeof(Op).GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(field => field.FieldType == typeof(ushort))
+            .GroupBy(field => (ushort)field.GetValue(null)!)
+            .Where(group => group.Count() > 1)
+            .Select(group => string.Join(", ", group.Select(field => field.Name)))
+            .ToList();
+        Assert.Empty(operations);
+    }
+
+    [Fact]
+    public void FusedInstructions_BehaveAsTheInstructions()
+    {
+        // Every fused operation of the interpreter (InstructionFuser), a br_if that keeps a value, a back edge, and a branch
+        // to the second instruction of a fused sequence (the br_if of $mid lands on the local.get after the local.set). The
+        // comparisons have their operands in two locals, in a local and a constant, or computed (the comparison alone is
+        // fused with the branch).
+        string[] comparisons = ["eq", "ne", "lt_s", "lt_u", "gt_s", "gt_u", "le_s", "le_u", "ge_s", "ge_u"];
+        string[] operands = ["(local.get $a) (local.get $b)", "(local.get $a) (i32.const 5)", "(i32.xor (local.get $a) (local.get $m)) (local.get $b)"];
+        var conditions = comparisons.SelectMany(comparison => operands.Select(operand => $"(i32.{comparison} {operand})"))
+            .Append("(i32.eqz (i32.xor (local.get $a) (local.get $m)))");
+        var lines = new StringBuilder();
+        foreach (var condition in conditions)
+        {
+            lines.AppendLine($"(block $c (br_if $c {condition}) (local.set $m (i32.add (i32.mul (local.get $m) (i32.const 3)) (i32.const 1))))");
+            lines.AppendLine($"(if {condition} (then (local.set $m (i32.add (i32.mul (local.get $m) (i32.const 5)) (i32.const 1)))))");
+        }
+
+        foreach (var operation in new[] { "add", "sub", "mul", "and", "or", "xor" })
+        {
+            lines.AppendLine($"(local.set $x (i32.{operation} (local.get $a) (local.get $b))) (local.set $m (i32.xor (local.get $m) (local.get $x)))");
+        }
+
+        foreach (var operation in new[] { "add", "sub", "mul" })
+        {
+            lines.AppendLine($"(local.set $l (i64.{operation} (local.get $l1) (local.get $l2))) (local.set $acc (i64.xor (local.get $acc) (local.get $l)))");
+        }
+
+        foreach (var operation in new[] { "add", "sub", "mul", "div" })
+        {
+            lines.AppendLine($"(local.set $acc (i64.xor (local.get $acc) (i64.reinterpret_f64 (f64.{operation} (local.get $d1) (local.get $d2)))))");
+        }
+
+        var bytes = WasmRuntime.WatToWasm($$"""
+            (module
+              (memory 1)
+              (data (i32.const 16) "\01\02\03\04\05\06\07\08\09\0a\0b\0c")
+              (func (export "run") (param $a i32) (param $b i32) (result i64)
+                (local $m i32) (local $x i32) (local $i i32) (local $p i32) (local $l i64) (local $d f64)
+                (local $l1 i64) (local $l2 i64) (local $d1 f64) (local $d2 f64) (local $acc i64)
+                (local.set $l1 (i64.extend_i32_s (local.get $a)))
+                (local.set $l2 (i64.extend_i32_s (local.get $b)))
+                (local.set $d1 (f64.convert_i32_s (local.get $a)))
+                (local.set $d2 (f64.convert_i32_s (local.get $b)))
+                {{lines}}
+                (local.set $x (block $r (result i32)
+                  (i32.const 99)
+                  (br_if $r (i32.const 42) (i32.lt_s (local.get $a) (local.get $b)))
+                  (drop)
+                  (drop)
+                  (i32.const 7)))
+                (block $mid
+                  (br_if $mid (i32.and (local.get $a) (i32.const 1)))
+                  (local.set $x (i32.add (local.get $x) (i32.const 1000))))
+                (local.set $x (i32.add (local.get $x) (i32.const 1)))
+                (loop $loop
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br_if $loop (i32.lt_u (local.get $i) (i32.const 10))))
+                (local.set $x (i32.add (i32.mul (local.get $x) (local.get $b)) (i32.const -5)))
+                (local.set $x (i32.xor (local.tee $x (i32.rotl (local.get $x) (i32.const 7))) (local.get $a)))
+                (local.set $x (i32.rotl (local.get $x) (local.get $a)))
+                (local.set $p (i32.and (local.get $b) (i32.const 3)))
+                (local.set $m (i32.popcnt (local.get $m)))
+                (local.set $x (i32.add (local.get $x) (i32.load offset=16 (local.get $p))))
+                (local.set $l (i64.extend_i32_s (local.get $x)))
+                (local.set $l (i64.mul (local.get $l) (i64.const -3)))
+                (local.set $d (f64.convert_i32_s (local.get $a)))
+                (local.set $d (f64.add (local.get $d) (f64.const 0.5)))
+                (i64.add
+                  (i64.add (i64.extend_i32_u (local.get $m)) (i64.shl (i64.extend_i32_u (i32.add (local.get $x) (local.get $i))) (i64.const 32)))
+                  (i64.xor (i64.xor (local.get $l) (local.get $acc)) (i64.reinterpret_f64 (local.get $d)))))
+              (func (export "load") (param $address i32) (result i32)
+                (i32.load offset=4 (local.get $address))))
+            """);
+        int[] values = [int.MinValue, int.MinValue + 1, -2, -1, 0, 1, 2, 3, 4, 5, 6, int.MaxValue - 1, int.MaxValue];
+        int[] addresses = [0, 12, 65_528, 65_529, 65_532, -4];
+
+        var interpreted = Run(compilationThreshold: -1, out var code);
+        var compiled = Run(compilationThreshold: 0, out _);
+        Assert.Equal(interpreted, compiled);
+
+        // The interpreted code has every fused operation
+        var ops = code.Interpreted.Select(instruction => (int)instruction.Op).ToHashSet();
+        foreach (var op in Enumerable.Range(Op.FusedFirst, Op.FusedLast - Op.FusedFirst + 1))
+        {
+            Assert.Contains(op, ops);
+        }
+
+        List<string> Run(int compilationThreshold, out CompiledCode runCode)
+        {
+            using var runtime = new WasmRuntime(new WasmRuntimeOptions { CompilationThreshold = compilationThreshold });
+            using var store = runtime.CreateStore();
+            var instance = store.Instantiate(runtime.Compile(bytes));
+            var run = instance.GetFunction("run")!;
+            var load = instance.GetFunction("load")!;
+            runCode = ((CodeFunction)run).Code;
+            var results = new List<string>();
+            foreach (var a in values)
+            {
+                foreach (var b in values)
+                {
+                    results.Add(run.Call(WasmValue.FromI32(a), WasmValue.FromI32(b))[0].ToString());
+                }
+            }
+
+            foreach (var address in addresses)
+            {
+                try
+                {
+                    results.Add(load.Call(WasmValue.FromI32(address))[0].ToString());
+                }
+                catch (WasmTrapException ex)
+                {
+                    results.Add("trap: " + ex.Message);
+                }
+            }
+
+            return results;
+        }
     }
 
     [Theory]

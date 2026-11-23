@@ -245,6 +245,9 @@
   "custom-elements/parser/parser-constructs-custom-elements-with-is.html": {
     "total": 2
   },
+  "custom-elements/parser/parser-constructs-custom-elements-with-prefix.xhtml": {
+    "total": 1
+  },
   "custom-elements/parser/parser-constructs-custom-elements.html": {
     "total": 2
   },
@@ -514,6 +517,9 @@
   "custom-elements/registries/Document-importNode-cross-document.window.js": {
     "total": 15
   },
+  "custom-elements/registries/Document-importNode-explicit-registry.window.js": {
+    "total": 4
+  },
   "custom-elements/registries/Document-importNode.html": {
     "total": 20
   },
@@ -542,7 +548,13 @@
     "total": 5
   },
   "custom-elements/registries/adoption-global-registry.window.js": {
-    "total": 16
+    "total": 17,
+    "failures": {
+      "Element with the global registry in a shadow root with a scoped registry, whose host is adopted into a document without a browsing context and then into a document with a global registry": "FAIL"
+    }
+  },
+  "custom-elements/registries/adoption-inherited-scoped-registry.window.js": {
+    "total": 14
   },
   "custom-elements/registries/adoption-null-registry-element.window.js": {
     "total": 3
@@ -599,7 +611,10 @@
     "total": 23
   },
   "custom-elements/registries/scoped-registry-append.html": {
-    "total": 16
+    "total": 17,
+    "failures": {
+      "Global registry element should gain effective global registry of scoped registry from its parent upon adoption.": "FAIL"
+    }
   },
   "custom-elements/registries/scoped-registry-define-upgrade-criteria.html": {
     "total": 14
@@ -677,7 +692,7 @@
     "total": 1
   },
   "custom-elements/upgrading/Node-cloneNode.html": {
-    "total": 9
+    "total": 10
   },
   "custom-elements/upgrading/upgrade-custom-element-error-event.html": {
     "total": 4

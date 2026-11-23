@@ -26,6 +26,12 @@
   "css/css-color/animation/opacity-animation-ending-correctly-002.html": {
     "reftest": "PASS"
   },
+  "css/css-color/animation/opacity-auto-keyframe.tentative.html": {
+    "total": 1,
+    "failures": {
+      "An ordinary-element auto opacity keyframe interpolates as numeric one": "FAIL"
+    }
+  },
   "css/css-color/animation/opacity-interpolation.html": {
     "total": 120
   },
@@ -628,7 +634,7 @@
     "total": 93
   },
   "css/css-color/parsing/color-invalid-color-mix-function.html": {
-    "total": 141
+    "total": 147
   },
   "css/css-color/parsing/color-invalid-contrast-color-function.html": {
     "total": 9
@@ -667,7 +673,7 @@
     "total": 170
   },
   "css/css-color/parsing/color-valid-color-mix-function.html": {
-    "total": 683
+    "total": 686
   },
   "css/css-color/parsing/color-valid-contrast-color-function.html": {
     "total": 17
@@ -698,6 +704,18 @@
   },
   "css/css-color/parsing/contrast-color-function-calc-container.html": {
     "total": 2
+  },
+  "css/css-color/parsing/opacity-auto-computed.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Property opacity value 'auto'": "FAIL"
+    }
+  },
+  "css/css-color/parsing/opacity-auto-valid.tentative.html": {
+    "total": 4,
+    "failures": {
+      "e.style['opacity'] = \"auto\" should set the property value": "FAIL"
+    }
   },
   "css/css-color/parsing/opacity-computed.html": {
     "total": 33
@@ -772,6 +790,36 @@
     "reftest": "PASS"
   },
   "css/css-color/rec2020-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-006.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-color/rec2020-gamma-010.html": {
     "reftest": "PASS"
   },
   "css/css-color/relative-color-with-system-color.html": {

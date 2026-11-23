@@ -824,6 +824,25 @@
   "html/syntax/parsing/noscript-template-querySelector.html": {
     "total": 3
   },
+  "html/syntax/parsing/parser-text-node-coalescing-and-mutations.html": {
+    "total": 29,
+    "failures": {
+      "Appending parser text to an existing Text node inside <textarea> uses replace data and updates its raw value": "FAIL",
+      "Chunked network HTML document loading flushes pending text per networking task and appends subsequent chunks via replace data": "FAIL",
+      "Chunked network text/plain document loading flushes pending text per networking task and appends subsequent chunks via replace data": "FAIL",
+      "Consecutive document.write() calls inside an unclosed <style> flush pending text at the end of each write": "FAIL",
+      "Consecutive document.write() calls inside an unclosed <textarea> flush pending text at the end of each write": "FAIL",
+      "Consecutive document.write() calls inside an unclosed <title> flush pending text and update document.title at the end of each write": "FAIL",
+      "Foster-parented table text runs flush before table tokens and append to the Text node before the table via replace data": "FAIL",
+      "Ignored U+0000 NULL character tokens do not flush pending text, whereas ignored non-character tokens do": "FAIL",
+      "Ignored end tags flush pending text and subsequent runs append via replace data (queueing one characterData MutationRecord per run)": "FAIL",
+      "Script that removes itself splits character runs and appends subsequent text to the preceding Text node with a characterData MutationRecord": "FAIL",
+      "Separate document.write() calls flush pending text and append via replace data": "FAIL",
+      "Stray DOCTYPE token in body flushes pending text before being ignored": "FAIL",
+      "Whitespace run in 'after after body' coalesces into a single flush": "FAIL",
+      "Whitespace run in 'after body' coalesces into a single flush": "FAIL"
+    }
+  },
   "html/syntax/parsing/quotes-in-meta.html": {
     "total": 1
   },

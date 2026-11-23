@@ -81,6 +81,36 @@ public sealed class JsEngineTests
         Assert.Equal(2, created);
     }
 
+    // [[Set]] looks up the receiver again after the factory of a lazy property of the prototype ran
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LazyPropertyFactoryDefinesThePropertyOnTheReceiver(bool fromScript)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+        var prototype = realm.CreateObject();
+        var child = realm.CreateObject(prototype);
+        prototype.DefineLazyDataProperty("x", () =>
+        {
+            child.DefineProperty("x", JsPropertyDescriptor.Data(1, writable: false));
+            return 0;
+        }, writable: true, enumerable: true, configurable: true);
+
+        if (fromScript)
+        {
+            realm.GlobalObject.SetProperty("child", child);
+            Assert.Equal("false,1,x", realm.Execute("[Reflect.set(child, 'x', 2), child.x, Object.keys(child)].join()").AsString());
+        }
+        else
+        {
+            Assert.False(child.SetProperty("x", 2));
+            Assert.Equal(1, child.GetProperty("x").AsNumber());
+            Assert.Single(child.GetOwnPropertyKeys());
+        }
+    }
+
     // The built-in methods and accessors, and some built-ins, are created on first use: it is not observable
     [Theory]
     [InlineData("var names = Object.getOwnPropertyNames(globalThis); var order = ['Map', 'Set', 'WeakMap', 'WeakSet', 'WeakRef', 'FinalizationRegistry', 'Promise', 'RegExp', 'ArrayBuffer', 'Date', 'SuppressedError', 'DisposableStack', 'AsyncDisposableStack'].map(n => names.indexOf(n)); order.every((index, i) => index > 0 && (i === 0 || index > order[i - 1]))", "true")]

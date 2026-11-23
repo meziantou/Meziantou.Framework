@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -285,6 +286,26 @@ public partial class JsObject : JsCell
         value = default;
         flags = default;
         return false;
+    }
+
+    /// <summary>Finds the flags of an own named property without evaluating it: a lazy property keeps <see cref="PropertyFlags.Lazy"/>.</summary>
+    private bool TryGetOwnSlotFlags(in PropertyKey key, out PropertyFlags flags)
+    {
+        Debug.Assert(!key.IsArrayIndex);
+        switch (_map)
+        {
+            case Shape shape when shape.Find(key) is var slot and >= 0:
+                flags = shape.GetFlags(slot);
+                return true;
+
+            case PropertyTable properties when properties.Find(key) is var position and >= 0:
+                flags = properties.GetFlags(position);
+                return true;
+
+            default:
+                flags = default;
+                return false;
+        }
     }
 
     internal bool OrdinaryDefineOwnProperty(in PropertyKey key, in PropertyDescriptor descriptor)
@@ -698,11 +719,21 @@ public partial class JsObject : JsCell
 
     internal bool OrdinarySet(in PropertyKey key, JsValue value, JsValue receiver)
     {
-        // Fast path: an own writable data property of an ordinary receiver
-        if (!IsExoticFor(key) && receiver.Cell == this && TryGetOwnSlot(key, out _, out var ownFlags) && (ownFlags & (PropertyFlags.Accessor | PropertyFlags.Writable)) == PropertyFlags.Writable)
+        if (!IsExoticFor(key) && receiver.Cell == this)
         {
-            SetOwnSlot(key, value, ownFlags);
-            return true;
+            // Fast path: an own writable data property of an ordinary receiver
+            if (TryGetOwnSlot(key, out _, out var ownFlags))
+            {
+                if ((ownFlags & (PropertyFlags.Accessor | PropertyFlags.Writable)) == PropertyFlags.Writable)
+                {
+                    SetOwnSlot(key, value, ownFlags);
+                    return true;
+                }
+            }
+            else if (!key.IsArrayIndex && TryAddPropertyForSet(key, value, out var added))
+            {
+                return added;
+            }
         }
 
         if (!GetOwnProperty(key, out var ownDesc))
@@ -715,6 +746,45 @@ public partial class JsObject : JsCell
         }
 
         return OrdinarySetWithOwnDescriptor(key, value, receiver, ownDesc);
+    }
+
+    /// <summary>
+    /// The fast path of [[Set]] of a property that the ordinary receiver (this) does not have: when the objects of its
+    /// prototype chain are ordinary for the key, and none has the property or the first one that has it has a writable data
+    /// property, the property is added to the receiver as OrdinarySetWithOwnDescriptor would (CreateDataProperty), without
+    /// looking up the key again at each step. Returns false when the slow path must run (nothing observable was done).
+    /// </summary>
+    private bool TryAddPropertyForSet(in PropertyKey key, JsValue value, out bool result)
+    {
+        for (var obj = GetPrototypeOf(); obj is not null; obj = obj.GetPrototypeOf())
+        {
+            if (obj.IsExoticFor(key))
+            {
+                result = false;
+                return false;
+            }
+
+            if (obj.TryGetOwnSlotFlags(key, out var flags))
+            {
+                // A setter, a read-only property, or a lazy property whose factory (host code) could change the receiver:
+                // the slow path, which looks up the receiver again after the factory ran
+                if ((flags & (PropertyFlags.Accessor | PropertyFlags.Writable | PropertyFlags.Lazy)) != PropertyFlags.Writable)
+                {
+                    result = false;
+                    return false;
+                }
+
+                break;
+            }
+        }
+
+        result = IsExtensible();
+        if (result)
+        {
+            AddProperty(key, value, PropertyFlags.Default);
+        }
+
+        return true;
     }
 
     /// <summary>OrdinarySetWithOwnDescriptor (https://tc39.es/ecma262/#sec-ordinarysetwithowndescriptor).</summary>

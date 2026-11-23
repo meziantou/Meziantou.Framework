@@ -36,6 +36,9 @@ internal static class JavaScriptSeeds
         ("recursion", "function r() { r(); } r()"),
         ("hashbang", "#!/usr/bin/env node\n'use strict'; 1"),
         ("html-comments", "var x = 1; <!-- comment\n--> also a comment\nx"),
+        ("to-int32", "[2 ** 31, -(2 ** 31) - 1, 2 ** 32 + 5.7, 2 ** 53 + 2, 2 ** 63 - 1024, -(2 ** 63), 2 ** 63, 2 ** 84 + 2 ** 32, -1e20, NaN].map(x => [x | 0, x >>> 0, x << 1, ~x])"),
+        ("arguments-objects", "function u() { return arguments; } function s() { 'use strict'; return arguments; } function m(a) { a = 2; return arguments; } const f = function () { return [].slice.call(arguments).join(); }; [u(1, 'x'), s(1), m(1)].map(a => Reflect.ownKeys(a).map(String).join() + f.apply(null, a) + Math.max.apply(null, { length: 2, 0: 1, 1: 9 }))"),
+        ("set-prototype-chain", "const b = Object.defineProperties({ w: 1 }, { ro: { value: 1 }, acc: { set(v) { this.log = v; } } }); const o = Object.create(b); for (const k of ['w', 'ro', 'acc', 'n' + 1]) o[k] = 2; const p = Object.create(new Proxy({}, {})); p['q'] = 3; const d = {}; for (let i = 0; i < 20; i++) { d['k' + i] = i; delete d['k' + (i >> 1)]; } [Object.keys(o), o.ro, Object.keys(p), Object.keys(d), Reflect.set(Object.preventExtensions({}), 'x', 1)]"),
     ];
 
     /// <summary>The scripts of the debugger target, in addition to <see cref="Scripts"/>: the code that raises events from other places than the script.</summary>

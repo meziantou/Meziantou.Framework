@@ -1,8 +1,8 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 // The user activation of the window (https://html.spec.whatwg.org/multipage/interaction.html#tracking-user-activation):
-// the timestamps of the last activation-triggering input event (e.g. a trusted mousedown or keydown), which
-// gate the APIs that need a user gesture.
+// the timestamp of the last activation-triggering input event (e.g. a trusted mousedown or keydown) and the sticky and
+// history-action activation flags, which gate the APIs that need a user gesture.
 public partial class Window
 {
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#transient-activation-duration</summary>
@@ -15,13 +15,20 @@ public partial class Window
     /// </summary>
     private long _lastActivationTimestamp = long.MaxValue;
 
-    /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#last-history-action-activation-timestamp</summary>
-    private long _lastHistoryActionActivationTimestamp = long.MaxValue;
+    /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#has-history-action-activation</summary>
+    private bool _hasHistoryActionActivation;
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/interaction.html#has-sticky-activation: set by the activation notification, or
+    /// carried over from the window of the document that a same-origin navigation, reload or traversal replaces (see
+    /// <see cref="CarryOverStickyActivation"/>).
+    /// </summary>
+    private bool _hasStickyActivation;
 
     private long CurrentTimestamp => EventLoop.TimeProvider.GetTimestamp();
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#sticky-activation</summary>
-    internal bool HasStickyActivation => _lastActivationTimestamp != long.MaxValue && CurrentTimestamp >= _lastActivationTimestamp;
+    internal bool HasStickyActivation => _hasStickyActivation;
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#transient-activation</summary>
     internal bool HasTransientActivation
@@ -37,7 +44,14 @@ public partial class Window
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#history-action-activation</summary>
-    internal bool HasHistoryActionActivation => _lastActivationTimestamp is not (long.MaxValue or long.MinValue) && _lastActivationTimestamp != _lastHistoryActionActivationTimestamp;
+    internal bool HasHistoryActionActivation => _hasHistoryActionActivation;
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application: the window
+    /// of the document that a same-origin navigation, reload or traversal reaches gets the sticky activation of the window of
+    /// the document it replaces (but not its transient activation), before the document runs scripts.
+    /// </summary>
+    internal void CarryOverStickyActivation() => _hasStickyActivation = true;
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/interaction.html#activation-notification: the window, the windows of the
@@ -50,14 +64,12 @@ public partial class Window
             return;
 
         var now = window.CurrentTimestamp;
-        window._lastActivationTimestamp = now;
-        window.CloseWatcherManager.NotifyAboutUserActivation();
+        window.RecordActivation(now);
         for (var navigable = document.BrowsingContext?.Parent; navigable is not null; navigable = navigable.Parent)
         {
             if (navigable.Document.RelevantWindow is { } ancestorWindow)
             {
-                ancestorWindow._lastActivationTimestamp = now;
-                ancestorWindow.CloseWatcherManager.NotifyAboutUserActivation();
+                ancestorWindow.RecordActivation(now);
             }
         }
 
@@ -67,8 +79,7 @@ public partial class Window
             {
                 if (descendant.Document.RelevantWindow is { } descendantWindow && OriginRecord.IsSameOrigin(descendant.Document.Origin, document.Origin))
                 {
-                    descendantWindow._lastActivationTimestamp = now;
-                    descendantWindow.CloseWatcherManager.NotifyAboutUserActivation();
+                    descendantWindow.RecordActivation(now);
                 }
             }
 
@@ -78,8 +89,7 @@ public partial class Window
             var top = browsingContext.Top;
             if (top.IsDocumentPictureInPicture && top.PictureInPictureOpener is { IsDestroyed: false } opener && opener.Document.RelevantWindow is { } openerWindow)
             {
-                openerWindow._lastActivationTimestamp = now;
-                openerWindow.CloseWatcherManager.NotifyAboutUserActivation();
+                openerWindow.RecordActivation(now);
             }
 
             if (top.DocumentPictureInPictureWindow is { IsDestroyed: false } pip)
@@ -88,12 +98,23 @@ public partial class Window
                 {
                     if (navigable.Document.RelevantWindow is { } pipWindow && OriginRecord.IsSameOrigin(navigable.Document.Origin, pip.Document.Origin))
                     {
-                        pipWindow._lastActivationTimestamp = now;
-                        pipWindow.CloseWatcherManager.NotifyAboutUserActivation();
+                        pipWindow.RecordActivation(now);
                     }
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/interaction.html#activation-notification, steps for each window: the window gets
+    /// the transient, history-action and sticky activations, and its close watcher manager is notified.
+    /// </summary>
+    private void RecordActivation(long now)
+    {
+        _lastActivationTimestamp = now;
+        _hasHistoryActionActivation = true;
+        _hasStickyActivation = true;
+        CloseWatcherManager.NotifyAboutUserActivation();
     }
 
     /// <summary>
@@ -153,7 +174,7 @@ public partial class Window
         {
             if (navigable.Document.RelevantWindow is { } window)
             {
-                window._lastHistoryActionActivationTimestamp = window._lastActivationTimestamp;
+                window._hasHistoryActionActivation = false;
             }
         }
     }

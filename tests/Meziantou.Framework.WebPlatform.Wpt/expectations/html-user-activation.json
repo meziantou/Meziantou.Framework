@@ -43,48 +43,30 @@
     "total": 1
   },
   "html/user-activation/iframe-clicked-after-navigation-started.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation when an iframe is clicked after its navigation started": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/iframe-navigated-by-crossorigin-parent.html": {
     "total": 1
   },
   "html/user-activation/iframe-navigated-by-itself-in-crossorigin-parent.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a navigation an iframe inside a cross-origin parent performs on itself": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/iframe-navigated-to-inherited-origin.html?about-blank": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a navigation of an iframe to a document that inherits an origin": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/iframe-navigated-to-inherited-origin.html?blob": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a navigation of an iframe to a document that inherits an origin": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/iframe-navigated-to-inherited-origin.html?srcdoc": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a navigation of an iframe to a document that inherits an origin": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/iframe-recreated-by-traversal.https.html?no-store": {
-    "total": 1,
-    "failures": {
-      "User activation is not carried over to an iframe that a traversal recreates": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/iframe-recreated-by-traversal.https.html?store": {
     "total": 1,
     "failures": {
-      "User activation is not carried over to an iframe that a traversal recreates": "FAIL"
+      "User activation is not carried over to an iframe that a traversal recreates": "PRECONDITION_FAILED"
     }
   },
   "html/user-activation/iframe-sandboxed-navigated-by-itself.html": {
@@ -110,10 +92,7 @@
     "total": 1
   },
   "html/user-activation/navigate-sameorigin-chain.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a chain of same-origin navigations and a reload": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigate-to-crossorigin-redirect.html": {
     "total": 1
@@ -131,70 +110,40 @@
     "total": 1
   },
   "html/user-activation/navigate-to-javascript-url.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a navigation to a javascript: URL": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigate-to-sameorigin-redirect.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a same-origin redirection": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigate-to-sameorigin.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a same-origin navigation": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigate-top-initiated-by-crossorigin-iframe.html": {
     "total": 1
   },
   "html/user-activation/navigate-with-coop-group-switch.https.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a same-origin navigation that switches the browsing context group": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigation-api-entry-points.html?go-zero": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across the navigation API entry points and history.go(0)": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigation-api-entry-points.html?navigate": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across the navigation API entry points and history.go(0)": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigation-api-entry-points.html?reload": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across the navigation API entry points and history.go(0)": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigation-api-entry-points.html?traverse": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across the navigation API entry points and history.go(0)": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigation-api-entry-points.html?traverse-to": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across the navigation API entry points and history.go(0)": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/navigation-state-reset-crossorigin.sub.html": {
     "total": 1
   },
   "html/user-activation/navigation-state-reset-sameorigin.html": {
-    "total": 1,
-    "failures": {
-      "Post-navigation state reset.": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/no-activation-thru-escape-key.html": {
     "total": 1
@@ -209,28 +158,16 @@
     "total": 9
   },
   "html/user-activation/reload-of-crossorigin-initiated-entry.html?history-go-zero": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a reload of an entry a cross-origin window navigated to": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/reload-of-crossorigin-initiated-entry.html?location-reload": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a reload of an entry a cross-origin window navigated to": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/reload-of-crossorigin-redirected-entry.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a reload of an entry reached through a cross-origin redirection": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/reload-sameorigin.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a reload": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/reload-through-crossorigin-redirect.html": {
     "total": 1
@@ -239,10 +176,7 @@
     "total": 1
   },
   "html/user-activation/replace-sameorigin.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a same-origin replace navigation": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/traverse-aborted-by-204.https.html": {
     "total": 1
@@ -257,10 +191,7 @@
     }
   },
   "html/user-activation/traverse-carry-over-before-pageshow.https.html?no-store": {
-    "total": 1,
-    "failures": {
-      "Sticky user activation is carried over before the document it reaches runs anything": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/traverse-carry-over-before-pageshow.https.html?store": {
     "total": 1,
@@ -287,10 +218,7 @@
     "total": 1
   },
   "html/user-activation/traverse-started-by-crossorigin-iframe.html": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a traversal a cross-origin iframe starts": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/traverse-to-crossorigin.html": {
     "total": 1
@@ -305,10 +233,7 @@
     }
   },
   "html/user-activation/traverse-to-pushed-entry.https.html?no-store": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a traversal to an entry that is not the one its document was last shown for": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/traverse-to-pushed-entry.https.html?store": {
     "total": 1,
@@ -317,10 +242,7 @@
     }
   },
   "html/user-activation/traverse-to-sameorigin.https.html?no-store": {
-    "total": 1,
-    "failures": {
-      "User activation propagation across a traversal to a same-origin document": "FAIL"
-    }
+    "total": 1
   },
   "html/user-activation/traverse-to-sameorigin.https.html?store": {
     "total": 1,

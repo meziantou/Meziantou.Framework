@@ -258,6 +258,19 @@ the next one when it is full, Tab and Shift+Tab move between the fields before l
 arrow keys move between them too, the up and down arrow keys step the focused field, and Backspace or Delete clears it.
 The value is set, and `input` and `change` are fired, when every field has a value (the value is empty otherwise).
 
+## User activation
+
+A press of a mouse button or of a key (except Escape), or the end of a touch, gives the window a user activation, as in
+the browsers: the APIs that need a user gesture (popups, fullscreen, clipboard, ...) work for 5 seconds, and
+`navigator.userActivation.hasBeenActive` stays true. The events that a script or
+[DispatchEvent()](cref:Meziantou.Framework.WebPlatform.Dom.EventTarget.DispatchEvent) fires give no activation.
+
+The sticky activation (`hasBeenActive`, not the transient one) follows the page when it moves to another document of its
+origin: a navigation, a reload or a back/forward traversal, when the navigation is started by a document of that origin
+(any reload counts) and no redirect crosses origins. A navigation that your application starts with
+[Navigate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Navigate) or [NavigateAsync](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.NavigateAsync) has no initiator: the new
+document starts without activation, and a later traversal back to it does not carry the activation over either.
+
 ## Pending input
 
 A long script can call `navigator.scheduling.isInputPending()` to yield when the user is waiting. The library dispatches

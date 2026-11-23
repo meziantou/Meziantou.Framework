@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,715 | 30,158 | 1,310 | 96% |
+| [Stable](#stable-tests) | 27,730 | 30,158 | 1,310 | 96% |
 | [Tentative](#tentative-tests) | 1,656 | 3,073 | 635 | 68% |
 | [Reftests](#reftests) | 28,800 | 29,687 | 139 | 97% |
 | [Crash tests](#crash-tests) | 2,122 | 2,144 | 13 | 99.5% |
-| **All** | **60,293** | **65,062** | **2,097** | **96%** |
+| **All** | **60,308** | **65,062** | **2,097** | **96%** |
 
 ## Failure reasons
 
@@ -61,14 +61,14 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 150
 - **TEST BUG**: 1,121
-- **NOT IMPLEMENTED**: 2,693
+- **NOT IMPLEMENTED**: 2,671
 - **REQUIRES**: 634
   - `hardware`: 445
   - `layout`: 22
   - `media`: 26
   - `user-input`: 151
 - **TEST RUNNER**: 104
-- **OUT OF SCOPE**: 264
+- **OUT OF SCOPE**: 271
 - **FLAKY**: 1
 - **PERFORMANCE**: 6
 
@@ -254,7 +254,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/semantics`](html/semantics.md) | 2,132 | 2,223 | 30 | 97% |
 | [`html/syntax`](html/syntax.md) | 105 | 107 | 0 | 98% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
-| [`html/user-activation`](html/user-activation.md) | 29 | 52 | 0 | 56% |
+| [`html/user-activation`](html/user-activation.md) | 44 | 52 | 0 | 85% |
 | [`html/webappapis`](html/webappapis.md) | 335 | 340 | 1 | 99% |
 | [`idle-detection`](idle-detection.md) | 7 | 10 | 0 | 70% |
 | [`imagebitmap-renderingcontext`](imagebitmap-renderingcontext.md) | 14 | 14 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,715** | **30,158** | **1,310** | **96%** |
+| **Total (341 sections)** | **27,730** | **30,158** | **1,310** | **96%** |
 
 ## Tentative tests
 

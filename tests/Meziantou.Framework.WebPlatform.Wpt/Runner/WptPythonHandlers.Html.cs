@@ -787,6 +787,26 @@ internal static partial class WptPythonHandlers
         // executor of RemoteContextHelper
         ["/html/browsers/browsing-the-web/remote-context-helper/resources/executor-window.py"] = ExecutorWindow,
 
+        // html/user-activation/resources/slow-remote-executor.py: a remote executor (the uuid parameter) whose headers are
+        // sent after the delay parameter (in seconds, 4 by default)
+        ["/html/user-activation/resources/slow-remote-executor.py"] = (request, response, _) =>
+        {
+            response.Delay = TimeSpan.FromSeconds(double.TryParse(request.Get("delay"), NumberStyles.Float, CultureInfo.InvariantCulture, out var delay) ? delay : 4);
+            response.Set("Content-Type", "text/html");
+            response.Set("Cache-Control", "no-store");
+            response.Content = """
+                <!DOCTYPE html>
+                <meta charset="utf-8">
+                <body>
+                <script src="/common/dispatcher/dispatcher.js"></script>
+                <script>
+                  const uuid = new URLSearchParams(location.search).get("uuid");
+                  new Executor(uuid);
+                </script>
+
+                """;
+        },
+
         // html/infrastructure/urls/terminology-0/resources/echo-referrer-text.py: the Referer header of the request
         ["/html/infrastructure/urls/terminology-0/resources/echo-referrer-text.py"] = (request, response, _) => TextResponse(response, request.Header("Referer") ?? ""),
 

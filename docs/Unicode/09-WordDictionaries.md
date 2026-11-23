@@ -126,7 +126,7 @@ Assert.True(cost > 0);
 ```
 <!-- endref -->
 
-The lists take about 1.5 MB in the assembly, compressed. Once loaded, a list takes from about 0.5 MB of memory (Thai)
+The lists take about 1.7 MB in the assembly, compressed. Once loaded, a list takes from about 0.5 MB of memory (Thai)
 to 3 MB (Chinese and Japanese).
 
 ## Licenses

@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <IsTrimmable>false</IsTrimmable>
     <Version>2.0.11</Version>
     <Description>.NET wrapper to get or set Mark of the Web, a metadata identifier used by Microsoft Windows to mark files downloaded from the Internet as potentially unsafe</Description>

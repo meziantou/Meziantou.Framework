@@ -333,7 +333,7 @@ public sealed partial class IcuWordDictionary
     /// <summary>Reads a word list from its uncompressed content (see the format in the constructor).</summary>
     internal static IcuWordDictionary Load(IcuWordDictionaryKind kind, ReadOnlySpan<byte> data) => new(kind, data);
 
-    /// <summary>Reads a word list from the content of its resource: the length of the uncompressed content (u32, little endian), then the content compressed with Brotli.</summary>
+    /// <summary>Reads a word list from the content of its resource: the length of the uncompressed content (u32, little endian), then the content compressed with Deflate.</summary>
     internal static IcuWordDictionary LoadCompressed(IcuWordDictionaryKind kind, Stream stream) => new(kind, Decompress(stream));
 
     /// <summary>Decompresses the content of the resource of a word list.</summary>
@@ -346,10 +346,18 @@ public sealed partial class IcuWordDictionary
             throw new InvalidDataException("The word list is invalid");
 
         var data = new byte[length];
-        using (var brotli = new BrotliStream(stream, CompressionMode.Decompress, leaveOpen: true))
+        using (var deflate = new DeflateStream(stream, CompressionMode.Decompress, leaveOpen: true))
         {
-            brotli.ReadExactly(data);
-            if (brotli.ReadByte() >= 0)
+            try
+            {
+                deflate.ReadExactly(data);
+            }
+            catch (EndOfStreamException ex)
+            {
+                throw new InvalidDataException("The word list is invalid", ex);
+            }
+
+            if (deflate.ReadByte() >= 0)
                 throw new InvalidDataException("The word list is invalid");
         }
 

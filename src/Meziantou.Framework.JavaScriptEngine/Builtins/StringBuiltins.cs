@@ -368,6 +368,7 @@ internal static class StringBuiltins
     }
 
     /// <summary>String.prototype.normalize([form])</summary>
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "FormKC and FormKD are unsupported by string.Normalize on the browser; UnicodeNormalization implements every form itself")]
     private static JsValue Normalize(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var s = ThisToString(thisValue, "normalize");

@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace Meziantou.Framework;
 
@@ -34,6 +35,7 @@ public readonly struct ProcessEntry : IEquatable<ProcessEntry>
     public override string ToString() => $"Id: {ProcessId}; Parent Id: {ParentProcessId}";
 
     /// <summary>Gets the <see cref="Process"/> instance for this process entry.</summary>
+    [UnsupportedOSPlatform("browser")]
     public Process ToProcess()
     {
         return Process.GetProcessById(ProcessId);

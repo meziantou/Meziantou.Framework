@@ -1,6 +1,7 @@
 <Project Sdk="Meziantou.NET.Sdk">
 
   <PropertyGroup>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <!-- Validates the host from Uri.IdnHost -->
     <GlobalizationSensitive>true</GlobalizationSensitive>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>

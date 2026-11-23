@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <RootNamespace>Meziantou.Framework.Diagnostics</RootNamespace>
     <Version>1.0.8</Version>
     <Description>Create a memory dump of the current process on Windows, Linux, and macOS</Description>

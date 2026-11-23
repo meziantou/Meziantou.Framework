@@ -8,6 +8,9 @@
     <!-- The libraries support trimming unless they opt out with IsTrimmable=false. Directory.Build.targets turns it off for the target frameworks that do not support it -->
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
 
+    <!-- The libraries support the browser (WebAssembly) unless they opt out with IsBrowserCompatible=false. Directory.Build.targets declares the platform to the platform compatibility analyzer (CA1416) -->
+    <IsBrowserCompatible Condition="'$(IsBrowserCompatible)' == ''">true</IsBrowserCompatible>
+
     <PublicApiGeneratorGenerateOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorGenerateOnBuild)' == ''">false</PublicApiGeneratorGenerateOnBuild>
     <PublicApiGeneratorVerifyNoChangeOnBuild Condition="'$(GITHUB_ACTIONS)' == 'true' and '$(PublicApiGeneratorVerifyNoChangeOnBuild)' == ''">false</PublicApiGeneratorVerifyNoChangeOnBuild>
 

@@ -178,7 +178,8 @@ internal ref partial struct HevcSliceCoder
         }
 
         _qpY = _state.LastQpY;
-        if (_workers is not null && _maxWorkers > 1 && _header.EntryPointOffsetMinus1.Length > 0)
+        // The browser (WebAssembly) has no thread to decode the substreams concurrently
+        if (_workers is not null && _maxWorkers > 1 && _header.EntryPointOffsetMinus1.Length > 0 && !OperatingSystem.IsBrowser())
         {
             switch (DecodeSubstreamsConcurrently(position, out var next))
             {

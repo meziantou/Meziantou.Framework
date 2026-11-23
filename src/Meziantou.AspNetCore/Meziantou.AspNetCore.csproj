@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <Version>2.0.4</Version>
     <Description>Helpers for ASP.NET Core middleware pipeline diagnostics and default response cache-control headers</Description>
     <PackageTags>aspnetcore, middleware, diagnostics, cache-control, http</PackageTags>

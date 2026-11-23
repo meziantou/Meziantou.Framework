@@ -1,3 +1,5 @@
+using System.Runtime.Versioning;
+
 namespace Meziantou.Framework.Threading;
 
 /// <summary>Provides extension methods for <see cref="SemaphoreSlim"/> to simplify usage with disposable patterns.</summary>
@@ -7,6 +9,7 @@ public static class SemaphoreSlimExtensions
     /// <param name="semaphore">The semaphore to wait on.</param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>A disposable struct that releases the semaphore when disposed.</returns>
+    [UnsupportedOSPlatform("browser")]
     [Obsolete("Use DisposableWaitUnsafe instead.")]
     public static SemaphoreDisposer DisposableUnsafeWait(this SemaphoreSlim semaphore, CancellationToken cancellationToken = default)
     {
@@ -17,6 +20,7 @@ public static class SemaphoreSlimExtensions
     /// <param name="semaphore">The semaphore to wait on.</param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>A disposable struct that releases the semaphore when disposed.</returns>
+    [UnsupportedOSPlatform("browser")]
     public static SemaphoreDisposer DisposableWaitUnsafe(this SemaphoreSlim semaphore, CancellationToken cancellationToken = default)
     {
         semaphore.Wait(cancellationToken);
@@ -37,6 +41,7 @@ public static class SemaphoreSlimExtensions
     /// <param name="semaphore">The semaphore to wait on.</param>
     /// <param name="cancellationToken">The cancellation token to observe.</param>
     /// <returns>A disposable object that releases the semaphore when disposed.</returns>
+    [UnsupportedOSPlatform("browser")]
     public static IDisposable DisposableWait(this SemaphoreSlim semaphore, CancellationToken cancellationToken = default)
     {
         semaphore.Wait(cancellationToken);

@@ -183,6 +183,7 @@ namespace Meziantou.Framework.Threading
         public int MaxPendingItems { get => throw null; set { } }
     }
 
+    [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
     public sealed class MonoThreadedTaskScheduler : System.Threading.Tasks.TaskScheduler, System.IDisposable
     {
         public bool DequeueOnDispose { get => throw null; set { } }
@@ -222,9 +223,12 @@ namespace Meziantou.Framework.Threading
     public static class SemaphoreSlimExtensions
     {
         [System.Obsolete("Use DisposableWaitUnsafe instead.")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer DisposableUnsafeWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static System.IDisposable DisposableWait(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<System.IDisposable> DisposableWaitAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Runtime.Versioning.UnsupportedOSPlatform("browser")]
         public static Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer DisposableWaitUnsafe(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Threading.SemaphoreSlimExtensions.SemaphoreDisposer> DisposableWaitUnsafeAsync(this System.Threading.SemaphoreSlim semaphore, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public readonly struct SemaphoreDisposer : System.IDisposable

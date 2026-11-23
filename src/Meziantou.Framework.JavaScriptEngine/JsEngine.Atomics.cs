@@ -1,3 +1,5 @@
+using System.Runtime.Versioning;
+
 namespace Meziantou.Framework.JavaScriptEngine;
 
 // The state of the agent used by Atomics (https://tc39.es/ecma262/#sec-agents)
@@ -14,11 +16,13 @@ public sealed partial class JsEngine
 
     /// <summary>
     /// Gets or sets the [[CanBlock]] field of the agent: when false, <c>Atomics.wait</c> throws a TypeError (e.g. the main
-    /// thread of a browser). It is <see cref="JsEngineOptions.CanBlock"/> unless it is set.
+    /// thread of a browser). It is <see cref="JsEngineOptions.CanBlock"/> unless it is set, and always false when the engine
+    /// runs on the browser (WebAssembly), whose thread cannot block.
     /// </summary>
+    [UnsupportedOSPlatformGuard("browser")]
     internal bool CanBlock
     {
-        get => _canBlock ?? Options.CanBlock;
+        get => (_canBlock ?? Options.CanBlock) && !OperatingSystem.IsBrowser();
         set => _canBlock = value;
     }
 
@@ -85,6 +89,7 @@ public sealed partial class JsEngine
     /// token of the engine is canceled.
     /// </summary>
     /// <exception cref="JsTerminationException">The cancellation token of the engine was canceled.</exception>
+    [UnsupportedOSPlatform("browser")]
     internal void RunJobsAndWaitForAtomicsWaiters()
     {
         RunJobs();

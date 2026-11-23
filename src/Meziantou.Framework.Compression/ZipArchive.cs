@@ -250,6 +250,7 @@ public sealed class ZipArchive : Archive
     /// The archive is in <see cref="ZipArchiveMode.Read"/> mode, or the compression method cannot be written (Deflate64, the
     /// legacy methods, and Zstandard before .NET 11).
     /// </exception>
+    /// <exception cref="PlatformNotSupportedException">The compression method is Zstandard and the code runs on the browser (WebAssembly).</exception>
     /// <exception cref="InvalidOperationException">The content of another entry is being written.</exception>
     public ZipArchiveEntry CreateEntry(string entryName, ZipEntryOptions? options = null)
     {

@@ -17,10 +17,11 @@ compiled into a trie in breadth-first order (the format is described by `IcuWord
 (`icu4c/source/data/BUILDRULES.py`), `cjdict.txt` keeps the UTF-16 code units of the words and their values (the costs
 of the Chinese and Japanese segmentation), and the other lists are byte tries: a letter is the offset of the character
 from the start of the block of the script (`gendict --transform offset-0x0e00` for Thai), U+200C is 0xFE and U+200D is
-0xFF. A file is the length of the trie (32 bits, little endian), then the trie compressed with Brotli. The generator
+0xFF. A file is the length of the trie (32 bits, little endian), then the trie compressed with Deflate (the only
+compression that the browser decompresses). The generator
 reads every word back through the runtime (`IcuWordDictionary`) with its value; any difference fails the run (exit code
 3). A file is only rewritten when its content changes once decompressed: the compressed bytes depend on the version of
-Brotli.
+zlib.
 
 ## Usage
 

@@ -242,6 +242,10 @@ internal static unsafe class AtomicWaiters
 
     public static WasmWaitResult Wait(byte* address, long expected, int size, TimeSpan? timeout, WasmWaitSignal? signal)
     {
+        // The browser (WebAssembly) cannot block its thread
+        if (OperatingSystem.IsBrowser())
+            throw new PlatformNotSupportedException("memory.atomic.wait is not supported on the browser.");
+
         var waiter = new Waiter();
         lock (ListsLock)
         {

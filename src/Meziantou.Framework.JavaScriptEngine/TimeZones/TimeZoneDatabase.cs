@@ -114,9 +114,9 @@ internal sealed partial class TimeZoneDatabase
     /// <summary>Loads a database from its compressed form (the content of tzdb.bin).</summary>
     internal static TimeZoneDatabase LoadCompressed(Stream stream)
     {
-        using var brotli = new BrotliStream(stream, CompressionMode.Decompress, leaveOpen: true);
+        using var deflate = new DeflateStream(stream, CompressionMode.Decompress, leaveOpen: true);
         using var memory = new MemoryStream();
-        brotli.CopyTo(memory);
+        deflate.CopyTo(memory);
         return new TimeZoneDatabase(memory.ToArray());
     }
 

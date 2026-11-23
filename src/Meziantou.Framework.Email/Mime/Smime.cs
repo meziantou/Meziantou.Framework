@@ -1,3 +1,4 @@
+using System.Runtime.Versioning;
 using System.Security.Cryptography;
 using System.Security.Cryptography.Pkcs;
 using System.Security.Cryptography.X509Certificates;
@@ -26,6 +27,7 @@ namespace Meziantou.Framework.Email;
 /// Assert.Equal("Hello", ((MimePart)signed.Content).GetText().TrimEnd());
 /// </code>
 /// </example>
+[UnsupportedOSPlatform("browser")]
 public static class Smime
 {
     private const string SignedDataOid = "1.2.840.113549.1.7.2";

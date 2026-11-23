@@ -565,6 +565,7 @@ internal static class AtomicsBuiltins
     /// is also bounded by the limits of the running entry: it stops with a <see cref="JsTerminationException"/> when the
     /// timeout of the engine or of an execution scope elapses, or when the execution is canceled.
     /// </summary>
+    [SuppressMessage("Interoperability", "CA1416:Validate platform compatibility", Justification = "CanBlock is false on the browser: DoWait throws a TypeError before it suspends the agent")]
     private static string SuspendThisAgent(JsEngine engine, JsSharedDataBlock block, int byteIndex, AtomicsWaiter waiter, double timeout)
     {
         var waitEvent = waiter.Event!;

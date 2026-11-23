@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IsBrowserCompatible>false</IsBrowserCompatible>
     <Version>3.0.4</Version>
     <Description>An NTP client for querying NTP servers to retrieve accurate network time (supports NTPv3 and NTPv4)</Description>
     <PackageTags>ntp, sntp, time, clock, networking</PackageTags>

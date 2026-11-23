@@ -1,6 +1,9 @@
+using System.Runtime.Versioning;
+
 namespace Meziantou.Framework;
 
 /// <summary>Provides methods for creating interactive yes/no prompts in console applications.</summary>
+[UnsupportedOSPlatform("browser")]
 public static class Prompt
 {
     /// <summary>Prompts the user with a yes/no question using standard Y/N labels.</summary>

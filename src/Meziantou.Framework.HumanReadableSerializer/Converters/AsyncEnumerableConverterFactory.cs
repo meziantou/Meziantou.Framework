@@ -34,6 +34,11 @@ internal sealed class AsyncEnumerableConverterFactory : HumanReadableConverterFa
         protected override void WriteValue(HumanReadableTextWriter writer, IAsyncEnumerable<T>? value, HumanReadableSerializerOptions options)
         {
             Debug.Assert(value is not null);
+
+            // Writing the items requires blocking on the asynchronous enumeration, which the browser (WebAssembly) does not support
+            if (OperatingSystem.IsBrowser())
+                throw new PlatformNotSupportedException("Serializing an IAsyncEnumerable<T> is not supported on the browser.");
+
             EnumerableConverter<T>.WriteValueCore(writer, value.ToBlockingEnumerable(), options);
         }
     }

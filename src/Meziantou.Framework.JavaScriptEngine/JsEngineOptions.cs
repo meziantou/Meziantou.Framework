@@ -56,7 +56,8 @@ public sealed class JsEngineOptions
     /// <summary>
     /// Gets or sets whether the scripts can block the thread with <c>Atomics.wait</c> (the [[CanBlock]] field of the agent).
     /// When false, <c>Atomics.wait</c> throws a TypeError, as on the main thread of a browser; <c>Atomics.waitAsync</c> still
-    /// works. A blocking wait is bounded by <see cref="Timeout"/> and <see cref="CancellationToken"/> either way.
+    /// works. A blocking wait is bounded by <see cref="Timeout"/> and <see cref="CancellationToken"/> either way. The engine
+    /// ignores the value and never blocks when it runs on the browser (WebAssembly).
     /// </summary>
     public bool CanBlock { get; set; } = true;
 

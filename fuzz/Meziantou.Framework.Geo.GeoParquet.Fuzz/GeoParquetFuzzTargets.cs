@@ -87,8 +87,8 @@ public static class GeoParquetFuzzTargets
     /// <summary>
     /// <c>codec, length (3 bytes, little-endian), data</c>: a compressed page and its decompressed length. The decompressors
     /// reject invalid data with a <see cref="FormatException"/>, and return exactly the declared length. GZIP, Brotli and
-    /// Zstandard give the bytes that .NET decompresses. The Zstandard decoder shared with Meziantou.Framework.Imaging (that
-    /// of the library before .NET 11, a copy of the fuzz project from .NET 11) gives them too.
+    /// Zstandard give the bytes that .NET decompresses. The Zstandard decoder of the library, shared with
+    /// Meziantou.Framework.Imaging, gives them too.
     /// </summary>
     private static void ParquetCompressionTarget(ReadOnlySpan<byte> data)
     {

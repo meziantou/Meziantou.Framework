@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Runtime.Versioning;
 
 namespace Meziantou.Framework.Threading;
 
@@ -14,6 +15,7 @@ namespace Meziantou.Framework.Threading;
 /// Assert.Equal("MyWorkerThread", threadName);
 /// </code>
 /// </example>
+[UnsupportedOSPlatform("browser")]
 public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 {
     private const int DefaultDisposeThreadJoinTimeoutInMilliseconds = 1000;

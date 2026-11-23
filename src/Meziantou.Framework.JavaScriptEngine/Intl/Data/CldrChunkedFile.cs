@@ -4,16 +4,17 @@ using System.IO.Compression;
 namespace Meziantou.Framework.JavaScriptEngine.Intl.Data;
 
 /// <summary>
-/// A data file made of independently Brotli-compressed chunks, so that only the chunks in use are decompressed. The
-/// chunks are decompressed on first use and kept; the instances are thread-safe.
+/// A data file made of independently Deflate-compressed chunks, so that only the chunks in use are decompressed. The
+/// chunks are decompressed on first use and kept; the instances are thread-safe. Deflate is the only compression that
+/// the browser (WebAssembly) decompresses.
 /// <code>
 /// "MFCD" formatVersion:u8 reserved:u8[3] chunkCount:u32 offset:u32[chunkCount + 1]   (little endian, from the file start)
-/// chunk: uncompressedLength:u32 brotli-data
+/// chunk: uncompressedLength:u32 deflate-data
 /// </code>
 /// </summary>
 internal sealed class CldrChunkedFile
 {
-    public const byte FormatVersion = 1;
+    public const byte FormatVersion = 2;
     private const int HeaderSize = 12;
 
     private readonly string? _resourceName;
@@ -105,7 +106,18 @@ internal sealed class CldrChunkedFile
     {
         var length = BinaryPrimitives.ReadInt32LittleEndian(compressed);
         var result = new byte[length];
-        if (!BrotliDecoder.TryDecompress(compressed.AsSpan(4), result, out var written) || written != length)
+        using var input = new MemoryStream(compressed, 4, compressed.Length - 4, writable: false);
+        using var deflate = new DeflateStream(input, CompressionMode.Decompress);
+        try
+        {
+            deflate.ReadExactly(result);
+        }
+        catch (EndOfStreamException ex)
+        {
+            throw new InvalidDataException("A chunk of the CLDR data file is invalid", ex);
+        }
+
+        if (deflate.ReadByte() >= 0)
             throw new InvalidDataException("A chunk of the CLDR data file is invalid");
 
         return result;

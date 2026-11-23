@@ -5,7 +5,7 @@ namespace Meziantou.Framework.Geo.Internals.Parquet;
 
 /// <summary>
 /// Decompresses the pages of a Parquet file. Snappy and LZ4 are decoded here; GZIP and Brotli by .NET, and Zstandard by
-/// .NET from .NET 11, else by the decoder of Meziantou.Framework.Imaging. LZO is not supported.
+/// .NET from .NET 11 except on the browser, else by the decoder of Meziantou.Framework.Imaging. LZO is not supported.
 /// </summary>
 internal static class ParquetCompression
 {
@@ -24,14 +24,12 @@ internal static class ParquetCompression
 
     private const int StreamChunkLength = 64 * 1024;
 
-#if !NET11_0_OR_GREATER
     // An RLE block of Zstandard (a 3-byte header and 1 byte) writes up to 128 KB
     private const int MaxZstdRatio = 32 * 1024;
 
     // The decoder holds about 700 KB of tables; it resets them at every frame, so a thread reuses it from page to page
     [ThreadStatic]
     private static ZstdDecoder? s_zstdDecoder;
-#endif
 
     /// <summary>
     /// Decompresses data whose decompressed length is known, as the length of a page is. The length comes from the file,
@@ -58,12 +56,19 @@ internal static class ParquetCompression
                 return DecompressStream(new GZipStream(new MemoryStream(buffer, offset, length, writable: false), CompressionMode.Decompress), decompressedLength);
 
             case Brotli:
+                // BrotliStream is not available on the browser (WebAssembly)
+                if (OperatingSystem.IsBrowser())
+                    throw new PlatformNotSupportedException("The Brotli compression of the Parquet file is not supported on the browser.");
+
                 return DecompressStream(new BrotliStream(new MemoryStream(buffer, offset, length, writable: false), CompressionMode.Decompress), decompressedLength);
 
             case Zstd:
 #if NET11_0_OR_GREATER
-                return DecompressStream(new ZstandardStream(new MemoryStream(buffer, offset, length, writable: false), CompressionMode.Decompress), decompressedLength);
-#else
+                // ZstandardStream is not available on the browser (WebAssembly), which uses the managed decoder
+                if (!OperatingSystem.IsBrowser())
+                    return DecompressStream(new ZstandardStream(new MemoryStream(buffer, offset, length, writable: false), CompressionMode.Decompress), decompressedLength);
+#endif
+
                 CheckRatio(length, decompressedLength, MaxZstdRatio);
                 var zstd = new byte[decompressedLength];
                 try
@@ -76,7 +81,6 @@ internal static class ParquetCompression
                 }
 
                 return zstd;
-#endif
 
             case Lz4Raw:
                 CheckRatio(length, decompressedLength, MaxLz4Ratio);

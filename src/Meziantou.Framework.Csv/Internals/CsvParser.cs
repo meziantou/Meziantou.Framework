@@ -212,7 +212,9 @@ internal sealed class CsvParser<T> : IDisposable
     {
         _separator = T.CreateTruncating(separator);
         _separatorByte = (byte)separator;
-        _quoteByte = byte.CreateTruncating(_quote);
+
+        // Without a quote character, the SIMD path looks for line feeds twice instead
+        _quoteByte = _hasQuote ? byte.CreateTruncating(_quote) : (byte)'\n';
 
         // The SIMD path saturates UTF-16 code units to 0xFF or 0x00 (see CsvSimd): a separator or a quote that is U+0000 or from U+00FF would match
         // characters above U+00FE
@@ -644,8 +646,7 @@ internal sealed class CsvParser<T> : IDisposable
                         }
                         else
                         {
-                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, blockStart)), vectorSize, _separatorByte, _quoteByte, out separators, out var quotes, out var lines);
-                            mask = separators | lines | (_hasQuote ? quotes : 0);
+                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, blockStart)), vectorSize, _separatorByte, _quoteByte, out separators, out mask);
                         }
 
                         maskBase = blockStart;
@@ -654,8 +655,7 @@ internal sealed class CsvParser<T> : IDisposable
                         // The masks of the next block are computed now: when the end of this block is mispredicted, they are not on the critical path
                         if (end - nextBlock >= vectorSize)
                         {
-                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, nextBlock)), vectorSize, _separatorByte, _quoteByte, out pendingSeparators, out var nextQuotes, out var nextLines);
-                            pendingMask = pendingSeparators | nextLines | (_hasQuote ? nextQuotes : 0);
+                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, nextBlock)), vectorSize, _separatorByte, _quoteByte, out pendingSeparators, out pendingMask);
                             pendingBase = nextBlock;
                         }
                         else

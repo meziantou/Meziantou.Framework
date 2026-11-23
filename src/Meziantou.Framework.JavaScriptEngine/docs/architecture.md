@@ -263,7 +263,11 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   method each (`JsInterpreter.Instructions.cs`, reached through `ExecuteCold`: `frame.Pc` is the position of the
   instruction, they return the new stack pointer). Keep the loop small: a big method makes the JIT spill `pc`/`sp`,
   zero a large frame and stop inlining. The slow paths are calls that take values (no `ref` to the locals of the loop).
-  `JsValue.Store`/`StoreNumber` skip the write barrier when a number overwrites a number.
+  `JsValue.Store`/`StoreNumber` skip the write barrier when a number overwrites a number: the stores of the operand
+  stack, of the registers, of the cached property and global stores (the slots of the objects, the bindings of the global
+  lexical declarations) use them. The write barriers are 20-30% of the CPU time of the benchmarks that call functions
+  (Calls, Classes, ClosureCreate, Polymorphic on Arm64): the hot paths avoid writing a reference that does not change
+  (`JsEngine.SwitchRealm`).
 - Compiled code (`Interpreter/JitCompiler.cs`, helpers in `JsInterpreter.Jit.cs`): a function whose calls and loop
   iterations reach `JsEngineOptions.CompilationThreshold` (`FunctionTemplate.HotCount`, counted when the interpreter
   enters the frame and at the backward jumps) is compiled once to a `DynamicMethod` (`FunctionTemplate.JitCode`, shared
@@ -279,9 +283,10 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `frame.Sp` and returns at once when it is not the expected depth. Any change to the semantics of an instruction of
   the dispatch loop must be made in its `Jit*` helper too: `InterpreterTests.Run`, test262 (each test runs
   interpreted, then with `CompilationThreshold = 1`) and the `javascript-compiled-code` fuzz target compare both. The bytecode compiled for a debugger (with `DebugStatement` instructions) stays interpreted.
-- Frames: the ordinary calls rent their `Frame` from `engine.FramePool` (the arguments are copied after the registers in
-  `Frame.Values`); generators, async functions, scripts, modules and eval code have frames of their own. Nothing may keep
-  a reference to a pooled frame after its call.
+- Frames: the ordinary calls rent their `Frame` from `engine.FramePool` (a stack of free frames; the arguments are copied
+  after the registers in `Frame.Values`); generators, async functions, scripts, modules and eval code have frames of
+  their own. Nothing may keep a reference to a pooled frame after its call. A cleared frame has no new.target: a call
+  only writes it when it has one.
 - Bytecode: comparisons and logical nots followed by a conditional jump are fused (`JumpIfLessThan`...), loops test their
   condition at the end, updates whose value is not used are prefix updates (`IncrementLocal` on a register), method calls
   use `GetMethod`. A backward jump counts an interrupt point.
@@ -296,7 +301,8 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   the receiver for a property table); a setter, a read-only property, a lazy property (its factory is host code, which
   could define the property on the receiver) or an exotic object of the chain takes the steps of the spec.
   `CreateListFromArrayLike` (`apply`, `Reflect.apply`...) copies the dense elements of the arrays and of the ordinary
-  objects.
+  objects. A spread argument (`f(...a)`) of an array without holes copies its elements at once
+  (`JsObject.CopyPackedDenseElements`).
 - Inline caches (`Runtime/InlineCache.cs`, `Interpreter/JsInterpreter.InlineCaches.cs`): GetProperty, GetMethod,
   SetProperty, DefineField, LoadGlobal and LoadGlobalOrUndefined have the index of their cache as last operand
   (`FunctionTemplate.Caches`, shared by the engines that run the code: an entry is immutable, and the entries that apply
@@ -328,7 +334,9 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   `DefineEagerMethod` when a built-in needs the function object (an intrinsic, a function shared by two properties, an
   iterator step). The evaluation of a lazy property does not invalidate the inline caches (they evaluate a lazy
   property before remembering it).
-- Property tables (`Runtime/PropertyTable.cs`): 32-byte entries, an open-addressing index above 8 properties. An object
+- Property tables (`Runtime/PropertyTable.cs`): 32-byte entries, an open-addressing index above 8 properties, with the
+  hash codes of the keys stored by position next to it (a probe compares the hashes first, and a removal or a growth of
+  the index does not hash the string keys again: a dictionary-like object that adds and deletes keys). An object
   with lazy properties (prototypes, global objects) uses a table, not a chain of shapes; a host can size it once with
   `JsObject.ReserveProperties` (and read the size of an object with `JsObject.OwnPropertyCount`, as the WebIDL bindings
   of WebPlatform do). A `BuiltinMethodTable` learns the number of properties of the objects that get its methods

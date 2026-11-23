@@ -75,7 +75,8 @@ internal sealed class ObjectEnvironment(JsObject bindingObject, Environment? out
 /// <summary>A binding of the declarative record of a global environment (let, const and class of the scripts).</summary>
 internal sealed class GlobalLexicalBinding
 {
-    public JsValue Value { get; set; } = JsValue.Hole;
+    // A field: the stores of the inline caches write it in place (JsValue.Store)
+    public JsValue Value = JsValue.Hole;
 
     public bool IsConstant { get; init; }
 }

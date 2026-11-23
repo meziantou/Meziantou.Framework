@@ -448,6 +448,39 @@ public partial class JsObject
         return -1;
     }
 
+    /// <summary>Copies the first dense elements to <paramref name="destination"/>: they must not be holes (<see cref="IsDensePacked"/>).</summary>
+    internal void CopyPackedDenseElements(Span<JsValue> destination)
+    {
+        switch (_elementKind)
+        {
+            case ElementKind.Number:
+                {
+                    var numbers = ((double[])_elements!).AsSpan(_elementStart, destination.Length);
+                    for (var i = 0; i < numbers.Length; i++)
+                    {
+                        destination[i] = new JsValue(numbers[i]);
+                    }
+
+                    break;
+                }
+
+            case ElementKind.Reference:
+                {
+                    var cells = ((CellSlot[])_elements!).AsSpan(_elementStart, destination.Length);
+                    for (var i = 0; i < cells.Length; i++)
+                    {
+                        destination[i] = new JsValue(cells[i].Cell);
+                    }
+
+                    break;
+                }
+
+            case ElementKind.Mixed:
+                ((JsValue[])_elements!).AsSpan(_elementStart, destination.Length).CopyTo(destination);
+                break;
+        }
+    }
+
     /// <summary>Gets whether the elements [0, length) are all in the dense storage and none is a hole.</summary>
     internal bool IsDensePacked(long length)
     {

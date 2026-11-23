@@ -38,6 +38,21 @@ internal sealed class ArgumentList() : JsCell(JsValueKind.Undefined)
         if (iterable.Cell is JsArray array && ReferenceEquals(array.PrototypeSlot, realm.Intrinsics.ArrayPrototype)
             && !array.TryFindOwnForCache(IteratorKey, out _, out _) && realm.Intrinsics.IsArrayIterationIntact())
         {
+            // No hole: the elements are read at once (no code can run between the reads)
+            var length = array.Length;
+            if (array.IsDensePacked(length))
+            {
+                if (length > _values.Length - _count)
+                {
+                    Grow((int)Math.Min(_count + (long)length, int.MaxValue));
+                }
+
+                JsEngine.CountCurrentWork(length);
+                array.CopyPackedDenseElements(_values.AsSpan(_count, (int)length));
+                _count += (int)length;
+                return;
+            }
+
             if (array.Length > _values.Length - _count)
             {
                 Grow(_count + (int)Math.Min(array.Length, 1024));

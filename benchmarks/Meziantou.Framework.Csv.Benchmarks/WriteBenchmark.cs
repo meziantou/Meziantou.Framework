@@ -35,6 +35,22 @@ public class WriteBenchmark
         return builder.Length;
     }
 
+    /// <summary>Writes rows of string values that are all quoted.</summary>
+    [Benchmark]
+    public int Utf16_Strings_AlwaysQuote()
+    {
+        var builder = new StringBuilder();
+        using (var writer = CsvWriter.Create(builder, new CsvWriterOptions { QuoteMode = CsvQuoteMode.Always }))
+        {
+            foreach (var row in _rows)
+            {
+                writer.WriteRow(row);
+            }
+        }
+
+        return builder.Length;
+    }
+
     [Benchmark]
     public int Utf8_Strings()
     {

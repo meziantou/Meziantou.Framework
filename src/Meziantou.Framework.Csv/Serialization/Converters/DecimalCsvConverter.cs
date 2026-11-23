@@ -1,4 +1,5 @@
 using System.Numerics;
+using Meziantou.Framework.Csv.Internals;
 
 namespace Meziantou.Framework.Csv.Serialization.Converters;
 
@@ -10,7 +11,7 @@ internal sealed class DecimalCsvConverter : CsvConverter<decimal>
 
     public override decimal Read(ReadOnlySpan<char> value, CsvConverterContext context)
     {
-        if (IsInvariant(context.FormatProvider) && TryParsePlain(value, out var result))
+        if (InvariantNumbers.IsInvariant(context.FormatProvider) && TryParsePlain(value, out var result))
             return result;
 
         return decimal.Parse(value, context.FormatProvider);
@@ -18,15 +19,17 @@ internal sealed class DecimalCsvConverter : CsvConverter<decimal>
 
     public override decimal Read(ReadOnlySpan<byte> utf8Value, CsvConverterContext context)
     {
-        if (IsInvariant(context.FormatProvider) && TryParsePlain(utf8Value, out var result))
+        if (InvariantNumbers.IsInvariant(context.FormatProvider) && TryParsePlain(utf8Value, out var result))
             return result;
 
         return decimal.Parse(utf8Value, context.FormatProvider);
     }
 
+    internal override bool IsInvariantNumber(CsvConverterContext context) => context.Format is null && InvariantNumbers.IsInvariant(context.FormatProvider);
+
     public override bool TryFormat(decimal value, Span<char> destination, out int charsWritten, CsvConverterContext context)
     {
-        if (context.Format is null && IsInvariant(context.FormatProvider) && TryFormatPlain(value, destination, out charsWritten, out var tooSmall))
+        if (context.Format is null && InvariantNumbers.IsInvariant(context.FormatProvider) && TryFormatPlain(value, destination, out charsWritten, out var tooSmall))
             return !tooSmall;
 
         return value.TryFormat(destination, out charsWritten, context.Format, context.FormatProvider);
@@ -34,13 +37,11 @@ internal sealed class DecimalCsvConverter : CsvConverter<decimal>
 
     public override bool TryFormat(decimal value, Span<byte> utf8Destination, out int bytesWritten, CsvConverterContext context)
     {
-        if (context.Format is null && IsInvariant(context.FormatProvider) && TryFormatPlain(value, utf8Destination, out bytesWritten, out var tooSmall))
+        if (context.Format is null && InvariantNumbers.IsInvariant(context.FormatProvider) && TryFormatPlain(value, utf8Destination, out bytesWritten, out var tooSmall))
             return !tooSmall;
 
         return value.TryFormat(utf8Destination, out bytesWritten, context.Format, context.FormatProvider);
     }
-
-    private static bool IsInvariant(IFormatProvider provider) => ReferenceEquals(provider, CultureInfo.InvariantCulture) || ReferenceEquals(provider, NumberFormatInfo.InvariantInfo);
 
     /// <summary>Parses an optional minus sign, then digits, then optionally a dot followed by digits, up to 18 digits in all.</summary>
     /// <remarks>The scale is the number of digits after the dot, as with <see cref="decimal.Parse(string)"/>: <c>1.50</c> keeps its two decimals.</remarks>

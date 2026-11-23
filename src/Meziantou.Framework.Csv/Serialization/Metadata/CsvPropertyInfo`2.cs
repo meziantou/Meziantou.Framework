@@ -11,6 +11,7 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
     private readonly CsvConverter<TValue> _converter;
     private readonly CsvConverterContext _context;
     private readonly bool _isText;
+    private readonly bool _isInvariantNumber;
 
     public CsvPropertyInfo(string name, CsvPropertyInfoValues<TDeclaring, TValue> values, CsvConverter<TValue> converter, CsvConverterContext context)
         : base(name, values.MemberName, typeof(TValue), values.Order, values.ColumnIndex, values.IsRequired, values.Format, converter, values.ParameterIndex)
@@ -20,6 +21,7 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         _converter = converter;
         _context = context;
         _isText = typeof(TValue) == typeof(string);
+        _isInvariantNumber = converter.IsInvariantNumber(context);
     }
 
     public override bool CanSerialize => _getter is not null;
@@ -108,7 +110,15 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
 
             if (success)
             {
-                writer.CommitField(start, written, _isText);
+                if (_isInvariantNumber)
+                {
+                    writer.CommitNumber(start, written, isInvariantNumber: true);
+                }
+                else
+                {
+                    writer.CommitField(start, written, _isText);
+                }
+
                 return;
             }
 

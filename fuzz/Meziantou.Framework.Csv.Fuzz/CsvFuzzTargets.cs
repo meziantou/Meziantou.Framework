@@ -13,7 +13,7 @@ namespace Meziantou.Framework.Csv.Fuzz;
 /// <summary>
 /// <see cref="CsvReader"/> and <see cref="Utf8CsvReader"/> read any data without throwing, and return the same records whatever the SIMD path, the
 /// size of the buffer and the number of elements each read of the source returns, as a character-by-character reference parser. What the writers
-/// write reads back as the rows they were given. What the serializer writes reads back as the records it was given, with the generated metadata and
+/// write reads back as the rows they were given, and is what a reference escaper writes, with every quote mode and buffer size. What the serializer writes reads back as the records it was given, with the generated metadata and
 /// with the reflection-based metadata, and both read any data the same way.
 /// </summary>
 public static partial class CsvFuzzTargets
@@ -41,6 +41,7 @@ public static partial class CsvFuzzTargets
     [
         new("csv-reader", Reader) { Seeds = GetReaderSeeds, Dictionary = Tokens },
         new("csv-roundtrip", RoundTrip) { Seeds = GetRoundTripSeeds, Dictionary = [.. Tokens, "=", "+", "-", "@", "=1+1"] },
+        new("csv-writer", Writer) { Seeds = GetWriterSeeds, Dictionary = [.. Tokens, "=", "+", "-", "@", "\t", "=1+1"] },
         new("csv-serializer-roundtrip", SerializerRoundTrip) { Seeds = GetSerializerRoundTripSeeds, Dictionary = Tokens },
         new("csv-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("csv-iso8601", ParseIso8601) { Seeds = GetIso8601Seeds, Dictionary = ["-", ":", "T", "Z", ".", "+", "2024", "02", "29", "23", "59", "0000000", "+02:00", "+14:00", "0001-01-01", "9999-12-31"] },
@@ -204,6 +205,117 @@ public static partial class CsvFuzzTargets
     }
 
     /// <summary>
+    /// <c>dialect, options, rows</c>: <c>dialect</c> picks the separator (bits 0-2), the quote (bits 3-4), the end of line (bits 5-6), and whether
+    /// the UTF-8 writer writes the rows (bit 7); <c>options</c> picks the quote mode (bits 0-1), whether formulas are escaped (bit 2) and the size of
+    /// the buffer (the other bits). The rows are separated by <c>FF</c> and their values by <c>FE</c>; <c>FD</c> alone is <see langword="null"/>.
+    /// The writers write what a reference escaper writes, value by value.
+    /// </summary>
+    private static void Writer(ReadOnlySpan<byte> data)
+    {
+        var dialect = FuzzInput.ReadByte(ref data);
+        var options = FuzzInput.ReadByte(ref data);
+        var separator = WriterSeparators[dialect & 0x07];
+        var quote = WriterQuotes[(dialect >> 3) & 0x03];
+        var utf8 = (dialect & 0x80) != 0 && separator <= 0x7F && quote is null or <= (char)0x7F;
+        var writerOptions = new CsvWriterOptions
+        {
+            Separator = separator,
+            Quote = quote,
+            NewLine = EndOfLines[(dialect >> 5) & 0x03],
+            QuoteMode = (options & 0x03) switch { 1 => CsvQuoteMode.Always, 2 => CsvQuoteMode.Never, _ => CsvQuoteMode.AsNeeded },
+            EscapeFormulas = (options & 0x04) != 0,
+            BufferSize = 1 + (options >> 3),
+        };
+
+        var rows = new List<string?[]>();
+        while (!data.IsEmpty)
+        {
+            var rowData = FuzzInput.ReadUntil(ref data, 0xFF);
+            var values = new List<string?>();
+            while (!rowData.IsEmpty)
+            {
+                var value = FuzzInput.ReadUntil(ref rowData, 0xFE);
+                values.Add(value is [0xFD] ? null : FuzzText.Decode(value));
+            }
+
+            rows.Add([.. values]);
+        }
+
+        string text;
+        if (utf8)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = Utf8CsvWriter.Create(buffer, writerOptions))
+            {
+                foreach (var row in rows)
+                {
+                    writer.WriteRow(row);
+                }
+            }
+
+            text = Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+        else
+        {
+            var builder = new StringBuilder();
+            using (var writer = CsvWriter.Create(builder, writerOptions))
+            {
+                foreach (var row in rows)
+                {
+                    writer.WriteRow(row);
+                }
+            }
+
+            text = builder.ToString();
+        }
+
+        // UTF-8 cannot represent a lone surrogate: the UTF-8 writer writes a replacement character
+        var expected = new StringBuilder();
+        foreach (var row in rows)
+        {
+            WriteReferenceRow(expected, [.. row.Select(value => utf8 ? Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(value ?? "")) : value ?? "")], writerOptions);
+        }
+
+        FuzzAssert.Equal(FuzzAssert.Format(expected.ToString()), FuzzAssert.Format(text), "The writer does not write what the reference escaper writes");
+    }
+
+    // Quotes a value that contains the separator, the quote, a line terminator or a character of the new line, an escaped formula when the quote is
+    // the apostrophe of its prefix, or every value with Always; doubles the quotes, the prefix included; prefixes an escaped formula with an
+    // apostrophe; and quotes a row that has a single empty value, which would read as an empty line
+    private static void WriteReferenceRow(StringBuilder output, string[] row, CsvWriterOptions options)
+    {
+        var canQuote = options.Quote.HasValue && options.QuoteMode is not CsvQuoteMode.Never;
+        var quote = options.Quote.GetValueOrDefault();
+        for (var i = 0; i < row.Length; i++)
+        {
+            var value = row[i];
+            if (i > 0)
+            {
+                output.Append(options.Separator);
+            }
+
+            var formula = options.EscapeFormulas && value is ['=' or '+' or '-' or '@' or '\t' or '\r', ..];
+            var needsQuotes = canQuote && (options.QuoteMode is CsvQuoteMode.Always || (formula && quote is '\'') || value.Contains(options.Separator, StringComparison.Ordinal) || value.Contains(quote, StringComparison.Ordinal) || value.AsSpan().ContainsAny('\r', '\n') || value.AsSpan().ContainsAny(options.NewLine));
+            var content = (formula ? "'" : "") + value;
+            if (needsQuotes)
+            {
+                output.Append(quote).Append(content.Replace(quote.ToString(), new string(quote, 2), StringComparison.Ordinal)).Append(quote);
+            }
+            else
+            {
+                output.Append(content);
+            }
+        }
+
+        if (row is [""] && canQuote && options.QuoteMode is not CsvQuoteMode.Always)
+        {
+            output.Append(quote, 2);
+        }
+
+        output.Append(options.NewLine);
+    }
+
+    /// <summary>
     /// <c>records</c>: the records are separated by <c>FF</c>; each gives the values of the members of <see cref="FuzzRecord"/>. The serializer writes
     /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8.
     /// </summary>
@@ -319,8 +431,8 @@ public static partial class CsvFuzzTargets
 
     /// <summary>
     /// The fast parser of the decimal converter accepts a subset of what <see cref="decimal.Parse(string, IFormatProvider?)"/> accepts, and gives the
-    /// same values, with the same scale and sign, in UTF-16 and in UTF-8. The fast formatter writes the value made of the first 13 bytes as
-    /// <see cref="decimal.ToString(IFormatProvider?)"/> does.
+    /// same values, with the same scale and sign, in UTF-16 and in UTF-8. The fast formatter, and the writers, write the value made of the first 13 bytes
+    /// as <see cref="decimal.ToString(IFormatProvider?)"/> does.
     /// </summary>
     private static void ParseDecimal(ReadOnlySpan<byte> data)
     {
@@ -336,6 +448,24 @@ public static partial class CsvFuzzTargets
                 FuzzAssert.True(Serialization.Converters.DecimalCsvConverter.TryFormatPlain(value, bytes, out var bytesWritten, out _), "The UTF-8 formatter does not handle a value the UTF-16 formatter handles");
                 FuzzAssert.Equal(expectedText, Encoding.UTF8.GetString(bytes[..bytesWritten]), "The decimal is not written in UTF-8 as the BCL writes it");
             }
+
+            // The writers write decimals with the fast formatter in the default format of the invariant culture, in a buffer that grows
+            var builder = new StringBuilder();
+            var buffer = new ArrayBufferWriter<byte>();
+            var writerOptions = new CsvWriterOptions { NewLine = "\n", BufferSize = 1 };
+            using (var writer = CsvWriter.Create(builder, writerOptions))
+            using (var utf8Writer = Utf8CsvWriter.Create(buffer, writerOptions))
+            {
+                writer.WriteField(value);
+                writer.WriteField(value);
+                writer.EndRow();
+                utf8Writer.WriteField(value);
+                utf8Writer.WriteField(value);
+                utf8Writer.EndRow();
+            }
+
+            FuzzAssert.Equal(expectedText + "," + expectedText + "\n", builder.ToString(), "The writer does not write the decimal as the BCL writes it");
+            FuzzAssert.Equal(expectedText + "," + expectedText + "\n", Encoding.UTF8.GetString(buffer.WrittenSpan), "The UTF-8 writer does not write the decimal as the BCL writes it");
         }
 
         var text = FuzzInput.ReadText(data);
@@ -483,28 +613,8 @@ public static partial class CsvFuzzTargets
         var index = 0;
         foreach (var (name, text) in GetTexts())
         {
-            // The texts of the tests split into rows on their line terminators and into values on commas
             var data = new List<byte> { (byte)((index % 8) | ((index % 4) << 5) | (index % 5 is 0 ? 0x80 : 0)), (byte)((index % 2) | (index % 3 is 0 ? 0 : 0x26) | (index % 7 is 0 ? 0x80 : 0)) };
-            var lines = text.ReplaceLineEndings("\n").Split('\n');
-            for (var i = 0; i < lines.Length; i++)
-            {
-                if (i > 0)
-                {
-                    data.Add(0xFF);
-                }
-
-                var values = lines[i].Split(',');
-                for (var j = 0; j < values.Length; j++)
-                {
-                    if (j > 0)
-                    {
-                        data.Add(0xFE);
-                    }
-
-                    data.AddRange(FuzzText.Encode(values[j]));
-                }
-            }
-
+            AddRows(data, text);
             yield return new FuzzSeed(name, data.ToArray());
             index++;
         }
@@ -518,6 +628,46 @@ public static partial class CsvFuzzTargets
         yield return new FuzzSeed("formulas-apostrophe-quote", (byte[])[0x08, 0x40, .. "=1"u8, 0xFE, .. "+a'b"u8, 0xFE, .. "plain"u8, 0xFE, .. "@x"u8, 0xFE, .. "-"u8, 0xFE, .. "="u8]);
         yield return new FuzzSeed("formulas-apostrophe-quote-utf8-always", (byte[])[0x08 | 0x80, 0x40 | 0x80, .. "=1"u8, 0xFE, .. "a"u8, 0xFF, .. "-'"u8]);
         yield return new FuzzSeed("formulas-no-quote", (byte[])[0x10, 0x40, .. "=1"u8, 0xFE, .. "@a"u8]);
+    }
+
+    private static IEnumerable<FuzzSeed> GetWriterSeeds()
+    {
+        var index = 0;
+        foreach (var (name, text) in GetTexts())
+        {
+            var data = new List<byte> { (byte)((index % 8) | ((index % 4) << 5) | (index % 5 is 0 ? 0x80 : 0)), (byte)((index % 4) | (index % 3 is 0 ? 0x04 : 0) | ((index % 6) << 3)) };
+            AddRows(data, text);
+            yield return new FuzzSeed("writer-" + name, data.ToArray());
+            index++;
+        }
+
+        yield return new FuzzSeed("formulas", (byte[])[0x00, 0x04, .. "=1+1"u8, 0xFE, .. "+a"u8, 0xFE, .. "-"u8, 0xFE, .. "@x,y"u8, 0xFE, .. "\t\"q\""u8, 0xFF, .. "\rz"u8]);
+        yield return new FuzzSeed("always-small-buffer", (byte[])[0x80, 0x01 | 0x04, .. "a\"b"u8, 0xFE, 0xFD, 0xFE, 0xFE, .. "é😀"u8, 0xFF, 0xFD]);
+        yield return new FuzzSeed("never", (byte[])[0x01, 0x02 | 0x08, .. "a;b"u8, 0xFE, .. "c\nd"u8]);
+    }
+
+    // The texts of the tests split into rows on their line terminators and into values on commas
+    private static void AddRows(List<byte> data, string text)
+    {
+        var lines = text.ReplaceLineEndings("\n").Split('\n');
+        for (var i = 0; i < lines.Length; i++)
+        {
+            if (i > 0)
+            {
+                data.Add(0xFF);
+            }
+
+            var values = lines[i].Split(',');
+            for (var j = 0; j < values.Length; j++)
+            {
+                if (j > 0)
+                {
+                    data.Add(0xFE);
+                }
+
+                data.AddRange(FuzzText.Encode(values[j]));
+            }
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetSerializerRoundTripSeeds()

@@ -7,6 +7,8 @@ internal sealed class NullableCsvConverter<T>(CsvConverter<T> converter) : CsvCo
 
     public override T? Read(ReadOnlySpan<byte> utf8Value, CsvConverterContext context) => converter.Read(utf8Value, context);
 
+    internal override bool IsInvariantNumber(CsvConverterContext context) => converter.IsInvariantNumber(context);
+
     public override bool TryFormat(T? value, Span<char> destination, out int charsWritten, CsvConverterContext context)
     {
         if (value is null)

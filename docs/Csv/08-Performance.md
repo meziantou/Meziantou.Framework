@@ -31,6 +31,9 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 ## Writing
 
 - **Write formattable values directly.** [WriteField](cref:Meziantou.Framework.Csv.CsvWriter.WriteField) formats numbers and dates into the buffer of the writer, without a string.
+  Decimals in the default format of the invariant culture are written by a faster path than `decimal.TryFormat`, which writes the same text.
+  Integers and decimals in the default format of the invariant culture, and dates in the round-trip format (`O`), are not
+  searched for characters that need quotes.
 - **Write UTF-8 with [Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter)** when the output is a file, a stream or a network response.
 - **Use [EndRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.EndRowAsync)** with an asynchronous output: the writer only awaits when its buffer is mostly full.
 
@@ -43,7 +46,9 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
   every record, so they are not boxed.
 - **Keep the default formats.** Dates and times in the ISO 8601 round-trip format (`O`), which the serializer writes,
   and decimals written as plain numbers, such as `-123.45`, with the invariant culture, are parsed and written by a
-  faster path than the other formats.
+  faster path than the other formats. The numbers and the dates written in the default formats with the invariant
+  culture are not searched for characters that need quotes, unless the separator, the quote or the new line is one of
+  their characters.
 - **Serialize to a string only when you need one.** The text is kept in chunks and copied once, into the string;
   writing to a stream, a `TextWriter` or an `IBufferWriter<T>` does not keep the whole text in memory.
 - **Stream large files** with [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) or [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable) instead of loading every record.

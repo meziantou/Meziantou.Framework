@@ -1148,7 +1148,7 @@ internal sealed class CsvParser<T> : IDisposable
             return _stringPool.GetOrAdd(buffer[..charsWritten]);
         }
 
-        return Encoding.UTF8.GetString(bytes);
+        return Utf8Transcoder.GetString(bytes);
     }
 
     /// <summary>Creates an exception about the current record.</summary>

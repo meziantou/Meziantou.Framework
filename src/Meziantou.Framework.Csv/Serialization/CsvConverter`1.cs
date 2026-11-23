@@ -32,6 +32,11 @@ public abstract class CsvConverter<T> : CsvConverter
     /// <inheritdoc/>
     public override bool CanConvert(Type typeToConvert) => typeToConvert == typeof(T);
 
+    /// <summary>Gets a value indicating whether the text the converter writes only has characters of <see cref="InvariantNumbers.Characters"/>, so that the writer does not search it for characters that need quotes.</summary>
+    /// <param name="context">The context of the conversion of the column.</param>
+    /// <returns><see langword="true"/> for the integers, the decimals and the dates written by the default converters with the invariant culture.</returns>
+    internal virtual bool IsInvariantNumber(CsvConverterContext context) => false;
+
     /// <summary>Converts a value read from the data.</summary>
     /// <param name="value">The value, without its quotes.</param>
     /// <param name="context">The context of the conversion.</param>

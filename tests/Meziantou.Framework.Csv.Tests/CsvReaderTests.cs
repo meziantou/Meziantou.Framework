@@ -1,4 +1,5 @@
 using System.Text;
+using Meziantou.Framework.Csv.Serialization;
 
 namespace Meziantou.Framework.Csv.Tests;
 
@@ -433,6 +434,35 @@ public class CsvReaderTests
         using var reader = Utf8CsvReader.Create((byte[])[(byte)'a', 0xFF, (byte)'b'], new CsvReaderOptions { HasHeaderRow = false });
         Assert.True(reader.Read());
         Assert.Equal("a\uFFFDb", reader.Current[0].ToString());
+    }
+
+    [Fact]
+    public void Utf8ValuesAreDecodedAsUtf8()
+    {
+        // ASCII values have a faster path: values of every length up to a few vectors, ASCII, or with a non-ASCII character or an invalid byte at
+        // each position, decode as Encoding.UTF8 does
+        var options = new CsvReaderOptions { HasHeaderRow = false };
+        for (var length = 0; length <= 70; length++)
+        {
+            var ascii = Enumerable.Range(0, length).Select(i => (byte)('a' + (i % 26))).ToArray();
+            List<byte[]> values = [ascii];
+            for (var position = 0; position < length; position++)
+            {
+                values.Add([.. ascii[..position], 0xFF, .. ascii[(position + 1)..]]);
+                values.Add([.. ascii[..position], .. "\u00E9"u8, .. ascii[(position + 1)..]]);
+                values.Add([.. ascii[..position], .. "\u65E5"u8, .. ascii[(position + 1)..]]);
+            }
+
+            foreach (var value in values)
+            {
+                byte[] data = [.. "x,"u8, .. value];
+                using var reader = Utf8CsvReader.Create(data, options);
+                Assert.True(reader.Read());
+                Assert.Equal(Encoding.UTF8.GetString(value), reader.Current[1].ToString());
+                Assert.Equal(Encoding.UTF8.GetString(data), reader.Current.ToString());
+                Assert.Equal(Encoding.UTF8.GetString(value), Assert.Single(CsvSerializer.Deserialize<Person>((byte[])[.. "Name,Age\n"u8, .. value, .. ",1\n"u8])).Name);
+            }
+        }
     }
 
     [Fact]

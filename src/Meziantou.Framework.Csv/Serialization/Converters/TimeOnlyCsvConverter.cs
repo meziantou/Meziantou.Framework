@@ -22,6 +22,9 @@ internal sealed class TimeOnlyCsvConverter : CsvConverter<TimeOnly>
         return base.Read(utf8Value, context);
     }
 
+    // The default format, the round-trip format (O), does not depend on the culture
+    internal override bool IsInvariantNumber(CsvConverterContext context) => context.Format is null;
+
     public override bool TryFormat(TimeOnly value, Span<char> destination, out int charsWritten, CsvConverterContext context)
         => value.TryFormat(destination, out charsWritten, context.Format ?? "O", context.FormatProvider);
 

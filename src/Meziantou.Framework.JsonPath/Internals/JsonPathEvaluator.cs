@@ -1307,8 +1307,11 @@ internal static class JsonPathEvaluator
 
     /// <summary>
     /// Compares two numbers exactly. Rounding to the nearest <see cref="double"/> keeps the order of numbers, so two numbers
-    /// whose <see cref="double"/> values differ compare like them. Only numbers that round to the same <see cref="double"/>
-    /// need their texts to be told apart.
+    /// whose <see cref="double"/> values are not adjacent compare like them. The numbers whose <see cref="double"/> values
+    /// are equal or adjacent need their texts to be told apart: a parser does not always round to the nearest
+    /// <see cref="double"/>. <see cref="System.Text.Json.Utf8JsonReader.TryGetDouble(out double)"/> rounds <c>9007199254740993.00000000000000</c>,
+    /// halfway between two <see cref="double"/> values, up to <c>9007199254740994</c>, but <c>9007199254740993</c> down to
+    /// <c>9007199254740992</c>.
     /// </summary>
     /// <returns>
     /// A negative number, zero or a positive number. A <see cref="double.NaN"/>, which only a custom function returns, is
@@ -1317,15 +1320,19 @@ internal static class JsonPathEvaluator
     private static int CompareNumbers<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator)
     {
         var comparison = left.Value.CompareTo(right.Value);
-        if (comparison is not 0 || double.IsNaN(left.Value))
-            return comparison;
+        if (comparison is 0)
+            return double.IsNaN(left.Value) ? 0 : CompareNumberTexts(left, right, navigator, comparison);
 
-        return CompareNumberTexts(left, right, navigator);
+        var (smaller, larger) = comparison < 0 ? (left.Value, right.Value) : (right.Value, left.Value);
+        if (Math.BitIncrement(smaller) == larger)
+            return CompareNumberTexts(left, right, navigator, comparison);
+
+        return comparison;
     }
 
-    // Kept apart from CompareNumbers so that its buffers are only allocated on the stack when the doubles are equal
+    // Kept apart from CompareNumbers so that its buffers are only allocated on the stack when the doubles are close
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CompareNumberTexts<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator)
+    private static int CompareNumberTexts<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator, int doubleComparison)
     {
         Span<byte> leftBuffer = stackalloc byte[JsonNodeNavigator.NumberBufferLength];
         Span<byte> rightBuffer = stackalloc byte[JsonNodeNavigator.NumberBufferLength];
@@ -1337,7 +1344,7 @@ internal static class JsonPathEvaluator
         }
 
         // The text of a number is unknown, or is not a number: the doubles are all there is to compare
-        return 0;
+        return doubleComparison;
     }
 
     /// <summary>A number to compare: a value of the document, or a literal or the result of a function.</summary>

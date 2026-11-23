@@ -78,8 +78,10 @@ Assert.Equal("[0.10000000000000001]", JsonPath.Parse("$.amounts[?@ > 0.1]").Eval
 ```
 <!-- endref -->
 
-- Numbers are compared as `double` values first. Only the numbers that round to the same `double` are compared by
-  their text, so the exact comparison costs nothing for most values.
+- Numbers are compared as `double` values first. Only the numbers whose `double` values are equal or adjacent are
+  compared by their text, so the exact comparison costs nothing for most values. Adjacent values are compared by their
+  text because `System.Text.Json` does not always round a number to the nearest `double`: it reads
+  `9007199254740993.000000000000000000` as `9007199254740994`, and `9007199254740993` as `9007199254740992`.
 - `JsonNode` values created from CLR numbers compare by their value: a `long` or a `decimal` exactly, a `float` as the
   `double` it converts to.
 - The numbers that functions return, such as `length()` and `count()`, are exact. A custom function returns a

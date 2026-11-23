@@ -295,7 +295,8 @@ internal static class PropertyOperations
         var list = new JsValue[length];
         for (var i = 0; i < list.Length; i++)
         {
-            list[i] = obj.Get(new PropertyKey((uint)i));
+            // An own dense element is the result of [[Get]] (no code runs): an array, an arguments object of a strict function...
+            list[i] = ArrayOperations.TryGetDenseElement(obj, i, out var element) ? element : obj.Get(new PropertyKey((uint)i));
         }
 
         return list;

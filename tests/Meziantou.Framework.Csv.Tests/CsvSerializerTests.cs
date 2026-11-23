@@ -327,7 +327,10 @@ public class CsvSerializerTests
     {
         // The numbers, the dates and the Boolean values of the default converters are not searched for characters that need quotes, unless one of
         // their characters is special: a separator or a quote that is a digit, a sign, a dot, a colon, T, Z or a letter of true or false still quotes them
-        var value = AllTypes.CreateSample();
+        // A record with true and one with false, so that every letter of the Boolean values is written
+        var falseValue = AllTypes.CreateSample();
+        falseValue.Boolean = false;
+        AllTypes[] values = [AllTypes.CreateSample(), falseValue];
         List<CsvSerializerOptions> options = [new() { QuoteMode = CsvQuoteMode.Always }];
         foreach (var c in "0123456789+-.:TZaeflrstu")
         {
@@ -337,11 +340,12 @@ public class CsvSerializerTests
 
         foreach (var option in options)
         {
-            var csv = CsvSerializer.Serialize([value], option);
-            Assert.Equal(value.Describe(), CsvSerializer.Deserialize<AllTypes>(csv, option)[0].Describe());
+            var csv = CsvSerializer.Serialize(values, option);
+            var result = CsvSerializer.Deserialize<AllTypes>(csv, option);
+            Assert.Equal(values.Select(value => value.Describe()), result.Select(value => value.Describe()));
 
             using var stream = new MemoryStream();
-            CsvSerializer.Serialize(stream, [value], option);
+            CsvSerializer.Serialize(stream, values, option);
             Assert.Equal(csv, Encoding.UTF8.GetString(stream.ToArray()));
         }
     }

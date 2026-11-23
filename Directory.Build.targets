@@ -101,6 +101,14 @@
 
   <Import Project="$(MSBuildThisFileDirectory)src/Meziantou.Framework.Roslyn/buildTransitive/Meziantou.Framework.Roslyn.targets" Condition="'$(IncludeRoslynHelpers)' == 'true'" />
 
+  <!-- Meziantou.NET.Sdk adds the xunit.v3 test framework with a fixed version, while the test projects reference
+       Meziantou.Xunit, which references xunit.v3.extensibility.core. The xunit.v3 packages require the exact same
+       version of each other (NU1608), so the framework must follow the version of xunit.v3.extensibility.core. -->
+  <ItemGroup>
+    <PackageReference Update="xunit.v3.mtp-v2" Version="4.0.3" />
+    <PackageReference Update="xunit.v3.aot.mtp-v2" Version="4.0.3" />
+  </ItemGroup>
+
   <!-- Ensure the latest framework is a target of the project -->
   <Target Name="CheckLatestFramework" BeforeTargets="Build" Condition="'$(MSBuildProjectExtension)' != '.proj' AND '$(ValidateProjectTargets)' == 'true' AND '$(IsSampleProject)' != 'true' AND $(TargetFrameworks.Contains('$(LatestTargetFramework)')) == false AND $(TargetFramework.Contains('$(LatestTargetFramework)')) == false">
     <Error Text="The project '$(MSBuildProjectFile)' must target $(LatestTargetFramework)" />

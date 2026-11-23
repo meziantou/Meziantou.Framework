@@ -256,13 +256,14 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         }
 
         // When every value is quoted, a value without a quote to double is converted between the quotes. The quote is ASCII: it is the same byte in UTF-8.
+        // The space of ASCII text is reserved first: 3 bytes per character only when the text is not ASCII.
         if (_alwaysQuote && _canQuote && !_escapeFormulas && !value.Contains((char)ushort.CreateTruncating(_quote)))
         {
-            var quoted = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked((value.Length * 3) + 2), out var quotedStart)));
-            var content = quoted[1..];
-            if (Ascii.FromUtf16(value, content, out var length) is not OperationStatus.Done)
+            var quoted = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length + 2), out var quotedStart)));
+            if (Ascii.FromUtf16(value, quoted[1..], out var length) is not OperationStatus.Done)
             {
-                Utf8.FromUtf16(value, content, out _, out length, replaceInvalidSequences: true);
+                quoted = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked((value.Length * 3) + 2))));
+                Utf8.FromUtf16(value, quoted[1..], out _, out length, replaceInvalidSequences: true);
             }
 
             quoted[0] = byte.CreateTruncating(_quote);
@@ -272,8 +273,9 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
-        // Most values are ASCII and need neither quotes nor an escaped formula: they are checked while they are converted
-        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length * 3), out var start)));
+        // Most values are ASCII and need neither quotes nor an escaped formula: they are checked while they are converted. The space of ASCII text is
+        // reserved first: 3 bytes per character only when the text is not ASCII, so that a long ASCII value does not grow the buffer 3 times its size.
+        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(value.Length, out var start)));
         if (_canCopyPlain && !_escapeFormulas && !_alwaysQuote && CsvSimd.TryCopyPlainAscii(value, destination, byte.CreateTruncating(_separator), byte.CreateTruncating(_quote)))
         {
             _lastFieldLength = value.Length;
@@ -288,6 +290,7 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         // Most text is ASCII, which is converted faster than UTF-8 in general
         if (Ascii.FromUtf16(value, destination, out var bytesWritten) is not OperationStatus.Done)
         {
+            destination = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked(value.Length * 3))));
             Utf8.FromUtf16(value, destination, out _, out bytesWritten, replaceInvalidSequences: true);
         }
 

@@ -7,7 +7,8 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata;
 
 internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDeclaring>
 {
-    // The writer reserves 3 bytes per character to convert text to UTF-8: longer text goes through the converter, which grows its buffer as needed
+    // The writer reserves 3 bytes per character to convert text that is not ASCII to UTF-8: longer text goes through the converter, which grows its
+    // buffer as needed
     private const int MaxDirectTextLength = 64 * 1024 * 1024;
 
     private readonly Func<TDeclaring, TValue>? _getter;

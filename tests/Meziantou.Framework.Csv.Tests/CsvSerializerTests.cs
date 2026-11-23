@@ -72,9 +72,10 @@ public class CsvSerializerTests
     [Fact]
     public void Serialize_TextIsWrittenAsTheWriterWritesIt()
     {
-        // The text of the default converter is written by the writer: quoted and escaped as needed, in every quote mode, as UTF-16 and as UTF-8
-        string?[] names = [null, "", "a", "plain text of 20 ch", "a,b", "\"", "x\ny", new string('a', 17) + "\r", "=1", "é", "日\"本😀", "Ĭ" + new string('b', 20)];
-        CsvSerializerOptions[] allOptions = [new(), new() { QuoteMode = CsvQuoteMode.Always }, new() { EscapeFormulas = true }, new() { Separator = ';', Quote = '\'' }];
+        // The text of the default converter is written by the writer: quoted and escaped as needed, in every quote mode, as UTF-16 and as UTF-8, with
+        // long values that grow a small buffer while they are converted
+        string?[] names = [null, "", "a", "plain text of 20 ch", "a,b", "\"", "x\ny", new string('a', 17) + "\r", "=1", "é", "日\"本😀", "\u012C" + new string('b', 20), new string('a', 5000), new string('é', 3000), new string('a', 4000) + "é,"];
+        CsvSerializerOptions[] allOptions = [new(), new() { QuoteMode = CsvQuoteMode.Always }, new() { EscapeFormulas = true }, new() { Separator = ';', Quote = '\'' }, new() { BufferSize = 16 }, new() { BufferSize = 16, QuoteMode = CsvQuoteMode.Always }];
         foreach (var options in allOptions)
         {
             var writerOption = new CsvWriterOptions { Separator = options.Separator, Quote = options.Quote, QuoteMode = options.QuoteMode, EscapeFormulas = options.EscapeFormulas };

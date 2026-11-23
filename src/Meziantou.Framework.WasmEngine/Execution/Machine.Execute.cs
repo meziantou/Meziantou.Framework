@@ -6,6 +6,9 @@ namespace Meziantou.Framework.WasmEngine;
 internal sealed unsafe partial class Machine
 {
 #pragma warning disable MA0051 // Method is too long: the loop of the interpreter
+    // The temporaries of the instructions make a large frame: zeroing it at each call of the interpreter (from .NET, from a
+    // host function or from compiled code) cost more than running a short function
+    [SkipLocalsInit]
     private void Execute(CodeFunction function, int fp, int entryFrames)
     {
         var code = function.Code;

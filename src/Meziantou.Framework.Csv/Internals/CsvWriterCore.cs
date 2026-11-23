@@ -537,6 +537,26 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
 
     public void EndRow()
     {
+        // Most rows end with a new line of two characters, which fits in the buffer: it is written without a call to copy it. The rest is in
+        // another method, so that the method stays small enough to be inlined in the loops of the callers without taking their inlining budget.
+        var buffer = _buffer;
+        var newLine = _newLine;
+        var position = _position;
+        if (buffer is not null && newLine.Length == 2 && buffer.Length - position >= 2 && _fieldCount != 1)
+        {
+            buffer[position] = newLine[0];
+            buffer[position + 1] = newLine[1];
+            _position = position + 2;
+            _fieldCount = 0;
+            _lastFieldLength = 0;
+            return;
+        }
+
+        EndRowSlow();
+    }
+
+    private void EndRowSlow()
+    {
         // A row with a single empty value would read back as an empty line, which has no value
         if (_fieldCount == 1 && _lastFieldLength == 0 && _canQuote && !_alwaysQuote)
         {

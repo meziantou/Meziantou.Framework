@@ -67,9 +67,11 @@ Assert.Equal([55, 89, 144, 233], results);
 [Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) reports the syntax errors of the whole script. The body of a nested function is compiled on its first call,
 once for all the engines.
 
-`realm.Execute(string)` parses and compiles its code on every call, and keeps no cache. When the same code runs often,
-parse it once and keep the [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) yourself, for instance in a field or in a dictionary of the scripts of your
-application. Bound the dictionary when the scripts come from your users: the engine does not evict anything.
+`realm.Execute(string)` parses and compiles its code on every call, and keeps no cache. The functions of each call are
+new: the hot ones are [compiled to .NET code](#how-the-code-runs) again, and the .NET JIT optimizes each of them fully,
+which can cost more than the parsing. When the same code runs often, parse it once and keep the
+[JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) yourself, for instance in a field or in
+a dictionary of the scripts of your application. Bound the dictionary when the scripts come from your users: the engine does not evict anything.
 
 A prepared script holds code, not state. Each run evaluates it again, in the realm that runs it:
 
@@ -152,7 +154,10 @@ another one costs the same.
   and the [limits](../07-LimitsAndSandboxing.md) are the same as with the interpreter.
 - The compiled code belongs to the compiled script, like the bytecode: a function of a
   [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) is compiled once for all the engines
-  and the threads that run it.
+  and the threads that run it. The same source parsed again, by `realm.Execute(string)` or another
+  [Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse), is a new script: its functions are counted
+  and compiled again. Keep the prepared script of the code you run often (see
+  [Reuse a compiled script](#reuse-a-compiled-script)).
 - The compilation is skipped with Native AOT, where no code can be generated at run time, for the code compiled for a
   [debugger](05-Debugging.md), and for the very large functions: their code is interpreted.
 

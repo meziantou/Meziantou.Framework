@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 2,127 | 2,214 | 30 | 97% |
-| [Tentative](#tentative-tests) | 62 | 223 | 32 | 32% |
+| [Tentative](#tentative-tests) | 63 | 223 | 32 | 33% |
 | [Reftests](#reftests) | 330 | 434 | 67 | 90% |
 | [Crash tests](#crash-tests) | 141 | 143 | 2 | 100% |
-| **All** | **2,660** | **3,014** | **131** | **92%** |
+| **All** | **2,661** | **3,014** | **131** | **92%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 57
-- **NOT IMPLEMENTED**: 292
+- **NOT IMPLEMENTED**: 291
 - **REQUIRES**: 2
   - `layout`: 1
   - `media`: 1
@@ -2331,7 +2331,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forms/form-submission-0/jsurl-form-submit.tentative.html`](https://wpt.fyi/results/html/semantics/forms/form-submission-0/jsurl-form-submit.tentative.html) | Pass | 1 / 1 |  |  |
 | [`forms/textfieldselection/selection-readonly-keyboard.tentative.html`](https://wpt.fyi/results/html/semantics/forms/textfieldselection/selection-readonly-keyboard.tentative.html) | Pass | 5 / 5 |  |  |
 | [`forms/the-button-element/controls-inside-link-activation.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-button-element/controls-inside-link-activation.tentative.html) | Fail | 14 / 49 | NOT IMPLEMENTED | the tentative activation behavior of the controls inside a link (activating a control that has no activation behavior follows the link) |
-| [`forms/the-input-element/input-type-checkbox-switch.tentative.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch.tentative.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, tentative, not in the HTML Standard yet): the content attribute is rendered (a track and a thumb), the `switch` IDL attribute is not implemented, so `input.switch = true` only sets an expando property |
+| [`forms/the-input-element/input-type-checkbox-switch.tentative.window.js`](https://wpt.fyi/results/html/semantics/forms/the-input-element/input-type-checkbox-switch.tentative.window.js) | Pass | 3 / 3 |  |  |
 | [`forms/the-label-element/proxy-modifier-click-to-associated-element.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-label-element/proxy-modifier-click-to-associated-element.tentative.html) | Pass | 4 / 4 |  |  |
 | [`forms/the-select-element/customizable-select-multiple-popup/select-multiple-popup-keyboard-behavior.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-multiple-popup/select-multiple-popup-keyboard-behavior.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the multi-select drop-down box (`<select multiple size=1>`: the specification lets the platform render it as a list box, which the library does; whatwg/html#8189): it has no picker |
 | [`forms/the-select-element/customizable-select-multiple-popup/select-multiple-popup-mouse-behavior.tentative.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select-multiple-popup/select-multiple-popup-mouse-behavior.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the multi-select drop-down box (`<select multiple size=1>`: the specification lets the platform render it as a list box, which the library does; whatwg/html#8189): it has no picker |
@@ -2465,7 +2465,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`scripting-1/the-script-element/module/dynamic-import/basic-deferred-evaluation.tentative.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/module/dynamic-import/basic-deferred-evaluation.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/module/dynamic-import/cyclic-tla-defer-eval.tentative.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/module/dynamic-import/cyclic-tla-defer-eval.tentative.html) | Pass | 1 / 1 |  |  |
 | [`scripting-1/the-script-element/module/dynamic-import/tla-deferred-evaluation.tentative.html`](https://wpt.fyi/results/html/semantics/scripting-1/the-script-element/module/dynamic-import/tla-deferred-evaluation.tentative.html) | Pass | 1 / 1 |  |  |
-| [`selectors/pseudo-classes/input-checkbox-switch.tentative.window.js`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/input-checkbox-switch.tentative.window.js) | Fail | 1 / 6 | NOT IMPLEMENTED | the `switch` IDL attribute of `<input type=checkbox>` (https://github.com/whatwg/html/pull/9546, tentative, not in the HTML Standard yet): the content attribute is rendered (a track and a thumb), the `switch` IDL attribute is not implemented, so `input.switch = true` only sets an expando property; a switch still matches `:indeterminate` |
+| [`selectors/pseudo-classes/input-checkbox-switch.tentative.window.js`](https://wpt.fyi/results/html/semantics/selectors/pseudo-classes/input-checkbox-switch.tentative.window.js) | Fail | 1 / 6 | NOT IMPLEMENTED | the switch controls of `<input type=checkbox switch>` (https://github.com/whatwg/html/pull/9546, tentative, not in the HTML Standard yet) still match `:indeterminate` (and their parents `:has(:indeterminate)`) |
 | [`the-button-element/command-and-commandfor/fullscreen-behavior.tentative.html`](https://wpt.fyi/results/html/semantics/the-button-element/command-and-commandfor/fullscreen-behavior.tentative.html) | Fail | 6 / 11 | NOT IMPLEMENTED | the `toggle-fullscreen`, `request-fullscreen` and `exit-fullscreen` commands of the buttons (an Open UI proposal that is not in the HTML Standard) |
 | [`the-button-element/command-and-commandfor/on-audio-behavior.tentative.html`](https://wpt.fyi/results/html/semantics/the-button-element/command-and-commandfor/on-audio-behavior.tentative.html) | Fail | 6 / 14 | NOT IMPLEMENTED | the media commands (`play-pause`, `play`, `pause`, `toggle-muted`) of the command invokers (a tentative proposal) |
 | [`the-button-element/command-and-commandfor/on-audio-invalid-behavior.tentative.html`](https://wpt.fyi/results/html/semantics/the-button-element/command-and-commandfor/on-audio-invalid-behavior.tentative.html) | Pass | 8 / 8 |  |  |

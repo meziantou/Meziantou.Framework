@@ -4782,12 +4782,7 @@
     "total": 2
   },
   "html/semantics/forms/the-input-element/input-type-checkbox-switch.tentative.window.js": {
-    "total": 3,
-    "failures": {
-      "Cloning a switch control": "FAIL",
-      "switch IDL attribute, getter": "FAIL",
-      "switch IDL attribute, setter": "FAIL"
-    }
+    "total": 3
   },
   "html/semantics/forms/the-input-element/input-type-checkbox.html": {
     "total": 7

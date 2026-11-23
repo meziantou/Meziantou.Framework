@@ -50,8 +50,10 @@ its name, title, description, the JSON of its input and output schemas
 ([InputSchemaJson](cref:Meziantou.Framework.WebPlatform.Dom.Tool.InputSchemaJson) and
 [OutputSchemaJson](cref:Meziantou.Framework.WebPlatform.Dom.Tool.OutputSchemaJson), null when the page gave none), its
 [ToolAnnotations](cref:Meziantou.Framework.WebPlatform.Dom.Tool.ToolAnnotations) (`readOnlyHint`, `consequentialHint`...),
-and the [Document](cref:Meziantou.Framework.WebPlatform.Dom.Tool.Document) and
-[Origin](cref:Meziantou.Framework.WebPlatform.Dom.Tool.Origin) that registered it. The application sees the tools of every
+the [Document](cref:Meziantou.Framework.WebPlatform.Dom.Tool.Document) and
+[Origin](cref:Meziantou.Framework.WebPlatform.Dom.Tool.Origin) that registered it, and its window
+([Source](cref:Meziantou.Framework.WebPlatform.Dom.Tool.Source), null once that document is not fully active, for
+instance when its iframe is removed). The application sees the tools of every
 origin of the frame tree: the `exposedTo` option of the page only restricts the other documents.
 
 The list does not change when the page registers or unregisters a tool: call the method again after running the event
@@ -90,7 +92,8 @@ Their behavior follows the specification and the proposals that Chromium impleme
 
 - `getTools()` returns `Tool` objects, which identify a registration of a tool
   ([webmcp#348](https://github.com/webmachinelearning/webmcp/pull/348)): executing a tool that was unregistered fails,
-  even when a tool with the same name was registered again.
+  even when a tool with the same name was registered again. As in Chromium, the window of a tool is its `window`
+  attribute, not the `source` attribute of the specification.
 - `waitForToolsUntil()` and `toolsReady`
   ([webmcp#373](https://github.com/webmachinelearning/webmcp/pull/373)).
 - `executeTool()` resolves with the JSON serialization of the result of the tool: a string is quoted, and `undefined` is

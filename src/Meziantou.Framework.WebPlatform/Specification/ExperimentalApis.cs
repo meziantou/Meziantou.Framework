@@ -95,4 +95,7 @@ internal static class ExperimentalApis
 
     /// <summary>The legacy <c>fromElement</c> and <c>toElement</c> attributes of <c>MouseEvent</c>, which Blink and WebKit implement but no specification defines.</summary>
     public const string MouseEventFromToElement = "WEBPLATEXP0029";
+
+    /// <summary>The legacy <c>window</c> attribute of the WebMCP <c>Tool</c> objects, the former name of <c>source</c> (https://github.com/webmachinelearning/webmcp/pull/348), which the web-platform-tests of <c>webmcp</c> still use.</summary>
+    public const string WebMcpToolWindow = "WEBPLATEXP0030";
 }

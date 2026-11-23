@@ -189,6 +189,24 @@ public sealed class ModelContextTests : IDisposable
     }
 
     [Fact]
+    public void Tool_Source_IsNullWhenTheDocumentIsNotFullyActive()
+    {
+        var context = Load("""
+            <iframe srcdoc="<script>document.modelContext.registerTool({ name: 'child', description: 'Child tool', execute: () => 1 })</script>"></iframe>
+            <script>document.modelContext.registerTool({ name: 'parent', description: 'Parent tool', execute: () => 1 })</script>
+            """);
+
+        var tools = context.GetModelContextTools();
+        var frame = (HtmlIFrameElement)context.Document.QuerySelector("iframe")!;
+        Assert.Same(context.Window, tools[0].Source);
+        Assert.Same(frame.ContentWindow, tools[1].Source);
+
+        frame.Remove();
+        Assert.Same(context.Window, tools[0].Source);
+        Assert.Null(tools[1].Source);
+    }
+
+    [Fact]
     public void Script_RegistersDiscoversAndExecutesTools()
     {
         var context = Load(AddTool + """

@@ -50,10 +50,10 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 27,644 | 30,012 | 1,296 | 96% |
-| [Tentative](#tentative-tests) | 1,632 | 3,031 | 625 | 68% |
+| [Tentative](#tentative-tests) | 1,633 | 3,031 | 625 | 68% |
 | [Reftests](#reftests) | 28,681 | 29,567 | 137 | 97% |
 | [Crash tests](#crash-tests) | 2,102 | 2,124 | 13 | 99.5% |
-| **All** | **60,059** | **64,734** | **2,071** | **96%** |
+| **All** | **60,060** | **64,734** | **2,071** | **96%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 112
 - **TEST BUG**: 1,155
-- **NOT IMPLEMENTED**: 2,610
+- **NOT IMPLEMENTED**: 2,609
 - **REQUIRES**: 631
   - `hardware`: 444
   - `layout`: 22
@@ -513,7 +513,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`html/editing`](html/editing.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`html/interaction`](html/interaction.md#tentative-tests) | 1 | 147 | 138 | 11% |
 | [`html/rendering`](html/rendering.md#tentative-tests) | 3 | 7 | 0 | 43% |
-| [`html/semantics`](html/semantics.md#tentative-tests) | 62 | 223 | 32 | 32% |
+| [`html/semantics`](html/semantics.md#tentative-tests) | 63 | 223 | 32 | 33% |
 | [`html/syntax`](html/syntax.md#tentative-tests) | 125 | 130 | 0 | 96% |
 | [`html/user-activation`](html/user-activation.md#tentative-tests) | 0 | 3 | 0 | 0% |
 | [`html/webappapis`](html/webappapis.md#tentative-tests) | 2 | 6 | 0 | 33% |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 2 | 2 | 0 | 100% |
-| **Total (164 sections)** | **1,632** | **3,031** | **625** | **68%** |
+| **Total (164 sections)** | **1,633** | **3,031** | **625** | **68%** |
 
 ## Reftests
 

@@ -126,6 +126,7 @@
   "Subscriber": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/Observable.js), because the algorithms of the Observable API are made of callbacks, promises, iterators and abort signals",
   "SubscriptionObserver": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/Observable.js), because the algorithms of the Observable API are made of callbacks, promises, iterators and abort signals",
   "SubtleCrypto": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/WebCrypto.js), because the algorithm normalization converts the dictionaries to a type that depends on the algorithm name",
+  "Tool.source": "Not exposed to the scripts: Chromium and the web-platform-tests of webmcp still use the former name, window (https://github.com/webmachinelearning/webmcp/pull/348), and webmcp/imperative/resources/iframe-register-tool.html posts every attribute of Tool except window (Tool.Source is the .NET property)",
   "TurboShakeParams": "Implemented in JavaScript by the WebIDL bindings (Scripting/WebIdl/WebCrypto.js), because the algorithm normalization converts the dictionaries to a type that depends on the algorithm name",
   "WebSocketOpenInfo.readable": "Implemented by the bindings (Scripting/WebIdl/WebIdlRealm.WebSockets.cs): the ReadableStream of Streams.js whose source is the connection of the WebSocketStream",
   "WebSocketOpenInfo.writable": "Implemented by the bindings (Scripting/WebIdl/WebIdlRealm.WebSockets.cs): the WritableStream of Streams.js whose sink is the connection of the WebSocketStream",

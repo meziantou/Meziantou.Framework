@@ -142,10 +142,14 @@ internal static partial class CssPropertyRegistry
         // https://drafts.csswg.org/css-ui-4/#outline-offset: inset (the offset of the outline is the inverse of its width)
         ["outline-offset"] = "<length> | inset",
 
+        // https://drafts.csswg.org/css-text-4/#propdef-text-autospace-size: the specification restricts the number to [0,∞], but the
+        // WPT tests of the resolution (https://github.com/w3c/csswg-drafts/issues/8510#issuecomment-6438888621) accept a
+        // negative number (WPT css/css-text/parsing/text-autospace-size-valid.html)
+        ["text-autospace-size"] = "<number>",
+
         ["zoom"] = "normal | <number [0,\u221E]> | <percentage [0,\u221E]>",
 
-        // https://drafts.csswg.org/css-content-3/#quotes-property: the editor's draft of webref has a placeholder keyword
-        // (bikeshed-this) instead of match-parent
+        // https://drafts.csswg.org/css-content-3/#quotes-property: the editor's draft of webref does not have match-parent
         ["quotes"] = "auto | none | match-parent | [ <string> <string> ]+",
 
         // https://drafts.csswg.org/css-overflow-5/#scroll-marker-group-property: the mode keyword follows the position, as in
@@ -259,10 +263,6 @@ internal static partial class CssPropertyRegistry
         // laid out in the shapes of shape-inside (webref does not have the properties of SVG 2 that CSS does not define); no
         // browser implements it, so it is not a property of the computed styles
         new("shape-subtract", "none | [ <basic-shape> | <url> ]+", "none", false, [], null, AnimationType: CssAnimationTypeKind.Discrete) { IsEnumerated = false },
-
-        // The amount of the inter-script spacing of text-autospace, in ic: a resolution of the CSS Working Group that the
-        // specification does not have yet (https://github.com/w3c/csswg-drafts/issues/8510#issuecomment-6438888621)
-        new("text-autospace-size", "<number>", "0.125", true, [], null, AnimationType: CssAnimationTypeKind.ByComputedValue),
     ];
 
     /// <summary>

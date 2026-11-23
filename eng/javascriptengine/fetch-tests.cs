@@ -720,4 +720,4 @@ static string? FindRoot(string directory)
     return null;
 }
 
-sealed record NpmTarballs(string Directory, string Name, CorpusMirror Mirror, bool Publish);
+internal sealed record NpmTarballs(string Directory, string Name, CorpusMirror Mirror, bool Publish);

@@ -176,4 +176,4 @@ static string Hash(string path)
 }
 
 // A conformance corpus: its name in the mirror, its pin file, the directory of its files, and the download of its files
-sealed record Corpus(string Name, string PinsPath, string Directory, Func<HttpClient, JsonElement, string, Task<IReadOnlyCollection<string>>> Download);
+internal sealed record Corpus(string Name, string PinsPath, string Directory, Func<HttpClient, JsonElement, string, Task<IReadOnlyCollection<string>>> Download);

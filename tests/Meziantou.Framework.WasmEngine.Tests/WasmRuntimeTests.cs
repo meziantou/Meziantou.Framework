@@ -320,6 +320,164 @@ public sealed class WasmRuntimeTests
     }
 
     [Fact]
+    public void Documentation_CodeCache()
+    {
+        #region WasmEngine_CodeCache
+        var bytes = WasmRuntime.WatToWasm("""
+            (module
+              (func (export "add") (param i32 i32) (result i32)
+                (i32.add (local.get 0) (local.get 1))))
+            """);
+
+        // The first run compiles the module from its binary, and saves its code cache (e.g. in a file)
+        byte[] codeCache;
+        using (var runtime = new WasmRuntime())
+        {
+            var module = runtime.Compile(bytes);
+            Assert.False(module.IsLoadedFromCodeCache);
+            codeCache = module.CreateCodeCache();
+        }
+
+        // A later run gives the cache with the same binary: the code is not validated and compiled again. A cache that
+        // does not match the binary or the build of the engine is ignored: the module is compiled from its binary.
+        using (var runtime = new WasmRuntime())
+        {
+            var module = runtime.Compile(bytes, codeCache);
+            Assert.True(module.IsLoadedFromCodeCache);
+
+            using var store = runtime.CreateStore();
+            var add = store.Instantiate(module).GetFunction("add")!;
+            Assert.Equal(42, add.Call(WasmValue.FromI32(40), WasmValue.FromI32(2))[0].I32);
+        }
+        #endregion
+    }
+
+    private const string CodeCacheModule = """
+        (module
+          (type $point (struct (field $x (mut i32)) (field $y i32)))
+          (type $bin (func (param i32 i32) (result i32)))
+          (global $g (mut i32) (i32.const 7))
+          (table 2 funcref)
+          (elem (i32.const 0) $add $sub)
+          (tag $e (param i32))
+          (func $add (type $bin) (i32.add (local.get 0) (local.get 1)))
+          (func $sub (type $bin) (i32.sub (local.get 0) (local.get 1)))
+          (func (export "run") (param i32) (result i32)
+            (local $p (ref null $point))
+            (local.set $p (struct.new $point (i32.mul (local.get 0) (i32.const 10)) (i32.const 3)))
+            (block $default
+              (block $one
+                (block $zero
+                  (br_table $zero $one $default (local.get 0)))
+                (return (call_indirect (type $bin) (i32.const 1) (i32.const 2) (i32.const 0))))
+              (return (call_indirect (type $bin) (global.get $g) (i32.const 2) (i32.const 1))))
+            (block $caught (result i32)
+              (try_table (catch $e $caught)
+                (throw $e (i32.add (struct.get $point $x (local.get $p)) (struct.get $point $y (local.get $p)))))
+              (i32.const -1)))
+          (func (export "big") (result i64) (i64.const -81985529216486896)))
+        """;
+
+    [Fact]
+    public void CodeCache_LoadsTheSameCode()
+    {
+        var bytes = WasmRuntime.WatToWasm(CodeCacheModule);
+        using var runtime = new WasmRuntime();
+        var compiled = (ManagedModule)runtime.Compile(bytes);
+        var cache = compiled.CreateCodeCache();
+
+        using var otherRuntime = new WasmRuntime();
+        var loaded = (ManagedModule)otherRuntime.Compile(bytes, cache);
+        Assert.True(loaded.IsLoadedFromCodeCache);
+        Assert.Equal(cache, loaded.CreateCodeCache());
+
+        Assert.HasCount(compiled.Info.Code.Count, loaded.Info.Code);
+        for (var i = 0; i < compiled.Info.Code.Count; i++)
+        {
+            var expected = compiled.Info.Code[i];
+            var actual = loaded.Info.Code[i];
+            Assert.Equal(expected.Name, actual.Name);
+            Assert.Equal(expected.MaxStackHeight, actual.MaxStackHeight);
+            Assert.Equal(expected.ParameterCount, actual.ParameterCount);
+            Assert.HasCount(expected.Results.Length, actual.Results);
+            Assert.Equal(expected.Heights, actual.Heights);
+            Assert.Equal(expected.Pops, actual.Pops);
+            Assert.Equal(expected.BranchTables, actual.BranchTables);
+            Assert.HasCount(expected.Locals.Length, actual.Locals);
+            for (var j = 0; j < expected.Locals.Length; j++)
+            {
+                Assert.Equal(expected.Locals[j].Code, actual.Locals[j].Code);
+                Assert.Equal(expected.Locals[j].Nullable, actual.Locals[j].Nullable);
+                Assert.Equal(expected.Locals[j].Heap, actual.Locals[j].Heap);
+                Assert.Equal(expected.Locals[j].Defined is null, actual.Locals[j].Defined is null);
+            }
+
+            Assert.HasCount(expected.Handlers.Length, actual.Handlers);
+            for (var j = 0; j < expected.Handlers.Length; j++)
+            {
+                Assert.Equal(expected.Handlers[j].Start, actual.Handlers[j].Start);
+                Assert.Equal(expected.Handlers[j].End, actual.Handlers[j].End);
+                Assert.Equal(expected.Handlers[j].Catches, actual.Handlers[j].Catches);
+            }
+
+            Assert.HasCount(expected.Code.Length, actual.Code);
+            for (var j = 0; j < expected.Code.Length; j++)
+            {
+                var (e, a) = (expected.Code[j], actual.Code[j]);
+                Assert.Equal((e.Op, e.I0, e.I1, e.I2, e.L0, e.L1, e.O is null), (a.Op, a.I0, a.I1, a.I2, a.L0, a.L1, a.O is null));
+            }
+        }
+
+        // The types of the code are the types of the runtime that loads the cache
+        var loadedTypes = loaded.Info.Code.SelectMany(code => code.Code).Select(instr => instr.O).OfType<DefinedType>().ToList();
+        Assert.NotEmpty(loadedTypes);
+        Assert.All(loadedTypes, type => loaded.Info.Types.Contains(type));
+
+        foreach (var (module, moduleRuntime) in new[] { (compiled, runtime), (loaded, otherRuntime) })
+        {
+            using var store = moduleRuntime.CreateStore();
+            var instance = store.Instantiate(module);
+            var run = instance.GetFunction("run")!;
+            Assert.Equal(3, run.Call(WasmValue.FromI32(0))[0].I32);
+            Assert.Equal(5, run.Call(WasmValue.FromI32(1))[0].I32);
+            Assert.Equal(53, run.Call(WasmValue.FromI32(5))[0].I32);
+            Assert.Equal(-81985529216486896L, instance.GetFunction("big")!.Call()[0].I64);
+        }
+    }
+
+    [Theory]
+    [InlineData("empty")]
+    [InlineData("truncated")]
+    [InlineData("corrupted")]
+    [InlineData("other-module")]
+    public void CodeCache_WhenItDoesNotMatch_CompilesTheBinary(string kind)
+    {
+        var bytes = WasmRuntime.WatToWasm(CodeCacheModule);
+        using var runtime = new WasmRuntime();
+        var cache = runtime.Compile(bytes).CreateCodeCache();
+        cache = kind switch
+        {
+            "empty" => [],
+            "truncated" => cache[..^1],
+            "corrupted" => [.. cache[..(cache.Length / 2)], (byte)(cache[cache.Length / 2] ^ 1), .. cache[((cache.Length / 2) + 1)..]],
+            _ => runtime.Compile(WasmRuntime.WatToWasm("(module (func (export \"f\")))")).CreateCodeCache(),
+        };
+
+        var module = runtime.Compile(bytes, cache);
+        Assert.False(module.IsLoadedFromCodeCache);
+        using var store = runtime.CreateStore();
+        Assert.Equal(53, store.Instantiate(module).GetFunction("run")!.Call(WasmValue.FromI32(5))[0].I32);
+    }
+
+    [Fact]
+    public void CodeCache_WhenTheBinaryIsNotValid_Throws()
+    {
+        using var runtime = new WasmRuntime();
+        var cache = runtime.Compile(WasmRuntime.WatToWasm(CodeCacheModule)).CreateCodeCache();
+        Assert.Throws<WasmCompileException>(() => runtime.Compile([0, 0x61, 0x73, 0x6D, 2, 0, 0, 0], cache));
+    }
+
+    [Fact]
     public void Options_WhenNotValid_Throw()
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => new WasmRuntime(new WasmRuntimeOptions { InterruptionCheckInterval = TimeSpan.Zero }));

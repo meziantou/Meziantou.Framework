@@ -11,16 +11,25 @@ internal sealed class ModuleDecoder
     private readonly byte[] _bytes;
     private readonly TypeRegistry _registry;
     private readonly ModuleInfo _module = new();
+    private readonly bool _skipCode;
     private int _functionCount = -1;
 
-    private ModuleDecoder(byte[] bytes, TypeRegistry registry)
+    private ModuleDecoder(byte[] bytes, TypeRegistry registry, bool skipCode)
     {
         _bytes = bytes;
         _registry = registry;
+        _skipCode = skipCode;
     }
 
     /// <exception cref="WasmDecodeException">The module is malformed or invalid.</exception>
-    public static ModuleInfo Decode(byte[] bytes, TypeRegistry registry) => new ModuleDecoder(bytes, registry).Decode();
+    public static ModuleInfo Decode(byte[] bytes, TypeRegistry registry) => new ModuleDecoder(bytes, registry, skipCode: false).Decode();
+
+    /// <summary>
+    /// Decodes a module without its code section (<see cref="ModuleInfo.Code"/> stays empty): the code comes from a code
+    /// cache created for the same binary (<see cref="CodeCache"/>), which was valid.
+    /// </summary>
+    /// <exception cref="WasmDecodeException">The module is malformed or invalid.</exception>
+    public static ModuleInfo DecodeWithoutCode(byte[] bytes, TypeRegistry registry) => new ModuleDecoder(bytes, registry, skipCode: true).Decode();
 
     private ModuleInfo Decode()
     {
@@ -110,7 +119,7 @@ internal sealed class ModuleDecoder
             reader.Position = end;
         }
 
-        if (_functionCount > 0 && _module.Code.Count != _functionCount)
+        if (!_skipCode && _functionCount > 0 && _module.Code.Count != _functionCount)
             throw new WasmDecodeException("function and code section have inconsistent lengths");
 
         if (_module.DataCount is { } dataCount && dataCount != _module.Data.Count)
@@ -690,6 +699,12 @@ internal sealed class ModuleDecoder
 
     private void ReadCodeSection(ref WasmReader reader)
     {
+        if (_skipCode)
+        {
+            reader.Position = reader.End;
+            return;
+        }
+
         var count = reader.ReadCount();
         if (count != Math.Max(_functionCount, 0))
             throw new WasmDecodeException("function and code section have inconsistent lengths");

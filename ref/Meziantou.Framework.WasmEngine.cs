@@ -212,7 +212,9 @@ namespace Meziantou.Framework.WasmEngine
         public System.ReadOnlyMemory<byte> Bytes { get => throw null; }
         public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.WasmExport> Exports { get; }
         public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.WasmImport> Imports { get; }
+        public abstract bool IsLoadedFromCodeCache { get; }
         public abstract Meziantou.Framework.WasmEngine.WasmRuntime Runtime { get; }
+        public abstract byte[] CreateCodeCache();
         public System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> GetCustomSections(string name) => throw null;
         public virtual bool IsMutableI16ArrayParameter(Meziantou.Framework.WasmEngine.WasmFunctionType functionType, int parameterIndex) => throw null;
     }
@@ -223,6 +225,7 @@ namespace Meziantou.Framework.WasmEngine
         public WasmRuntime(Meziantou.Framework.WasmEngine.WasmRuntimeOptions? options = null) { }
         public Meziantou.Framework.WasmEngine.WasmModule Compile(System.ReadOnlySpan<byte> bytes) => throw null;
         public Meziantou.Framework.WasmEngine.WasmModule Compile(byte[] bytes) => throw null;
+        public Meziantou.Framework.WasmEngine.WasmModule Compile(byte[] bytes, System.ReadOnlySpan<byte> codeCache) => throw null;
         public Meziantou.Framework.WasmEngine.WasmStore CreateStore(Meziantou.Framework.WasmEngine.WasmStoreOptions? options = null) => throw null;
         public void Dispose() { }
         public bool Validate(System.ReadOnlySpan<byte> bytes) => throw null;

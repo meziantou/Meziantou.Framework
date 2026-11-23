@@ -31,6 +31,48 @@ public abstract class WasmModule
     /// <summary>Gets the exports of the module, in the order of the export section.</summary>
     public abstract IReadOnlyList<WasmExport> Exports { get; }
 
+    /// <summary>Gets whether the code of the functions was loaded from a code cache (see <see cref="WasmRuntime.Compile(byte[], ReadOnlySpan{byte})"/>).</summary>
+    public abstract bool IsLoadedFromCodeCache { get; }
+
+    /// <summary>
+    /// Creates the code cache of the module: the validated and compiled code of its functions. Pass it to
+    /// <see cref="WasmRuntime.Compile(byte[], ReadOnlySpan{byte})"/> with the same binary, for instance in a later run of
+    /// the application, to skip the validation and the compilation of the code. The cache is only valid for the build
+    /// of the engine that created it, and only for the platforms of the same kind (with or without dynamic code).
+    /// </summary>
+    /// <returns>The bytes of the cache.</returns>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.WasmEngine.Tests/WasmRuntimeTests.cs" ref:region="WasmEngine_CodeCache" ref:dedent="true">
+    /// var bytes = WasmRuntime.WatToWasm("""
+    ///     (module
+    ///       (func (export "add") (param i32 i32) (result i32)
+    ///         (i32.add (local.get 0) (local.get 1))))
+    ///     """);
+    ///
+    /// // The first run compiles the module from its binary, and saves its code cache (e.g. in a file)
+    /// byte[] codeCache;
+    /// using (var runtime = new WasmRuntime())
+    /// {
+    ///     var module = runtime.Compile(bytes);
+    ///     Assert.False(module.IsLoadedFromCodeCache);
+    ///     codeCache = module.CreateCodeCache();
+    /// }
+    ///
+    /// // A later run gives the cache with the same binary: the code is not validated and compiled again. A cache that
+    /// // does not match the binary or the build of the engine is ignored: the module is compiled from its binary.
+    /// using (var runtime = new WasmRuntime())
+    /// {
+    ///     var module = runtime.Compile(bytes, codeCache);
+    ///     Assert.True(module.IsLoadedFromCodeCache);
+    ///
+    ///     using var store = runtime.CreateStore();
+    ///     var add = store.Instantiate(module).GetFunction("add")!;
+    ///     Assert.Equal(42, add.Call(WasmValue.FromI32(40), WasmValue.FromI32(2))[0].I32);
+    /// }
+    /// </code>
+    /// </example>
+    public abstract byte[] CreateCodeCache();
+
     /// <summary>The sections of the module that the native module does not expose (the custom sections, the limits of the tables, the function indices of the exports).</summary>
     internal WasmModuleSections Sections => _sections ??= WasmModuleSections.Read(SourceBytes);
 

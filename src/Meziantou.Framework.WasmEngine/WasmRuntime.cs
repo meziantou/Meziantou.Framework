@@ -82,7 +82,25 @@ public sealed class WasmRuntime : IDisposable
     /// <returns>The module, which can be instantiated by the stores of the runtime.</returns>
     /// <exception cref="WasmCompileException">The module is not valid.</exception>
     /// <exception cref="ObjectDisposedException">The runtime is disposed.</exception>
-    public WasmModule Compile(byte[] bytes)
+    public WasmModule Compile(byte[] bytes) => Compile(bytes, codeCache: default);
+
+    /// <summary>
+    /// Compiles a module, with the code of its functions from a code cache (<see cref="WasmModule.CreateCodeCache"/>)
+    /// when the cache was created for this binary by this build of the engine: the validation and the compilation of
+    /// the code are skipped. Otherwise, the module is compiled from its binary (<see cref="WasmModule.IsLoadedFromCodeCache"/>
+    /// is false). It can be called from any thread.
+    /// </summary>
+    /// <remarks>
+    /// A code cache is trusted like a compiled assembly: its code is not validated again. Store it where only the
+    /// application can write. The cache detects the changes of the binary, of the engine and the corruptions, but not
+    /// a cache written on purpose to match the binary.
+    /// </remarks>
+    /// <param name="bytes">The binary of the module. The module keeps the array: do not change it.</param>
+    /// <param name="codeCache">The code cache of the module, or an empty span.</param>
+    /// <returns>The module, which can be instantiated by the stores of the runtime.</returns>
+    /// <exception cref="WasmCompileException">The module is not valid.</exception>
+    /// <exception cref="ObjectDisposedException">The runtime is disposed.</exception>
+    public WasmModule Compile(byte[] bytes, ReadOnlySpan<byte> codeCache)
     {
         ArgumentNullException.ThrowIfNull(bytes);
         ThrowIfDisposed();
@@ -90,24 +108,48 @@ public sealed class WasmRuntime : IDisposable
         var start = Stopwatch.GetTimestamp();
         try
         {
-            ModuleInfo info;
-            try
+            var module = TryLoadFromCodeCache(bytes, codeCache);
+            if (module is null)
             {
-                info = Decode(bytes);
-            }
-            catch (WasmDecodeException ex)
-            {
-                throw new WasmCompileException(ex.Message, ex);
+                ModuleInfo info;
+                try
+                {
+                    info = Decode(bytes);
+                }
+                catch (WasmDecodeException ex)
+                {
+                    throw new WasmCompileException(ex.Message, ex);
+                }
+
+                module = new ManagedModule(this, info, bytes);
             }
 
             _telemetry.RecordCompile(Stopwatch.GetElapsedTime(start), bytes.Length, exception: null);
-            return new ManagedModule(this, info, bytes);
+            return module;
         }
         catch (WasmCompileException ex)
         {
             WasmEngineTelemetry.SetError(activity, ex);
             _telemetry.RecordCompile(Stopwatch.GetElapsedTime(start), bytes.Length, ex);
             throw;
+        }
+    }
+
+    private ManagedModule? TryLoadFromCodeCache(byte[] bytes, ReadOnlySpan<byte> codeCache)
+    {
+        if (codeCache.IsEmpty || !CodeCache.IsValid(bytes, codeCache))
+            return null;
+
+        try
+        {
+            var info = ModuleDecoder.DecodeWithoutCode(bytes, Registry);
+            CodeCache.ReadCode(codeCache, info);
+            return new ManagedModule(this, info, bytes) { LoadedFromCodeCache = true };
+        }
+        catch (Exception ex) when (ex is WasmDecodeException or CodeCacheFormatException)
+        {
+            // A cache of this build for this binary is always readable: the module is compiled from its binary anyway
+            return null;
         }
     }
 

@@ -28,7 +28,8 @@ Assert.Equal(42, results[0].I32);
 
 - [Compile](cref:Meziantou.Framework.WasmEngine.WasmRuntime.Compile) takes the binary of a module and throws a
   [WasmCompileException](cref:Meziantou.Framework.WasmEngine.WasmCompileException) when it is not valid.
-  [Validate](cref:Meziantou.Framework.WasmEngine.WasmRuntime.Validate) only tells whether it is valid.
+  [Validate](cref:Meziantou.Framework.WasmEngine.WasmRuntime.Validate) only tells whether it is valid. A large module
+  compiles faster in the next runs of the application from its [code cache](11-CodeCache.md).
 - [WatToWasm](cref:Meziantou.Framework.WasmEngine.WasmRuntime.WatToWasm) converts the text format to the binary format;
   it throws a `FormatException` when the text is not valid.
 - A module is immutable: compile it once, and instantiate it in as many stores as you need, from any thread. Its

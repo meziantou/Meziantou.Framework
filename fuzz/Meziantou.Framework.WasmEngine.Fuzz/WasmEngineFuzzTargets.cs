@@ -739,5 +739,33 @@ public static class WasmEngineFuzzTargets
               (tag (export "tag") (param i32))
               (func (export "throw") (param i32) (throw 0 (local.get 0))))
             """),
+
+        // The sequences that the interpreter fuses (InstructionFuser): comparisons of locals and constants followed by
+        // br_if or if, the arithmetic of two locals, the copies of locals, and a load of the address of a local
+        ("fused-instructions", """
+            (module
+              (memory 1)
+              (data (i32.const 0) "\01\02\03\04\05\06\07\08")
+              (func (export "run") (result i64)
+                (local $i i32) (local $a i32) (local $b i32) (local $m i32) (local $x i32) (local $l i64) (local $d f64)
+                (loop $next
+                  (local.set $a (i32.mul (local.get $i) (i32.const 0x9E3779B9)))
+                  (local.set $b (i32.xor (local.get $a) (i32.shr_u (local.get $a) (i32.const 7))))
+                  (block $c (br_if $c (i32.lt_s (local.get $a) (local.get $b))) (local.set $m (i32.add (local.get $m) (i32.const 1))))
+                  (block $c (br_if $c (i32.ge_u (local.get $a) (i32.const 5))) (local.set $m (i32.add (local.get $m) (i32.const 3))))
+                  (block $c (br_if $c (i32.eqz (i32.and (local.get $a) (local.get $b)))) (local.set $m (i32.add (local.get $m) (i32.const 7))))
+                  (if (i32.le_u (local.get $a) (local.get $b)) (then (local.set $m (i32.mul (local.get $m) (i32.const 3)))))
+                  (if (i32.gt_s (local.get $b) (i32.const -5)) (then (local.set $m (i32.sub (local.get $m) (i32.const 1)))))
+                  (if (i32.ne (i32.xor (local.get $a) (local.get $m)) (local.get $b)) (then (local.set $m (i32.rotl (local.get $m) (i32.const 3)))))
+                  (local.set $x (i32.sub (local.get $a) (local.get $b)))
+                  (local.set $x (i32.xor (local.tee $m (i32.or (local.get $m) (local.get $x))) (local.get $i)))
+                  (local.set $l (i64.add (i64.mul (i64.extend_i32_s (local.get $x)) (i64.const -3)) (local.get $l)))
+                  (local.set $d (f64.div (f64.convert_i32_s (local.get $a)) (f64.convert_i32_s (local.get $b))))
+                  (local.set $l (i64.xor (local.get $l) (i64.reinterpret_f64 (local.get $d))))
+                  (local.set $x (i32.add (local.get $x) (i32.load (i32.and (local.get $i) (i32.const 3)))))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br_if $next (i32.lt_u (local.get $i) (i32.const 64))))
+                (i64.add (local.get $l) (i64.extend_i32_u (i32.add (local.get $m) (local.get $x))))))
+            """),
     ];
 }

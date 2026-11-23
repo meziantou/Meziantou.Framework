@@ -72,6 +72,9 @@ Assert.Equal(6765, fib.Call(WasmValue.FromI32(20))[0].I32);
 <!-- endref -->
 
 - In a Native AOT application, the functions are always interpreted.
+- The interpreter runs the frequent sequences of instructions as one operation, such as the two `local.get` of an
+  addition, or the comparison and the `br_if` that end a loop. It prepares them when it runs a function for the first
+  time: an interpreted function uses about 40 more bytes per instruction.
 - A function that uses the tail calls (`return_call`, `return_call_indirect`, `return_call_ref`), or that has a very
   large number of locals, is interpreted.
 - The compiled functions behave as the interpreted ones: the same results, traps and interruptions. A deep recursion

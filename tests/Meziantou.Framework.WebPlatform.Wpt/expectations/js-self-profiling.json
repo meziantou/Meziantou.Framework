@@ -140,6 +140,24 @@
       "sample timestamps use the current high-resolution time": "FAIL"
     }
   },
+  "js-self-profiling/with-document-policy/dedicated-module-worker.https.html": {
+    "total": 13,
+    "failures": {
+      "A blob module worker inherits its creator Document Policy": "FAIL",
+      "A data module worker inherits its creator Document Policy": "FAIL",
+      "A dynamic import's policy cannot disable profiling": "FAIL",
+      "A dynamic import's policy cannot enable profiling": "FAIL",
+      "A module worker can profile and stop after requesting GC of a leaked profiler": "FAIL",
+      "A nested blob module worker inherits its network creator's allowing Document Policy": "FAIL",
+      "A nested blob module worker inherits its network creator's denying Document Policy": "FAIL",
+      "A network module worker without a policy cannot profile": "FAIL",
+      "A static import's policy cannot disable profiling": "FAIL",
+      "A static import's policy cannot enable profiling": "FAIL",
+      "Concurrent module workers parse their response policies": "FAIL",
+      "Report-only allowance does not override an enforced policy denying module-worker profiling": "FAIL",
+      "Report-only policy does not block collecting and stopping a module-worker profiling trace": "FAIL"
+    }
+  },
   "js-self-profiling/with-document-policy/dedicated-worker-blob.https.html": {
     "total": 1,
     "failures": {
@@ -168,6 +186,16 @@
     "total": 1,
     "failures": {
       "profiling should succeed in dedicated worker with document policy enabled": "FAIL"
+    }
+  },
+  "js-self-profiling/without-document-policy/dedicated-module-worker.https.html": {
+    "total": 5,
+    "failures": {
+      "A blob module worker inherits its creator's missing policy despite an imported module's allowing header": "FAIL",
+      "A data module worker inherits its creator's missing policy despite an imported module's allowing header": "FAIL",
+      "A network module worker's allowing response policy applies without a creator policy": "FAIL",
+      "A network module worker's denying response policy applies without a creator policy": "FAIL",
+      "The creator cannot profile without Document Policy": "FAIL"
     }
   },
   "js-self-profiling/without-document-policy/disabled.https.html": {

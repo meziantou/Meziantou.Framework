@@ -35,6 +35,9 @@
   "css/css-env/fallback-nested-var.tentative.html": {
     "total": 1
   },
+  "css/css-env/indexed-env-fallback.tentative.html": {
+    "total": 5
+  },
   "css/css-env/indexed-env.tentative.html": {
     "total": 11,
     "failures": {

@@ -5,6 +5,9 @@
   "css/css-break/abspos-002-print.html": {
     "reftest": "PASS"
   },
+  "css/css-break/abspos-003-print.html": {
+    "reftest": "PASS"
+  },
   "css/css-break/abspos-in-clipped-overflow-print.html": {
     "reftest": "PASS"
   },
@@ -2006,7 +2009,7 @@
   "css/css-break/grid/grid-lanes/column-early-breaks-010.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/column-early-breaks-011.html": {
+  "css/css-break/grid/grid-lanes/column-early-breaks-011.tentative.html": {
     "reftest": "FAIL"
   },
   "css/css-break/grid/grid-lanes/column-early-breaks-012.html": {
@@ -2069,7 +2072,7 @@
   "css/css-break/grid/grid-lanes/column-grid-lanes-oof-fragmentation-009.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/column-grid-lanes-oof-fragmentation-010.html": {
+  "css/css-break/grid/grid-lanes/column-grid-lanes-oof-fragmentation-010.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-grid-lanes-oof-fragmentation-011.html": {
@@ -2135,7 +2138,7 @@
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-019.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-020.html": {
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-020.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-021.html": {
@@ -2150,7 +2153,7 @@
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-024.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-025.html": {
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-025.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-026.html": {
@@ -2189,7 +2192,7 @@
   "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-037.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-038.html": {
+  "css/css-break/grid/grid-lanes/column-multi-lane-fragmentation-038.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/column-single-lane-fragmentation-001.html": {
@@ -2334,6 +2337,36 @@
       "Row geometry is independent of overflow compensation with writing-mode: vertical-lr": "FAIL"
     }
   },
+  "css/css-break/grid/grid-lanes/row-early-breaks-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-early-breaks-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-005.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-006.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-007.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-break/grid/grid-lanes/row-expansion-008.html": {
+    "reftest": "PASS"
+  },
   "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -2343,7 +2376,7 @@
   "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-003.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-004.html": {
+  "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-004.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-grid-lanes-oof-fragmentation-005.html": {
@@ -2427,7 +2460,7 @@
   "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-020.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-021.html": {
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-021.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-022.html": {
@@ -2442,7 +2475,7 @@
   "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-025.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-026.html": {
+  "css/css-break/grid/grid-lanes/row-multi-lane-fragmentation-026.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-001.html": {
@@ -2454,10 +2487,10 @@
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-003.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-004.html": {
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-004.tentative.html": {
     "reftest": "PASS"
   },
-  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-005.html": {
+  "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-005.tentative.html": {
     "reftest": "PASS"
   },
   "css/css-break/grid/grid-lanes/row-single-lane-fragmentation-006.html": {

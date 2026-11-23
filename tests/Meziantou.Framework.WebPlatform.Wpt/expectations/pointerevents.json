@@ -414,10 +414,7 @@
     "total": 1
   },
   "pointerevents/pointerevent_element_haspointercapture.html?touch": {
-    "total": 1,
-    "failures": {
-      "hasPointerCapture": "FAIL"
-    }
+    "total": 1
   },
   "pointerevents/pointerevent_element_haspointercapture_release_pending_capture.html?mouse": {
     "total": 1

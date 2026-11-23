@@ -215,6 +215,12 @@
   "webmessaging/message-channels/no-start.any.js#dedicatedworker": {
     "total": 1
   },
+  "webmessaging/message-channels/transfer-from-closed-port.any.js": {
+    "total": 5
+  },
+  "webmessaging/message-channels/transfer-from-closed-port.any.js#dedicatedworker": {
+    "total": 5
+  },
   "webmessaging/message-channels/user-activation.tentative.any.js": {
     "total": 1,
     "failures": {

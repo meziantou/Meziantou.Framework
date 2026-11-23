@@ -2496,7 +2496,7 @@ internal sealed partial class IdlModel
     /// <code>
     /// partial dictionary ModelContextTool { object outputSchema; };  // webmachinelearning/webmcp#254 (merged)
     ///
-    /// // webmachinelearning/webmcp#348: the RegisteredTool dictionary becomes the Tool interface
+    /// // webmachinelearning/webmcp#348 (merged): the RegisteredTool dictionary becomes the Tool interface
     /// [Exposed=Window, SecureContext]
     /// interface Tool {
     ///   readonly attribute DOMString name;
@@ -2504,7 +2504,7 @@ internal sealed partial class IdlModel
     ///   readonly attribute DOMString description;
     ///   readonly attribute object? inputSchema;
     ///   readonly attribute object? outputSchema;
-    ///   readonly attribute Window? window;
+    ///   readonly attribute WindowProxy? source;
     ///   readonly attribute USVString origin;
     ///   readonly attribute object? annotations;
     /// };
@@ -2523,7 +2523,7 @@ internal sealed partial class IdlModel
         if (!model.Definitions.TryGetValue("ModelContext", out var modelContext) || model.Definitions.ContainsKey("Tool"))
             return;
 
-        const string ToolHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#tool";
+        const string ToolHref = "https://webmachinelearning.github.io/webmcp/#tool";
         const string ToolsReadyHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/373.html#dom-modelcontext-toolsready";
         const string WaitForToolsUntilHref = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/373.html#dom-modelcontext-waitfortoolsuntil";
         var source = modelContext.Source;
@@ -2547,7 +2547,7 @@ internal sealed partial class IdlModel
             ("description", new IdlType { Name = "DOMString" }),
             ("inputSchema", new IdlType { Name = "object", Nullable = true }),
             ("outputSchema", new IdlType { Name = "object", Nullable = true }),
-            ("window", new IdlType { Name = "Window", Nullable = true }),
+            ("source", new IdlType { Name = "WindowProxy", Nullable = true }),
             ("origin", new IdlType { Name = "USVString" }),
             ("annotations", new IdlType { Name = "object", Nullable = true }),
         ];
@@ -2561,7 +2561,7 @@ internal sealed partial class IdlModel
                 Name = attribute.Name,
                 Type = attribute.Type,
                 Readonly = true,
-                Href = "https://pr-preview.s3.amazonaws.com/webmachinelearning/webmcp/pull/348.html#dom-tool-" + attribute.Name.ToLowerInvariant(),
+                Href = "https://webmachinelearning.github.io/webmcp/#dom-tool-" + attribute.Name.ToLowerInvariant(),
                 Source = source,
                 DeclaringDefinition = "Tool",
             }),

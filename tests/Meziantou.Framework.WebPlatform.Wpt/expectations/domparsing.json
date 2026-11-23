@@ -202,6 +202,33 @@
   "domparsing/stream-html-parser-blocking-script.html": {
     "total": 29
   },
+  "domparsing/stream-html-pending-text.html": {
+    "total": 26,
+    "failures": {
+      "Element.streamAfterHTML() coalesces subsequent text chunks via replace data": "FAIL",
+      "Element.streamAfterHTMLUnsafe() coalesces subsequent text chunks via replace data": "FAIL",
+      "Element.streamAppendHTMLUnsafe() coalesces multi-chunk text via replace data": "FAIL",
+      "Element.streamPrependHTMLUnsafe() coalesces multi-chunk text via replace data": "FAIL",
+      "Resumed fragment parser after self-removing external <script> coalesces trailing text via replace data": "FAIL",
+      "ShadowRoot.streamAppendHTML() coalesces multi-chunk text via replace data": "FAIL",
+      "ShadowRoot.streamAppendHTMLUnsafe() coalesces multi-chunk text via replace data": "FAIL",
+      "ShadowRoot.streamHTML() coalesces multi-chunk text via replace data": "FAIL",
+      "ShadowRoot.streamHTMLUnsafe() coalesces multi-chunk text via replace data": "FAIL",
+      "ShadowRoot.streamPrependHTML() coalesces multi-chunk text via replace data": "FAIL",
+      "ShadowRoot.streamPrependHTMLUnsafe() coalesces multi-chunk text via replace data": "FAIL",
+      "Text.streamAfterHTML() appends streamed text directly to the receiver Text node via replace data": "FAIL",
+      "Text.streamAfterHTMLUnsafe() appends streamed text directly to the receiver Text node via replace data": "FAIL",
+      "streamAppendHTML() appends streamed text to an existing trailing Text node via replace data": "FAIL",
+      "streamAppendHTML() into <textarea> coalesces chunks into existing Text node and updates raw value via replace data": "FAIL",
+      "streamBeforeHTML() appends to referenceChild.previousSibling via replace data and rejects if referenceChild is detached before write()": "FAIL",
+      "streamBeforeHTMLUnsafe({ runScripts: true }) flushes text before mid-parse referenceChild removal and discards trailing characters": "FAIL",
+      "streamHTML() coalesces character tokens per write() and appends subsequent chunks via replace data": "FAIL",
+      "streamPrependHTML() inserts a single Text node before firstChild and appends subsequent chunks via replace data": "FAIL",
+      "streamReplaceWithHTML() coalesces streamed text into previousSibling Text node via replace data after removing receiver": "FAIL",
+      "streamReplaceWithHTMLUnsafe() coalesces streamed text into previousSibling Text node via replace data after removing receiver": "FAIL",
+      "template.streamHTML() coalesces streamed text inside template.content via replace data": "FAIL"
+    }
+  },
   "domparsing/stream-html-reentrancy.html": {
     "total": 40,
     "failures": {

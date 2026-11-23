@@ -174,13 +174,20 @@
     }
   },
   "css/css-mixins/private/css-private-lexical-scope.tentative.html": {
-    "total": 10
+    "total": 11,
+    "failures": {
+      "A nested private declaration can reference an enclosing private name": "FAIL",
+      "A private declaration on a descendant can reference an enclosing private name": "FAIL"
+    }
   },
   "css/css-mixins/private/css-private-mixins-cssom.tentative.html": {
     "total": 4
   },
   "css/css-mixins/private/css-private-mixins-nesting.tentative.html": {
-    "total": 6
+    "total": 7,
+    "failures": {
+      "A nested private declaration in a mixin can reference an enclosing private name": "FAIL"
+    }
   },
   "css/css-mixins/private/css-private-mixins.tentative.html": {
     "total": 14

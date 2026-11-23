@@ -15455,9 +15455,9 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Origin { get => throw null; }
         public object? OutputSchema { get => throw null; }
         public string? OutputSchemaJson { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Window? Source { get => throw null; }
         public string Title { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ToolAnnotations? ToolAnnotations { get => throw null; }
-        public Meziantou.Framework.WebPlatform.Dom.Window? Window { get => throw null; }
         public override string ToString() => throw null;
     }
 

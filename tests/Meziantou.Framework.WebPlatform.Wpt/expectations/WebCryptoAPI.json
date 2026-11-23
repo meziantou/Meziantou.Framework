@@ -491,6 +491,15 @@
   "WebCryptoAPI/import_export/ec_importKey_failures_ECDSA.https.any.js#dedicatedworker": {
     "total": 908
   },
+  "WebCryptoAPI/import_export/jwk_key_ops_duplicates.https.any.js": {
+    "total": 1
+  },
+  "WebCryptoAPI/import_export/jwk_key_ops_duplicates.https.any.js#dedicatedworker": {
+    "total": 1
+  },
+  "WebCryptoAPI/import_export/jwk_key_ops_duplicates.https.any.js#sharedworker": {
+    "total": 1
+  },
   "WebCryptoAPI/import_export/okp_fixed_length.https.any.js": {
     "total": 6
   },

@@ -26,6 +26,13 @@
   "container-timing/tentative/containertiming-continue-after-untrusted-events.html": {
     "total": 1
   },
+  "container-timing/tentative/containertiming-continue-for-root-added-after-input.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "A container root added after an input records until the next input.": "TIMEOUT"
+    }
+  },
   "container-timing/tentative/containertiming-dropped-entries-count.html": {
     "total": 1
   },
@@ -101,6 +108,12 @@
   },
   "container-timing/tentative/containertiming-text-itself.html": {
     "total": 1
+  },
+  "container-timing/tentative/containertiming-tojson.html": {
+    "total": 1,
+    "failures": {
+      "PerformanceContainerTiming.toJSON() serializes its data correctly": "FAIL"
+    }
   },
   "container-timing/tentative/containertiming-two-overlapping-imgs.html": {
     "total": 1

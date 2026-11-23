@@ -853,6 +853,12 @@
   "wasm/jsapi/esm-integration/mutable-global-sharing.tentative.any.js#dedicatedworker": {
     "total": 5
   },
+  "wasm/jsapi/esm-integration/namespace-import.tentative.any.js": {
+    "total": 1
+  },
+  "wasm/jsapi/esm-integration/namespace-import.tentative.any.js#dedicatedworker": {
+    "total": 1
+  },
   "wasm/jsapi/esm-integration/namespace-instance.tentative.any.js": {
     "total": 3
   },
@@ -1040,18 +1046,10 @@
     "total": 2
   },
   "wasm/jsapi/idlharness.any.js": {
-    "total": 91,
-    "failures": {
-      "Module interface: existence and properties of interface object": "FAIL",
-      "Module interface: existence and properties of interface prototype object": "FAIL"
-    }
+    "total": 91
   },
   "wasm/jsapi/idlharness.any.js#dedicatedworker": {
-    "total": 91,
-    "failures": {
-      "Module interface: existence and properties of interface object": "FAIL",
-      "Module interface: existence and properties of interface prototype object": "FAIL"
-    }
+    "total": 91
   },
   "wasm/jsapi/instance/constructor-bad-imports.any.js": {
     "total": 106

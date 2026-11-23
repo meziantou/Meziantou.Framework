@@ -231,7 +231,44 @@
     }
   },
   "css/css-properties-values-api/at-property-cssom.html": {
-    "total": 40
+    "total": 68,
+    "failures": {
+      "Rule for --inherits-only has expected cssText": "FAIL",
+      "Rule for --inherits-only returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --inherits-only returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --inherits-only returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --inherits-only returns expected value for CSSPropertyRule.syntax": "FAIL",
+      "Rule for --initial-value-only has expected cssText": "FAIL",
+      "Rule for --initial-value-only returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --initial-value-only returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --initial-value-only returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --initial-value-only returns expected value for CSSPropertyRule.syntax": "FAIL",
+      "Rule for --no-descriptors has expected cssText": "FAIL",
+      "Rule for --no-descriptors returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --no-descriptors returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --no-descriptors returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --no-descriptors returns expected value for CSSPropertyRule.syntax": "FAIL",
+      "Rule for --no-inherits has expected cssText": "FAIL",
+      "Rule for --no-inherits returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --no-inherits returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --no-inherits returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --no-inherits returns expected value for CSSPropertyRule.syntax": "FAIL",
+      "Rule for --no-initial-color-value has expected cssText": "FAIL",
+      "Rule for --no-initial-color-value returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --no-initial-color-value returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --no-initial-color-value returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --no-initial-color-value returns expected value for CSSPropertyRule.syntax": "FAIL",
+      "Rule for --no-syntax has expected cssText": "FAIL",
+      "Rule for --no-syntax returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --no-syntax returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --no-syntax returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --no-syntax returns expected value for CSSPropertyRule.syntax": "FAIL",
+      "Rule for --syntax-only has expected cssText": "FAIL",
+      "Rule for --syntax-only returns expected value for CSSPropertyRule.inherits": "FAIL",
+      "Rule for --syntax-only returns expected value for CSSPropertyRule.initialValue": "FAIL",
+      "Rule for --syntax-only returns expected value for CSSPropertyRule.name": "FAIL",
+      "Rule for --syntax-only returns expected value for CSSPropertyRule.syntax": "FAIL"
+    }
   },
   "css/css-properties-values-api/at-property-media-query.html": {
     "total": 1
@@ -258,7 +295,57 @@
     "total": 24
   },
   "css/css-properties-values-api/at-property.html": {
-    "total": 106
+    "total": 107,
+    "failures": {
+      "Attribute 'inherits' returns expected value for [false]": "FAIL",
+      "Attribute 'inherits' returns expected value for [true]": "FAIL",
+      "Attribute 'initial-value' returns expected value for [10px]": "FAIL",
+      "Attribute 'initial-value' returns expected value for [foo(){}]": "FAIL",
+      "Attribute 'initial-value' returns expected value for [foo]": "FAIL",
+      "Attribute 'initial-value' returns expected value for [red]": "FAIL",
+      "Attribute 'initial-value' returns expected value for [rgb(1, 2, 3)]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"\t*\t\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\" * \"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"* \"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"*\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"<color> | none\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"<color>\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"<color># | <image> | none\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"foo | <length>#\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"foo | bar | baz\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"notasyntax\"]": "FAIL",
+      "Attribute 'syntax' returns expected value for [\"red\"]": "FAIL",
+      "Invalid 'inherits' is ignored for [\"false\"]": "FAIL",
+      "Invalid 'inherits' is ignored for [\"true\"]": "FAIL",
+      "Invalid 'inherits' is ignored for [0]": "FAIL",
+      "Invalid 'inherits' is ignored for [1]": "FAIL",
+      "Invalid 'inherits' is ignored for [calc(0)]": "FAIL",
+      "Invalid 'inherits' is ignored for [none]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"<length> <percentage>\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Default\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Foo <length>\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Inherit\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Initial\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Revert\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Revert-layer\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"Unset\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"default\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"foo bar\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"foo, bar\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"inherit\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"initial\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"revert\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"revert-layer\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"rgb(255, 0, 0)\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"unset\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [\"|<length>\"]": "FAIL",
+      "Invalid 'syntax' is ignored for [<color>]": "FAIL",
+      "Invalid 'syntax' is ignored for [foo | bar]": "FAIL",
+      "Non-universal registration uses guaranteed-invalid when initial-value is omitted": "FAIL",
+      "Rule applied [<color>, green, undefined]": "FAIL",
+      "Rule applied [<gandalf>, grey, false]": "FAIL",
+      "Rule applied [undefined, green, false]": "FAIL"
+    }
   },
   "css/css-properties-values-api/conditional-rules.html": {
     "total": 3
@@ -282,7 +369,12 @@
     "total": 2
   },
   "css/css-properties-values-api/determine-registration.html": {
-    "total": 15
+    "total": 15,
+    "failures": {
+      "Later @property rule applies even when inherits is omitted": "FAIL",
+      "Later @property rule uses guaranteed-invalid when initial-value is omitted": "FAIL",
+      "Later @property rule uses universal syntax when syntax is omitted": "FAIL"
+    }
   },
   "css/css-properties-values-api/font-property-unit-cycles.tentative.html": {
     "total": 95,
@@ -324,9 +416,11 @@
     "total": 246
   },
   "css/css-properties-values-api/register-property.html": {
-    "total": 6,
+    "total": 7,
     "failures": {
-      "registerProperty requires inherits": "FAIL"
+      "registerProperty allows omitting initialValue for any syntax": "FAIL",
+      "registerProperty defaults inherits to true": "FAIL",
+      "registerProperty defaults initialValue to guaranteed-invalid": "FAIL"
     }
   },
   "css/css-properties-values-api/registered-properties-inheritance.html": {

@@ -116,6 +116,9 @@
   "resize-observer/svg.html": {
     "total": 20
   },
+  "resize-observer/zoom-fractional.html": {
+    "total": 3
+  },
   "resize-observer/zoom.html": {
     "total": 1
   }

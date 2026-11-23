@@ -401,8 +401,26 @@
   "intersection-observer/v2/drop-shadow-filter-vertical-rl.html": {
     "total": 3
   },
+  "intersection-observer/v2/first-line-occlusion.html": {
+    "total": 4,
+    "failures": {
+      "Switch to ::first-line box-shadow.": "FAIL"
+    }
+  },
   "intersection-observer/v2/fragmented-occluder.html": {
     "total": 3
+  },
+  "intersection-observer/v2/gap-decorations-dynamic-occlusion.html": {
+    "total": 4
+  },
+  "intersection-observer/v2/gap-decorations-negative-margin-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/gap-decorations-overflow-occlusion.html": {
+    "total": 1
+  },
+  "intersection-observer/v2/gap-decorations-overlap-inset-occlusion.html": {
+    "total": 1
   },
   "intersection-observer/v2/iframe-target.html": {
     "total": 2

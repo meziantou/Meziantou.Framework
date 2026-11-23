@@ -1547,6 +1547,9 @@
   "mathml/relations/css-styling/padding-border-margin/padding-002.html": {
     "total": 51
   },
+  "mathml/relations/css-styling/padding-border-margin/padding-border-block-math-001.html": {
+    "total": 8
+  },
   "mathml/relations/css-styling/padding-border-margin/padding-border-margin-001.html": {
     "reftest": "PASS"
   },

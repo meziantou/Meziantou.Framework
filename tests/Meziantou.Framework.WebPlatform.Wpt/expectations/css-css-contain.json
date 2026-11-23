@@ -1483,6 +1483,9 @@
   "css/css-contain/content-visibility/content-visibility-svg.html": {
     "total": 1
   },
+  "css/css-contain/content-visibility/content-visibility-top-layer-pending-slot-assignment-crash.html": {
+    "crashtest": "PASS"
+  },
   "css/css-contain/content-visibility/content-visibility-video.html": {
     "reftest": "PASS"
   },
@@ -1721,6 +1724,12 @@
     "reftest": "PASS"
   },
   "css/css-contain/counter-scoping-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-contain/counter-scoping-005.html": {
+    "reftest": "PASS"
+  },
+  "css/css-contain/counter-scoping-006.html": {
     "reftest": "PASS"
   },
   "css/css-contain/crashtests/change-text-node-data-ellipsis.html": {

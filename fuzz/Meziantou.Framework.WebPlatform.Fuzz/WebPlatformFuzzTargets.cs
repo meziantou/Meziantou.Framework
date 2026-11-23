@@ -810,6 +810,7 @@ public static partial class WebPlatformFuzzTargets
         var streamed = new System.Text.StringBuilder();
         var stream = new TextDecodeOptions { Stream = true };
         string? actual = null;
+        var failed = false;
         try
         {
             var remaining = data;
@@ -826,9 +827,17 @@ public static partial class WebPlatformFuzzTargets
         catch (TypeErrorException) when (decoder.Fatal)
         {
             // Invalid data in fatal mode
+            failed = true;
         }
 
         FuzzAssert.Equal(expected, actual, $"The streamed decoding (chunks of {chunkLength1} and {chunkLength2} bytes) differs from the decoding in one pass ({decoder.Encoding})");
+
+        if (failed)
+        {
+            // A decode() that throws resets the decoder (https://encoding.spec.whatwg.org/#dom-textdecoder-decode): decoding again
+            // in stream mode does not continue where the error occurred, and fails again
+            FuzzAssert.Equal(null, DecodeStreamed(streamDecoder, data), "The streamed decoding after an error in fatal mode");
+        }
 
         // A decode without the stream option resets the state of a decoder that was used in stream mode
         FuzzAssert.Equal(expected, Decode(streamDecoder, data), "The decoding with a decoder that was used in stream mode");
@@ -878,6 +887,18 @@ public static partial class WebPlatformFuzzTargets
             try
             {
                 return decoder.Decode(data);
+            }
+            catch (TypeErrorException) when (decoder.Fatal)
+            {
+                return null;
+            }
+        }
+
+        static string? DecodeStreamed(TextDecoder decoder, ReadOnlySpan<byte> data)
+        {
+            try
+            {
+                return decoder.Decode(data, new TextDecodeOptions { Stream = true }) + decoder.Decode();
             }
             catch (TypeErrorException) when (decoder.Fatal)
             {

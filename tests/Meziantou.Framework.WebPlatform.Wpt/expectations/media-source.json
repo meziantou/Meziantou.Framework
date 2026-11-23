@@ -247,6 +247,9 @@
   "media-source/mediasource-liveseekable.html": {
     "total": 10
   },
+  "media-source/mediasource-mpeg-audio-metadata.html": {
+    "total": 3
+  },
   "media-source/mediasource-multiple-attach.html": {
     "total": 3
   },

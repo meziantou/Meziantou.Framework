@@ -77,6 +77,9 @@
   "css/motion/animation/reftests/offset-rotate-interpolation-001.html": {
     "reftest": "PASS"
   },
+  "css/motion/change-offset-path-ray-coord-box.html": {
+    "reftest": "PASS"
+  },
   "css/motion/change-offset-path.html": {
     "reftest": "PASS"
   },
@@ -225,6 +228,12 @@
     "reftest": "PASS"
   },
   "css/motion/offset-path-ray-contain-005.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-coord-box-offset-position-normal-001.html": {
+    "reftest": "PASS"
+  },
+  "css/motion/offset-path-ray-coord-box-offset-position-normal-002.html": {
     "reftest": "PASS"
   },
   "css/motion/offset-path-ray-sides-fourth-quadrant.html": {

@@ -69,13 +69,13 @@
     "reftest": "PASS"
   },
   "css/css-lists/counter-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counter-004.html": {
     "reftest": "PASS"
@@ -158,6 +158,9 @@
   "css/css-lists/counter-reset-reversed-siblings-003.html": {
     "reftest": "PASS"
   },
+  "css/css-lists/counter-reset-reversed-siblings-004.html": {
+    "reftest": "PASS"
+  },
   "css/css-lists/counter-reset-reversed-with-regular.html": {
     "reftest": "PASS"
   },
@@ -174,16 +177,16 @@
     "reftest": "PASS"
   },
   "css/css-lists/counters-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-005.html": {
     "reftest": "PASS"
@@ -195,16 +198,16 @@
     "crashtest": "PASS"
   },
   "css/css-lists/counters-scope-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-scope-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-scope-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/counters-scope-004.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/crashtests/chrome-bug-1377573.html": {
     "crashtest": "PASS"

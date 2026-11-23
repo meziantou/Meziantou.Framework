@@ -328,6 +328,9 @@
       "unobserve() is idempotent": "FAIL"
     }
   },
+  "fs/FileSystemSyncAccessHandle-buckets.https.worker.js": {
+    "total": 2
+  },
   "fs/FileSystemSyncAccessHandle-close.https.worker.js": {
     "total": 6
   },

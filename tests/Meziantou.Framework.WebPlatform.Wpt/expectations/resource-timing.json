@@ -74,6 +74,13 @@
   "resource-timing/content-encoding.https.html": {
     "total": 29
   },
+  "resource-timing/content-type-failed-subframe.html": {
+    "total": 13,
+    "failures": {
+      "Same-origin 204 iframe exposes minimized contentType (text/html;charset=utf-8 -> text/html)": "FAIL",
+      "Same-origin 205 iframe exposes minimized contentType (application/json -> application/json)": "FAIL"
+    }
+  },
   "resource-timing/content-type-minimization.html": {
     "total": 77
   },

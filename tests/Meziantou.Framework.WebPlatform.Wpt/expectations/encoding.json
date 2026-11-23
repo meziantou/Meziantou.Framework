@@ -3927,10 +3927,10 @@
     "total": 168
   },
   "encoding/textdecoder-fatal-streaming.any.js": {
-    "total": 2
+    "total": 8
   },
   "encoding/textdecoder-fatal-streaming.any.js#dedicatedworker": {
-    "total": 2
+    "total": 8
   },
   "encoding/textdecoder-fatal.any.js": {
     "total": 36

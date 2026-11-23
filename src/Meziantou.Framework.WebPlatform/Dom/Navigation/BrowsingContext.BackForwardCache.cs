@@ -371,6 +371,10 @@ public sealed partial class BrowsingContext
             Name = "";
         }
 
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#apply-the-history-step: the sticky activation is carried
+        // over to a restored document that did not have it (the decision is taken before the displayed document is deactivated)
+        var stickyActivationToCarryOver = ShouldCarryOverStickyActivation(oldDocument, document, NavigationType.Traverse, entry.DocumentState.RequestInitiatorOrigin, entry.DocumentState.WasCreatedViaCrossOriginRedirects);
+
         // https://html.spec.whatwg.org/multipage/browsing-the-web.html#deactivate-a-document-for-a-cross-document-navigation
         FirePageSwap(oldDocument, document, NavigationHistoryBehavior.Replace, entry);
         var blockingReasons = GetBackForwardCacheBlockingReasons(oldDocument, NavigationHistoryBehavior.Replace, entry);
@@ -414,6 +418,13 @@ public sealed partial class BrowsingContext
         else
         {
             DestroyDocument(oldDocument);
+        }
+
+        // https://html.spec.whatwg.org/multipage/browsing-the-web.html#update-document-for-history-step-application: before the
+        // pageshow event of the reactivation
+        if (stickyActivationToCarryOver)
+        {
+            window.CarryOverStickyActivation();
         }
 
         foreach (var reactivatedDocument in GetDocumentTree(document))

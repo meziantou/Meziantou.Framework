@@ -140,6 +140,12 @@
   "scroll-animations/animation-trigger/crashtests/selection-pseudo-crash.html": {
     "crashtest": "PASS"
   },
+  "scroll-animations/animation-trigger/crashtests/starting-style-declares-timeline-trigger.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/animation-trigger/crashtests/starting-style-omits-timeline-trigger.html": {
+    "crashtest": "PASS"
+  },
   "scroll-animations/animation-trigger/parsing/animation-trigger-parsing.tentative.html": {
     "total": 58,
     "failures": {
@@ -386,6 +392,9 @@
     "crashtest": "PASS"
   },
   "scroll-animations/crashtests/scroll-timeline-with-long-duration.html": {
+    "crashtest": "PASS"
+  },
+  "scroll-animations/crashtests/view-timeline-on-view-transition-pseudo-element-crash.html": {
     "crashtest": "PASS"
   },
   "scroll-animations/crashtests/viewport-100vh.html": {

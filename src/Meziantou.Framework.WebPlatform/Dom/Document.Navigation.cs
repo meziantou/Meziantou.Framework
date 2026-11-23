@@ -69,6 +69,12 @@ public partial class Document
     [NotInIdl]
     public bool IsNetworkErrorDocument { get; internal set; }
 
+    /// <summary>
+    /// https://html.spec.whatwg.org/multipage/dom.html#was-created-via-cross-origin-redirects: whether the response of the
+    /// navigation that created the document followed a redirect to another origin.
+    /// </summary>
+    internal bool WasCreatedViaCrossOriginRedirects { get; set; }
+
     /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#active-sandboxing-flag-set (only the flags that change the origin are modeled).</summary>
     internal SandboxingFlags ActiveSandboxingFlags { get; set; }
 

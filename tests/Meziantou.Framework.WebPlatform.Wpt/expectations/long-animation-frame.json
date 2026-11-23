@@ -129,6 +129,13 @@
   "long-animation-frame/loaf-popup.html": {
     "total": 1
   },
+  "long-animation-frame/loaf-promise-cross-origin-detach.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Cross-origin promise rejection settled synchronously during parser frame detach is not exposed": "TIMEOUT"
+    }
+  },
   "long-animation-frame/loaf-promise-import.tentative.html": {
     "total": 1
   },

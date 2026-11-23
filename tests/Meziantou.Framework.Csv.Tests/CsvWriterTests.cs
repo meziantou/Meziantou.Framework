@@ -205,6 +205,173 @@ public class CsvWriterTests
     }
 
     [Fact]
+    public void WriteField_MatchesReference()
+    {
+        // Every option that changes how a value is escaped, with values that need quotes, escaped quotes or an escaped formula, of lengths around the
+        // vector sizes, and small buffers that grow while a value is written
+        string[] values = ["", "a", "plain", "a,b", "a\"b", "\"", "\"\"", "line\nbreak", "cr\r", "=1+1", "+1", "-1", "@a", "\tx", "\rx", "x;y", "a|b", new string('a', 15), new string('a', 16) + ",", new string('"', 33), new string('b', 70) + "\"" + new string('c', 70)];
+        CsvWriterOptions[] options =
+        [
+            new() { NewLine = "\n" },
+            new() { NewLine = "\r\n", BufferSize = 1 },
+            new() { QuoteMode = CsvQuoteMode.Always, BufferSize = 7 },
+            new() { QuoteMode = CsvQuoteMode.Never },
+            new() { Quote = null },
+            new() { EscapeFormulas = true, BufferSize = 3 },
+            new() { EscapeFormulas = true, QuoteMode = CsvQuoteMode.Always },
+            new() { Separator = ';', Quote = '\'', NewLine = "|\n" },
+            new() { Quote = '\'', EscapeFormulas = true, BufferSize = 1 },
+            new() { Quote = '\'', EscapeFormulas = true, QuoteMode = CsvQuoteMode.Always },
+        ];
+
+        foreach (var option in options)
+        {
+            foreach (var first in values)
+            {
+                foreach (var second in (string?[])[null, .. values])
+                {
+                    string[] row = second is null ? [first] : [first, second];
+                    var output = new StringBuilder();
+                    using (var writer = CsvWriter.Create(output, option))
+                    {
+                        writer.WriteRow(row);
+                    }
+
+                    var buffer = new ArrayBufferWriter<byte>();
+                    using (var writer = Utf8CsvWriter.Create(buffer, option))
+                    {
+                        writer.WriteRow(row);
+                    }
+
+                    var expected = Reference(row, option);
+                    Assert.Equal(expected, output.ToString());
+                    Assert.Equal(expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void WriteField_SpecialCharactersOfNumbers()
+    {
+        // Numbers and dates written with the invariant culture are not searched for characters that need quotes, unless one of their characters is
+        // special or every value is quoted
+        var negativeTilde = new NumberFormatInfo { NegativeSign = "~" };
+        List<(Action<CsvWriter> Write, Action<Utf8CsvWriter> WriteUtf8, Func<IFormatProvider, string> GetText)> values = [];
+        Add(-12, "");
+        Add(-1234567890123L, "");
+        Add(UInt128.MaxValue, "");
+        Add(-1.5m, "");
+        Add(12.345m, "");
+        Add(-12, "D5");
+        Add(new DateTime(2021, 3, 4, 5, 6, 7, 890, DateTimeKind.Utc), "O");
+        Add(new DateTime(2021, 3, 4, 5, 6, 7, DateTimeKind.Unspecified), "o");
+        Add(new DateTimeOffset(2021, 3, 4, 5, 6, 7, TimeSpan.FromHours(-2)), "O");
+        Add(new DateOnly(2021, 3, 4), "O");
+        Add(new TimeOnly(5, 6, 7), "O");
+        Add(TimeSpan.FromHours(-25.5), "c");
+        Add(new DateTime(2021, 3, 4, 5, 6, 7, DateTimeKind.Utc), "yyyy,MM");
+        Add(1.5, "");
+
+        List<CsvWriterOptions> options = [new(), new() { QuoteMode = CsvQuoteMode.Always }, new() { QuoteMode = CsvQuoteMode.Never }, new() { Quote = null }, new() { FormatProvider = negativeTilde, Separator = '~' }];
+        foreach (var c in "0123456789+-.:TZ")
+        {
+            options.Add(new() { Separator = c });
+            options.Add(new() { Quote = c });
+            options.Add(new() { NewLine = c + "\n" });
+        }
+
+        foreach (var option in options)
+        {
+            foreach (var (write, writeUtf8, getText) in values)
+            {
+                var output = new StringBuilder();
+                var buffer = new ArrayBufferWriter<byte>();
+                using (var writer = CsvWriter.Create(output, option))
+                using (var utf8Writer = Utf8CsvWriter.Create(buffer, option))
+                {
+                    writer.WriteField("a");
+                    write(writer);
+                    writer.EndRow();
+                    utf8Writer.WriteField("a");
+                    writeUtf8(utf8Writer);
+                    utf8Writer.EndRow();
+                }
+
+                var expected = Reference(["a", getText(option.FormatProvider ?? CultureInfo.InvariantCulture)], option);
+                Assert.Equal(expected, output.ToString());
+                Assert.Equal(expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
+            }
+        }
+
+        void Add<T>(T value, string format)
+            where T : ISpanFormattable, IUtf8SpanFormattable
+        {
+            values.Add((writer => writer.WriteField(value, format), writer => writer.WriteField(value, format), provider => value.ToString(format, provider)));
+        }
+    }
+
+    [Fact]
+    public void WriteField_Decimal()
+    {
+        // Decimals have a faster path in the default format of the invariant culture: the text is the text of the BCL
+        decimal[] values = [0m, 1m, -1m, 0.5m, -0.05m, 1.50m, 0.00m, 123456789.123456789m, ulong.MaxValue, -(decimal)ulong.MaxValue, decimal.MaxValue, decimal.MinValue, new(0, 0, 0, isNegative: true, scale: 3), new(1, 0, 0, isNegative: false, scale: 28), 12.34m];
+        var commaDecimal = new NumberFormatInfo { NumberDecimalSeparator = "," };
+        foreach (var value in values)
+        {
+            var output = new StringBuilder();
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = CsvWriter.Create(output, new CsvWriterOptions { NewLine = "\n", BufferSize = 1 }))
+            using (var utf8Writer = Utf8CsvWriter.Create(buffer, new CsvWriterOptions { NewLine = "\n", BufferSize = 1 }))
+            {
+                writer.WriteField(value);
+                writer.WriteField(value, "F2");
+                writer.WriteField(value, formatProvider: commaDecimal);
+                writer.EndRow();
+                utf8Writer.WriteField(value);
+                utf8Writer.WriteField(value, "F2");
+                utf8Writer.WriteField(value, formatProvider: commaDecimal);
+                utf8Writer.EndRow();
+            }
+
+            var invariant = value.ToString(CultureInfo.InvariantCulture);
+            var expected = invariant + "," + value.ToString("F2", CultureInfo.InvariantCulture) + "," + (invariant.Contains('.', StringComparison.Ordinal) ? "\"" + value.ToString(commaDecimal) + "\"" : value.ToString(commaDecimal)) + "\n";
+            Assert.Equal(expected, output.ToString());
+            Assert.Equal(expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
+        }
+    }
+
+    // Quotes a value that contains the separator, the quote, a line terminator or a character of the new line, or every value with Always; doubles
+    // the quotes; prefixes an escaped formula with an apostrophe, which is a quote to double when the quote character is the apostrophe
+    private static string Reference(string[] row, CsvWriterOptions options)
+    {
+        var canQuote = options.Quote.HasValue && options.QuoteMode is not CsvQuoteMode.Never;
+        var quote = options.Quote.GetValueOrDefault();
+        var result = new StringBuilder();
+        for (var i = 0; i < row.Length; i++)
+        {
+            var value = row[i];
+            if (i > 0)
+            {
+                result.Append(options.Separator);
+            }
+
+            var formula = options.EscapeFormulas && value.Length > 0 && value[0] is '=' or '+' or '-' or '@' or '\t' or '\r';
+            var needsQuotes = canQuote && (options.QuoteMode is CsvQuoteMode.Always || (formula && quote is '\'') || value.Contains(options.Separator, StringComparison.Ordinal) || value.Contains(quote, StringComparison.Ordinal) || value.Contains('\r', StringComparison.Ordinal) || value.Contains('\n', StringComparison.Ordinal) || value.AsSpan().ContainsAny(options.NewLine));
+            var content = (formula ? "'" : "") + value;
+            result.Append(needsQuotes ? quote + content.Replace(quote.ToString(), new string(quote, 2), StringComparison.Ordinal) + quote : content);
+        }
+
+        // A row with a single empty value is quoted, so that it is not read as an empty line
+        if (row is [""] && canQuote && options.QuoteMode is not CsvQuoteMode.Always)
+        {
+            result.Append(quote, 2);
+        }
+
+        return result.Append(options.NewLine).ToString();
+    }
+
+    [Fact]
     public void SingleEmptyValue()
     {
         var output = new StringBuilder();

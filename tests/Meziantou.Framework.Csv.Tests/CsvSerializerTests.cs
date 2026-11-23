@@ -289,6 +289,30 @@ public class CsvSerializerTests
         Assert.Equal(empty.Describe(), utf8Result[1].Describe());
     }
 
+    [Fact]
+    public void BuiltInTypes_SpecialCharactersOfNumbers()
+    {
+        // The numbers and the dates of the default converters are not searched for characters that need quotes, unless one of their characters is
+        // special: a separator or a quote that is a digit, a sign, a dot, a colon, T or Z still quotes them
+        var value = AllTypes.CreateSample();
+        List<CsvSerializerOptions> options = [new() { QuoteMode = CsvQuoteMode.Always }];
+        foreach (var c in "0123456789+-.:TZ")
+        {
+            options.Add(new() { Separator = c });
+            options.Add(new() { Quote = c });
+        }
+
+        foreach (var option in options)
+        {
+            var csv = CsvSerializer.Serialize([value], option);
+            Assert.Equal(value.Describe(), CsvSerializer.Deserialize<AllTypes>(csv, option)[0].Describe());
+
+            using var stream = new MemoryStream();
+            CsvSerializer.Serialize(stream, [value], option);
+            Assert.Equal(csv, Encoding.UTF8.GetString(stream.ToArray()));
+        }
+    }
+
     [Theory]
     [InlineData("2020-01-01T00:00:00.0000000Z")]
     [InlineData("2026-11-21T00:00:00.0000000")]

@@ -33,6 +33,7 @@ internal sealed partial class BenchmarkCsvContext : CsvSerializerContext
 internal static class BenchmarkData
 {
     private static readonly string[] Countries = ["France", "Germany", "United States", "Japan", "Brazil"];
+    private static readonly string[] AccentedCountries = ["France", "Österreich", "日本", "España", "Brasil"];
 
     public static List<BenchmarkRow> CreateRows(int count)
     {
@@ -53,6 +54,21 @@ internal static class BenchmarkData
                 // A tenth of the notes need quotes
                 Notes = random.Next(10) == 0 ? "Quoted, with \"quotes\" and a separator" : "Plain note number " + random.Next(1000).ToString(CultureInfo.InvariantCulture),
             });
+        }
+
+        return rows;
+    }
+
+    // The text values of most rows are not ASCII
+    public static List<BenchmarkRow> CreateAccentedRows(int count)
+    {
+        var random = new Random(42);
+        var rows = CreateRows(count);
+        foreach (var row in rows)
+        {
+            row.Name = "Élodie " + row.Id.ToString(CultureInfo.InvariantCulture);
+            row.Country = AccentedCountries[random.Next(AccentedCountries.Length)];
+            row.Notes = "Note numéro " + random.Next(1000).ToString(CultureInfo.InvariantCulture);
         }
 
         return rows;

@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Text.Unicode;
+using Meziantou.Framework.Csv.Internals;
 
 namespace Meziantou.Framework.Csv.Serialization.Converters;
 
@@ -10,7 +11,7 @@ internal sealed class StringCsvConverter : CsvConverter<string?>
 
     public override string Read(ReadOnlySpan<char> value, CsvConverterContext context) => value.IsEmpty ? "" : new string(value);
 
-    public override string Read(ReadOnlySpan<byte> utf8Value, CsvConverterContext context) => utf8Value.IsEmpty ? "" : Encoding.UTF8.GetString(utf8Value);
+    public override string Read(ReadOnlySpan<byte> utf8Value, CsvConverterContext context) => utf8Value.IsEmpty ? "" : Utf8Transcoder.GetString(utf8Value);
 
     public override bool TryFormat(string? value, Span<char> destination, out int charsWritten, CsvConverterContext context)
     {

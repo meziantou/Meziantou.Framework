@@ -4,6 +4,7 @@ using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Unicode;
+using Meziantou.Framework.Csv.Serialization.Converters;
 
 namespace Meziantou.Framework.Csv.Internals;
 
@@ -25,6 +26,7 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     private readonly bool _canQuote;
     private readonly bool _alwaysQuote;
     private readonly bool _escapeFormulas;
+    private readonly bool _quoteInvariantNumbers;
     private readonly T[] _newLine;
     private readonly SearchValues<T> _specialValues;
     private const int MaxChunkSize = 1024 * 1024;
@@ -52,6 +54,10 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
         _escapeFormulas = options.EscapeFormulas;
         FormatProvider = options.FormatProvider ?? CultureInfo.InvariantCulture;
         (_newLine, _specialValues) = GetTables(options.Separator, options.Quote, options.NewLine);
+
+        // Numbers and dates written with the invariant culture need quotes only when every value is quoted, or when one of their characters is special
+        _quoteInvariantNumbers = _canQuote &&
+            (_alwaysQuote || InvariantNumbers.Characters.Contains(options.Separator, StringComparison.Ordinal) || InvariantNumbers.Characters.Contains(options.Quote.GetValueOrDefault(), StringComparison.Ordinal) || options.NewLine.AsSpan().ContainsAny(InvariantNumbers.Characters));
         _buffer = ArrayPool<T>.Shared.Rent(Math.Max(options.BufferSize, 64));
         _flushThreshold = GetFlushThreshold(target is null ? _buffer.Length : options.BufferSize);
     }
@@ -163,9 +169,27 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
 
     public void WriteField(ReadOnlySpan<T> value, bool isText)
     {
-        BeginField();
-        WriteContent(value, isText);
+        // When every value is quoted, the value is escaped while it is copied
+        if (_alwaysQuote && _canQuote)
+        {
+            BeginField();
+            WriteContent(value, isText);
+            _lastFieldLength = value.Length;
+            return;
+        }
+
+        // Most values need neither quotes nor an escaped formula: the value is copied after a single capacity check. The value is searched before
+        // it is copied: reading the copy right after writing it is slower.
+        var destination = BeginField(value.Length, out var start);
         _lastFieldLength = value.Length;
+        if ((isText && _escapeFormulas) || (_canQuote && value.ContainsAny(_specialValues)))
+        {
+            WriteContent(value, isText);
+            return;
+        }
+
+        value.CopyTo(destination);
+        _position = start + value.Length;
     }
 
     public void WriteUtf16Field(ReadOnlySpan<char> value)
@@ -176,8 +200,7 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
-        var start = BeginField();
-        var destination = unsafe(MemoryMarshal.Cast<T, byte>(GetSpan(checked(value.Length * 3))));
+        var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(checked(value.Length * 3), out var start)));
 
         // Most text is ASCII, which is converted faster than UTF-8 in general
         if (Ascii.FromUtf16(value, destination, out var bytesWritten) is not OperationStatus.Done)
@@ -195,11 +218,23 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
 
         var sizeHint = 64;
         var destination = unsafe(MemoryMarshal.Cast<T, char>(BeginField(sizeHint, out var start)));
+
+        var formatProvider = provider ?? FormatProvider;
+        var isInvariantNumber = InvariantNumbers.IsInvariantNumber<TValue>(format, formatProvider);
+
+        // Decimals are written faster than by the BCL in the default format of the invariant culture, as the serializer does
+        if (typeof(TValue) == typeof(decimal) && isInvariantNumber &&
+            DecimalCsvConverter.TryFormatPlain((decimal)(object)value, destination, out var plainWritten, out var tooSmall) && !tooSmall)
+        {
+            CommitNumber(start, plainWritten, isInvariantNumber);
+            return;
+        }
+
         while (true)
         {
-            if (value.TryFormat(destination, out var written, format, provider ?? FormatProvider))
+            if (value.TryFormat(destination, out var written, format, formatProvider))
             {
-                CommitField(start, written, isText: false);
+                CommitNumber(start, written, isInvariantNumber);
                 return;
             }
 
@@ -216,11 +251,23 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
 
         var sizeHint = 64;
         var destination = unsafe(MemoryMarshal.Cast<T, byte>(BeginField(sizeHint, out var start)));
+
+        var formatProvider = provider ?? FormatProvider;
+        var isInvariantNumber = InvariantNumbers.IsInvariantNumber<TValue>(format, formatProvider);
+
+        // Decimals are written faster than by the BCL in the default format of the invariant culture, as the serializer does
+        if (typeof(TValue) == typeof(decimal) && isInvariantNumber &&
+            DecimalCsvConverter.TryFormatPlain((decimal)(object)value, destination, out var plainWritten, out var tooSmall) && !tooSmall)
+        {
+            CommitNumber(start, plainWritten, isInvariantNumber);
+            return;
+        }
+
         while (true)
         {
-            if (value.TryFormat(destination, out var written, format, provider ?? FormatProvider))
+            if (value.TryFormat(destination, out var written, format, formatProvider))
             {
-                CommitField(start, written, isText: false);
+                CommitNumber(start, written, isInvariantNumber);
                 return;
             }
 
@@ -277,6 +324,20 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     {
         EnsureCapacity(sizeHint);
         return Buffer.AsSpan(_position);
+    }
+
+    /// <summary>Commits a formatted value: a number or a date written with the invariant culture is not searched for characters that need quotes, unless one of its characters is special.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void CommitNumber(int start, int length, bool isInvariantNumber)
+    {
+        if (isInvariantNumber && !_quoteInvariantNumbers)
+        {
+            _lastFieldLength = length;
+            _position = start + length;
+            return;
+        }
+
+        CommitField(start, length, isText: false);
     }
 
     /// <summary>Quotes or escapes the content written in place by the caller, from <paramref name="start"/>, when needed.</summary>

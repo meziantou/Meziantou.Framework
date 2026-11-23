@@ -106,7 +106,7 @@ public readonly ref struct Utf8CsvRecord
 
     /// <summary>Gets the text of the record, as it is in the data.</summary>
     /// <returns>The text of the record.</returns>
-    public override string ToString() => Encoding.UTF8.GetString(RawUtf8Span);
+    public override string ToString() => Utf8Transcoder.GetString(RawUtf8Span);
 
     [DoesNotReturn]
     private static void ThrowIndexOutOfRange(int index, int columnCount)

@@ -9,6 +9,9 @@ internal sealed class TimeSpanCsvConverter : CsvConverter<TimeSpan>
             : TimeSpan.Parse(value, context.FormatProvider);
     }
 
+    // The default format, the constant format (c), does not depend on the culture
+    internal override bool IsInvariantNumber(CsvConverterContext context) => context.Format is null;
+
     public override bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten, CsvConverterContext context)
         => value.TryFormat(destination, out charsWritten, context.Format ?? "c", context.FormatProvider);
 

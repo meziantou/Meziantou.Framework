@@ -30,6 +30,10 @@ internal sealed class HuffCdicDecoder
     /// <exception cref="InvalidDataException">The records are not valid.</exception>
     public static HuffCdicDecoder Create(IReadOnlyList<ReadOnlyMemory<byte>> records)
     {
+        // A book can give no HUFF record (its number of records is 0)
+        if (records.Count is 0)
+            throw new InvalidDataException("The book has no HUFF record");
+
         var huff = records[0].Span;
         if (huff.Length < 16 || !huff.StartsWith("HUFF\0\0\0\x18"u8))
             throw new InvalidDataException("The HUFF record of the book is not valid");

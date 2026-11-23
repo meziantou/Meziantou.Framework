@@ -71,6 +71,53 @@ internal static class TestFiles
         return stream.ToArray();
     }
 
+    /// <summary>
+    /// Changes the fields of an entry of a zip archive created by <see cref="CreateZip"/>, in its local header and in the central
+    /// directory: the flags (bit 0 marks an encrypted entry), the compression method, and the Unix mode (<c>0xA1FF</c> is a symbolic link).
+    /// </summary>
+    public static byte[] PatchZipEntry(byte[] zip, string name, ushort? flags = null, ushort? method = null, ushort? unixMode = null)
+    {
+        var result = zip.ToArray();
+        var span = result.AsSpan();
+        var endOfCentralDirectory = span.LastIndexOf("PK\x05\x06"u8);
+        var entryCount = BinaryPrimitives.ReadUInt16LittleEndian(span[(endOfCentralDirectory + 10)..]);
+        var position = (int)BinaryPrimitives.ReadUInt32LittleEndian(span[(endOfCentralDirectory + 16)..]);
+        for (var i = 0; i < entryCount; i++)
+        {
+            var header = span[position..];
+            var nameLength = BinaryPrimitives.ReadUInt16LittleEndian(header[28..]);
+            var length = 46 + nameLength + BinaryPrimitives.ReadUInt16LittleEndian(header[30..]) + BinaryPrimitives.ReadUInt16LittleEndian(header[32..]);
+            if (header.Slice(46, nameLength).SequenceEqual(Encoding.UTF8.GetBytes(name)))
+            {
+                var localHeader = span[(int)BinaryPrimitives.ReadUInt32LittleEndian(header[42..])..];
+                if (flags is { } flagsValue)
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(header[8..], flagsValue);
+                    BinaryPrimitives.WriteUInt16LittleEndian(localHeader[6..], flagsValue);
+                }
+
+                if (method is { } methodValue)
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(header[10..], methodValue);
+                    BinaryPrimitives.WriteUInt16LittleEndian(localHeader[8..], methodValue);
+                }
+
+                if (unixMode is { } mode)
+                {
+                    // Made by Unix (3), so that the high word of the external attributes is the Unix mode
+                    header[5] = 3;
+                    BinaryPrimitives.WriteUInt32LittleEndian(header[38..], (uint)mode << 16);
+                }
+
+                return result;
+            }
+
+            position += length;
+        }
+
+        throw new ArgumentException($"The archive has no entry '{name}'", nameof(name));
+    }
+
     public static byte[] CreateSevenZip(params (string Name, byte[] Content)[] entries)
     {
         using var stream = new MemoryStream();

@@ -1,0 +1,17 @@
+From: alice@example.com
+Subject: Parts
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=b
+
+preamble
+--b
+Content-Type: text/plain
+
+Hello
+--b
+Content-Type: application/octet-stream
+Content-Transfer-
+ncoding: base64
+
+AAEC
+--b--

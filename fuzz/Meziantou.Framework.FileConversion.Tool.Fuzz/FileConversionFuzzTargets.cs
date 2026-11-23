@@ -249,10 +249,16 @@ public static class FileConversionFuzzTargets
             FuzzAssert.False(segment.Contains('\\', StringComparison.Ordinal) || segment.Contains('\0', StringComparison.Ordinal), "A resolved path has a backslash or a NUL");
         }
 
-        // A resolved path that contains no character to escape resolves to itself
-        if (resolved.AsSpan().IndexOfAny("%#?:") < 0)
+        // A resolved path that contains no character to escape resolves to itself: the whitespace around a reference is not part of it
+        if (resolved.AsSpan().IndexOfAny("%#?:") < 0 && !char.IsWhiteSpace(resolved[0]) && !char.IsWhiteSpace(resolved[^1]))
         {
             FuzzAssert.Equal(resolved, EpubPackage.ResolvePath(basePath: "", resolved), "Resolving a resolved path changes it");
+        }
+
+        // The escaped segments of a resolved path resolve to it (the escaping replaces the unpaired surrogates)
+        if (!resolved.AsSpan().ContainsAnyInRange('\uD800', '\uDFFF'))
+        {
+            FuzzAssert.Equal(resolved, EpubPackage.ResolvePath(basePath: "", string.Join('/', resolved.Split('/').Select(Uri.EscapeDataString))), "Resolving an escaped resolved path changes it");
         }
     }
 
@@ -313,8 +319,9 @@ public static class FileConversionFuzzTargets
         {
             entries = [.. ArchiveInputDocument.GetPageEntries(archive)];
         }
-        catch (InvalidDataException)
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
         {
+            // An archive with too many entries, or a symbolic link whose target cannot be read
             return;
         }
 
@@ -336,13 +343,15 @@ public static class FileConversionFuzzTargets
         if (archive is null || archive.Entries.Count > 1000)
             return;
 
-        // The content of the files, read once: the copy must give the same content
+        // The content of the files, read once: the copy must give the same content. The copy keeps the entries that have the
+        // same name, so the content of such a name depends on the entry a reader picks: these names are not checked
         var files = new Dictionary<string, byte[]>(StringComparer.Ordinal);
+        var duplicatedNames = archive.Entries.GroupBy(entry => entry.FullName.TrimEnd('/'), StringComparer.Ordinal).Where(group => group.Count() > 1).Select(group => group.Key).ToHashSet(StringComparer.Ordinal);
         try
         {
             foreach (var entry in archive.Entries)
             {
-                if (!entry.IsDirectory && entry.LinkTarget is null && entry.HardLinkTarget is null)
+                if (!entry.IsDirectory && entry.LinkTarget is null && entry.HardLinkTarget is null && !duplicatedNames.Contains(entry.FullName.TrimEnd('/')))
                 {
                     files[entry.FullName] = ArchiveFiles.ReadEntry(entry, maxLength: 1024 * 1024);
                 }
@@ -356,16 +365,21 @@ public static class FileConversionFuzzTargets
         foreach (var archiveType in new[] { ArchiveType.Zip, ArchiveType.Tar })
         {
             using var output = new MemoryStream();
+            int count;
             try
             {
                 using var writer = ArchiveWriter.Create(output, archiveType, new ConversionSettings(), storeByDefault: true);
-                ArchiveOutputWriter.Copy(archive, writer, _ => { }, CancellationToken.None);
+                count = ArchiveOutputWriter.Copy(archive, writer, _ => { }, CancellationToken.None);
             }
             catch (Exception ex) when (ex is InvalidDataException or IOException or NotSupportedException or ArgumentException or InvalidOperationException)
             {
                 // Names the output format cannot store (empty, too long, duplicated...), or content that is not valid
                 return;
             }
+
+            // A tar archive without entries has no header: no reader can detect its format
+            if (count is 0)
+                continue;
 
             output.Position = 0;
             using var copy = Compression.ArchiveFile.Open(output);

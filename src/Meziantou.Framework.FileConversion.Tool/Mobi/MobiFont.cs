@@ -51,8 +51,20 @@ internal static class MobiFont
 
         using var stream = new ZLibStream(new MemoryStream(data, writable: false), CompressionMode.Decompress);
         var result = new byte[length];
-        var read = stream.ReadAtLeast(result, result.Length, throwOnEndOfStream: false);
-        if (read != result.Length || stream.ReadByte() >= 0)
+        int read;
+        bool hasMoreData;
+        try
+        {
+            read = stream.ReadAtLeast(result, result.Length, throwOnEndOfStream: false);
+            hasMoreData = read == result.Length && stream.ReadByte() >= 0;
+        }
+        catch (IOException ex)
+        {
+            // zlib reports some errors of the compressed data (a preset dictionary, an unexpected state...) as a ZLibException, which is not public
+            throw new InvalidDataException("The compressed font of the book is not valid", ex);
+        }
+
+        if (read != result.Length || hasMoreData)
             throw new InvalidDataException("The font of the book does not have the length of its FONT record");
 
         return result;

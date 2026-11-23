@@ -33,7 +33,8 @@ internal sealed class ArchiveInputDocument : InputDocument
     }
 
     /// <summary>Gets the entries of the images of an archive, sorted by their names in natural order: the files of the folders created by macOS and the hidden files are ignored.</summary>
-    /// <exception cref="InvalidDataException">The archive has more entries than <see cref="ZipFiles.MaxEntryCount"/>.</exception>
+    /// <exception cref="InvalidDataException">The archive has more entries than <see cref="ZipFiles.MaxEntryCount"/>, or the target of a symbolic link is not valid.</exception>
+    /// <exception cref="NotSupportedException">A symbolic link whose name is the name of an image uses an encryption or a compression method that is not supported.</exception>
     public static IEnumerable<ArchiveEntry> GetPageEntries(Archive archive)
     {
         if (archive.Entries.Count > ZipFiles.MaxEntryCount)
@@ -70,12 +71,16 @@ internal sealed class ArchiveInputDocument : InputDocument
 
     private static bool IsPageEntry(ArchiveEntry entry)
     {
-        if (entry.IsDirectory || entry.LinkTarget is not null || entry.HardLinkTarget is not null)
+        if (entry.IsDirectory || entry.HardLinkTarget is not null)
             return false;
 
         if (entry.FullName.StartsWith("__MACOSX/", StringComparison.Ordinal) || entry.Name.StartsWith('.', StringComparison.Ordinal))
             return false;
 
-        return FileFormat.FromExtension(System.IO.Path.GetExtension(entry.Name)) is { Kind: FileFormatKind.Image };
+        if (FileFormat.FromExtension(System.IO.Path.GetExtension(entry.Name)) is not { Kind: FileFormatKind.Image })
+            return false;
+
+        // The target of a zip symbolic link is the content of the entry: it is only read for the entries that would be pages
+        return entry.LinkTarget is null;
     }
 }

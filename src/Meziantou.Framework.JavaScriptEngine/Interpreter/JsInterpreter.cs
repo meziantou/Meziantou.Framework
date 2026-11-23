@@ -311,7 +311,7 @@ internal static partial class JsInterpreter
                     }
 
                 case OpCode.LoadGlobal:
-                    values[sp++] = LoadGlobal(frame, code[pc], code[pc + 1]);
+                    JsValue.Store(ref values[sp++], LoadGlobal(frame, code[pc], code[pc + 1]));
                     pc += 2;
                     break;
                 case OpCode.StoreGlobal:
@@ -766,12 +766,12 @@ internal static partial class JsInterpreter
                         frame = frame.Parent!;
                         current = frame;
                         engine.FramePool.Return(completed);
-                        engine.CurrentRealm = frame.Realm;
+                        engine.SwitchRealm(frame.Realm);
                         code = frame.Code.Code;
                         values = frame.Values;
                         pc = frame.Pc;
                         sp = frame.Sp;
-                        values[sp++] = result;
+                        JsValue.Store(ref values[sp++], result);
                         if (HasJitCode(frame.Code, engine))
                             goto RunJit;
 

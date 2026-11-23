@@ -21,7 +21,7 @@ internal static partial class JsInterpreter
         engine.CallDepth++;
         callee.Parent = caller;
         engine.PushFrame(callee);
-        engine.CurrentRealm = callee.Realm;
+        engine.SwitchRealm(callee.Realm);
         return callee;
     }
 
@@ -43,7 +43,7 @@ internal static partial class JsInterpreter
         caller.State = FrameState.Completed;
         engine.FramePool.Return(caller);
         engine.PushFrame(callee);
-        engine.CurrentRealm = callee.Realm;
+        engine.SwitchRealm(callee.Realm);
         return callee;
     }
 
@@ -75,7 +75,12 @@ internal static partial class JsInterpreter
         var realm = closure.Realm;
         var frame = pooled ? realm.Engine.FramePool.Rent(template, realm, closure.Environment, arguments) : new Frame(template, realm, closure.Environment, arguments);
         frame.Function = closure;
-        frame.NewTarget = newTarget;
+        if (newTarget is not null)
+        {
+            // The new frames and the frames of the pool have no new.target
+            frame.NewTarget = newTarget;
+        }
+
         frame.Script = closure.Script;
 
         if (!template.IsArrow)

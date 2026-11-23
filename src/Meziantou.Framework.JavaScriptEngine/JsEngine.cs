@@ -43,6 +43,16 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Gets the realm of the running execution context (the current realm).</summary>
     public JsRealm? CurrentRealm { get; internal set; }
 
+    /// <summary>Sets <see cref="CurrentRealm"/> when it changes (most calls stay in their realm: no write of the reference).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal void SwitchRealm(JsRealm realm)
+    {
+        if (!ReferenceEquals(CurrentRealm, realm))
+        {
+            CurrentRealm = realm;
+        }
+    }
+
     /// <summary>Gets the depth of the running calls.</summary>
     internal int CallDepth { get; set; }
 

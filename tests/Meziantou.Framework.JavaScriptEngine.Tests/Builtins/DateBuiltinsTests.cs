@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace Meziantou.Framework.JavaScriptEngine.Tests.Builtins;
 
 public sealed class DateBuiltinsTests
@@ -146,6 +148,41 @@ public sealed class DateBuiltinsTests
         Assert.Equal(Ms(2017, 1, 1), Number(context.CallStatic("Date", "UTC", 2017)));
         Assert.True(double.IsNaN(Number(context.CallStatic("Date", "UTC", double.MaxValue, double.MaxValue))));
         Assert.True(double.IsNaN(Number(context.CallStatic("Date", "UTC", double.PositiveInfinity, 0))));
+    }
+
+    [Fact]
+    public void UtcGetters_TimesBeforeTheEpochAndLeapYears()
+    {
+        using var context = CreateContext();
+        Assert.Equal("-271821,3,20,2,0,0,0,0", UtcComponents(context, -8.64e15));
+        Assert.Equal("275760,8,13,6,0,0,0,0", UtcComponents(context, 8.64e15));
+        Assert.Equal("1969,11,31,3,23,59,59,999", UtcComponents(context, -1));
+        Assert.Equal("1969,11,30,2,23,59,59,999", UtcComponents(context, -86400001));
+        Assert.Equal("-2,11,31,4,23,59,59,999", UtcComponents(context, -62198755200001));
+        Assert.Equal(-74784902400000, Number(context.CallStatic("Date", "UTC", -400, 1, 29)));
+        Assert.Equal(-65317795200000, Number(context.CallStatic("Date", "UTC", -100, 1, 29)));
+        Assert.Equal(-62288352000000, Number(context.CallStatic("Date", "UTC", -4, 1, 29)));
+        Assert.Equal(-11670998400000, Number(context.CallStatic("Date", "UTC", 1600, 1, 29)));
+        Assert.Equal(-8515238400000, Number(context.CallStatic("Date", "UTC", 1700, 1, 29)));
+        Assert.Equal(951782400000, Number(context.CallStatic("Date", "UTC", 2000, 1, 29)));
+        Assert.Equal(4107542400000, Number(context.CallStatic("Date", "UTC", 2100, 1, 29)));
+        Assert.Equal(8639951443200000, Number(context.CallStatic("Date", "UTC", 275759, 1, 29)));
+
+        // Every hour of 3 years around the epoch, and of a leap year before it
+        foreach (var start in new[] { Ms(1968, 1, 1), Ms(1600, 1, 1) })
+        {
+            for (var time = (double)start; time < start + (3 * 366 * 86_400_000.0); time += 3_600_000 + 61_001)
+            {
+                var expected = DateTimeOffset.FromUnixTimeMilliseconds((long)time);
+                Assert.Equal(string.Create(CultureInfo.InvariantCulture, $"{expected.Year},{expected.Month - 1},{expected.Day},{(int)expected.DayOfWeek},{expected.Hour},{expected.Minute},{expected.Second},{expected.Millisecond}"), UtcComponents(context, time));
+            }
+        }
+
+        static string UtcComponents(FundamentalsTestContext context, double time)
+        {
+            var date = NewDate(context, time);
+            return string.Join(',', new[] { "getUTCFullYear", "getUTCMonth", "getUTCDate", "getUTCDay", "getUTCHours", "getUTCMinutes", "getUTCSeconds", "getUTCMilliseconds" }.Select(name => ((long)Number(Invoke(date, name))).ToString(CultureInfo.InvariantCulture)));
+        }
     }
 
     [Fact]

@@ -13,6 +13,9 @@ internal static class DateOperations
     /// <summary>The largest absolute time value (100,000,000 days).</summary>
     public const double MaxTimeValue = 8.64e15;
 
+    // 2^53: the integers up to this magnitude are exact in a double
+    private const double MaxExactInteger = 9_007_199_254_740_992;
+
     private static readonly string[] WeekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     private static readonly string[] MonthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     private static readonly int[] CumulativeDays = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
@@ -287,14 +290,37 @@ internal static class DateOperations
         return (365 * (y - 1970)) + Math.Floor((y - 1969) / 4) - Math.Floor((y - 1901) / 100) + Math.Floor((y - 1601) / 400);
     }
 
-    private static bool InLeapYear(double y) => (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+    private static bool InLeapYear(double y)
+    {
+        // The years of the time values are integers: the remainders of a long are exact (and cost less than fmod)
+        if (Math.Abs(y) <= MaxExactInteger && y == Math.Truncate(y))
+        {
+            var year = (long)y;
+            return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+        }
+
+        return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0;
+    }
 
     /// <summary>ToIntegerOrInfinity of a finite number (truncation, -0 becomes +0).</summary>
     private static double Truncate(double value) => Math.Truncate(value) + 0.0;
 
-    /// <summary>The modulo of the spec (the sign of the divisor), +0 instead of -0.</summary>
+    /// <summary>The modulo of the spec (the sign of the divisor), +0 instead of -0. The divisor is a positive integer.</summary>
     private static double Modulo(double value, double divisor)
     {
+        // The time values and their components are integers: the remainder of a long is exact (and costs less than fmod)
+        if (Math.Abs(value) <= MaxExactInteger && value == Math.Truncate(value))
+        {
+            var integerDivisor = (long)divisor;
+            var integerRemainder = (long)value % integerDivisor;
+            if (integerRemainder < 0)
+            {
+                integerRemainder += integerDivisor;
+            }
+
+            return integerRemainder;
+        }
+
         var remainder = value % divisor;
         if (remainder < 0)
         {

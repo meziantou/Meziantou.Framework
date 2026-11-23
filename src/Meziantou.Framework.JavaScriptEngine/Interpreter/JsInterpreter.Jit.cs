@@ -133,7 +133,7 @@ internal static partial class JsInterpreter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void JitLoadGlobal(Frame frame, ref JsValue destination, int name, int cache) => destination = LoadGlobal(frame, name, cache);
+    internal static void JitLoadGlobal(Frame frame, ref JsValue destination, int name, int cache) => JsValue.Store(ref destination, LoadGlobal(frame, name, cache));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void JitStoreGlobal(Frame frame, JsValue value, int name, int strict, int cache) => StoreGlobal(frame, name, cache, value, strict != 0);
@@ -466,7 +466,7 @@ internal static partial class JsInterpreter
     internal static void JitSetProperty(Frame frame, ref JsValue target, JsValue value, int name, int cache)
     {
         SetProperty(frame, name, cache, target, value);
-        target = value;
+        JsValue.Store(ref target, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -476,7 +476,7 @@ internal static partial class JsInterpreter
     internal static void JitSetElement(Frame frame, ref JsValue target, JsValue key, JsValue value)
     {
         SetElement(frame, target, key, value);
-        target = value;
+        JsValue.Store(ref target, value);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -19,8 +19,9 @@ description: "The results of the web-platform-tests of long-animation-frame, and
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
+- **BUG**: 1
 - **NOT IMPLEMENTED**: 18
-- **TEST RUNNER**: 3
+- **TEST RUNNER**: 2
 
 ## Stable tests
 
@@ -49,7 +50,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`loaf-pointer-without-render-iframe.html`](https://wpt.fyi/results/long-animation-frame/loaf-pointer-without-render-iframe.html) | Pass | 1 / 1 |  |  |
 | [`loaf-pointer-without-render.html`](https://wpt.fyi/results/long-animation-frame/loaf-pointer-without-render.html) | Pass | 1 / 1 |  |  |
 | [`loaf-popup.html`](https://wpt.fyi/results/long-animation-frame/loaf-popup.html) | Pass | 1 / 1 |  |  |
-| [`loaf-promise-cross-origin-detach.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-cross-origin-detach.html) | Fail | 0 / 1 | TEST RUNNER | the `long-animation-frame/resources/streamed-promise-detach.py` handler (a streamed document and a pending cross-origin fetch) is not emulated: the cross-origin request gets a 404 without CORS headers and `fetch()` rejects |
+| [`loaf-promise-cross-origin-detach.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-cross-origin-detach.html) | Timeout | 0 / 1 | BUG | the long animation frame in which the same-origin iframe streamed by the test runs its 80 ms script (which detaches the cross-origin iframe through the adoption agency algorithm) is not reported to the observer of the parent document: no entry covers `detachReferenceTime`, so the test times out |
 | [`loaf-promise-scheduled-render.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise-scheduled-render.html) | Pass | 1 / 1 |  |  |
 | [`loaf-promise.html`](https://wpt.fyi/results/long-animation-frame/loaf-promise.html) | Pass | 5 / 5 |  |  |
 | [`loaf-script-block.html`](https://wpt.fyi/results/long-animation-frame/loaf-script-block.html) | Fail | 9 / 10 | NOT IMPLEMENTED | the subtest of the module imported by `import()`: the engine evaluates the imported module in a reaction of the promise of the import, without a host hook, so its evaluation is reported in the `resolve-promise` script of the import (`import.then`), not as a `module-script` |

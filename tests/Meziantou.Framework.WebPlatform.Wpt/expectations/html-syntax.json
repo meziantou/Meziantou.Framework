@@ -825,13 +825,11 @@
     "total": 3
   },
   "html/syntax/parsing/parser-text-node-coalescing-and-mutations.html": {
-    "harness": "TIMEOUT",
     "total": 29,
     "failures": {
-      "Aborting an active parser via window.stop() retains flushed text and discards subsequent chunks": "NOTRUN",
       "Appending parser text to an existing Text node inside <textarea> uses replace data and updates its raw value": "FAIL",
-      "Chunked network HTML document loading flushes pending text per networking task and appends subsequent chunks via replace data": "TIMEOUT",
-      "Chunked network text/plain document loading flushes pending text per networking task and appends subsequent chunks via replace data": "NOTRUN",
+      "Chunked network HTML document loading flushes pending text per networking task and appends subsequent chunks via replace data": "FAIL",
+      "Chunked network text/plain document loading flushes pending text per networking task and appends subsequent chunks via replace data": "FAIL",
       "Consecutive document.write() calls inside an unclosed <style> flush pending text at the end of each write": "FAIL",
       "Consecutive document.write() calls inside an unclosed <textarea> flush pending text at the end of each write": "FAIL",
       "Consecutive document.write() calls inside an unclosed <title> flush pending text and update document.title at the end of each write": "FAIL",

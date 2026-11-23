@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 377 | 409 | 1 | 92% |
+| [Stable](#stable-tests) | 378 | 409 | 1 | 93% |
 | [Tentative](#tentative-tests) | 48 | 78 | 0 | 62% |
 | [Reftests](#reftests) | 10 | 11 | 0 | 91% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **439** | **502** | **1** | **88%** |
+| **All** | **440** | **502** | **1** | **88%** |
 
 ## Failure reasons
 
@@ -24,7 +24,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 25
 - **REQUIRES**: 1
   - `layout`: 1
-- **TEST RUNNER**: 4
+- **TEST RUNNER**: 3
 
 ## Stable tests
 
@@ -106,7 +106,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`api/cors/sandboxed-iframe.html`](https://wpt.fyi/results/fetch/api/cors/sandboxed-iframe.html) | Pass | 1 / 1 |  |  |
 | [`api/crashtests/huge-fetch.any.js`](https://wpt.fyi/results/fetch/api/crashtests/huge-fetch.any.js) | Pass | 3 / 3 |  |  |
 | [`api/credentials/authentication-basic.any.js`](https://wpt.fyi/results/fetch/api/credentials/authentication-basic.any.js) | Pass | 12 / 12 |  |  |
-| [`api/credentials/authentication-redirection-stored-credentials.window.js`](https://wpt.fyi/results/fetch/api/credentials/authentication-redirection-stored-credentials.window.js) | Error | 0 / 2 | TEST RUNNER | the handlers of `/fetch/api/resources/stored-credentials/` (`authentication.py`, `dump-authorization-header.py`, which load the ones of `/fetch/api/resources/`) are not emulated: the setup request gets a 404 |
+| [`api/credentials/authentication-redirection-stored-credentials.window.js`](https://wpt.fyi/results/fetch/api/credentials/authentication-redirection-stored-credentials.window.js) | Pass | 2 / 2 |  |  |
 | [`api/credentials/authentication-redirection.any.js`](https://wpt.fyi/results/fetch/api/credentials/authentication-redirection.any.js) | Pass | 9 / 9 |  |  |
 | [`api/credentials/cookies.any.js`](https://wpt.fyi/results/fetch/api/credentials/cookies.any.js) | Pass | 21 / 21 |  |  |
 | [`api/headers/header-setcookie.any.js`](https://wpt.fyi/results/fetch/api/headers/header-setcookie.any.js) | Pass | 72 / 72 |  |  |

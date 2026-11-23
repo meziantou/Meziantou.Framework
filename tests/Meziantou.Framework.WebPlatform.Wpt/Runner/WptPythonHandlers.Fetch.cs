@@ -263,6 +263,10 @@ internal static partial class WptPythonHandlers
         ["/fetch/http-cache/resources/cached_pragma_immutable_rand.py"] = (_, response, _) => CachedPragmaRand(response, "max-age=2592000, immutable"),
         ["/fetch/http-cache/resources/securedimage.py"] = SecuredImage,
         ["/fetch/api/resources/dump-authorization-header.py"] = DumpAuthorizationHeader,
+
+        // fetch/api/resources/stored-credentials/*.py load the handlers of the parent directory
+        ["/fetch/api/resources/stored-credentials/authentication.py"] = FetchAuthentication,
+        ["/fetch/api/resources/stored-credentials/dump-authorization-header.py"] = DumpAuthorizationHeader,
         ["/fetch/api/resources/echo-content.py"] = EchoContent,
         ["/fetch/api/resources/method.py"] = Method,
         ["/fetch/api/resources/redirect.h2.py"] = (request, response, _) =>

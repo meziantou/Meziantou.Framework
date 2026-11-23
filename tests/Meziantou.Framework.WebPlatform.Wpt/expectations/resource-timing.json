@@ -78,14 +78,7 @@
     "total": 13,
     "failures": {
       "Same-origin 204 iframe exposes minimized contentType (text/html;charset=utf-8 -> text/html)": "FAIL",
-      "Same-origin 205 iframe exposes minimized contentType (application/json -> application/json)": "FAIL",
-      "Same-origin 404 frame-typed object exposes minimized contentType (text/html;charset=utf-8 -> text/html)": "FAIL",
-      "Same-origin 404 frame-typed object exposes minimized contentType (text/plain -> text/plain)": "FAIL",
-      "Same-origin 404 null-typed object exposes minimized contentType (text/html;charset=utf-8 -> text/html)": "FAIL",
-      "Same-origin 404 null-typed object exposes minimized contentType (text/plain -> text/plain)": "FAIL",
-      "Same-origin 500 frame-typed object exposes minimized contentType (text/json -> application/json)": "FAIL",
-      "Same-origin 500 null-typed object exposes minimized contentType (text/json -> application/json)": "FAIL",
-      "Same-origin redirected 404 object exposes contentType": "FAIL"
+      "Same-origin 205 iframe exposes minimized contentType (application/json -> application/json)": "FAIL"
     }
   },
   "resource-timing/content-type-minimization.html": {

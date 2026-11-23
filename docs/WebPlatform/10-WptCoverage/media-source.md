@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of media-source, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 85 | 94 | 0 | 90% |
+| [Stable](#stable-tests) | 86 | 94 | 0 | 91% |
 | [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **85** | **98** | **0** | **87%** |
+| **All** | **86** | **98** | **0** | **88%** |
 
 ## Failure reasons
 
@@ -23,7 +23,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **NOT IMPLEMENTED**: 3
 - **REQUIRES**: 3
   - `media`: 3
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -103,7 +102,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`mediasource-invalid-codec.html`](https://wpt.fyi/results/media-source/mediasource-invalid-codec.html) | Pass | 2 / 2 |  |  |
 | [`mediasource-is-type-supported.html`](https://wpt.fyi/results/media-source/mediasource-is-type-supported.html) | Pass | 55 / 55 |  |  |
 | [`mediasource-liveseekable.html`](https://wpt.fyi/results/media-source/mediasource-liveseekable.html) | Pass | 10 / 10 |  |  |
-| [`mediasource-mpeg-audio-metadata.html`](https://wpt.fyi/results/media-source/mediasource-mpeg-audio-metadata.html) | Fail | 2 / 3 | TEST RUNNER | 1 of 3 subtests: the MPEG audio byte stream parser of the media backend of the tests skips the ID3v2 tags but not the ID3v1 tags (`TAG`) nor the Icecast headers (`ICY`), which are metadata frames too (https://w3c.github.io/mse-byte-stream-format-mpeg-audio/#metadata-frames): the append fails with an invalid MPEG audio frame |
+| [`mediasource-mpeg-audio-metadata.html`](https://wpt.fyi/results/media-source/mediasource-mpeg-audio-metadata.html) | Pass | 3 / 3 |  |  |
 | [`mediasource-multiple-attach.html`](https://wpt.fyi/results/media-source/mediasource-multiple-attach.html) | Pass | 3 / 3 |  |  |
 | [`mediasource-play-then-seek-back.html`](https://wpt.fyi/results/media-source/mediasource-play-then-seek-back.html) | Pass | 1 / 1 |  |  |
 | [`mediasource-play.html`](https://wpt.fyi/results/media-source/mediasource-play.html) | Pass | 1 / 1 |  |  |

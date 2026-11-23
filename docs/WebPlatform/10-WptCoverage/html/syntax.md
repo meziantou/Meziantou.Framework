@@ -21,7 +21,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **TEST BUG**: 6
 - **NOT IMPLEMENTED**: 1
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -97,7 +96,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`parsing/newline-normalization-cr-then-lf.html`](https://wpt.fyi/results/html/syntax/parsing/newline-normalization-cr-then-lf.html) | Pass | 6 / 6 |  |  |
 | [`parsing/no-doctype-name.html`](https://wpt.fyi/results/html/syntax/parsing/no-doctype-name.html) | Pass | 1 / 1 |  |  |
 | [`parsing/noscript-template-querySelector.html`](https://wpt.fyi/results/html/syntax/parsing/noscript-template-querySelector.html) | Pass | 3 / 3 |  |  |
-| [`parsing/parser-text-node-coalescing-and-mutations.html`](https://wpt.fyi/results/html/syntax/parsing/parser-text-node-coalescing-and-mutations.html) | Timeout | 14 / 29 | NOT IMPLEMENTED, TEST RUNNER | 12 of 29 subtests: the coalescing of the parser's text insertions (whatwg/html#13199): the parser appends the text of a later run (after an ignored token, a `document.write()`, a self-removing script, foster parenting...) to the existing Text node without DOM's "replace data", so no `characterData` MutationRecord is queued; 3 of 29 subtests: the `resources/chunked-response.py` handler (a response sent in two chunks) is not emulated (404), so the `Chunked network HTML document loading` subtest times out and the two following subtests are not run |
+| [`parsing/parser-text-node-coalescing-and-mutations.html`](https://wpt.fyi/results/html/syntax/parsing/parser-text-node-coalescing-and-mutations.html) | Fail | 15 / 29 | NOT IMPLEMENTED | 14 of 29 subtests: the coalescing of the parser's text insertions (whatwg/html#13199): the parser appends the text of a later run (after an ignored token, a `document.write()`, a self-removing script, foster parenting, a network chunk...) to the existing Text node without DOM's "replace data", so no `characterData` MutationRecord is queued, and the first chunk of a streamed `text/plain` document is not flushed into its `<pre>` before the next one arrives |
 | [`parsing/quotes-in-meta.html`](https://wpt.fyi/results/html/syntax/parsing/quotes-in-meta.html) | Pass | 1 / 1 |  |  |
 | [`parsing/template/additions-to-foster-parenting/template-is-a-foster-parent-element.html`](https://wpt.fyi/results/html/syntax/parsing/template/additions-to-foster-parenting/template-is-a-foster-parent-element.html) | Pass | 2 / 2 |  |  |
 | [`parsing/template/additions-to-foster-parenting/template-is-not-a-foster-parent-element.html`](https://wpt.fyi/results/html/syntax/parsing/template/additions-to-foster-parenting/template-is-not-a-foster-parent-element.html) | Pass | 2 / 2 |  |  |

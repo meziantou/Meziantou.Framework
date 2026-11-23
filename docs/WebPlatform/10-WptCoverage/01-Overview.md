@@ -49,25 +49,25 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,711 | 30,158 | 1,310 | 96% |
+| [Stable](#stable-tests) | 27,715 | 30,158 | 1,310 | 96% |
 | [Tentative](#tentative-tests) | 1,656 | 3,073 | 635 | 68% |
 | [Reftests](#reftests) | 28,800 | 29,687 | 139 | 97% |
 | [Crash tests](#crash-tests) | 2,122 | 2,144 | 13 | 99.5% |
-| **All** | **60,289** | **65,062** | **2,097** | **96%** |
+| **All** | **60,293** | **65,062** | **2,097** | **96%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 148
+- **BUG**: 150
 - **TEST BUG**: 1,121
-- **NOT IMPLEMENTED**: 2,695
+- **NOT IMPLEMENTED**: 2,693
 - **REQUIRES**: 634
   - `hardware`: 445
   - `layout`: 22
   - `media`: 26
   - `user-input`: 151
-- **TEST RUNNER**: 109
+- **TEST RUNNER**: 104
 - **OUT OF SCOPE**: 264
 - **FLAKY**: 1
 - **PERFORMANCE**: 6
@@ -212,7 +212,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ecmascript`](ecmascript.md) | 0 | 2 | 2 | – |
 | [`editing`](editing.md) | 76 | 133 | 0 | 57% |
 | [`element-timing`](element-timing.md) | 52 | 53 | 0 | 98% |
-| [`encoding`](encoding.md) | 151 | 153 | 0 | 99% |
+| [`encoding`](encoding.md) | 153 | 153 | 0 | 100% |
 | [`encoding-detection`](encoding-detection.md) | 5 | 5 | 0 | 100% |
 | [`encrypted-media`](encrypted-media.md) | 58 | 99 | 0 | 59% |
 | [`entries-api`](entries-api.md) | 6 | 6 | 0 | 100% |
@@ -221,7 +221,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`eyedropper`](eyedropper.md) | 0 | 1 | 1 | – |
 | [`fedcm`](fedcm.md) | 59 | 68 | 0 | 87% |
 | [`fenced-frame`](fenced-frame.md) | 0 | 9 | 9 | – |
-| [`fetch`](fetch.md) | 377 | 409 | 1 | 92% |
+| [`fetch`](fetch.md) | 378 | 409 | 1 | 93% |
 | [`file-system-access`](file-system-access.md) | 0 | 5 | 5 | – |
 | [`FileAPI`](FileAPI.md) | 72 | 73 | 0 | 99% |
 | [`focus`](focus.md) | 31 | 39 | 0 | 79% |
@@ -284,7 +284,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`measure-memory`](measure-memory.md) | 11 | 15 | 0 | 73% |
 | [`media-capabilities`](media-capabilities.md) | 4 | 7 | 0 | 57% |
 | [`media-playback-quality`](media-playback-quality.md) | 1 | 1 | 0 | 100% |
-| [`media-source`](media-source.md) | 85 | 94 | 0 | 90% |
+| [`media-source`](media-source.md) | 86 | 94 | 0 | 91% |
 | [`mediacapture-extensions`](mediacapture-extensions.md) | 12 | 13 | 1 | 100% |
 | [`mediacapture-fromelement`](mediacapture-fromelement.md) | 9 | 11 | 0 | 82% |
 | [`mediacapture-handle`](mediacapture-handle.md) | 1 | 1 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,711** | **30,158** | **1,310** | **96%** |
+| **Total (341 sections)** | **27,715** | **30,158** | **1,310** | **96%** |
 
 ## Tentative tests
 

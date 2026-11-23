@@ -997,6 +997,10 @@ internal static partial class WptPythonHandlers
         // key, when the continue action puts "continue" in the stash; check_chunk1 tells whether the first chunk was sent)
         ["/html/dom/partial-updates/tentative/resources/chunked-html.py"] = ChunkedHtml,
 
+        // html/syntax/parsing: a response of the content_type parameter in two chunks, the second one sent when the continue
+        // action puts "continue" in the stash (the handler gives up after 5 seconds)
+        ["/html/syntax/parsing/resources/chunked-response.py"] = ChunkedResponse,
+
         // html/dom/partial-updates: a document whose buffered template content is completed after 500 ms
         ["/html/dom/partial-updates/tentative/fragment/buffer-streaming-reflection.py"] = (_, response, _) =>
         {
@@ -1077,6 +1081,29 @@ internal static partial class WptPythonHandlers
         response.StatusText = "Moved";
         response.Set("Location", "../gamma/" + script);
         response.Content = "postMessage('executed redirecting script');";
+    }
+
+    private static void ChunkedResponse(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)
+    {
+        var stashKey = "chunked-response|" + request.Get("key");
+        if (request.Get("action") == "continue")
+        {
+            stash.Take(stashKey);
+            stash.Put(stashKey, "continue");
+            response.Set("Content-Type", "text/plain");
+            response.Set("Cache-Control", "no-store");
+            response.Content = "ok";
+            return;
+        }
+
+        response.Set("Content-Type", request.Get("content_type") ?? "text/html; charset=utf-8");
+        response.Set("Cache-Control", "no-store");
+        response.Set("X-Content-Type-Options", "nosniff");
+        response.Streamed = true;
+        response.Body = Encoding.UTF8.GetBytes(request.Get("chunk1") ?? "");
+        response.Chunks.Add((TimeSpan.Zero, Encoding.UTF8.GetBytes(request.Get("chunk2") ?? "")));
+        response.ChunksCondition = () => stash.TakeValue(stashKey) as string == "continue";
+        response.ChunksTimeout = TimeSpan.FromSeconds(5);
     }
 
     private static void ChunkedHtml(WptHandlerRequest request, WptHandlerResponse response, WptStash stash)

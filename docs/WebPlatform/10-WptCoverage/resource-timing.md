@@ -19,10 +19,9 @@ description: "The results of the web-platform-tests of resource-timing, and why 
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **BUG**: 1
+- **BUG**: 2
 - **TEST BUG**: 2
 - **NOT IMPLEMENTED**: 5
-- **TEST RUNNER**: 1
 
 ## Stable tests
 
@@ -52,7 +51,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`connection-reuse.html`](https://wpt.fyi/results/resource-timing/connection-reuse.html) | Pass | 6 / 6 |  |  |
 | [`connection-reuse.https.html`](https://wpt.fyi/results/resource-timing/connection-reuse.https.html) | Pass | 2 / 2 |  |  |
 | [`content-encoding.https.html`](https://wpt.fyi/results/resource-timing/content-encoding.https.html) | Pass | 29 / 29 |  |  |
-| [`content-type-failed-subframe.html`](https://wpt.fyi/results/resource-timing/content-type-failed-subframe.html) | Fail | 4 / 13 | TEST RUNNER | 9 of 13 subtests: the emulated `resource-timing/resources/content-type.py` handler ignores the `status` and `tao_value` parameters (added upstream), so the responses have the status 200 |
+| [`content-type-failed-subframe.html`](https://wpt.fyi/results/resource-timing/content-type-failed-subframe.html) | Fail | 11 / 13 | BUG | 2 of 13 subtests: the resource timing entry of an iframe whose navigation response is a 204 or 205 (which does not replace the document of the iframe) has the `responseStatus` 0 instead of the status of the response |
 | [`content-type-minimization.html`](https://wpt.fyi/results/resource-timing/content-type-minimization.html) | Pass | 77 / 77 |  |  |
 | [`content-type.html`](https://wpt.fyi/results/resource-timing/content-type.html) | Pass | 21 / 21 |  |  |
 | [`cors-preflight.any.js`](https://wpt.fyi/results/resource-timing/cors-preflight.any.js) | Pass | 2 / 2 |  |  |

@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webrtc-svc, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 5 | 5 | – |
+| [Stable](#stable-tests) | 0 | 5 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
+| **All** | **0** | **5** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,8 +25,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCRtpParameters-scalability-av1.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-av1.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-scalability-h264.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-h264.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-scalability-vp8.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-vp8.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-scalability-vp9.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-vp9.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
-| [`RTCRtpParameters-scalability.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-scalability-av1.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-av1.html) | Fail | 0 / 28 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-scalability-h264.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-h264.html) | Fail | 0 / 3 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-scalability-vp8.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-vp8.html) | Fail | 0 / 3 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-scalability-vp9.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability-vp9.html) | Fail | 0 / 28 | NOT IMPLEMENTED | WebRTC |
+| [`RTCRtpParameters-scalability.html`](https://wpt.fyi/results/webrtc-svc/RTCRtpParameters-scalability.html) | Fail | 0 / 5 | NOT IMPLEMENTED | WebRTC |

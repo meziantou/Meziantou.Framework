@@ -10,23 +10,23 @@ description: "The results of the web-platform-tests of web-install, and why the 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 5 | 5 | – |
+| [Tentative](#tentative-tests) | 1 | 5 | 0 | 20% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **5** | **5** | **–** |
+| **All** | **1** | **5** | **0** | **20%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 4
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`navigator-install-bad-inputs.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-bad-inputs.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Web Install API |
-| [`navigator-install-defined.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-defined.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Web Install API |
-| [`navigator-install-not-defined.tentative.http.html`](https://wpt.fyi/results/web-install/navigator-install-not-defined.tentative.http.html) | Disabled | – | NOT IMPLEMENTED | Web Install API |
-| [`navigator-install-sandboxed-iframe.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-sandboxed-iframe.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Web Install API |
-| [`navigator-install-user-activation.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-user-activation.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Web Install API |
+| [`navigator-install-bad-inputs.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-bad-inputs.tentative.https.html) | Fail | 0 / 10 | NOT IMPLEMENTED | Web Install API |
+| [`navigator-install-defined.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-defined.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Install API |
+| [`navigator-install-not-defined.tentative.http.html`](https://wpt.fyi/results/web-install/navigator-install-not-defined.tentative.http.html) | Pass | 2 / 2 |  |  |
+| [`navigator-install-sandboxed-iframe.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-sandboxed-iframe.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Install API |
+| [`navigator-install-user-activation.tentative.https.html`](https://wpt.fyi/results/web-install/navigator-install-user-activation.tentative.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Install API |

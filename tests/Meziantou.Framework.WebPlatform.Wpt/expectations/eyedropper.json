@@ -1,0 +1,18 @@
+{
+  "eyedropper/eye-dropper-abort-signal.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 2
+  },
+  "eyedropper/idlharness.https.window.js": {
+    "total": 9,
+    "failures": {
+      "EyeDropper interface object length": "FAIL",
+      "EyeDropper interface object name": "FAIL",
+      "EyeDropper interface: existence and properties of interface object": "FAIL",
+      "EyeDropper interface: existence and properties of interface prototype object": "FAIL",
+      "EyeDropper interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "EyeDropper interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "EyeDropper interface: operation open(optional ColorSelectionOptions)": "FAIL"
+    }
+  }
+}

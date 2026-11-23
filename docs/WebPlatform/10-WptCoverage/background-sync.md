@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of background-sync, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| [Crash tests](#crash-tests) | 0 | 1 | 1 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| [Crash tests](#crash-tests) | 0 | 1 | 0 | 0% |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,10 +25,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.any.js`](https://wpt.fyi/results/background-sync/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Background Synchronization |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/background-sync/idlharness.https.any.js) | Fail | 16 / 34 | NOT IMPLEMENTED | Background Synchronization |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`crashtests/detached-frame.https.html`](https://wpt.fyi/results/background-sync/crashtests/detached-frame.https.html) | Disabled | – | NOT IMPLEMENTED | Background Synchronization |
+| [`crashtests/detached-frame.https.html`](https://wpt.fyi/results/background-sync/crashtests/detached-frame.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Background Synchronization |

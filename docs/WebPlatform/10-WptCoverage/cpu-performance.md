@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of cpu-performance, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| **All** | **0** | **1** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,4 +26,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`cpu-performance.https.window.js`](https://wpt.fyi/results/cpu-performance/cpu-performance.https.window.js) | Disabled | – | REQUIRES(hardware) | CPU Performance API |
+| [`cpu-performance.https.window.js`](https://wpt.fyi/results/cpu-performance/cpu-performance.https.window.js) | Fail | 0 / 1 | REQUIRES(hardware) | CPU Performance API |

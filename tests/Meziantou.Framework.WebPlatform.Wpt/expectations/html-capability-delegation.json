@@ -1,0 +1,45 @@
+{
+  "html/capability-delegation/delegate-fullscreen-request-popup-cross-origin.https.sub.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Fullscreen requests from a cross-origin popup succeeds with delegation from an opener with user activation": "FAIL"
+    }
+  },
+  "html/capability-delegation/delegate-fullscreen-request-popup-same-origin.https.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Fullscreen requests from a same-origin popup succeeds with delegation from an opener with user activation": "FAIL"
+    }
+  },
+  "html/capability-delegation/delegate-fullscreen-request-subframe-cross-origin.https.sub.tentative.html": {
+    "total": 3,
+    "failures": {
+      "Fullscreen requests from a cross-origin subframe succeeds with delegation from an opener with user activation": "FAIL"
+    }
+  },
+  "html/capability-delegation/delegate-fullscreen-request-subframe-same-origin.https.tentative.html": {
+    "total": 3
+  },
+  "html/capability-delegation/delegation-consumes-activation.https.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Capability delegation consumes transient user activation": "NOTRUN"
+    }
+  },
+  "html/capability-delegation/delegation-sender-checks.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 3,
+    "failures": {
+      "Delegating an unsupported capability throws an exception": "NOTRUN",
+      "Delegating to targetOrigin='*' throws an exception": "NOTRUN",
+      "Delegating without user activation throws an exception": "NOTRUN"
+    }
+  },
+  "html/capability-delegation/frame-capability-delegation-popup-blocked.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Frame-to-frame popup delegation throws NotSupportedError even with user activation": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,1546 @@
+{
+  "ai/decision-model/decision-model-create-user-activation.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/decision-model/decision-model.tentative.https.window.js": {
+    "total": 13,
+    "failures": {
+      "Aborting DecisionModel.create()": "FAIL",
+      "Aborting decisionModel.decide()": "FAIL",
+      "Aborting the signal passed to DecisionModel.create() destroys the session and rejects decide()": "FAIL",
+      "DecisionModel dynamically reflects custom choice and score question schemas": "FAIL",
+      "DecisionModel rejects malformed question schemas with TypeError and invalid BCP-47 language tags with RangeError": "FAIL",
+      "DecisionModel.availability() returns a valid Availability enum value": "FAIL",
+      "DecisionModel.create() and decisionModel.decide() return a record keyed by question id with probabilities keyed by option label": "FAIL",
+      "DecisionModel.create() notifies its monitor on downloadprogress": "FAIL",
+      "DecisionModel.create() rejects when monitor callback throws an error": "FAIL",
+      "DecisionModel.destroy() rejects pending and later decide() calls with AbortError": "FAIL",
+      "Progress events are not emitted after DecisionModel.create() is aborted": "FAIL",
+      "decisionModel.decide() rejects empty or whitespace-only input with TypeError": "FAIL",
+      "decisionModel.decide() returns one decision per create-time question": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-abort.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Aborting LanguageModel.clone().": "FAIL",
+      "Aborting LanguageModel.create().": "FAIL",
+      "Aborting LanguageModel.prompt().": "FAIL",
+      "Aborting LanguageModel.promptStreaming().": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-append.tentative.https.window.js": {
+    "total": 6,
+    "failures": {
+      "Check contextUsage increases from a simple LanguageModel.append() call": "FAIL",
+      "LanguageModel.append() allows empty and coerced inputs": "FAIL",
+      "Simple LanguageModel.append() call": "FAIL",
+      "Test that append input exceeding the total context window rejects": "FAIL",
+      "append() after initializing with user prompt should reject system role": "FAIL",
+      "append() should reject system role messages after other messages": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-availability-available.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "LanguageModel.availability() is available with no options": "FAIL",
+      "LanguageModel.availability() rejects with invalid options": "FAIL",
+      "LanguageModel.availability() returns available with supported options": "FAIL",
+      "LanguageModel.availability() returns unavailable and create() rejects with unsupported options": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-availability-sampling-mode.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "LanguageModel.availability() accepts a sampling mode and ignores legacy sampling options": "FAIL",
+      "LanguageModel.availability() accepts a sampling mode and ignores legacy temperature sampling option": "FAIL",
+      "LanguageModel.availability() accepts a sampling mode and ignores legacy topK sampling option": "FAIL",
+      "LanguageModel.availability() accepts all valid sampling modes": "FAIL",
+      "LanguageModel.availability() rejects with TypeError for invalid sampling modes": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-availability.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "LanguageModel.availability() is defined": "FAIL",
+      "LanguageModel.availability() rejects when given invalid language tags": "FAIL",
+      "LanguageModel.availability() returns a valid value with no options": "FAIL",
+      "LanguageModel.availability() returns a valid value with plausible options": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-clone.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Language Model Clone": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-create-sampling-mode.tentative.https.window.js": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "LanguageModel.create() accepts all valid sampling modes and preserves samplingMode on clone()": "FAIL",
+      "LanguageModel.create() defaults samplingMode to balanced when omitted": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-create-user-activation.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-create.tentative.https.window.js": {
+    "total": 12,
+    "failures": {
+      "Create multiple system role entries should fail": "FAIL",
+      "Create with empty initialPrompts": "FAIL",
+      "Create with initialPrompts": "FAIL",
+      "Create with initialPrompts without system role": "FAIL",
+      "Create with system role not ordered first should fail": "FAIL",
+      "Ensure sessions can be created": "FAIL",
+      "If monitor throws an error, LanguageModel.create() rejects with that error": "FAIL",
+      "LanguageModel.create() canonicalizes language tags": "FAIL",
+      "LanguageModel.create() notifies its monitor on downloadprogress": "FAIL",
+      "LanguageModel.create() rejects when given invalid language tags": "FAIL",
+      "LanguageModel.create() returns a valid object with default options": "FAIL",
+      "Progress events are not emitted after aborted.": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-destroy.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Language Model Destroy": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-from-detached-iframe.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Language Model From Detached Iframe": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-iframe.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "LanguageModel can be created within cross-origin iframe with permission policy": "FAIL",
+      "LanguageModel can be used within same-origin iframe": "FAIL",
+      "LanguageModel is available within cross-origin iframe with permission policy": "FAIL",
+      "LanguageModel is available within same-origin iframe": "FAIL",
+      "LanguageModel is unavailable within cross-origin iframe": "FAIL",
+      "Throw a 'NotAllowedError' when creating LanguageModel within cross-origin iframe": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-params.tentative.https.window.js": {
+    "harness": "ERROR",
+    "total": 0
+  },
+  "ai/language-model/language-model-quota-exceeded.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "QuotaExceededError is thrown when initial prompts are too large.": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-thinking-effort.tentative.https.window.js": {
+    "total": 6,
+    "failures": {
+      "LanguageModel.availability() accepts all valid thinkingEffort values": "FAIL",
+      "LanguageModel.availability() rejects invalid thinkingEffort values with TypeError": "FAIL",
+      "LanguageModel.create() defaults readonly thinkingEffort to none and preserves valid values on clone()": "FAIL",
+      "LanguageModel.create() rejects invalid thinkingEffort values with TypeError": "FAIL",
+      "Per-call invalid thinkingEffort values reject or throw TypeError": "FAIL",
+      "Per-call thinkingEffort overrides work on prompt(), promptStreaming(), and measureContextUsage() without mutating session.thinkingEffort": "FAIL"
+    }
+  },
+  "ai/language-model/language-model-tool-use.tentative.https.window.js": {
+    "total": 45,
+    "failures": {
+      "Caller-supplied tool calls preserve structured initial history and normalize empty arguments": "FAIL",
+      "Caller-supplied tool-call input rejects invalid arguments and unsupported sessions": "FAIL",
+      "Cloned model should preserve tools": "FAIL",
+      "Multimodal tool response with AudioBuffer throws NotSupportedError": "FAIL",
+      "Multimodal tool response with ImageBitmap throws NotSupportedError": "FAIL",
+      "Multiple tools can be declared and called": "FAIL",
+      "Open-loop pattern - send tool response via follow-up prompt": "FAIL",
+      "Tool response can include error field": "FAIL",
+      "Tool response with BigInt value should reject with DataError": "FAIL",
+      "Tool response with DOM object (ImageBitmap) labeled as type object should reject": "FAIL",
+      "Tool response with circular reference should reject with DataError": "FAIL",
+      "Tool response with function value should reject with DataError": "FAIL",
+      "Tool response with valid serializable values should succeed": "FAIL",
+      "Tool with no arguments should have empty arguments object": "FAIL",
+      "append() and recreated sessions preserve caller-supplied tool-call history": "FAIL",
+      "createLanguageModel should fail-fast when one tool among many is invalid": "FAIL",
+      "createLanguageModel should propagate V8 exception from custom getter during serialization": "FAIL",
+      "createLanguageModel should propagate V8 exception from custom toJSON()": "FAIL",
+      "createLanguageModel should propagate exception when inputSchema getter throws.": "FAIL",
+      "createLanguageModel should propagate exception when inputSchema type getter throws.": "FAIL",
+      "createLanguageModel should reject when all tools have circular references": "FAIL",
+      "createLanguageModel should reject when tool has circular reference in inputSchema": "FAIL",
+      "createLanguageModel should reject when tool has empty description.": "FAIL",
+      "createLanguageModel should reject when tool has empty name.": "FAIL",
+      "createLanguageModel should reject when tool has no inputSchema.": "FAIL",
+      "createLanguageModel should reject when tool has null inputSchema.": "FAIL",
+      "createLanguageModel should reject when tool inputSchema has no type property.": "FAIL",
+      "createLanguageModel should reject when tool inputSchema is empty object without type property.": "FAIL",
+      "createLanguageModel should reject when tool inputSchema is not an object.": "FAIL",
+      "createLanguageModel should reject when tool inputSchema properties is not an object.": "FAIL",
+      "createLanguageModel should reject when tool inputSchema required is not an array.": "FAIL",
+      "createLanguageModel should reject when tool inputSchema type is not object.": "FAIL",
+      "createLanguageModel should reject when tools array contains duplicate tool names.": "FAIL",
+      "createLanguageModel should reject when tools provided but expectedOutputs does not include tool-call.": "FAIL",
+      "createLanguageModel should reject when tools provided but expectedOutputs is missing.": "FAIL",
+      "createLanguageModel should succeed when tools provided with tool-call in expectedOutputs.": "FAIL",
+      "createLanguageModel should succeed with empty tools array.": "FAIL",
+      "createLanguageModel should succeed with no tools property.": "FAIL",
+      "createLanguageModel should succeed with tool-call in expectedOutputs but no tools.": "FAIL",
+      "createLanguageModel with schema containing invalid-JSON-like text (trailing commas, comments) as string content succeeds because JSON.stringify escapes properly": "FAIL",
+      "prompt() returns both text and tool call in correct order when model outputs mixed response": "FAIL",
+      "prompt() should handle multiple batches of tool calls from model": "FAIL",
+      "prompt() should return structured tool call messages in open-loop pattern": "FAIL",
+      "promptStreaming() should handle multiple batches of tool calls from model": "FAIL",
+      "promptStreaming() should stream tool call messages": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/context/destroyed.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Detaching iframe while running prompt() should not cause memory leak": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/context/measure.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "measure message sequences of various roles, even after adding prompts": "FAIL",
+      "measureContextUsage increases usage when responseConstraint input is inserted": "FAIL",
+      "measureContextUsage omits responseConstraint input when omitResponseConstraintInput is true": "FAIL",
+      "measureContextUsage rejects response schemas with circular references": "FAIL",
+      "measureContextUsage returns a number greater than zero for text": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/context/overflow.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "The `contextoverflow` event is fired when overall usage exceeds the context window": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/context/usage-initial-prompt.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Test that initialPrompt counts towards session contextUsage": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/context/usage-prompt-quota-exceeded.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Test that prompt input exceeding the total context window rejects": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/context/usage.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Check contextUsage increases from a simple LanguageModel.prompt() call": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/empty-array-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows empty array input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/empty-object-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows empty object input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/empty-sequence-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows empty message sequence input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/empty-string-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows empty string input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/null-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows null input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/sequence-with-empty-string-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows message sequence with empty string input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/empty-inputs/undefined-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.prompt() allows undefined input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/garbage-collection.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt API must continue even after GC has been performed.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/monitor-callback-exception.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Language Model Prompt Monitor Callback Exception": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/audio/audio-dual-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal prompt with dual audio inputs after aborting a previous request.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/audio/audio-input.tentative.https.window.js": {
+    "total": 6,
+    "failures": {
+      "Prompt audio with blob containing invalid audio data.": "FAIL",
+      "Prompt audio without `audio` expectedInput": "FAIL",
+      "Prompt with AudioBuffer": "FAIL",
+      "Prompt with Blob audio content": "FAIL",
+      "Prompt with BufferSource - ArrayBuffer": "FAIL",
+      "Test Audio initialPrompt": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/audio/audio-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal audio prompt after aborting a previous multimodal audio prompt.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/availability.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "LanguageModel.availability() is available with multimodal audio option": "FAIL",
+      "LanguageModel.availability() is available with multimodal image option": "FAIL",
+      "LanguageModel.availability() returns available with supported multimodal options": "FAIL",
+      "LanguageModel.availability() returns unavailable with unsupported multimodal options": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/create.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "LanguageModel.create() fails with unsupported multimodal initialPrompts": "FAIL",
+      "LanguageModel.create() succeeds with supported multimodal initialPrompts": "FAIL",
+      "LanguageModel.create() succeeds with supported multimodal type and language options": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/array-buffer-view-offset.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with ArrayBufferView image content with an offset.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/array-buffer-view.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with ArrayBufferView image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/array-buffer.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with ArrayBuffer image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/blob.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with Blob image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/html-canvas-element.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with HTMLCanvasElement image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/html-image-element-svg.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with HTMLImageElement image content (with SVG)": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/html-image-element.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with HTMLImageElement image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/image-bitmap.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with ImageBitmap image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/image-data.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with ImageData image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/image-dual-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal prompt with dual image inputs after aborting a previous request.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/image-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal image prompt after aborting a previous multimodal image prompt.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/initial-prompt.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Test Image initialPrompt": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/offscreen-canvas.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with OffscreenCanvas image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/svg-image-element.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with SVGImageElement image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/image/without-image-expected-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt image without `image` expectedInput": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/mix-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal mix prompt after aborting a previous multimodal mix prompt.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/prompt-multimodal.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Prompt with assistant role should reject with multimodal input": "FAIL",
+      "Prompt with type:\"text\" and image content should reject": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/video/html-video-element.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with HTMLVideoElement image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/video/initial-prompt.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Test Video initialPrompt": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/video/video-dual-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal prompt with dual video inputs after aborting a previous request.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/video/video-frame.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt with VideoFrame image content": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/video/video-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Multimodal video prompt after aborting a previous multimodal video prompt.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/multimodal/video/without-video-expected-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt video without `image` expectedInput": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/prompt-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple LanguageModel.prompt() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple LanguageModel.prompt() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/prompt-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt after aborting a previous prompt.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/prompt-simple-question.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Check capital of France": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/prompt.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Simple LanguageModel.prompt() call": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/rejections.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "prompt() after initializing with user prompt should reject system role": "FAIL",
+      "prompt() should reject system role messages after other messages": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/empty-array-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows empty array input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/empty-object-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows empty object input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/empty-sequence-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows empty message sequence input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/empty-string-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows empty string input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/garbage-collection.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt Streaming API must continue even after GC has been performed.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/null-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows null input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/prompt-streaming-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple LanguageModel.promptStreaming() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple LanguageModel.promptStreaming() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/prompt-streaming-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt after aborting a previous promptStreaming.": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/prompt-streaming.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming yields non-empty response": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/sequence-with-empty-string-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows message sequence with empty string input": "FAIL"
+    }
+  },
+  "ai/language-model/prompt/streaming/undefined-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "LanguageModel.promptStreaming() allows undefined input": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/array.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an array json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/boolean.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a boolean json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/circular-references-rejection.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should reject response schemas with circular references": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/integer-bounded.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a bounded integer json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/integer-streaming.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "promptStreaming should terminate with an integer json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/integer.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an integer json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/invalid-type-rejection.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should reject response schemas with invalid types": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/null.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a null json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/number-bounded.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a bounded number json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/number-streaming.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "promptStreaming should terminate with a number json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/number.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a number json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/object.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an object json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/prefix-bad.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should reject if the prefix deviates from the json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/prefix-good.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work when a valid response json schema and matching prefix is provided.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/response-schema-omitted-from-input.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should omit response schema from input.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/string.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a string json schema constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/json-schema/valid-schema-success.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work when a valid response json schema is provided.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/boolean.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a boolean regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/bullet-points.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a bullet points regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/character-range.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a character range regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/csv-row.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a CSV row regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/date.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a date regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/decimal-streaming.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "promptStreaming should terminate with an unbounded decimal regex.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/decimal.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a decimal regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/email.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an email regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/enumeration.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an enumeration regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/exact-length.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an exact length regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/integer-streaming.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "promptStreaming should terminate with an unbounded integer regex.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/integer.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with an integer regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/list.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a list regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/literal.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a literal regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/max-length.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a max length regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/prefix-bad.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should reject if the prefix deviates from the regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/prefix-good.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a valid regex constraint and matching prefix.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/quote.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a quote regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/time.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a time regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/url.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a URL regex constraint.": "FAIL"
+    }
+  },
+  "ai/language-model/response-constraint/regex/word.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Prompt should work with a word regex constraint.": "FAIL"
+    }
+  },
+  "ai/language_detection/availability-detached-crash.https.html": {
+    "crashtest": "PASS"
+  },
+  "ai/language_detection/detector-iframe.https.html": {
+    "total": 6,
+    "failures": {
+      "Language Detector can be created within cross-origin iframe with permission policy": "FAIL",
+      "Language Detector can be used within same-origin iframe": "FAIL",
+      "Language Detector is available within cross-origin iframe with permission policy": "FAIL",
+      "Language Detector is unavailable within cross-origin iframe": "FAIL",
+      "LanguageDetector is available within same-origin iframe": "FAIL",
+      "Throw a 'NotAllowedError' when creating Language Detector within cross-origin iframe": "FAIL"
+    }
+  },
+  "ai/language_detection/detector-locale.https.window.js": {
+    "total": 5,
+    "failures": {
+      "LanguageDetector has valid expectedInputLanguages": "FAIL",
+      "LanguageDetector.availability() is consistent between language tag variations": "FAIL",
+      "LanguageDetector.availability() throws RangeError for invalid language tags": "FAIL",
+      "LanguageDetector.create() throws NotSupportedError for unsupported language tags": "FAIL"
+    }
+  },
+  "ai/language_detection/detector.https.window.js": {
+    "total": 16,
+    "failures": {
+      "Aborting LanguageDetector.detect().": "FAIL",
+      "Aborting LanguageDetector.measureInputUsage().": "FAIL",
+      "Aborting createLanguageDetector().": "FAIL",
+      "Calling LanguageDetector.destroy() aborts calls to detect and measureInputUsage.": "FAIL",
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL",
+      "Creating LanguageDetector with empty expectedInputLanguages array": "FAIL",
+      "Creating LanguageDetector without expectedInputLanguages": "FAIL",
+      "If monitor throws an error, LanguageDetector.create() rejects with that error": "FAIL",
+      "LanguageDetector.create() call with an aborted signal.": "FAIL",
+      "LanguageDetector.create() notifies its monitor on downloadprogress": "FAIL",
+      "LanguageDetector.create()'s abort signal destroys its LanguageDetector after creation.": "FAIL",
+      "LanguageDetector.detect() call with an aborted signal.": "FAIL",
+      "LanguageDetector.detect() returns valid results": "FAIL",
+      "LanguageDetector.measureInputUsage() and inputQuota basic usage.": "FAIL",
+      "LanguageDetector.measureInputUsage() call with an aborted signal.": "FAIL",
+      "Progress events are not emitted after aborted.": "FAIL"
+    }
+  },
+  "ai/language_detection/detector.optional.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Creating LanguageDetector with expectedInputLanguages": "FAIL",
+      "LanguageDetector.detect() detects empty string": "FAIL",
+      "LanguageDetector.detect() detects the correct language": "FAIL"
+    }
+  },
+  "ai/language_detection/language-detector-detect-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple LanguageDetector.detect() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple LanguageDetector.detect() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/language_detection/language-detector-detect-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Detect after aborting a previous detect.": "FAIL"
+    }
+  },
+  "ai/proofreader/proofreader-abort.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Aborting Proofreader.create()": "FAIL",
+      "Aborting Proofreader.proofread()": "FAIL",
+      "Aborting Proofreader.proofread() including correction types": "FAIL"
+    }
+  },
+  "ai/proofreader/proofreader-create-available.tentative.https.window.js": {
+    "total": 8,
+    "failures": {
+      "Proofreader.create() does not emit progress events after abort": "FAIL",
+      "Proofreader.create() notifies its monitor on downloadprogress": "FAIL",
+      "Proofreader.create() returns a valid object with default options": "FAIL",
+      "Proofreader.create() sets correctionExplanationLanguage when specified": "FAIL",
+      "Proofreader.create() sets expectedInputLanguages when specified": "FAIL",
+      "Proofreader.create() sets includeCorrectionExplanations when specified": "FAIL",
+      "Proofreader.create() sets includeCorrectionTypes when specified": "FAIL",
+      "Proofreader.create() with empty options sets optional attributes to null": "FAIL"
+    }
+  },
+  "ai/proofreader/proofreader-create.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "If monitor throws an error, Proofreader.create() rejects with that error": "FAIL"
+    }
+  },
+  "ai/proofreader/proofreader-proofread-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Proofreader.proofread() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Proofreader.proofread() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/proofreader/proofreader-proofread-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Proofread after aborting a previous proofread.": "FAIL"
+    }
+  },
+  "ai/proofreader/proofreader-proofread.tentative.https.window.js": {
+    "total": 8,
+    "failures": {
+      "Calling Proofreader.destroy() aborts calls to proofread": "FAIL",
+      "Proofreader.create()'s abort signal destroys its Proofreader after creation.": "FAIL",
+      "Proofreader.proofread() returns a list of corrections": "FAIL",
+      "Proofreader.proofread() returns correction types when requested": "FAIL",
+      "Proofreader.proofread() with a whitespace input returns a whitespace text": "FAIL",
+      "Proofreader.proofread() with an empty input returns an empty text": "FAIL",
+      "Proofreader.proofread() with non-empty input returns a non-empty result": "FAIL",
+      "Simple Proofreader.proofread() call": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-abort.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Aborting Rewriter.create()": "FAIL",
+      "Aborting Rewriter.rewrite()": "FAIL",
+      "Aborting Rewriter.rewriteStreaming()": "FAIL",
+      "Aborting Rewriter.rewriteStreaming() after finished reading": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-availability-available.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Rewriter.availability() is available with no options": "FAIL",
+      "Rewriter.availability() returns available with supported options": "FAIL",
+      "Rewriter.availability() returns unavailable for unsupported languages and create() rejects": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-availability.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Rewriter.availability() is defined": "FAIL",
+      "Rewriter.availability() rejects when given invalid language tags": "FAIL",
+      "Rewriter.availability() returns a valid value with no options": "FAIL",
+      "Rewriter.availability() returns a valid value with plausible options": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-create-available.tentative.https.window.js": {
+    "total": 16,
+    "failures": {
+      "Creating Rewriter with malformed language string": "FAIL",
+      "Creating a Rewriter with \"longer\" length": "FAIL",
+      "Creating a Rewriter with \"markdown\" format": "FAIL",
+      "Creating a Rewriter with \"more-casual\" tone": "FAIL",
+      "Creating a Rewriter with \"more-formal\" tone": "FAIL",
+      "Creating a Rewriter with \"plain-text\" format": "FAIL",
+      "Creating a Rewriter with \"shorter\" length": "FAIL",
+      "Progress events are not emitted after aborted": "FAIL",
+      "Rewriter optional attributes return null": "FAIL",
+      "Rewriter.create() canonicalizes language tags": "FAIL",
+      "Rewriter.create() notifies its monitor on downloadprogress": "FAIL",
+      "Rewriter.create() returns a valid object with default options": "FAIL",
+      "Rewriter.expectedContextLanguages": "FAIL",
+      "Rewriter.expectedInputLanguages": "FAIL",
+      "Rewriter.outputLanguage": "FAIL",
+      "Rewriter.sharedContext": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-create-user-activation.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-create.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "If monitor throws an error, Rewriter.create() rejects with that error": "FAIL",
+      "Rewriter must be defined.": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-from-detached-iframe.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Detaching iframe during Rewriter.create() should not leak memory": "FAIL",
+      "Detaching iframe during Rewriter.rewrite() should not leak memory": "FAIL",
+      "Rewriter.create() fails on a detached iframe.": "FAIL",
+      "Rewriter.rewrite() fails on a detached iframe.": "FAIL",
+      "Rewriter.rewriteStreaming() fails on a detached iframe.": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-iframe.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "Rewriter can be created within cross-origin iframe with permission policy": "FAIL",
+      "Rewriter can be used within same-origin iframe": "FAIL",
+      "Rewriter is available within cross-origin iframe with permission policy": "FAIL",
+      "Rewriter is available within same-origin iframe": "FAIL",
+      "Rewriter is unavailable within cross-origin iframe": "FAIL",
+      "Throw a 'NotAllowedError' when creating Rewriter within cross-origin iframe": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-measureInputUsage.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Rewriter.measureInputUsage() returns non-empty result": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-rewrite-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Rewriter.rewrite() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Rewriter.rewrite() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-rewrite-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Rewrite after aborting a previous rewrite.": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-rewrite-streaming-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Rewriter.rewriteStreaming() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Rewriter.rewriteStreaming() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-rewrite-streaming-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Rewrite after aborting a previous rewriteStreaming.": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-rewrite-streaming.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Rewrite Streaming API must continue even after GC has been performed.": "FAIL",
+      "Rewriter.rewriteStreaming() fails after destroyed": "FAIL",
+      "Rewriter.rewriteStreaming() returns a ReadableStream without any chunk on an empty input": "FAIL",
+      "Simple Rewriter.rewriteStreaming() call": "FAIL"
+    }
+  },
+  "ai/rewriter/rewriter-rewrite.tentative.https.window.js": {
+    "total": 6,
+    "failures": {
+      "Calling Rewriter.destroy() aborts calls to rewrite and measureInputUsage.": "FAIL",
+      "Rewriter.create()'s abort signal destroys its Rewriter after creation.": "FAIL",
+      "Rewriter.rewrite() with a whitespace context returns a non-empty result": "FAIL",
+      "Rewriter.rewrite() with a whitespace input returns a whitespace text": "FAIL",
+      "Rewriter.rewrite() with an empty input returns an empty text": "FAIL",
+      "Simple Rewriter.rewrite() call": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-availability.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "SemanticEmbedder.availability() is \"unavailable\" for an unknown embeddingSpace": "FAIL",
+      "SemanticEmbedder.availability() requires an embeddingSpace": "FAIL",
+      "SemanticEmbedder.availability() returns a valid value with an embeddingSpace": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-create-user-activation.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL",
+      "Create succeeds with user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-create.tentative.https.window.js": {
+    "total": 7,
+    "failures": {
+      "If monitor throws an error, SemanticEmbedder.create() rejects with that error": "FAIL",
+      "SemanticEmbedder.create() can be aborted": "FAIL",
+      "SemanticEmbedder.create() returns a valid object with default options": "FAIL",
+      "SemanticEmbedder.embed() accepts taskType option": "FAIL",
+      "SemanticEmbedder.embed() handles empty array without crashing": "FAIL",
+      "SemanticEmbedder.embed() returns SemanticEmbedderResult for batch strings": "FAIL",
+      "SemanticEmbedder.embed() returns SemanticEmbedderResult for single string": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-downloadprogress-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Progress events are not emitted after aborted.": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-downloadprogress.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "SemanticEmbedder.create() notifies its monitor on downloadprogress": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-embed-abort.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Aborting after embed() resolved has no effect": "FAIL",
+      "SemanticEmbedder.embed() can be aborted": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-embedding-space.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Each ContentEmbedding names the space its values are in": "FAIL",
+      "SemanticEmbedder.create() rejects an unknown embeddingSpace": "FAIL",
+      "SemanticEmbedder.create() requires an embeddingSpace": "FAIL",
+      "SemanticEmbedder.embeddingSpace echoes the space passed to create()": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-iframe.tentative.https.html": {
+    "total": 7,
+    "failures": {
+      "SemanticEmbedder can be created within cross-origin iframe with permission policy": "FAIL",
+      "SemanticEmbedder can be used within same-origin iframe": "FAIL",
+      "SemanticEmbedder is available within cross-origin iframe with permission policy": "FAIL",
+      "SemanticEmbedder is available within same-origin iframe": "FAIL",
+      "SemanticEmbedder is unavailable within cross-origin iframe": "FAIL",
+      "The language-model permission policy does not grant SemanticEmbedder": "FAIL",
+      "Throw a 'NotAllowedError' when creating SemanticEmbedder within cross-origin iframe": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-input-items.tentative.https.window.js": {
+    "total": 13,
+    "failures": {
+      "embed() accepts a mixed sequence of strings and items": "FAIL",
+      "embed() accepts a {type: \"text\", value} item": "FAIL",
+      "embed() rejects a nested array instead of embedding its string form": "FAIL",
+      "embed() rejects a sequence with an object item that is not an input": "FAIL",
+      "embed() rejects an item with an unknown type": "FAIL",
+      "embed() rejects an item without a type": "FAIL",
+      "embed() rejects an item without a value": "FAIL",
+      "embed() still stringifies a boolean": "FAIL",
+      "embed() still stringifies a number": "FAIL",
+      "embed([]) resolves with no embeddings": "FAIL",
+      "embed(null) rejects instead of embedding the string \"null\"": "FAIL",
+      "embed(undefined) rejects instead of embedding the string \"undefined\"": "FAIL",
+      "embed({}) rejects instead of embedding \"[object Object]\"": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-max-input-tokens.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "SemanticEmbedder.maxInputTokens is a positive integer": "FAIL"
+    }
+  },
+  "ai/semantic_embedder/semantic-embedder-params.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "SemanticEmbedder.params() lists the served embedding spaces": "FAIL",
+      "availability() accepts every space listed by params()": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-availability-available.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Summarizer.availability() is available with speed preference": "FAIL",
+      "Summarizer.availability() returns valid availability across speed preference options": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-create-available.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Summarizer.create() returns a valid object with speed preference": "FAIL",
+      "Summarizer.create() with speed preference handles option combinations": "FAIL",
+      "Summarizer.create() with speed preference notifies its monitor on downloadprogress": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-measureInputUsage.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Summarizer.measureInputUsage() with speed preference returns non-empty result within inputQuota": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-summarize-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Summarizer.summarize() calls with speed preference and divergent inputs are resolved successfully": "FAIL",
+      "Multiple Summarizer.summarize() calls with speed preference and identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-summarize-streaming-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Summarizer.summarizeStreaming() calls with speed preference and divergent inputs are resolved successfully": "FAIL",
+      "Multiple Summarizer.summarizeStreaming() calls with speed preference and identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-summarize-streaming.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Simple Summarizer.summarizeStreaming() call with speed preference": "FAIL",
+      "Summarizer.summarizeStreaming() with speed preference fails after destroyed": "FAIL",
+      "Summarizer.summarizeStreaming() with speed preference returns a ReadableStream without any chunk on an empty input": "FAIL"
+    }
+  },
+  "ai/summarizer/speed/summarizer-summarize.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Calling Summarizer.destroy() on speed preference session aborts calls to summarize and measureInputUsage": "FAIL",
+      "Simple Summarizer.summarize() call with speed preference": "FAIL",
+      "Summarizer.summarize() with speed preference and empty input returns empty text": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-abort.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Aborting Summarizer.create().": "FAIL",
+      "Aborting Summarizer.measureInputUsage() and destroying on abort": "FAIL",
+      "Aborting Summarizer.summarize()": "FAIL",
+      "Aborting Summarizer.summarizeStreaming()": "FAIL",
+      "Aborting Summarizer.summarizeStreaming() after finished reading": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-availability-available.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Summarizer.availability() is available with no options": "FAIL",
+      "Summarizer.availability() returns available with supported options": "FAIL",
+      "Summarizer.availability() returns unavailable for unsupported languages and create() rejects": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-availability.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Summarizer.availability() is defined": "FAIL",
+      "Summarizer.availability() rejects when given invalid language tags": "FAIL",
+      "Summarizer.availability() returns a valid value with no options": "FAIL",
+      "Summarizer.availability() returns a valid value with plausible options": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-create-available.tentative.https.window.js": {
+    "total": 13,
+    "failures": {
+      "Creating Summarizer with malformed language string": "FAIL",
+      "Progress events are not emitted after aborted": "FAIL",
+      "Summarizer optional attributes return null": "FAIL",
+      "Summarizer.create() canonicalizes language tags": "FAIL",
+      "Summarizer.create() notifies its monitor on downloadprogress": "FAIL",
+      "Summarizer.create() returns a valid object with default options": "FAIL",
+      "Summarizer.expectedContextLanguages": "FAIL",
+      "Summarizer.expectedInputLanguages": "FAIL",
+      "Summarizer.format": "FAIL",
+      "Summarizer.length": "FAIL",
+      "Summarizer.outputLanguage": "FAIL",
+      "Summarizer.sharedContext": "FAIL",
+      "Summarizer.type": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-create-user-activation.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-create.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "If monitor throws an error, Summarizer.create() rejects with that error": "FAIL",
+      "Summarizer.create() is defined": "PRECONDITION_FAILED"
+    }
+  },
+  "ai/summarizer/summarizer-from-detached-iframe.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Detaching iframe during Summarizer.create() should not leak memory": "FAIL",
+      "Detaching iframe during Summarizer.summarize() should not leak memory": "FAIL",
+      "Summarizer.create() fails on a detached iframe": "FAIL",
+      "Summarizer.summarize() fails on a detached iframe": "FAIL",
+      "Summarizer.summarizeStreaming() fails on a detached iframe": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-iframe.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "Summarizer can be created within cross-origin iframe with permission policy": "FAIL",
+      "Summarizer can be used within same-origin iframe": "FAIL",
+      "Summarizer is available within cross-origin iframe with permission policy": "FAIL",
+      "Summarizer is available within same-origin iframe": "FAIL",
+      "Summarizer is unavailable within cross-origin iframe": "FAIL",
+      "Throw a 'NotAllowedError' when creating Summarizer within cross-origin iframe": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-measureInputUsage.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Summarizer.measureInputUsage() returns non-empty result": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-summarize-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Summarizer.summarize() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Summarizer.summarize() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-summarize-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Summarize after aborting a previous summarize.": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-summarize-streaming-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Summarizer.summarizeStreaming() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Summarizer.summarizeStreaming() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-summarize-streaming-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Summarize after aborting a previous summarizeStreaming.": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-summarize-streaming.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Simple Summarizer.summarizeStreaming() call": "FAIL",
+      "Summarize Streaming API must continue even after GC has been performed.": "FAIL",
+      "Summarizer.summarizeStreaming() fails after destroyed": "FAIL",
+      "Summarizer.summarizeStreaming() returns a ReadableStream without any chunk on an empty input": "FAIL"
+    }
+  },
+  "ai/summarizer/summarizer-summarize.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Calling Summarizer.destroy() aborts calls to summarize and measureInputUsage.": "FAIL",
+      "Simple Summarizer.summarize() call": "FAIL",
+      "Summarizer.create()'s abort signal destroys its Summarizer after creation.": "FAIL",
+      "Summarizer.summarize() with a whitespace context returns an empty result": "FAIL",
+      "Summarizer.summarize() with an empty input returns an empty text": "FAIL"
+    }
+  },
+  "ai/translator/translator-bad-input.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Translator.create rejects with TypeError if no options are passed.": "FAIL",
+      "Translator.create rejects with TypeError sourceLanguage is not provided.": "FAIL",
+      "Translator.create rejects with TypeError targetLanguage is not provided.": "FAIL"
+    }
+  },
+  "ai/translator/translator-create-user-activation.optional.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Create requires user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/translator/translator-locale.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Translator has valid source and target languages": "FAIL",
+      "Translator.availability() is consistent between language tag variations": "FAIL",
+      "Translator.availability() throws RangeError for invalid language tags": "FAIL",
+      "Translator.create() throws RangeError for invalid language tags": "FAIL"
+    }
+  },
+  "ai/translator/translator-translate-concurrent.optional.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Translator.translate() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Translator.translate() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/translator/translator-translate-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Translate after aborting a previous translate.": "FAIL"
+    }
+  },
+  "ai/translator/translator-translate-streaming-concurrent.optional.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Translator.translateStreaming() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Translator.translateStreaming() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/translator/translator-translate-streaming-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Translate after aborting a previous translateStreaming.": "FAIL"
+    }
+  },
+  "ai/translator/translator.https.window.js": {
+    "total": 1,
+    "failures": {
+      "If monitor throws an error, Translator.create() rejects with that error": "FAIL"
+    }
+  },
+  "ai/translator/translator.optional.https.window.js": {
+    "total": 19,
+    "failures": {
+      "Aborting Translator.create().": "FAIL",
+      "Aborting Translator.measureInputUsage().": "FAIL",
+      "Aborting Translator.translate().": "FAIL",
+      "Calling Translator.destroy() aborts calls to write and measureInputUsage.": "FAIL",
+      "Multiple sentence Translator.translateStreaming() call": "FAIL",
+      "Multiple sentence Translator.translateStreaming() call with honorific": "FAIL",
+      "Progress events are not emitted after aborted.": "FAIL",
+      "Simple Translator.translate() call": "FAIL",
+      "Simple Translator.translateStreaming() call": "FAIL",
+      "Translate Streaming API must continue even after GC has been performed.": "FAIL",
+      "Translator.create() call with an aborted signal.": "FAIL",
+      "Translator.create() notifies its monitor on downloadprogress": "FAIL",
+      "Translator.create()'s abort signal destroys its Translator after creation.": "FAIL",
+      "Translator.measureInputUsage() and inputQuota basic usage.": "FAIL",
+      "Translator.measureInputUsage() call with an aborted signal.": "FAIL",
+      "Translator.translate() call with an aborted signal.": "FAIL",
+      "Translator.translate() echoes non-translatable content": "FAIL",
+      "Translator.translateStreaming() fails after destroyed": "FAIL",
+      "Translator: sourceLanguage and targetLanguage are equal to their respective option passed in to Translator.create.": "FAIL"
+    }
+  },
+  "ai/writer/writer-abort.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Aborting Writer.create()": "FAIL",
+      "Aborting Writer.write()": "FAIL",
+      "Aborting Writer.writeStreaming()": "FAIL",
+      "Aborting Writer.writeStreaming() after finished reading": "FAIL"
+    }
+  },
+  "ai/writer/writer-availability-available.tentative.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Writer.availability() is available with no options": "FAIL",
+      "Writer.availability() returns available with supported options": "FAIL",
+      "Writer.availability() returns unavailable for unsupported languages and create() rejects": "FAIL"
+    }
+  },
+  "ai/writer/writer-availability.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Writer.availability() is defined": "FAIL",
+      "Writer.availability() rejects when given invalid language tags": "FAIL",
+      "Writer.availability() returns a valid value with no options": "FAIL",
+      "Writer.availability() returns a valid value with plausible options": "FAIL"
+    }
+  },
+  "ai/writer/writer-create-available.tentative.https.window.js": {
+    "total": 15,
+    "failures": {
+      "Creating Writer with malformed language string": "FAIL",
+      "Creating a Writer with \"casual\" tone": "FAIL",
+      "Creating a Writer with \"formal\" tone": "FAIL",
+      "Creating a Writer with \"long\" length": "FAIL",
+      "Creating a Writer with \"markdown\" format": "FAIL",
+      "Creating a Writer with \"medium\" length": "FAIL",
+      "Progress events are not emitted after aborted": "FAIL",
+      "Writer optional attributes return null": "FAIL",
+      "Writer.create() canonicalizes language tags": "FAIL",
+      "Writer.create() notifies its monitor on downloadprogress": "FAIL",
+      "Writer.create() returns a valid object with default options": "FAIL",
+      "Writer.expectedContextLanguages": "FAIL",
+      "Writer.expectedInputLanguages": "FAIL",
+      "Writer.outputLanguage": "FAIL",
+      "Writer.sharedContext": "FAIL"
+    }
+  },
+  "ai/writer/writer-create-user-activation.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Create requires sticky user activation when availability is \"downloadable\"": "FAIL"
+    }
+  },
+  "ai/writer/writer-create.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "If monitor throws an error, Writer.create() rejects with that error": "FAIL",
+      "Writer must be defined.": "FAIL"
+    }
+  },
+  "ai/writer/writer-from-detached-iframe.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Detaching iframe during Writer.create() should not leak memory": "FAIL",
+      "Detaching iframe during Writer.write() should not leak memory": "FAIL",
+      "Writer.create() fails on a detached iframe": "FAIL",
+      "Writer.write() fails on a detached iframe": "FAIL",
+      "Writer.writeStreaming() fails on a detached iframe": "FAIL"
+    }
+  },
+  "ai/writer/writer-iframe.tentative.https.html": {
+    "total": 6,
+    "failures": {
+      "Throw a 'NotAllowedError' when creating Writer within cross-origin iframe": "FAIL",
+      "Writer can be created within cross-origin iframe with permission policy": "FAIL",
+      "Writer can be used within same-origin iframe": "FAIL",
+      "Writer is available within cross-origin iframe with permission policy": "FAIL",
+      "Writer is available within same-origin iframe": "FAIL",
+      "Writer is unavailable within cross-origin iframe": "FAIL"
+    }
+  },
+  "ai/writer/writer-measureInputUsage.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Writer.measureInputUsage() returns non-empty result": "FAIL"
+    }
+  },
+  "ai/writer/writer-write-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Writer.write() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Writer.write() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/writer/writer-write-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Write after aborting a previous write.": "FAIL"
+    }
+  },
+  "ai/writer/writer-write-streaming-concurrent.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "Multiple Writer.writeStreaming() calls with divergent inputs are resolved successfully": "FAIL",
+      "Multiple Writer.writeStreaming() calls with identical inputs are resolved successfully": "FAIL"
+    }
+  },
+  "ai/writer/writer-write-streaming-post-abort.tentative.https.window.js": {
+    "total": 1,
+    "failures": {
+      "Write after aborting a previous writeStreaming.": "FAIL"
+    }
+  },
+  "ai/writer/writer-write-streaming.tentative.https.window.js": {
+    "total": 4,
+    "failures": {
+      "Simple Writer.writeStreaming() call": "FAIL",
+      "Write Streaming API must continue even after GC has been performed.": "FAIL",
+      "Writer.writeStreaming() fails after destroyed": "FAIL",
+      "Writer.writeStreaming() returns a ReadableStream without any chunk on an empty input": "FAIL"
+    }
+  },
+  "ai/writer/writer-write.tentative.https.window.js": {
+    "total": 6,
+    "failures": {
+      "Calling Writer.destroy() aborts calls to write and measureInputUsage.": "FAIL",
+      "Simple Writer.write() call": "FAIL",
+      "Writer.create()'s abort signal destroys its Writer after creation.": "FAIL",
+      "Writer.write() with a whitespace context returns a non-empty result": "FAIL",
+      "Writer.write() with a whitespace input returns an empty text": "FAIL",
+      "Writer.write() with an empty input returns an empty text": "FAIL"
+    }
+  }
+}

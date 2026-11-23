@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of autoplay-policy-detection
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 3 | 3 | – |
+| [Stable](#stable-tests) | 0 | 3 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **3** | **3** | **–** |
+| **All** | **0** | **3** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,6 +25,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`autoplaypolicy.html`](https://wpt.fyi/results/autoplay-policy-detection/autoplaypolicy.html) | Disabled | – | NOT IMPLEMENTED | Autoplay Policy Detection (`navigator.getAutoplayPolicy()`) |
-| [`autoplaypolicy_media_element.html`](https://wpt.fyi/results/autoplay-policy-detection/autoplaypolicy_media_element.html) | Disabled | – | NOT IMPLEMENTED | Autoplay Policy Detection (`navigator.getAutoplayPolicy()`) |
-| [`idlharness.window.js`](https://wpt.fyi/results/autoplay-policy-detection/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | Autoplay Policy Detection (`navigator.getAutoplayPolicy()`) |
+| [`autoplaypolicy.html`](https://wpt.fyi/results/autoplay-policy-detection/autoplaypolicy.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Autoplay Policy Detection (`navigator.getAutoplayPolicy()`) |
+| [`autoplaypolicy_media_element.html`](https://wpt.fyi/results/autoplay-policy-detection/autoplaypolicy_media_element.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Autoplay Policy Detection (`navigator.getAutoplayPolicy()`) |
+| [`idlharness.window.js`](https://wpt.fyi/results/autoplay-policy-detection/idlharness.window.js) | Fail | 14 / 17 | NOT IMPLEMENTED | Autoplay Policy Detection (`navigator.getAutoplayPolicy()`) |

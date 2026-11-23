@@ -1,0 +1,8 @@
+{
+  "cpu-performance/cpu-performance.https.window.js": {
+    "total": 1,
+    "failures": {
+      "navigator.cpuPerformance is valid": "FAIL"
+    }
+  }
+}

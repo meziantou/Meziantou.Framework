@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of nav-tracking-mitigations,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 0 | 2 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,5 +25,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`stateful-client-bounce.sub.https.html`](https://wpt.fyi/results/nav-tracking-mitigations/stateful-client-bounce.sub.https.html) | Disabled | – | NOT IMPLEMENTED | navigational tracking mitigations (bounce tracking) |
-| [`stateless-client-bounce.sub.https.html`](https://wpt.fyi/results/nav-tracking-mitigations/stateless-client-bounce.sub.https.html) | Disabled | – | NOT IMPLEMENTED | navigational tracking mitigations (bounce tracking) |
+| [`stateful-client-bounce.sub.https.html`](https://wpt.fyi/results/nav-tracking-mitigations/stateful-client-bounce.sub.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | navigational tracking mitigations (bounce tracking) |
+| [`stateless-client-bounce.sub.https.html`](https://wpt.fyi/results/nav-tracking-mitigations/stateless-client-bounce.sub.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | navigational tracking mitigations (bounce tracking) |

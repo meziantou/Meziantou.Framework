@@ -1,0 +1,247 @@
+{
+  "background-fetch/abort.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Aborting the same registration twice fails": "FAIL",
+      "An aborted fetch throws a DOM exception when accessing an incomplete record": "FAIL",
+      "Calling BackgroundFetchRegistration.abort sets the correct fields and responses are still available": "FAIL"
+    }
+  },
+  "background-fetch/content-security-policy.https.window.js": {
+    "total": 1,
+    "failures": {
+      "fetch blocked by CSP should reject": "FAIL"
+    }
+  },
+  "background-fetch/cors.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Cross-origin Background Fetch fails without CORS headers": "FAIL",
+      "Cross-origin Background Fetch with credentials mode include fails against wildcard Origin": "FAIL",
+      "Cross-origin Background Fetch with credentials mode omit succeeds against wildcard Origin": "FAIL",
+      "Cross-origin Background Fetch with custom headers fails without preflight approval": "FAIL",
+      "Cross-origin response type is cors and non-CORS-exposed headers are filtered": "FAIL"
+    }
+  },
+  "background-fetch/fetch-uploads.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Duplicate upload requests work and can be distinguished.": "FAIL",
+      "Fetch with an upload should work": "FAIL",
+      "Progress event includes uploaded bytes": "FAIL"
+    }
+  },
+  "background-fetch/fetch.https.window.js": {
+    "total": 14,
+    "failures": {
+      "Argument verification is done for BackgroundFetchManager.fetch()": "FAIL",
+      "Background Fetch requires an activated Service Worker": "FAIL",
+      "Background Fetch that exceeds the quota throws a QuotaExceededError": "FAIL",
+      "Empty URL is OK.": "FAIL",
+      "Fetches can have requests with duplicate URLs": "FAIL",
+      "Fetches with mixed content should fail.": "FAIL",
+      "IDs must be unique among active Background Fetch registrations": "FAIL",
+      "Registration object gets updated values when a background fetch completes.": "FAIL",
+      "Requests with PUT method require CORS Preflight and succeed.": "FAIL",
+      "Requests with text/json content type require CORS Preflight and succeed.": "FAIL",
+      "Responses failing CORS checks are not leaked": "FAIL",
+      "Using Background Fetch to fetch a non-existent resource should fail.": "FAIL",
+      "Using Background Fetch to successfully fetch a single resource": "FAIL",
+      "recordsAvailable is false after onbackgroundfetchsuccess finishes execution.": "FAIL"
+    }
+  },
+  "background-fetch/get-ids.https.window.js": {
+    "total": 2,
+    "failures": {
+      "BackgroundFetchManager.getIds() does not require an activated worker": "FAIL",
+      "The BackgroundFetchManager exposes active fetches": "FAIL"
+    }
+  },
+  "background-fetch/get.https.window.js": {
+    "total": 3,
+    "failures": {
+      "BackgroundFetchManager.get() does not require an activated worker": "FAIL",
+      "Getting an existing registration has the expected values": "FAIL",
+      "Getting non-existing registrations yields `undefined`": "FAIL"
+    }
+  },
+  "background-fetch/idlharness.https.any.js": {
+    "total": 45,
+    "failures": {
+      "BackgroundFetchManager interface object length": "FAIL",
+      "BackgroundFetchManager interface object name": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchManager interface: operation fetch(DOMString, (RequestInfo or sequence<RequestInfo>), optional BackgroundFetchOptions)": "FAIL",
+      "BackgroundFetchManager interface: operation get(DOMString)": "FAIL",
+      "BackgroundFetchManager interface: operation getIds()": "FAIL",
+      "BackgroundFetchRecord interface object length": "FAIL",
+      "BackgroundFetchRecord interface object name": "FAIL",
+      "BackgroundFetchRecord interface: attribute request": "FAIL",
+      "BackgroundFetchRecord interface: attribute responseReady": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchRegistration interface object length": "FAIL",
+      "BackgroundFetchRegistration interface object name": "FAIL",
+      "BackgroundFetchRegistration interface: attribute downloadTotal": "FAIL",
+      "BackgroundFetchRegistration interface: attribute downloaded": "FAIL",
+      "BackgroundFetchRegistration interface: attribute failureReason": "FAIL",
+      "BackgroundFetchRegistration interface: attribute id": "FAIL",
+      "BackgroundFetchRegistration interface: attribute onprogress": "FAIL",
+      "BackgroundFetchRegistration interface: attribute recordsAvailable": "FAIL",
+      "BackgroundFetchRegistration interface: attribute result": "FAIL",
+      "BackgroundFetchRegistration interface: attribute uploadTotal": "FAIL",
+      "BackgroundFetchRegistration interface: attribute uploaded": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchRegistration interface: operation abort()": "FAIL",
+      "BackgroundFetchRegistration interface: operation match(RequestInfo, optional CacheQueryOptions)": "FAIL",
+      "BackgroundFetchRegistration interface: operation matchAll(optional RequestInfo, optional CacheQueryOptions)": "FAIL",
+      "ServiceWorkerRegistration interface: attribute backgroundFetch": "FAIL"
+    }
+  },
+  "background-fetch/idlharness.https.any.js#dedicatedworker": {
+    "total": 45,
+    "failures": {
+      "BackgroundFetchManager interface object length": "FAIL",
+      "BackgroundFetchManager interface object name": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchManager interface: operation fetch(DOMString, (RequestInfo or sequence<RequestInfo>), optional BackgroundFetchOptions)": "FAIL",
+      "BackgroundFetchManager interface: operation get(DOMString)": "FAIL",
+      "BackgroundFetchManager interface: operation getIds()": "FAIL",
+      "BackgroundFetchRecord interface object length": "FAIL",
+      "BackgroundFetchRecord interface object name": "FAIL",
+      "BackgroundFetchRecord interface: attribute request": "FAIL",
+      "BackgroundFetchRecord interface: attribute responseReady": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchRegistration interface object length": "FAIL",
+      "BackgroundFetchRegistration interface object name": "FAIL",
+      "BackgroundFetchRegistration interface: attribute downloadTotal": "FAIL",
+      "BackgroundFetchRegistration interface: attribute downloaded": "FAIL",
+      "BackgroundFetchRegistration interface: attribute failureReason": "FAIL",
+      "BackgroundFetchRegistration interface: attribute id": "FAIL",
+      "BackgroundFetchRegistration interface: attribute onprogress": "FAIL",
+      "BackgroundFetchRegistration interface: attribute recordsAvailable": "FAIL",
+      "BackgroundFetchRegistration interface: attribute result": "FAIL",
+      "BackgroundFetchRegistration interface: attribute uploadTotal": "FAIL",
+      "BackgroundFetchRegistration interface: attribute uploaded": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchRegistration interface: operation abort()": "FAIL",
+      "BackgroundFetchRegistration interface: operation match(RequestInfo, optional CacheQueryOptions)": "FAIL",
+      "BackgroundFetchRegistration interface: operation matchAll(optional RequestInfo, optional CacheQueryOptions)": "FAIL",
+      "ServiceWorkerRegistration interface: attribute backgroundFetch": "FAIL"
+    }
+  },
+  "background-fetch/idlharness.https.any.js#sharedworker": {
+    "total": 45,
+    "failures": {
+      "BackgroundFetchManager interface object length": "FAIL",
+      "BackgroundFetchManager interface object name": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchManager interface: operation fetch(DOMString, (RequestInfo or sequence<RequestInfo>), optional BackgroundFetchOptions)": "FAIL",
+      "BackgroundFetchManager interface: operation get(DOMString)": "FAIL",
+      "BackgroundFetchManager interface: operation getIds()": "FAIL",
+      "BackgroundFetchRecord interface object length": "FAIL",
+      "BackgroundFetchRecord interface object name": "FAIL",
+      "BackgroundFetchRecord interface: attribute request": "FAIL",
+      "BackgroundFetchRecord interface: attribute responseReady": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchRecord interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchRegistration interface object length": "FAIL",
+      "BackgroundFetchRegistration interface object name": "FAIL",
+      "BackgroundFetchRegistration interface: attribute downloadTotal": "FAIL",
+      "BackgroundFetchRegistration interface: attribute downloaded": "FAIL",
+      "BackgroundFetchRegistration interface: attribute failureReason": "FAIL",
+      "BackgroundFetchRegistration interface: attribute id": "FAIL",
+      "BackgroundFetchRegistration interface: attribute onprogress": "FAIL",
+      "BackgroundFetchRegistration interface: attribute recordsAvailable": "FAIL",
+      "BackgroundFetchRegistration interface: attribute result": "FAIL",
+      "BackgroundFetchRegistration interface: attribute uploadTotal": "FAIL",
+      "BackgroundFetchRegistration interface: attribute uploaded": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface object": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "BackgroundFetchRegistration interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "BackgroundFetchRegistration interface: operation abort()": "FAIL",
+      "BackgroundFetchRegistration interface: operation match(RequestInfo, optional CacheQueryOptions)": "FAIL",
+      "BackgroundFetchRegistration interface: operation matchAll(optional RequestInfo, optional CacheQueryOptions)": "FAIL",
+      "ServiceWorkerRegistration interface: attribute backgroundFetch": "FAIL"
+    }
+  },
+  "background-fetch/match-request-body.https.window.js": {
+    "total": 8,
+    "failures": {
+      "Match returns the request body for ArrayBuffer.": "FAIL",
+      "Match returns the request body for Blob.": "FAIL",
+      "Match returns the request body for DataView.": "FAIL",
+      "Match returns the request body for File.": "FAIL",
+      "Match returns the request body for FormData.": "FAIL",
+      "Match returns the request body for TypedArray.": "FAIL",
+      "Match returns the request body for URLSearchParams.": "FAIL",
+      "Match returns the request body for string.": "FAIL"
+    }
+  },
+  "background-fetch/match.https.window.js": {
+    "total": 6,
+    "failures": {
+      "Access to active fetches is supported.": "FAIL",
+      "Match with query options.": "FAIL",
+      "Matching multiple times on the same request works as expected.": "FAIL",
+      "Matching to a non-existing request should work": "FAIL",
+      "Matching to a single request should work": "FAIL",
+      "Multiple observers for the same active fetch both resolve.": "FAIL"
+    }
+  },
+  "background-fetch/mixed-content-and-allowed-schemes.https.window.js": {
+    "total": 8,
+    "failures": {
+      "data: fetch should reject": "FAIL",
+      "file: fetch should reject": "FAIL",
+      "https: fetch should register ok": "FAIL",
+      "localhost http: fetch should register ok": "FAIL",
+      "loopback IPv4 http: fetch should register ok": "FAIL",
+      "loopback IPv6 http: fetch should register ok": "FAIL",
+      "unknown scheme fetch should reject": "FAIL",
+      "wss: fetch should reject": "FAIL"
+    }
+  },
+  "background-fetch/port-blocking.https.window.js": {
+    "total": 6,
+    "failures": {
+      "fetch to bad port (SMTP) should reject": "FAIL",
+      "fetch to default http port should register ok": "FAIL",
+      "fetch to default https port should register ok": "FAIL",
+      "fetch to non-default non-bad port (8080) should register ok": "FAIL",
+      "fetch to port 443 should register ok": "FAIL",
+      "fetch to port 80 should register ok, even over https": "FAIL"
+    }
+  },
+  "background-fetch/update-ui.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Background Fetch updateUI called twice fails": "FAIL",
+      "Background Fetch updateUI fails when event is not active": "FAIL",
+      "Background Fetch updateUI resolves": "FAIL"
+    }
+  }
+}

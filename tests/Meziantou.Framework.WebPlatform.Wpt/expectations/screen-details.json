@@ -1,0 +1,22 @@
+{
+  "screen-details/getScreenDetails.tentative.https.window.js": {
+    "total": 5,
+    "failures": {
+      "Cached ScreenDetails interface from detached iframe does not crash, behaves okay": "FAIL",
+      "getScreenDetails() is present": "FAIL",
+      "getScreenDetails() rejects the promise with permission denied": "FAIL",
+      "getScreenDetails() resolves for attached iframe; rejects for detached iframe": "FAIL",
+      "getScreenDetails() returns the expected interface with permission granted": "FAIL"
+    }
+  },
+  "screen-details/isExtended.tentative.https.window.js": {
+    "total": 2,
+    "failures": {
+      "screen.isExtended is present": "FAIL",
+      "screen.isExtended is present for attached iframes": "FAIL"
+    }
+  },
+  "screen-details/permission.https.window.js": {
+    "total": 2
+  }
+}

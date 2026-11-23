@@ -1,0 +1,36 @@
+{
+  "window-management/additional-windowing-controls.tentative.https.html": {
+    "total": 5,
+    "failures": {
+      "Additional Windowing Controls methods are exposed on the Window interface": "FAIL",
+      "window.maximize() rejects with InvalidStateError when called outside web app scope": "FAIL",
+      "window.minimize() rejects with InvalidStateError when called outside web app scope": "FAIL",
+      "window.restore() rejects with InvalidStateError when called outside web app scope": "FAIL",
+      "window.setResizable() rejects with InvalidStateError when called outside web app scope": "FAIL"
+    }
+  },
+  "window-management/multi-screen-fullscreen-companion.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Enter fullscreen and open a popup from one transient activation.": "FAIL"
+    }
+  },
+  "window-management/multi-screen-fullscreen-enter.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Use multi-screen details to enter fullscreen on specific screens": "FAIL"
+    }
+  },
+  "window-management/multi-screen-fullscreen-move.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Use multi-screen details to move fullscreen between screens": "FAIL"
+    }
+  },
+  "window-management/multi-screen-window-open.tentative.https.html": {
+    "total": 1,
+    "failures": {
+      "Use multi-screen details to open a popup window on each screen": "FAIL"
+    }
+  }
+}

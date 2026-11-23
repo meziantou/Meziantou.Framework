@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of captured-mouse-events, an
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 0 | 4 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **4** | **4** | **–** |
+| **All** | **0** | **4** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,7 +26,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`capture-controller-oncapturedmousechange.https.html`](https://wpt.fyi/results/captured-mouse-events/capture-controller-oncapturedmousechange.https.html) | Disabled | – | REQUIRES(hardware) | Captured Mouse Events |
-| [`captured-mouse-event-constructor-inherited.html`](https://wpt.fyi/results/captured-mouse-events/captured-mouse-event-constructor-inherited.html) | Disabled | – | REQUIRES(hardware) | Captured Mouse Events |
-| [`captured-mouse-event-constructor.html`](https://wpt.fyi/results/captured-mouse-events/captured-mouse-event-constructor.html) | Disabled | – | REQUIRES(hardware) | Captured Mouse Events |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/captured-mouse-events/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Captured Mouse Events |
+| [`capture-controller-oncapturedmousechange.https.html`](https://wpt.fyi/results/captured-mouse-events/capture-controller-oncapturedmousechange.https.html) | Fail | 0 / 2 | REQUIRES(hardware) | Captured Mouse Events |
+| [`captured-mouse-event-constructor-inherited.html`](https://wpt.fyi/results/captured-mouse-events/captured-mouse-event-constructor-inherited.html) | Fail | 0 / 2 | REQUIRES(hardware) | Captured Mouse Events |
+| [`captured-mouse-event-constructor.html`](https://wpt.fyi/results/captured-mouse-events/captured-mouse-event-constructor.html) | Fail | 0 / 4 | REQUIRES(hardware) | Captured Mouse Events |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/captured-mouse-events/idlharness.https.window.js) | Fail | 9 / 18 | REQUIRES(hardware) | Captured Mouse Events |

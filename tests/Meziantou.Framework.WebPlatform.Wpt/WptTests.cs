@@ -737,6 +737,142 @@ public sealed class WptTests
     private static readonly string[] SvgExcludedDirectories = ["svg/types", "svg/path", "svg/geometry", "svg/painting"];
 
 
+    public static TheoryData<string> AiTests => GetTests("ai");
+
+    public static TheoryData<string> AudioOutputTests => GetTests("audio-output");
+
+    public static TheoryData<string> AudioSessionTests => GetTests("audio-session");
+
+    public static TheoryData<string> AutoplayPolicyDetectionTests => GetTests("autoplay-policy-detection");
+
+    public static TheoryData<string> BackgroundFetchTests => GetTests("background-fetch");
+
+    public static TheoryData<string> BackgroundSyncTests => GetTests("background-sync");
+
+    public static TheoryData<string> BluetoothTests => GetTests("bluetooth");
+
+    public static TheoryData<string> CapturedMouseEventsTests => GetTests("captured-mouse-events");
+
+    public static TheoryData<string> ConnectionAllowlistTests => GetTests("connection-allowlist");
+
+    public static TheoryData<string> ContactsTests => GetTests("contacts");
+
+    public static TheoryData<string> ContentIndexTests => GetTests("content-index");
+
+    public static TheoryData<string> ContenteditableTests => GetTests("contenteditable");
+
+    public static TheoryData<string> CoreAamTests => GetTests("core-aam");
+
+    public static TheoryData<string> CpuPerformanceTests => GetTests("cpu-performance");
+
+    public static TheoryData<string> CssExclusionsTests => GetTests("css/css-exclusions");
+
+    public static TheoryData<string> CssNavigationTests => GetTests("css/css-navigation");
+
+    public static TheoryData<string> DeviceBoundSessionCredentialsTests => GetTests("device-bound-session-credentials");
+
+    public static TheoryData<string> DirectSocketsTests => GetTests("direct-sockets");
+
+    public static TheoryData<string> DpubAamTests => GetTests("dpub-aam");
+
+    public static TheoryData<string> EcmaScriptTests => GetTests("ecmascript");
+
+    public static TheoryData<string> EyeDropperTests => GetTests("eyedropper");
+
+    public static TheoryData<string> FencedFrameTests => GetTests("fenced-frame");
+
+    public static TheoryData<string> FileSystemAccessTests => GetTests("file-system-access");
+
+    public static TheoryData<string> FontAccessTests => GetTests("font-access");
+
+    public static TheoryData<string> GamepadTests => GetTests("gamepad");
+
+    public static TheoryData<string> GraphicsAriaTests => GetTests("graphics-aria");
+
+    public static TheoryData<string> HtmlMediaCaptureTests => GetTests("html-media-capture");
+
+    public static TheoryData<string> HtmlCapabilityDelegationTests => GetTests("html/capability-delegation");
+
+    public static TheoryData<string> InfrastructureTests => GetTests("infrastructure");
+
+    public static TheoryData<string> InputDeviceCapabilitiesTests => GetTests("input-device-capabilities");
+
+    public static TheoryData<string> InstalledAppTests => GetTests("installedapp");
+
+    public static TheoryData<string> ManagedTests => GetTests("managed");
+
+    public static TheoryData<string> NavTrackingMitigationsTests => GetTests("nav-tracking-mitigations");
+
+    public static TheoryData<string> OldTestsTests => GetTests("old-tests");
+
+    public static TheoryData<string> PeriodicBackgroundSyncTests => GetTests("periodic-background-sync");
+
+    public static TheoryData<string> PermissionsRequestTests => GetTests("permissions-request");
+
+    public static TheoryData<string> PermissionsRevokeTests => GetTests("permissions-revoke");
+
+    public static TheoryData<string> PresentationApiTests => GetTests("presentation-api");
+
+    public static TheoryData<string> PrivateClickMeasurementTests => GetTests("private-click-measurement");
+
+    public static TheoryData<string> PushApiTests => GetTests("push-api");
+
+    public static TheoryData<string> RemotePlaybackTests => GetTests("remote-playback");
+
+    public static TheoryData<string> ScreenDetailsTests => GetTests("screen-details");
+
+    public static TheoryData<string> SerialTests => GetTests("serial");
+
+    public static TheoryData<string> SignedExchangeTests => GetTests("signed-exchange");
+
+    public static TheoryData<string> SpeechApiTests => GetTests("speech-api");
+
+    public static TheoryData<string> SubAppsTests => GetTests("subapps");
+
+    public static TheoryData<string> TrustTokensTests => GetTests("trust-tokens");
+
+    public static TheoryData<string> WebBundleTests => GetTests("web-bundle");
+
+    public static TheoryData<string> WebInstallTests => GetTests("web-install");
+
+    public static TheoryData<string> WebMonetizationTests => GetTests("web-monetization");
+
+    public static TheoryData<string> WebNfcTests => GetTests("web-nfc");
+
+    public static TheoryData<string> WebOtpTests => GetTests("web-otp");
+
+    public static TheoryData<string> WebDriverTests => GetTests("webdriver");
+
+    public static TheoryData<string> WebHidTests => GetTests("webhid");
+
+    public static TheoryData<string> WebMidiTests => GetTests("webmidi");
+
+    public static TheoryData<string> WebNNTests => GetTests("webnn");
+
+    public static TheoryData<string> WebRtcTests => GetTests("webrtc");
+
+    public static TheoryData<string> WebRtcEncodedTransformTests => GetTests("webrtc-encoded-transform");
+
+    public static TheoryData<string> WebRtcExtensionsTests => GetTests("webrtc-extensions");
+
+    public static TheoryData<string> WebRtcIceTests => GetTests("webrtc-ice");
+
+    public static TheoryData<string> WebRtcIdentityTests => GetTests("webrtc-identity");
+
+    public static TheoryData<string> WebRtcPriorityTests => GetTests("webrtc-priority");
+
+    public static TheoryData<string> WebRtcStatsTests => GetTests("webrtc-stats");
+
+    public static TheoryData<string> WebRtcSvcTests => GetTests("webrtc-svc");
+
+    public static TheoryData<string> WebTransportTests => GetTests("webtransport");
+
+    public static TheoryData<string> WebUsbTests => GetTests("webusb");
+
+    public static TheoryData<string> WebXRTests => GetTests("webxr");
+
+    public static TheoryData<string> WindowManagementTests => GetTests("window-management");
+
     /// <summary>The parsing and serialization of the values of the CSS properties (css/*/parsing), except the tests of other groups.</summary>
     public static TheoryData<string> CssParsingTests => GetTests(CssParsingDirectory, CssParsingExcludedDirectories);
 
@@ -2258,4 +2394,276 @@ public sealed class WptTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(CssParsingTests))]
     public void CssParsing(string test) => Run(CssParsingDirectory, test, CssParsingExcludedDirectories);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AiTests))]
+    public void Ai(string test) => Run("ai", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AudioOutputTests))]
+    public void AudioOutput(string test) => Run("audio-output", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AudioSessionTests))]
+    public void AudioSession(string test) => Run("audio-session", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(AutoplayPolicyDetectionTests))]
+    public void AutoplayPolicyDetection(string test) => Run("autoplay-policy-detection", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(BackgroundFetchTests))]
+    public void BackgroundFetch(string test) => Run("background-fetch", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(BackgroundSyncTests))]
+    public void BackgroundSync(string test) => Run("background-sync", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(BluetoothTests))]
+    public void Bluetooth(string test) => Run("bluetooth", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CapturedMouseEventsTests))]
+    public void CapturedMouseEvents(string test) => Run("captured-mouse-events", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ConnectionAllowlistTests))]
+    public void ConnectionAllowlist(string test) => Run("connection-allowlist", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ContactsTests))]
+    public void Contacts(string test) => Run("contacts", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ContentIndexTests))]
+    public void ContentIndex(string test) => Run("content-index", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ContenteditableTests))]
+    public void Contenteditable(string test) => Run("contenteditable", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CoreAamTests))]
+    public void CoreAam(string test) => Run("core-aam", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CpuPerformanceTests))]
+    public void CpuPerformance(string test) => Run("cpu-performance", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CssExclusionsTests))]
+    public void CssExclusions(string test) => Run("css/css-exclusions", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(CssNavigationTests))]
+    public void CssNavigation(string test) => Run("css/css-navigation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DeviceBoundSessionCredentialsTests))]
+    public void DeviceBoundSessionCredentials(string test) => Run("device-bound-session-credentials", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DirectSocketsTests))]
+    public void DirectSockets(string test) => Run("direct-sockets", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(DpubAamTests))]
+    public void DpubAam(string test) => Run("dpub-aam", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(EcmaScriptTests))]
+    public void EcmaScript(string test) => Run("ecmascript", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(EyeDropperTests))]
+    public void EyeDropper(string test) => Run("eyedropper", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(FencedFrameTests))]
+    public void FencedFrame(string test) => Run("fenced-frame", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(FileSystemAccessTests))]
+    public void FileSystemAccess(string test) => Run("file-system-access", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(FontAccessTests))]
+    public void FontAccess(string test) => Run("font-access", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GamepadTests))]
+    public void Gamepad(string test) => Run("gamepad", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(GraphicsAriaTests))]
+    public void GraphicsAria(string test) => Run("graphics-aria", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(HtmlMediaCaptureTests))]
+    public void HtmlMediaCapture(string test) => Run("html-media-capture", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(HtmlCapabilityDelegationTests))]
+    public void HtmlCapabilityDelegation(string test) => Run("html/capability-delegation", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(InfrastructureTests))]
+    public void Infrastructure(string test) => Run("infrastructure", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(InputDeviceCapabilitiesTests))]
+    public void InputDeviceCapabilities(string test) => Run("input-device-capabilities", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(InstalledAppTests))]
+    public void InstalledApp(string test) => Run("installedapp", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ManagedTests))]
+    public void Managed(string test) => Run("managed", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(NavTrackingMitigationsTests))]
+    public void NavTrackingMitigations(string test) => Run("nav-tracking-mitigations", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(OldTestsTests))]
+    public void OldTests(string test) => Run("old-tests", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PeriodicBackgroundSyncTests))]
+    public void PeriodicBackgroundSync(string test) => Run("periodic-background-sync", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PermissionsRequestTests))]
+    public void PermissionsRequest(string test) => Run("permissions-request", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PermissionsRevokeTests))]
+    public void PermissionsRevoke(string test) => Run("permissions-revoke", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PresentationApiTests))]
+    public void PresentationApi(string test) => Run("presentation-api", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PrivateClickMeasurementTests))]
+    public void PrivateClickMeasurement(string test) => Run("private-click-measurement", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PushApiTests))]
+    public void PushApi(string test) => Run("push-api", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(RemotePlaybackTests))]
+    public void RemotePlayback(string test) => Run("remote-playback", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(ScreenDetailsTests))]
+    public void ScreenDetails(string test) => Run("screen-details", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SerialTests))]
+    public void Serial(string test) => Run("serial", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SignedExchangeTests))]
+    public void SignedExchange(string test) => Run("signed-exchange", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SpeechApiTests))]
+    public void SpeechApi(string test) => Run("speech-api", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(SubAppsTests))]
+    public void SubApps(string test) => Run("subapps", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(TrustTokensTests))]
+    public void TrustTokens(string test) => Run("trust-tokens", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebBundleTests))]
+    public void WebBundle(string test) => Run("web-bundle", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebInstallTests))]
+    public void WebInstall(string test) => Run("web-install", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebMonetizationTests))]
+    public void WebMonetization(string test) => Run("web-monetization", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebNfcTests))]
+    public void WebNfc(string test) => Run("web-nfc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebOtpTests))]
+    public void WebOtp(string test) => Run("web-otp", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebDriverTests))]
+    public void WebDriver(string test) => Run("webdriver", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebHidTests))]
+    public void WebHid(string test) => Run("webhid", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebMidiTests))]
+    public void WebMidi(string test) => Run("webmidi", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebNNTests))]
+    public void WebNN(string test) => Run("webnn", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcTests))]
+    public void WebRtc(string test) => Run("webrtc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcEncodedTransformTests))]
+    public void WebRtcEncodedTransform(string test) => Run("webrtc-encoded-transform", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcExtensionsTests))]
+    public void WebRtcExtensions(string test) => Run("webrtc-extensions", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcIceTests))]
+    public void WebRtcIce(string test) => Run("webrtc-ice", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcIdentityTests))]
+    public void WebRtcIdentity(string test) => Run("webrtc-identity", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcPriorityTests))]
+    public void WebRtcPriority(string test) => Run("webrtc-priority", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcStatsTests))]
+    public void WebRtcStats(string test) => Run("webrtc-stats", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebRtcSvcTests))]
+    public void WebRtcSvc(string test) => Run("webrtc-svc", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebTransportTests))]
+    public void WebTransport(string test) => Run("webtransport", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebUsbTests))]
+    public void WebUsb(string test) => Run("webusb", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WebXRTests))]
+    public void WebXR(string test) => Run("webxr", test);
+
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(WindowManagementTests))]
+    public void WindowManagement(string test) => Run("window-management", test);
 }

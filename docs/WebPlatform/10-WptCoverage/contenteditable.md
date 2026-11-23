@@ -9,37 +9,29 @@ description: "The results of the web-platform-tests of contenteditable, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 4 | 4 | – |
+| [Stable](#stable-tests) | 4 | 4 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 1 | 1 | – |
-| [Crash tests](#crash-tests) | 0 | 1 | 1 | – |
-| **All** | **0** | **6** | **6** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **NOT IMPLEMENTED**: 6
-- **REQUIRES**: 6
-  - `user-input`: 6
+| [Reftests](#reftests) | 1 | 1 | 0 | 100% |
+| [Crash tests](#crash-tests) | 1 | 1 | 0 | 100% |
+| **All** | **6** | **6** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`anchor-active-contenteditable.html`](https://wpt.fyi/results/contenteditable/anchor-active-contenteditable.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | the editing of contenteditable elements: the editing commands of the typing, the deletion and the formatting (only `insertText`, `delete`, `forwardDelete`, `selectAll` and the clipboard commands are implemented); typing with `test_driver.send_keys` |
-| [`anchor-contenteditable-navigate.html`](https://wpt.fyi/results/contenteditable/anchor-contenteditable-navigate.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | the editing of contenteditable elements: the editing commands of the typing, the deletion and the formatting (only `insertText`, `delete`, `forwardDelete`, `selectAll` and the clipboard commands are implemented); typing with `test_driver.send_keys` |
-| [`designmode-iscontenteditable.html`](https://wpt.fyi/results/contenteditable/designmode-iscontenteditable.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | the editing of contenteditable elements: the editing commands of the typing, the deletion and the formatting (only `insertText`, `delete`, `forwardDelete`, `selectAll` and the clipboard commands are implemented); typing with `test_driver.send_keys` |
-| [`plaintext-only.html`](https://wpt.fyi/results/contenteditable/plaintext-only.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | the editing of contenteditable elements: the editing commands of the typing, the deletion and the formatting (only `insertText`, `delete`, `forwardDelete`, `selectAll` and the clipboard commands are implemented); typing with `test_driver.send_keys` |
+| [`anchor-active-contenteditable.html`](https://wpt.fyi/results/contenteditable/anchor-active-contenteditable.html) | Pass | 1 / 1 |  |  |
+| [`anchor-contenteditable-navigate.html`](https://wpt.fyi/results/contenteditable/anchor-contenteditable-navigate.html) | Pass | 1 / 1 |  |  |
+| [`designmode-iscontenteditable.html`](https://wpt.fyi/results/contenteditable/designmode-iscontenteditable.html) | Pass | 4 / 4 |  |  |
+| [`plaintext-only.html`](https://wpt.fyi/results/contenteditable/plaintext-only.html) | Pass | 2 / 2 |  |  |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`synthetic-height.html`](https://wpt.fyi/results/contenteditable/synthetic-height.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | the editing of contenteditable elements: the editing commands of the typing, the deletion and the formatting (only `insertText`, `delete`, `forwardDelete`, `selectAll` and the clipboard commands are implemented); typing with `test_driver.send_keys` |
+| [`synthetic-height.html`](https://wpt.fyi/results/contenteditable/synthetic-height.html) | Pass | 1 / 1 |  |  |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`select-text-change-crash.html`](https://wpt.fyi/results/contenteditable/select-text-change-crash.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | the editing of contenteditable elements: the editing commands of the typing, the deletion and the formatting (only `insertText`, `delete`, `forwardDelete`, `selectAll` and the clipboard commands are implemented); typing with `test_driver.send_keys` |
+| [`select-text-change-crash.html`](https://wpt.fyi/results/contenteditable/select-text-change-crash.html) | Pass | 1 / 1 |  |  |

@@ -10,10 +10,10 @@ description: "The results of the web-platform-tests of trust-tokens, and why the
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 3 | 3 | – |
+| [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **3** | **3** | **–** |
+| **All** | **0** | **3** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,6 +25,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`end-to-end/has-trust-token-with-no-top-frame.tentative.https.html`](https://wpt.fyi/results/trust-tokens/end-to-end/has-trust-token-with-no-top-frame.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Private State Tokens |
-| [`trust-token-parameter-validation-xhr.tentative.https.html`](https://wpt.fyi/results/trust-tokens/trust-token-parameter-validation-xhr.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Private State Tokens |
-| [`trust-token-parameter-validation.tentative.https.html`](https://wpt.fyi/results/trust-tokens/trust-token-parameter-validation.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Private State Tokens |
+| [`end-to-end/has-trust-token-with-no-top-frame.tentative.https.html`](https://wpt.fyi/results/trust-tokens/end-to-end/has-trust-token-with-no-top-frame.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Private State Tokens |
+| [`trust-token-parameter-validation-xhr.tentative.https.html`](https://wpt.fyi/results/trust-tokens/trust-token-parameter-validation-xhr.tentative.https.html) | Fail | 5 / 8 | NOT IMPLEMENTED | Private State Tokens |
+| [`trust-token-parameter-validation.tentative.https.html`](https://wpt.fyi/results/trust-tokens/trust-token-parameter-validation.tentative.https.html) | Fail | 1 / 6 | NOT IMPLEMENTED | Private State Tokens |

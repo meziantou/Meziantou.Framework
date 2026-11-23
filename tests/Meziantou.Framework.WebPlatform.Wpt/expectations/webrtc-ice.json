@@ -1,0 +1,28 @@
+{
+  "webrtc-ice/RTCIceTransport-extension.https.html": {
+    "harness": "ERROR",
+    "total": 20,
+    "failures": {
+      "RTCIceTransport constructor does not throw": "FAIL",
+      "RTCIceTransport initial properties are set": "FAIL",
+      "eventually transition gatheringState to 'complete'": "FAIL",
+      "gather() returns at least one host candidate": "FAIL",
+      "gather() returns no candidates with { gatherPolicy: 'relay'} and no turn servers": "FAIL",
+      "gather() throws if called twice": "FAIL",
+      "gather() throws if closed": "FAIL",
+      "gather() transitions gatheringState to 'gathering'": "FAIL",
+      "gather() with 2 stun servers should succeed": "FAIL",
+      "gather() with one turns server, one turn server, username, credential should succeed": "FAIL",
+      "gather() with { iceServers: null } should throw TypeError": "FAIL",
+      "gather() with { iceServers: undefined } should succeed": "FAIL",
+      "onicecandidate fires with null candidate before gatheringState transitions to 'complete'": "FAIL",
+      "start() does not transition state to 'checking' if no remote candidates added": "FAIL",
+      "start() sets role attribute to 'controlling'": "FAIL",
+      "start() throws if closed": "FAIL",
+      "start() throws if password does not conform to syntax": "FAIL",
+      "start() throws if usernameFragment does not conform to syntax": "FAIL",
+      "start() throws if usernameFragment or password not set": "FAIL",
+      "start() with default role sets role attribute to 'controlled'": "FAIL"
+    }
+  }
+}

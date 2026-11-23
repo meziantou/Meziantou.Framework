@@ -9,20 +9,20 @@ description: "The results of the web-platform-tests of webdriver, and why the te
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| **All** | **0** | **1** | **0** | **0%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **OUT OF SCOPE**: 1
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`tests/classic/idlharness.window.js`](https://wpt.fyi/results/webdriver/tests/classic/idlharness.window.js) | Disabled | – | OUT OF SCOPE | WebDriver tests |
+| [`tests/classic/idlharness.window.js`](https://wpt.fyi/results/webdriver/tests/classic/idlharness.window.js) | Fail | 12 / 14 | NOT IMPLEMENTED | `navigator.webdriver` (the `NavigatorAutomationInformation` interface of WebDriver) |

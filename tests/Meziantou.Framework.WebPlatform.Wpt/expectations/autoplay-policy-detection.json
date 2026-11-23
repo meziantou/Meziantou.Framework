@@ -1,0 +1,25 @@
+{
+  "autoplay-policy-detection/autoplaypolicy.html": {
+    "total": 3,
+    "failures": {
+      "Test method 'getAutoplayPolicy(AudioContext context)'": "FAIL",
+      "Test method 'getAutoplayPolicy(AutoplayPolicyMediaType type)'": "FAIL",
+      "Test method 'getAutoplayPolicy(HTMLMediaElement element)'": "FAIL"
+    }
+  },
+  "autoplay-policy-detection/autoplaypolicy_media_element.html": {
+    "total": 2,
+    "failures": {
+      "Check autoplay policy when playing audible media element": "FAIL",
+      "Check autoplay policy when playing inaudible media element": "FAIL"
+    }
+  },
+  "autoplay-policy-detection/idlharness.window.js": {
+    "total": 17,
+    "failures": {
+      "Navigator interface: operation getAutoplayPolicy(AudioContext)": "FAIL",
+      "Navigator interface: operation getAutoplayPolicy(AutoplayPolicyMediaType)": "FAIL",
+      "Navigator interface: operation getAutoplayPolicy(HTMLMediaElement)": "FAIL"
+    }
+  }
+}

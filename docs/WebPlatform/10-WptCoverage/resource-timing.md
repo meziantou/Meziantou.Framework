@@ -153,7 +153,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`delivery-type.tentative.any.js`](https://wpt.fyi/results/resource-timing/delivery-type.tentative.any.js) | Pass | 12 / 12 |  |  |
-| [`resource-timing-failed-fetch-web-bundle.tentative.html`](https://wpt.fyi/results/resource-timing/resource-timing-failed-fetch-web-bundle.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | Web Bundles (`<script type="webbundle">`); `/web-bundle/resources/test-helpers.js` is not fetched |
+| [`resource-timing-failed-fetch-web-bundle.tentative.html`](https://wpt.fyi/results/resource-timing/resource-timing-failed-fetch-web-bundle.tentative.html) | Error | 0 / 0 | NOT IMPLEMENTED | Web Bundles (`<script type="webbundle">`) |
 | [`tentative/initiator-url/dedicated-worker-script.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/dedicated-worker-script.html) | Pass | 6 / 6 |  |  |
 | [`tentative/initiator-url/direct.any.js`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/direct.any.js) | Pass | 4 / 4 |  |  |
 | [`tentative/initiator-url/event-handler-overwritten.html`](https://wpt.fyi/results/resource-timing/tentative/initiator-url/event-handler-overwritten.html) | Pass | 1 / 1 |  |  |

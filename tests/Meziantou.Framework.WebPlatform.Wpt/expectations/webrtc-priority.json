@@ -1,0 +1,21 @@
+{
+  "webrtc-priority/RTCPeerConnection-ondatachannel.html": {
+    "total": 2,
+    "failures": {
+      "In-band negotiated channel created on remote peer should match the same (default) configuration as local peer": "FAIL",
+      "In-band negotiated channel created on remote peer should match the same configuration as local peer": "FAIL"
+    }
+  },
+  "webrtc-priority/RTCRtpParameters-encodings.html": {
+    "total": 7,
+    "failures": {
+      "sender.getParameters() should return sendEncodings set by addTransceiver()": "FAIL",
+      "setParameters() with modified encoding.active should succeed with RTCRtpTransceiverInit": "FAIL",
+      "setParameters() with modified encoding.active should succeed without RTCRtpTransceiverInit": "FAIL",
+      "setParameters() with modified encoding.networkPriority should succeed with RTCRtpTransceiverInit": "FAIL",
+      "setParameters() with modified encoding.networkPriority should succeed without RTCRtpTransceiverInit": "FAIL",
+      "setParameters() with modified encoding.priority should succeed with RTCRtpTransceiverInit": "FAIL",
+      "setParameters() with modified encoding.priority should succeed without RTCRtpTransceiverInit": "FAIL"
+    }
+  }
+}

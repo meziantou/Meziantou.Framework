@@ -1,0 +1,20 @@
+{
+  "html-media-capture/capture_reflect.html": {
+    "total": 6,
+    "failures": {
+      "Element input should have own property capture": "FAIL",
+      "input.capture is \"\" when the capture attribute is absent": "FAIL",
+      "input.capture is \"\" when the capture attribute is invalid value default": "FAIL",
+      "input.capture is \"\" when the capture attribute is missing value default": "FAIL",
+      "input.capture is \"environment\" when the capture attribute is environment": "FAIL",
+      "input.capture is \"user\" when the capture attribute is user": "FAIL"
+    }
+  },
+  "html-media-capture/idlharness.window.js": {
+    "total": 16,
+    "failures": {
+      "HTMLInputElement interface: attribute capture": "FAIL",
+      "HTMLInputElement interface: input must inherit property \"capture\" with the proper type": "FAIL"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "private-click-measurement/idlharness.window.js": {
+    "total": 17,
+    "failures": {
+      "HTMLAnchorElement interface: attribute attributionSourceId": "FAIL",
+      "HTMLAnchorElement interface: document.createElement(\"a\") must inherit property \"attributionSourceId\" with the proper type": "FAIL"
+    }
+  }
+}

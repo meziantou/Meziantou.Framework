@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webrtc-ice, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
+| **All** | **0** | **1** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,4 +25,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`RTCIceTransport-extension.https.html`](https://wpt.fyi/results/webrtc-ice/RTCIceTransport-extension.https.html) | Disabled | – | NOT IMPLEMENTED | WebRTC |
+| [`RTCIceTransport-extension.https.html`](https://wpt.fyi/results/webrtc-ice/RTCIceTransport-extension.https.html) | Error | 0 / 20 | NOT IMPLEMENTED | WebRTC |

@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of managed, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 0 | 2 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,5 +25,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`managed-config-error.https.window.js`](https://wpt.fyi/results/managed/managed-config-error.https.window.js) | Disabled | – | NOT IMPLEMENTED | Device Attributes API (managed devices) |
-| [`managed-config-success.https.window.js`](https://wpt.fyi/results/managed/managed-config-success.https.window.js) | Disabled | – | NOT IMPLEMENTED | Device Attributes API (managed devices) |
+| [`managed-config-error.https.window.js`](https://wpt.fyi/results/managed/managed-config-error.https.window.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Device Attributes API (managed devices) |
+| [`managed-config-success.https.window.js`](https://wpt.fyi/results/managed/managed-config-success.https.window.js) | Fail | 0 / 6 | NOT IMPLEMENTED | Device Attributes API (managed devices) |

@@ -2301,14 +2301,11 @@
     "total": 1
   },
   "fetch/local-network-access/dedicated-worker.tentative.https.html": {
-    "harness": "TIMEOUT",
     "total": 6,
     "failures": {
       "LNA Dedicated Worker Public to Loopback Fetch without permission": "FAIL",
-      "LNA Dedicated Worker Public to Loopback WebSocket with permission": "NOTRUN",
-      "LNA Dedicated Worker Public to Loopback WebSocket without permission": "NOTRUN",
-      "LNA Dedicated Worker Public to Loopback WebTransport with permission": "TIMEOUT",
-      "LNA Dedicated Worker Public to Loopback WebTransport without permission": "NOTRUN"
+      "LNA Dedicated Worker Public to Loopback WebSocket without permission": "FAIL",
+      "LNA Dedicated Worker Public to Loopback WebTransport with permission": "FAIL"
     }
   },
   "fetch/local-network-access/fetch.tentative.https.html": {
@@ -2364,28 +2361,20 @@
     }
   },
   "fetch/local-network-access/service-worker.tentative.https.html": {
-    "harness": "TIMEOUT",
     "total": 9,
     "failures": {
-      "LNA Service Worker Public navigate to Loopback in iframe with permission": "NOTRUN",
-      "LNA Service Worker Public navigate to Loopback in iframe without permission": "NOTRUN",
-      "LNA Service Worker Public navigate to Loopback main frame without permission": "NOTRUN",
+      "LNA Service Worker Public navigate to Loopback in iframe without permission": "FAIL",
       "LNA Service Worker Public to Loopback Fetch without permission": "FAIL",
-      "LNA Service Worker Public to Loopback WebSocket with permission": "NOTRUN",
-      "LNA Service Worker Public to Loopback WebSocket without permission": "NOTRUN",
-      "LNA Service Worker Public to Loopback WebTransport with permission": "TIMEOUT",
-      "LNA Service Worker Public to Loopback WebTransport without permission": "NOTRUN"
+      "LNA Service Worker Public to Loopback WebSocket without permission": "FAIL",
+      "LNA Service Worker Public to Loopback WebTransport with permission": "FAIL"
     }
   },
   "fetch/local-network-access/shared-worker.tentative.https.html": {
-    "harness": "TIMEOUT",
     "total": 6,
     "failures": {
       "LNA Shared Worker Public to Loopback Fetch without permission": "FAIL",
-      "LNA Shared Worker Public to Loopback WebSocket with permission": "NOTRUN",
-      "LNA Shared Worker Public to Loopback WebSocket without permission": "NOTRUN",
-      "LNA Shared Worker Public to Loopback WebTransport with permission": "TIMEOUT",
-      "LNA Shared Worker Public to Loopback WebTransport without permission": "NOTRUN"
+      "LNA Shared Worker Public to Loopback WebSocket without permission": "FAIL",
+      "LNA Shared Worker Public to Loopback WebTransport with permission": "FAIL"
     }
   },
   "fetch/local-network-access/websocket.tentative.https.html": {

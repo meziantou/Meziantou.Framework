@@ -10,27 +10,27 @@ description: "The results of the web-platform-tests of html/capability-delegatio
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 7 | 7 | – |
+| [Tentative](#tentative-tests) | 1 | 7 | 0 | 14% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **7** | **7** | **–** |
+| **All** | **1** | **7** | **0** | **14%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 7
-- **REQUIRES**: 7
-  - `user-input`: 7
+- **NOT IMPLEMENTED**: 6
+- **REQUIRES**: 6
+  - `user-input`: 6
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`delegate-fullscreen-request-popup-cross-origin.https.sub.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-popup-cross-origin.https.sub.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
-| [`delegate-fullscreen-request-popup-same-origin.https.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-popup-same-origin.https.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
-| [`delegate-fullscreen-request-subframe-cross-origin.https.sub.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-subframe-cross-origin.https.sub.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
-| [`delegate-fullscreen-request-subframe-same-origin.https.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-subframe-same-origin.https.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
-| [`delegation-consumes-activation.https.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegation-consumes-activation.https.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
-| [`delegation-sender-checks.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegation-sender-checks.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
-| [`frame-capability-delegation-popup-blocked.tentative.html`](https://wpt.fyi/results/html/capability-delegation/frame-capability-delegation-popup-blocked.tentative.html) | Disabled | – | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
+| [`delegate-fullscreen-request-popup-cross-origin.https.sub.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-popup-cross-origin.https.sub.tentative.html) | Fail | 2 / 3 | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
+| [`delegate-fullscreen-request-popup-same-origin.https.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-popup-same-origin.https.tentative.html) | Fail | 2 / 3 | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
+| [`delegate-fullscreen-request-subframe-cross-origin.https.sub.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-subframe-cross-origin.https.sub.tentative.html) | Fail | 2 / 3 | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
+| [`delegate-fullscreen-request-subframe-same-origin.https.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegate-fullscreen-request-subframe-same-origin.https.tentative.html) | Pass | 3 / 3 |  |  |
+| [`delegation-consumes-activation.https.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegation-consumes-activation.https.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
+| [`delegation-sender-checks.tentative.html`](https://wpt.fyi/results/html/capability-delegation/delegation-sender-checks.tentative.html) | Timeout | 0 / 3 | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |
+| [`frame-capability-delegation-popup-blocked.tentative.html`](https://wpt.fyi/results/html/capability-delegation/frame-capability-delegation-popup-blocked.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED, REQUIRES(user-input) | capability delegation (the `delegate` option of `postMessage()`); activation through `test_driver` clicks |

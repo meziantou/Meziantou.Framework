@@ -1,0 +1,9 @@
+{
+  "web-monetization/rellist-supports.tentative.html": {
+    "total": 5,
+    "failures": {
+      "<link> supports the monetization link type": "FAIL",
+      "The monetization link type is matched ASCII case-insensitively": "FAIL"
+    }
+  }
+}

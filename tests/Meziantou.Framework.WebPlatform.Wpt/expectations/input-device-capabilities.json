@@ -1,0 +1,28 @@
+{
+  "input-device-capabilities/idlharness.window.js": {
+    "total": 22,
+    "failures": {
+      "InputDeviceCapabilities interface object length": "FAIL",
+      "InputDeviceCapabilities interface object name": "FAIL",
+      "InputDeviceCapabilities interface: attribute firesTouchEvents": "FAIL",
+      "InputDeviceCapabilities interface: attribute pointerMovementScrolls": "FAIL",
+      "InputDeviceCapabilities interface: existence and properties of interface object": "FAIL",
+      "InputDeviceCapabilities interface: existence and properties of interface prototype object": "FAIL",
+      "InputDeviceCapabilities interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "InputDeviceCapabilities interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "InputDeviceCapabilities interface: new InputDeviceCapabilities must inherit property \"firesTouchEvents\" with the proper type": "FAIL",
+      "InputDeviceCapabilities interface: new InputDeviceCapabilities must inherit property \"pointerMovementScrolls\" with the proper type": "FAIL",
+      "InputDeviceCapabilities must be primary interface of new InputDeviceCapabilities": "FAIL",
+      "Stringification of new InputDeviceCapabilities": "FAIL",
+      "UIEvent interface: attribute sourceCapabilities": "FAIL"
+    }
+  },
+  "input-device-capabilities/sourcecapabilities-sequential-focus-navigation.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "same-origin iframe": "TIMEOUT",
+      "same-site cross-origin iframe": "NOTRUN"
+    }
+  }
+}

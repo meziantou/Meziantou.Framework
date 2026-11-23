@@ -1,0 +1,18 @@
+{
+  "permissions-request/idlharness.any.js": {
+    "total": 7,
+    "failures": {
+      "Permissions interface: calling request(object) on navigator.permissions with too few arguments must throw TypeError": "FAIL",
+      "Permissions interface: navigator.permissions must inherit property \"request(object)\" with the proper type": "FAIL",
+      "Permissions interface: operation request(object)": "FAIL"
+    }
+  },
+  "permissions-request/idlharness.any.js#dedicatedworker": {
+    "total": 7,
+    "failures": {
+      "Permissions interface: calling request(object) on navigator.permissions with too few arguments must throw TypeError": "FAIL",
+      "Permissions interface: navigator.permissions must inherit property \"request(object)\" with the proper type": "FAIL",
+      "Permissions interface: operation request(object)": "FAIL"
+    }
+  }
+}

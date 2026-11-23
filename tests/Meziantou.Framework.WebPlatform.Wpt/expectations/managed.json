@@ -1,0 +1,21 @@
+{
+  "managed/managed-config-error.https.window.js": {
+    "total": 3,
+    "failures": {
+      "Dictionary instead of list": "FAIL",
+      "Empty key list": "FAIL",
+      "Number instead of keys": "FAIL"
+    }
+  },
+  "managed/managed-config-success.https.window.js": {
+    "total": 6,
+    "failures": {
+      "A change in managed configuration is observed.": "FAIL",
+      "App is not managed.": "FAIL",
+      "Configuration is returned": "FAIL",
+      "Only existing keys are returned.": "FAIL",
+      "Selected keys are returned.": "FAIL",
+      "Values can be of any type": "FAIL"
+    }
+  }
+}

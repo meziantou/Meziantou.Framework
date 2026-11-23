@@ -3,15 +3,23 @@
     "total": 18
   },
   "video-rvfc/request-video-frame-callback-before-xr-session.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 4,
+    "failures": {
+      "Make sure video.rVFC works during a non-immersive session - webgl": "FAIL",
+      "Make sure video.rVFC works during a non-immersive session - webgl2": "FAIL",
+      "Make sure video.rVFC works during an immersive session - webgl": "FAIL",
+      "Make sure video.rVFC works during an immersive session - webgl2": "FAIL"
+    }
   },
   "video-rvfc/request-video-frame-callback-dom.html": {
     "total": 3
   },
   "video-rvfc/request-video-frame-callback-during-xr-session.https.html": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 2,
+    "failures": {
+      "Make sure video.rVFC callbacks started during an immersive session continue after it ends - webgl": "FAIL",
+      "Make sure video.rVFC callbacks started during an immersive session continue after it ends - webgl2": "FAIL"
+    }
   },
   "video-rvfc/request-video-frame-callback-parallel.html": {
     "total": 2

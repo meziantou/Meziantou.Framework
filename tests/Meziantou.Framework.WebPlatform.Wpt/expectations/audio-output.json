@@ -1,0 +1,73 @@
+{
+  "audio-output/enumerateDevices-permissions-policy.https.html": {
+    "total": 1
+  },
+  "audio-output/enumerateDevices-with-selectAudioOutput.https.html": {
+    "total": 3,
+    "failures": {
+      "enumerateDevices() after selectAudioOutput()": "FAIL",
+      "selectAudioOutput()": "FAIL"
+    }
+  },
+  "audio-output/idlharness.https.window.js": {
+    "total": 20,
+    "failures": {
+      "HTMLMediaElement interface: attribute sinkId": "FAIL",
+      "HTMLMediaElement interface: operation setSinkId(DOMString)": "FAIL",
+      "MediaDevices interface: calling selectAudioOutput(optional AudioOutputOptions) on navigator.mediaDevices with too few arguments must throw TypeError": "FAIL",
+      "MediaDevices interface: navigator.mediaDevices must inherit property \"selectAudioOutput(optional AudioOutputOptions)\" with the proper type": "FAIL",
+      "MediaDevices interface: operation selectAudioOutput(optional AudioOutputOptions)": "FAIL"
+    }
+  },
+  "audio-output/removeTrack-after-setSinkId.https.html": {
+    "total": 1,
+    "failures": {
+      "Test source track removal after setSinkId does not crash": "FAIL"
+    }
+  },
+  "audio-output/secure-context.html": {
+    "total": 2
+  },
+  "audio-output/selectAudioOutput-permissions-policy.https.sub.html": {
+    "total": 5,
+    "failures": {
+      "Default \"speaker-selection\" permissions policy [\"self\"] allows same-origin iframes.": "FAIL",
+      "Default \"speaker-selection\" permissions policy [\"self\"] allows the top-level document.": "FAIL",
+      "Default \"speaker-selection\" permissions policy [\"self\"] disallows cross-origin iframes.": "FAIL",
+      "permissions policy \"speaker-selection\" can be disabled in same-origin iframes using \"allow\" attribute.": "FAIL",
+      "permissions policy \"speaker-selection\" can be enabled in cross-origin iframes using \"allow\" attribute.": "FAIL"
+    }
+  },
+  "audio-output/selectAudioOutput-sans-user-activation.https.html": {
+    "total": 1,
+    "failures": {
+      "selectAudioOutput() before user activation": "FAIL"
+    }
+  },
+  "audio-output/setSinkId-permissions-policy.https.sub.html": {
+    "total": 5,
+    "failures": {
+      "Default \"speaker-selection\" permissions policy [\"self\"] allows same-origin iframes.": "FAIL",
+      "Default \"speaker-selection\" permissions policy [\"self\"] allows the top-level document.": "FAIL",
+      "Default \"speaker-selection\" permissions policy [\"self\"] disallows cross-origin iframes.": "FAIL",
+      "permissions policy \"speaker-selection\" can be disabled in same-origin iframes using \"allow\" attribute.": "FAIL",
+      "permissions policy \"speaker-selection\" can be enabled in cross-origin iframes using \"allow\" attribute.": "FAIL"
+    }
+  },
+  "audio-output/setSinkId-with-selectAudioOutput.https.html": {
+    "total": 4,
+    "failures": {
+      "setSinkId() after selectAudioOutput()": "FAIL",
+      "setSinkId() on video after loadeddata": "FAIL",
+      "setSinkId() on video after play": "FAIL",
+      "setSinkId() with deviceID from another window": "FAIL"
+    }
+  },
+  "audio-output/setSinkId.https.html": {
+    "total": 3,
+    "failures": {
+      "setSinkId fails with NotFoundError on made up deviceid": "FAIL",
+      "setSinkId on default audio output should always work": "FAIL"
+    }
+  }
+}

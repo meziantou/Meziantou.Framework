@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of installedapp, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 0 | 2 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,5 +25,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.window.js`](https://wpt.fyi/results/installedapp/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | getInstalledRelatedApps() |
-| [`installedapp.https.window.js`](https://wpt.fyi/results/installedapp/installedapp.https.window.js) | Disabled | – | NOT IMPLEMENTED | getInstalledRelatedApps() |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/installedapp/idlharness.https.window.js) | Fail | 14 / 16 | NOT IMPLEMENTED | getInstalledRelatedApps() |
+| [`installedapp.https.window.js`](https://wpt.fyi/results/installedapp/installedapp.https.window.js) | Fail | 0 / 2 | NOT IMPLEMENTED | getInstalledRelatedApps() |

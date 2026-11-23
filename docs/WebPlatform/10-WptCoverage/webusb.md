@@ -9,52 +9,52 @@ description: "The results of the web-platform-tests of webusb, and why the tests
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 32 | 32 | – |
+| [Stable](#stable-tests) | 3 | 32 | 0 | 9% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **32** | **32** | **–** |
+| **All** | **3** | **32** | **0** | **9%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 32
-  - `hardware`: 32
+- **REQUIRES**: 29
+  - `hardware`: 29
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`getDevices/reject_opaque_origin.https.html`](https://wpt.fyi/results/webusb/getDevices/reject_opaque_origin.https.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`getDevices/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/webusb/getDevices/sandboxed_iframe.https.window.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/webusb/idlharness.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`insecure-context.any.js`](https://wpt.fyi/results/webusb/insecure-context.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`protected-interface-classes.https.any.js`](https://wpt.fyi/results/webusb/protected-interface-classes.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`requestDevice/reject_opaque_origin.https.html`](https://wpt.fyi/results/webusb/requestDevice/reject_opaque_origin.https.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`requestDevice/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/webusb/requestDevice/sandboxed_iframe.https.window.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/webusb/usb-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/webusb/usb-allowed-by-permissions-policy-attribute.https.sub.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/webusb/usb-allowed-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/webusb/usb-default-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/webusb/usb-disabled-by-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-garbage-collection.https.window.js`](https://wpt.fyi/results/webusb/usb-garbage-collection.https.window.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb-supported-by-permissions-policy.html`](https://wpt.fyi/results/webusb/usb-supported-by-permissions-policy.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb.https.any.js`](https://wpt.fyi/results/webusb/usb.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb.https.window.js`](https://wpt.fyi/results/webusb/usb.https.window.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usb.serviceworker.https.html`](https://wpt.fyi/results/webusb/usb.serviceworker.https.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbAlternateInterface.https.any.js`](https://wpt.fyi/results/webusb/usbAlternateInterface.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbConfiguration.https.any.js`](https://wpt.fyi/results/webusb/usbConfiguration.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbConnectionEvent.https.any.js`](https://wpt.fyi/results/webusb/usbConnectionEvent.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbDevice-iframe.https.html`](https://wpt.fyi/results/webusb/usbDevice-iframe.https.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbDevice-same-objecct.https.any.js`](https://wpt.fyi/results/webusb/usbDevice-same-objecct.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbDevice-worker.https.html`](https://wpt.fyi/results/webusb/usbDevice-worker.https.html) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbDevice.https.any.js`](https://wpt.fyi/results/webusb/usbDevice.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbEndpoint.https.any.js`](https://wpt.fyi/results/webusb/usbEndpoint.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbInTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbInTransferResult.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbInterface.https.any.js`](https://wpt.fyi/results/webusb/usbInterface.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbIsochronousInTransferPacket.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousInTransferPacket.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbIsochronousInTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousInTransferResult.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbIsochronousOutTransferPacket.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousOutTransferPacket.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbIsochronousOutTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousOutTransferResult.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
-| [`usbOutTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbOutTransferResult.https.any.js) | Disabled | – | REQUIRES(hardware) | WebUSB |
+| [`getDevices/reject_opaque_origin.https.html`](https://wpt.fyi/results/webusb/getDevices/reject_opaque_origin.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | WebUSB |
+| [`getDevices/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/webusb/getDevices/sandboxed_iframe.https.window.js) | Timeout | 0 / 1 | REQUIRES(hardware) | WebUSB |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/webusb/idlharness.https.any.js) | Fail | 46 / 557 | REQUIRES(hardware) | WebUSB |
+| [`insecure-context.any.js`](https://wpt.fyi/results/webusb/insecure-context.any.js) | Pass | 28 / 28 |  |  |
+| [`protected-interface-classes.https.any.js`](https://wpt.fyi/results/webusb/protected-interface-classes.https.any.js) | Fail | 0 / 14 | REQUIRES(hardware) | WebUSB |
+| [`requestDevice/reject_opaque_origin.https.html`](https://wpt.fyi/results/webusb/requestDevice/reject_opaque_origin.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | WebUSB |
+| [`requestDevice/sandboxed_iframe.https.window.js`](https://wpt.fyi/results/webusb/requestDevice/sandboxed_iframe.https.window.js) | Fail | 0 / 1 | REQUIRES(hardware) | WebUSB |
+| [`usb-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/webusb/usb-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Timeout | 1 / 4 | REQUIRES(hardware) | WebUSB |
+| [`usb-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/webusb/usb-allowed-by-permissions-policy-attribute.https.sub.html) | Timeout | 0 / 5 | REQUIRES(hardware) | WebUSB |
+| [`usb-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/webusb/usb-allowed-by-permissions-policy.https.sub.html) | Timeout | 0 / 6 | REQUIRES(hardware) | WebUSB |
+| [`usb-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/webusb/usb-default-permissions-policy.https.sub.html) | Fail | 1 / 3 | REQUIRES(hardware) | WebUSB |
+| [`usb-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/webusb/usb-disabled-by-permissions-policy.https.sub.html) | Timeout | 2 / 7 | REQUIRES(hardware) | WebUSB |
+| [`usb-garbage-collection.https.window.js`](https://wpt.fyi/results/webusb/usb-garbage-collection.https.window.js) | Fail | 0 / 1 | REQUIRES(hardware) | WebUSB |
+| [`usb-supported-by-permissions-policy.html`](https://wpt.fyi/results/webusb/usb-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`usb.https.any.js`](https://wpt.fyi/results/webusb/usb.https.any.js) | Fail | 0 / 8 | REQUIRES(hardware) | WebUSB |
+| [`usb.https.window.js`](https://wpt.fyi/results/webusb/usb.https.window.js) | Fail | 0 / 7 | REQUIRES(hardware) | WebUSB |
+| [`usb.serviceworker.https.html`](https://wpt.fyi/results/webusb/usb.serviceworker.https.html) | Pass | 2 / 2 |  |  |
+| [`usbAlternateInterface.https.any.js`](https://wpt.fyi/results/webusb/usbAlternateInterface.https.any.js) | Fail | 0 / 4 | REQUIRES(hardware) | WebUSB |
+| [`usbConfiguration.https.any.js`](https://wpt.fyi/results/webusb/usbConfiguration.https.any.js) | Fail | 0 / 4 | REQUIRES(hardware) | WebUSB |
+| [`usbConnectionEvent.https.any.js`](https://wpt.fyi/results/webusb/usbConnectionEvent.https.any.js) | Fail | 0 / 4 | REQUIRES(hardware) | WebUSB |
+| [`usbDevice-iframe.https.html`](https://wpt.fyi/results/webusb/usbDevice-iframe.https.html) | Fail | 0 / 3 | REQUIRES(hardware) | WebUSB |
+| [`usbDevice-same-objecct.https.any.js`](https://wpt.fyi/results/webusb/usbDevice-same-objecct.https.any.js) | Fail | 0 / 2 | REQUIRES(hardware) | WebUSB |
+| [`usbDevice-worker.https.html`](https://wpt.fyi/results/webusb/usbDevice-worker.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | WebUSB |
+| [`usbDevice.https.any.js`](https://wpt.fyi/results/webusb/usbDevice.https.any.js) | Fail | 0 / 150 | REQUIRES(hardware) | WebUSB |
+| [`usbEndpoint.https.any.js`](https://wpt.fyi/results/webusb/usbEndpoint.https.any.js) | Fail | 0 / 4 | REQUIRES(hardware) | WebUSB |
+| [`usbInTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbInTransferResult.https.any.js) | Fail | 0 / 8 | REQUIRES(hardware) | WebUSB |
+| [`usbInterface.https.any.js`](https://wpt.fyi/results/webusb/usbInterface.https.any.js) | Fail | 0 / 8 | REQUIRES(hardware) | WebUSB |
+| [`usbIsochronousInTransferPacket.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousInTransferPacket.https.any.js) | Fail | 0 / 8 | REQUIRES(hardware) | WebUSB |
+| [`usbIsochronousInTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousInTransferResult.https.any.js) | Fail | 0 / 6 | REQUIRES(hardware) | WebUSB |
+| [`usbIsochronousOutTransferPacket.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousOutTransferPacket.https.any.js) | Fail | 0 / 6 | REQUIRES(hardware) | WebUSB |
+| [`usbIsochronousOutTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbIsochronousOutTransferResult.https.any.js) | Fail | 0 / 4 | REQUIRES(hardware) | WebUSB |
+| [`usbOutTransferResult.https.any.js`](https://wpt.fyi/results/webusb/usbOutTransferResult.https.any.js) | Fail | 0 / 6 | REQUIRES(hardware) | WebUSB |

@@ -1,0 +1,14 @@
+{
+  "web-otp/idlharness.https.window.js": {
+    "total": 13,
+    "failures": {
+      "OTPCredential interface object length": "FAIL",
+      "OTPCredential interface object name": "FAIL",
+      "OTPCredential interface: attribute code": "FAIL",
+      "OTPCredential interface: existence and properties of interface object": "FAIL",
+      "OTPCredential interface: existence and properties of interface prototype object": "FAIL",
+      "OTPCredential interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "OTPCredential interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+    }
+  }
+}

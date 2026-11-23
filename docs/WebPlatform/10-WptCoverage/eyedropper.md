@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of eyedropper, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
-| [Tentative](#tentative-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
+| [Tentative](#tentative-tests) | 0 | 1 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,10 +25,10 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.window.js`](https://wpt.fyi/results/eyedropper/idlharness.https.window.js) | Disabled | – | NOT IMPLEMENTED | EyeDropper API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/eyedropper/idlharness.https.window.js) | Fail | 2 / 9 | NOT IMPLEMENTED | EyeDropper API |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`eye-dropper-abort-signal.tentative.https.html`](https://wpt.fyi/results/eyedropper/eye-dropper-abort-signal.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | EyeDropper API |
+| [`eye-dropper-abort-signal.tentative.https.html`](https://wpt.fyi/results/eyedropper/eye-dropper-abort-signal.tentative.https.html) | Error | 2 / 2 | NOT IMPLEMENTED | EyeDropper API |

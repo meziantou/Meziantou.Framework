@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of html-media-capture, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 0 | 2 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **2** | **2** | **–** |
+| **All** | **0** | **2** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,5 +26,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`capture_reflect.html`](https://wpt.fyi/results/html-media-capture/capture_reflect.html) | Disabled | – | REQUIRES(hardware) | HTML Media Capture |
-| [`idlharness.window.js`](https://wpt.fyi/results/html-media-capture/idlharness.window.js) | Disabled | – | REQUIRES(hardware) | HTML Media Capture |
+| [`capture_reflect.html`](https://wpt.fyi/results/html-media-capture/capture_reflect.html) | Fail | 0 / 6 | REQUIRES(hardware) | HTML Media Capture |
+| [`idlharness.window.js`](https://wpt.fyi/results/html-media-capture/idlharness.window.js) | Fail | 14 / 16 | REQUIRES(hardware) | HTML Media Capture |

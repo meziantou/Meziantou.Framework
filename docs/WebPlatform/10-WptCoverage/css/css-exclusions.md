@@ -9,36 +9,36 @@ description: "The results of the web-platform-tests of css/css-exclusions, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 8 | 8 | – |
+| [Stable](#stable-tests) | 2 | 8 | 0 | 25% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 0 | 4 | 4 | – |
+| [Reftests](#reftests) | 0 | 4 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **12** | **12** | **–** |
+| **All** | **2** | **12** | **0** | **17%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 12
+- **NOT IMPLEMENTED**: 10
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`inheritance.html`](https://wpt.fyi/results/css/css-exclusions/inheritance.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-flow-001.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-001.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-flow-002.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-002.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-flow-003.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-003.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-flow-004.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-004.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-flow-005.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-005.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-flow-006.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-006.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`wrap-through-001.html`](https://wpt.fyi/results/css/css-exclusions/wrap-through-001.html) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`inheritance.html`](https://wpt.fyi/results/css/css-exclusions/inheritance.html) | Pass | 4 / 4 |  |  |
+| [`wrap-flow-001.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`wrap-flow-002.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-002.html) | Fail | 1 / 4 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`wrap-flow-003.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-003.html) | Pass | 5 / 5 |  |  |
+| [`wrap-flow-004.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-004.html) | Fail | 7 / 10 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`wrap-flow-005.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-005.html) | Fail | 7 / 10 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`wrap-flow-006.html`](https://wpt.fyi/results/css/css-exclusions/wrap-flow-006.html) | Fail | 4 / 8 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`wrap-through-001.html`](https://wpt.fyi/results/css/css-exclusions/wrap-through-001.html) | Fail | 6 / 8 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
 
 ## Reftests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`css3-exclusions/exclusions-wrap-flow-01.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-01.xht) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`css3-exclusions/exclusions-wrap-flow-02.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-02.xht) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`css3-exclusions/exclusions-wrap-flow-03.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-03.xht) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
-| [`css3-exclusions/exclusions-wrap-flow-04.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-04.xht) | Disabled | – | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`css3-exclusions/exclusions-wrap-flow-01.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-01.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`css3-exclusions/exclusions-wrap-flow-02.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-02.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`css3-exclusions/exclusions-wrap-flow-03.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-03.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |
+| [`css3-exclusions/exclusions-wrap-flow-04.xht`](https://wpt.fyi/results/css/css-exclusions/css3-exclusions/exclusions-wrap-flow-04.xht) | Fail | 0 / 1 | NOT IMPLEMENTED | CSS Exclusions (`wrap-flow`, `wrap-through` have no effect); Requires layout |

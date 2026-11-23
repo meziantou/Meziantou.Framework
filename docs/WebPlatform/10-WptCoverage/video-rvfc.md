@@ -28,9 +28,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`idlharness.window.js`](https://wpt.fyi/results/video-rvfc/idlharness.window.js) | Pass | 18 / 18 |  |  |
-| [`request-video-frame-callback-before-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-before-xr-session.https.html) | Error | 0 / 0 | REQUIRES(hardware) | WebXR Device API (`xr_session_promise_test` of `/webxr/resources/webxr_util.js`) |
+| [`request-video-frame-callback-before-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-before-xr-session.https.html) | Fail | 0 / 4 | REQUIRES(hardware) | WebXR Device API (`xr_session_promise_test` of `/webxr/resources/webxr_util.js`) |
 | [`request-video-frame-callback-dom.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-dom.html) | Pass | 3 / 3 |  |  |
-| [`request-video-frame-callback-during-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-during-xr-session.https.html) | Error | 0 / 0 | REQUIRES(hardware) | WebXR Device API (`xr_session_promise_test` of `/webxr/resources/webxr_util.js`) |
+| [`request-video-frame-callback-during-xr-session.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-during-xr-session.https.html) | Fail | 0 / 2 | REQUIRES(hardware) | WebXR Device API (`xr_session_promise_test` of `/webxr/resources/webxr_util.js`) |
 | [`request-video-frame-callback-parallel.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-parallel.html) | Pass | 2 / 2 |  |  |
 | [`request-video-frame-callback-repeating.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-repeating.html) | Pass | 2 / 2 |  |  |
 | [`request-video-frame-callback-webrtc.https.html`](https://wpt.fyi/results/video-rvfc/request-video-frame-callback-webrtc.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebRTC (`RTCPeerConnection`) |

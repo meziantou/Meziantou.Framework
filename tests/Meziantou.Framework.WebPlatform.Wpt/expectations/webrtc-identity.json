@@ -1,0 +1,69 @@
+{
+  "webrtc-identity/RTCPeerConnection-constructor.html": {
+    "total": 1,
+    "failures": {
+      "RTCPeerConnection constructor throws if the given peerIdentity getter throws": "FAIL"
+    }
+  },
+  "webrtc-identity/RTCPeerConnection-getIdentityAssertion.sub.https.html": {
+    "total": 12,
+    "failures": {
+      "Calling setIdentityProvider() multiple times should reset identity assertions": "FAIL",
+      "createAnswer() should reject with OperationError if identity assertion request fails": "FAIL",
+      "createOffer() should reject with OperationError if identity assertion request fails": "FAIL",
+      "createOffer() should return SDP containing identity assertion string if identity provider is set": "FAIL",
+      "getIdentityAssertion() should load IdP proxy and return assertion generated": "FAIL",
+      "getIdentityAssertion() should reject with OperationError if mock-idp.js return invalid result": "FAIL",
+      "getIdentityAssertion() should reject with RTCError('idp-bad-script-failure') if IdP proxy script do not register its callback": "FAIL",
+      "getIdentityAssertion() should reject with RTCError('idp-execution-failure') if mock-idp.js throws error": "FAIL",
+      "getIdentityAssertion() should reject with RTCError('idp-load-failure') if IdP cannot be loaded": "FAIL",
+      "getIdentityAssertion() should reject with RTCError('idp-need-login') when mock-idp.js requires login": "FAIL",
+      "getIdentityAssertion() should succeed if mock-idp.js return different domain and protocol in assertion": "FAIL",
+      "setIdentityProvider() with no peerIdentity provided should use peerIdentity value from getConfiguration()": "FAIL"
+    }
+  },
+  "webrtc-identity/RTCPeerConnection-peerIdentity.https.html": {
+    "total": 6,
+    "failures": {
+      "IdP failure with no target peer identity should have following setRemoteDescription() succeed and replace pc.peerIdentity with a new promise": "FAIL",
+      "When IdP throws error and pc has target peer identity, setRemoteDescription() and peerIdentity rejected with RTCError('idp-execution-error')": "FAIL",
+      "setRemoteDescription() and peerIdentity should reject with OperationError if IdP return validated identity that is different from its own domain": "FAIL",
+      "setRemoteDescription() on offer with a=identity should establish peerIdentity": "FAIL",
+      "setRemoteDescription() on offer with a=identity that resolve to value different from target peer identity should reject with OperationError": "FAIL",
+      "setRemoteDescription() with peerIdentity set and with IdP proxy that return validationAssertion with mismatch contents should reject with OperationError": "FAIL"
+    }
+  },
+  "webrtc-identity/idlharness.https.window.js": {
+    "total": 49,
+    "failures": {
+      "MediaStreamTrack interface: attribute isolated": "FAIL",
+      "MediaStreamTrack interface: attribute onisolationchange": "FAIL",
+      "MediaStreamTrack interface: track must inherit property \"isolated\" with the proper type": "FAIL",
+      "MediaStreamTrack interface: track must inherit property \"onisolationchange\" with the proper type": "FAIL",
+      "RTCError interface: attribute httpRequestStatusCode": "FAIL",
+      "RTCIdentityAssertion interface object length": "FAIL",
+      "RTCIdentityAssertion interface object name": "FAIL",
+      "RTCIdentityAssertion interface: attribute idp": "FAIL",
+      "RTCIdentityAssertion interface: attribute name": "FAIL",
+      "RTCIdentityAssertion interface: existence and properties of interface object": "FAIL",
+      "RTCIdentityAssertion interface: existence and properties of interface prototype object": "FAIL",
+      "RTCIdentityAssertion interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "RTCIdentityAssertion interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "RTCIdentityAssertion interface: new RTCIdentityAssertion('idp', 'name') must inherit property \"idp\" with the proper type": "FAIL",
+      "RTCIdentityAssertion interface: new RTCIdentityAssertion('idp', 'name') must inherit property \"name\" with the proper type": "FAIL",
+      "RTCIdentityAssertion must be primary interface of new RTCIdentityAssertion('idp', 'name')": "FAIL",
+      "RTCPeerConnection interface: attribute idpErrorInfo": "FAIL",
+      "RTCPeerConnection interface: attribute idpLoginUrl": "FAIL",
+      "RTCPeerConnection interface: attribute peerIdentity": "FAIL",
+      "RTCPeerConnection interface: calling setIdentityProvider(DOMString, optional RTCIdentityProviderOptions) on new RTCPeerConnection() with too few arguments must throw TypeError": "FAIL",
+      "RTCPeerConnection interface: new RTCPeerConnection() must inherit property \"getIdentityAssertion()\" with the proper type": "FAIL",
+      "RTCPeerConnection interface: new RTCPeerConnection() must inherit property \"idpErrorInfo\" with the proper type": "FAIL",
+      "RTCPeerConnection interface: new RTCPeerConnection() must inherit property \"idpLoginUrl\" with the proper type": "FAIL",
+      "RTCPeerConnection interface: new RTCPeerConnection() must inherit property \"peerIdentity\" with the proper type": "FAIL",
+      "RTCPeerConnection interface: new RTCPeerConnection() must inherit property \"setIdentityProvider(DOMString, optional RTCIdentityProviderOptions)\" with the proper type": "FAIL",
+      "RTCPeerConnection interface: operation getIdentityAssertion()": "FAIL",
+      "RTCPeerConnection interface: operation setIdentityProvider(DOMString, optional RTCIdentityProviderOptions)": "FAIL",
+      "Stringification of new RTCIdentityAssertion('idp', 'name')": "FAIL"
+    }
+  }
+}

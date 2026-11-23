@@ -9,20 +9,14 @@ description: "The results of the web-platform-tests of core-aam, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 1 | – |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **1** | **–** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **TEST RUNNER**: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`role/roles-contextual.html`](https://wpt.fyi/results/core-aam/role/roles-contextual.html) | Disabled | – | TEST RUNNER | needs the platform accessibility API of a browser |
+| [`role/roles-contextual.html`](https://wpt.fyi/results/core-aam/role/roles-contextual.html) | Pass | 8 / 8 |  |  |

@@ -1,0 +1,87 @@
+{
+  "subapps/add-error.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "API is only supported in top-level browsing contexts.": "FAIL",
+      "API supports only same-origin URLs.": "FAIL",
+      "Service added one sub-app failed to add another sub-app.": "NOTRUN",
+      "Service failed to add two sub-apps.": "NOTRUN",
+      "Service rejected call because user denied permission.": "NOTRUN",
+      "The object is no longer associated to a document.": "FAIL"
+    }
+  },
+  "subapps/add-success.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Add API call works with multiple sub apps.": "NOTRUN",
+      "Add API call works with single sub app.": "FAIL"
+    }
+  },
+  "subapps/disabled-by-permissions-policy.tentative.https.html": {
+    "total": 3,
+    "failures": {
+      "add() disabled by permissions-policy": "FAIL",
+      "list() disabled by permissions-policy": "FAIL",
+      "remove() disabled by permissions-policy": "FAIL"
+    }
+  },
+  "subapps/idlharness.tentative.https.window.js": {
+    "total": 29,
+    "failures": {
+      "Stringification of window.subApps": "FAIL",
+      "SubApps interface object length": "FAIL",
+      "SubApps interface object name": "FAIL",
+      "SubApps interface: calling add(sequence<USVString>) on window.subApps with too few arguments must throw TypeError": "FAIL",
+      "SubApps interface: calling remove(sequence<USVString>) on window.subApps with too few arguments must throw TypeError": "FAIL",
+      "SubApps interface: existence and properties of interface object": "FAIL",
+      "SubApps interface: existence and properties of interface prototype object": "FAIL",
+      "SubApps interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SubApps interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SubApps interface: operation add(sequence<USVString>)": "FAIL",
+      "SubApps interface: operation list()": "FAIL",
+      "SubApps interface: operation remove(sequence<USVString>)": "FAIL",
+      "SubApps interface: window.subApps must inherit property \"add(sequence<USVString>)\" with the proper type": "FAIL",
+      "SubApps interface: window.subApps must inherit property \"list()\" with the proper type": "FAIL",
+      "SubApps interface: window.subApps must inherit property \"remove(sequence<USVString>)\" with the proper type": "FAIL",
+      "SubApps must be primary interface of window.subApps": "FAIL",
+      "Window interface: attribute subApps": "FAIL",
+      "Window interface: window must inherit property \"subApps\" with the proper type": "FAIL"
+    }
+  },
+  "subapps/list-error.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "API is only supported in top-level browsing contexts.": "FAIL",
+      "The object is no longer associated to a document.": "FAIL"
+    }
+  },
+  "subapps/list-success.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "List API call works with 2 sub apps.": "FAIL",
+      "List API call works with no sub apps.": "NOTRUN"
+    }
+  },
+  "subapps/remove-error.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 5,
+    "failures": {
+      "API is only supported in top-level browsing contexts.": "FAIL",
+      "API supports only same-origin URLs.": "FAIL",
+      "Remove call fails with mixed results.": "NOTRUN",
+      "Remove call fails.": "NOTRUN",
+      "The object is no longer associated to a document.": "FAIL"
+    }
+  },
+  "subapps/remove-success.tentative.https.html": {
+    "harness": "ERROR",
+    "total": 2,
+    "failures": {
+      "Remove API call works with one app.": "FAIL",
+      "Remove API call works with several apps.": "NOTRUN"
+    }
+  }
+}

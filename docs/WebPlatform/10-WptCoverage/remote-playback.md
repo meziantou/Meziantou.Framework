@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of remote-playback, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 9 | 9 | – |
+| [Stable](#stable-tests) | 0 | 9 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **9** | **9** | **–** |
+| **All** | **0** | **9** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,12 +25,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`cancel-watch-availability.html`](https://wpt.fyi/results/remote-playback/cancel-watch-availability.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`disable-remote-playback-cancel-watch-availability-throws.html`](https://wpt.fyi/results/remote-playback/disable-remote-playback-cancel-watch-availability-throws.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`disable-remote-playback-prompt-throws.html`](https://wpt.fyi/results/remote-playback/disable-remote-playback-prompt-throws.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`disable-remote-playback-watch-availability-throws.html`](https://wpt.fyi/results/remote-playback/disable-remote-playback-watch-availability-throws.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`idlharness.window.js`](https://wpt.fyi/results/remote-playback/idlharness.window.js) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`prompt-in-detached-iframe.html`](https://wpt.fyi/results/remote-playback/prompt-in-detached-iframe.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`watch-availability-callback-parameter.html`](https://wpt.fyi/results/remote-playback/watch-availability-callback-parameter.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`watch-availability-initial-callback.html`](https://wpt.fyi/results/remote-playback/watch-availability-initial-callback.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
-| [`watch-availability-promise-return-callback-id.html`](https://wpt.fyi/results/remote-playback/watch-availability-promise-return-callback-id.html) | Disabled | – | NOT IMPLEMENTED | Remote Playback API |
+| [`cancel-watch-availability.html`](https://wpt.fyi/results/remote-playback/cancel-watch-availability.html) | Fail | 0 / 2 | NOT IMPLEMENTED | Remote Playback API |
+| [`disable-remote-playback-cancel-watch-availability-throws.html`](https://wpt.fyi/results/remote-playback/disable-remote-playback-cancel-watch-availability-throws.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |
+| [`disable-remote-playback-prompt-throws.html`](https://wpt.fyi/results/remote-playback/disable-remote-playback-prompt-throws.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |
+| [`disable-remote-playback-watch-availability-throws.html`](https://wpt.fyi/results/remote-playback/disable-remote-playback-watch-availability-throws.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |
+| [`idlharness.window.js`](https://wpt.fyi/results/remote-playback/idlharness.window.js) | Fail | 12 / 38 | NOT IMPLEMENTED | Remote Playback API |
+| [`prompt-in-detached-iframe.html`](https://wpt.fyi/results/remote-playback/prompt-in-detached-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |
+| [`watch-availability-callback-parameter.html`](https://wpt.fyi/results/remote-playback/watch-availability-callback-parameter.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |
+| [`watch-availability-initial-callback.html`](https://wpt.fyi/results/remote-playback/watch-availability-initial-callback.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |
+| [`watch-availability-promise-return-callback-id.html`](https://wpt.fyi/results/remote-playback/watch-availability-promise-return-callback-id.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Remote Playback API |

@@ -9,31 +9,31 @@ description: "The results of the web-platform-tests of web-nfc, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 11 | 11 | – |
+| [Stable](#stable-tests) | 2 | 11 | 0 | 18% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **11** | **11** | **–** |
+| **All** | **2** | **11** | **0** | **18%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 11
-  - `hardware`: 11
+- **REQUIRES**: 9
+  - `hardware`: 9
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`NDEFMessage_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_constructor.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFMessage_recursion-limit.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_recursion-limit.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_make-read-only.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReader_make-read-only.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_scan.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan.https.html) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_scan_iframe.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan_iframe.https.html) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_write.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_write.https.html) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFReadingEvent_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReadingEvent_constructor.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`NDEFRecord_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFRecord_constructor.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/web-nfc/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`nfc_insecure_context.html`](https://wpt.fyi/results/web-nfc/nfc_insecure_context.html) | Disabled | – | REQUIRES(hardware) | Web NFC |
-| [`nfc_permission.https.window.js`](https://wpt.fyi/results/web-nfc/nfc_permission.https.window.js) | Disabled | – | REQUIRES(hardware) | Web NFC |
+| [`NDEFMessage_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_constructor.https.window.js) | Fail | 0 / 5 | REQUIRES(hardware) | Web NFC |
+| [`NDEFMessage_recursion-limit.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_recursion-limit.https.window.js) | Fail | 0 / 5 | REQUIRES(hardware) | Web NFC |
+| [`NDEFReader_make-read-only.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReader_make-read-only.https.window.js) | Error | 0 / 14 | REQUIRES(hardware) | Web NFC |
+| [`NDEFReader_scan.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan.https.html) | Error | 0 / 18 | REQUIRES(hardware) | Web NFC |
+| [`NDEFReader_scan_iframe.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan_iframe.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Web NFC |
+| [`NDEFReader_write.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_write.https.html) | Error | 0 / 29 | REQUIRES(hardware) | Web NFC |
+| [`NDEFReadingEvent_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReadingEvent_constructor.https.window.js) | Fail | 0 / 6 | REQUIRES(hardware) | Web NFC |
+| [`NDEFRecord_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFRecord_constructor.https.window.js) | Fail | 0 / 25 | REQUIRES(hardware) | Web NFC |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/web-nfc/idlharness.https.window.js) | Fail | 2 / 67 | REQUIRES(hardware) | Web NFC |
+| [`nfc_insecure_context.html`](https://wpt.fyi/results/web-nfc/nfc_insecure_context.html) | Pass | 1 / 1 |  |  |
+| [`nfc_permission.https.window.js`](https://wpt.fyi/results/web-nfc/nfc_permission.https.window.js) | Pass | 2 / 2 |  |  |

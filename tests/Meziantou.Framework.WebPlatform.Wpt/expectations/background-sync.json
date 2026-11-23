@@ -1,0 +1,33 @@
+{
+  "background-sync/crashtests/detached-frame.https.html": {
+    "crashtest": "TIMEOUT"
+  },
+  "background-sync/idlharness.https.any.js": {
+    "total": 17,
+    "failures": {
+      "ServiceWorkerRegistration interface: attribute sync": "FAIL",
+      "SyncManager interface object length": "FAIL",
+      "SyncManager interface object name": "FAIL",
+      "SyncManager interface: existence and properties of interface object": "FAIL",
+      "SyncManager interface: existence and properties of interface prototype object": "FAIL",
+      "SyncManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SyncManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SyncManager interface: operation getTags()": "FAIL",
+      "SyncManager interface: operation register(DOMString)": "FAIL"
+    }
+  },
+  "background-sync/idlharness.https.any.js#dedicatedworker": {
+    "total": 17,
+    "failures": {
+      "ServiceWorkerRegistration interface: attribute sync": "FAIL",
+      "SyncManager interface object length": "FAIL",
+      "SyncManager interface object name": "FAIL",
+      "SyncManager interface: existence and properties of interface object": "FAIL",
+      "SyncManager interface: existence and properties of interface prototype object": "FAIL",
+      "SyncManager interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
+      "SyncManager interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
+      "SyncManager interface: operation getTags()": "FAIL",
+      "SyncManager interface: operation register(DOMString)": "FAIL"
+    }
+  }
+}

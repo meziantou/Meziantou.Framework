@@ -1,0 +1,20 @@
+{
+  "contenteditable/anchor-active-contenteditable.html": {
+    "total": 1
+  },
+  "contenteditable/anchor-contenteditable-navigate.html": {
+    "total": 1
+  },
+  "contenteditable/designmode-iscontenteditable.html": {
+    "total": 4
+  },
+  "contenteditable/plaintext-only.html": {
+    "total": 2
+  },
+  "contenteditable/select-text-change-crash.html": {
+    "crashtest": "PASS"
+  },
+  "contenteditable/synthetic-height.html": {
+    "reftest": "PASS"
+  }
+}

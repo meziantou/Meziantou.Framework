@@ -9,211 +9,211 @@ description: "The results of the web-platform-tests of webnn, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 192 | 192 | – |
+| [Stable](#stable-tests) | 1 | 192 | 0 | 0.5% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **192** | **192** | **–** |
+| **All** | **1** | **192** | **0** | **0.5%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 192
+- **NOT IMPLEMENTED**: 191
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`conformance_tests/abs.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/abs.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/add.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/add.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/arg_min_max.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/arg_min_max.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/averagePool2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/averagePool2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/batch_normalization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/batch_normalization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/batch_normalization_constant.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/batch_normalization_constant.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/byob_readtensor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/byob_readtensor.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/cast-storage.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cast-storage.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/cast.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cast.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/cast_rounding.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cast_rounding.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/ceil.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/ceil.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/clamp.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/clamp.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/comparison-select.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/comparison-select.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/concat.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/concat.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/constant-reshape-optimization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/constant-reshape-optimization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/conv2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/conv2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/conv_transpose2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/conv_transpose2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/cos.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cos.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/cumulative_sum.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cumulative_sum.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/dequantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/dequantizeLinear.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/div.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/div.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/elu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/elu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/equal.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/erf.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/erf.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/exp.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/exp.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/expand.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/expand.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/float16-transport.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/float16-transport.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/float32-underflow.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/float32-underflow.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/floor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/floor.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gather-cast-int8-table.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gather-cast-int8-table.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gather.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gather.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gatherElements.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gatherElements.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gatherND.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gatherND.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gelu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gelu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gemm.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gemm.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/graph_devices.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/graph_devices.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/greater.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/greater.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/greater_or_equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/greater_or_equal.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gru.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gru.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/gru_cell.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gru_cell.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/hard_sigmoid.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/hard_sigmoid.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/hard_swish.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/hard_swish.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/identity.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/identity.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/inputs-are-not-modified.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/inputs-are-not-modified.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/inputs-with-special-names.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/inputs-with-special-names.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/instance-normalization-affine-layout.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/instance-normalization-affine-layout.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/instance-normalization-zero-epsilon.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/instance-normalization-zero-epsilon.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/instance_normalization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/instance_normalization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/int32-full-range.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/int32-full-range.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/is_infinite.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/is_infinite.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/is_nan.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/is_nan.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/l2Pool2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/l2Pool2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/layer_normalization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/layer_normalization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/leaky_relu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/leaky_relu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/lesser.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lesser.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/lesser_or_equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lesser_or_equal.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/linear.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/linear.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/log.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/log.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/logical_and.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_and.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/logical_not.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_not.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/logical_or.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_or.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/logical_xor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_xor.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/lstm.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lstm.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/lstm_cell.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lstm_cell.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/matmul.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/matmul.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/max.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/max.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/maxPool2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/maxPool2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/min.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/min.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/mlNumber.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/mlNumber.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/mul.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/mul.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/neg.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/neg.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/not_equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/not_equal.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/operations-with-special-names.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/operations-with-special-names.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/pad.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/pad.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/parallel-dispatch.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/parallel-dispatch.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/pow.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/pow.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/prelu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/prelu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/qdq_subgraph.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/qdq_subgraph.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/quantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/quantizeLinear.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reciprocal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reciprocal.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce-log-sum-small-values.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce-log-sum-small-values.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_l1.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_l1.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_l2.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_l2.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_log_sum.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_log_sum.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_log_sum_exp.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_log_sum_exp.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_max.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_max.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_mean.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_mean.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_min.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_min.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_product.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_product.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_sum.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_sum.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reduce_sum_square.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_sum_square.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/relu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/relu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/resample2d-gather-shape-divergence.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/resample2d-gather-shape-divergence.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/resample2d-nearest-half-pixel.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/resample2d-nearest-half-pixel.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/resample2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/resample2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reshape.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reshape.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/reverse.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reverse.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/round_even.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/round_even.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/scalars.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/scalars.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/scatterElements.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/scatterElements.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/scatterND.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/scatterND.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/shared_arraybuffer_constant.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/shared_arraybuffer_constant.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/sigmoid.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sigmoid.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/sign.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sign.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/sin.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sin.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/slice.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/slice.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/softmax.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/softmax.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/softplus.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/softplus.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/softsign.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/softsign.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/split.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/split.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/sqrt.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sqrt.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/sub.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sub.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/subgraph.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/subgraph.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/tan.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tan.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/tanh.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tanh.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/tensor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tensor.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/tile.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tile.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/transpose.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/transpose.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/triangular.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/triangular.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`conformance_tests/where.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/where.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`helper-validation.window.js`](https://wpt.fyi/results/webnn/helper-validation.window.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/webnn/idlharness.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-allowed-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-by-permissions-policy-attribute-redirect-on-load.https.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-allowed-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-by-permissions-policy-attribute.https.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-allowed-by-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-by-permissions-policy.https.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-allowed-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-on-self-origin-by-permissions-policy.https.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-default-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-default-permissions-policy.https.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-disabled-by-permissions-policy.https.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`permissions-policy/webnn-supported-by-permissions-policy.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-supported-by-permissions-policy.html) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/argMinMax.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/argMinMax.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/batchNormalization.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/batchNormalization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/build-more-than-once.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/build-more-than-once.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/cast.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/cast.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/clamp.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/clamp.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/concat.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/concat.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/constant-changed-buffer.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/constant-changed-buffer.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/constant.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/constant.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/conv2d.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/conv2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/convTranspose2d.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/convTranspose2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/createContext.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/createContext.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/cumulativeSum.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/cumulativeSum.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/dequantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/dequantizeLinear.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/destroyContext.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/destroyContext.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/destroyGraph.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/destroyGraph.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/elementwise-binary.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elementwise-binary.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/elementwise-logical.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elementwise-logical.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/elementwise-unary.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elementwise-unary.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/elu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/expand.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/expand.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gather.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gather.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gatherElements.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gatherElements.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gatherND.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gatherND.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gelu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gelu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gemm.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gemm.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gru.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gru.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/gruCell.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gruCell.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/hardSigmoid.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/hardSigmoid.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/hardSwish.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/hardSwish.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/input.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/input.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/instanceNormalization.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/instanceNormalization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/invalid-rank.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/invalid-rank.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/layerNormalization.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/layerNormalization.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/leakyRelu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/leakyRelu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/linear.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/linear.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/lstm.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/lstm.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/lstmCell.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/lstmCell.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/matmul.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/matmul.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/opSupportLimits.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/opSupportLimits.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/pad.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/pad.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/pooling-and-reduction-keep-dims.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/pooling-and-reduction-keep-dims.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/pooling.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/pooling.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/prelu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/prelu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/quantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/quantizeLinear.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/reduction.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/reduction.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/relu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/relu.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/resample2d.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/resample2d.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/reshape.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/reshape.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/reverse.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/reverse.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/scatterElements.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/scatterElements.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/scatterND.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/scatterND.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/sigmoid.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/sigmoid.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/slice.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/slice.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/softmax.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/softmax.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/softplus.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/softplus.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/softsign.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/softsign.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/split.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/split.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/tanh.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/tanh.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/tile.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/tile.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/transpose.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/transpose.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/triangular.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/triangular.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/unprintableNames.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/unprintableNames.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
-| [`validation_tests/where.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/where.https.any.js) | Disabled | – | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/abs.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/abs.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/add.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/add.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/arg_min_max.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/arg_min_max.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/averagePool2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/averagePool2d.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/batch_normalization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/batch_normalization.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/batch_normalization_constant.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/batch_normalization_constant.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/byob_readtensor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/byob_readtensor.https.any.js) | Error | 0 / 45 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/cast-storage.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cast-storage.https.any.js) | Fail | 0 / 54 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/cast.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cast.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/cast_rounding.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cast_rounding.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/ceil.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/ceil.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/clamp.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/clamp.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/comparison-select.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/comparison-select.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/concat.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/concat.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/constant-reshape-optimization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/constant-reshape-optimization.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/conv2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/conv2d.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/conv_transpose2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/conv_transpose2d.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/cos.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cos.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/cumulative_sum.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/cumulative_sum.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/dequantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/dequantizeLinear.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/div.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/div.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/elu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/elu.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/equal.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/erf.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/erf.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/exp.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/exp.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/expand.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/expand.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/float16-transport.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/float16-transport.https.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/float32-underflow.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/float32-underflow.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/floor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/floor.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gather-cast-int8-table.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gather-cast-int8-table.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gather.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gather.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gatherElements.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gatherElements.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gatherND.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gatherND.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gelu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gelu.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gemm.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gemm.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/graph_devices.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/graph_devices.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/greater.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/greater.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/greater_or_equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/greater_or_equal.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gru.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gru.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/gru_cell.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/gru_cell.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/hard_sigmoid.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/hard_sigmoid.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/hard_swish.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/hard_swish.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/identity.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/identity.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/inputs-are-not-modified.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/inputs-are-not-modified.https.any.js) | Error | 0 / 6 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/inputs-with-special-names.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/inputs-with-special-names.https.any.js) | Error | 0 / 27 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/instance-normalization-affine-layout.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/instance-normalization-affine-layout.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/instance-normalization-zero-epsilon.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/instance-normalization-zero-epsilon.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/instance_normalization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/instance_normalization.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/int32-full-range.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/int32-full-range.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/is_infinite.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/is_infinite.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/is_nan.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/is_nan.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/l2Pool2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/l2Pool2d.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/layer_normalization.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/layer_normalization.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/leaky_relu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/leaky_relu.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/lesser.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lesser.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/lesser_or_equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lesser_or_equal.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/linear.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/linear.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/log.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/log.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/logical_and.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_and.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/logical_not.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_not.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/logical_or.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_or.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/logical_xor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/logical_xor.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/lstm.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lstm.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/lstm_cell.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/lstm_cell.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/matmul.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/matmul.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/max.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/max.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/maxPool2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/maxPool2d.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/min.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/min.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/mlNumber.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/mlNumber.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/mul.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/mul.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/neg.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/neg.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/not_equal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/not_equal.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/operations-with-special-names.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/operations-with-special-names.https.any.js) | Error | 0 / 15 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/pad.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/pad.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/parallel-dispatch.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/parallel-dispatch.https.any.js) | Error | 0 / 27 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/pow.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/pow.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/prelu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/prelu.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/qdq_subgraph.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/qdq_subgraph.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/quantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/quantizeLinear.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reciprocal.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reciprocal.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce-log-sum-small-values.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce-log-sum-small-values.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_l1.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_l1.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_l2.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_l2.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_log_sum.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_log_sum.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_log_sum_exp.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_log_sum_exp.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_max.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_max.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_mean.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_mean.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_min.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_min.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_product.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_product.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_sum.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_sum.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reduce_sum_square.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reduce_sum_square.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/relu.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/relu.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/resample2d-gather-shape-divergence.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/resample2d-gather-shape-divergence.https.any.js) | Error | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/resample2d-nearest-half-pixel.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/resample2d-nearest-half-pixel.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/resample2d.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/resample2d.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reshape.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reshape.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/reverse.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/reverse.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/round_even.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/round_even.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/scalars.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/scalars.https.any.js) | Error | 0 / 18 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/scatterElements.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/scatterElements.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/scatterND.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/scatterND.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/shared_arraybuffer_constant.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/shared_arraybuffer_constant.https.any.js) | Error | 0 / 9 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/sigmoid.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sigmoid.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/sign.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sign.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/sin.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sin.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/slice.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/slice.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/softmax.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/softmax.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/softplus.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/softplus.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/softsign.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/softsign.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/split.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/split.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/sqrt.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sqrt.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/sub.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/sub.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/subgraph.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/subgraph.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/tan.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tan.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/tanh.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tanh.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/tensor.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tensor.https.any.js) | Error | 0 / 6 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/tile.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/tile.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/transpose.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/transpose.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/triangular.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/triangular.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`conformance_tests/where.https.any.js`](https://wpt.fyi/results/webnn/conformance_tests/where.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`helper-validation.window.js`](https://wpt.fyi/results/webnn/helper-validation.window.js) | Pass | 19 / 19 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/webnn/idlharness.https.any.js) | Fail | 452 / 1,282 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-allowed-by-permissions-policy-attribute-redirect-on-load.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-by-permissions-policy-attribute-redirect-on-load.https.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-allowed-by-permissions-policy-attribute.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-by-permissions-policy-attribute.https.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-allowed-by-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-by-permissions-policy.https.html) | Timeout | 1 / 4 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-allowed-on-self-origin-by-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-allowed-on-self-origin-by-permissions-policy.https.html) | Timeout | 1 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-default-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-default-permissions-policy.https.html) | Timeout | 0 / 2 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-disabled-by-permissions-policy.https.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-disabled-by-permissions-policy.https.html) | Timeout | 0 / 5 | NOT IMPLEMENTED | Web Neural Network API |
+| [`permissions-policy/webnn-supported-by-permissions-policy.html`](https://wpt.fyi/results/webnn/permissions-policy/webnn-supported-by-permissions-policy.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/argMinMax.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/argMinMax.https.any.js) | Fail | 0 / 75 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/batchNormalization.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/batchNormalization.https.any.js) | Fail | 0 / 78 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/build-more-than-once.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/build-more-than-once.https.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/cast.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/cast.https.any.js) | Fail | 0 / 18 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/clamp.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/clamp.https.any.js) | Fail | 0 / 39 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/concat.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/concat.https.any.js) | Fail | 0 / 54 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/constant-changed-buffer.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/constant-changed-buffer.https.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/constant.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/constant.https.any.js) | Fail | 0 / 132 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/conv2d.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/conv2d.https.any.js) | Fail | 0 / 189 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/convTranspose2d.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/convTranspose2d.https.any.js) | Fail | 0 / 180 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/createContext.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/createContext.https.any.js) | Fail | 3 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/cumulativeSum.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/cumulativeSum.https.any.js) | Fail | 0 / 36 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/dequantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/dequantizeLinear.https.any.js) | Fail | 0 / 48 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/destroyContext.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/destroyContext.https.any.js) | Fail | 0 / 33 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/destroyGraph.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/destroyGraph.https.any.js) | Error | 0 / 12 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/elementwise-binary.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elementwise-binary.https.any.js) | Fail | 0 / 273 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/elementwise-logical.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elementwise-logical.https.any.js) | Fail | 0 / 261 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/elementwise-unary.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elementwise-unary.https.any.js) | Fail | 0 / 273 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/elu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/elu.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/expand.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/expand.https.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gather.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gather.https.any.js) | Fail | 0 / 36 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gatherElements.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gatherElements.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gatherND.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gatherND.https.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gelu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gelu.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gemm.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gemm.https.any.js) | Fail | 0 / 75 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gru.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gru.https.any.js) | Fail | 0 / 87 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/gruCell.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/gruCell.https.any.js) | Fail | 0 / 99 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/hardSigmoid.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/hardSigmoid.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/hardSwish.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/hardSwish.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/input.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/input.https.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/instanceNormalization.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/instanceNormalization.https.any.js) | Fail | 0 / 66 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/invalid-rank.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/invalid-rank.https.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/layerNormalization.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/layerNormalization.https.any.js) | Fail | 0 / 63 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/leakyRelu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/leakyRelu.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/linear.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/linear.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/lstm.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/lstm.https.any.js) | Fail | 0 / 87 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/lstmCell.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/lstmCell.https.any.js) | Fail | 0 / 123 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/matmul.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/matmul.https.any.js) | Fail | 0 / 57 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/opSupportLimits.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/opSupportLimits.https.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/pad.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/pad.https.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/pooling-and-reduction-keep-dims.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/pooling-and-reduction-keep-dims.https.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/pooling.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/pooling.https.any.js) | Fail | 0 / 171 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/prelu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/prelu.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/quantizeLinear.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/quantizeLinear.https.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/reduction.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/reduction.https.any.js) | Fail | 0 / 273 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/relu.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/relu.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/resample2d.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/resample2d.https.any.js) | Fail | 0 / 84 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/reshape.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/reshape.https.any.js) | Fail | 0 / 42 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/reverse.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/reverse.https.any.js) | Fail | 0 / 27 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/scatterElements.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/scatterElements.https.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/scatterND.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/scatterND.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/sigmoid.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/sigmoid.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/slice.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/slice.https.any.js) | Fail | 0 / 48 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/softmax.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/softmax.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/softplus.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/softplus.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/softsign.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/softsign.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/split.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/split.https.any.js) | Fail | 0 / 48 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/tanh.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/tanh.https.any.js) | Fail | 0 / 21 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/tile.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/tile.https.any.js) | Fail | 0 / 36 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/transpose.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/transpose.https.any.js) | Fail | 0 / 33 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/triangular.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/triangular.https.any.js) | Fail | 0 / 18 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/unprintableNames.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/unprintableNames.https.any.js) | Error | 0 / 3 | NOT IMPLEMENTED | Web Neural Network API |
+| [`validation_tests/where.https.any.js`](https://wpt.fyi/results/webnn/validation_tests/where.https.any.js) | Fail | 0 / 60 | NOT IMPLEMENTED | Web Neural Network API |

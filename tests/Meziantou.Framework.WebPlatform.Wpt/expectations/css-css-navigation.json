@@ -1,0 +1,162 @@
+{
+  "css/css-navigation/crashtests/invalid-location-descriptor-value.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-navigation/crashtests/invalid-url-pattern-argument.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-navigation/crashtests/url-pattern-null-document.html": {
+    "crashtest": "PASS"
+  },
+  "css/css-navigation/tentative/crossdoc-001.html": {
+    "total": 1,
+    "failures": {
+      "Go to matching route": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/crossdoc-002.html": {
+    "total": 1,
+    "failures": {
+      "Go to matching route, with view transition": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/function-001.html": {
+    "total": 1,
+    "failures": {
+      "@navigation within @function": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/function-002.html": {
+    "total": 1,
+    "failures": {
+      "Navigate between URLs using @navigation inside @function": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/if-001.html": {
+    "total": 1,
+    "failures": {
+      "if()": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/link-to-001.html": {
+    "total": 1,
+    "failures": {
+      "link-to()": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/link-to-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-navigation/tentative/link-to-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-navigation/tentative/link-to-004.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-navigation/tentative/navigation-001.html": {
+    "total": 1,
+    "failures": {
+      "Navigate between URLs": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/navigation-002.html": {
+    "total": 1,
+    "failures": {
+      "Navigate between URLs": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/navigation-003.html": {
+    "total": 1,
+    "failures": {
+      "Navigate between URLs": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/navigation-004.html": {
+    "total": 1,
+    "failures": {
+      "conditions, locations defined by @location": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/navigation-source-001.html": {
+    "total": 1,
+    "failures": {
+      ":navigation-source": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/parsing/link-to-invalid.html": {
+    "total": 8
+  },
+  "css/css-navigation/tentative/parsing/link-to-valid.html": {
+    "total": 9,
+    "failures": {
+      ":link-To( --loc ){}  should be a valid rule": "FAIL",
+      ":link-To( Url( /foo/ ) ) { } should be a valid rule": "FAIL",
+      ":link-to( url-Pattern( '/:foo/*' ) ){}  should be a valid rule": "FAIL",
+      ":link-to(--loc) { } should be a valid rule": "FAIL",
+      ":link-to(url(\"/foo/\")) { } should be a valid rule": "FAIL",
+      ":link-to(url-pattern(\"/:foo/*\")) { } should be a valid rule": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/parsing/location-invalid-001.html": {
+    "total": 6
+  },
+  "css/css-navigation/tentative/parsing/location-invalid-002.html": {
+    "total": 1
+  },
+  "css/css-navigation/tentative/parsing/location-valid.html": {
+    "total": 21,
+    "failures": {
+      "@location  --loc { PATTERN: url-pattern( '/foo/*' ); } should be a valid rule": "FAIL",
+      "@location  --loc { pattern: url-Pattern( '/foo/*' ); } should be a valid rule": "FAIL",
+      "@location  --loc{} should be a valid rule": "FAIL",
+      "@location --ahoi\\(hoi {} should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern(\"\"); } should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern(\"/\\\"\"); } should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern(\"/foo/*\"); } should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern(\"https://example.com:8080/books/:id?sort=asc#heading\"); } should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern(''); } should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern('/\"'); } should be a valid rule": "FAIL",
+      "@location --loc { pattern: url-pattern('/\\\\'); } should be a valid rule": "FAIL",
+      "@location --loc { protocol: \"https\"; hostname: \"example.com\"; port: \"8080\"; pathname: \"/books/:id\"; search: \"sort=asc\"; hash: \"heading\"; base-url: \"https://example.com/\"; } should be a valid rule": "FAIL",
+      "@location --loc { } should be a valid rule": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/parsing/navigation-rule-invalid.html": {
+    "total": 1,
+    "failures": {
+      "Invalid @navigation rules": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/parsing/navigation-rule-location-valid.html": {
+    "total": 18,
+    "failures": {
+      " @Navigation  ( At:url-pattern( \"/a/\") ){ \n }  should be a valid rule": "FAIL",
+      " @Navigation  (At:--foo ){  \n}  should be a valid rule": "FAIL",
+      "@Navigation  ( ( Between:--a  And  --b ) Or ( At:--c) ){ \n}  should be a valid rule": "FAIL",
+      "@Navigation  ( ( From:--a ) Or ( At:--b) ){ \n}  should be a valid rule": "FAIL",
+      "@Navigation  ( Between:--a  And  --b ){ \n}  should be a valid rule": "FAIL",
+      "@Navigation (Between:url-pattern( \"/a/\" )  And  url-pattern( \"/b/\" )){ \n } should be a valid rule": "FAIL",
+      "@navigation ((between: --a and --b) or (at: --c)) {\n} should be a valid rule": "FAIL",
+      "@navigation ((from: --a) or (at: --b)) {\n} should be a valid rule": "FAIL",
+      "@navigation (at: --foo) {\n} should be a valid rule": "FAIL",
+      "@navigation (at: url-pattern(\"/a/\")) {\n} should be a valid rule": "FAIL",
+      "@navigation (between: --a and --b) {\n} should be a valid rule": "FAIL",
+      "@navigation (between: url-pattern(\"/a/\") and url-pattern(\"/b/\")) {\n} should be a valid rule": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/parsing/url-pattern-valid.html": {
+    "total": 3,
+    "failures": {
+      "@Navigation  ( At:url-Pattern( '/foo/' )){ \n} should be a valid rule": "FAIL",
+      "@navigation (at: url-pattern(\"/foo/\")) {\n} should be a valid rule": "FAIL"
+    }
+  },
+  "css/css-navigation/tentative/parsing/url-valid.html": {
+    "total": 4,
+    "failures": {
+      "@Navigation  ( At:Url( '/foo/' )){ \n} should be a valid rule": "FAIL",
+      "@Navigation  ( At:Url( /foo/ )){ \n} should be a valid rule": "FAIL",
+      "@navigation (at: url(\"/foo/\")) {\n} should be a valid rule": "FAIL"
+    }
+  }
+}

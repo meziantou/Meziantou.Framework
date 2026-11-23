@@ -1,0 +1,109 @@
+{
+  "webrtc-stats/RTCDataChannel-stats.html": {
+    "total": 15,
+    "failures": {
+      "answerer on worker: Check that RTCDataChannelStats are present": "FAIL",
+      "answerer on worker: Check that RTCDataChannelStats have a valid initial state": "FAIL",
+      "answerer on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various binary messages received as arraybuffer": "FAIL",
+      "answerer on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various binary messages received as blob": "FAIL",
+      "answerer on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various strings": "FAIL",
+      "neither on worker: Check that RTCDataChannelStats are present": "FAIL",
+      "neither on worker: Check that RTCDataChannelStats have a valid initial state": "FAIL",
+      "neither on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various binary messages received as arraybuffer": "FAIL",
+      "neither on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various binary messages received as blob": "FAIL",
+      "neither on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various strings": "FAIL",
+      "offerer on worker: Check that RTCDataChannelStats are present": "FAIL",
+      "offerer on worker: Check that RTCDataChannelStats have a valid initial state": "FAIL",
+      "offerer on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various binary messages received as arraybuffer": "FAIL",
+      "offerer on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various binary messages received as blob": "FAIL",
+      "offerer on worker: Check that RTCDataChannelStats messages/bytes Sent/Received are correct for various strings": "FAIL"
+    }
+  },
+  "webrtc-stats/getStats-RTCAudioSourceStats.https.html": {
+    "total": 10,
+    "failures": {
+      "RTCAudioSourceStats audioLevel does not reset when track is switched between senders": "FAIL",
+      "RTCAudioSourceStats audioLevel is 0 for a disabled track": "FAIL",
+      "RTCAudioSourceStats audioLevel reflects the audio level of the source": "FAIL",
+      "RTCAudioSourceStats id does not change when the track is replaced with itself": "FAIL",
+      "RTCAudioSourceStats id not inherited when the track is replaced with a new track": "FAIL",
+      "RTCAudioSourceStats totalAudioEnergy and totalSamplesDuration accumulate after a disabled track is enabled": "FAIL",
+      "RTCAudioSourceStats totalAudioEnergy and totalSamplesDuration do not reset when track is replaced with itself": "FAIL",
+      "RTCAudioSourceStats totalAudioEnergy reflects the energy of the source": "FAIL",
+      "RTCAudioSourceStats totalSamplesDuration and totalAudioEnergy accumulation are not effected by being attached to multiple senders": "FAIL",
+      "RTCAudioSourceStats totalSamplesDuration and totalAudioEnergy on a new track do not inherit the accumulated value from the previously attached track": "FAIL"
+    }
+  },
+  "webrtc-stats/getStats-remote-candidate-address.html": {
+    "total": 2,
+    "failures": {
+      "Do not expose in stats remote addresses that are not known to be already exposed to JS": "FAIL",
+      "Expose in stats remote addresses that are already exposed to JS": "FAIL"
+    }
+  },
+  "webrtc-stats/getStats-remote-candidate-ufrag.html": {
+    "total": 1,
+    "failures": {
+      "Do not expose in stats remote ufrags that are not known via signaling": "FAIL"
+    }
+  },
+  "webrtc-stats/hardware-capability-stats.https.html": {
+    "total": 12,
+    "failures": {
+      "decoderImplementation exposed when capturing.": "FAIL",
+      "decoderImplementation not exposed when fullscreen and not capturing.": "FAIL",
+      "decoderImplementation not exposed when not capturing.": "FAIL",
+      "encoderImplementation exposed when capturing.": "FAIL",
+      "encoderImplementation not exposed when fullscreen and not capturing.": "FAIL",
+      "encoderImplementation not exposed when not capturing.": "FAIL",
+      "powerEfficientDecoder exposed when capturing.": "FAIL",
+      "powerEfficientDecoder not exposed when fullscreen and not capturing.": "FAIL",
+      "powerEfficientDecoder not exposed when not capturing.": "FAIL",
+      "powerEfficientEncoder exposed when capturing.": "FAIL",
+      "powerEfficientEncoder not exposed when fullscreen and not capturing.": "FAIL",
+      "powerEfficientEncoder not exposed when not capturing.": "FAIL"
+    }
+  },
+  "webrtc-stats/idlharness.window.js": {
+    "total": 2
+  },
+  "webrtc-stats/outbound-rtp.https.html": {
+    "total": 1,
+    "failures": {
+      "setting an encoding to false is reflected in outbound-rtp stats": "FAIL"
+    }
+  },
+  "webrtc-stats/rtp-stats-creation.html": {
+    "total": 5,
+    "failures": {
+      "No RTCInboundRtpStreamStats exist until packets have been received": "FAIL",
+      "No RTCRtpOutboundStreamStats should exist before negotiation completes": "FAIL",
+      "No RTCRtpStreamStats exist when only local description is set": "FAIL",
+      "No RTCRtpStreamStats exist when only remote description is set": "FAIL",
+      "RTCAudioPlayoutStats should be present": "FAIL"
+    }
+  },
+  "webrtc-stats/stats-creation.html": {
+    "total": 5,
+    "failures": {
+      "Stats creation time: after addTrack": "FAIL",
+      "Stats creation time: after connected": "FAIL",
+      "Stats creation time: after createDataChannel": "FAIL",
+      "Stats creation time: after negotiation": "FAIL",
+      "Stats creation time: after setLocalDescription": "FAIL"
+    }
+  },
+  "webrtc-stats/supported-stats.https.html": {
+    "total": 1,
+    "failures": {
+      "getStats succeeds": "FAIL"
+    }
+  },
+  "webrtc-stats/video-psnr.https.html": {
+    "total": 2,
+    "failures": {
+      "video psnr stats are gated on hardware": "FAIL",
+      "video psnr stats are present": "FAIL"
+    }
+  }
+}

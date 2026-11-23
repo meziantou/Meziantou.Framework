@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webtransport, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 43 | 43 | – |
-| [Tentative](#tentative-tests) | 0 | 2 | 2 | – |
+| [Stable](#stable-tests) | 0 | 43 | 0 | 0% |
+| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | Reftests | 0 | 0 | 0 | – |
-| [Crash tests](#crash-tests) | 0 | 1 | 1 | – |
-| **All** | **0** | **46** | **46** | **–** |
+| [Crash tests](#crash-tests) | 0 | 1 | 0 | 0% |
+| **All** | **0** | **46** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -25,59 +25,59 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`anticipated-concurrent-incoming-streams.https.any.js`](https://wpt.fyi/results/webtransport/anticipated-concurrent-incoming-streams.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`anticipated-streams.https.any.js`](https://wpt.fyi/results/webtransport/anticipated-streams.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`back-forward-cache-with-closed-webtransport-connection.https.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-closed-webtransport-connection.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`back-forward-cache-with-open-webtransport-connection.https.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-open-webtransport-connection.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`close.https.any.js`](https://wpt.fyi/results/webtransport/close.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`close2.https.any.js`](https://wpt.fyi/results/webtransport/close2.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`congestion-control.https.any.js`](https://wpt.fyi/results/webtransport/congestion-control.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`connect.https.any.js`](https://wpt.fyi/results/webtransport/connect.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`constructor-certificate-hashes.https.sub.any.js`](https://wpt.fyi/results/webtransport/constructor-certificate-hashes.https.sub.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`constructor-sharedarraybuffer.https.any.js`](https://wpt.fyi/results/webtransport/constructor-sharedarraybuffer.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`constructor.https.sub.any.js`](https://wpt.fyi/results/webtransport/constructor.https.sub.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`csp-fail.https.window.js`](https://wpt.fyi/results/webtransport/csp-fail.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`csp-pass.https.window.js`](https://wpt.fyi/results/webtransport/csp-pass.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`datagram-bad-chunk.https.any.js`](https://wpt.fyi/results/webtransport/datagram-bad-chunk.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`datagram-cancel-crash.https.sub.window.js`](https://wpt.fyi/results/webtransport/datagram-cancel-crash.https.sub.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`datagrams-cleanup.https.any.js`](https://wpt.fyi/results/webtransport/datagrams-cleanup.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`datagrams-writable.https.any.js`](https://wpt.fyi/results/webtransport/datagrams-writable.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`datagrams.https.any.js`](https://wpt.fyi/results/webtransport/datagrams.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`draining.https.any.js`](https://wpt.fyi/results/webtransport/draining.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`echo-large-bidirectional-streams.https.any.js`](https://wpt.fyi/results/webtransport/echo-large-bidirectional-streams.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`export-keying-material.https.any.js`](https://wpt.fyi/results/webtransport/export-keying-material.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`headers.https.any.js`](https://wpt.fyi/results/webtransport/headers.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`historical.https.sub.any.js`](https://wpt.fyi/results/webtransport/historical.https.sub.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`idlharness-writer.https.sub.any.js`](https://wpt.fyi/results/webtransport/idlharness-writer.https.sub.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`idlharness.https.sub.any.js`](https://wpt.fyi/results/webtransport/idlharness.https.sub.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`in-removed-iframe.https.html`](https://wpt.fyi/results/webtransport/in-removed-iframe.https.html) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`incoming-multiple-streams.https.any.js`](https://wpt.fyi/results/webtransport/incoming-multiple-streams.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`receive-stream-pull.https.any.js`](https://wpt.fyi/results/webtransport/receive-stream-pull.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`receive-stream-stats.https.any.js`](https://wpt.fyi/results/webtransport/receive-stream-stats.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`reliability.https.any.js`](https://wpt.fyi/results/webtransport/reliability.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`reliability.https.window.js`](https://wpt.fyi/results/webtransport/reliability.https.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`response-headers.https.any.js`](https://wpt.fyi/results/webtransport/response-headers.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`send-stream-stats.https.any.js`](https://wpt.fyi/results/webtransport/send-stream-stats.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`sendgroup.https.any.js`](https://wpt.fyi/results/webtransport/sendgroup.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`sendorder.https.any.js`](https://wpt.fyi/results/webtransport/sendorder.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`sendstream-bad-chunk.https.any.js`](https://wpt.fyi/results/webtransport/sendstream-bad-chunk.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`server-certificate-hashes.https.any.js`](https://wpt.fyi/results/webtransport/server-certificate-hashes.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`stats.https.any.js`](https://wpt.fyi/results/webtransport/stats.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`stream-stats.https.any.js`](https://wpt.fyi/results/webtransport/stream-stats.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`streams-close.https.any.js`](https://wpt.fyi/results/webtransport/streams-close.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`streams-echo.https.any.js`](https://wpt.fyi/results/webtransport/streams-echo.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`streams-reset-bidi-keeps-writing.https.any.js`](https://wpt.fyi/results/webtransport/streams-reset-bidi-keeps-writing.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`streams-stop-sending-bidi-keeps-reading.https.any.js`](https://wpt.fyi/results/webtransport/streams-stop-sending-bidi-keeps-reading.https.any.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
+| [`anticipated-concurrent-incoming-streams.https.any.js`](https://wpt.fyi/results/webtransport/anticipated-concurrent-incoming-streams.https.any.js) | Fail | 0 / 54 | NOT IMPLEMENTED | WebTransport |
+| [`anticipated-streams.https.any.js`](https://wpt.fyi/results/webtransport/anticipated-streams.https.any.js) | Fail | 0 / 24 | NOT IMPLEMENTED | WebTransport |
+| [`back-forward-cache-with-closed-webtransport-connection.https.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-closed-webtransport-connection.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`back-forward-cache-with-open-webtransport-connection.https.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-open-webtransport-connection.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`close.https.any.js`](https://wpt.fyi/results/webtransport/close.https.any.js) | Fail | 0 / 36 | NOT IMPLEMENTED | WebTransport |
+| [`close2.https.any.js`](https://wpt.fyi/results/webtransport/close2.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`congestion-control.https.any.js`](https://wpt.fyi/results/webtransport/congestion-control.https.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | WebTransport |
+| [`connect.https.any.js`](https://wpt.fyi/results/webtransport/connect.https.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED | WebTransport |
+| [`constructor-certificate-hashes.https.sub.any.js`](https://wpt.fyi/results/webtransport/constructor-certificate-hashes.https.sub.any.js) | Fail | 0 / 15 | NOT IMPLEMENTED | WebTransport |
+| [`constructor-sharedarraybuffer.https.any.js`](https://wpt.fyi/results/webtransport/constructor-sharedarraybuffer.https.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | WebTransport |
+| [`constructor.https.sub.any.js`](https://wpt.fyi/results/webtransport/constructor.https.sub.any.js) | Fail | 0 / 87 | NOT IMPLEMENTED | WebTransport |
+| [`csp-fail.https.window.js`](https://wpt.fyi/results/webtransport/csp-fail.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`csp-pass.https.window.js`](https://wpt.fyi/results/webtransport/csp-pass.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`datagram-bad-chunk.https.any.js`](https://wpt.fyi/results/webtransport/datagram-bad-chunk.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`datagram-cancel-crash.https.sub.window.js`](https://wpt.fyi/results/webtransport/datagram-cancel-crash.https.sub.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`datagrams-cleanup.https.any.js`](https://wpt.fyi/results/webtransport/datagrams-cleanup.https.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | WebTransport |
+| [`datagrams-writable.https.any.js`](https://wpt.fyi/results/webtransport/datagrams-writable.https.any.js) | Fail | 0 / 13 | NOT IMPLEMENTED | WebTransport |
+| [`datagrams.https.any.js`](https://wpt.fyi/results/webtransport/datagrams.https.any.js) | Fail | 0 / 33 | NOT IMPLEMENTED | WebTransport |
+| [`draining.https.any.js`](https://wpt.fyi/results/webtransport/draining.https.any.js) | Fail | 0 / 24 | NOT IMPLEMENTED | WebTransport |
+| [`echo-large-bidirectional-streams.https.any.js`](https://wpt.fyi/results/webtransport/echo-large-bidirectional-streams.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`export-keying-material.https.any.js`](https://wpt.fyi/results/webtransport/export-keying-material.https.any.js) | Fail | 0 / 45 | NOT IMPLEMENTED | WebTransport |
+| [`headers.https.any.js`](https://wpt.fyi/results/webtransport/headers.https.any.js) | Fail | 0 / 63 | NOT IMPLEMENTED | WebTransport |
+| [`historical.https.sub.any.js`](https://wpt.fyi/results/webtransport/historical.https.sub.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | WebTransport |
+| [`idlharness-writer.https.sub.any.js`](https://wpt.fyi/results/webtransport/idlharness-writer.https.sub.any.js) | Fail | 6 / 33 | NOT IMPLEMENTED | WebTransport |
+| [`idlharness.https.sub.any.js`](https://wpt.fyi/results/webtransport/idlharness.https.sub.any.js) | Fail | 3 / 336 | NOT IMPLEMENTED | WebTransport |
+| [`in-removed-iframe.https.html`](https://wpt.fyi/results/webtransport/in-removed-iframe.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`incoming-multiple-streams.https.any.js`](https://wpt.fyi/results/webtransport/incoming-multiple-streams.https.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | WebTransport |
+| [`receive-stream-pull.https.any.js`](https://wpt.fyi/results/webtransport/receive-stream-pull.https.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | WebTransport |
+| [`receive-stream-stats.https.any.js`](https://wpt.fyi/results/webtransport/receive-stream-stats.https.any.js) | Fail | 0 / 12 | NOT IMPLEMENTED | WebTransport |
+| [`reliability.https.any.js`](https://wpt.fyi/results/webtransport/reliability.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`reliability.https.window.js`](https://wpt.fyi/results/webtransport/reliability.https.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`response-headers.https.any.js`](https://wpt.fyi/results/webtransport/response-headers.https.any.js) | Fail | 0 / 6 | NOT IMPLEMENTED | WebTransport |
+| [`send-stream-stats.https.any.js`](https://wpt.fyi/results/webtransport/send-stream-stats.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`sendgroup.https.any.js`](https://wpt.fyi/results/webtransport/sendgroup.https.any.js) | Fail | 0 / 39 | NOT IMPLEMENTED | WebTransport |
+| [`sendorder.https.any.js`](https://wpt.fyi/results/webtransport/sendorder.https.any.js) | Fail | 0 / 9 | NOT IMPLEMENTED | WebTransport |
+| [`sendstream-bad-chunk.https.any.js`](https://wpt.fyi/results/webtransport/sendstream-bad-chunk.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`server-certificate-hashes.https.any.js`](https://wpt.fyi/results/webtransport/server-certificate-hashes.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`stats.https.any.js`](https://wpt.fyi/results/webtransport/stats.https.any.js) | Fail | 0 / 24 | NOT IMPLEMENTED | WebTransport |
+| [`stream-stats.https.any.js`](https://wpt.fyi/results/webtransport/stream-stats.https.any.js) | Fail | 0 / 33 | NOT IMPLEMENTED | WebTransport |
+| [`streams-close.https.any.js`](https://wpt.fyi/results/webtransport/streams-close.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | WebTransport |
+| [`streams-echo.https.any.js`](https://wpt.fyi/results/webtransport/streams-echo.https.any.js) | Fail | 0 / 30 | NOT IMPLEMENTED | WebTransport |
+| [`streams-reset-bidi-keeps-writing.https.any.js`](https://wpt.fyi/results/webtransport/streams-reset-bidi-keeps-writing.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`streams-stop-sending-bidi-keeps-reading.https.any.js`](https://wpt.fyi/results/webtransport/streams-stop-sending-bidi-keeps-reading.https.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`back-forward-cache-with-closed-webtransport-connection-ccns.https.tentative.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-closed-webtransport-connection-ccns.https.tentative.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
-| [`back-forward-cache-with-open-webtransport-connection-ccns.https.tentative.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-open-webtransport-connection-ccns.https.tentative.window.js) | Disabled | – | NOT IMPLEMENTED | WebTransport |
+| [`back-forward-cache-with-closed-webtransport-connection-ccns.https.tentative.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-closed-webtransport-connection-ccns.https.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
+| [`back-forward-cache-with-open-webtransport-connection-ccns.https.tentative.window.js`](https://wpt.fyi/results/webtransport/back-forward-cache-with-open-webtransport-connection-ccns.https.tentative.window.js) | Fail | 0 / 1 | NOT IMPLEMENTED | WebTransport |
 
 ## Crash tests
 
 | Test | Result | Variants | Kind | Description |
 |---|---|--:|---|---|
-| [`bidirectional-cancel-crash.https.html`](https://wpt.fyi/results/webtransport/bidirectional-cancel-crash.https.html) | Disabled | – | NOT IMPLEMENTED | WebTransport |
+| [`bidirectional-cancel-crash.https.html`](https://wpt.fyi/results/webtransport/bidirectional-cancel-crash.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | WebTransport |

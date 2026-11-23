@@ -9,31 +9,31 @@ description: "The results of the web-platform-tests of audio-output, and why the
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 10 | 10 | – |
+| [Stable](#stable-tests) | 2 | 10 | 0 | 20% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **10** | **10** | **–** |
+| **All** | **2** | **10** | **0** | **20%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 10
-  - `hardware`: 10
-  - `media`: 10
+- **REQUIRES**: 8
+  - `hardware`: 8
+  - `media`: 8
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`enumerateDevices-permissions-policy.https.html`](https://wpt.fyi/results/audio-output/enumerateDevices-permissions-policy.https.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`enumerateDevices-with-selectAudioOutput.https.html`](https://wpt.fyi/results/audio-output/enumerateDevices-with-selectAudioOutput.https.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/audio-output/idlharness.https.window.js) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`removeTrack-after-setSinkId.https.html`](https://wpt.fyi/results/audio-output/removeTrack-after-setSinkId.https.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`secure-context.html`](https://wpt.fyi/results/audio-output/secure-context.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`selectAudioOutput-permissions-policy.https.sub.html`](https://wpt.fyi/results/audio-output/selectAudioOutput-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`selectAudioOutput-sans-user-activation.https.html`](https://wpt.fyi/results/audio-output/selectAudioOutput-sans-user-activation.https.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`setSinkId-permissions-policy.https.sub.html`](https://wpt.fyi/results/audio-output/setSinkId-permissions-policy.https.sub.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`setSinkId-with-selectAudioOutput.https.html`](https://wpt.fyi/results/audio-output/setSinkId-with-selectAudioOutput.https.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
-| [`setSinkId.https.html`](https://wpt.fyi/results/audio-output/setSinkId.https.html) | Disabled | – | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`enumerateDevices-permissions-policy.https.html`](https://wpt.fyi/results/audio-output/enumerateDevices-permissions-policy.https.html) | Pass | 1 / 1 |  |  |
+| [`enumerateDevices-with-selectAudioOutput.https.html`](https://wpt.fyi/results/audio-output/enumerateDevices-with-selectAudioOutput.https.html) | Fail | 1 / 3 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/audio-output/idlharness.https.window.js) | Fail | 15 / 20 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`removeTrack-after-setSinkId.https.html`](https://wpt.fyi/results/audio-output/removeTrack-after-setSinkId.https.html) | Fail | 0 / 1 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`secure-context.html`](https://wpt.fyi/results/audio-output/secure-context.html) | Pass | 2 / 2 |  |  |
+| [`selectAudioOutput-permissions-policy.https.sub.html`](https://wpt.fyi/results/audio-output/selectAudioOutput-permissions-policy.https.sub.html) | Fail | 0 / 5 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`selectAudioOutput-sans-user-activation.https.html`](https://wpt.fyi/results/audio-output/selectAudioOutput-sans-user-activation.https.html) | Fail | 0 / 1 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`setSinkId-permissions-policy.https.sub.html`](https://wpt.fyi/results/audio-output/setSinkId-permissions-policy.https.sub.html) | Fail | 0 / 5 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`setSinkId-with-selectAudioOutput.https.html`](https://wpt.fyi/results/audio-output/setSinkId-with-selectAudioOutput.https.html) | Fail | 0 / 4 | REQUIRES(hardware, media) | Audio Output Devices API |
+| [`setSinkId.https.html`](https://wpt.fyi/results/audio-output/setSinkId.https.html) | Fail | 1 / 3 | REQUIRES(hardware, media) | Audio Output Devices API |

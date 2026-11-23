@@ -10,78 +10,78 @@ description: "The results of the web-platform-tests of signed-exchange, and why 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 0 | 60 | 60 | – |
+| [Tentative](#tentative-tests) | 5 | 60 | 0 | 8% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **60** | **60** | **–** |
+| **All** | **5** | **60** | **0** | **8%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 60
+- **NOT IMPLEMENTED**: 55
 
 ## Tentative tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`check-cert-request.tentative.html`](https://wpt.fyi/results/signed-exchange/check-cert-request.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`fallback-to-another-sxg.tentative.html`](https://wpt.fyi/results/signed-exchange/fallback-to-another-sxg.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`nested-sxg.tentative.html`](https://wpt.fyi/results/signed-exchange/nested-sxg.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-cert_fetch_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_fetch_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-cert_fetch_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_fetch_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-cert_parse_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_parse_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-cert_parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_parse_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-cert_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_verification_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-cert_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_verification_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-failed-zero-success-fraction.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-failed-zero-success-fraction.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-invalid_integrity_header.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-invalid_integrity_header.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-mi_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-mi_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-ok-no-referrer.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-ok-no-referrer.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-ok-origin-referrer.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-ok-origin-referrer.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-ok.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-ok.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-parse_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-signature_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-signature_verification_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-navigation-signature_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-signature_verification_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-cert_fetch_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_fetch_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-cert_fetch_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_fetch_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-cert_parse_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_parse_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-cert_parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_parse_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-cert_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_verification_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-cert_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_verification_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-failed-zero-success-feaction.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-failed-zero-success-feaction.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-invalid_integrity_header.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-invalid_integrity_header.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-mi_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-mi_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-ok.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-ok.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-parse_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-signature_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-signature_verification_error-downgraded.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`reporting/sxg-reporting-prefetch-signature_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-signature_verification_error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`service-workers/sxg-sw-register-after-fallback.tentative.https.html`](https://wpt.fyi/results/signed-exchange/service-workers/sxg-sw-register-after-fallback.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`service-workers/sxg-sw-register.tentative.https.html`](https://wpt.fyi/results/signed-exchange/service-workers/sxg-sw-register.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`subresource/sxg-subresource-header-integrity-mismatch.tentative.html`](https://wpt.fyi/results/signed-exchange/subresource/sxg-subresource-header-integrity-mismatch.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`subresource/sxg-subresource.tentative.html`](https://wpt.fyi/results/signed-exchange/subresource/sxg-subresource.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-data-cert-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-data-cert-url.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-double-prefetch.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-double-prefetch.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-fallback-with-fragment.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-fallback-with-fragment.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-hsts.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-hsts.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-inner-url-bom.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-inner-url-bom.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-invalid-utf8-inner-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-invalid-utf8-inner-url.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-invalid-validity-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-invalid-validity-url.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-location-fragment.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-location-fragment.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-location.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-location.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-merkle-integrity-error.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-merkle-integrity-error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-navigation-timing.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-navigation-timing.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-non-secure-origin.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-non-secure-origin.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-noncacheable.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-noncacheable.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-prefetch-merkle-integrity-error.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-prefetch-merkle-integrity-error.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-prefetch-resource-timing.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-prefetch-resource-timing.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-prefetch.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-prefetch.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-referrer-policy-header.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-policy-header.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-referrer-remote-physical-remote-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-remote-physical-remote-logical.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-referrer-remote-physical-same-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-remote-physical-same-logical.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-referrer-same-physical-remote-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-same-physical-remote-logical.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-referrer-same-physical-same-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-utf8-inner-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-utf8-inner-url.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-variants-match.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-variants-match.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-variants-mismatch.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-variants-mismatch.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
-| [`sxg-version1b2.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-version1b2.tentative.html) | Disabled | – | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`check-cert-request.tentative.html`](https://wpt.fyi/results/signed-exchange/check-cert-request.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`fallback-to-another-sxg.tentative.html`](https://wpt.fyi/results/signed-exchange/fallback-to-another-sxg.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`nested-sxg.tentative.html`](https://wpt.fyi/results/signed-exchange/nested-sxg.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-cert_fetch_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_fetch_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-cert_fetch_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_fetch_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-cert_parse_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_parse_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-cert_parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_parse_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-cert_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_verification_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-cert_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-cert_verification_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-failed-zero-success-fraction.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-failed-zero-success-fraction.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-invalid_integrity_header.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-invalid_integrity_header.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-mi_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-mi_error.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-ok-no-referrer.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-ok-no-referrer.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-ok-origin-referrer.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-ok-origin-referrer.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-ok.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-ok.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-parse_error.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-signature_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-signature_verification_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-navigation-signature_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-navigation-signature_verification_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-cert_fetch_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_fetch_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-cert_fetch_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_fetch_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-cert_parse_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_parse_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-cert_parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_parse_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-cert_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_verification_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-cert_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-cert_verification_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-failed-zero-success-feaction.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-failed-zero-success-feaction.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-invalid_integrity_header.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-invalid_integrity_header.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-mi_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-mi_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-ok.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-ok.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-parse_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-parse_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-signature_verification_error-downgraded.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-signature_verification_error-downgraded.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`reporting/sxg-reporting-prefetch-signature_verification_error.tentative.html`](https://wpt.fyi/results/signed-exchange/reporting/sxg-reporting-prefetch-signature_verification_error.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`service-workers/sxg-sw-register-after-fallback.tentative.https.html`](https://wpt.fyi/results/signed-exchange/service-workers/sxg-sw-register-after-fallback.tentative.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`service-workers/sxg-sw-register.tentative.https.html`](https://wpt.fyi/results/signed-exchange/service-workers/sxg-sw-register.tentative.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`subresource/sxg-subresource-header-integrity-mismatch.tentative.html`](https://wpt.fyi/results/signed-exchange/subresource/sxg-subresource-header-integrity-mismatch.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`subresource/sxg-subresource.tentative.html`](https://wpt.fyi/results/signed-exchange/subresource/sxg-subresource.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-data-cert-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-data-cert-url.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-double-prefetch.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-double-prefetch.tentative.html) | Pass | 1 / 1 |  |  |
+| [`sxg-fallback-with-fragment.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-fallback-with-fragment.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-hsts.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-hsts.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-inner-url-bom.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-inner-url-bom.tentative.html) | Pass | 1 / 1 |  |  |
+| [`sxg-invalid-utf8-inner-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-invalid-utf8-inner-url.tentative.html) | Pass | 1 / 1 |  |  |
+| [`sxg-invalid-validity-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-invalid-validity-url.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-location-fragment.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-location-fragment.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-location.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-location.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-merkle-integrity-error.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-merkle-integrity-error.tentative.html) | Pass | 1 / 1 |  |  |
+| [`sxg-navigation-timing.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-navigation-timing.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-non-secure-origin.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-non-secure-origin.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-noncacheable.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-noncacheable.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-prefetch-merkle-integrity-error.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-prefetch-merkle-integrity-error.tentative.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-prefetch-resource-timing.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-prefetch-resource-timing.tentative.html) | Pass | 1 / 1 |  |  |
+| [`sxg-prefetch.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-prefetch.tentative.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-referrer-policy-header.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-policy-header.tentative.https.html) | Timeout | 0 / 7 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-referrer-remote-physical-remote-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-remote-physical-remote-logical.tentative.https.html) | Timeout | 0 / 8 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-referrer-remote-physical-same-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-remote-physical-same-logical.tentative.https.html) | Timeout | 0 / 8 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-referrer-same-physical-remote-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-same-physical-remote-logical.tentative.https.html) | Timeout | 0 / 8 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-referrer-same-physical-same-logical.tentative.https.html`](https://wpt.fyi/results/signed-exchange/sxg-referrer-same-physical-same-logical.tentative.https.html) | Timeout | 0 / 8 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-utf8-inner-url.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-utf8-inner-url.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-variants-match.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-variants-match.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-variants-mismatch.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-variants-mismatch.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |
+| [`sxg-version1b2.tentative.html`](https://wpt.fyi/results/signed-exchange/sxg-version1b2.tentative.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | Signed HTTP Exchanges |

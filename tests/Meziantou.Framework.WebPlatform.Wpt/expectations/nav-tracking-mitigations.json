@@ -1,0 +1,14 @@
+{
+  "nav-tracking-mitigations/stateful-client-bounce.sub.https.html": {
+    "total": 1,
+    "failures": {
+      "Bounce tracking mitigations deleting state for a bounce tracker": "FAIL"
+    }
+  },
+  "nav-tracking-mitigations/stateless-client-bounce.sub.https.html": {
+    "total": 1,
+    "failures": {
+      "Bounce tracking mitigations catching a stateless bounce tracker": "FAIL"
+    }
+  }
+}

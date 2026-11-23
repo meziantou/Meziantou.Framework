@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of presentation-api, and why
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 13 | 13 | – |
+| [Stable](#stable-tests) | 0 | 13 | 0 | 0% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **13** | **13** | **–** |
+| **All** | **0** | **13** | **0** | **0%** |
 
 ## Failure reasons
 
@@ -26,16 +26,16 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`controlling-ua/PresentationConnectionCloseEvent.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationConnectionCloseEvent.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/PresentationRequest_error.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_error.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/PresentationRequest_mixedcontent.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_mixedcontent.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/PresentationRequest_mixedcontent_multiple.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_mixedcontent_multiple.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/PresentationRequest_sandboxing_error.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_sandboxing_error.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/PresentationRequest_sandboxing_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_sandboxing_success.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/PresentationRequest_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_success.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/defaultRequest.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/defaultRequest.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/getAvailability.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/getAvailability.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/getAvailability_sandboxing_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/getAvailability_sandboxing_success.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/idlharness.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/idlharness.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/reconnectToPresentation_sandboxing_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/reconnectToPresentation_sandboxing_success.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
-| [`controlling-ua/startNewPresentation_error.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/startNewPresentation_error.https.html) | Disabled | – | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationConnectionCloseEvent.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationConnectionCloseEvent.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationRequest_error.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_error.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationRequest_mixedcontent.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_mixedcontent.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationRequest_mixedcontent_multiple.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_mixedcontent_multiple.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationRequest_sandboxing_error.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_sandboxing_error.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationRequest_sandboxing_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_sandboxing_success.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/PresentationRequest_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/PresentationRequest_success.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/defaultRequest.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/defaultRequest.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/getAvailability.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/getAvailability.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/getAvailability_sandboxing_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/getAvailability_sandboxing_success.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/idlharness.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/idlharness.https.html) | Fail | 16 / 103 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/reconnectToPresentation_sandboxing_success.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/reconnectToPresentation_sandboxing_success.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |
+| [`controlling-ua/startNewPresentation_error.https.html`](https://wpt.fyi/results/presentation-api/controlling-ua/startNewPresentation_error.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Presentation API, needs a second screen |

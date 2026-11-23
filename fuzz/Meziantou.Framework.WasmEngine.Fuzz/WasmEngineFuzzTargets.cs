@@ -767,5 +767,27 @@ public static class WasmEngineFuzzTargets
                   (br_if $next (i32.lt_u (local.get $i) (i32.const 64))))
                 (i64.add (local.get $l) (i64.extend_i32_u (i32.add (local.get $m) (local.get $x))))))
             """),
+        ("nested-branches", """
+            (module
+              (func (export "run") (param $n i32) (result i32)
+                (block $outer (result i32)
+                  (block $inner (result i32)
+                    (br_if $outer (i32.const 10) (i32.eqz (local.get $n)))
+                    (br_table $inner $outer (i32.const 20) (i32.sub (local.get $n) (i32.const 1))))
+                  (i32.const 1)
+                  (i32.add))))
+            """),
+        ("invalid-nested-blocks", """
+            (module
+              (type $t (func))
+              (func $f (type $t))
+              (elem declare func $f)
+              (func (result i32)
+                (block (result i32)
+                  (loop (result i32)
+                    (if (result i32) (i32.const 1)
+                      (then (ref.func $f) (i32.const 1))
+                      (else (i32.const 2)))))))
+            """),
     ];
 }

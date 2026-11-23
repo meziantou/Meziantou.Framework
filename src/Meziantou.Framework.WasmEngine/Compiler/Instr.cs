@@ -150,6 +150,9 @@ internal sealed class CompiledCode
     /// <summary>0 before the compilation of the OSR method, 1 once it started or failed.</summary>
     public int OsrStarted;
 
-    /// <summary>A name for the diagnostics (the index of the function).</summary>
-    public string Name { get; set; } = "";
+    /// <summary>The index of the function in its module, or -1 for a constant expression.</summary>
+    public int FunctionIndex { get; set; } = -1;
+
+    /// <summary>A name for the diagnostics (the index of the function), computed when it is used.</summary>
+    public string Name => FunctionIndex < 0 ? "" : "func" + FunctionIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
 }

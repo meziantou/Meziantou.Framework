@@ -1,7 +1,8 @@
 namespace Meziantou.Framework.Win32.CredentialManagerConsole;
 
-// Example of the readme (src/Meziantou.Framework.Win32.CredentialManager/readme.md). It changes the credentials of the
-// user, so it is compiled in CI to keep the documentation in sync with the API, but not run.
+// Example of the readme (src/Meziantou.Framework.Win32.CredentialManager/readme.md) and of the XML documentation of
+// CredentialManager. It changes the credentials of the user, so it is compiled in CI to keep the documentation in sync
+// with the API, but not run.
 public static class ReadmeExamples
 {
     public static void Usage()

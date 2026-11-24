@@ -100,6 +100,15 @@ For the letter `l` of Noto Sans, the path is `M173 0L85 0L85 -760L173 -760L173 0
 - A glyph without outline, such as a space, emits nothing.
 - [GlyphBoundsSink](cref:Meziantou.Framework.Fonts.GlyphBoundsSink) is a sink that measures an outline: the smallest rectangle that contains its points and the control
   points of its curves.
+- [TryGetGlyphBounds](cref:Meziantou.Framework.Fonts.FontFace.TryGetGlyphBounds) gives, in font units:
+  - for TrueType outlines that do not vary (a font without `gvar` table, or the default instance of a variable font),
+    the box the `glyf` table declares for the glyph. A declared box whose sides are swapped is put back in order, as
+    HarfBuzz does;
+  - for the TrueType outlines of the other instances of a variable font, and for CFF and CFF2 outlines, the box of
+    the points of the outline, rounded outward;
+  - for a font without outlines, the box of the bitmap that [TryGetAnyBitmapGlyph](cref:Meziantou.Framework.Fonts.FontFace.TryGetAnyBitmapGlyph) finds for the glyph at the largest size
+    (see [Bitmap glyphs](#bitmap-glyphs)), when that bitmap gives its size. The JPEG and TIFF images of `sbix` do not:
+    their glyphs have no box.
 - The [DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) overload that takes a size uses the bitmaps of one bit per pixel of the font (`EBDT`, `bdat`): a
   rectangle per run of pixels of a row. A font loaded with `useEmbeddedBitmaps` uses the strike made for exactly that
   size; a font without outlines uses the strike that suits any size (see [Bitmap glyphs](#bitmap-glyphs)).

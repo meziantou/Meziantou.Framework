@@ -522,6 +522,7 @@ namespace Meziantou.Framework.Csv.Serialization
         public System.IFormatProvider? FormatProvider { get => throw null; init { } }
         public bool HasHeaderRow { get => throw null; init { } }
         public bool IncludeFields { get => throw null; init { } }
+        public int MaxDegreeOfParallelism { get => throw null; init { } }
         public int MaxRowLength { get => throw null; init { } }
         public Meziantou.Framework.Csv.Serialization.CsvMissingColumnHandling MissingColumnHandling { get => throw null; init { } }
         public string NewLine { get => throw null; init { } }

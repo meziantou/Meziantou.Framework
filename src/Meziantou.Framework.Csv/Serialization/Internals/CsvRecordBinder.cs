@@ -47,6 +47,27 @@ internal sealed class CsvRecordBinder<T>
         _setProperties = [.. setProperties];
     }
 
+    private CsvRecordBinder(CsvRecordBinder<T> binder, CsvDeserializationErrorHandler? errorHandler)
+    {
+        _typeInfo = binder._typeInfo;
+        _errorHandler = errorHandler;
+        _columns = binder._columns;
+        _requiredColumns = binder._requiredColumns;
+        _throwOnUnmappedColumn = binder._throwOnUnmappedColumn;
+        _setColumns = binder._setColumns;
+        _setProperties = binder._setProperties;
+        if (_typeInfo.ParameterizedCreator is not null)
+        {
+            _arguments = _typeInfo.CreateArguments();
+        }
+    }
+
+    public CsvDeserializationErrorHandler? ErrorHandler => _errorHandler;
+
+    /// <summary>Creates a binder of the same columns that can read records at the same time as this one, on another thread.</summary>
+    /// <param name="errorHandler">The handler called for the errors of the records, instead of the handler of the options.</param>
+    public CsvRecordBinder<T> Clone(CsvDeserializationErrorHandler? errorHandler) => new(this, errorHandler);
+
     public static CsvRecordBinder<T> Create<TChar>(CsvTypeInfo<T> typeInfo, CsvParser<TChar> parser)
         where TChar : unmanaged, IBinaryInteger<TChar>
     {

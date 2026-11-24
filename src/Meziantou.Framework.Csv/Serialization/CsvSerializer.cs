@@ -487,11 +487,37 @@ public static class CsvSerializer
     private static CsvParser<byte> CreateParser<T>(Stream stream, CsvTypeInfo<T> typeInfo)
         => new(typeInfo.Options.ReaderOptions, new StreamCsvSource(stream, leaveOpen: true), default);
 
+    // The number of threads that convert the records, or 1 to convert them on the calling thread
+    private static int GetDegreeOfParallelism<T>(CsvTypeInfo<T> typeInfo)
+    {
+        // The browser has a single thread: waiting for a task there would never end
+        if (OperatingSystem.IsBrowser() || OperatingSystem.IsWasi())
+            return 1;
+
+        var value = typeInfo.Options.MaxDegreeOfParallelism;
+        return value is -1 ? Environment.ProcessorCount : value;
+    }
+
     private static List<T> ReadAll<T, TChar>(CsvParser<TChar> parser, CsvTypeInfo<T> typeInfo)
         where TChar : unmanaged, IBinaryInteger<TChar>
     {
         // The records are not added to a list as they are read: see SegmentedListBuilder
         var result = new SegmentedListBuilder<T>();
+        var degreeOfParallelism = GetDegreeOfParallelism(typeInfo);
+        if (degreeOfParallelism > 1)
+        {
+            using var deserializer = new CsvParallelDeserializer<T, TChar>(typeInfo, degreeOfParallelism);
+            while (deserializer.MoveNext(parser))
+            {
+                foreach (var item in deserializer.Current)
+                {
+                    result.Add(item);
+                }
+            }
+
+            return result.ToList();
+        }
+
         CsvRecordBinder<T>? binder = null;
         while (parser.Read())
         {
@@ -511,6 +537,24 @@ public static class CsvSerializer
         using (parser)
         {
             var result = new SegmentedListBuilder<T>();
+            var degreeOfParallelism = GetDegreeOfParallelism(typeInfo);
+            if (degreeOfParallelism > 1)
+            {
+                var deserializer = new CsvParallelDeserializer<T, TChar>(typeInfo, degreeOfParallelism);
+                await using (deserializer.ConfigureAwait(false))
+                {
+                    while (await deserializer.MoveNextAsync(parser, cancellationToken).ConfigureAwait(false))
+                    {
+                        foreach (var item in deserializer.Current)
+                        {
+                            result.Add(item);
+                        }
+                    }
+                }
+
+                return result.ToList();
+            }
+
             CsvRecordBinder<T>? binder = null;
             while (await parser.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -529,6 +573,21 @@ public static class CsvSerializer
         where TChar : unmanaged, IBinaryInteger<TChar>
     {
         using var parser = createParser();
+        var degreeOfParallelism = GetDegreeOfParallelism(typeInfo);
+        if (degreeOfParallelism > 1)
+        {
+            using var deserializer = new CsvParallelDeserializer<T, TChar>(typeInfo, degreeOfParallelism);
+            while (deserializer.MoveNext(parser))
+            {
+                foreach (var item in deserializer.Current)
+                {
+                    yield return item;
+                }
+            }
+
+            yield break;
+        }
+
         CsvRecordBinder<T>? binder = null;
         while (parser.Read())
         {
@@ -544,6 +603,24 @@ public static class CsvSerializer
         where TChar : unmanaged, IBinaryInteger<TChar>
     {
         using var parser = createParser();
+        var degreeOfParallelism = GetDegreeOfParallelism(typeInfo);
+        if (degreeOfParallelism > 1)
+        {
+            var deserializer = new CsvParallelDeserializer<T, TChar>(typeInfo, degreeOfParallelism);
+            await using (deserializer.ConfigureAwait(false))
+            {
+                while (await deserializer.MoveNextAsync(parser, cancellationToken).ConfigureAwait(false))
+                {
+                    foreach (var item in deserializer.Current)
+                    {
+                        yield return item;
+                    }
+                }
+            }
+
+            yield break;
+        }
+
         CsvRecordBinder<T>? binder = null;
         while (await parser.ReadAsync(cancellationToken).ConfigureAwait(false))
         {

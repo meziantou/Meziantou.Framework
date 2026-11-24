@@ -59,6 +59,8 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
   separator, the quote or the new line is one of their characters.
 - **Serialize to a string only when you need one.** The text is kept in chunks and copied once, into the string;
   writing to a stream, a `TextWriter` or an `IBufferWriter<T>` does not keep the whole text in memory.
+- **Convert large files on several threads.** With [MaxDegreeOfParallelism](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.MaxDegreeOfParallelism), the records are converted on the
+  thread pool while the calling thread splits the data into records. See [Convert the records in parallel](05-Serialization.md#convert-the-records-in-parallel).
 - **Stream large files** with [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) or [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable) instead of loading every record.
 - **Loading every record is cheap on the garbage collector.** [Deserialize](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.Deserialize) and [DeserializeAsync](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsync)
   collect the records in small arrays, then copy them once to a list of the exact size. A list that grows while the records

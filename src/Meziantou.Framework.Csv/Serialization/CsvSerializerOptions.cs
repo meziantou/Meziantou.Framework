@@ -46,6 +46,7 @@ public sealed class CsvSerializerOptions
         UnmappedColumnHandling = options.UnmappedColumnHandling;
         BufferSize = options.BufferSize;
         MaxRowLength = options.MaxRowLength;
+        MaxDegreeOfParallelism = options.MaxDegreeOfParallelism;
     }
 
     /// <summary>Gets the default options.</summary>
@@ -148,6 +149,37 @@ public sealed class CsvSerializerOptions
 
     /// <summary>Gets the maximum length of a row read from a <see cref="TextReader"/> or a <see cref="Stream"/>. Default is 16777216.</summary>
     public int MaxRowLength { get; init; } = CsvReaderOptions.DefaultMaxRowLength;
+
+    /// <summary>Gets the maximum number of threads that convert the records to objects when reading data. Default is 1.</summary>
+    /// <value>1 to convert the records on the calling thread, a larger value to convert them on the thread pool, or -1 to use <see cref="Environment.ProcessorCount"/>.</value>
+    /// <remarks>
+    /// <para>
+    /// When larger than 1, the data is still split into records on the calling thread, and the records are converted to objects on the thread pool, in
+    /// batches of a few hundred records; the calling thread converts the next batch itself when no thread of the pool has started it. The objects are
+    /// returned in the order of the records, and the exceptions are the same as when reading the records one by one. The enumerable overloads read a
+    /// few batches ahead of the objects they return. The gain is largest when converting the values takes time, such as numbers and dates, and smallest
+    /// when strings are most of the values: the garbage collector limits their allocation, less so the server garbage collector. Splitting the data on
+    /// one thread limits the gain to a few times, whatever the number of processors.
+    /// </para>
+    /// <para>
+    /// The constructors, the setters, the converters and the callbacks of the records are called from several threads at the same time. The
+    /// <see cref="DeserializationErrorHandler"/> is not called by two threads at the same time, but it can be called for the records in another order, and
+    /// for records after the error that ends the reading. The <see cref="BadDataHandler"/> is called on the calling thread. The browser runs the records
+    /// on the calling thread.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is 0 or less than -1.</exception>
+    public int MaxDegreeOfParallelism
+    {
+        get;
+        init
+        {
+            if (value is 0 or < -1)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum degree of parallelism must be -1 or a positive number.");
+
+            field = value;
+        }
+    } = 1;
 
     internal CsvReaderOptions ReaderOptions => _readerOptions ??= new CsvReaderOptions
     {

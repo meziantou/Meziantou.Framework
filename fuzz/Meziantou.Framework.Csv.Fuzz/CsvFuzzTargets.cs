@@ -2,10 +2,14 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.Csv.Internals;
 using Meziantou.Framework.Csv.Serialization;
+using Meziantou.Framework.Csv.Serialization.Internals;
+using Meziantou.Framework.Csv.Serialization.Metadata;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Csv.Fuzz;
@@ -55,6 +59,7 @@ public static partial class CsvFuzzTargets
         new("csv-serializer-roundtrip", SerializerRoundTrip) { Seeds = GetSerializerRoundTripSeeds, Dictionary = Tokens },
         new("csv-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("csv-deserialize-errors", DeserializeErrors) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
+        new("csv-deserialize-parallel", DeserializeParallel) { Seeds = GetDeserializeParallelSeeds, Dictionary = Tokens },
         new("csv-iso8601", ParseIso8601) { Seeds = GetIso8601Seeds, Dictionary = ["-", ":", "T", "Z", ".", "+", "2024", "02", "29", "23", "59", "0000000", "+02:00", "+14:00", "0001-01-01", "9999-12-31"] },
         new("csv-decimal", ParseDecimal) { Seeds = GetDecimalSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.50", "123456789", "999999999999999999", " ", ",", "+", "e"] },
         new("csv-numbers", ParseNumbers) { Seeds = GetNumberSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.5", "999999999", "2147483648", "999999999999999", "9223372036854775808", " ", ",", "+", "e", "E", "NaN"] },
@@ -331,6 +336,120 @@ public static partial class CsvFuzzTargets
             {
                 s_deserializeErrorState = null;
             }
+        }
+    }
+
+    /// <summary>
+    /// <c>mode, text</c>: converting the records on the thread pool, in batches of 1 to 8 records (bits 0-2 of <c>mode</c>) with 1 to 4 pending batches
+    /// (bits 3-4), from UTF-16 or UTF-8 (bit 5), returns the records that converting them one by one returns, in the same order, then throws the same
+    /// exception. With a deserialization error handler that ignores the errors or skips the records (bits 6-7), it reports the same errors, in any order.
+    /// The public overloads give the same result.
+    /// </summary>
+    private static void DeserializeParallel(ReadOnlySpan<byte> data)
+    {
+        var mode = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        var maxBatchRows = 1 + (mode & 7);
+        var maxPendingBatches = 1 + ((mode >> 3) & 3);
+        var utf8 = (mode & 0x20) != 0;
+        CsvDeserializationErrorAction? action = (mode >> 6) switch
+        {
+            1 => CsvDeserializationErrorAction.Ignore,
+            2 => CsvDeserializationErrorAction.SkipRecord,
+            _ => null,
+        };
+
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = Read(parallel: false);
+        FuzzAssert.Equal(expected, Read(parallel: true), "Converting the records in parallel gives other records, errors or exceptions");
+
+        // The public overloads, with the default size of the batches
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = maxPendingBatches + 1 };
+        var expectedRecords = TryDeserialize(() => utf8 ? CsvSerializer.Deserialize(new MemoryStream(bytes), FuzzCsvContext.Default.FuzzRecord) : CsvSerializer.Deserialize(text, FuzzCsvContext.Default.FuzzRecord));
+        var actualRecords = TryDeserialize(() => utf8 ? CsvSerializer.Deserialize(new MemoryStream(bytes), new FuzzCsvContext(options).FuzzRecord) : CsvSerializer.Deserialize(text, new FuzzCsvContext(options).FuzzRecord));
+        FuzzAssert.Equal(expectedRecords, actualRecords, "Deserialize with MaxDegreeOfParallelism gives other records");
+
+        string Read(bool parallel)
+        {
+            var errors = new List<string>();
+            var serializerOptions = new CsvSerializerOptions
+            {
+                DeserializationErrorHandler = action is { } value
+                    ? context =>
+                    {
+                        // Called from the tasks that convert the records
+                        lock (errors)
+                        {
+                            errors.Add(string.Create(CultureInfo.InvariantCulture, $"{context.Kind} {context.RowIndex} {context.LineNumber} {context.Position} {context.ColumnIndex} {context.MemberName} {context.RawValue}"));
+                        }
+
+                        return value;
+                    }
+                    : null,
+            };
+
+            var typeInfo = new FuzzCsvContext(serializerOptions).FuzzRecord;
+            var records = new List<string>();
+            var exception = "";
+            try
+            {
+                if (utf8)
+                {
+                    using var parser = new CsvParser<byte>(serializerOptions.ReaderOptions, source: null, bytes);
+                    ReadRecords(parser, typeInfo, parallel, maxPendingBatches, maxBatchRows, records);
+                }
+                else
+                {
+                    using var parser = new CsvParser<char>(serializerOptions.ReaderOptions, source: null, text.AsMemory());
+                    ReadRecords(parser, typeInfo, parallel, maxPendingBatches, maxBatchRows, records);
+                }
+            }
+            catch (CsvException ex)
+            {
+                exception = string.Create(CultureInfo.InvariantCulture, $"{ex.Message} {ex.RowIndex} {ex.LineNumber} {ex.Position} {ex.ColumnIndex}");
+            }
+
+            errors.Sort(StringComparer.Ordinal);
+            return string.Join("\n", records) + "\n" + exception + "\n" + string.Join("\n", errors);
+        }
+
+        static void ReadRecords<TChar>(CsvParser<TChar> parser, CsvTypeInfo<FuzzRecord> typeInfo, bool parallel, int maxPendingBatches, int maxBatchRows, List<string> records)
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            if (parallel)
+            {
+                using var deserializer = new CsvParallelDeserializer<FuzzRecord, TChar>(typeInfo, maxPendingBatches, maxBatchRows);
+                while (deserializer.MoveNext(parser))
+                {
+                    foreach (var record in deserializer.Current)
+                    {
+                        records.Add(Describe(record));
+                    }
+                }
+
+                return;
+            }
+
+            CsvRecordBinder<FuzzRecord>? binder = null;
+            while (parser.Read())
+            {
+                binder ??= CsvRecordBinder<FuzzRecord>.Create(typeInfo, parser);
+                if (binder.TryRead(parser, out var record))
+                {
+                    records.Add(Describe(record));
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetDeserializeParallelSeeds()
+    {
+        // Batches of 1 to 8 records, UTF-16 and UTF-8, without a handler, ignoring and skipping the errors
+        byte[] modes = [0x00, 0x09, 0x23, 0x5A, 0x9F, 0x41, 0xB2, 0x07];
+        var index = 0;
+        foreach (var seed in GetDeserializeSeeds())
+        {
+            yield return new FuzzSeed("parallel-" + seed.Name, (byte[])[modes[index++ % modes.Length], .. seed.Data.Span]);
         }
     }
 

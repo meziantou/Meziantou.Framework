@@ -21,7 +21,7 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 - **Use the spans.** [Span](cref:Meziantou.Framework.Csv.CsvField.Span), [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) do not allocate. Call [ToString](cref:Meziantou.Framework.Csv.CsvField.ToString) only for the values you keep.
 - **Parse floating-point numbers with the invariant culture.** With the default [FormatProvider](cref:Meziantou.Framework.Csv.CsvReaderOptions.FormatProvider),
   [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) read a `double`, a `float` or a `Half` with few digits, such as `-123.45` or `1.5e-3`,
-  about three times faster than `double.Parse`, with the same value. Values with more digits, such as the round-trip format of a
+  through a faster path, with the same value. Values with more digits, such as the round-trip format of a
   `double`, are often parsed by the same path; the others are left to `double.Parse`.
 - **Read UTF-8 files with [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader).** It does not decode the data, and parses numbers from the bytes.
 - **Pass memory when you already have it.** [CsvReader.Create](cref:Meziantou.Framework.Csv.CsvReader.Create) with a `ReadOnlyMemory<char>`, [CreateFromString](cref:Meziantou.Framework.Csv.CsvReader.CreateFromString) and

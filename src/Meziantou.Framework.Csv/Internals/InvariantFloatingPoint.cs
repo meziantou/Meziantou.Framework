@@ -106,12 +106,16 @@ internal static class InvariantFloatingPoint
             index++;
         }
 
+        // A value with more digits is left to the BCL as soon as it is found, so that a long value is not read twice. With more digits, the
+        // mantissa could overflow.
         var digits = 0;
         while (index < value.Length && uint.CreateTruncating(value[index]) - '0' <= 9)
         {
+            if (++digits > MaxDigits)
+                return false;
+
             mantissa = (mantissa * 10) + (uint.CreateTruncating(value[index]) - '0');
             index++;
-            digits++;
         }
 
         var fractionDigits = 0;
@@ -120,16 +124,16 @@ internal static class InvariantFloatingPoint
             index++;
             while (index < value.Length && uint.CreateTruncating(value[index]) - '0' <= 9)
             {
+                if (++digits > MaxDigits)
+                    return false;
+
                 mantissa = (mantissa * 10) + (uint.CreateTruncating(value[index]) - '0');
                 index++;
                 fractionDigits++;
             }
-
-            digits += fractionDigits;
         }
 
-        // With more digits, the mantissa may have overflowed
-        if (digits is 0 or > MaxDigits)
+        if (digits == 0)
             return false;
 
         if (index < value.Length && (value[index] == TChar.CreateTruncating('e') || value[index] == TChar.CreateTruncating('E')))

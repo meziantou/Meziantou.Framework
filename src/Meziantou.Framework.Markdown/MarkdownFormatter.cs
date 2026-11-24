@@ -488,7 +488,8 @@ public static class MarkdownFormatter
                     if (!blankLine && previous is not null && tableLines.Count > 0)
                     {
                         var continuedBlock = new ContinuedBlock(string.Join('\n', lines.Skip(previousStart)), previous.Kind());
-                        if (!IsTableAfter(continuedBlock, tableLines, table) && !IsTableAfterWrittenBlock(ref continuedBlock, tableLines, table))
+                        var blocks = ParseWithTable(continuedBlock, tableLines);
+                        if (!IsTableAfter(blocks, continuedBlock.Kind, table) && !IsTableAfterWrittenBlock(ref continuedBlock, blocks, table))
                         {
                             // The first row of a pipe table that follows a paragraph is a line of the paragraph for Markdig
                             var indented = false;
@@ -669,11 +670,16 @@ public static class MarkdownFormatter
             return blocks.Length >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
         }
 
-        private bool IsTableAfter(ContinuedBlock continuedBlock, List<string> tableLines, MarkdownTableSyntax table) => IsContinuation(continuedBlock, string.Join('\n', tableLines), table.Kind(), underline: null);
+        private bool IsTableAfter(ContinuedBlock continuedBlock, List<string> tableLines, MarkdownTableSyntax table) => IsTableAfter(ParseWithTable(continuedBlock, tableLines), continuedBlock.Kind, table);
+
+        private static bool IsTableAfter(ImmutableArray<MarkdownBlockSyntax> blocks, SyntaxKind kind, MarkdownTableSyntax table) => blocks.Length >= 2 && blocks[^2].Kind() == kind && blocks[^1].Kind() == table.Kind();
+
+        private ImmutableArray<MarkdownBlockSyntax> ParseWithTable(ContinuedBlock continuedBlock, List<string> tableLines) => MarkdownSyntaxTree.ParseText(continuedBlock.Text + "\n" + string.Join('\n', tableLines), parseOptions).GetRoot().Blocks;
 
         // The block before the table can be written as another kind, such as a setext heading as an ATX heading, or an indented
-        // code block as a fenced one: the table is checked after the block that the lines are. A paragraph is written as one.
-        private bool IsTableAfterWrittenBlock(ref ContinuedBlock continuedBlock, List<string> tableLines, MarkdownTableSyntax table)
+        // code block as a fenced one: the blocks of the block and the table are checked with the kind of the block that the lines
+        // are. A paragraph is written as one.
+        private bool IsTableAfterWrittenBlock(ref ContinuedBlock continuedBlock, ImmutableArray<MarkdownBlockSyntax> blocks, MarkdownTableSyntax table)
         {
             if (continuedBlock.Kind == SyntaxKind.Paragraph || MarkdownSyntaxTree.ParseText(continuedBlock.Text, parseOptions).GetRoot().Blocks is not [.., var written] || written.Kind() == continuedBlock.Kind)
             {
@@ -681,7 +687,7 @@ public static class MarkdownFormatter
             }
 
             continuedBlock = continuedBlock with { Kind = written.Kind() };
-            return IsTableAfter(continuedBlock, tableLines, table);
+            return IsTableAfter(blocks, continuedBlock.Kind, table);
         }
 
         // The blocks tell whether the text is a paragraph, without parsing its inlines and building its tree, except for the pipe

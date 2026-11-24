@@ -1616,11 +1616,7 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-web-usb.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Web USB API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-web-xr-immersive-vr-session.https.html?target_hint=_blank": {
     "harness": "TIMEOUT",

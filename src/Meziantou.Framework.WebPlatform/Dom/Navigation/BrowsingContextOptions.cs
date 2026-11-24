@@ -721,6 +721,14 @@ public sealed partial record BrowsingContextOptions
     public GamepadOptions? Gamepads { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of WebUSB (https://usb.spec.whatwg.org/, <c>navigator.usb</c> in the windows and the
+    /// workers): <see cref="UsbOptions.Provider"/> lists the connected USB devices, stores the devices each origin is allowed
+    /// to use, and plays the role of the device chooser of <c>requestDevice()</c>. The default is null: no USB device is
+    /// connected.
+    /// </summary>
+    public UsbOptions? Usb { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

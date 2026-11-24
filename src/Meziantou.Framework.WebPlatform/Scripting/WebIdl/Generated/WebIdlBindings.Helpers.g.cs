@@ -311,6 +311,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.UrlPatternInit Defaults_Dom_UrlPatternInit = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter Defaults_Dom_UsbDeviceFilter = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration Defaults_Dom_VideoConfiguration = new() { ContentType = default!, Width = default!, Height = default!, Bitrate = default!, Framerate = default! };
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo Defaults_Dom_WebSocketCloseInfo = new();
@@ -654,6 +656,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_TransferFunction_Values = new[] { "srgb", "pq", "hlg" };
 
     internal static readonly string[] Enum_URLPatternComponent_Values = new[] { "protocol", "username", "password", "hostname", "port", "pathname", "search", "hash" };
+
+    internal static readonly string[] Enum_USBDirection_Values = new[] { "in", "out" };
+
+    internal static readonly string[] Enum_USBRecipient_Values = new[] { "device", "interface", "endpoint", "other" };
+
+    internal static readonly string[] Enum_USBRequestType_Values = new[] { "standard", "class", "vendor" };
+
+    internal static readonly string[] Enum_USBTransferStatus_Values = new[] { "ok", "stall", "babble" };
 
     internal static readonly string[] Enum_VideoColorPrimaries_Values = new[] { "bt709", "bt470bg", "smpte170m", "bt2020", "smpte432" };
 
@@ -4699,6 +4709,47 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_UsbConnectionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.UsbConnectionEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "device", r.Wrap(value.Device));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_UsbControlTransferParameters(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.UsbControlTransferParameters value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "index", r.FromNumber((double)value.Index));
+        r.SetMember(result, "recipient", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbRecipient(value.Recipient)));
+        r.SetMember(result, "request", r.FromNumber((double)value.Request));
+        r.SetMember(result, "requestType", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbRequestType(value.RequestType)));
+        r.SetMember(result, "value", r.FromNumber((double)value.Value));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_UsbDeviceFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter value)
+    {
+        var result = r.CreateObject();
+        if (value.ClassCode is not null) r.SetMember(result, "classCode", (value.ClassCode.HasValue ? r.FromNumber((double)value.ClassCode.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ProductId is not null) r.SetMember(result, "productId", (value.ProductId.HasValue ? r.FromNumber((double)value.ProductId.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ProtocolCode is not null) r.SetMember(result, "protocolCode", (value.ProtocolCode.HasValue ? r.FromNumber((double)value.ProtocolCode.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.SerialNumber is not null) r.SetMember(result, "serialNumber", r.FromString(value.SerialNumber));
+        if (value.SubclassCode is not null) r.SetMember(result, "subclassCode", (value.SubclassCode.HasValue ? r.FromNumber((double)value.SubclassCode.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.VendorId is not null) r.SetMember(result, "vendorId", (value.VendorId.HasValue ? r.FromNumber((double)value.VendorId.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_UsbDeviceRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceRequestOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "exclusionFilters", r.FromSequence(value.ExclusionFilters, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbDeviceFilter(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "filters", r.FromSequence(value.Filters, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbDeviceFilter(r, dictionaryValue2) : r.Adapter.Null)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_ValidityStateFlags(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ValidityStateFlags value)
     {
         var result = r.CreateObject();
@@ -6685,6 +6736,46 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Srgb => "srgb",
         global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Pq => "pq",
         global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Hlg => "hlg",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_UsbDirection(global::Meziantou.Framework.WebPlatform.Dom.UsbDirection value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.UsbDirection.In => "in",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbDirection.Out => "out",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_UsbEndpointType(global::Meziantou.Framework.WebPlatform.Dom.UsbEndpointType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.UsbEndpointType.Bulk => "bulk",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbEndpointType.Interrupt => "interrupt",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbEndpointType.Isochronous => "isochronous",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_UsbRecipient(global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Device => "device",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Interface => "interface",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Endpoint => "endpoint",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Other => "other",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_UsbRequestType(global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType.Standard => "standard",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType.Class => "class",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType.Vendor => "vendor",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_UsbTransferStatus(global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus.Ok => "ok",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus.Stall => "stall",
+        global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus.Babble => "babble",
         _ => value.ToString(),
     };
 
@@ -14375,6 +14466,102 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbConnectionEventInit ToDictionary_Dom_UsbConnectionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "USBConnectionEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "device");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("USBConnectionEventInit", "device");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.UsbDevice>(m3_value, "USBDevice");
+        return new global::Meziantou.Framework.WebPlatform.Dom.UsbConnectionEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Device = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbControlTransferParameters ToDictionary_Dom_UsbControlTransferParameters(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "USBControlTransferParameters");
+        var m0_value = r.GetDictionaryMember(value, "index");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("USBControlTransferParameters", "index");
+        var m0 = r.ToUnsignedShort(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m1_value = r.GetDictionaryMember(value, "recipient");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("USBControlTransferParameters", "recipient");
+        var m1 = r.ToEnumerationValue(m1_value, "USBRecipient", WebIdlHelpers<TAdapter, TValue>.Enum_USBRecipient_Values);
+        var m2_value = r.GetDictionaryMember(value, "request");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("USBControlTransferParameters", "request");
+        var m2 = r.ToOctet(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m3_value = r.GetDictionaryMember(value, "requestType");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("USBControlTransferParameters", "requestType");
+        var m3 = r.ToEnumerationValue(m3_value, "USBRequestType", WebIdlHelpers<TAdapter, TValue>.Enum_USBRequestType_Values);
+        var m4_value = r.GetDictionaryMember(value, "value");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("USBControlTransferParameters", "value");
+        var m4 = r.ToUnsignedShort(m4_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        return new global::Meziantou.Framework.WebPlatform.Dom.UsbControlTransferParameters
+        {
+            Index = m0,
+            Recipient = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_UsbRecipient(m1),
+            Request = m2,
+            RequestType = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_UsbRequestType(m3),
+            Value = m4,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter ToDictionary_Dom_UsbDeviceFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "USBDeviceFilter");
+        var m0_value = r.GetDictionaryMember(value, "classCode");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (byte?)r.ToOctet(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m1_value = r.GetDictionaryMember(value, "productId");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (ushort?)r.ToUnsignedShort(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m2_value = r.GetDictionaryMember(value, "protocolCode");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (byte?)r.ToOctet(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m3_value = r.GetDictionaryMember(value, "serialNumber");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (string?)r.ToDomString(m3_value) : default;
+        var m4_value = r.GetDictionaryMember(value, "subclassCode");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (byte?)r.ToOctet(m4_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m5_value = r.GetDictionaryMember(value, "vendorId");
+        var m5_present = !r.Adapter.IsUndefined(m5_value);
+        var m5 = m5_present ? (ushort?)r.ToUnsignedShort(m5_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter
+        {
+            ClassCode = m0_present ? m0 : Defaults_Dom_UsbDeviceFilter.ClassCode,
+            ProductId = m1_present ? m1 : Defaults_Dom_UsbDeviceFilter.ProductId,
+            ProtocolCode = m2_present ? m2 : Defaults_Dom_UsbDeviceFilter.ProtocolCode,
+            SerialNumber = m3_present ? m3 : Defaults_Dom_UsbDeviceFilter.SerialNumber,
+            SubclassCode = m4_present ? m4 : Defaults_Dom_UsbDeviceFilter.SubclassCode,
+            VendorId = m5_present ? m5 : Defaults_Dom_UsbDeviceFilter.VendorId,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceRequestOptions ToDictionary_Dom_UsbDeviceRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "USBDeviceRequestOptions");
+        var m0_value = r.GetDictionaryMember(value, "exclusionFilters");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter>)new global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter>() : r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UsbDeviceFilter(r, e));
+        var m1_value = r.GetDictionaryMember(value, "filters");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("USBDeviceRequestOptions", "filters");
+        var m1 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter>(m1_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_UsbDeviceFilter(r, e));
+        return new global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceRequestOptions
+        {
+            ExclusionFilters = m0,
+            Filters = m1,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.ValidityStateFlags ToDictionary_Dom_ValidityStateFlags(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "ValidityStateFlags");
@@ -16884,6 +17071,38 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "srgb" => global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Srgb,
         "pq" => global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Pq,
         "hlg" => global::Meziantou.Framework.WebPlatform.Dom.TransferFunction.Hlg,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbDirection ToEnum_Dom_UsbDirection(string value) => value switch
+    {
+        "in" => global::Meziantou.Framework.WebPlatform.Dom.UsbDirection.In,
+        "out" => global::Meziantou.Framework.WebPlatform.Dom.UsbDirection.Out,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient ToEnum_Dom_UsbRecipient(string value) => value switch
+    {
+        "device" => global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Device,
+        "interface" => global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Interface,
+        "endpoint" => global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Endpoint,
+        "other" => global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient.Other,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType ToEnum_Dom_UsbRequestType(string value) => value switch
+    {
+        "standard" => global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType.Standard,
+        "class" => global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType.Class,
+        "vendor" => global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType.Vendor,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus ToEnum_Dom_UsbTransferStatus(string value) => value switch
+    {
+        "ok" => global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus.Ok,
+        "stall" => global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus.Stall,
+        "babble" => global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus.Babble,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

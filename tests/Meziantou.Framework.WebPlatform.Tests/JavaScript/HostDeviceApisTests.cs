@@ -65,6 +65,7 @@ public sealed class HostDeviceApisTests : IDisposable
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
             Gamepads = options.Gamepads,
+            Usb = options.Usb,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -1565,6 +1566,191 @@ public sealed class HostDeviceApisTests : IDisposable
         Run(document);
         Assert.True(Assert.Single(gamepads.Effects).Request.CancellationToken.IsCancellationRequested);
         Assert.Equal("connected 0 Test|preempted", Run(document, "document.title = log.join('|')"));
+    }
+
+    // WebUSB
+
+    #region WebPlatform_UsbHostDevice
+    // A device of the application: one configuration with a vendor-specific interface, whose bulk OUT endpoint 1 stores
+    // the data that its bulk IN endpoint 1 returns
+    private sealed class LoopbackUsbDevice() : UsbHostDevice(new UsbDeviceDescriptor
+    {
+        VendorId = 0x1234,
+        ProductId = 0x0001,
+        ProductName = "Loopback",
+        Configurations =
+        [
+            new UsbConfigurationDescriptor
+            {
+                ConfigurationValue = 1,
+                Interfaces =
+                [
+                    new UsbInterfaceDescriptor
+                    {
+                        InterfaceNumber = 0,
+                        Alternates =
+                        [
+                            new UsbAlternateInterfaceDescriptor
+                            {
+                                InterfaceClass = 0xFF,
+                                Endpoints =
+                                [
+                                    new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.In, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                                    new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.Out, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    })
+    {
+        public override Task<UsbDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<UsbDeviceSession>(new Session());
+
+        // The library validates the operations of the page (the opened device, the configuration, the claimed interfaces...)
+        private sealed class Session : UsbDeviceSession
+        {
+            private byte[] _buffer = [];
+
+            public override Task CloseAsync() => Task.CompletedTask;
+
+            public override Task SelectConfigurationAsync(byte configurationValue, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ClaimInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ReleaseInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task SelectAlternateInterfaceAsync(byte interfaceNumber, byte alternateSetting, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ResetAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ClearHaltAsync(UsbDirection direction, byte endpointNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            // The device stalls the control requests
+            public override Task<UsbInTransfer> ControlTransferInAsync(UsbControlTransferSetup setup, ushort length, CancellationToken cancellationToken)
+                => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Stall, ReadOnlyMemory<byte>.Empty));
+
+            public override Task<UsbOutTransfer> ControlTransferOutAsync(UsbControlTransferSetup setup, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+                => Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Stall, 0));
+
+            public override Task<UsbInTransfer> TransferInAsync(byte endpointNumber, uint length, CancellationToken cancellationToken)
+                => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Ok, _buffer.AsMemory(0, (int)Math.Min(length, (uint)_buffer.Length))));
+
+            public override Task<UsbOutTransfer> TransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                _buffer = data.ToArray();
+                return Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Ok, (uint)data.Length));
+            }
+
+            public override Task<IReadOnlyList<UsbInTransfer>> IsochronousTransferInAsync(byte endpointNumber, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+                => throw new UsbException("The device has no isochronous endpoint");
+
+            public override Task<IReadOnlyList<UsbOutTransfer>> IsochronousTransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+                => throw new UsbException("The device has no isochronous endpoint");
+        }
+    }
+    #endregion
+
+    #region WebPlatform_UsbDeviceChooser
+    // The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+    private sealed class FirstDeviceChooser : UsbProvider
+    {
+        public override Task<UsbHostDevice?> RequestDevice(UsbDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+    }
+    #endregion
+
+    private const string UsbScript = """
+        window.log = [];
+        window.request = filters => navigator.usb.requestDevice({ filters }).then(d => { window.device = d; document.title = d.productName; }, e => document.title = e.name);
+        window.count = () => navigator.usb.getDevices().then(d => document.title = d.length);
+        """;
+
+    [Fact]
+    public async Task Usb_RequestDevice_AllowsTheOriginToUseTheDevice()
+    {
+        #region WebPlatform_Usb
+        var usb = new FirstDeviceChooser();
+        usb.Connect(new LoopbackUsbDevice());
+        var options = new BrowsingContextOptions
+        {
+            Usb = new UsbOptions { Provider = usb },
+        };
+        #endregion
+
+        var document = Load("<script>" + UsbScript + "</script>", options);
+        Assert.Equal("0", await RunAsync(document, "count()"));
+        Assert.Equal("SecurityError", await RunAsync(document, "request([])"));
+
+        Activate(document);
+        Assert.Equal("TypeError", await RunAsync(document, "request([{ productId: 1 }])"));
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "request([{ vendorId: 0x9999 }])"));
+        Activate(document);
+        Assert.Equal("Loopback", await RunAsync(document, "request([{ vendorId: 0x1234, classCode: 0xFF }])"));
+        Assert.Equal("1", await RunAsync(document, "count()"));
+        Assert.True(usb.IsAllowed(usb.Devices[0], "https://example.com"));
+
+        Assert.Equal("0", await RunAsync(document, "device.forget().then(() => count())"));
+    }
+
+    [Fact]
+    public async Task Usb_Transfers()
+    {
+        var usb = new UsbProvider();
+        var device = new LoopbackUsbDevice();
+        usb.Connect(device);
+        usb.Allow(device, "https://example.com");
+        var document = Load("<script>" + UsbScript + "</script>", new BrowsingContextOptions { Usb = new UsbOptions { Provider = usb } });
+
+        Assert.Equal("InvalidStateError,3,1,4,4,stall,false", await RunAsync(document, """
+            (async () => {
+              const [device] = await navigator.usb.getDevices();
+              const results = [];
+              await device.claimInterface(0).catch(e => results.push(e.name));
+              await device.open();
+              await device.selectConfiguration(1);
+              await device.claimInterface(0);
+              const out = await device.transferOut(1, new Uint8Array([3, 1, 4, 1]));
+              const input = await device.transferIn(1, 3);
+              results.push(new Uint8Array(input.data.buffer).join(), out.bytesWritten);
+              results.push((await device.controlTransferIn({ requestType: 'vendor', recipient: 'device', request: 1, value: 0, index: 0 }, 8)).status);
+              await device.close();
+              results.push(device.opened);
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Usb_ConnectAndDisconnectEvents()
+    {
+        var usb = new UsbProvider();
+        var document = Load("""
+            <script>
+            window.log = [];
+            navigator.usb.onconnect = e => log.push('connect ' + e.device.productName);
+            navigator.usb.ondisconnect = e => { log.push('disconnect ' + e.device.opened); e.device.open().catch(error => { log.push(error.name); document.title = log.join('|'); }); };
+            navigator.usb.addEventListener('connect', e => e.device.open());
+            </script>
+            """, new BrowsingContextOptions { Usb = new UsbOptions { Provider = usb } });
+
+        // The origin is not allowed to use the first device: there is no event
+        usb.Connect(new LoopbackUsbDevice());
+        await RunAsync(document);
+        var device = new LoopbackUsbDevice();
+        usb.Allow(device, "https://example.com");
+        usb.Connect(device);
+        await RunAsync(document);
+        Assert.True(usb.Disconnect(device));
+
+        Assert.Equal("connect Loopback|disconnect false|NotFoundError", await RunAsync(document));
+    }
+
+    [Fact]
+    public void Usb_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false,true", Run(Load("<script>document.title = ['usb' in navigator, typeof USBDevice === 'undefined'].join();</script>", url: "http://example.com/")));
     }
 
     // CPU Performance

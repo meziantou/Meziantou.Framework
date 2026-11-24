@@ -3696,7 +3696,25 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   empty list for a document that is not fully active. `playEffect()` validates the magnitudes, limits the delay plus the
   duration to 5 seconds, preempts the playing effect, and calls `GamepadProvider.PlayEffect`; `reset()`, a hidden document
   and the disconnection of the gamepad stop the effect. No touch surfaces (`touches` is empty), and the user activation
-  of the gamepads (tentative) is not implemented.
+  of the gamepads (tentative) is not implemented. A prerendering document gets no gamepad and no event, then a
+  `gamepadconnected` event for each connected gamepad when it is activated.
+- **WebUSB** ([WebUSB API](https://usb.spec.whatwg.org/)): `navigator.usb` (`getDevices()`, `requestDevice()` in the
+  windows, the `connect` and `disconnect` events), `USBDevice`, `USBConfiguration`, `USBInterface`, `USBAlternateInterface`,
+  `USBEndpoint` (and their constructors, which throw a `RangeError` for an unknown descriptor), the transfer results and
+  `USBConnectionEvent`, in the windows and the workers, on the `UsbHostDevice` objects of `Usb.Provider`. Each `USBDevice`
+  opens its own `UsbDeviceSession`, and runs the steps of the specification before calling it: the configuration, the
+  claimed interfaces and the alternate settings, the endpoints of the claimed interfaces (`IndexSizeError` above 15,
+  `NotFoundError`, `InvalidAccessError` for the wrong type), the protected classes (`SecurityError`, `usb-unrestricted` is
+  never enabled), the control transfer recipients, the 32 MiB limit of a transfer (`DataError`) and the packets of the
+  isochronous transfers (whose data views share the buffer of the result). As in Chromium: an operation fails with an
+  `InvalidStateError` while another one changes the state of the device (`open()`, `close()`, `selectConfiguration()`,
+  `reset()`) or of its interface (`claimInterface()`, `releaseInterface()`, `selectAlternateInterface()`); `close()` does
+  not abort the operations already sent; the control requests to the device do not need a configuration; the standard
+  requests are not restricted; the top-level origin must not be opaque. The permission storage is the provider
+  (`IsAllowed`, `Allow`, `Revoke`, `forget()`); the WebUSB blocklist is built in. A disconnection rejects the pending
+  operations with a `NotFoundError` and closes the device; the sessions end when their window is unloaded or their worker
+  terminated. `getDevices()` and `requestDevice()` are delayed in a prerendering document. Not implemented:
+  `USBPermissionResult` and the `usb` permission of the Permissions API.
 - **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
   steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
   `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the

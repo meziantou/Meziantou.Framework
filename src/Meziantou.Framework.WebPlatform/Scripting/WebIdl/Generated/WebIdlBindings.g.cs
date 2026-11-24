@@ -717,6 +717,19 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["URL"] = Binding_URL<TAdapter, TValue>.Binding,
             ["URLPattern"] = Binding_URLPattern<TAdapter, TValue>.Binding,
             ["URLSearchParams"] = Binding_URLSearchParams<TAdapter, TValue>.Binding,
+            ["USB"] = Binding_USB<TAdapter, TValue>.Binding,
+            ["USBAlternateInterface"] = Binding_USBAlternateInterface<TAdapter, TValue>.Binding,
+            ["USBConfiguration"] = Binding_USBConfiguration<TAdapter, TValue>.Binding,
+            ["USBConnectionEvent"] = Binding_USBConnectionEvent<TAdapter, TValue>.Binding,
+            ["USBDevice"] = Binding_USBDevice<TAdapter, TValue>.Binding,
+            ["USBEndpoint"] = Binding_USBEndpoint<TAdapter, TValue>.Binding,
+            ["USBInTransferResult"] = Binding_USBInTransferResult<TAdapter, TValue>.Binding,
+            ["USBInterface"] = Binding_USBInterface<TAdapter, TValue>.Binding,
+            ["USBIsochronousInTransferPacket"] = Binding_USBIsochronousInTransferPacket<TAdapter, TValue>.Binding,
+            ["USBIsochronousInTransferResult"] = Binding_USBIsochronousInTransferResult<TAdapter, TValue>.Binding,
+            ["USBIsochronousOutTransferPacket"] = Binding_USBIsochronousOutTransferPacket<TAdapter, TValue>.Binding,
+            ["USBIsochronousOutTransferResult"] = Binding_USBIsochronousOutTransferResult<TAdapter, TValue>.Binding,
+            ["USBOutTransferResult"] = Binding_USBOutTransferResult<TAdapter, TValue>.Binding,
             ["UncalibratedMagnetometer"] = Binding_UncalibratedMagnetometer<TAdapter, TValue>.Binding,
             ["UserActivation"] = Binding_UserActivation<TAdapter, TValue>.Binding,
             ["VTTCue"] = Binding_VTTCue<TAdapter, TValue>.Binding,
@@ -1118,6 +1131,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UIEventInit dictionaryDom_UIEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UIEventInit(r, dictionaryDom_UIEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbConnectionEventInit dictionaryDom_UsbConnectionEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbConnectionEventInit(r, dictionaryDom_UsbConnectionEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WindowPostMessageOptions dictionaryDom_WindowPostMessageOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WindowPostMessageOptions(r, dictionaryDom_WindowPostMessageOptions);
@@ -1953,6 +1969,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.UrlPatternResult dictionaryDom_UrlPatternResult:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UrlPatternResult(r, dictionaryDom_UrlPatternResult);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbControlTransferParameters dictionaryDom_UsbControlTransferParameters:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbControlTransferParameters(r, dictionaryDom_UsbControlTransferParameters);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter dictionaryDom_UsbDeviceFilter:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbDeviceFilter(r, dictionaryDom_UsbDeviceFilter);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceRequestOptions dictionaryDom_UsbDeviceRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbDeviceRequestOptions(r, dictionaryDom_UsbDeviceRequestOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ValidityStateFlags dictionaryDom_ValidityStateFlags:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ValidityStateFlags(r, dictionaryDom_ValidityStateFlags);
                 return true;
@@ -2547,6 +2572,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.TransferFunction enumDom_TransferFunction:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_TransferFunction(enumDom_TransferFunction));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbDirection enumDom_UsbDirection:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbDirection(enumDom_UsbDirection));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbEndpointType enumDom_UsbEndpointType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbEndpointType(enumDom_UsbEndpointType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbRecipient enumDom_UsbRecipient:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbRecipient(enumDom_UsbRecipient));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbRequestType enumDom_UsbRequestType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbRequestType(enumDom_UsbRequestType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus enumDom_UsbTransferStatus:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UsbTransferStatus(enumDom_UsbTransferStatus));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.UserIdleState enumDom_UserIdleState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_UserIdleState(enumDom_UserIdleState));
                 return true;
@@ -2805,6 +2845,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UADataValues> taskSystem_Threading_Tasks_Task_Dom_UADataValues_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UADataValues_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UADataValues(r, dictionaryValue) : r.Adapter.Null));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UsbDevice> taskSystem_Threading_Tasks_Task_Dom_UsbDevice_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UsbDevice_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UsbInTransferResult> taskSystem_Threading_Tasks_Task_Dom_UsbInTransferResult_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UsbInTransferResult_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UsbIsochronousInTransferResult> taskSystem_Threading_Tasks_Task_Dom_UsbIsochronousInTransferResult_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UsbIsochronousInTransferResult_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UsbIsochronousOutTransferResult> taskSystem_Threading_Tasks_Task_Dom_UsbIsochronousOutTransferResult_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UsbIsochronousOutTransferResult_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.UsbOutTransferResult> taskSystem_Threading_Tasks_Task_Dom_UsbOutTransferResult_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_UsbOutTransferResult_, static (r, v) => r.Wrap(v));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.WakeLockSentinel> taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_WakeLockSentinel_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2876,6 +2931,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Tool>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Tool__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Tool__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.UsbDevice>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_UsbDevice__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_UsbDevice__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.WebCodecs.PlaneLayout>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_WebCodecs_PlaneLayout__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_WebCodecs_PlaneLayout(r, dictionaryValue) : r.Adapter.Null)));

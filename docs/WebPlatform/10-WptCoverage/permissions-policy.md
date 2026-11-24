@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 68 | 94 | 0 | 72% |
+| [Stable](#stable-tests) | 70 | 94 | 0 | 74% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **82** | **118** | **0** | **69%** |
+| **All** | **84** | **118** | **0** | **71%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 23
+- **NOT IMPLEMENTED**: 21
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -116,8 +116,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
 | [`reporting/sync-xhr-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-report-only.html) | Pass | 1 / 1 |  |  |
 | [`reporting/sync-xhr-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-reporting.html) | Pass | 1 / 1 |  |  |
-| [`reporting/usb-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebUSB (`navigator.usb`) |
-| [`reporting/usb-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | WebUSB (`navigator.usb`) |
+| [`reporting/usb-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/usb-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/xr-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/xr-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebXR Device API (`navigator.xr`) |
 | [`reporting/xr-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/xr-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebXR Device API (`navigator.xr`) |
 | [`speaker-selection-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html) | Pass | 4 / 4 |  |  |

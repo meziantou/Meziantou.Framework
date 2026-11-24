@@ -3710,6 +3710,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.StorageOptions? Storage { get => throw null; init { } }
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Scripting.ScriptError>? UnhandledScriptError { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UsbOptions? Usb { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
         public string? UserAgent { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.UserAgentUIBackend? UserAgentUI { get => throw null; init { } }
@@ -11102,6 +11103,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Usb Usb { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.UserActivation UserActivation { get => throw null; }
         public string UserAgent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
@@ -16110,6 +16112,365 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public override string ToString() => throw null;
     }
 
+    public sealed class Usb : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnect { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDisconnect { get => throw null; set { } }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbDevice>> GetDevices() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbDevice> RequestDevice(Meziantou.Framework.WebPlatform.Dom.UsbDeviceRequestOptions options) => throw null;
+    }
+
+    public sealed class UsbAlternateInterface
+    {
+        public byte AlternateSetting { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbEndpoint> Endpoints { get => throw null; }
+        public byte InterfaceClass { get => throw null; }
+        public string? InterfaceName { get => throw null; }
+        public byte InterfaceProtocol { get => throw null; }
+        public byte InterfaceSubclass { get => throw null; }
+        public UsbAlternateInterface(Meziantou.Framework.WebPlatform.Dom.UsbInterface deviceInterface, byte alternateSetting) { }
+    }
+
+    public sealed class UsbAlternateInterfaceDescriptor
+    {
+        public byte AlternateSetting { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbEndpointDescriptor> Endpoints { get => throw null; init { } }
+        public byte InterfaceClass { get => throw null; init { } }
+        public string? InterfaceName { get => throw null; init { } }
+        public byte InterfaceProtocol { get => throw null; init { } }
+        public byte InterfaceSubclass { get => throw null; init { } }
+    }
+
+    public sealed class UsbConfiguration
+    {
+        public string? ConfigurationName { get => throw null; }
+        public byte ConfigurationValue { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbInterface> Interfaces { get => throw null; }
+        public UsbConfiguration(Meziantou.Framework.WebPlatform.Dom.UsbDevice device, byte configurationValue) { }
+    }
+
+    public sealed class UsbConfigurationDescriptor
+    {
+        public string? ConfigurationName { get => throw null; init { } }
+        public byte ConfigurationValue { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbInterfaceDescriptor> Interfaces { get => throw null; init { } }
+    }
+
+    public sealed class UsbConnectionEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbDevice Device { get => throw null; }
+        public UsbConnectionEvent(string type, Meziantou.Framework.WebPlatform.Dom.UsbConnectionEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class UsbConnectionEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.UsbDevice Device { get => throw null; init { } }
+    }
+
+    public sealed class UsbControlTransferParameters
+    {
+        public required ushort Index { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.UsbRecipient Recipient { get => throw null; init { } }
+        public required byte Request { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.UsbRequestType RequestType { get => throw null; init { } }
+        public required ushort Value { get => throw null; init { } }
+    }
+
+    public sealed class UsbControlTransferSetup : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup>
+    {
+        public ushort Index { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UsbRecipient Recipient { get => throw null; init { } }
+        public byte Request { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UsbRequestType RequestType { get => throw null; init { } }
+        public ushort Value { get => throw null; init { } }
+        public UsbControlTransferSetup(Meziantou.Framework.WebPlatform.Dom.UsbRequestType RequestType, Meziantou.Framework.WebPlatform.Dom.UsbRecipient Recipient, byte Request, ushort Value, ushort Index) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Dom.UsbRequestType RequestType, out Meziantou.Framework.WebPlatform.Dom.UsbRecipient Recipient, out byte Request, out ushort Value, out ushort Index) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup? left, Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup? left, Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup? right) => throw null;
+    }
+
+    public sealed class UsbDevice
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbConfiguration? Configuration { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbConfiguration> Configurations { get => throw null; }
+        public byte DeviceClass { get => throw null; }
+        public byte DeviceProtocol { get => throw null; }
+        public byte DeviceSubclass { get => throw null; }
+        public byte DeviceVersionMajor { get => throw null; }
+        public byte DeviceVersionMinor { get => throw null; }
+        public byte DeviceVersionSubminor { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbHostDevice HostDevice { get => throw null; }
+        public string? ManufacturerName { get => throw null; }
+        public bool Opened { get => throw null; }
+        public ushort ProductId { get => throw null; }
+        public string? ProductName { get => throw null; }
+        public string? SerialNumber { get => throw null; }
+        public byte UsbVersionMajor { get => throw null; }
+        public byte UsbVersionMinor { get => throw null; }
+        public byte UsbVersionSubminor { get => throw null; }
+        public ushort VendorId { get => throw null; }
+        public System.Threading.Tasks.Task ClaimInterface(byte interfaceNumber) => throw null;
+        public System.Threading.Tasks.Task ClearHalt(Meziantou.Framework.WebPlatform.Dom.UsbDirection direction, byte endpointNumber) => throw null;
+        public System.Threading.Tasks.Task Close() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbInTransferResult> ControlTransferIn(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferParameters setup, ushort length) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbOutTransferResult> ControlTransferOut(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferParameters setup, System.ReadOnlyMemory<byte>? data = null) => throw null;
+        public System.Threading.Tasks.Task Forget() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbIsochronousInTransferResult> IsochronousTransferIn(byte endpointNumber, System.Collections.Generic.IReadOnlyList<uint> packetLengths) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbIsochronousOutTransferResult> IsochronousTransferOut(byte endpointNumber, System.ReadOnlyMemory<byte> data, System.Collections.Generic.IReadOnlyList<uint> packetLengths) => throw null;
+        public System.Threading.Tasks.Task Open() => throw null;
+        public System.Threading.Tasks.Task ReleaseInterface(byte interfaceNumber) => throw null;
+        public System.Threading.Tasks.Task Reset() => throw null;
+        public System.Threading.Tasks.Task SelectAlternateInterface(byte interfaceNumber, byte alternateSetting) => throw null;
+        public System.Threading.Tasks.Task SelectConfiguration(byte configurationValue) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbInTransferResult> TransferIn(byte endpointNumber, uint length) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbOutTransferResult> TransferOut(byte endpointNumber, System.ReadOnlyMemory<byte> data) => throw null;
+    }
+
+    public sealed class UsbDeviceDescriptor
+    {
+        public byte ActiveConfigurationValue { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbConfigurationDescriptor> Configurations { get => throw null; init { } }
+        public byte DeviceClass { get => throw null; init { } }
+        public byte DeviceProtocol { get => throw null; init { } }
+        public byte DeviceSubclass { get => throw null; init { } }
+        public byte DeviceVersionMajor { get => throw null; init { } }
+        public byte DeviceVersionMinor { get => throw null; init { } }
+        public byte DeviceVersionSubminor { get => throw null; init { } }
+        public string? ManufacturerName { get => throw null; init { } }
+        public ushort ProductId { get => throw null; init { } }
+        public string? ProductName { get => throw null; init { } }
+        public string? SerialNumber { get => throw null; init { } }
+        public byte UsbVersionMajor { get => throw null; init { } }
+        public byte UsbVersionMinor { get => throw null; init { } }
+        public byte UsbVersionSubminor { get => throw null; init { } }
+        public ushort VendorId { get => throw null; init { } }
+    }
+
+    public sealed class UsbDeviceFilter
+    {
+        public byte? ClassCode { get => throw null; init { } }
+        public ushort? ProductId { get => throw null; init { } }
+        public byte? ProtocolCode { get => throw null; init { } }
+        public string? SerialNumber { get => throw null; init { } }
+        public byte? SubclassCode { get => throw null; init { } }
+        public ushort? VendorId { get => throw null; init { } }
+        public bool Matches(Meziantou.Framework.WebPlatform.Dom.UsbDeviceDescriptor device) => throw null;
+    }
+
+    public sealed class UsbDeviceRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbHostDevice> Devices { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter> ExclusionFilters { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter> Filters { get => throw null; }
+    }
+
+    public sealed class UsbDeviceRequestOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter> ExclusionFilters { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter> Filters { get => throw null; init { } }
+    }
+
+    public abstract class UsbDeviceSession
+    {
+        public abstract System.Threading.Tasks.Task ClaimInterfaceAsync(byte interfaceNumber, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task ClearHaltAsync(Meziantou.Framework.WebPlatform.Dom.UsbDirection direction, byte endpointNumber, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task CloseAsync();
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbInTransfer> ControlTransferInAsync(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup setup, ushort length, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer> ControlTransferOutAsync(Meziantou.Framework.WebPlatform.Dom.UsbControlTransferSetup setup, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbInTransfer>> IsochronousTransferInAsync(byte endpointNumber, System.Collections.Generic.IReadOnlyList<uint> packetLengths, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer>> IsochronousTransferOutAsync(byte endpointNumber, System.ReadOnlyMemory<byte> data, System.Collections.Generic.IReadOnlyList<uint> packetLengths, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task ReleaseInterfaceAsync(byte interfaceNumber, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task ResetAsync(System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task SelectAlternateInterfaceAsync(byte interfaceNumber, byte alternateSetting, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task SelectConfigurationAsync(byte configurationValue, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbInTransfer> TransferInAsync(byte endpointNumber, uint length, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer> TransferOutAsync(byte endpointNumber, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public enum UsbDirection
+    {
+        In = 0,
+        Out = 1,
+    }
+
+    public sealed class UsbEndpoint
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbDirection Direction { get => throw null; }
+        public byte EndpointNumber { get => throw null; }
+        public uint PacketSize { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbEndpointType Type { get => throw null; }
+        public UsbEndpoint(Meziantou.Framework.WebPlatform.Dom.UsbAlternateInterface alternate, byte endpointNumber, Meziantou.Framework.WebPlatform.Dom.UsbDirection direction) { }
+    }
+
+    public sealed class UsbEndpointDescriptor
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbDirection Direction { get => throw null; init { } }
+        public byte EndpointNumber { get => throw null; init { } }
+        public uint PacketSize { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UsbEndpointType Type { get => throw null; init { } }
+    }
+
+    public enum UsbEndpointType
+    {
+        Bulk = 0,
+        Interrupt = 1,
+        Isochronous = 2,
+    }
+
+    public enum UsbError
+    {
+        Failed = 0,
+        AccessDenied = 1,
+        Timeout = 2,
+        Cancelled = 3,
+        Disconnected = 4,
+    }
+
+    public sealed class UsbException : System.Exception
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbError Error { get => throw null; }
+        public UsbException(string message) { }
+        public UsbException(Meziantou.Framework.WebPlatform.Dom.UsbError error, string? message = null) { }
+        public UsbException(string message, System.Exception innerException) { }
+    }
+
+    public abstract class UsbHostDevice
+    {
+        public virtual byte ActiveConfigurationValue { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbDeviceDescriptor Descriptor { get => throw null; }
+        protected UsbHostDevice(Meziantou.Framework.WebPlatform.Dom.UsbDeviceDescriptor descriptor) { }
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbDeviceSession> OpenAsync(System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class UsbInTransfer : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.UsbInTransfer>
+    {
+        public System.ReadOnlyMemory<byte> Data { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status { get => throw null; init { } }
+        public UsbInTransfer(Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status, System.ReadOnlyMemory<byte> Data) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status, out System.ReadOnlyMemory<byte> Data) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.UsbInTransfer? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.UsbInTransfer? left, Meziantou.Framework.WebPlatform.Dom.UsbInTransfer? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.UsbInTransfer? left, Meziantou.Framework.WebPlatform.Dom.UsbInTransfer? right) => throw null;
+    }
+
+    public sealed class UsbInTransferResult
+    {
+        public System.ReadOnlyMemory<byte>? Data { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status { get => throw null; }
+        public UsbInTransferResult(Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus status, System.ReadOnlyMemory<byte>? data = null) { }
+    }
+
+    public sealed class UsbInterface
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbAlternateInterface Alternate { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbAlternateInterface> Alternates { get => throw null; }
+        public bool Claimed { get => throw null; }
+        public byte InterfaceNumber { get => throw null; }
+        public UsbInterface(Meziantou.Framework.WebPlatform.Dom.UsbConfiguration configuration, byte interfaceNumber) { }
+    }
+
+    public sealed class UsbInterfaceDescriptor
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbAlternateInterfaceDescriptor> Alternates { get => throw null; init { } }
+        public byte InterfaceNumber { get => throw null; init { } }
+    }
+
+    public sealed class UsbIsochronousInTransferPacket
+    {
+        public System.ReadOnlyMemory<byte>? Data { get => throw null; }
+        public object? DataView { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status { get => throw null; }
+        public UsbIsochronousInTransferPacket(Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus status, System.ReadOnlyMemory<byte>? data = null) { }
+    }
+
+    public sealed class UsbIsochronousInTransferResult
+    {
+        public System.ReadOnlyMemory<byte>? Data { get => throw null; }
+        public object? DataView { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbIsochronousInTransferPacket> Packets { get => throw null; }
+        public UsbIsochronousInTransferResult(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbIsochronousInTransferPacket> packets, System.ReadOnlyMemory<byte>? data = null) { }
+    }
+
+    public sealed class UsbIsochronousOutTransferPacket
+    {
+        public uint BytesWritten { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status { get => throw null; }
+        public UsbIsochronousOutTransferPacket(Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus status, uint bytesWritten = 0U) { }
+    }
+
+    public sealed class UsbIsochronousOutTransferResult
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbIsochronousOutTransferPacket> Packets { get => throw null; }
+        public UsbIsochronousOutTransferResult(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbIsochronousOutTransferPacket> packets) { }
+    }
+
+    public sealed class UsbOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.UsbProvider? Provider { get => throw null; init { } }
+    }
+
+    public sealed class UsbOutTransfer : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer>
+    {
+        public uint BytesWritten { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status { get => throw null; init { } }
+        public UsbOutTransfer(Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status, uint BytesWritten) { }
+        public void Deconstruct(out Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status, out uint BytesWritten) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer? left, Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer? left, Meziantou.Framework.WebPlatform.Dom.UsbOutTransfer? right) => throw null;
+    }
+
+    public sealed class UsbOutTransferResult
+    {
+        public uint BytesWritten { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus Status { get => throw null; }
+        public UsbOutTransferResult(Meziantou.Framework.WebPlatform.Dom.UsbTransferStatus status, uint bytesWritten = 0U) { }
+    }
+
+    public class UsbProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UsbHostDevice> Devices { get => throw null; }
+        public void Allow(Meziantou.Framework.WebPlatform.Dom.UsbHostDevice device, string origin) { }
+        public void Connect(Meziantou.Framework.WebPlatform.Dom.UsbHostDevice device) { }
+        public bool Disconnect(Meziantou.Framework.WebPlatform.Dom.UsbHostDevice device) => throw null;
+        public virtual bool IsAllowed(Meziantou.Framework.WebPlatform.Dom.UsbHostDevice device, string origin) => throw null;
+        public virtual System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UsbHostDevice?> RequestDevice(Meziantou.Framework.WebPlatform.Dom.UsbDeviceRequest request) => throw null;
+        public void Revoke(Meziantou.Framework.WebPlatform.Dom.UsbHostDevice device, string origin) { }
+    }
+
+    public enum UsbRecipient
+    {
+        Device = 0,
+        Interface = 1,
+        Endpoint = 2,
+        Other = 3,
+    }
+
+    public enum UsbRequestType
+    {
+        Standard = 0,
+        Class = 1,
+        Vendor = 2,
+    }
+
+    public enum UsbTransferStatus
+    {
+        Ok = 0,
+        Stall = 1,
+        Babble = 2,
+    }
+
     public sealed class UserActivation
     {
         public bool HasBeenActive { get => throw null; }
@@ -17066,6 +17427,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Usb Usb { get => throw null; }
         public string UserAgent { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NavigatorUAData UserAgentData { get => throw null; }
         public string Vendor { get => throw null; }

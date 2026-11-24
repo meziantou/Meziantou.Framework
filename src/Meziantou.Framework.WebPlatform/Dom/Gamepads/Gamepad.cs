@@ -506,6 +506,23 @@ internal sealed class WindowGamepads(Window window)
         {
             OnConnected(device);
         }
+
+        // https://wicg.github.io/nav-speculation/prerendering.html#patch-gamepads: the activated document gets a
+        // gamepadconnected event for each connected gamepad
+        if (window.Document.Prerendering)
+        {
+            window.Document.RunAfterPrerendering(() =>
+            {
+                foreach (var gamepad in _gamepads)
+                {
+                    if (gamepad is not null && PermissionsPolicyAlgorithms.IsAllowedToUse(window.Document, PolicyControlledFeature.Gamepad))
+                    {
+                        gamepad.Exposed = true;
+                        window.FireEvent(new GamepadEvent("gamepadconnected", gamepad));
+                    }
+                }
+            });
+        }
     }
 
     /// <summary>https://w3c.github.io/gamepad/#dom-navigator-getgamepads</summary>
@@ -518,8 +535,9 @@ internal sealed class WindowGamepads(Window window)
         if (!PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.Gamepad))
             throw new DomException("The document is not allowed to use the gamepad feature", "SecurityError");
 
+        // https://wicg.github.io/nav-speculation/prerendering.html#patch-gamepads
         EnsureRegistered();
-        if (!_hasGamepadGesture)
+        if (!_hasGamepadGesture || document.Prerendering)
             return [];
 
         var gamepads = new Gamepad?[_gamepads.Count];
@@ -541,7 +559,7 @@ internal sealed class WindowGamepads(Window window)
         var gamepad = new Gamepad(window, device, SelectUnusedIndex(), window.GetCurrentHighResolutionTime(), device.GetSnapshot());
         _gamepads[gamepad.Index] = gamepad;
         _byDevice[device] = gamepad;
-        if (_hasGamepadGesture)
+        if (_hasGamepadGesture && !document.Prerendering)
         {
             gamepad.Exposed = true;
             if (document.IsFullyActive)
@@ -565,7 +583,7 @@ internal sealed class WindowGamepads(Window window)
         // The first gesture of the user, in a visible document, exposes the gamepads (the user attention of a top-level
         // traversable is its visibility: the library has no system focus)
         var document = window.Document;
-        if (_hasGamepadGesture || !document.IsFullyActive || document.Hidden || !snapshot.ContainsUserGesture)
+        if (_hasGamepadGesture || !document.IsFullyActive || document.Hidden || document.Prerendering || !snapshot.ContainsUserGesture)
             return;
 
         _hasGamepadGesture = true;
@@ -594,7 +612,7 @@ internal sealed class WindowGamepads(Window window)
 
         gamepad.Connected = false;
         gamepad.VibrationActuator.StopPlayingEffect();
-        if (gamepad.Exposed && window.Document.IsFullyActive)
+        if (gamepad.Exposed && window.Document.IsFullyActive && !window.Document.Prerendering)
         {
             window.FireEvent(new GamepadEvent("gamepaddisconnected", gamepad));
         }

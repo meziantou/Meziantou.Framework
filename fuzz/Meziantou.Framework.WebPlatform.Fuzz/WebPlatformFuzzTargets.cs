@@ -143,6 +143,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
         new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
         new("webplatform-ndef-message", NdefMessageTarget) { Seeds = GetNdefMessageSeeds, Dictionary = NdefMessageTokens },
+        new("webplatform-webusb", WebUsb) { Seeds = GetWebUsbSeeds },
     ];
 
     /// <summary>

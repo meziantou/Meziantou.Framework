@@ -35,6 +35,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_maxTouchPoints(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.MaxTouchPoints); }
     private static TValue Get_wakeLock(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.WakeLock); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
+    private static TValue Get_usb(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Usb); }
     private static TValue Get_virtualKeyboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.VirtualKeyboard); }
     private static TValue Get_globalPrivacyControl(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromBoolean(o.GlobalPrivacyControl); }
     private static TValue Get_appCodeName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromString(o.AppCodeName); }
@@ -163,6 +164,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         r.DefineAttribute(instanceTarget, "maxTouchPoints", Get_maxTouchPoints, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "wakeLock", Get_wakeLock, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "usb", Get_usb, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "virtualKeyboard", Get_virtualKeyboard, null);
         r.DefineAttribute(instanceTarget, "globalPrivacyControl", Get_globalPrivacyControl, null);
         r.DefineAttribute(instanceTarget, "appCodeName", Get_appCodeName, null);

@@ -75,6 +75,9 @@ internal sealed partial class WptTestRunner
     [SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "The generated code of LibraryImport is unsafe code, which the memory-safety rules of the project reject; the function has no marshalling")]
     private static safe extern uint TimeBeginPeriod(uint period);
 
+    /// <summary>The WebUSB Testing API of the runner (Runner/webusb-test.js), defined in the realms of the WebUSB tests.</summary>
+    private static readonly Lazy<string> WebUsbTestScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "webusb-test.js")));
+
     /// <summary>The testdriver vendor implementation of the runner (Runner/testdriver-vendor.js).</summary>
     private static readonly Lazy<string> TestDriverVendorScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "testdriver-vendor.js")));
 
@@ -141,6 +144,9 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The posture of the device, overridden by test_driver.set_device_posture().</summary>
     private readonly DevicePostureProvider _devicePosture = new();
+
+    /// <summary>The fake USB devices of the WebUSB Testing API (navigator.usb.test).</summary>
+    private readonly WptUsbProvider _usb = new();
 
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
@@ -301,6 +307,9 @@ internal sealed partial class WptTestRunner
                 // The virtual pressure sources and the posture override of the test driver
                 ComputePressure = new ComputePressureOptions { Provider = _pressureSources },
                 DevicePosture = new DevicePostureOptions { Provider = _devicePosture },
+
+                // The fake devices of the WebUSB Testing API (navigator.usb.test of Runner/webusb-test.js)
+                Usb = new UsbOptions { Provider = _usb },
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
@@ -1825,6 +1834,12 @@ internal sealed partial class WptTestRunner
         if (_test.RelativePath.StartsWith("js/builtins/weakrefs/", StringComparison.Ordinal))
         {
             DefineTestUtils(realm);
+        }
+
+        // The WebUSB Testing API, in the windows and the workers of the WebUSB tests (the polyfill of Chromium needs MojoJS)
+        if (_test.RelativePath.StartsWith("webusb/", StringComparison.Ordinal))
+        {
+            _usb.DefineTestApi(realm, WebUsbTestScript.Value);
         }
 
         // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)

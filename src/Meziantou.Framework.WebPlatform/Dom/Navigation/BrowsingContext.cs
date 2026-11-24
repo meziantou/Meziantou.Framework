@@ -3747,6 +3747,9 @@ public sealed partial class BrowsingContext : IDisposable
             }
 
             PressureObserverRegistry.OnUnloaded(window);
+
+            // The sessions of the USB devices of the window end
+            window.CloseUsbDevices();
         }
 
         // The sensor objects are disconnected from the sensors of the device

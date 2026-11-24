@@ -49,25 +49,25 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,860 | 30,158 | 80 | 93% |
+| [Stable](#stable-tests) | 27,890 | 30,158 | 80 | 93% |
 | [Tentative](#tentative-tests) | 1,676 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,505** | **65,062** | **326** | **93%** |
+| **All** | **60,535** | **65,062** | **326** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 150
-- **TEST BUG**: 1,124
-- **NOT IMPLEMENTED**: 2,808
-- **REQUIRES**: 406
-  - `hardware`: 224
+- **TEST BUG**: 1,126
+- **NOT IMPLEMENTED**: 2,806
+- **REQUIRES**: 377
+  - `hardware`: 195
   - `layout`: 22
   - `media`: 16
   - `user-input`: 144
-- **TEST RUNNER**: 148
+- **TEST RUNNER**: 147
 - **OUT OF SCOPE**: 114
 - **FLAKY**: 1
 - **PERFORMANCE**: 6
@@ -317,7 +317,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`performance-timeline`](performance-timeline.md) | 32 | 44 | 0 | 73% |
 | [`periodic-background-sync`](periodic-background-sync.md) | 0 | 2 | 0 | 0% |
 | [`permissions`](permissions.md) | 15 | 15 | 0 | 100% |
-| [`permissions-policy`](permissions-policy.md) | 68 | 94 | 0 | 72% |
+| [`permissions-policy`](permissions-policy.md) | 70 | 94 | 0 | 74% |
 | [`permissions-request`](permissions-request.md) | 0 | 1 | 0 | 0% |
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 0 | 0% |
 | [`picture-in-picture`](picture-in-picture.md) | 18 | 18 | 0 | 100% |
@@ -354,7 +354,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 230 | 238 | 0 | 97% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 156 | 185 | 1 | 85% |
+| [`speculation-rules`](speculation-rules.md) | 157 | 185 | 1 | 85% |
 | [`speech-api`](speech-api.md) | 1 | 16 | 0 | 6% |
 | [`storage`](storage.md) | 14 | 14 | 0 | 100% |
 | [`storage-access-api`](storage-access-api.md) | 34 | 37 | 0 | 92% |
@@ -409,7 +409,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`websockets`](websockets.md) | 197 | 204 | 0 | 97% |
 | [`webstorage`](webstorage.md) | 54 | 54 | 0 | 100% |
 | [`webtransport`](webtransport.md) | 0 | 43 | 0 | 0% |
-| [`webusb`](webusb.md) | 3 | 32 | 0 | 9% |
+| [`webusb`](webusb.md) | 30 | 32 | 0 | 94% |
 | [`webvtt`](webvtt.md) | 75 | 75 | 0 | 100% |
 | [`webxr`](webxr.md) | 2 | 182 | 0 | 1% |
 | [`workers`](workers.md) | 290 | 290 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,860** | **30,158** | **80** | **93%** |
+| **Total (341 sections)** | **27,890** | **30,158** | **80** | **93%** |
 
 ## Tentative tests
 

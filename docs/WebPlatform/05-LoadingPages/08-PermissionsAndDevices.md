@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -33,6 +33,7 @@ the device in a test, or to connect the API to your application.
 | [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
 | [Gamepads](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Gamepads) | `navigator.getGamepads()`, the `gamepadconnected` and `gamepaddisconnected` events | No gamepad is connected |
+| [Usb](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Usb) | `navigator.usb` (WebUSB), in the pages and the workers | No USB device is connected |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -784,7 +785,149 @@ The `vibrationActuator` of a gamepad plays the effects of
 [PlayEffect](cref:Meziantou.Framework.WebPlatform.Dom.GamepadProvider.PlayEffect) to make the device vibrate: its task
 completes when the effect completes, and its cancellation token is canceled when the page stops it (`reset()`, another
 effect, or a hidden page). The default implementation only waits for the duration of the effect. The touch surfaces are
-not supported: `touches` is always empty.
+not supported: `touches` is always empty. A prerendered page sees no gamepad: it gets a `gamepadconnected` event for each
+gamepad once it is shown.
+
+## USB devices
+
+`navigator.usb` (WebUSB) uses the USB devices of a [UsbProvider](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider),
+in the pages and in their workers. Implement each device with a
+[UsbHostDevice](cref:Meziantou.Framework.WebPlatform.Dom.UsbHostDevice): its descriptors, and the
+[UsbDeviceSession](cref:Meziantou.Framework.WebPlatform.Dom.UsbDeviceSession) that `device.open()` opens, which performs
+the operations of the page. The library validates them first (the device is opened and configured, the interface is
+claimed, the endpoint exists and has the right type, the class of the interface is not protected, the transfer is at most
+32 MiB), so a session only talks to the device:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UsbHostDevice;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A device of the application: one configuration with a vendor-specific interface, whose bulk OUT endpoint 1 stores
+// the data that its bulk IN endpoint 1 returns
+private sealed class LoopbackUsbDevice() : UsbHostDevice(new UsbDeviceDescriptor
+{
+    VendorId = 0x1234,
+    ProductId = 0x0001,
+    ProductName = "Loopback",
+    Configurations =
+    [
+        new UsbConfigurationDescriptor
+        {
+            ConfigurationValue = 1,
+            Interfaces =
+            [
+                new UsbInterfaceDescriptor
+                {
+                    InterfaceNumber = 0,
+                    Alternates =
+                    [
+                        new UsbAlternateInterfaceDescriptor
+                        {
+                            InterfaceClass = 0xFF,
+                            Endpoints =
+                            [
+                                new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.In, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                                new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.Out, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+})
+{
+    public override Task<UsbDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<UsbDeviceSession>(new Session());
+
+    // The library validates the operations of the page (the opened device, the configuration, the claimed interfaces...)
+    private sealed class Session : UsbDeviceSession
+    {
+        private byte[] _buffer = [];
+
+        public override Task CloseAsync() => Task.CompletedTask;
+
+        public override Task SelectConfigurationAsync(byte configurationValue, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ClaimInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ReleaseInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task SelectAlternateInterfaceAsync(byte interfaceNumber, byte alternateSetting, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ResetAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ClearHaltAsync(UsbDirection direction, byte endpointNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        // The device stalls the control requests
+        public override Task<UsbInTransfer> ControlTransferInAsync(UsbControlTransferSetup setup, ushort length, CancellationToken cancellationToken)
+            => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Stall, ReadOnlyMemory<byte>.Empty));
+
+        public override Task<UsbOutTransfer> ControlTransferOutAsync(UsbControlTransferSetup setup, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            => Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Stall, 0));
+
+        public override Task<UsbInTransfer> TransferInAsync(byte endpointNumber, uint length, CancellationToken cancellationToken)
+            => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Ok, _buffer.AsMemory(0, (int)Math.Min(length, (uint)_buffer.Length))));
+
+        public override Task<UsbOutTransfer> TransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            _buffer = data.ToArray();
+            return Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Ok, (uint)data.Length));
+        }
+
+        public override Task<IReadOnlyList<UsbInTransfer>> IsochronousTransferInAsync(byte endpointNumber, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+            => throw new UsbException("The device has no isochronous endpoint");
+
+        public override Task<IReadOnlyList<UsbOutTransfer>> IsochronousTransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+            => throw new UsbException("The device has no isochronous endpoint");
+    }
+}
+```
+<!-- endref -->
+
+A page can use a device once its origin is allowed to: call
+[Allow](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider.Allow), or let the user choose a device for
+`navigator.usb.requestDevice()` by overriding
+[RequestDevice](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider.RequestDevice), which plays the role of the device
+chooser of the browser:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UsbDeviceChooser;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+private sealed class FirstDeviceChooser : UsbProvider
+{
+    public override Task<UsbHostDevice?> RequestDevice(UsbDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Usb;format=md-fenced-code-block;dedent=true -->
+```csharp
+var usb = new FirstDeviceChooser();
+usb.Connect(new LoopbackUsbDevice());
+var options = new BrowsingContextOptions
+{
+    Usb = new UsbOptions { Provider = usb },
+};
+```
+<!-- endref -->
+
+- `getDevices()` returns the connected devices that the origin can use (override
+  [IsAllowed](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider.IsAllowed) to use your own permission storage), and
+  `device.forget()` revokes the permission. The devices of the
+  [WebUSB blocklist](https://github.com/WICG/webusb/blob/main/blocklist.txt) (security keys) are never offered.
+- `requestDevice()` needs a click of the user, and offers the devices that match the filters of the page. Both methods
+  fail with a `SecurityError` when the `usb` permissions policy does not allow the frame, or when the top-level page has
+  an opaque origin.
+- `Connect` and `Disconnect` fire the `connect` and `disconnect` events of the pages that can use the device. A
+  disconnection closes the device, and its pending operations fail with a `NotFoundError`. Unloading a page or
+  terminating a worker ends the sessions it opened.
+- A session reports an error by throwing a [UsbException](cref:Meziantou.Framework.WebPlatform.Dom.UsbException): its
+  [Error](cref:Meziantou.Framework.WebPlatform.Dom.UsbException.Error) chooses the `DOMException` of the page
+  (`NetworkError`, `SecurityError`, `TimeoutError`, `AbortError` or `NotFoundError`). A stalled endpoint or a babble is
+  the status of a successful transfer. The cancellation token of an operation is canceled when it is aborted (`reset()`,
+  a new configuration or alternate setting, a disconnection).
+- As in Chromium, an operation fails with an `InvalidStateError` while another one changes the state of the device or
+  of its interface, `close()` lets the operations already sent to the device complete, and the standard control
+  requests are not restricted. A prerendered page gets the devices once it is shown. `navigator.permissions.query()` does
+  not support the `usb` permission.
 
 ## NFC
 

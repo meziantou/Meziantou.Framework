@@ -21,6 +21,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
     private static TValue Get_mediaCapabilities(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.MediaCapabilities); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
+    private static TValue Get_usb(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Usb); }
     private static TValue Get_globalPrivacyControl(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromBoolean(o.GlobalPrivacyControl); }
     private static TValue Get_appCodeName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromString(o.AppCodeName); }
     private static TValue Get_appName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromString(o.AppName); }
@@ -53,6 +54,7 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
         r.DefineAttribute(instanceTarget, "mediaCapabilities", Get_mediaCapabilities, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "usb", Get_usb, null);
         r.DefineAttribute(instanceTarget, "globalPrivacyControl", Get_globalPrivacyControl, null);
         r.DefineAttribute(instanceTarget, "appCodeName", Get_appCodeName, null);
         r.DefineAttribute(instanceTarget, "appName", Get_appName, null);

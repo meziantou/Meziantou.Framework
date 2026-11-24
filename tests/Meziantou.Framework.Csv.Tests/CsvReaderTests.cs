@@ -795,6 +795,27 @@ public class CsvReaderTests
         Assert.Equal(-1, reader.Header!.IndexOf("missing"));
         Assert.False(reader.Header.TryGetIndex("missing", out _));
         Assert.False(reader.Current.TryGetField("missing", out _));
+
+        // The names found are kept by reference: the same instances read in any order, other instances of the same names, and the names of the
+        // header, find the same columns. The name of the last column is also the name of the first one, which it finds.
+        var instances = Enumerable.Range(0, columnCount - 1).Select(i => "C" + i.ToString(CultureInfo.InvariantCulture)).ToArray();
+        string[][] orders = [instances, [.. instances.Reverse()], [.. instances.Where((_, i) => i % 2 == 0), .. instances.Where((_, i) => i % 2 == 1)]];
+        for (var round = 0; round < 3; round++)
+        {
+            foreach (var order in orders)
+            {
+                foreach (var name in order)
+                {
+                    var expected = int.Parse(name.AsSpan(1), CultureInfo.InvariantCulture);
+                    Assert.Equal(expected, reader.Header.IndexOf(name));
+                    Assert.Equal(expected, reader.Header.IndexOf(new string(name.AsSpan())));
+                    Assert.Equal(expected, reader.Header.IndexOf(names[expected]));
+                }
+
+                Assert.Equal(0, reader.Header.IndexOf(names[^1]));
+                Assert.Equal(-1, reader.Header.IndexOf("missing"));
+            }
+        }
     }
 
     [Fact]

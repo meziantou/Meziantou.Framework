@@ -40,6 +40,22 @@ public class ReadBenchmark
         return length;
     }
 
+    /// <summary>Reads each value by the name of its column, as most code that reads a file with a header does.</summary>
+    [Benchmark]
+    public int Utf16_Spans_ByName()
+    {
+        var length = 0;
+        using var reader = CsvReader.CreateFromString(_text);
+        while (reader.Read())
+        {
+            var record = reader.Current;
+            length += record["Id"].Span.Length + record["Name"].Span.Length + record["Email"].Span.Length + record["Amount"].Span.Length +
+                record["Date"].Span.Length + record["Active"].Span.Length + record["Country"].Span.Length + record["Notes"].Span.Length;
+        }
+
+        return length;
+    }
+
     [Benchmark]
     public int Utf16TextReader_Spans()
     {

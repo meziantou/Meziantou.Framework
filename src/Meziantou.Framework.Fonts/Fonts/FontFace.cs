@@ -1325,7 +1325,7 @@ public sealed class FontFace
     /// default. A value outside the range of its axis is brought to the nearest end.
     /// </param>
     /// <returns>The face of the instance; the face of the default instance when every axis is at its default.</returns>
-    /// <exception cref="InvalidFontException">A table that varies the font along its axes is malformed.</exception>
+    /// <exception cref="InvalidFontException">A table that varies the font along its axes is malformed; not thrown for the default instance.</exception>
     public FontFace WithCoordinates(ReadOnlySpan<int> userCoordinates)
     {
         var root = _default;

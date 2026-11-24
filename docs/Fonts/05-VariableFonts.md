@@ -36,9 +36,10 @@ weight 900.
 - The face of an instance shares the bytes of the font and is cheap to create. It is a [FontFace](cref:Meziantou.Framework.Fonts.FontFace) like any other: decode
   its outlines, read its metrics and shape text with it. [Instance](cref:Meziantou.Framework.Fonts.FontFace.Instance) gives its coordinates; it is `null` for the default
   instance.
-- [WithCoordinates](cref:Meziantou.Framework.Fonts.FontFace.WithCoordinates) throws an [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) when a table that varies the font is
-  malformed: loading the font only reads the headers of those tables, the regions of their variation data are read
-  when an instance is created.
+- Creating an instance other than the default one throws an [InvalidFontException](cref:Meziantou.Framework.Fonts.InvalidFontException) when a table that varies the font
+  is malformed: loading the font only reads the headers of those tables, and the regions of their variation data are
+  read when such an instance is created. When every axis is at its default, [WithCoordinates](cref:Meziantou.Framework.Fonts.FontFace.WithCoordinates) returns the default
+  face without reading them.
 - A font that does not vary has no axis.
 - [GlyphHinter](cref:Meziantou.Framework.Fonts.GlyphHinter) hints an instance with its own outlines: the TrueType instructions run with the control values the
   `cvar` table varies, and the hints of CFF2 outlines and the alignment zones of their private DICT are blended for the

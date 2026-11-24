@@ -57,6 +57,8 @@ public static partial class CsvFuzzTargets
         new("csv-deserialize-errors", DeserializeErrors) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("csv-iso8601", ParseIso8601) { Seeds = GetIso8601Seeds, Dictionary = ["-", ":", "T", "Z", ".", "+", "2024", "02", "29", "23", "59", "0000000", "+02:00", "+14:00", "0001-01-01", "9999-12-31"] },
         new("csv-decimal", ParseDecimal) { Seeds = GetDecimalSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.50", "123456789", "999999999999999999", " ", ",", "+", "e"] },
+        new("csv-numbers", ParseNumbers) { Seeds = GetNumberSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.5", "999999999", "2147483648", "999999999999999", "9223372036854775808", " ", ",", "+", "e", "E", "NaN"] },
+        new("csv-floating-point", ParseFloatingPoint) { Seeds = GetFloatingPointSeeds, Dictionary = ["-", "+", ".", "0", "9", "e", "E", "e-", "e+", "22", "23", "2048", "65504", "16777216", "9007199254740992", "0.1", "NaN", "Infinity", " ", ","] },
     ];
 
     /// <summary>
@@ -736,12 +738,137 @@ public static partial class CsvFuzzTargets
         static string Describe(decimal value) => string.Join(',', decimal.GetBits(value));
     }
 
+    /// <summary>
+    /// <c>mode, value</c>: when bit 0 of <c>mode</c> is set and <c>value</c> has 8 bytes, they are a double, written with its shortest text or with
+    /// up to 15 decimals (bits 1-4); otherwise <c>value</c> is the text. The fast parsers of <see cref="int"/> and <see cref="long"/> agree
+    /// in UTF-16 and UTF-8, and give the value of the BCL; the texts of doubles check that they are rejected or parsed as the BCL parses them.
+    /// </summary>
+    private static void ParseNumbers(ReadOnlySpan<byte> data)
+    {
+        var mode = FuzzInput.ReadByte(ref data);
+        string text;
+        if ((mode & 1) != 0 && data.Length >= 8)
+        {
+            var number = BinaryPrimitives.ReadDoubleLittleEndian(data);
+            var decimals = (mode >> 1) & 0x0F;
+            text = decimals == 0 ? number.ToString("R", CultureInfo.InvariantCulture) : number.ToString("F" + Math.Min(decimals, 15).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            text = FuzzInput.ReadText(data);
+        }
+
+        var utf8 = Encoding.UTF8.GetBytes(text);
+        Check<int>(text, utf8, value => value.ToString(CultureInfo.InvariantCulture));
+        Check<long>(text, utf8, value => value.ToString(CultureInfo.InvariantCulture));
+
+        static void Check<T>(string text, byte[] utf8, Func<T, string> describe)
+            where T : ISpanParsable<T>
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var parsed = Serialization.Converters.PlainNumberParser.TryParse<char, T>(text, invariant, out var result);
+            var utf8Parsed = Serialization.Converters.PlainNumberParser.TryParse<byte, T>(utf8, invariant, out var utf8Result);
+            FuzzAssert.Equal(parsed, utf8Parsed, "The UTF-16 and UTF-8 fast parsers disagree: " + typeof(T).Name);
+            if (!parsed)
+                return;
+
+            if (!T.TryParse(text, invariant, out var expected))
+                FuzzAssert.Fail("The BCL rejects a value the fast parser accepts: " + typeof(T).Name + " " + FuzzAssert.Format(text));
+
+            FuzzAssert.Equal(describe(expected), describe(result), "The number is not the number of the BCL: " + typeof(T).Name);
+            FuzzAssert.Equal(describe(expected), describe(utf8Result), "The UTF-8 number is not the number of the BCL: " + typeof(T).Name);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumberSeeds()
+    {
+        string[] values = ["0", "-0", "0.0", "-0.00", "007", "1.5", "-123.45", "0.1", "999999999", "1234567890", "2147483648", "-2147483648", "999999999999999999", "9223372036854775808", "999999999999999", "9999999999999999", "0.123456789012345", "12345678.9012345", "9007199254740993", "1.", ".5", "1e3", "+1", " 1", "1,000", "NaN"];
+        for (var i = 0; i < values.Length; i++)
+        {
+            yield return FuzzSeed.FromText("number-" + i.ToString(CultureInfo.InvariantCulture), [0], values[i]);
+        }
+
+        double[] doubles = [0.1, 123.456, -42.5, 1e-7, 1e22, 6.02214076e23, double.Epsilon, double.MaxValue, -0.0, 23.4];
+        for (var i = 0; i < doubles.Length; i++)
+        {
+            var bytes = new byte[9];
+            bytes[0] = (byte)(1 | ((i % 8) << 1));
+            BinaryPrimitives.WriteDoubleLittleEndian(bytes.AsSpan(1), doubles[i]);
+            yield return new FuzzSeed("double-" + i.ToString(CultureInfo.InvariantCulture), bytes);
+        }
+    }
+
     private static IEnumerable<FuzzSeed> GetDecimalSeeds()
     {
         string[] values = ["0", "-0", "1.50", "-123.45", "007", "123456789012345678", "-12345678901234567.8", "1234567890123456789", "0.000000000000000001", "1.", ".5", "1e3", "1,000"];
         for (var i = 0; i < values.Length; i++)
         {
             yield return FuzzSeed.FromText("decimal-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
+        }
+    }
+
+    /// <summary>
+    /// The fast parser of <see cref="double"/>, <see cref="float"/> and <see cref="Half"/> values accepts a subset of what the BCL accepts with the
+    /// invariant culture, and gives the same values, with the same sign, in UTF-16 and in UTF-8. The data is read as text, and its first bytes as the
+    /// bits of a value, written as the BCL writes it, so that the values around the limits of the fast path are covered.
+    /// </summary>
+    private static void ParseFloatingPoint(ReadOnlySpan<byte> data)
+    {
+        if (data.Length >= 8)
+        {
+            var number = BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data));
+            var decimals = (data[0] & 0x7).ToString(CultureInfo.InvariantCulture);
+            CheckFloatingPoint<double>(number.ToString("R", CultureInfo.InvariantCulture));
+            CheckFloatingPoint<double>(number.ToString("F" + decimals, CultureInfo.InvariantCulture));
+            CheckFloatingPoint<double>(number.ToString("E" + decimals, CultureInfo.InvariantCulture));
+
+            var single = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data));
+            CheckFloatingPoint<float>(single.ToString("R", CultureInfo.InvariantCulture));
+            CheckFloatingPoint<float>(single.ToString("F" + decimals, CultureInfo.InvariantCulture));
+
+            var half = BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(data));
+            CheckFloatingPoint<Half>(half.ToString("R", CultureInfo.InvariantCulture));
+            CheckFloatingPoint<Half>(half.ToString("F" + decimals, CultureInfo.InvariantCulture));
+        }
+
+        var text = FuzzInput.ReadText(data);
+        CheckFloatingPoint<double>(text);
+        CheckFloatingPoint<float>(text);
+        CheckFloatingPoint<Half>(text);
+    }
+
+    private static void CheckFloatingPoint<T>(string text)
+        where T : IFormattable, IUtf8SpanParsable<T>, ISpanParsable<T>
+    {
+        var parsed = Internals.InvariantFloatingPoint.TryParse(text.AsSpan(), out T result);
+        var utf8Parsed = Internals.InvariantFloatingPoint.TryParse((ReadOnlySpan<byte>)Encoding.UTF8.GetBytes(text), out T utf8Result);
+        FuzzAssert.Equal(parsed, utf8Parsed, "The UTF-16 and UTF-8 fast parsers disagree on " + FuzzAssert.Format(text));
+        if (parsed)
+        {
+            if (!T.TryParse(text, CultureInfo.InvariantCulture, out var expected))
+                FuzzAssert.Fail("The BCL rejects a value the fast parser accepts: " + FuzzAssert.Format(text));
+
+            // The round-trip format distinguishes every value, including the negative zero
+            var expectedText = expected.ToString("R", CultureInfo.InvariantCulture);
+            FuzzAssert.Equal(expectedText, result.ToString("R", CultureInfo.InvariantCulture), "The " + typeof(T).Name + " is not the value of the BCL for " + FuzzAssert.Format(text));
+            FuzzAssert.Equal(expectedText, utf8Result.ToString("R", CultureInfo.InvariantCulture), "The UTF-8 " + typeof(T).Name + " is not the value of the BCL for " + FuzzAssert.Format(text));
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetFloatingPointSeeds()
+    {
+        // The values of the unit tests
+        string[] values =
+        [
+            "0", "-0", "+0", "0.0", "-0.000", "1", "-1", "+1.5", "1.50", "-123.45", "0.1", "0.3", "3.14159", "1.", ".5", "-.5", "1e3", "1E3", "1e+3",
+            "1.5e-3", "1.e3", ".5e1", "1e0000", "1e22", "1e23", "1e-22", "1e-23", "9007199254740992", "9007199254740993", "16777216", "16777217", "2048",
+            "2049", "65504", "65520", "100000", "0.00001", "1234567890123456789", "12345678901234567890", "0.0000000000000000001", "12345.678901234567",
+            "1.7976931348623157E+308", "4.9406564584124654E-324", "1e400", "NaN", "-Infinity", "1,000", " 1", "1 ", "1e", "1e+", "e3", ".", "-", "--1",
+            "1.2.3", "0x10", "",
+        ];
+        for (var i = 0; i < values.Length; i++)
+        {
+            yield return FuzzSeed.FromText("floating-point-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
         }
     }
 

@@ -19,6 +19,10 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 ## Reading
 
 - **Use the spans.** [Span](cref:Meziantou.Framework.Csv.CsvField.Span), [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) do not allocate. Call [ToString](cref:Meziantou.Framework.Csv.CsvField.ToString) only for the values you keep.
+- **Parse floating-point numbers with the invariant culture.** With the default [FormatProvider](cref:Meziantou.Framework.Csv.CsvReaderOptions.FormatProvider),
+  [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) read a `double`, a `float` or a `Half` with few digits, such as `-123.45` or `1.5e-3`,
+  through a faster path, with the same value. Values with more digits, such as the round-trip format of a
+  `double`, are often parsed by the same path; the others are left to `double.Parse`.
 - **Read UTF-8 files with [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader).** It does not decode the data, and parses numbers from the bytes.
 - **Pass memory when you already have it.** [CsvReader.Create](cref:Meziantou.Framework.Csv.CsvReader.Create) with a `ReadOnlyMemory<char>`, [CreateFromString](cref:Meziantou.Framework.Csv.CsvReader.CreateFromString) and
   [Utf8CsvReader.Create](cref:Meziantou.Framework.Csv.Utf8CsvReader.Create) with a `ReadOnlyMemory<byte>` read the data in place, without a copy.
@@ -49,17 +53,22 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
   every record, so they are not boxed.
 - **Keep the default formats.** Dates and times in the ISO 8601 round-trip format (`O`), which the serializer writes,
   and decimals written as plain numbers, such as `-123.45`, with the invariant culture, are parsed and written by a
-  faster path than the other formats. The numbers and the dates written in the default formats with the invariant
-  culture are not searched for characters that need quotes, unless the separator, the quote or the new line is one of
-  their characters.
+  faster path than the other formats. `int` and `long` values written as plain numbers, such as `42` or `-7`, and
+  doubles, floats and `Half` values with few digits, are parsed by a faster path too. The numbers and the dates written
+  in the default formats with the invariant culture are not searched for characters that need quotes, unless the
+  separator, the quote or the new line is one of their characters.
 - **Serialize to a string only when you need one.** The text is kept in chunks and copied once, into the string;
   writing to a stream, a `TextWriter` or an `IBufferWriter<T>` does not keep the whole text in memory.
 - **Stream large files** with [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) or [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable) instead of loading every record.
+- **Loading every record is cheap on the garbage collector.** [Deserialize](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.Deserialize) and [DeserializeAsync](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsync)
+  collect the records in small arrays, then copy them once to a list of the exact size. A list that grows while the records
+  are read puts its larger arrays on the large object heap, which starts full collections of every record read so far.
+  Most of the remaining time of a file with text values is the allocation of the strings and the records.
 
 ## Benchmarks
 
 The `benchmarks/Meziantou.Framework.Csv.Benchmarks` project of the repository measures the reader (UTF-16 and UTF-8, spans and
-strings), the writer (strings and formatted values) and the serializer (generated metadata and reflection) on your machine:
+strings), the writer (strings and formatted values), the serializer (generated metadata and reflection) and the converters on your machine:
 
 ```shell
 dotnet run -c Release --project benchmarks/Meziantou.Framework.Csv.Benchmarks -- --filter "*"

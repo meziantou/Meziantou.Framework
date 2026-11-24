@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Numerics;
 using System.Text;
+using Meziantou.Framework.Csv.Internals;
 using Meziantou.Framework.Csv.Serialization;
 using Meziantou.Framework.Csv.Serialization.Metadata;
 
@@ -67,6 +68,43 @@ public class CsvSerializerTests
         Assert.Equal(expected, Describe(await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Person>(new StringReader(Csv)))));
 
         static string[] Describe(IEnumerable<Person> people) => [.. people.Select(p => $"{p.Name}|{p.Age.ToString(CultureInfo.InvariantCulture)}|{p.BirthDate?.ToString("O", CultureInfo.InvariantCulture)}")];
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(33)]
+    [InlineData(8_192)]
+    [InlineData(8_193)]
+    [InlineData(30_001)]
+    public async Task Deserialize_RecordCount(int count)
+    {
+        // The records are collected in segments, then copied to the list: the list has every record, in order, whatever the number of segments
+        var csv = string.Concat(Enumerable.Range(0, count).Select(i => i.ToString(CultureInfo.InvariantCulture) + "\n"));
+        var bytes = Encoding.UTF8.GetBytes(csv);
+        var options = new CsvSerializerOptions { HasHeaderRow = false };
+        var expected = Enumerable.Range(0, count).Select(i => (decimal)i).ToList();
+
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(csv, options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(bytes, options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(new StringReader(csv), options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(new MemoryStream(bytes), options)));
+        Assert.Equal(expected, Values(await CsvSerializer.DeserializeAsync<DecimalModel>(new MemoryStream(bytes), options)));
+        Assert.Equal(expected, Values(await CsvSerializer.DeserializeAsync<DecimalModel>(new StringReader(csv), options)));
+
+        // A value type is collected in segments of its own size
+        var structs = CsvSerializer.Deserialize<StructModel>(csv, options);
+        Assert.HasCount(count, structs);
+        Assert.Equal(Enumerable.Range(0, count), structs.Select(item => item.X));
+
+        static List<decimal> Values(List<DecimalModel> models)
+        {
+            Assert.Equal(models.Count, models.Capacity);
+            return [.. models.Select(model => model.Value)];
+        }
     }
 
     [Fact]
@@ -691,6 +729,183 @@ public class CsvSerializerTests
         }
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("0.0")]
+    [InlineData("-0.00")]
+    [InlineData("007")]
+    [InlineData("-007")]
+    [InlineData("1.5")]
+    [InlineData("-123.45")]
+    [InlineData("0.1")]
+    [InlineData("0.3")]
+    [InlineData("123456789")]
+    [InlineData("-123456789")]
+    [InlineData("999999999")]
+    [InlineData("1234567890")]
+    [InlineData("2147483647")]
+    [InlineData("-2147483648")]
+    [InlineData("2147483648")]
+    [InlineData("123456789012345678")]
+    [InlineData("-123456789012345678")]
+    [InlineData("999999999999999999")]
+    [InlineData("9223372036854775807")]
+    [InlineData("-9223372036854775808")]
+    [InlineData("9223372036854775808")]
+    [InlineData("999999999999999")]
+    [InlineData("9999999999999999")]
+    [InlineData("0.123456789012345")]
+    [InlineData("0.1234567890123456")]
+    [InlineData("12345678.9012345")]
+    [InlineData("9007199254740993")]
+    [InlineData("1.")]
+    [InlineData(".5")]
+    [InlineData("1..2")]
+    [InlineData("1.2.3")]
+    [InlineData("+1")]
+    [InlineData(" 1")]
+    [InlineData("1 ")]
+    [InlineData("1,000")]
+    [InlineData("1e3")]
+    [InlineData("NaN")]
+    [InlineData("-")]
+    [InlineData("--1")]
+    [InlineData("")]
+    public void PlainNumbers_MatchBcl(string value)
+    {
+        // The fast parsers accept a subset of what the BCL accepts, and give the same values, with the same sign for zero
+        var utf8 = Encoding.UTF8.GetBytes(value);
+        var invariant = CultureInfo.InvariantCulture;
+        AssertMatches<int>(value, utf8);
+        AssertMatches<long>(value, utf8);
+
+        // The doubles have their own converter: the fast parser of the integers rejects them, and the converter gives the value of the BCL
+        AssertMatches<double>(value, utf8);
+
+        // Other types and cultures go through the general parsers
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, short>(value, invariant, out _));
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, decimal>(value, invariant, out _));
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, int>(value, (CultureInfo)invariant.Clone(), out _));
+
+        static void AssertMatches<T>(string value, byte[] utf8)
+            where T : ISpanParsable<T>, IUtf8SpanParsable<T>
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var parsed = Serialization.Converters.PlainNumberParser.TryParse<char, T>(value, invariant, out var result);
+            Assert.Equal(parsed, Serialization.Converters.PlainNumberParser.TryParse<byte, T>(utf8, invariant, out var utf8Result));
+            if (parsed)
+            {
+                var expected = T.Parse(value, invariant);
+                AssertSame(expected, result);
+                AssertSame(expected, utf8Result);
+            }
+
+            // The converters give the values and the errors of the BCL
+            var converter = CsvMetadataServices.GetConverter<T>(CsvSerializerOptions.Default);
+            var context = new CsvConverterContext(CsvSerializerOptions.Default);
+            if (T.TryParse(value, invariant, out var bcl))
+            {
+                AssertSame(bcl, converter.Read(value, context));
+                AssertSame(bcl, converter.Read(utf8, context));
+            }
+            else
+            {
+                Assert.ThrowsAny<Exception>(() => converter.Read(value, context));
+                Assert.ThrowsAny<Exception>(() => converter.Read(utf8, context));
+            }
+        }
+
+        static void AssertSame<T>(T expected, T actual)
+        {
+            // Compares the bits of the doubles, so that 0 and -0 are different
+            if (expected is double expectedDouble && actual is double actualDouble)
+            {
+                Assert.Equal(BitConverter.DoubleToInt64Bits(expectedDouble), BitConverter.DoubleToInt64Bits(actualDouble));
+            }
+            else
+            {
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(0x9E3779B97F4A7C15UL)]
+    public void PlainNumbers_MatchBcl_Random(ulong seed)
+    {
+        var values = CreateRandomNumbers(seed, 20_000);
+        var parsedCount = 0;
+        foreach (var value in values)
+        {
+            if (MatchesBcl(value))
+            {
+                parsedCount++;
+            }
+        }
+
+        // About a quarter of the values are integers of 18 digits or less, which take the fast path of long: the test checks it, not only the
+        // general parser. The other values are rejected and left to the general parser.
+        Assert.True(parsedCount > values.Count / 5, parsedCount.ToString(CultureInfo.InvariantCulture));
+
+        // Returns whether the fast parser of long accepts the value
+        static bool MatchesBcl(string value)
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var utf8 = Encoding.UTF8.GetBytes(value);
+            if (Serialization.Converters.PlainNumberParser.TryParse<char, int>(value, invariant, out var intResult))
+            {
+                Assert.Equal(int.Parse(value, invariant), intResult);
+                Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, int>(utf8, invariant, out var utf8IntResult));
+                Assert.Equal(intResult, utf8IntResult);
+            }
+
+            if (!Serialization.Converters.PlainNumberParser.TryParse<char, long>(value, invariant, out var longResult))
+                return false;
+
+            Assert.Equal(long.Parse(value, invariant), longResult);
+            Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, long>(utf8, invariant, out var utf8LongResult));
+            Assert.Equal(longResult, utf8LongResult);
+            return true;
+        }
+    }
+
+    // Integers of 1 to 19 digits, decimals of up to 15 decimals, and doubles as the serializer writes them, with a deterministic xorshift generator
+    // (no warnings about Random). The seed is a parameter of the test, not a constant: the value content analysis of the security analyzers
+    // (CA3xxx, CA5xxx) computes the possible values of a variable, and from a constant seed, the values of each step of the generator in the loop
+    // grew until the compilation used more than 25 GB.
+    private static List<string> CreateRandomNumbers(ulong seed, int count)
+    {
+        var invariant = CultureInfo.InvariantCulture;
+        var state = seed;
+        var values = new List<string>();
+        for (var i = 0; i < count; i++)
+        {
+            var integer = Next(ref state) % (ulong)Math.Pow(10, Math.Min((int)(Next(ref state) % 19) + 1, 18));
+            var text = (Next(ref state) % 2 == 0 ? "-" : "") + integer.ToString(invariant);
+            values.Add(text);
+
+            var scale = (int)(Next(ref state) % 16);
+            if (scale > 0)
+            {
+                values.Add(text + "." + (Next(ref state) % (ulong)Math.Pow(10, scale)).ToString(invariant).PadLeft(scale, '0'));
+            }
+
+            values.Add(BitConverter.Int64BitsToDouble((long)(Next(ref state) >> 2) + 0x3000000000000000).ToString("R", invariant));
+            values.Add(Math.Round(BitConverter.UInt64BitsToDouble(0x3FF0000000000000 | (Next(ref state) >> 12)) * 1000, (int)(Next(ref state) % 6), MidpointRounding.ToEven).ToString(invariant));
+        }
+
+        return values;
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
     [Fact]
     public void Decimal_FormatMatchesBcl()
     {
@@ -733,6 +948,203 @@ public class CsvSerializerTests
         var models = values.Select(value => new DecimalModel { Value = value }).ToList();
         Assert.Equal(string.Concat(values.Select(value => value.ToString(CultureInfo.InvariantCulture) + "\r\n")), CsvSerializer.Serialize(models, new CsvSerializerOptions { HasHeaderRow = false }));
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("+0")]
+    [InlineData("0.0")]
+    [InlineData("-0.000")]
+    [InlineData("1")]
+    [InlineData("-1")]
+    [InlineData("+1.5")]
+    [InlineData("1.50")]
+    [InlineData("-123.45")]
+    [InlineData("0.1")]
+    [InlineData("0.3")]
+    [InlineData("3.14159")]
+    [InlineData("1.")]
+    [InlineData(".5")]
+    [InlineData("-.5")]
+    [InlineData("1e3")]
+    [InlineData("1E3")]
+    [InlineData("1e+3")]
+    [InlineData("1.5e-3")]
+    [InlineData("1.e3")]
+    [InlineData(".5e1")]
+    [InlineData("1e0000")]
+    [InlineData("1e22")]
+    [InlineData("1e23")]
+    [InlineData("1e-22")]
+    [InlineData("1e-23")]
+    [InlineData("9007199254740992")]
+    [InlineData("9007199254740993")]
+    [InlineData("16777216")]
+    [InlineData("16777217")]
+    [InlineData("2048")]
+    [InlineData("2049")]
+    [InlineData("65504")]
+    [InlineData("65520")]
+    [InlineData("100000")]
+    [InlineData("0.00001")]
+    [InlineData("1234567890123456789")]
+    [InlineData("12345678901234567890")]
+    [InlineData("0.0000000000000000001")]
+    [InlineData("12345.678901234567")]
+    [InlineData("1.7976931348623157E+308")]
+    [InlineData("4.9406564584124654E-324")]
+    [InlineData("1e400")]
+    [InlineData("NaN")]
+    [InlineData("-Infinity")]
+    [InlineData("1,000")]
+    [InlineData(" 1")]
+    [InlineData("1 ")]
+    [InlineData("1e")]
+    [InlineData("1e+")]
+    [InlineData("e3")]
+    [InlineData(".")]
+    [InlineData("-")]
+    [InlineData("--1")]
+    [InlineData("1.2.3")]
+    [InlineData("0x10")]
+    [InlineData("")]
+    public void FloatingPoint_MatchesBcl(string value)
+    {
+        // The fast parser accepts a subset of what the BCL accepts, and gives the same values, with the same sign, for double, float and Half
+        AssertMatchesBcl<double>(value);
+        AssertMatchesBcl<float>(value);
+        AssertMatchesBcl<Half>(value);
+
+        if (double.TryParse(value, CultureInfo.InvariantCulture, out _))
+        {
+            var text = value + ";" + value + ";" + value;
+            var options = new CsvSerializerOptions { HasHeaderRow = false, Separator = ';' };
+            foreach (var model in new[] { CsvSerializer.Deserialize<FloatingPointModel>(text, options)[0], CsvSerializer.Deserialize<FloatingPointModel>(Encoding.UTF8.GetBytes(text), options)[0] })
+            {
+                Assert.Equal(Format(double.Parse(value, CultureInfo.InvariantCulture)), Format(model.Double));
+                Assert.Equal(Format(float.Parse(value, CultureInfo.InvariantCulture)), Format(model.Single));
+                Assert.Equal(Format(Half.Parse(value, CultureInfo.InvariantCulture)), Format(model.Half));
+            }
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_Half_MatchesBclForEveryFastValue()
+    {
+        // Every mantissa and exponent the fast path of Half can accept
+        var accepted = 0;
+        for (var mantissa = 0; mantissa <= 2100; mantissa++)
+        {
+            for (var exponent = -5; exponent <= 5; exponent++)
+            {
+                var text = mantissa.ToString(CultureInfo.InvariantCulture) + "e" + exponent.ToString(CultureInfo.InvariantCulture);
+                accepted += AssertMatchesBcl<Half>(text) ? 1 : 0;
+                AssertMatchesBcl<Half>("-" + text);
+            }
+        }
+
+        // The values that overflow, such as 100e4, are left to the BCL
+        Assert.True(accepted > 12_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void FloatingPoint_MatchesBclForRandomValues()
+    {
+        var state = 0x9E3779B97F4A7C15UL;
+        var accepted = 0;
+        for (var i = 0; i < 20_000; i++)
+        {
+            // Mantissas around the limits of the fast paths, written with a dot at any position or with an exponent
+            var mantissa = (Next(ref state) % 4) switch
+            {
+                0 => Next(ref state) % (1UL << 54),
+                1 => Next(ref state) % (1UL << 25),
+                2 => Next(ref state) % 100_000,
+                _ => Next(ref state) % 10_000_000_000_000_000_000UL,
+            };
+
+            var digits = mantissa.ToString(CultureInfo.InvariantCulture);
+            var dot = (int)(Next(ref state) % (ulong)(digits.Length + 1));
+            var withDot = digits[..dot] + "." + digits[dot..];
+            var exponent = (int)(Next(ref state) % 61) - 30;
+            foreach (var text in new[] { withDot, digits + "e" + exponent.ToString(CultureInfo.InvariantCulture), "-" + withDot + "E" + exponent.ToString(CultureInfo.InvariantCulture) })
+            {
+                accepted += AssertMatchesBcl<double>(text) ? 1 : 0;
+                AssertMatchesBcl<float>(text);
+            }
+
+            // The texts the BCL writes: shortest round-trip, and rounded to a few decimals
+            var number = BitConverter.Int64BitsToDouble((long)Next(ref state));
+            AssertMatchesBcl<double>(number.ToString("R", CultureInfo.InvariantCulture));
+            var small = (double)(Next(ref state) % 100_000_000) / 997;
+            accepted += AssertMatchesBcl<double>(small.ToString("R", CultureInfo.InvariantCulture)) ? 1 : 0;
+            accepted += AssertMatchesBcl<double>(small.ToString("F" + ((int)(Next(ref state) % 7)).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)) ? 1 : 0;
+            AssertMatchesBcl<float>(((float)small).ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        Assert.True(accepted > 20_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+
+        // xorshift: deterministic values, without the warnings about Random
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_ReadersUseFastPath()
+    {
+        // The fields parse with the fast path with the invariant culture, and with the BCL with another culture
+        using (var reader = CsvReader.CreateFromString("-123.45;1e3;0.1", new CsvReaderOptions { HasHeaderRow = false, Separator = ';' }))
+        {
+            Assert.True(reader.Read());
+            Assert.Equal(-123.45, reader.Current[0].Parse<double>());
+            Assert.Equal(1000f, reader.Current[1].Parse<float>());
+            Assert.True(reader.Current[2].TryParse<Half>(out var half));
+            Assert.Equal((Half)0.1, half);
+        }
+
+        using (var reader = Utf8CsvReader.Create("-123.45;1e3;0.1"u8.ToArray(), new CsvReaderOptions { HasHeaderRow = false, Separator = ';' }))
+        {
+            Assert.True(reader.Read());
+            Assert.Equal(-123.45, reader.Current[0].Parse<double>());
+            Assert.Equal(1000f, reader.Current[1].Parse<float>());
+            Assert.True(reader.Current[2].TryParse<Half>(out var half));
+            Assert.Equal((Half)0.1, half);
+        }
+
+        var french = new NumberFormatInfo { NumberDecimalSeparator = "," };
+        using (var reader = CsvReader.CreateFromString("-123,45", new CsvReaderOptions { HasHeaderRow = false, Separator = ';', FormatProvider = french }))
+        {
+            Assert.True(reader.Read());
+            Assert.Equal(-123.45, reader.Current[0].Parse<double>());
+        }
+
+        Assert.Equal(-123.45, CsvSerializer.Deserialize<FloatingPointModel>("-123,45;0;0", new CsvSerializerOptions { HasHeaderRow = false, Separator = ';', FormatProvider = french })[0].Double);
+    }
+
+    private static bool AssertMatchesBcl<T>(string value)
+        where T : IBinaryFloatingPointIeee754<T>, IUtf8SpanParsable<T>
+    {
+        var parsed = InvariantFloatingPoint.TryParse(value.AsSpan(), out T result);
+        Assert.Equal(parsed, InvariantFloatingPoint.TryParse((ReadOnlySpan<byte>)Encoding.UTF8.GetBytes(value), out T utf8Result));
+        if (parsed)
+        {
+            Assert.True(T.TryParse(value, CultureInfo.InvariantCulture, out var expected), "The BCL rejects a value the fast parser accepts: " + value);
+            Assert.Equal(Format(expected), Format(result));
+            Assert.Equal(Format(expected), Format(utf8Result));
+        }
+
+        return parsed;
+    }
+
+    // The round-trip format distinguishes every value, including the negative zero
+    private static string Format<T>(T value)
+        where T : IFormattable
+        => value.ToString("R", CultureInfo.InvariantCulture);
 
     [Fact]
     public void Metadata_ParameterWithoutMember()
@@ -1065,6 +1477,15 @@ public sealed class LabeledItem(int id, string label, int rank)
 public sealed class DecimalModel
 {
     public decimal Value { get; set; }
+}
+
+public sealed class FloatingPointModel
+{
+    public double Double { get; set; }
+
+    public float Single { get; set; }
+
+    public Half Half { get; set; }
 }
 
 public enum Color

@@ -214,6 +214,19 @@ public sealed class MimeMessageTests
         Assert.Equal(["Jürgen Müller|j@example.com", "Smith, John|john@example.com"], MailboxAddress.ParseList(formatted).Select(address => address.Name + "|" + address.Address));
     }
 
+    [Theory]
+    [InlineData("a\u00A0b@example.com")]
+    [InlineData("a\u2003b@example.com")]
+    [InlineData("a\u000Bb@example.com")]
+    [InlineData("a b@example.com")]
+    public void Address_FormatWhitespace(string address)
+    {
+        // The reader removes the whitespace of a bare address: the writer puts the address in angle brackets
+        var formatted = new MailboxAddress(name: null, address).ToHeaderValue();
+        Assert.Equal("<" + address + ">", formatted);
+        Assert.Equal(address, MailboxAddress.Parse(formatted)?.Address);
+    }
+
     [Fact]
     public void Load_DeepNesting_IsLimited()
     {

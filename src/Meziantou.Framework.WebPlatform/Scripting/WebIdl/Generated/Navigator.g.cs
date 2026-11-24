@@ -81,6 +81,11 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var a1 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaKeySystemConfiguration(r, e));
         var result = o.RequestMediaKeySystemAccess(a0, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value));
     }
+    private static TValue Op_getGamepads(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var result = o.GetGamepads(); return r.FromSequence(result, static (r, e) => r.Wrap(e));
+    }
     private static TValue Op_vibrate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
@@ -186,6 +191,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "getBattery", 0, Op_getBattery, returnsPromise: true);
         r.DefineOperation(instanceTarget, "sendBeacon", 1, Op_sendBeacon);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "requestMediaKeySystemAccess", 2, Op_requestMediaKeySystemAccess, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "getGamepads", 0, Op_getGamepads);
         r.DefineOperation(instanceTarget, "vibrate", 1, Op_vibrate);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "share", 0, Op_share, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "canShare", 0, Op_canShare);

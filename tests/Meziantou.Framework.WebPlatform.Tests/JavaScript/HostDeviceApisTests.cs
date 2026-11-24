@@ -64,6 +64,7 @@ public sealed class HostDeviceApisTests : IDisposable
             ComputePressure = options.ComputePressure,
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
+            Gamepads = options.Gamepads,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -1412,6 +1413,158 @@ public sealed class HostDeviceApisTests : IDisposable
         document.BrowsingContext.IsVisible = true;
         Run(document);
         Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
+    }
+
+    // Gamepad
+
+    private const string GamepadScript = """
+        <script>
+        window.log = [];
+        window.addEventListener('gamepadconnected', e => log.push('connected ' + e.gamepad.index + ' ' + e.gamepad.id));
+        window.addEventListener('gamepaddisconnected', e => log.push('disconnected ' + e.gamepad.index + ' ' + e.gamepad.connected));
+        window.state = () => document.title = navigator.getGamepads().map(g => g && [g.mapping, g.buttons[0].pressed, g.buttons[0].value, g.axes[0], g.connected].join()).join(';');
+        </script>
+        """;
+
+    [Fact]
+    public void Gamepad_IsExposedAfterAGestureOfTheUser()
+    {
+        #region WebPlatform_Gamepads
+        var gamepads = new GamepadProvider();
+        var options = new BrowsingContextOptions
+        {
+            Gamepads = new GamepadOptions { Provider = gamepads },
+        };
+
+        // A standard gamepad (17 buttons, 4 axes): the pages see it once the user presses a button or moves an axis
+        var controller = new GamepadDevice("Test controller (Vendor: 045e Product: 02ea)", buttonCount: 17, axisCount: 4) { Mapping = GamepadMappingType.Standard };
+        gamepads.Connect(controller);
+        controller.SetButton(0, 1);
+        #endregion
+
+        controller.SetButton(0, 0);
+        var document = Load(GamepadScript, options);
+
+        // The inputs and the connections are applied by tasks
+        string State()
+        {
+            Run(document);
+            return Run(document, "state()");
+        }
+
+        // Connected, but not exposed before a gesture
+        Assert.Equal("", State());
+        controller.SetAxis(0, 0.25);
+        Assert.Equal("", State());
+
+        controller.SetButton(0, 1);
+        Assert.Equal("standard,true,1,0.25,true", State());
+        Assert.Equal("connected 0 Test controller (Vendor: 045e Product: 02ea)", Run(document, "document.title = log.join('|')"));
+
+        // A gamepad connected after the gesture is exposed at once, at the next index
+        var second = new GamepadDevice("Second", buttonCount: 1, axisCount: 1);
+        gamepads.Connect(second);
+        Assert.Equal("standard,true,1,0.25,true;,false,0,0,true", State());
+
+        Assert.True(gamepads.Disconnect(controller));
+        Assert.Equal(";,false,0,0,true", State());
+        Assert.Equal("connected 0 Test controller (Vendor: 045e Product: 02ea)|connected 1 Second|disconnected 0 false", Run(document, "document.title = log.join('|')"));
+        Assert.False(gamepads.Disconnect(controller));
+    }
+
+    [Fact]
+    public void Gamepad_GetGamepadsReturnsSnapshots()
+    {
+        var gamepads = new GamepadProvider();
+        var controller = new GamepadDevice("Test", buttonCount: 1, axisCount: 1);
+        gamepads.Connect(controller);
+        var document = Load(GamepadScript, new BrowsingContextOptions { Gamepads = new GamepadOptions { Provider = gamepads } });
+        controller.SetAxis(0, -1);
+        Run(document);
+
+        Assert.Equal("false,true,true", Run(document, """
+            const a = navigator.getGamepads()[0];
+            const b = navigator.getGamepads()[0];
+            document.title = [a === b, a.vibrationActuator === b.vibrationActuator, a.axes[0] === -1].join();
+            """));
+    }
+
+    [Fact]
+    public void Gamepad_WithoutProvider_HasNoGamepad()
+    {
+        Assert.Equal("0,function", Run(Load("<script>document.title = [navigator.getGamepads().length, typeof GamepadEvent].join();</script>")));
+        Assert.Equal("true,x", Run(Load("<script>const e = new GamepadEvent('x'); document.title = [e.gamepad === null, e.type].join();</script>")));
+    }
+
+    // A provider whose effects complete when the test completes them
+    private sealed class ManualHapticsProvider : GamepadProvider
+    {
+        public List<(GamepadHapticEffectRequest Request, TaskCompletionSource Completion)> Effects { get; } = [];
+
+        public override Task PlayEffect(GamepadHapticEffectRequest request)
+        {
+            var completion = new TaskCompletionSource();
+            Effects.Add((request, completion));
+            return completion.Task;
+        }
+    }
+
+    [Fact]
+    public void Gamepad_HapticEffects()
+    {
+        var gamepads = new ManualHapticsProvider();
+        var controller = new GamepadDevice("Test", buttonCount: 1, axisCount: 0) { HapticEffects = [GamepadHapticEffectType.DualRumble] };
+        gamepads.Connect(controller);
+        var document = Load("""
+            <script>
+            window.log = [];
+            window.play = p => navigator.getGamepads()[0].vibrationActuator.playEffect('dual-rumble', p).then(r => log.push(r), e => log.push(e.name));
+            </script>
+            """, new BrowsingContextOptions { Gamepads = new GamepadOptions { Provider = gamepads } });
+        Run(document, "navigator.getGamepads()");
+        controller.SetButton(0, 1);
+        Run(document);
+
+        Run(document, "play({ duration: 10000, startDelay: 100, strongMagnitude: 1 })");
+        var (request, completion) = Assert.Single(gamepads.Effects);
+        Assert.Equal(4900UL, request.Parameters.Duration);
+        Assert.Equal(100UL, request.Parameters.StartDelay);
+        Assert.Same(controller, request.Device);
+
+        // Another effect preempts the first one, whose request is canceled
+        Run(document, "play({ duration: 100 })");
+        Assert.True(request.CancellationToken.IsCancellationRequested);
+        gamepads.Effects[1].Completion.SetResult();
+        Run(document);
+
+        Run(document, "play({ duration: 100 }); navigator.getGamepads()[0].vibrationActuator.reset().then(r => log.push('reset ' + r))");
+        Run(document, "play({ strongMagnitude: 2 }); navigator.getGamepads()[0].vibrationActuator.playEffect('trigger-rumble').catch(e => log.push(e.name))");
+        Assert.Equal("preempted,complete,reset complete,preempted,TypeError,NotSupportedError", Run(document, "document.title = log.join()"));
+        completion.SetResult();
+    }
+
+    [Fact]
+    public void Gamepad_HiddenDocument_IgnoresTheGesturesAndStopsTheEffects()
+    {
+        var gamepads = new ManualHapticsProvider();
+        var controller = new GamepadDevice("Test", buttonCount: 1, axisCount: 0) { HapticEffects = [GamepadHapticEffectType.DualRumble] };
+        gamepads.Connect(controller);
+        var document = Load(GamepadScript, new BrowsingContextOptions { Gamepads = new GamepadOptions { Provider = gamepads } });
+
+        document.BrowsingContext!.IsVisible = false;
+        controller.SetButton(0, 1);
+        Run(document);
+        controller.SetButton(0, 0);
+        Assert.Equal("", Run(document, "state()"));
+
+        document.BrowsingContext.IsVisible = true;
+        controller.SetButton(0, 1);
+        Run(document);
+        Run(document, "navigator.getGamepads()[0].vibrationActuator.playEffect('dual-rumble', { duration: 100 }).then(r => log.push(r))");
+        document.BrowsingContext.IsVisible = false;
+        Run(document);
+        Assert.True(Assert.Single(gamepads.Effects).Request.CancellationToken.IsCancellationRequested);
+        Assert.Equal("connected 0 Test|preempted", Run(document, "document.title = log.join('|')"));
     }
 
     // CPU Performance

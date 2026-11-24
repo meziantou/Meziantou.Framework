@@ -599,6 +599,7 @@ public partial class Window
     {
         base.OnEventListenerAdded(listener);
         OnDeviceOrientationListenerAdded(listener);
+        OnGamepadListenerAdded(listener);
 
         // https://html.spec.whatwg.org/multipage/dom.html#reveal: the pagereveal event is fired by the first rendering update of
         // the document; a rendering opportunity is only scheduled for it when the event is observed

@@ -3671,6 +3671,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? ExitPointerLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? Features { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.FileSystemBackend? FileSystem { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadOptions? Gamepads { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions? GlobalPrivacyControl { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.HstsOptions? Hsts { get => throw null; init { } }
@@ -6991,6 +6992,116 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public delegate void FunctionStringCallback(string data);
 
+    public sealed class Gamepad
+    {
+        public System.Collections.Generic.IReadOnlyList<double> Axes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.GamepadButton> Buttons { get => throw null; }
+        public bool Connected { get => throw null; }
+        public string Id { get => throw null; }
+        public int Index { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadMappingType Mapping { get => throw null; }
+        public double Timestamp { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.GamepadTouch> Touches { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadHapticActuator VibrationActuator { get => throw null; }
+    }
+
+    public sealed class GamepadButton
+    {
+        public bool Pressed { get => throw null; }
+        public bool Touched { get => throw null; }
+        public double Value { get => throw null; }
+    }
+
+    public sealed class GamepadDevice
+    {
+        public int AxisCount { get => throw null; }
+        public int ButtonCount { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType> HapticEffects { get => throw null; init { } }
+        public string Id { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadMappingType Mapping { get => throw null; init { } }
+        public GamepadDevice(string id, int buttonCount, int axisCount) { }
+        public void SetAxis(int index, double value) { }
+        public void SetButton(int index, double value, bool? pressed = null, bool? touched = null) { }
+    }
+
+    public sealed class GamepadEffectParameters
+    {
+        public ulong Duration { get => throw null; init { } }
+        public double LeftTrigger { get => throw null; init { } }
+        public double RightTrigger { get => throw null; init { } }
+        public ulong StartDelay { get => throw null; init { } }
+        public double StrongMagnitude { get => throw null; init { } }
+        public double WeakMagnitude { get => throw null; init { } }
+    }
+
+    public sealed class GamepadEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Gamepad? Gamepad { get => throw null; }
+        public GamepadEvent(string type, Meziantou.Framework.WebPlatform.Dom.GamepadEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class GamepadEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public Meziantou.Framework.WebPlatform.Dom.Gamepad? Gamepad { get => throw null; init { } }
+    }
+
+    public sealed class GamepadHapticActuator
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType> Effects { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult> PlayEffect(Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType type, Meziantou.Framework.WebPlatform.Dom.GamepadEffectParameters? @params = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult> Reset() => throw null;
+    }
+
+    public sealed class GamepadHapticEffectRequest
+    {
+        public System.Threading.CancellationToken CancellationToken { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadDevice Device { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadEffectParameters Parameters { get => throw null; }
+        public System.TimeProvider TimeProvider { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType Type { get => throw null; }
+    }
+
+    public enum GamepadHapticEffectType
+    {
+        DualRumble = 0,
+        TriggerRumble = 1,
+    }
+
+    public enum GamepadHapticsResult
+    {
+        Complete = 0,
+        Preempted = 1,
+    }
+
+    public enum GamepadMappingType
+    {
+        None = 0,
+        Standard = 1,
+        XrStandard = 2,
+    }
+
+    public sealed class GamepadOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.GamepadProvider? Provider { get => throw null; init { } }
+    }
+
+    public class GamepadProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.GamepadDevice> Devices { get => throw null; }
+        public void Connect(Meziantou.Framework.WebPlatform.Dom.GamepadDevice device) { }
+        public bool Disconnect(Meziantou.Framework.WebPlatform.Dom.GamepadDevice device) => throw null;
+        public virtual System.Threading.Tasks.Task PlayEffect(Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectRequest request) => throw null;
+    }
+
+    public sealed class GamepadTouch
+    {
+        public Meziantou.Framework.WebPlatform.Dom.DomPointReadOnly? Position { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.DomRectReadOnly? SurfaceDimensions { get => throw null; init { } }
+        public byte SurfaceId { get => throw null; init { } }
+        public uint TouchId { get => throw null; init { } }
+    }
+
     public sealed class Geolocation
     {
         public void ClearWatch(int watchId) { }
@@ -7306,6 +7417,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAfterPrint { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnBeforePrint { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnBeforeUnload { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadConnected { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadDisconnected { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnHashChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLanguageChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
@@ -7687,6 +7800,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAfterPrint { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnBeforePrint { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnBeforeUnload { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadConnected { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadDisconnected { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnHashChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLanguageChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
@@ -10997,6 +11112,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool CanShare(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
         public System.Threading.Tasks.Task ClearAppBadge() => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BatteryManager> GetBattery() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.Gamepad?> GetGamepads() => throw null;
         public bool JavaEnabled() => throw null;
         public void RegisterProtocolHandler(string scheme, string url) { }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess> RequestMediaKeySystemAccess(string keySystem, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration> supportedConfigurations) => throw null;
@@ -15049,6 +15165,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAfterPrint { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnBeforePrint { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnBeforeUnload { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadConnected { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadDisconnected { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnHashChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLanguageChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
@@ -16720,6 +16838,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnFocus { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnFormData { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadConnected { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGamepadDisconnected { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGotPointerCapture { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnHashChange { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnInput { get => throw null; set { } }

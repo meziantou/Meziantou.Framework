@@ -275,6 +275,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["FragmentDirective"] = Binding_FragmentDirective<TAdapter, TValue>.Binding,
             ["FragmentResult"] = Binding_FragmentResult<TAdapter, TValue>.Binding,
             ["GainNode"] = Binding_GainNode<TAdapter, TValue>.Binding,
+            ["Gamepad"] = Binding_Gamepad<TAdapter, TValue>.Binding,
+            ["GamepadButton"] = Binding_GamepadButton<TAdapter, TValue>.Binding,
+            ["GamepadEvent"] = Binding_GamepadEvent<TAdapter, TValue>.Binding,
+            ["GamepadHapticActuator"] = Binding_GamepadHapticActuator<TAdapter, TValue>.Binding,
             ["Geolocation"] = Binding_Geolocation<TAdapter, TValue>.Binding,
             ["GeolocationCoordinates"] = Binding_GeolocationCoordinates<TAdapter, TValue>.Binding,
             ["GeolocationPosition"] = Binding_GeolocationPosition<TAdapter, TValue>.Binding,
@@ -953,6 +957,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.FormDataEventInit dictionaryDom_FormDataEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FormDataEventInit(r, dictionaryDom_FormDataEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GamepadEventInit dictionaryDom_GamepadEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GamepadEventInit(r, dictionaryDom_GamepadEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions dictionaryDom_GyroscopeSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GyroscopeSensorOptions(r, dictionaryDom_GyroscopeSensorOptions);
                 return true;
@@ -1471,6 +1478,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FullscreenOptions dictionaryDom_FullscreenOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_FullscreenOptions(r, dictionaryDom_FullscreenOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GamepadEffectParameters dictionaryDom_GamepadEffectParameters:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GamepadEffectParameters(r, dictionaryDom_GamepadEffectParameters);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GamepadTouch dictionaryDom_GamepadTouch:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GamepadTouch(r, dictionaryDom_GamepadTouch);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.GetAnimationsOptions dictionaryDom_GetAnimationsOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GetAnimationsOptions(r, dictionaryDom_GetAnimationsOptions);
@@ -2279,6 +2292,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI enumDom_FullscreenNavigationUI:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FullscreenNavigationUI(enumDom_FullscreenNavigationUI));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType enumDom_GamepadHapticEffectType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GamepadHapticEffectType(enumDom_GamepadHapticEffectType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult enumDom_GamepadHapticsResult:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GamepadHapticsResult(enumDom_GamepadHapticsResult));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.GamepadMappingType enumDom_GamepadMappingType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GamepadMappingType(enumDom_GamepadMappingType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.GetUserMediaSemantics enumDom_GetUserMediaSemantics:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GetUserMediaSemantics(enumDom_GetUserMediaSemantics));
                 return true;
@@ -2689,6 +2711,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.FileSystemSyncAccessHandle> taskSystem_Threading_Tasks_Task_Dom_FileSystemSyncAccessHandle_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_FileSystemSyncAccessHandle_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult> taskSystem_Threading_Tasks_Task_Dom_GamepadHapticsResult_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_GamepadHapticsResult_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_GamepadHapticsResult(v)));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ImageBitmap> taskSystem_Threading_Tasks_Task_Dom_ImageBitmap_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ImageBitmap_, static (r, v) => r.Wrap(v));

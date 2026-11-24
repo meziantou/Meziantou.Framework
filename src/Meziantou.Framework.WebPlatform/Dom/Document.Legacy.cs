@@ -437,6 +437,12 @@ public partial class Document
                 // https://w3c.github.io/screen-wake-lock/#handling-document-loss-of-visibility: the wake locks are released
                 navigator.WakeLockOrNull?.ReleaseAll();
             }
+
+            // https://w3c.github.io/gamepad/#handling-visibility-change: the haptic effects are stopped
+            if (RelevantWindow is { GamepadsOrNull: { } gamepads } gamepadsWindow && ReferenceEquals(gamepadsWindow.Document, this))
+            {
+                gamepads.OnDocumentHidden();
+            }
         }
 
         FireEvent(new Event("visibilitychange", new EventInit { Bubbles = true }));

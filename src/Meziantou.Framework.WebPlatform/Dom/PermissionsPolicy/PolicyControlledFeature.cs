@@ -99,6 +99,9 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c.github.io/gamepad/#permission-policy: its default allowlist is *.</summary>
+    public static PolicyControlledFeature Gamepad { get; } = new("gamepad", isAllowedForAllByDefault: true);
+
     /// <summary>https://w3c.github.io/mediacapture-main/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature Microphone { get; } = new("microphone", isAllowedForAllByDefault: false);
 
@@ -167,6 +170,7 @@ internal sealed partial class PolicyControlledFeature
         ExecutionWhileOutOfViewport,
         FocusWithoutUserActivation,
         Fullscreen,
+        Gamepad,
         Geolocation,
         Gyroscope,
         IdentityCredentialsGet,

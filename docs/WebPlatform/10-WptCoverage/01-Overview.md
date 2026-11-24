@@ -49,21 +49,21 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,856 | 30,158 | 80 | 93% |
+| [Stable](#stable-tests) | 27,860 | 30,158 | 80 | 93% |
 | [Tentative](#tentative-tests) | 1,676 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,501** | **65,062** | **326** | **93%** |
+| **All** | **60,505** | **65,062** | **326** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 150
-- **TEST BUG**: 1,122
+- **TEST BUG**: 1,124
 - **NOT IMPLEMENTED**: 2,808
-- **REQUIRES**: 412
-  - `hardware`: 230
+- **REQUIRES**: 406
+  - `hardware`: 224
   - `layout`: 22
   - `media`: 16
   - `user-input`: 144
@@ -205,7 +205,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`direct-sockets`](direct-sockets.md) | 0 | 4 | 0 | 0% |
 | [`document-picture-in-picture`](document-picture-in-picture.md) | 22 | 22 | 0 | 100% |
 | [`document-policy`](document-policy.md) | 6 | 7 | 0 | 86% |
-| [`dom`](dom.md) | 676 | 692 | 6 | 99% |
+| [`dom`](dom.md) | 677 | 692 | 6 | 99% |
 | [`domparsing`](domparsing.md) | 90 | 95 | 0 | 95% |
 | [`domxpath`](domxpath.md) | 29 | 29 | 0 | 100% |
 | [`dpub-aam`](dpub-aam.md) | 1 | 1 | 0 | 100% |
@@ -229,7 +229,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`forced-colors-mode`](forced-colors-mode.md) | 13 | 15 | 0 | 87% |
 | [`fs`](fs.md) | 34 | 36 | 0 | 94% |
 | [`fullscreen`](fullscreen.md) | 82 | 87 | 0 | 94% |
-| [`gamepad`](gamepad.md) | 1 | 6 | 0 | 17% |
+| [`gamepad`](gamepad.md) | 4 | 6 | 0 | 67% |
 | [`generic-sensor`](generic-sensor.md) | 3 | 3 | 0 | 100% |
 | [`geolocation`](geolocation.md) | 20 | 24 | 0 | 83% |
 | [`geolocation-sensor`](geolocation-sensor.md) | 1 | 1 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,856** | **30,158** | **80** | **93%** |
+| **Total (341 sections)** | **27,860** | **30,158** | **80** | **93%** |
 
 ## Tentative tests
 

@@ -491,6 +491,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_FullscreenNavigationUI_Values = new[] { "auto", "show", "hide" };
 
+    internal static readonly string[] Enum_GamepadHapticEffectType_Values = new[] { "dual-rumble", "trigger-rumble" };
+
     internal static readonly string[] Enum_GetUserMediaSemantics_Values = new[] { "browser-chooses", "user-chooses" };
 
     internal static readonly string[] Enum_GyroscopeLocalCoordinateSystem_Values = new[] { "device", "screen" };
@@ -2197,6 +2199,38 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         r.SetMember(result, "keyboardLock", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FullscreenKeyboardLock(value.KeyboardLock)));
         r.SetMember(result, "navigationUI", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FullscreenNavigationUI(value.NavigationUI)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_GamepadEffectParameters(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.GamepadEffectParameters value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "duration", r.FromNumber((double)value.Duration));
+        r.SetMember(result, "leftTrigger", r.FromNumber((double)value.LeftTrigger));
+        r.SetMember(result, "rightTrigger", r.FromNumber((double)value.RightTrigger));
+        r.SetMember(result, "startDelay", r.FromNumber((double)value.StartDelay));
+        r.SetMember(result, "strongMagnitude", r.FromNumber((double)value.StrongMagnitude));
+        r.SetMember(result, "weakMagnitude", r.FromNumber((double)value.WeakMagnitude));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_GamepadEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.GamepadEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "gamepad", r.Wrap(value.Gamepad));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_GamepadTouch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.GamepadTouch value)
+    {
+        var result = r.CreateObject();
+        if (value.Position is not null) r.SetMember(result, "position", r.Wrap(value.Position));
+        r.SetMember(result, "surfaceDimensions", r.Wrap(value.SurfaceDimensions));
+        r.SetMember(result, "surfaceId", r.FromNumber((double)value.SurfaceId));
+        r.SetMember(result, "touchId", r.FromNumber((double)value.TouchId));
         return result;
     }
 
@@ -5957,6 +5991,28 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_GamepadHapticEffectType(global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType.DualRumble => "dual-rumble",
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType.TriggerRumble => "trigger-rumble",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_GamepadHapticsResult(global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult.Complete => "complete",
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticsResult.Preempted => "preempted",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_GamepadMappingType(global::Meziantou.Framework.WebPlatform.Dom.GamepadMappingType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadMappingType.None => "",
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadMappingType.Standard => "standard",
+        global::Meziantou.Framework.WebPlatform.Dom.GamepadMappingType.XrStandard => "xr-standard",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_GetUserMediaSemantics(global::Meziantou.Framework.WebPlatform.Dom.GetUserMediaSemantics value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.GetUserMediaSemantics.BrowserChooses => "browser-chooses",
@@ -9709,6 +9765,52 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         {
             KeyboardLock = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_FullscreenKeyboardLock(m0),
             NavigationUI = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_FullscreenNavigationUI(m1),
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.GamepadEffectParameters ToDictionary_Dom_GamepadEffectParameters(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "GamepadEffectParameters");
+        var m0_value = r.GetDictionaryMember(value, "duration");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (ulong)(ulong)(0d) : r.ToUnsignedLongLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m1_value = r.GetDictionaryMember(value, "leftTrigger");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (double)(double)(0d) : r.ToDouble(m1_value, restricted: true);
+        var m2_value = r.GetDictionaryMember(value, "rightTrigger");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (double)(double)(0d) : r.ToDouble(m2_value, restricted: true);
+        var m3_value = r.GetDictionaryMember(value, "startDelay");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (ulong)(ulong)(0d) : r.ToUnsignedLongLong(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m4_value = r.GetDictionaryMember(value, "strongMagnitude");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (double)(double)(0d) : r.ToDouble(m4_value, restricted: true);
+        var m5_value = r.GetDictionaryMember(value, "weakMagnitude");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (double)(double)(0d) : r.ToDouble(m5_value, restricted: true);
+        return new global::Meziantou.Framework.WebPlatform.Dom.GamepadEffectParameters
+        {
+            Duration = m0,
+            LeftTrigger = m1,
+            RightTrigger = m2,
+            StartDelay = m3,
+            StrongMagnitude = m4,
+            WeakMagnitude = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.GamepadEventInit ToDictionary_Dom_GamepadEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "GamepadEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "gamepad");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (global::Meziantou.Framework.WebPlatform.Dom.Gamepad?)(global::Meziantou.Framework.WebPlatform.Dom.Gamepad?)null : (r.IsNullOrUndefined(m3_value) ? (global::Meziantou.Framework.WebPlatform.Dom.Gamepad?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.Gamepad>(m3_value, "Gamepad"));
+        return new global::Meziantou.Framework.WebPlatform.Dom.GamepadEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Gamepad = m3,
         };
     }
 
@@ -16275,6 +16377,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "auto" => global::Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI.Auto,
         "show" => global::Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI.Show,
         "hide" => global::Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI.Hide,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType ToEnum_Dom_GamepadHapticEffectType(string value) => value switch
+    {
+        "dual-rumble" => global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType.DualRumble,
+        "trigger-rumble" => global::Meziantou.Framework.WebPlatform.Dom.GamepadHapticEffectType.TriggerRumble,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

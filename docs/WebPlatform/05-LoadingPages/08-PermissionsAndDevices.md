@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -32,6 +32,7 @@ the device in a test, or to connect the API to your application.
 | [ComputePressure](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ComputePressure) | `PressureObserver` | The `cpu` source is supported, but reports no state |
 | [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
+| [Gamepads](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Gamepads) | `navigator.getGamepads()`, the `gamepadconnected` and `gamepaddisconnected` events | No gamepad is connected |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -745,6 +746,45 @@ posture.Posture = DevicePostureType.Folded;
 Changing [Posture](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider.Posture) fires the `change` event of
 `navigator.devicePosture`, and the `change` event of the media query lists such as `matchMedia('(device-posture: folded)')`.
 A hidden page gets the event when it becomes visible. All the frames of a tab have the posture of the tab.
+
+## Gamepads
+
+`navigator.getGamepads()` and the `gamepadconnected` and `gamepaddisconnected` events read the gamepads of a
+[GamepadProvider](cref:Meziantou.Framework.WebPlatform.Dom.GamepadProvider). Connect a
+[GamepadDevice](cref:Meziantou.Framework.WebPlatform.Dom.GamepadDevice) and update its buttons and axes as the user
+plays:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Gamepads;format=md-fenced-code-block;dedent=true -->
+```csharp
+var gamepads = new GamepadProvider();
+var options = new BrowsingContextOptions
+{
+    Gamepads = new GamepadOptions { Provider = gamepads },
+};
+
+// A standard gamepad (17 buttons, 4 axes): the pages see it once the user presses a button or moves an axis
+var controller = new GamepadDevice("Test controller (Vendor: 045e Product: 02ea)", buttonCount: 17, axisCount: 4) { Mapping = GamepadMappingType.Standard };
+gamepads.Connect(controller);
+controller.SetButton(0, 1);
+```
+<!-- endref -->
+
+A device gives its values in the order of the `buttons` and `axes` of the pages: the values of a button are between 0
+and 1 (pressed above 0.5, unless you pass `pressed`), and the values of an axis between -1 and 1. Set
+[Mapping](cref:Meziantou.Framework.WebPlatform.Dom.GamepadDevice.Mapping) to `Standard` when they follow the
+[standard gamepad](https://w3c.github.io/gamepad/#remapping) layout.
+
+As in the browsers, a page only sees the gamepads once it uses the API (it calls `getGamepads()` or listens to a
+gamepad event), and `getGamepads()` returns them once the user pressed a button or moved an axis while the page was
+visible: the page then gets a `gamepadconnected` event for each gamepad. `getGamepads()` returns snapshots, and throws a
+`SecurityError` in a frame that the `gamepad` permissions policy does not allow.
+
+The `vibrationActuator` of a gamepad plays the effects of
+[HapticEffects](cref:Meziantou.Framework.WebPlatform.Dom.GamepadDevice.HapticEffects). Override
+[PlayEffect](cref:Meziantou.Framework.WebPlatform.Dom.GamepadProvider.PlayEffect) to make the device vibrate: its task
+completes when the effect completes, and its cancellation token is canceled when the page stops it (`reset()`, another
+effect, or a hidden page). The default implementation only waits for the duration of the effect. The touch surfaces are
+not supported: `touches` is always empty.
 
 ## NFC
 

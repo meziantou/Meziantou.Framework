@@ -3686,6 +3686,17 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   `DevicePosture.Provider`. Setting its `Posture` runs the device posture change steps: the visible documents fire
   `change`, the hidden ones when they become visible, and the media query lists are evaluated again. All the documents of
   a browsing context tree have the posture of the provider. Without provider, the posture is `continuous`.
+- **Gamepad** ([Gamepad](https://w3c.github.io/gamepad/)): `navigator.getGamepads()`, `Gamepad`, `GamepadButton`,
+  `GamepadHapticActuator`, `GamepadEvent` and the `gamepadconnected` and `gamepaddisconnected` events, on the
+  `GamepadDevice` objects of `Gamepads.Provider` (the application gives the normalized values of the buttons and the axes:
+  the library does not map the raw inputs of the hardware). A window gets the devices once it calls `getGamepads()` or
+  listens to a gamepad event, as in Chromium; the gamepads are exposed by the first press of a button or move of an axis
+  (above 0.5) while the document is visible. `getGamepads()` returns snapshots (sharing the `vibrationActuator`), throws a
+  `SecurityError` when the `gamepad` permissions policy feature (default allowlist `*`) is not allowed, and returns an
+  empty list for a document that is not fully active. `playEffect()` validates the magnitudes, limits the delay plus the
+  duration to 5 seconds, preempts the playing effect, and calls `GamepadProvider.PlayEffect`; `reset()`, a hidden document
+  and the disconnection of the gamepad stop the effect. No touch surfaces (`touches` is empty), and the user activation
+  of the gamepads (tentative) is not implemented.
 - **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
   steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
   `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the

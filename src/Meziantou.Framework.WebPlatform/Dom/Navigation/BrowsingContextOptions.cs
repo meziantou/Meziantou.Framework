@@ -714,6 +714,13 @@ public sealed partial record BrowsingContextOptions
     public DevicePostureOptions? DevicePosture { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the Gamepad API (https://w3c.github.io/gamepad/, <c>navigator.getGamepads()</c> and the
+    /// <c>gamepadconnected</c> and <c>gamepaddisconnected</c> events): <see cref="GamepadOptions.Provider"/> lists the
+    /// connected gamepads and their inputs, and plays their haptic effects. The default is null: no gamepad is connected.
+    /// </summary>
+    public GamepadOptions? Gamepads { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

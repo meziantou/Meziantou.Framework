@@ -33,9 +33,10 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     private readonly ConditionalWeakTable<JsRealm, DomEventLoop> _eventLoops = [];
     private int _executionDepth;
 
-    // The thread that entered JavaScript (valid while _executionDepth is not zero): the algorithms that run in parallel on
-    // other threads (e.g. the fetch of the script of a service worker, which may report a violation of a content security
-    // policy) must not read the execution context stack of the engine while that thread changes it
+    // The thread that runs JavaScript, or 0 when _executionDepth is zero: the algorithms that run in parallel on other
+    // threads (e.g. the fetch of the script of a service worker, which may report a violation of a content security policy)
+    // must not read the execution context stack of the engine while that thread changes it. It is set before the depth
+    // leaves zero and cleared when the depth returns to zero, so a thread that ran JavaScript before never matches it
     private int _executionThreadId;
 
     // The depth of the calls of the host (Evaluate, Call): the strings they compile are not checked by the content security policies
@@ -294,33 +295,15 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
             {
                 var engineRealm = (JsRealm)realm.EngineRealm;
                 JsPreparedScript prepared;
-                if (ShouldCacheScript(script))
-                {
-                    if (PreparedScripts.TryGetValue(script.Url, out var cached) && string.Equals(cached.SourceText, script.SourceText, StringComparison.Ordinal))
-                    {
-                        prepared = cached.Script;
-                    }
-                    else if (JsPreparedScript.TryParse(script.SourceText, script.Url, 0, 0, out var parsedScript, out var parseError))
-                    {
-                        // The first source text of a URL stays in the cache
-                        PreparedScripts.TryAdd(script.Url, (script.SourceText, parsedScript));
-                        prepared = parsedScript;
-                    }
-                    else
-                    {
-                        throw CreateSyntaxError(realm, parseError);
-                    }
-                }
-                else if (_parsedScripts.TryGetValue(script, out var parsed))
+                if (_parsedScripts.TryGetValue(script, out var parsed))
                 {
                     // A script parsed by ParseClassicScript (the script of a worker) is not parsed again
                     _parsedScripts.Remove(script);
                     prepared = parsed;
                 }
-                else if (JsPreparedScript.TryParse(script.SourceText, script.Url, Math.Max(0, script.SourceTextLine - 1), script.SourceTextColumn, out var inlineScript, out var error))
+                else if (TryPrepareScript(script, out var preparedScript, out var error))
                 {
-                    // The positions in an inline script are the positions in its document
-                    prepared = inlineScript;
+                    prepared = preparedScript;
                 }
                 else
                 {
@@ -349,7 +332,7 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     protected internal override object? ParseClassicScript(ClassicScript script)
     {
         ArgumentNullException.ThrowIfNull(script);
-        if (JsPreparedScript.TryParse(script.SourceText, script.Url, 0, 0, out var prepared, out var error))
+        if (TryPrepareScript(script, out var prepared, out var error))
         {
             _parsedScripts.AddOrUpdate(script, prepared);
             return null;
@@ -357,6 +340,32 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
         var realm = Agent.GetRealm(script.Global);
         return realm.Run(() => realm.CreateError("SyntaxError", error.Message));
+    }
+
+    /// <summary>Parses a classic script, or gets it from the cache of the process (see <see cref="ShouldCacheScript"/>).</summary>
+    private bool TryPrepareScript(ClassicScript script, [NotNullWhen(true)] out JsPreparedScript? prepared, [NotNullWhen(false)] out JsSyntaxErrorException? error)
+    {
+        // The positions in an inline script are the positions in its document: the cache holds the scripts parsed from the
+        // start of their source text (an inline script whose document has the URL of a script, e.g. after
+        // history.replaceState, is not cached)
+        var line = Math.Max(0, script.SourceTextLine - 1);
+        var column = script.SourceTextColumn;
+        if (line is not 0 || column is not 0 || !ShouldCacheScript(script))
+            return JsPreparedScript.TryParse(script.SourceText, script.Url, line, column, out prepared, out error);
+
+        if (PreparedScripts.TryGetValue(script.Url, out var cached) && string.Equals(cached.SourceText, script.SourceText, StringComparison.Ordinal))
+        {
+            prepared = cached.Script;
+            error = null;
+            return true;
+        }
+
+        if (!JsPreparedScript.TryParse(script.SourceText, script.Url, 0, 0, out prepared, out error))
+            return false;
+
+        // The first source text of a URL stays in the cache
+        PreparedScripts.TryAdd(script.Url, (script.SourceText, prepared));
+        return true;
     }
 
     /// <summary>The base URLs and the fetch options of the running classic and module scripts (the innermost is the active script).</summary>
@@ -421,7 +430,11 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     /// </summary>
     internal ScriptHostDefined? GetActiveScript()
     {
-        if (IsScriptRunningOnCurrentThread && Engine.GetActiveScriptOrModule()?.HostDefined is ScriptHostDefined hostDefined)
+        // The scripts are pushed while JavaScript runs: another thread would read the stacks while the engine changes them
+        if (!IsScriptRunningOnCurrentThread)
+            return null;
+
+        if (Engine.GetActiveScriptOrModule()?.HostDefined is ScriptHostDefined hostDefined)
             return hostDefined;
 
         return ActiveScripts.TryPeek(out var script) ? script : null;
@@ -604,7 +617,7 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
             _disposed = true;
             queue.Dispose();
-            engine._executionDepth--;
+            engine.ExitJavaScript();
         }
     }
 
@@ -612,7 +625,7 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
     protected internal override bool IsScriptRunning => _executionDepth > 0;
 
     /// <summary>Whether JavaScript code is running on the current thread (see <see cref="IsScriptRunning"/>).</summary>
-    private bool IsScriptRunningOnCurrentThread => _executionDepth > 0 && _executionThreadId == Environment.CurrentManagedThreadId;
+    private bool IsScriptRunningOnCurrentThread => Volatile.Read(ref _executionThreadId) == Environment.CurrentManagedThreadId;
 
     /// <summary>Throws when a limit of the engine is exceeded (e.g. the timeout): the running script is terminated.</summary>
     protected internal override void CheckInterrupt() => Engine.CheckInterrupt();
@@ -626,13 +639,21 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
     private void IncrementExecutionDepth()
     {
-        if (_executionDepth++ == 0)
+        if (_executionDepth == 0)
         {
-            _executionThreadId = Environment.CurrentManagedThreadId;
+            Volatile.Write(ref _executionThreadId, Environment.CurrentManagedThreadId);
         }
+
+        _executionDepth++;
     }
 
-    internal void ExitJavaScript() => _executionDepth--;
+    internal void ExitJavaScript()
+    {
+        if (--_executionDepth == 0)
+        {
+            Volatile.Write(ref _executionThreadId, 0);
+        }
+    }
 
     internal readonly struct ExecutionScope(JavaScriptScriptEngine engine) : IDisposable
     {

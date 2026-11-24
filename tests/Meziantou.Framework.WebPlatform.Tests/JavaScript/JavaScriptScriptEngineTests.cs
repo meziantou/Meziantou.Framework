@@ -969,7 +969,7 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
         using var engine = new ScriptLocationScriptEngine();
         var document = Load("<script>document.title = locations();</script>", engine);
         Assert.Empty(_errors);
-        Assert.Equal("https://example.com/ https://example.com/|null null", document.Title);
+        Assert.Equal("https://example.com/ https://example.com/ https://example.com/|null null null", document.Title);
     }
 
     /// <summary>A script engine whose windows have a <c>locations</c> function: the running script and the current global object, seen from the thread of the engine and from another thread.</summary>
@@ -989,7 +989,7 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
             }));
         }
 
-        private string Describe() => (GetCurrentScriptLocation()?.Url ?? "null") + " " + ((GetCurrentGlobal() as Window)?.Document.Url ?? "null");
+        private string Describe() => (GetCurrentScriptLocation()?.Url ?? "null") + " " + ((GetCurrentGlobal() as Window)?.Document.Url ?? "null") + " " + (GetActiveScriptBaseUrl() ?? "null");
     }
 
     [Fact]

@@ -426,9 +426,10 @@ properties (`*-valid.html`, `*-invalid.html`), their computed values (`*-compute
 `rellist-feature-detection.html`): its subdirectories are run by their own groups. The tests run
 in parallel with the server garbage collector (the workstation GC pauses all the tests when one of them collects).
 The project file sets the other runtime settings of the run (no concurrent GC, no dynamic PGO, no call counting delay
-of the tiered compilation), and the external scripts whose URL has no query are parsed once for the whole run (e.g.
-`testharness.js` and the index tables of the `encoding/legacy-mb-*` tests): a script parsed again by each test would
-compile its hot functions to IL again.
+of the tiered compilation), and the external `.js` scripts whose URL has no query are parsed once for the whole run
+(e.g. `testharness.js` and the index tables of the `encoding/legacy-mb-*` tests): a script parsed again by each test
+would compile its hot functions to IL again. The parse is reused only when the source text is the one first cached for
+the URL: the other scripts (inline scripts, URLs with a query, a URL whose content changed) are parsed each time.
 
 ## CSS directories
 

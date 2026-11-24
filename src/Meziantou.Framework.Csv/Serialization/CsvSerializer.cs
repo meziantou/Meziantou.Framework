@@ -496,7 +496,10 @@ public static class CsvSerializer
         while (parser.Read())
         {
             binder ??= CsvRecordBinder<T>.Create(typeInfo, parser);
-            result.Add(binder.Read(parser));
+            if (binder.TryRead(parser, out var item))
+            {
+                result.Add(item);
+            }
         }
 
         return result.ToList();
@@ -512,7 +515,10 @@ public static class CsvSerializer
             while (await parser.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
                 binder ??= CsvRecordBinder<T>.Create(typeInfo, parser);
-                result.Add(binder.Read(parser));
+                if (binder.TryRead(parser, out var item))
+                {
+                    result.Add(item);
+                }
             }
 
             return result.ToList();
@@ -527,7 +533,10 @@ public static class CsvSerializer
         while (parser.Read())
         {
             binder ??= CsvRecordBinder<T>.Create(typeInfo, parser);
-            yield return binder.Read(parser);
+            if (binder.TryRead(parser, out var item))
+            {
+                yield return item;
+            }
         }
     }
 
@@ -539,7 +548,10 @@ public static class CsvSerializer
         while (await parser.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             binder ??= CsvRecordBinder<T>.Create(typeInfo, parser);
-            yield return binder.Read(parser);
+            if (binder.TryRead(parser, out var item))
+            {
+                yield return item;
+            }
         }
     }
 

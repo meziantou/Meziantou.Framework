@@ -34,6 +34,8 @@ public sealed class CsvSerializerOptions
         QuoteMode = options.QuoteMode;
         EscapeFormulas = options.EscapeFormulas;
         Strict = options.Strict;
+        BadDataHandler = options.BadDataHandler;
+        DeserializationErrorHandler = options.DeserializationErrorHandler;
         FormatProvider = options.FormatProvider;
         PropertyNamingPolicy = options.PropertyNamingPolicy;
         PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive;
@@ -79,6 +81,44 @@ public sealed class CsvSerializerOptions
     /// <remarks>See <see cref="CsvReaderOptions.Strict"/>.</remarks>
     public bool Strict { get; init; }
 
+    /// <summary>Gets the method called for malformed data, which decides whether the serializer throws, accepts the data, or skips the record. Default is <see langword="null"/>.</summary>
+    /// <remarks>See <see cref="CsvReaderOptions.BadDataHandler"/>. To handle the values that cannot be converted, use <see cref="DeserializationErrorHandler"/>.</remarks>
+    public CsvBadDataHandler? BadDataHandler { get; init; }
+
+    /// <summary>Gets the method called when a record cannot be converted to an object, which decides whether the serializer throws, ignores the error, or skips the record. Default is <see langword="null"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// The handler is called for the errors that throw a <see cref="CsvException"/> without it (see <see cref="CsvDeserializationErrorKind"/>): a value that
+    /// cannot be converted, a missing value or column for a required member, and the missing and unmapped columns when <see cref="MissingColumnHandling"/>
+    /// or <see cref="UnmappedColumnHandling"/> is <c>Throw</c>. When it is <see langword="null"/>, the serializer throws.
+    /// </para>
+    /// <para>
+    /// A record can have several errors, reported one by one until the handler returns <see cref="CsvDeserializationErrorAction.SkipRecord"/>. The errors of
+    /// the header row are reported when the first record is read. The exceptions thrown by the members, the constructors and the callbacks of the type are not
+    /// reported. The handler may throw its own exception, which ends the reading.
+    /// </para>
+    /// <para>The handler is used by the reflection-based metadata and by the generated <see cref="CsvSerializerContext"/> alike.</para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs" ref:region="CsvSerializer_DeserializationErrorHandler" ref:dedent="true">
+    /// var errors = new List&lt;string&gt;();
+    /// var options = new CsvSerializerOptions
+    /// {
+    ///     DeserializationErrorHandler = context =&gt;
+    ///     {
+    ///         errors.Add($"line {context.LineNumber}: '{context.RawValue}' is not a valid {context.MemberName}");
+    ///         return CsvDeserializationErrorAction.SkipRecord; // or Ignore to keep the default value, or Throw
+    ///     },
+    /// };
+    ///
+    /// var products = CsvSerializer.Deserialize&lt;Product&gt;("Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99\n3,Screen,199", options);
+    ///
+    /// Assert.Equal(["Keyboard", "Screen"], products.Select(p =&gt; p.Name));
+    /// Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
+    /// </code>
+    /// </example>
+    public CsvDeserializationErrorHandler? DeserializationErrorHandler { get; init; }
+
     /// <summary>Gets the format provider used to parse and format values. Default is <see langword="null"/>, which means <see cref="CultureInfo.InvariantCulture"/>.</summary>
     public IFormatProvider? FormatProvider { get; init; }
 
@@ -118,6 +158,7 @@ public sealed class CsvSerializerOptions
         CommentCharacter = CommentCharacter,
         SkipEmptyLines = true,
         Strict = Strict,
+        BadDataHandler = BadDataHandler,
         FormatProvider = FormatProvider,
         ColumnNameComparer = PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal,
         BufferSize = BufferSize,

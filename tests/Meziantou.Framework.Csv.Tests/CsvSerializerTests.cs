@@ -322,6 +322,206 @@ public class CsvSerializerTests
     }
 
     [Fact]
+    public void DeserializationErrorHandler()
+    {
+        #region CsvSerializer_DeserializationErrorHandler
+        var errors = new List<string>();
+        var options = new CsvSerializerOptions
+        {
+            DeserializationErrorHandler = context =>
+            {
+                errors.Add($"line {context.LineNumber}: '{context.RawValue}' is not a valid {context.MemberName}");
+                return CsvDeserializationErrorAction.SkipRecord; // or Ignore to keep the default value, or Throw
+            },
+        };
+
+        var products = CsvSerializer.Deserialize<Product>("Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99\n3,Screen,199", options);
+
+        Assert.Equal(["Keyboard", "Screen"], products.Select(p => p.Name));
+        Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DeserializationErrorHandler_AllInputs()
+    {
+        const string Csv = "Name,Age,BirthDate\nAlice,30,2000-01-02\nBob,x,\nCharlie,20,not a date\nDavid,40,\n";
+        var bytes = Encoding.UTF8.GetBytes(Csv);
+        foreach (var (action, expected) in new (CsvDeserializationErrorAction, string[])[]
+        {
+            (CsvDeserializationErrorAction.SkipRecord, ["Alice|30|2000-01-02", "David|40|"]),
+            (CsvDeserializationErrorAction.Ignore, ["Alice|30|2000-01-02", "Bob|0|", "Charlie|20|", "David|40|"]),
+        })
+        {
+            var errors = new List<string>();
+            var options = new CsvSerializerOptions
+            {
+                DeserializationErrorHandler = context =>
+                {
+                    errors.Add(string.Create(CultureInfo.InvariantCulture, $"{context.Kind} {context.RowIndex} {context.LineNumber} {context.ColumnIndex} {context.ColumnName} {context.MemberName} {context.RawValue} {context.Type.Name} {context.Exception.InnerException?.GetType().Name}"));
+                    return action;
+                },
+            };
+
+            string[] expectedErrors = ["ConversionFailed 1 3 1 Age Age x Person FormatException", "ConversionFailed 2 4 2 BirthDate BirthDate not a date Person FormatException"];
+            async Task Check(Func<Task<IEnumerable<Person>>> deserialize)
+            {
+                errors.Clear();
+                Assert.Equal(expected, Describe(await deserialize()));
+                Assert.Equal(expectedErrors, errors);
+            }
+
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(Csv, options)));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(bytes, options)));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(new StringReader(Csv), options)));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(new MemoryStream(bytes), options)));
+            await Check(async () => await CsvSerializer.DeserializeAsync<Person>(new MemoryStream(bytes), options));
+            await Check(async () => await CsvSerializer.DeserializeAsync<Person>(new StringReader(Csv), options));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.DeserializeEnumerable<Person>(new StringReader(Csv), options).ToList()));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.DeserializeEnumerable<Person>(new MemoryStream(bytes), options).ToList()));
+            await Check(async () => await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Person>(new StringReader(Csv), options)));
+            await Check(async () => await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Person>(new MemoryStream(bytes), options)));
+        }
+
+        static string[] Describe(IEnumerable<Person> people) => [.. people.Select(p => $"{p.Name}|{p.Age.ToString(CultureInfo.InvariantCulture)}|{p.BirthDate?.ToString("O", CultureInfo.InvariantCulture)}")];
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_Throw()
+    {
+        const string Csv = "Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99";
+        var expected = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(Csv));
+        CsvDeserializationErrorContext? context = null;
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = c => { context = c; return CsvDeserializationErrorAction.Throw; } };
+        var exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(Csv, options));
+        Assert.Equal(expected.Message, exception.Message);
+        Assert.Same(context!.Exception, exception);
+        Assert.Equal(31, context.Position);
+        Assert.Equal(1, context.RowIndex);
+
+        Assert.Throws<InvalidOperationException>(() => CsvSerializer.Deserialize<Product>(Csv, new CsvSerializerOptions { DeserializationErrorHandler = _ => (CsvDeserializationErrorAction)42 }));
+        Assert.Throws<FormatException>(() => CsvSerializer.Deserialize<Product>(Csv, new CsvSerializerOptions { DeserializationErrorHandler = _ => throw new FormatException() }));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_ConstructorParameters()
+    {
+        // A parameter that cannot be converted gets its default value
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = _ => CsvDeserializationErrorAction.Ignore };
+        var model = Assert.Single(CsvSerializer.Deserialize<DefaultValuesModel>("A,B,C\n1,x,y", options));
+        Assert.Equal(1, model.A);
+        Assert.Equal(42, model.B);
+        Assert.Equal("y", model.C);
+
+        var products = CsvSerializer.Deserialize<Product>("Id,Name,Price\nx,a,1\n2,b,y", options);
+        Assert.Equal([new Product(0, "a", 1), new Product(2, "b", 0)], products);
+
+        options = new CsvSerializerOptions { DeserializationErrorHandler = _ => CsvDeserializationErrorAction.SkipRecord };
+        Assert.Empty(CsvSerializer.Deserialize<DefaultValuesModel>("A,B,C\n1,x,y", options));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_RequiredColumns()
+    {
+        var errors = new List<CsvDeserializationErrorContext>();
+        foreach (var action in (CsvDeserializationErrorAction[])[CsvDeserializationErrorAction.Ignore, CsvDeserializationErrorAction.SkipRecord])
+        {
+            // A column of the header row is not about a record: the records are returned, without the value of the column
+            errors.Clear();
+            var options = new CsvSerializerOptions { DeserializationErrorHandler = context => { errors.Add(context); return action; } };
+            var result = CsvSerializer.Deserialize<RequiredModel>("Optional,Value\nx,1\ny,2", options);
+            Assert.Equal([1, 2], result.Select(r => r.Value));
+            Assert.All(result, r => Assert.Equal(0, r.Attributed));
+            var error = Assert.Single(errors);
+            Assert.Equal(CsvDeserializationErrorKind.MissingColumn, error.Kind);
+            Assert.Equal("Attributed", error.MemberName);
+            Assert.Null(error.ColumnIndex);
+
+            // A record without a value for a required column
+            errors.Clear();
+            result = CsvSerializer.Deserialize<RequiredModel>("Optional,Value,Attributed\nx,1\ny,2,3", options);
+            Assert.Equal(action is CsvDeserializationErrorAction.Ignore ? ["x|1|0", "y|2|3"] : ["y|2|3"], result.Select(r => $"{r.Optional}|{r.Value}|{r.Attributed}"));
+            error = Assert.Single(errors);
+            Assert.Equal(CsvDeserializationErrorKind.MissingRequiredValue, error.Kind);
+            Assert.Equal("Attributed", error.MemberName);
+            Assert.Equal("Attributed", error.ColumnName);
+            Assert.Equal(2, error.ColumnIndex);
+            Assert.Equal(0, error.RowIndex);
+        }
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_MissingAndUnmappedColumns()
+    {
+        var errors = new List<CsvDeserializationErrorContext>();
+        var options = new CsvSerializerOptions
+        {
+            MissingColumnHandling = CsvMissingColumnHandling.Throw,
+            UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw,
+            DeserializationErrorHandler = context => { errors.Add(context); return CsvDeserializationErrorAction.SkipRecord; },
+        };
+
+        var people = CsvSerializer.Deserialize<Person>("Name,Country\nAlice,France\nBob,Spain", options);
+        Assert.Equal(["Alice", "Bob"], people.Select(p => p.Name));
+        Assert.Equal(["UnmappedColumn 1 Country ", "MissingColumn   Age", "MissingColumn   BirthDate"], errors.Select(e => $"{e.Kind} {e.ColumnIndex} {e.ColumnName} {e.MemberName}"));
+
+        // Without a header row, the columns after the last member are checked for each record
+        errors.Clear();
+        options = new CsvSerializerOptions { HasHeaderRow = false, UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw, DeserializationErrorHandler = context => { errors.Add(context); return context.RowIndex == 0 ? CsvDeserializationErrorAction.Ignore : CsvDeserializationErrorAction.SkipRecord; } };
+        var products = CsvSerializer.Deserialize<Product>("1,a,2,extra\n2,b,3,extra\n3,c,4", options);
+        Assert.Equal([1, 3], products.Select(p => p.Id));
+        Assert.Equal([0L, 1L], errors.Select(e => e.RowIndex!.Value));
+        Assert.All(errors, e => Assert.Equal(CsvDeserializationErrorKind.UnmappedColumn, e.Kind));
+        Assert.All(errors, e => Assert.Equal(3, e.ColumnIndex));
+
+        // Each extra column is reported: the handler can accept one and not the next
+        errors.Clear();
+        options = new CsvSerializerOptions { HasHeaderRow = false, UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw, DeserializationErrorHandler = context => { errors.Add(context); return context.ColumnIndex == 3 ? CsvDeserializationErrorAction.Ignore : CsvDeserializationErrorAction.SkipRecord; } };
+        products = CsvSerializer.Deserialize<Product>("1,a,2,extra\n2,b,3,extra,extra\n3,c,4", options);
+        Assert.Equal([1, 3], products.Select(p => p.Id));
+        Assert.Equal(["0 3", "1 3", "1 4"], errors.Select(e => $"{e.RowIndex} {e.ColumnIndex}"));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_SetterExceptionsAreNotReported()
+    {
+        var calls = 0;
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = _ => { calls++; return CsvDeserializationErrorAction.Ignore; } };
+        var exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1", options));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        Assert.Equal(0L, exception.RowIndex);
+        Assert.Equal(0, calls);
+
+        // The same exception as without a handler
+        exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"u8.ToArray(), options));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        Assert.Equal(0, calls);
+
+        // The conversion errors are still reported
+        var models = CsvSerializer.Deserialize<ValidatingSetterModel>("Value\nabc\n2", options);
+        Assert.Equal([0, 2], models.Select(m => m.Value));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void BadDataHandler_Serializer()
+    {
+        var errors = new List<CsvBadDataContext>();
+        var options = new CsvSerializerOptions { BadDataHandler = context => { errors.Add(context); return CsvBadDataAction.Skip; } };
+        var csv = "Id,Name,Price\n1,\"a\"b,2\n3,c,4";
+        Assert.Equal([new Product(3, "c", 4)], CsvSerializer.Deserialize<Product>(csv, options));
+        Assert.Equal([new Product(3, "c", 4)], CsvSerializer.Deserialize<Product>(Encoding.UTF8.GetBytes(csv), options));
+        Assert.HasCount(2, errors);
+        Assert.All(errors, e => Assert.Equal("Name", e.ColumnName));
+
+        // Accept is the same as non-strict mode
+        options = new CsvSerializerOptions { Strict = true, BadDataHandler = _ => CsvBadDataAction.Accept };
+        Assert.Equal(CsvSerializer.Deserialize<Product>(csv), CsvSerializer.Deserialize<Product>(csv, options));
+    }
+
+    [Fact]
     public void Converters()
     {
         #region CsvSerializer_Converters
@@ -1129,8 +1329,12 @@ public class CsvSerializerTests
     [Fact]
     public void OptionsCopy()
     {
-        var options = new CsvSerializerOptions { Separator = ';', PropertyNameCaseInsensitive = true, Converters = [new PointConverter()] };
+        CsvBadDataHandler badDataHandler = _ => CsvBadDataAction.Skip;
+        CsvDeserializationErrorHandler errorHandler = _ => CsvDeserializationErrorAction.Ignore;
+        var options = new CsvSerializerOptions { Separator = ';', PropertyNameCaseInsensitive = true, Converters = [new PointConverter()], BadDataHandler = badDataHandler, DeserializationErrorHandler = errorHandler };
         var copy = new CsvSerializerOptions(options) { NewLine = "\n" };
+        Assert.Same(badDataHandler, copy.BadDataHandler);
+        Assert.Same(errorHandler, copy.DeserializationErrorHandler);
         Assert.Equal(';', copy.Separator);
         Assert.True(copy.PropertyNameCaseInsensitive);
         Assert.Single(copy.Converters);
@@ -1467,6 +1671,15 @@ public sealed class DefaultValuesModel(int a, int b = 42, string c = "default", 
     public decimal Ratio { get; } = ratio;
 
     public char Letter { get; } = letter;
+}
+
+public sealed class ValidatingSetterModel
+{
+    public int Value
+    {
+        get;
+        set => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+    }
 }
 
 public sealed class ParameterOnlyModel(int value, int factor)

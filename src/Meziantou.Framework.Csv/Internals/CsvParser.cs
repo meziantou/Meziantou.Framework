@@ -41,6 +41,7 @@ internal sealed class CsvParser<T> : IDisposable
     private readonly bool _skipEmptyLines;
     private readonly bool _validateColumnCount;
     private readonly bool _strict;
+    private readonly CsvBadDataHandler? _badDataHandler;
     private readonly bool _hasHeaderRow;
     private readonly int _maxRowLength;
     private readonly IEqualityComparer<string> _columnNameComparer;
@@ -94,6 +95,7 @@ internal sealed class CsvParser<T> : IDisposable
     private int _scanLineTerminators;
     private bool _scanRowHasQuote;
     private int _scanColumnStart;
+    private bool _scanSkipRow; // The bad data handler asked to skip the record being scanned
     private long _nextLineNumber = 1;
 
     // Unescaped values of the current record
@@ -119,7 +121,10 @@ internal sealed class CsvParser<T> : IDisposable
         _trimInside = options.Trim.HasFlag(CsvTrimOptions.InsideQuotes);
         _skipEmptyLines = options.SkipEmptyLines;
         _validateColumnCount = options.ValidateColumnCount;
-        _strict = options.Strict;
+        _badDataHandler = options.BadDataHandler;
+
+        // The handler decides what to do with the errors of strict mode: they must be detected
+        _strict = options.Strict || _badDataHandler is not null;
         _hasHeaderRow = options.HasHeaderRow;
         _maxRowLength = options.MaxRowLength;
         _vectorSize = CsvSimd.Resolve(options.VectorSize);
@@ -336,7 +341,8 @@ internal sealed class CsvParser<T> : IDisposable
             }
             else if (_columnCount != _expectedColumnCount)
             {
-                throw CreateException($"The record has {_columnCount.ToString(CultureInfo.InvariantCulture)} columns, but {_expectedColumnCount.ToString(CultureInfo.InvariantCulture)} were expected.");
+                var message = $"The record has {_columnCount.ToString(CultureInfo.InvariantCulture)} columns, but {_expectedColumnCount.ToString(CultureInfo.InvariantCulture)} were expected.";
+                return ReportBadData(CsvBadDataKind.ColumnCountMismatch, message, _recordIndex, _lineNumber, Position, columnIndex: null);
             }
         }
 
@@ -686,7 +692,7 @@ internal sealed class CsvParser<T> : IDisposable
                             if (_batchCount > 0)
                                 goto RestartRow;
 
-                            throw CreateScanException("A quoted value is not closed before the end of the data.", rowStart, _nextLineNumber, columnTotal - columnStart - 1);
+                            ReportScanError(CsvBadDataKind.UnterminatedQuotedValue, "A quoted value is not closed before the end of the data.", rowStart, columnTotal - columnStart - 1);
                         }
 
                         contentEnd = end;
@@ -721,7 +727,7 @@ internal sealed class CsvParser<T> : IDisposable
                                 if (_batchCount > 0)
                                     goto RestartRow;
 
-                                throw CreateScanException("A quoted value is followed by characters that are not a separator.", rowStart, _nextLineNumber, columnTotal - columnStart - 1);
+                                ReportScanError(CsvBadDataKind.CharactersAfterClosingQuote, "A quoted value is followed by characters that are not a separator.", rowStart, columnTotal - columnStart - 1);
                             }
 
                             inQuote = false;
@@ -835,7 +841,7 @@ internal sealed class CsvParser<T> : IDisposable
                         if (_batchCount > 0)
                             goto RestartRow;
 
-                        throw CreateScanException("A value that is not quoted contains a quote character.", rowStart, _nextLineNumber, columnTotal - columnStart - 1);
+                        ReportScanError(CsvBadDataKind.QuoteInUnquotedValue, "A value that is not quoted contains a quote character.", rowStart, columnTotal - columnStart - 1);
                     }
                 }
 
@@ -863,7 +869,12 @@ internal sealed class CsvParser<T> : IDisposable
             }
 
             var columnCount = columnTotal - columnStart - 1;
-            if (!_skipEmptyLines || columnCount > 0)
+            if (_scanSkipRow)
+            {
+                SkipScannedRow();
+                columnTotal = columnStart;
+            }
+            else if (!_skipEmptyLines || columnCount > 0)
             {
                 _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, _scanRowHasQuote);
             }
@@ -1160,8 +1171,51 @@ internal sealed class CsvParser<T> : IDisposable
     /// <summary>Creates an exception about the record being scanned, which follows the last record read.</summary>
     private CsvException CreateScanException(string message, int rowStart, long lineNumber, int? columnIndex)
     {
-        long? recordIndex = _hasHeaderRow && _header is null ? null : _recordIndex + 1;
-        return new CsvException(message, recordIndex, lineNumber, _bufferOffset + rowStart, columnIndex, GetColumnName(columnIndex));
+        return new CsvException(message, ScannedRecordIndex, lineNumber, _bufferOffset + rowStart, columnIndex, GetColumnName(columnIndex));
+    }
+
+    // The index of the record being scanned, which follows the last record read, or null when it is the header row
+    private long? ScannedRecordIndex => _hasHeaderRow && _header is null ? null : _recordIndex + 1;
+
+    /// <summary>Reports malformed data in the record being scanned, which is the first record of the batch. The scan then continues as in non-strict mode.</summary>
+    /// <remarks>Throws when the data must not be read; sets <see cref="_scanSkipRow"/> when the record must be skipped once scanned.</remarks>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void ReportScanError(CsvBadDataKind kind, string message, int rowStart, int columnIndex)
+    {
+        // Once the record is skipped, its other errors do not matter
+        if (_scanSkipRow)
+            return;
+
+        if (!ReportBadData(kind, message, ScannedRecordIndex, _nextLineNumber, _bufferOffset + rowStart, columnIndex))
+        {
+            _scanSkipRow = true;
+        }
+    }
+
+    // The record is complete and skipped: it is not added to the batch, but it counts in the record indexes, as the indexes reported for the next errors
+    private void SkipScannedRow()
+    {
+        if (!_hasHeaderRow || _header is not null)
+        {
+            _recordIndex++;
+        }
+
+        _scanSkipRow = false;
+    }
+
+    /// <summary>Calls the bad data handler, or applies <see cref="CsvReaderOptions.Strict"/> when there is none.</summary>
+    /// <returns><see langword="true"/> to accept the data; <see langword="false"/> to skip the record.</returns>
+    private bool ReportBadData(CsvBadDataKind kind, string message, long? recordIndex, long lineNumber, long position, int? columnIndex)
+    {
+        var context = new CsvBadDataContext(kind, message, recordIndex, lineNumber, position, columnIndex, GetColumnName(columnIndex));
+        var action = _badDataHandler is null ? CsvBadDataAction.Throw : _badDataHandler(context);
+        return action switch
+        {
+            CsvBadDataAction.Accept => true,
+            CsvBadDataAction.Skip => false,
+            CsvBadDataAction.Throw => throw context.Exception,
+            _ => throw new InvalidOperationException($"The bad data handler returned an invalid action ({action})."),
+        };
     }
 
     private string? GetColumnName(int? columnIndex)

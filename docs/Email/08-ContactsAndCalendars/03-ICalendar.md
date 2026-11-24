@@ -38,7 +38,9 @@ properties, in their order, and its components. [VEvent](cref:Meziantou.Framewor
 their properties through it (summary, description, location, start, end, duration, attendees, categories, status,
 progress...), so that a calendar written back keeps the properties and the components they do not know, such as the
 alarms (`VALARM`). A calendar read and written without changes keeps its properties as they were; the writer folds the
-lines longer than 75 bytes.
+lines longer than 75 bytes. The reader decodes the values in quoted-printable (vCard 2.1 and vCalendar 1.0) as the vCard
+reader does: a `=` at the end of a line continues the value on the next line only in these values, and stays in the
+other values.
 
 ## Dates and time zones
 

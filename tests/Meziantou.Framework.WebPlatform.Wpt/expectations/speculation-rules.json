@@ -1376,32 +1376,16 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-audio-setSinkId-with-invalid-sinkId.https.tentative.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the setSinkId of Audio API with the invalid sinkId should be\n    deferred until the prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-audio-setSinkId-with-invalid-sinkId.https.tentative.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the setSinkId of Audio API with the invalid sinkId should be\n    deferred until the prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-audio-setSinkId.https.tentative.https.html?target_hint=_blank": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the setSinkId of Audio API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-audio-setSinkId.https.tentative.https.html?target_hint=_self": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the setSinkId of Audio API should be deferred until the\n    prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-background-fetch.https.html?target_hint=_blank": {
     "harness": "TIMEOUT",
@@ -1619,11 +1603,7 @@
     "total": 2
   },
   "speculation-rules/prerender/restriction-web-nfc.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "The access to the Web NFC API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-web-serial.tentative.https.html": {
     "harness": "TIMEOUT",

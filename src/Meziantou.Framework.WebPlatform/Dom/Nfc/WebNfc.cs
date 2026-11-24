@@ -318,16 +318,17 @@ public sealed class NdefReader : EventTarget
     /// Starts listening to the NFC tags (https://w3c-cg.github.io/web-nfc/#the-scan-method). The task fails with an
     /// <c>InvalidStateError</c> <see cref="DomException"/> when the window is not the window of a top-level browsing context,
     /// with the abort reason of the signal when it is aborted, with a <c>NotAllowedError</c> when the <c>nfc</c> permission is
-    /// not granted, and else with a <c>NotSupportedError</c>: the library has no NFC adapter.
+    /// not granted, and else with a <c>NotSupportedError</c>: the library has no NFC adapter. A prerendering document starts
+    /// the scan once it is activated (https://wicg.github.io/nav-speculation/prerendering.html#patch-web-nfc).
     /// </summary>
     /// <param name="options">The signal that stops the scan.</param>
     /// <seealso href="https://w3c-cg.github.io/web-nfc/#dom-ndefreader-scan"/>
     [IdlMember("scan", "https://w3c-cg.github.io/web-nfc/#dom-ndefreader-scan")]
-    public Task Scan(NdefScanOptions? options = null) => Start(options?.Signal);
+    public Task Scan(NdefScanOptions? options = null) => Document.DelayWhilePrerendering(_window, () => Start(options?.Signal));
 
     /// <summary>
     /// Writes a message to an NFC tag (https://w3c-cg.github.io/web-nfc/#the-write-method). The task fails as the task of
-    /// <see cref="Scan"/>: the library has no NFC adapter.
+    /// <see cref="Scan"/>: the library has no NFC adapter. A prerendering document writes once it is activated.
     /// </summary>
     /// <param name="message">The message: a string (a <c>text</c> record), bytes (a <c>mime</c> record), or an <see cref="NdefMessageInit"/>.</param>
     /// <param name="options">Whether the message of the tag is replaced, and the signal that aborts the write.</param>
@@ -336,7 +337,7 @@ public sealed class NdefReader : EventTarget
     public Task Write(object? message, NdefWriteOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(message);
-        return Start(options?.Signal);
+        return Document.DelayWhilePrerendering(_window, () => Start(options?.Signal));
     }
 
     /// <summary>

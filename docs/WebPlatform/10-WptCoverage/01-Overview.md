@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,846 | 30,158 | 80 | 93% |
-| [Tentative](#tentative-tests) | 1,674 | 3,073 | 174 | 58% |
+| [Stable](#stable-tests) | 27,856 | 30,158 | 80 | 93% |
+| [Tentative](#tentative-tests) | 1,676 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,489** | **65,062** | **326** | **93%** |
+| **All** | **60,501** | **65,062** | **326** | **93%** |
 
 ## Failure reasons
 
@@ -61,13 +61,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 150
 - **TEST BUG**: 1,122
-- **NOT IMPLEMENTED**: 2,812
-- **REQUIRES**: 420
-  - `hardware`: 238
+- **NOT IMPLEMENTED**: 2,808
+- **REQUIRES**: 412
+  - `hardware`: 230
   - `layout`: 22
-  - `media`: 24
+  - `media`: 16
   - `user-input`: 144
-- **TEST RUNNER**: 151
+- **TEST RUNNER**: 148
 - **OUT OF SCOPE**: 114
 - **FLAKY**: 1
 - **PERFORMANCE**: 6
@@ -84,7 +84,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`ambient-light`](ambient-light.md) | 10 | 10 | 0 | 100% |
 | [`animation-worklet`](animation-worklet.md) | 15 | 23 | 0 | 65% |
 | [`apng`](apng.md) | 1 | 1 | 0 | 100% |
-| [`audio-output`](audio-output.md) | 2 | 10 | 0 | 20% |
+| [`audio-output`](audio-output.md) | 10 | 10 | 0 | 100% |
 | [`audio-session`](audio-session.md) | 0 | 3 | 0 | 0% |
 | [`autoplay-policy-detection`](autoplay-policy-detection.md) | 0 | 3 | 0 | 0% |
 | [`background-fetch`](background-fetch.md) | 0 | 13 | 0 | 0% |
@@ -354,7 +354,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md) | 230 | 238 | 0 | 97% |
 | [`shape-detection`](shape-detection.md) | 0 | 25 | 0 | 0% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md) | 1 | 1 | 0 | 100% |
-| [`speculation-rules`](speculation-rules.md) | 155 | 185 | 1 | 84% |
+| [`speculation-rules`](speculation-rules.md) | 156 | 185 | 1 | 85% |
 | [`speech-api`](speech-api.md) | 1 | 16 | 0 | 6% |
 | [`storage`](storage.md) | 14 | 14 | 0 | 100% |
 | [`storage-access-api`](storage-access-api.md) | 34 | 37 | 0 | 92% |
@@ -386,7 +386,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`web-nfc`](web-nfc.md) | 7 | 11 | 0 | 64% |
 | [`web-otp`](web-otp.md) | 0 | 1 | 0 | 0% |
 | [`web-share`](web-share.md) | 14 | 14 | 0 | 100% |
-| [`webaudio`](webaudio.md) | 287 | 299 | 0 | 96% |
+| [`webaudio`](webaudio.md) | 288 | 299 | 0 | 96% |
 | [`webauthn`](webauthn.md) | 47 | 54 | 0 | 87% |
 | [`webcodecs`](webcodecs.md) | 54 | 90 | 0 | 60% |
 | [`WebCryptoAPI`](WebCryptoAPI.md) | 138 | 138 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,846** | **30,158** | **80** | **93%** |
+| **Total (341 sections)** | **27,856** | **30,158** | **80** | **93%** |
 
 ## Tentative tests
 
@@ -556,7 +556,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`shadow-dom`](shadow-dom.md#tentative-tests) | 29 | 80 | 0 | 36% |
 | [`signed-exchange`](signed-exchange.md#tentative-tests) | 5 | 60 | 0 | 8% |
 | [`soft-navigation-heuristics`](soft-navigation-heuristics.md#tentative-tests) | 91 | 95 | 0 | 96% |
-| [`speculation-rules`](speculation-rules.md#tentative-tests) | 10 | 29 | 0 | 34% |
+| [`speculation-rules`](speculation-rules.md#tentative-tests) | 12 | 29 | 0 | 41% |
 | [`speech-api`](speech-api.md#tentative-tests) | 0 | 2 | 0 | 0% |
 | [`storage`](storage.md#tentative-tests) | 4 | 13 | 0 | 31% |
 | [`storage-access-api`](storage-access-api.md#tentative-tests) | 1 | 5 | 0 | 20% |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 2 | 2 | 0 | 100% |
-| **Total (166 sections)** | **1,674** | **3,073** | **174** | **58%** |
+| **Total (166 sections)** | **1,676** | **3,073** | **174** | **58%** |
 
 ## Reftests
 

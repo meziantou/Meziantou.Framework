@@ -16,7 +16,7 @@ the device in a test, or to connect the API to your application.
 | [Share](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Share) | `navigator.share()` | There is no share target: the promise is rejected with an `AbortError` |
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
-| [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()` | There is no camera, microphone nor screen: `getUserMedia()` fails with a `NotFoundError` |
+| [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`, `selectAudioOutput()`, `setSinkId()` | There is no camera, microphone, speaker nor screen: `getUserMedia()` fails with a `NotFoundError` |
 | [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage) | The `persistent-license` sessions of `navigator.requestMediaKeySystemAccess()` (Clear Key) | The sessions are stored in memory, for the browsing contexts of the group |
 | [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
@@ -245,6 +245,40 @@ seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBa
 `MediaRecorder` records the streams with the codecs of a codec backend (see
 [Audio and video codecs](10-AudioAndVideoCodecs.md#record-a-stream)). The audio of the media elements is not decoded (the
 media backend gives no audio), so `createMediaElementSource()` outputs silence.
+
+### Audio output devices
+
+A page plays its audio on another device with `audio.setSinkId(deviceId)` (and `AudioContext.setSinkId()`). It can use
+the speakers of a microphone it captured (the `audiooutput` devices of the same group, which `enumerateDevices()` lists
+once the microphone was captured), or a device the user chose with `navigator.mediaDevices.selectAudioOutput()`. List the
+speakers of the machine with the devices of the backend, and override
+[SelectAudioOutput](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend.SelectAudioOutput) to play the role
+of the prompt of the browser:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_AudioOutputBackend;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The speakers and the headphones of the machine: the user picks the headphones in the prompt of selectAudioOutput()
+private sealed class Speakers : MediaCaptureBackend
+{
+    public override IReadOnlyList<MediaCaptureDevice> GetDevices() =>
+    [
+        new MediaCaptureDevice { Id = "speakers", Kind = MediaDeviceKind.AudioOutput, Label = "Speakers" },
+        new MediaCaptureDevice { Id = "headphones", Kind = MediaDeviceKind.AudioOutput, Label = "Headphones" },
+    ];
+
+    public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => throw new NotSupportedException();
+
+    public override MediaCaptureDevice? SelectAudioOutput(AudioOutputRequest request)
+        => request.Devices.FirstOrDefault(device => device.Label == "Headphones");
+}
+```
+<!-- endref -->
+
+`selectAudioOutput()` needs a user activation, and is rejected with a `NotAllowedError` when the user cancels (the
+default of `SelectAudioOutput`), when the `speaker-selection` permission is denied, or in a frame that the
+`speaker-selection` permissions policy does not allow. The chosen device is then listed by `enumerateDevices()`, and
+`setSinkId()` accepts it. The library does not play the audio of the media elements, so the device only changes
+`sinkId`.
 
 ### Processing the frames of a track
 

@@ -1235,6 +1235,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.AudioConfiguration dictionaryDom_AudioConfiguration:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AudioConfiguration(r, dictionaryDom_AudioConfiguration);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.AudioOutputOptions dictionaryDom_AudioOutputOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AudioOutputOptions(r, dictionaryDom_AudioOutputOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs dictionaryDom_AuthenticationExtensionsClientInputs:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_AuthenticationExtensionsClientInputs(r, dictionaryDom_AuthenticationExtensionsClientInputs);
                 return true;
@@ -2707,6 +2710,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaCapabilitiesEncodingInfo> taskSystem_Threading_Tasks_Task_Dom_MediaCapabilitiesEncodingInfo_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaCapabilitiesEncodingInfo_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MediaCapabilitiesEncodingInfo(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo> taskSystem_Threading_Tasks_Task_Dom_MediaDeviceInfo_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaDeviceInfo_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySessionClosedReason> taskSystem_Threading_Tasks_Task_Dom_MediaKeySessionClosedReason_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MediaKeySessionClosedReason_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaKeySessionClosedReason(v)));

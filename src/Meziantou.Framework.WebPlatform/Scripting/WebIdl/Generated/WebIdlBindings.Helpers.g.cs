@@ -1047,6 +1047,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_AudioOutputOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.AudioOutputOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "deviceId", r.FromString(value.DeviceId));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_AuthenticationExtensionsClientInputs(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.AuthenticationExtensionsClientInputs value)
     {
         var result = r.CreateObject();
@@ -7648,6 +7655,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             ContentType = m2,
             Samplerate = m3_present ? m3 : Defaults_Dom_AudioConfiguration.Samplerate,
             SpatialRendering = m4_present ? m4 : Defaults_Dom_AudioConfiguration.SpatialRendering,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.AudioOutputOptions ToDictionary_Dom_AudioOutputOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "AudioOutputOptions");
+        var m0_value = r.GetDictionaryMember(value, "deviceId");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"" : r.ToDomString(m0_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.AudioOutputOptions
+        {
+            DeviceId = m0,
         };
     }
 

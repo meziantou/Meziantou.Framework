@@ -580,6 +580,12 @@ Media Capture and Streams (https://w3c.github.io/mediacapture-main/) is implemen
   `setCaptureHandleConfig()` and `CropTarget.fromElement()`, but no capture can be cropped. `CapturedMouseEvent` and
   `CaptureController.oncapturedmousechange` (Captured Mouse Events) exist, but the library does not track the cursor over
   the captured surfaces: it never fires the event.
+- **Audio output devices** (Audio Output Devices API): `navigator.mediaDevices.selectAudioOutput()` asks the user with
+  `MediaCaptureBackend.SelectAudioOutput` (transient activation, `speaker-selection` permission and permissions policy),
+  and `enumerateDevices()` then lists the chosen device; the outputs of a captured microphone are listed too.
+  `HTMLMediaElement.setSinkId()` and `sinkId` (secure contexts) accept these devices (`NotFoundError` for another one, set
+  by a task), and `AudioContext.setSinkId()` too. Both are delayed in a prerendering document until it is activated. The
+  audio of the media elements is not played, so the device changes nothing else.
 - **HTML Media Capture**: the `capture` attribute of the `input` elements is reflected by `capture` (`user`,
   `environment`, or the empty string for a missing or invalid value). The files of a file input come from
   `BrowsingContextOptions.ShowFilePicker`: the library does not capture them.
@@ -3689,7 +3695,8 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   payload given as bytes is not parsed (`toRecords()` returns null). `NDEFReader` has no NFC adapter: `scan()`,
   `write()` and `makeReadOnly()` reject with an `InvalidStateError` outside the active document of a top-level browsing
   context, with the abort reason of their signal, with a `NotAllowedError` when the `nfc` permission is not granted
-  (asked with `RequestPermission`), and else with a `NotSupportedError`.
+  (asked with `RequestPermission`), and else with a `NotSupportedError`. A prerendering document calls `scan()` and
+  `write()` once it is activated.
 - **CPU Performance** ([CPU Performance API](https://wicg.github.io/cpu-performance/)): `navigator.cpuPerformance` (secure
   contexts) is the performance tier of the number of processors of the machine (1 for one processor, 2 up to 4, 3 up to
   10, 4 above), without adjustment for the model of the CPU.

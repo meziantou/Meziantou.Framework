@@ -3172,6 +3172,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool? SpatialRendering { get => throw null; init { } }
     }
 
+    public sealed class AudioOutputOptions
+    {
+        public string DeviceId { get => throw null; init { } }
+    }
+
     public enum AudioSelectionPreference
     {
         Preferred = 0,
@@ -7958,6 +7963,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public ushort ReadyState { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.TimeRanges Seekable { get => throw null; }
         public bool Seeking { get => throw null; }
+        public string SinkId { get => throw null; }
         public string Src { get => throw null; set { } }
         public object? SrcObject { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.TextTrackList TextTracks { get => throw null; }
@@ -7972,6 +7978,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Pause() { }
         public System.Threading.Tasks.Task Play() => throw null;
         public System.Threading.Tasks.Task SetMediaKeys(Meziantou.Framework.WebPlatform.Dom.MediaKeys? mediaKeys) => throw null;
+        public System.Threading.Tasks.Task SetSinkId(string sinkId) => throw null;
     }
 
     public sealed class HtmlMenuElement : Meziantou.Framework.WebPlatform.Dom.HtmlElement
@@ -9885,6 +9892,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaStream> GetDisplayMedia(Meziantou.Framework.WebPlatform.Dom.DisplayMediaStreamOptions? options = null) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.MediaTrackSupportedConstraints GetSupportedConstraints() => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaStream> GetUserMedia(Meziantou.Framework.WebPlatform.Dom.MediaStreamConstraints? constraints = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaDeviceInfo> SelectAudioOutput(Meziantou.Framework.WebPlatform.Dom.AudioOutputOptions? options = null) => throw null;
         public void SetCaptureHandleConfig(Meziantou.Framework.WebPlatform.Dom.CaptureHandleConfig? config = null) { }
     }
 
@@ -17353,6 +17361,12 @@ namespace Meziantou.Framework.WebPlatform.Formatting
 }
 namespace Meziantou.Framework.WebPlatform.Media
 {
+    public sealed class AudioOutputRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice> Devices { get => throw null; }
+    }
+
     public sealed class DisplayCaptureRequest
     {
         public bool Audio { get => throw null; }
@@ -17403,6 +17417,7 @@ namespace Meziantou.Framework.WebPlatform.Media
     {
         public abstract System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice> GetDevices();
         protected void NotifyDevicesChanged() { }
+        public virtual Meziantou.Framework.WebPlatform.Media.MediaCaptureDevice? SelectAudioOutput(Meziantou.Framework.WebPlatform.Media.AudioOutputRequest request) => throw null;
         public virtual Meziantou.Framework.WebPlatform.Media.DisplayCaptureSelection? SelectDisplaySurface(Meziantou.Framework.WebPlatform.Media.DisplayCaptureRequest request) => throw null;
         public abstract Meziantou.Framework.WebPlatform.Media.MediaCaptureSource StartCapture(Meziantou.Framework.WebPlatform.Media.MediaCaptureRequest request);
     }

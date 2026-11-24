@@ -4374,6 +4374,99 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("videoinput,Test camera,64,true", await RunAsync(document, "list()"));
     }
 
+    // Audio Output Devices API
+
+    #region WebPlatform_AudioOutputBackend
+    // The speakers and the headphones of the machine: the user picks the headphones in the prompt of selectAudioOutput()
+    private sealed class Speakers : MediaCaptureBackend
+    {
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() =>
+        [
+            new MediaCaptureDevice { Id = "speakers", Kind = MediaDeviceKind.AudioOutput, Label = "Speakers" },
+            new MediaCaptureDevice { Id = "headphones", Kind = MediaDeviceKind.AudioOutput, Label = "Headphones" },
+        ];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => throw new NotSupportedException();
+
+        public override MediaCaptureDevice? SelectAudioOutput(AudioOutputRequest request)
+            => request.Devices.FirstOrDefault(device => device.Label == "Headphones");
+    }
+    #endregion
+
+    private const string AudioOutputScript = """
+        window.select = () => navigator.mediaDevices.selectAudioOutput().then(d => { window.device = d; document.title = d.kind + ',' + d.label; }, e => document.title = e.name);
+        window.list = () => navigator.mediaDevices.enumerateDevices().then(d => document.title = d.filter(x => x.kind === 'audiooutput').map(x => x.label + ',' + (x.deviceId === window.device?.deviceId)).join(';'));
+        """;
+
+    [Fact]
+    public async Task SelectAudioOutput_ExposesTheDeviceChosenByTheUser()
+    {
+        var document = Load("<script>" + AudioOutputScript + "</script>", new BrowsingContextOptions { MediaCapture = new Speakers() });
+
+        Assert.Equal("", await RunAsync(document, "list()"));
+        Activate(document);
+        Assert.Equal("audiooutput,Headphones", await RunAsync(document, "select()"));
+        Assert.Equal("Headphones,true", await RunAsync(document, "list()"));
+    }
+
+    [Fact]
+    public async Task SelectAudioOutput_Errors()
+    {
+        const string Script = "<script>window.select = () => navigator.mediaDevices.selectAudioOutput().then(d => document.title = d.label, e => document.title = e.name);</script>";
+
+        var document = Load(Script, new BrowsingContextOptions { MediaCapture = new Speakers() });
+        Assert.Equal("InvalidStateError", await RunAsync(document, "select()"));
+
+        // Without audio output device
+        document = Load(Script);
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "select()"));
+
+        document = Load(Script, new BrowsingContextOptions { MediaCapture = new SolidColorCamera() });
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "select()"));
+
+        // The user cancels the prompt (the default of MediaCaptureBackend.SelectAudioOutput), or denied the permission
+        document = Load(Script, new BrowsingContextOptions { MediaCapture = new SpeakersWithoutPrompt() });
+        Activate(document);
+        Assert.Equal("NotAllowedError", await RunAsync(document, "select()"));
+
+        var denied = new PermissionStore();
+        denied.SetState("speaker-selection", PermissionState.Denied);
+        document = Load(Script, new BrowsingContextOptions { MediaCapture = new Speakers(), Permissions = denied });
+        Activate(document);
+        Assert.Equal("NotAllowedError", await RunAsync(document, "select()"));
+    }
+
+    // Speakers whose prompt is always canceled
+    private sealed class SpeakersWithoutPrompt : MediaCaptureBackend
+    {
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [new MediaCaptureDevice { Id = "speakers", Kind = MediaDeviceKind.AudioOutput, Label = "Speakers" }];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task SetSinkId_ChangesTheDeviceOfTheMediaElement()
+    {
+        var document = Load("<audio id=a></audio><script>" + AudioOutputScript + "</script>", new BrowsingContextOptions { MediaCapture = new Speakers() });
+        Activate(document);
+        await RunAsync(document, "select()");
+
+        Assert.Equal("true,true", await RunAsync(document, "const p = a.setSinkId(device.deviceId); const before = a.sinkId === ''; p.then(() => document.title = [before, a.sinkId === device.deviceId].join())"));
+        Assert.Equal("NotFoundError,true", await RunAsync(document, "a.setSinkId('unknown').catch(e => document.title = [e.name, a.sinkId === device.deviceId].join())"));
+        Assert.Equal("default", await RunAsync(document, "a.setSinkId('').then(() => document.title = a.sinkId || 'default')"));
+
+        // The device of an AudioContext
+        Assert.Equal("true", await RunAsync(document, "const context = new AudioContext(); context.setSinkId(device.deviceId).then(() => document.title = context.sinkId === device.deviceId)"));
+    }
+
+    [Fact]
+    public void SetSinkId_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false", Run(Load("<script>document.title = 'setSinkId' in document.createElement('audio');</script>", url: "http://example.com/")));
+    }
+
     [Fact]
     public async Task ApplyConstraints_ChangesTheSettings()
     {

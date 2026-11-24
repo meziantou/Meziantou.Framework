@@ -106,10 +106,11 @@ For the letter `l` of Noto Sans, the path is `M173 0L85 0L85 -760L173 -760L173 0
     HarfBuzz does;
   - for the TrueType outlines of the other instances of a variable font, and for CFF and CFF2 outlines, the box of
     the points of the outline, rounded outward;
-  - for a font without outlines, the box of the bitmap of the glyph in the largest strike. The strike is chosen before
-    the image of the glyph is looked up: among all the strikes of an `sbix` table, and among the strikes whose range
-    of glyph identifiers includes the glyph in the `CBLC`, `EBLC` and `bloc` tables. When that strike has no image
-    for the glyph, a smaller strike of the same table is not tried.
+  - for a font without outlines, the box of the bitmap of the glyph, from the first table that has an image for it:
+    `sbix`, then `CBLC`, then `EBLC` or `bloc`. In each table, the largest strike is chosen before the image of the
+    glyph is looked up: among all the strikes of `sbix`, and among the strikes whose range of glyph identifiers
+    includes the glyph in the other tables. When that strike has no image for the glyph, a smaller strike of the same
+    table is not tried, and the next table is.
 - The [DecodeOutline](cref:Meziantou.Framework.Fonts.FontFace.DecodeOutline) overload that takes a size uses the bitmaps of one bit per pixel of the font (`EBDT`, `bdat`): a
   rectangle per run of pixels of a row. A font loaded with `useEmbeddedBitmaps` uses the strike made for exactly that
   size; a font without outlines uses the strike that suits any size (see [Bitmap glyphs](#bitmap-glyphs)).

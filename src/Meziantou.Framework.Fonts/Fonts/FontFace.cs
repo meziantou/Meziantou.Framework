@@ -1147,9 +1147,10 @@ public sealed class FontFace
     }
 
     /// <summary>
-    /// Gets the box of the bitmap of a glyph of a font without outlines, in font units, from the largest strike of a
-    /// table: any strike of <c>sbix</c>, a strike whose range of glyph identifiers includes the glyph in the other
-    /// tables. The strike is chosen before its image of the glyph is looked up: a smaller strike is not tried.
+    /// Gets the box of the bitmap of a glyph of a font without outlines, in font units, from the first table that has
+    /// an image for it (<c>sbix</c>, <c>CBLC</c>, then <c>EBLC</c> or <c>bloc</c>). In each table, the largest strike is
+    /// chosen before its image of the glyph is looked up: any strike of <c>sbix</c>, a strike whose range of glyph
+    /// identifiers includes the glyph in the other tables. A smaller strike of the same table is not tried.
     /// </summary>
     private bool TryGetBitmapBounds(int glyphId, out GlyphBox bounds)
     {

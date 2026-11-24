@@ -126,6 +126,4 @@ internal static partial class JsInterpreter
         realm.TemplateRegistry.Add(site, template);
         return template;
     }
-
-    private static JsValue CreateRegExp(JsRealm realm, string pattern, string flags) => RegExpBuiltins.RegExpCreate(realm, pattern, flags);
 }

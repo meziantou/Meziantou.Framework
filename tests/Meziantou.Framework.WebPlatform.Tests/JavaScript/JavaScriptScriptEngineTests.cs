@@ -753,6 +753,32 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void Bindings_LegacyPlatformObjects_OwnPropertiesHideNamedProperties()
+    {
+        var document = Load("""
+            <div id=target data-cp=1></div><span id=a></span>
+            <script>
+              const results = [];
+              const collection = document.getElementsByTagName('span');
+              results.push(Reflect.defineProperty(collection, 'b', { value: 'own', configurable: true }), Reflect.defineProperty(collection, 'a', { value: 'own' }));
+              const span = document.createElement('span');
+              span.id = 'b';
+              document.body.appendChild(span);
+              results.push(collection.b, collection.a.id, Object.getOwnPropertyDescriptor(collection, 'b').value, Object.getOwnPropertyDescriptor(collection, 'a').value.id);
+              delete collection.b;
+              results.push(collection.b.id);
+              const dataset = document.getElementById('target').dataset;
+              results.push(dataset.cp, Object.getOwnPropertyDescriptor(dataset, 'cp').value, dataset.length, 'cp' in dataset, 'xy' in dataset);
+              dataset.xy = '2';
+              results.push(dataset.xy, Object.keys(dataset).join(' '));
+              document.title = results.join();
+            </script>
+            """);
+        Assert.Equal("true,false,own,a,own,a,b,1,1,,true,false,2,cp xy", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Hyperlink_JavaScriptUrl_RunsTheScript()
     {
         var document = Load("""

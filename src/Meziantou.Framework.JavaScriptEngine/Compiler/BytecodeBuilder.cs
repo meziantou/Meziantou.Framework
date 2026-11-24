@@ -501,7 +501,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.CreateClosure or OpCode.CreateClass or OpCode.CreatePrivateName
                 or OpCode.DefineClassField or OpCode.SetFunctionNameComputed
                 or OpCode.DefineAutoAccessor or OpCode.SetDecoratedMethod or OpCode.ApplyClassDecorators or OpCode.RunClassDecorationInitializers
-                or OpCode.GetTemplateObject
+                or OpCode.GetTemplateObject or OpCode.CreateRegExp
                 or OpCode.IteratorNext or OpCode.ForInNext or OpCode.IteratorDelegateStep or OpCode.CreateIterResultDone or OpCode.IteratorStepFinish
                 or OpCode.GlobalDeclarationInstantiation or OpCode.EvalDeclarationInstantiation
                 or OpCode.InitializeGlobalLexical or OpCode.InitializeGlobalFunction or OpCode.SetGlobalVar
@@ -521,7 +521,6 @@ internal sealed class BytecodeBuilder
                 or OpCode.CallEval or OpCode.TailCallEval
                 or OpCode.DefinePrivateMethod or OpCode.CreateElementDecoration
                 or OpCode.ThrowError
-                or OpCode.CreateRegExp
                 or OpCode.StoreResolved
                 => 2,
             OpCode.LoadContextChecked or OpCode.StoreContextChecked or OpCode.ThrowConstAssignContext or OpCode.LoadImport

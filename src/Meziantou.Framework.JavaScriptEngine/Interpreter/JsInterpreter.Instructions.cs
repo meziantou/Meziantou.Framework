@@ -1120,9 +1120,7 @@ internal static partial class JsInterpreter
         var values = frame.Values;
         var code = frame.Code.Code;
         var pc = frame.Pc + 1;
-        var pattern = frame.Code.Constants[code[pc++]].AsString();
-        var flags = frame.Code.Constants[code[pc++]].AsString();
-        values[sp++] = CreateRegExp(frame.Realm, pattern, flags);
+        values[sp++] = RegExpBuiltins.RegExpCreate(frame.Realm, (RegExpLiteralSite)frame.Code.Objects[code[pc++]]);
         frame.Pc = pc;
         return sp;
     }

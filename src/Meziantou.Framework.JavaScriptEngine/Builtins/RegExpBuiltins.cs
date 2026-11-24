@@ -142,11 +142,23 @@ internal static class RegExpBuiltins
     // Creation (https://tc39.es/ecma262/#sec-abstract-operations-for-regexp-creation)
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>RegExpCreate(P, F) in a realm: used for the regular expression literals (each evaluation creates an object).</summary>
-    public static JsRegExpObject RegExpCreate(JsRealm realm, string pattern, string flags)
+    /// <summary>RegExpCreate(P, F) in a realm for a regular expression literal (each evaluation creates an object).</summary>
+    public static JsRegExpObject RegExpCreate(JsRealm realm, Compiler.RegExpLiteralSite site)
     {
-        var obj = new JsRegExpObject(realm.Intrinsics.RegExpPrototype, realm, legacyFeaturesEnabled: true);
-        return Initialize(obj, pattern, flags);
+        JsRegExpObject obj;
+        var program = site.Program;
+        if (program is null)
+        {
+            obj = new JsRegExpObject(realm.Intrinsics.RegExpPrototype, realm, legacyFeaturesEnabled: true);
+            Initialize(obj, site.Pattern, site.Flags);
+            site.Program = obj.Matcher;
+            return obj;
+        }
+
+        // The pattern was compiled by a previous evaluation. The lastIndex of the new object is writable: Set(obj, "lastIndex", 0) only stores the value.
+        obj = new JsRegExpObject(realm.Intrinsics.RegExpPrototype, realm, legacyFeaturesEnabled: true, lastIndex: 0);
+        obj.Initialize(site.Pattern, site.Flags, site.ParsedFlags, program);
+        return obj;
     }
 
     /// <summary>RegExpCreate(P, F) in the current realm.</summary>

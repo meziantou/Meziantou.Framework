@@ -612,7 +612,7 @@ internal enum OpCode
     /// <summary>(template) -> template object (tagged templates, cached per site and realm)</summary>
     GetTemplateObject,
 
-    /// <summary>(pattern, flags) -> RegExp object</summary>
+    /// <summary>(site) -> RegExp object (a new object per evaluation; the site keeps the compiled pattern)</summary>
     CreateRegExp,
 
     // ---- Iteration ---------------------------------------------------------------------------------------------------

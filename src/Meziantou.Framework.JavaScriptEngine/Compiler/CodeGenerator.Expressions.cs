@@ -41,7 +41,7 @@ internal sealed partial class CodeGenerator
                 return;
             case RegExpLiteral regexp:
                 _builder.SetPosition(regexp.Start);
-                _builder.Emit(OpCode.CreateRegExp, _builder.AddConstant(regexp.Pattern), _builder.AddConstant(regexp.Flags));
+                _builder.Emit(OpCode.CreateRegExp, _builder.AddObject(new RegExpLiteralSite(regexp.Pattern, regexp.Flags)));
                 return;
             case TemplateLiteral template:
                 EmitTemplateLiteral(template);

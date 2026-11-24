@@ -19,6 +19,23 @@ internal sealed class TemplateSite(string?[] cooked, string[] raw)
     public string[] Raw { get; } = raw;
 }
 
+/// <summary>
+/// A regular expression literal: each evaluation creates an object, and the site keeps the compiled pattern for the next
+/// ones (the code may run on several threads: the program is immutable and is published by one write).
+/// </summary>
+internal sealed class RegExpLiteralSite(string pattern, string flags)
+{
+    public string Pattern { get; } = pattern;
+
+    public string Flags { get; } = flags;
+
+    /// <summary>Gets the parsed <see cref="Flags"/>; they are valid when <see cref="Program"/> is set.</summary>
+    public RegExpFlags ParsedFlags { get; } = RegExpFlagsExtensions.TryParse(flags, out var parsed) ? parsed : default;
+
+    /// <summary>Gets or sets the compiled pattern: null until an evaluation succeeds.</summary>
+    public RegExpProgram? Program { get; set; }
+}
+
 /// <summary>The compile-time description of a class: its constructor and its source text.</summary>
 internal sealed record ClassTemplate(string Name, FunctionTemplate Constructor, bool HasHeritage, SourceText Source, int SourceStart, int SourceEnd);
 

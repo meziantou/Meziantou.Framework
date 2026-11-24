@@ -106,6 +106,9 @@ public abstract partial class Node : EventTarget, Scripting.IScriptWrapperHolder
     [IdlMember("DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC", "https://dom.spec.whatwg.org/#dom-node-document_position_implementation_specific")]
     public const ushort DocumentPositionImplementationSpecific = 0x20;
 
+    // First: the collector marks the fields of an object from the first, so the wrapper of a node is marked before its
+    // siblings (otherwise the wrappers of a long list of siblings stay on the mark stack, which overflows)
+    private Scripting.ScriptWrapperSlot? _scriptWrapper;
     private Document _nodeDocument;
     private Node? _parent;
     private Node? _previousSibling;
@@ -160,7 +163,11 @@ public abstract partial class Node : EventTarget, Scripting.IScriptWrapperHolder
     internal void KeepCreationRealm(Window window) => CreationRealms.TryAdd(this, window);
 
     /// <inheritdoc/>
-    Scripting.ScriptWrapperSlot? Scripting.IScriptWrapperHolder.ScriptWrapper { get; set; }
+    Scripting.ScriptWrapperSlot? Scripting.IScriptWrapperHolder.ScriptWrapper
+    {
+        get => _scriptWrapper;
+        set => _scriptWrapper = value;
+    }
 
     /// <inheritdoc/>
     Window? Scripting.IScriptWrapperHolder.ScriptWrapperWindow => NodeDocument.RealmWindow;

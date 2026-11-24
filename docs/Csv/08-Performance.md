@@ -24,6 +24,9 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 
 ## Reading
 
+- **Read by name with the same strings.** The header remembers the string of each column name it found: reading the columns of each record
+  with the same strings, such as literals, is almost as fast as reading them by index, whatever the order. A new string for each value is
+  compared with the names of the header again.
 - **Use the spans.** [Span](cref:Meziantou.Framework.Csv.CsvField.Span), [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) do not allocate. Call [ToString](cref:Meziantou.Framework.Csv.CsvField.ToString) only for the values you keep.
 - **Parse floating-point numbers with the invariant culture.** With the default [FormatProvider](cref:Meziantou.Framework.Csv.CsvReaderOptions.FormatProvider),
   [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) read a `double`, a `float` or a `Half` with few digits, such as `-123.45` or `1.5e-3`,

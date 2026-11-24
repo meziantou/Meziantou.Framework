@@ -59,6 +59,7 @@ public static partial class CsvFuzzTargets
         new("csv-decimal", ParseDecimal) { Seeds = GetDecimalSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.50", "123456789", "999999999999999999", " ", ",", "+", "e"] },
         new("csv-numbers", ParseNumbers) { Seeds = GetNumberSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.5", "999999999", "2147483648", "999999999999999", "9223372036854775808", " ", ",", "+", "e", "E", "NaN"] },
         new("csv-floating-point", ParseFloatingPoint) { Seeds = GetFloatingPointSeeds, Dictionary = ["-", "+", ".", "0", "9", "e", "E", "e-", "e+", "22", "23", "2048", "65504", "16777216", "9007199254740992", "0.1", "NaN", "Infinity", " ", ","] },
+        new("csv-header", HeaderLookup) { Seeds = GetHeaderSeeds, Dictionary = [",", "Id", "Name", "id", "NAME", "é"] },
     ];
 
     /// <summary>
@@ -870,6 +871,45 @@ public static partial class CsvFuzzTargets
         {
             yield return FuzzSeed.FromText("floating-point-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
         }
+    }
+
+    /// <summary>
+    /// <c>flags, names, 0xFF, lookups</c>: bit 0 of <c>flags</c> compares the names ignoring the case; <c>names</c> are the names of the header, separated
+    /// by commas; each byte of <c>lookups</c> picks a name of a column, one of another case, or a missing one, as the instance of the header, a
+    /// reused instance, or a new one. Whatever the order and the instances, the header finds the first column with the name, as a linear search does.
+    /// </summary>
+    private static void HeaderLookup(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var names = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0xFF)).Split(',');
+        if (names.Length > 64)
+        {
+            names = names[..64];
+        }
+
+        var comparer = (flags & 1) != 0 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var header = new CsvHeader(names, comparer);
+        string[] queries = [.. names.Select(name => new string(name.AsSpan())), .. names.Select(name => name.ToUpperInvariant()), "missing"];
+        foreach (var lookup in data)
+        {
+            var index = lookup & 0x3F;
+            var query = (lookup >> 6) switch
+            {
+                0 => queries[index % queries.Length],
+                1 => new string(queries[index % queries.Length].AsSpan()),
+                _ => names[index % names.Length],
+            };
+
+            var expected = Array.FindIndex(names, name => comparer.Equals(name, query));
+            FuzzAssert.Equal(expected, header.IndexOf(query), "The header does not find the first column with the name: " + query);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetHeaderSeeds()
+    {
+        yield return new FuzzSeed("header-in-order", (byte[])[0x00, .. "Id,Name,Email,Amount"u8, 0xFF, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]);
+        yield return new FuzzSeed("header-any-order", (byte[])[0x01, .. "Id,Name,id,Email"u8, 0xFF, 3, 2, 1, 0, 0x44, 0x83, 6, 5, 4, 8, 0xC2, 2, 1]);
+        yield return new FuzzSeed("header-wide", (byte[])[0x00, .. Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Range(0, 20).Select(i => "c" + (i % 18).ToString(CultureInfo.InvariantCulture)))), 0xFF, 0, 1, 19, 18, 0x52, 0x93, 40, 20, 19, 0, 17]);
     }
 
     private static IEnumerable<FuzzSeed> GetIso8601Seeds()

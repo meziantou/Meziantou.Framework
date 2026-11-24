@@ -571,4 +571,46 @@ public sealed class ImagingRenderingBackendTests
         byte[] app1 = [0xFF, 0xE1, (byte)(length >> 8), (byte)length, .. exifHeader, .. tiff];
         return [.. jpeg.AsSpan(0, 2), .. app1, .. jpeg.AsSpan(2)];
     }
+
+    [Fact]
+    public void PixelConversions_ToBytes_RoundsEveryComponent()
+    {
+        // Every 16-bit value, in each of the components, converted by the vectorized loop and by the scalar tail
+        var pixels = new Rgba64[65536];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba64((ushort)i, (ushort)(i * 7), (ushort)~i, (ushort)(i * 31));
+        }
+
+        var bytes = new byte[pixels.Length * 4];
+        PixelConversions.ToBytes(pixels, bytes);
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            Assert.Equal(Expected(pixels[i].R), bytes[(i * 4) + 0]);
+            Assert.Equal(Expected(pixels[i].G), bytes[(i * 4) + 1]);
+            Assert.Equal(Expected(pixels[i].B), bytes[(i * 4) + 2]);
+            Assert.Equal(Expected(pixels[i].A), bytes[(i * 4) + 3]);
+        }
+
+        // The lengths around the width of the vectors, from unaligned starts; the bytes after the pixels are not written
+        for (var start = 0; start < 3; start++)
+        {
+            for (var length = 0; length <= 20; length++)
+            {
+                var source = pixels.AsSpan(30000 + start, length);
+                var destination = new byte[(length * 4) + 4];
+                destination.AsSpan().Fill(0xAB);
+                PixelConversions.ToBytes(source, destination);
+                for (var i = 0; i < length; i++)
+                {
+                    Assert.Equal(Expected(source[i].R), destination[(i * 4) + 0]);
+                    Assert.Equal(Expected(source[i].A), destination[(i * 4) + 3]);
+                }
+
+                Assert.Equal([0xAB, 0xAB, 0xAB, 0xAB], destination[^4..]);
+            }
+        }
+
+        static byte Expected(ushort value) => (byte)(((value * 65280L) + (65535L * 129)) / (65535L * 256));
+    }
 }

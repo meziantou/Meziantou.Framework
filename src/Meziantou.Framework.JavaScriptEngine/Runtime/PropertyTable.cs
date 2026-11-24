@@ -65,7 +65,7 @@ internal sealed class PropertyTable : PropertyMap
     private static int FindIndexed(int[] index, int[] hashes, Entry[] entries, in PropertyKey key)
     {
         var mask = index.Length - 1;
-        var hash = key.GetHashCode();
+        var hash = GetHash(key);
         for (var i = hash & mask; ; i = (i + 1) & mask)
         {
             var slot = index[i];
@@ -148,7 +148,7 @@ internal sealed class PropertyTable : PropertyMap
 
         if (_index is not null)
         {
-            var hash = key.GetHashCode();
+            var hash = GetHash(key);
             _hashes![position] = hash;
             if (Count * 3 > _index.Length * 2)
             {
@@ -317,7 +317,7 @@ internal sealed class PropertyTable : PropertyMap
                 ref var entry = ref _entries[i];
                 if (!entry.IsDeleted)
                 {
-                    hashes[i] = PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex).GetHashCode();
+                    hashes[i] = GetHash(PropertyKey.FromRaw(entry.KeyValue, entry.KeyIndex));
                 }
             }
 
@@ -360,6 +360,19 @@ internal sealed class PropertyTable : PropertyMap
         }
 
         index[empty] = 0;
+    }
+
+    /// <summary>
+    /// Gets the hash code of a key in the index. The hash code of an array index is the index itself: consecutive indices
+    /// would fill consecutive slots, and the probe of a missing index that falls in such a run would visit the whole run (a
+    /// sparse array whose keys are runs of code points, read for every code point of a range). The bits are mixed so that
+    /// close keys go to distant slots.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetHash(in PropertyKey key)
+    {
+        var hash = (uint)key.GetHashCode();
+        return (int)((hash ^ (hash >> 16)) * 0x45D9F3Bu);
     }
 
     private static void Insert(int[] index, int hash, int position)

@@ -123,6 +123,18 @@ internal static class Workloads
               return s + Object.keys(items).length;
             }
             """,
+        // A reverse index built in a sparse array (consecutive runs of keys), read for the keys of a range, most of them
+        // missing (the encoders of the encoding tests of web-platform-tests)
+        ["SparseArrayLookups"] = """
+            const reverse = [];
+            for (let i = 0; i < 11000; i++) { reverse[0xAC00 + i] = i; }
+            for (let i = 0; i < 6000; i++) { reverse[0x4E00 + i * 3] = 11000 + i; }
+            function run() {
+              let s = 0;
+              for (let cp = 0x3000; cp < 0xD800; cp++) { s += reverse[cp] ?? 1; }
+              return s;
+            }
+            """,
         ["DictionarySlidingWindow"] = """
             function run() {
               const cache = {};

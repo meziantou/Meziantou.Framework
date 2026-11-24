@@ -114,11 +114,12 @@ internal sealed class JavaScriptWptEngine : WptEngine
         internal override void InitializeRealm(WebIdlRealm<JavaScriptAdapter, object> realm) => _runner.SetupGlobals(realm);
 
         /// <summary>
-        /// The scripts of the harness are parsed once for all the tests: the external scripts of <c>/resources/</c>, not the
-        /// inline scripts nor the <c>javascript:</c> URLs of its documents (e.g. <c>/resources/blank.html</c>), whose URL is
-        /// the one of the document.
+        /// The external scripts are parsed once for all the tests (e.g. the scripts of the harness, and the large tables of
+        /// the encoding tests, loaded by hundreds of tests): the hot functions of a script parsed again are compiled to IL
+        /// again. Not the inline scripts nor the <c>javascript:</c> URLs of the documents, whose URL is the one of the document,
+        /// nor the URLs that have a query, whose response depends on it (e.g. the substitutions of <c>?pipe=sub</c>).
         /// </summary>
-        internal override bool ShouldCacheScript(ClassicScript script) => new Url(script.Url).Pathname is var path && path.StartsWith("/resources/", StringComparison.Ordinal) && path.EndsWith(".js", StringComparison.Ordinal);
+        internal override bool ShouldCacheScript(ClassicScript script) => new Url(script.Url) is var url && url.Search.Length is 0 && url.Pathname.EndsWith(".js", StringComparison.Ordinal);
     }
 }
 

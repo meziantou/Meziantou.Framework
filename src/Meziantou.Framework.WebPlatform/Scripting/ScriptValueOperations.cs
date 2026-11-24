@@ -55,6 +55,20 @@ internal interface IScriptValueOperations
     /// </summary>
     /// <exception cref="TypeErrorException">The value cannot be converted to the dictionary.</exception>
     SecurePaymentConfirmationRequest ToSecurePaymentConfirmationRequest(object? value);
+
+    /// <summary>Whether the value is a string.</summary>
+    bool IsString(object? value);
+
+    /// <summary>
+    /// Returns a copy of the bytes of a buffer source (https://webidl.spec.whatwg.org/#BufferSource), or null when the value is
+    /// not one.
+    /// </summary>
+    /// <exception cref="TypeErrorException">The buffer source is a view of a shared or resizable buffer.</exception>
+    byte[]? GetBufferSourceCopy(object? value);
+
+    /// <summary>Converts the data of an NDEF record to an NDEFMessageInit dictionary (https://w3c-cg.github.io/web-nfc/#dom-ndefmessageinit).</summary>
+    /// <exception cref="TypeErrorException">The value cannot be converted to the dictionary.</exception>
+    NdefMessageInit ToNdefMessageInit(object? value);
 }
 
 /// <summary>
@@ -125,6 +139,21 @@ internal sealed class DotNetScriptValueOperations : IScriptValueOperations
     // The .NET code gives the dictionary itself
     public SecurePaymentConfirmationRequest ToSecurePaymentConfirmationRequest(object? value)
         => value as SecurePaymentConfirmationRequest ?? throw new TypeErrorException("The data of the secure-payment-confirmation payment method is not a SecurePaymentConfirmationRequest");
+
+    public bool IsString(object? value) => value is string;
+
+    public byte[]? GetBufferSourceCopy(object? value) => value switch
+    {
+        byte[] bytes => bytes.ToArray(),
+        ReadOnlyMemory<byte> memory => memory.ToArray(),
+        Memory<byte> memory => memory.ToArray(),
+        ArraySegment<byte> segment => segment.ToArray(),
+        _ => null,
+    };
+
+    // The .NET code gives the dictionary itself
+    public NdefMessageInit ToNdefMessageInit(object? value)
+        => value as NdefMessageInit ?? throw new TypeErrorException("The data of the NDEF record is not an NDEFMessageInit");
 
     /// <summary>
     /// Converts a value to a string; a list is the strings of its elements joined by commas, and a list that contains itself

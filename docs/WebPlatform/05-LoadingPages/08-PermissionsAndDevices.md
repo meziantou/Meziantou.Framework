@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -227,6 +227,12 @@ private sealed class SolidColorCamera : MediaCaptureBackend
   can give together with the other live tracks of the device: constraints that only another mode satisfies reject the
   call with an `OverconstrainedError`, and neither the track nor the device change.
 - The capture stops when the last track of a device stops, or when the document is unloaded: the source is disposed.
+- The library does not track the cursor over a captured surface: the `capturedmousechange` event of `CaptureController`
+  (Captured Mouse Events) is never fired.
+- The `capture` attribute of a file input (`<input type=file accept="image/*" capture=user>`) only asks for a camera:
+  the files of the input come from
+  [ShowFilePicker](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowFilePicker), which can read
+  [Capture](cref:Meziantou.Framework.WebPlatform.Dom.HtmlInputElement.Capture) to take a photo.
 
 The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes, at most
 `frameRate` times per second when the page gives a frame rate (only on `requestFrame()` for a rate of 0). Once the
@@ -511,6 +517,13 @@ with the requests to the secure origins.
 between 0.25 and 8 to make the users harder to fingerprint. The library does not read the memory of the machine: without
 value, the pages see 8, but the `Sec-CH-Device-Memory` client hint is not sent.
 
+## CPU performance
+
+`navigator.cpuPerformance` is the performance tier of the CPU, in the secure pages: 1 for a single processor, 2 for up
+to 4 processors, 3 for up to 10, and 4 above. The library computes it from the number of processors of the machine
+([Environment.ProcessorCount](https://learn.microsoft.com/dotnet/api/system.environment.processorcount)), like
+`navigator.hardwareConcurrency`, and does not adjust it for the model of the CPU.
+
 ## Global Privacy Control
 
 `navigator.globalPrivacyControl` tells the pages that the user does not want their data sold or shared, and the
@@ -698,6 +711,48 @@ posture.Posture = DevicePostureType.Folded;
 Changing [Posture](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider.Posture) fires the `change` event of
 `navigator.devicePosture`, and the `change` event of the media query lists such as `matchMedia('(device-posture: folded)')`.
 A hidden page gets the event when it becomes visible. All the frames of a tab have the posture of the tab.
+
+## NFC
+
+The library has no NFC adapter, as a device without NFC: `new NDEFReader()` works, but `scan()`, `write()` and
+`makeReadOnly()` are rejected with a `NotSupportedError` once the `nfc` permission is granted (with a `NotAllowedError`
+before, and with an `InvalidStateError` in a frame).
+
+The NDEF messages and records themselves work, in the pages and in .NET:
+[NdefMessage](cref:Meziantou.Framework.WebPlatform.Dom.NdefMessage) and
+[NdefRecord](cref:Meziantou.Framework.WebPlatform.Dom.NdefRecord) validate the records as `NDEFReader.write()` does,
+for instance to check the messages your application writes to its tags:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_NdefMessage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var message = new NdefMessage(new NdefMessageInit
+{
+    Records =
+    [
+        new NdefRecordInit { RecordType = "text", Data = "Hello", Lang = "en-US" },
+        new NdefRecordInit { RecordType = "url", Data = "https://example.com/products/42" },
+
+        // An external type record whose payload is another NDEF message
+        new NdefRecordInit
+        {
+            RecordType = "example.com:product",
+            Data = new NdefMessageInit
+            {
+                Records = [new NdefRecordInit { RecordType = "mime", MediaType = "application/json", Data = """{"id":42}"""u8.ToArray() }],
+            },
+        },
+    ],
+});
+
+Assert.Equal("Hello", Encoding.UTF8.GetString(message.Records[0].Data!.Value.Span));
+Assert.Equal("utf-8", message.Records[0].Encoding);
+Assert.Equal("application/json", message.Records[2].ToRecords()![0].MediaType);
+```
+<!-- endref -->
+
+A `text` record without `lang` has the language of the document (`en` when it has none, and in .NET). A record whose
+payload is a nested message (`smart-poster`, external and local types) gives its records with `ToRecords()`, and has no
+`Data`: the library does not serialize the NDEF messages, so `ToRecords()` returns null for a payload given as bytes.
 
 ## Web Authentication
 

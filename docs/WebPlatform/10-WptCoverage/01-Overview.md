@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,834 | 30,158 | 80 | 93% |
+| [Stable](#stable-tests) | 27,846 | 30,158 | 80 | 93% |
 | [Tentative](#tentative-tests) | 1,674 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,477** | **65,062** | **326** | **93%** |
+| **All** | **60,489** | **65,062** | **326** | **93%** |
 
 ## Failure reasons
 
@@ -61,13 +61,13 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 150
 - **TEST BUG**: 1,122
-- **NOT IMPLEMENTED**: 2,630
-- **REQUIRES**: 614
-  - `hardware`: 432
+- **NOT IMPLEMENTED**: 2,812
+- **REQUIRES**: 420
+  - `hardware`: 238
   - `layout`: 22
   - `media`: 24
   - `user-input`: 144
-- **TEST RUNNER**: 147
+- **TEST RUNNER**: 151
 - **OUT OF SCOPE**: 114
 - **FLAKY**: 1
 - **PERFORMANCE**: 6
@@ -93,7 +93,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`battery-status`](battery-status.md) | 9 | 17 | 0 | 53% |
 | [`beacon`](beacon.md) | 16 | 16 | 0 | 100% |
 | [`bluetooth`](bluetooth.md) | 1 | 157 | 0 | 0.6% |
-| [`captured-mouse-events`](captured-mouse-events.md) | 0 | 4 | 0 | 0% |
+| [`captured-mouse-events`](captured-mouse-events.md) | 4 | 4 | 0 | 100% |
 | [`clear-site-data`](clear-site-data.md) | 12 | 13 | 0 | 92% |
 | [`client-hints`](client-hints.md) | 122 | 132 | 0 | 92% |
 | [`clipboard-apis`](clipboard-apis.md) | 34 | 38 | 0 | 89% |
@@ -111,7 +111,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`cookiestore`](cookiestore.md) | 55 | 55 | 0 | 100% |
 | [`core-aam`](core-aam.md) | 1 | 1 | 0 | 100% |
 | [`cors`](cors.md) | 24 | 24 | 0 | 100% |
-| [`cpu-performance`](cpu-performance.md) | 0 | 1 | 0 | 0% |
+| [`cpu-performance`](cpu-performance.md) | 1 | 1 | 0 | 100% |
 | [`credential-management`](credential-management.md) | 7 | 16 | 0 | 44% |
 | [`css/compositing`](css/compositing.md) | 13 | 15 | 0 | 87% |
 | [`css/css-align`](css/css-align.md) | 242 | 242 | 0 | 100% |
@@ -238,7 +238,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`gyroscope`](gyroscope.md) | 10 | 10 | 0 | 100% |
 | [`hr-time`](hr-time.md) | 14 | 15 | 0 | 93% |
 | [`html-aam`](html-aam.md) | 24 | 27 | 0 | 89% |
-| [`html-media-capture`](html-media-capture.md) | 0 | 2 | 0 | 0% |
+| [`html-media-capture`](html-media-capture.md) | 2 | 2 | 0 | 100% |
 | [`html/browsers`](html/browsers.md) | 717 | 762 | 0 | 94% |
 | [`html/canvas`](html/canvas.md) | 3,150 | 3,181 | 0 | 99% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 69 | 75 | 0 | 92% |
@@ -383,7 +383,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`web-based-payment-handler`](web-based-payment-handler.md) | 8 | 10 | 0 | 80% |
 | [`web-extensions`](web-extensions.md) | 0 | 7 | 7 | – |
 | [`web-locks`](web-locks.md) | 22 | 23 | 0 | 96% |
-| [`web-nfc`](web-nfc.md) | 2 | 11 | 0 | 18% |
+| [`web-nfc`](web-nfc.md) | 7 | 11 | 0 | 64% |
 | [`web-otp`](web-otp.md) | 0 | 1 | 0 | 0% |
 | [`web-share`](web-share.md) | 14 | 14 | 0 | 100% |
 | [`webaudio`](webaudio.md) | 287 | 299 | 0 | 96% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,834** | **30,158** | **80** | **93%** |
+| **Total (341 sections)** | **27,846** | **30,158** | **80** | **93%** |
 
 ## Tentative tests
 

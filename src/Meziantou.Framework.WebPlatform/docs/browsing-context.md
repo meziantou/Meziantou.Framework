@@ -577,7 +577,12 @@ Media Capture and Streams (https://w3c.github.io/mediacapture-main/) is implemen
   silence, `contentHint`, `stats`), `MediaStreamTrackEvent`, `OverconstrainedError`; a stream assigned to `srcObject` is
   played live (no seeking, a playback rate of 1, `preload` is `none`) and ends when it becomes inactive.
 - **Screen capture**: `getDisplayMedia()` (user activation, `CaptureController`, the constraints of display surfaces);
-  `setCaptureHandleConfig()` and `CropTarget.fromElement()`, but no capture can be cropped.
+  `setCaptureHandleConfig()` and `CropTarget.fromElement()`, but no capture can be cropped. `CapturedMouseEvent` and
+  `CaptureController.oncapturedmousechange` (Captured Mouse Events) exist, but the library does not track the cursor over
+  the captured surfaces: it never fires the event.
+- **HTML Media Capture**: the `capture` attribute of the `input` elements is reflected by `capture` (`user`,
+  `environment`, or the empty string for a missing or invalid value). The files of a file input come from
+  `BrowsingContextOptions.ShowFilePicker`: the library does not capture them.
 - **From elements**: `canvas.captureStream()` (`CanvasCaptureMediaStreamTrack`), `video.captureStream()` and
   `audio.captureStream()` (the audio of the resources is not decoded), `ImageCapture` (`grabFrame()`, `takePhoto()` as
   PNG), and the Web Audio `MediaStream` nodes.
@@ -3675,6 +3680,19 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   `DevicePosture.Provider`. Setting its `Posture` runs the device posture change steps: the visible documents fire
   `change`, the hidden ones when they become visible, and the media query lists are evaluated again. All the documents of
   a browsing context tree have the posture of the provider. Without provider, the posture is `continuous`.
+- **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
+  steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
+  `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the
+  language of the document, the smart poster rules (one `url` record, at most one `:t`, `:s` and `:act` record, a 4-byte
+  size and a 1-byte action, as in Chromium) and the limit of 32 nested messages. `toRecords()` returns the records of a
+  nested message; the NDEF messages are not serialized, so a record created from a nested message has no `data`, and a
+  payload given as bytes is not parsed (`toRecords()` returns null). `NDEFReader` has no NFC adapter: `scan()`,
+  `write()` and `makeReadOnly()` reject with an `InvalidStateError` outside the active document of a top-level browsing
+  context, with the abort reason of their signal, with a `NotAllowedError` when the `nfc` permission is not granted
+  (asked with `RequestPermission`), and else with a `NotSupportedError`.
+- **CPU Performance** ([CPU Performance API](https://wicg.github.io/cpu-performance/)): `navigator.cpuPerformance` (secure
+  contexts) is the performance tier of the number of processors of the machine (1 for one processor, 2 up to 4, 3 up to
+  10, 4 above), without adjustment for the model of the CPU.
 - **Screen Orientation** ([Screen Orientation](https://w3c.github.io/screen-orientation/)): `screen.orientation` (`type`,
   `angle`, `change`), `lock()` and `unlock()`, on the `ScreenOrientationProvider` of `ScreenOrientation.Provider` (its
   natural orientation, the `DeviceOrientation` the user holds the device in, and `TryLock` to lock the screen of the

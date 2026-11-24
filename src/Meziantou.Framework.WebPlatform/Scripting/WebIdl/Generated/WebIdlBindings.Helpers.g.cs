@@ -207,6 +207,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.NavigationReloadOptions Defaults_Dom_NavigationReloadOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.NdefMakeReadOnlyOptions Defaults_Dom_NdefMakeReadOnlyOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.NdefRecordInit Defaults_Dom_NdefRecordInit = new() { RecordType = default! };
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.NdefScanOptions Defaults_Dom_NdefScanOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.NdefWriteOptions Defaults_Dom_NdefWriteOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.NotificationAction Defaults_Dom_NotificationAction = new() { Action = default!, Title = default! };
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.NotificationOptions Defaults_Dom_NotificationOptions = new();
@@ -1326,6 +1334,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "exposeOrigin", r.FromBoolean(value.ExposeOrigin));
         r.SetMember(result, "handle", r.FromString(value.Handle));
         r.SetMember(result, "permittedOrigins", r.FromSequence(value.PermittedOrigins, static (r, e) => r.FromString(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_CapturedMouseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.CapturedMouseEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "surfaceX", r.FromNumber((double)value.SurfaceX));
+        r.SetMember(result, "surfaceY", r.FromNumber((double)value.SurfaceY));
         return result;
     }
 
@@ -3290,6 +3309,58 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         if (value.Brand is not null) r.SetMember(result, "brand", r.FromString(value.Brand));
         if (value.Version is not null) r.SetMember(result, "version", r.FromString(value.Version));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NdefMakeReadOnlyOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NdefMakeReadOnlyOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "signal", r.Wrap(value.Signal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NdefMessageInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NdefMessageInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "records", r.FromSequence(value.Records, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefRecordInit(r, dictionaryValue) : r.Adapter.Null)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NdefReadingEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NdefReadingEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "message", (value.Message is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefMessageInit(r, dictionaryValue) : r.Adapter.Null));
+        r.SetMember(result, "serialNumber", r.FromString(value.SerialNumber));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NdefRecordInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NdefRecordInit value)
+    {
+        var result = r.CreateObject();
+        if (value.Data is not null) r.SetMember(result, "data", r.ToJs((object?)value.Data));
+        if (value.Encoding is not null) r.SetMember(result, "encoding", r.FromString(value.Encoding));
+        if (value.Id is not null) r.SetMember(result, "id", r.FromString(value.Id));
+        if (value.Lang is not null) r.SetMember(result, "lang", r.FromString(value.Lang));
+        if (value.MediaType is not null) r.SetMember(result, "mediaType", r.FromString(value.MediaType));
+        r.SetMember(result, "recordType", r.FromString(value.RecordType));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NdefScanOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NdefScanOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_NdefWriteOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.NdefWriteOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "overwrite", r.FromBoolean(value.Overwrite));
+        r.SetMember(result, "signal", r.Wrap(value.Signal));
         return result;
     }
 
@@ -7970,6 +8041,29 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.CapturedMouseEventInit ToDictionary_Dom_CapturedMouseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "CapturedMouseEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "surfaceX");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (int)(int)(-1d) : r.ToLong(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        var m4_value = r.GetDictionaryMember(value, "surfaceY");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (int)(int)(-1d) : r.ToLong(m4_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        return new global::Meziantou.Framework.WebPlatform.Dom.CapturedMouseEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            SurfaceX = m3,
+            SurfaceY = m4,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.CaretPositionFromPointOptions ToDictionary_Dom_CaretPositionFromPointOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "CaretPositionFromPointOptions");
@@ -11550,6 +11644,113 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return new global::Meziantou.Framework.WebPlatform.Dom.NavigationUpdateCurrentEntryOptions
         {
             State = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NdefMakeReadOnlyOptions ToDictionary_Dom_NdefMakeReadOnlyOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NDEFMakeReadOnlyOptions");
+        var m0_value = r.GetDictionaryMember(value, "signal");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)(r.IsNullOrUndefined(m0_value) ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m0_value, "AbortSignal")) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.NdefMakeReadOnlyOptions
+        {
+            Signal = m0_present ? m0 : Defaults_Dom_NdefMakeReadOnlyOptions.Signal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NdefMessageInit ToDictionary_Dom_NdefMessageInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NDEFMessageInit");
+        var m0_value = r.GetDictionaryMember(value, "records");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("NDEFMessageInit", "records");
+        var m0 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.NdefRecordInit>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NdefRecordInit(r, e));
+        return new global::Meziantou.Framework.WebPlatform.Dom.NdefMessageInit
+        {
+            Records = m0,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NdefReadingEventInit ToDictionary_Dom_NdefReadingEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NDEFReadingEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "message");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("NDEFReadingEventInit", "message");
+        var m3 = WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NdefMessageInit(r, m3_value);
+        var m4_value = r.GetDictionaryMember(value, "serialNumber");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (string?)"" : (r.IsNullOrUndefined(m4_value) ? (string?)null : r.ToDomString(m4_value));
+        return new global::Meziantou.Framework.WebPlatform.Dom.NdefReadingEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Message = m3,
+            SerialNumber = m4,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NdefRecordInit ToDictionary_Dom_NdefRecordInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NDEFRecordInit");
+        var m0_value = r.GetDictionaryMember(value, "data");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (object?)r.ToAny(m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "encoding");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToUsvString(m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "id");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToUsvString(m2_value) : default;
+        var m3_value = r.GetDictionaryMember(value, "lang");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (string?)r.ToUsvString(m3_value) : default;
+        var m4_value = r.GetDictionaryMember(value, "mediaType");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (string?)r.ToUsvString(m4_value) : default;
+        var m5_value = r.GetDictionaryMember(value, "recordType");
+        if (r.Adapter.IsUndefined(m5_value)) throw r.MissingRequiredDictionaryMember("NDEFRecordInit", "recordType");
+        var m5 = r.ToUsvString(m5_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.NdefRecordInit
+        {
+            Data = m0_present ? m0 : Defaults_Dom_NdefRecordInit.Data,
+            Encoding = m1_present ? m1 : Defaults_Dom_NdefRecordInit.Encoding,
+            Id = m2_present ? m2 : Defaults_Dom_NdefRecordInit.Id,
+            Lang = m3_present ? m3 : Defaults_Dom_NdefRecordInit.Lang,
+            MediaType = m4_present ? m4 : Defaults_Dom_NdefRecordInit.MediaType,
+            RecordType = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NdefScanOptions ToDictionary_Dom_NdefScanOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NDEFScanOptions");
+        var m0_value = r.GetDictionaryMember(value, "signal");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m0_value, "AbortSignal") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.NdefScanOptions
+        {
+            Signal = m0_present ? m0 : Defaults_Dom_NdefScanOptions.Signal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.NdefWriteOptions ToDictionary_Dom_NdefWriteOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "NDEFWriteOptions");
+        var m0_value = r.GetDictionaryMember(value, "overwrite");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)true : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "signal");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)(r.IsNullOrUndefined(m1_value) ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)null : r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m1_value, "AbortSignal")) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.NdefWriteOptions
+        {
+            Overwrite = m0,
+            Signal = m1_present ? m1 : Defaults_Dom_NdefWriteOptions.Signal,
         };
     }
 
@@ -18090,6 +18291,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             return r.ToRecord(value, static (r, k) => r.ToUsvString(k), static (r, e) => r.ToUsvString(e));
         }
         return r.ToUsvString(value);
+    }
+
+    /// <summary>(DOMString or (ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView)) or NDEFMessageInit)</summary>
+    internal static object? ToUnion_a66ddde0(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.IsNullOrUndefined(value)) return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NdefMessageInit(r, value);
+        if (r.Adapter.IsObject(value))
+        {
+            if (r.TryToBufferSource(value, 32765u, false) is { } buffer) return buffer;
+            return WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_NdefMessageInit(r, value);
+        }
+        return r.ToDomString(value);
     }
 
     /// <summary>(DOMString or SanitizerElementNamespace)</summary>

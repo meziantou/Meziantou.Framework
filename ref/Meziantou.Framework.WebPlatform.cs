@@ -4093,6 +4093,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class CaptureController : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCapturedMouseChange { get => throw null; set { } }
         public void SetFocusBehavior(Meziantou.Framework.WebPlatform.Dom.CaptureStartFocusBehavior focusBehavior) { }
     }
 
@@ -4114,6 +4115,19 @@ namespace Meziantou.Framework.WebPlatform.Dom
         FocusCapturingApplication = 0,
         FocusCapturedSurface = 1,
         NoFocusChange = 2,
+    }
+
+    public sealed class CapturedMouseEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public int SurfaceX { get => throw null; }
+        public int SurfaceY { get => throw null; }
+        public CapturedMouseEvent(string type, Meziantou.Framework.WebPlatform.Dom.CapturedMouseEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class CapturedMouseEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public int SurfaceX { get => throw null; init { } }
+        public int SurfaceY { get => throw null; init { } }
     }
 
     public sealed class CaretPosition
@@ -7778,6 +7792,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool Alpha { get => throw null; set { } }
         public string Alt { get => throw null; set { } }
         public string Autocomplete { get => throw null; set { } }
+        public string Capture { get => throw null; set { } }
         public bool Checked { get => throw null; set { } }
         public string ColorSpace { get => throw null; set { } }
         public bool DefaultChecked { get => throw null; set { } }
@@ -10934,6 +10949,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformation Connection { get => throw null; }
         public bool CookieEnabled { get => throw null; }
+        public ushort CpuPerformance { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.CredentialsContainer Credentials { get => throw null; }
         public double DeviceMemory { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.DevicePosture DevicePosture { get => throw null; }
@@ -11003,6 +11019,79 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Platform { get => throw null; }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.UADataValues> GetHighEntropyValues(System.Collections.Generic.IReadOnlyList<string> hints) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.UALowEntropyJson ToJson() => throw null;
+    }
+
+    public sealed class NdefMakeReadOnlyOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public sealed class NdefMessage
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.NdefRecord> Records { get => throw null; }
+        public NdefMessage(Meziantou.Framework.WebPlatform.Dom.NdefMessageInit messageInit) { }
+    }
+
+    public sealed class NdefMessageInit
+    {
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.NdefRecordInit> Records { get => throw null; init { } }
+    }
+
+    public sealed class NdefReader : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnReading { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnReadingError { get => throw null; set { } }
+        public NdefReader(Meziantou.Framework.WebPlatform.Dom.Window window) { }
+        public System.Threading.Tasks.Task MakeReadOnly(Meziantou.Framework.WebPlatform.Dom.NdefMakeReadOnlyOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task Scan(Meziantou.Framework.WebPlatform.Dom.NdefScanOptions? options = null) => throw null;
+        public System.Threading.Tasks.Task Write(object? message, Meziantou.Framework.WebPlatform.Dom.NdefWriteOptions? options = null) => throw null;
+    }
+
+    public sealed class NdefReadingEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.NdefMessage Message { get => throw null; }
+        public string SerialNumber { get => throw null; }
+        public NdefReadingEvent(string type, Meziantou.Framework.WebPlatform.Dom.NdefReadingEventInit readingEventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class NdefReadingEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.NdefMessageInit Message { get => throw null; init { } }
+        public string? SerialNumber { get => throw null; init { } }
+    }
+
+    public sealed class NdefRecord
+    {
+        public System.ReadOnlyMemory<byte>? Data { get => throw null; }
+        public object? DataView { get => throw null; }
+        public string? Encoding { get => throw null; }
+        public string? Id { get => throw null; }
+        public string? Lang { get => throw null; }
+        public string? MediaType { get => throw null; }
+        public string RecordType { get => throw null; }
+        public NdefRecord(Meziantou.Framework.WebPlatform.Dom.NdefRecordInit recordInit) { }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.NdefRecord>? ToRecords() => throw null;
+    }
+
+    public sealed class NdefRecordInit
+    {
+        public object? Data { get => throw null; init { } }
+        public string? Encoding { get => throw null; init { } }
+        public string? Id { get => throw null; init { } }
+        public string? Lang { get => throw null; init { } }
+        public string? MediaType { get => throw null; init { } }
+        public required string RecordType { get => throw null; init { } }
+    }
+
+    public sealed class NdefScanOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
+    }
+
+    public sealed class NdefWriteOptions
+    {
+        public bool Overwrite { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
     }
 
     public sealed class NetworkConnectionStatus : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.NetworkConnectionStatus>

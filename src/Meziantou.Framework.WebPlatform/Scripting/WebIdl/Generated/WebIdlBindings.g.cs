@@ -164,6 +164,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CanvasPattern"] = Binding_CanvasPattern<TAdapter, TValue>.Binding,
             ["CanvasRenderingContext2D"] = Binding_CanvasRenderingContext2D<TAdapter, TValue>.Binding,
             ["CaptureController"] = Binding_CaptureController<TAdapter, TValue>.Binding,
+            ["CapturedMouseEvent"] = Binding_CapturedMouseEvent<TAdapter, TValue>.Binding,
             ["CaretPosition"] = Binding_CaretPosition<TAdapter, TValue>.Binding,
             ["ChannelMergerNode"] = Binding_ChannelMergerNode<TAdapter, TValue>.Binding,
             ["ChannelSplitterNode"] = Binding_ChannelSplitterNode<TAdapter, TValue>.Binding,
@@ -455,6 +456,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["MouseEvent"] = Binding_MouseEvent<TAdapter, TValue>.Binding,
             ["MutationObserver"] = Binding_MutationObserver<TAdapter, TValue>.Binding,
             ["MutationRecord"] = Binding_MutationRecord<TAdapter, TValue>.Binding,
+            ["NDEFMessage"] = Binding_NDEFMessage<TAdapter, TValue>.Binding,
+            ["NDEFReader"] = Binding_NDEFReader<TAdapter, TValue>.Binding,
+            ["NDEFReadingEvent"] = Binding_NDEFReadingEvent<TAdapter, TValue>.Binding,
+            ["NDEFRecord"] = Binding_NDEFRecord<TAdapter, TValue>.Binding,
             ["NamedNodeMap"] = Binding_NamedNodeMap<TAdapter, TValue>.Binding,
             ["NavigateEvent"] = Binding_NavigateEvent<TAdapter, TValue>.Binding,
             ["Navigation"] = Binding_Navigation<TAdapter, TValue>.Binding,
@@ -879,6 +884,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.CanvasPaintEventInit dictionaryDom_CanvasPaintEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CanvasPaintEventInit(r, dictionaryDom_CanvasPaintEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.CapturedMouseEventInit dictionaryDom_CapturedMouseEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CapturedMouseEventInit(r, dictionaryDom_CapturedMouseEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ClipboardChangeEventInit dictionaryDom_ClipboardChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ClipboardChangeEventInit(r, dictionaryDom_ClipboardChangeEventInit);
                 return true;
@@ -1004,6 +1012,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.NavigationReloadOptions dictionaryDom_NavigationReloadOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigationReloadOptions(r, dictionaryDom_NavigationReloadOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NdefReadingEventInit dictionaryDom_NdefReadingEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefReadingEventInit(r, dictionaryDom_NdefReadingEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorOptions dictionaryDom_OrientationSensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_OrientationSensorOptions(r, dictionaryDom_OrientationSensorOptions);
@@ -1655,6 +1666,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.NavigatorUABrandVersion dictionaryDom_NavigatorUABrandVersion:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigatorUABrandVersion(r, dictionaryDom_NavigatorUABrandVersion);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NdefMakeReadOnlyOptions dictionaryDom_NdefMakeReadOnlyOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefMakeReadOnlyOptions(r, dictionaryDom_NdefMakeReadOnlyOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NdefMessageInit dictionaryDom_NdefMessageInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefMessageInit(r, dictionaryDom_NdefMessageInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NdefRecordInit dictionaryDom_NdefRecordInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefRecordInit(r, dictionaryDom_NdefRecordInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NdefScanOptions dictionaryDom_NdefScanOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefScanOptions(r, dictionaryDom_NdefScanOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.NdefWriteOptions dictionaryDom_NdefWriteOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NdefWriteOptions(r, dictionaryDom_NdefWriteOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.NotificationAction dictionaryDom_NotificationAction:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NotificationAction(r, dictionaryDom_NotificationAction);

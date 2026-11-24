@@ -1414,6 +1414,168 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
     }
 
+    // CPU Performance
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(4, 2)]
+    [InlineData(5, 3)]
+    [InlineData(10, 3)]
+    [InlineData(11, 4)]
+    [InlineData(128, 4)]
+    public void CpuPerformance_TierOfTheProcessorCount(int cores, int tier)
+    {
+        Assert.Equal((ushort)tier, Navigator.GetCpuPerformanceTier(cores));
+    }
+
+    [Fact]
+    public void CpuPerformance_IsOnlyExposedToTheSecureContexts()
+    {
+        var expected = Navigator.GetCpuPerformanceTier(Environment.ProcessorCount).ToString(CultureInfo.InvariantCulture);
+        Assert.Equal(expected, Run(Load("<script>document.title = navigator.cpuPerformance;</script>")));
+        Assert.Equal("false", Run(Load("<script>document.title = 'cpuPerformance' in navigator;</script>", url: "http://example.com/")));
+    }
+
+    // HTML Media Capture
+
+    [Fact]
+    public void InputCapture_ReflectsTheKnownValues()
+    {
+        var document = Load("""
+            <input type=file accept="image/*" id=a capture=ENVIRONMENT>
+            <input type=file accept="image/*" id=b capture=front>
+            <input type=file accept="image/*" id=c>
+            <script>
+            c.capture = 'user';
+            document.title = [a.capture, b.capture, c.capture, c.getAttribute('capture')].join();
+            </script>
+            """);
+
+        Assert.Equal("environment,,user,user", Run(document));
+    }
+
+    // Captured Mouse Events
+
+    [Fact]
+    public void CapturedMouseEvent_IsDispatchedToTheEventHandlerOfTheController()
+    {
+        var document = Load("""
+            <script>
+            const controller = new CaptureController();
+            controller.oncapturedmousechange = e => document.title = [e.surfaceX, e.surfaceY, new CapturedMouseEvent('x').surfaceX].join();
+            controller.dispatchEvent(new CapturedMouseEvent('capturedmousechange', { surfaceX: 5, surfaceY: 7 }));
+            </script>
+            """);
+
+        Assert.Equal("5,7,-1", Run(document));
+    }
+
+    [Fact]
+    public void CapturedMouseEvent_NegativeCoordinates_ThrowRangeError()
+    {
+        Assert.Throws<RangeErrorException>(() => new CapturedMouseEvent("capturedmousechange", new CapturedMouseEventInit { SurfaceX = -1, SurfaceY = 5 }));
+        Assert.Throws<RangeErrorException>(() => new CapturedMouseEvent("capturedmousechange", new CapturedMouseEventInit { SurfaceX = -2, SurfaceY = -2 }));
+        Assert.Equal(-1, new CapturedMouseEvent("capturedmousechange", new CapturedMouseEventInit { SurfaceX = -1, SurfaceY = -1 }).SurfaceY);
+    }
+
+    // Web NFC
+
+    [Fact]
+    public void NdefMessage_CreatedFromDotNet()
+    {
+        #region WebPlatform_NdefMessage
+        var message = new NdefMessage(new NdefMessageInit
+        {
+            Records =
+            [
+                new NdefRecordInit { RecordType = "text", Data = "Hello", Lang = "en-US" },
+                new NdefRecordInit { RecordType = "url", Data = "https://example.com/products/42" },
+
+                // An external type record whose payload is another NDEF message
+                new NdefRecordInit
+                {
+                    RecordType = "example.com:product",
+                    Data = new NdefMessageInit
+                    {
+                        Records = [new NdefRecordInit { RecordType = "mime", MediaType = "application/json", Data = """{"id":42}"""u8.ToArray() }],
+                    },
+                },
+            ],
+        });
+
+        Assert.Equal("Hello", Encoding.UTF8.GetString(message.Records[0].Data!.Value.Span));
+        Assert.Equal("utf-8", message.Records[0].Encoding);
+        Assert.Equal("application/json", message.Records[2].ToRecords()![0].MediaType);
+        #endregion
+
+        Assert.Equal("en-US", message.Records[0].Lang);
+        Assert.Equal("https://example.com/products/42", Encoding.UTF8.GetString(message.Records[1].Data!.Value.Span));
+        Assert.Null(message.Records[2].Data);
+        Assert.Null(new NdefRecord(new NdefRecordInit { RecordType = "example.com:product", Data = new byte[] { 1, 2 } }).ToRecords());
+        Assert.Equal("NotSupportedError", Assert.Throws<DomException>(() => message.Records[0].ToRecords()).Name);
+    }
+
+    [Fact]
+    public void NdefRecord_InvalidRecords_Throw()
+    {
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "Text", Data = "Hello" }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "text", Data = "Hello", Encoding = "utf-16" }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "mime", Data = "Hello" }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = ":local", Data = new byte[] { 1 } }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "example.com:a/b", Data = new byte[] { 1 } }));
+        Assert.Equal("SyntaxError", Assert.Throws<DomException>(() => new NdefRecord(new NdefRecordInit { RecordType = "url", Data = "not a URL" })).Name);
+
+        // A smart poster has exactly one url record
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit
+        {
+            RecordType = "smart-poster",
+            Data = new NdefMessageInit { Records = [new NdefRecordInit { RecordType = "text", Data = "Title" }] },
+        }));
+
+        // The messages cannot be nested more than 32 times
+        var init = new NdefMessageInit { Records = [new NdefRecordInit { RecordType = "empty" }] };
+        for (var i = 0; i < 32; i++)
+        {
+            init = new NdefMessageInit { Records = [new NdefRecordInit { RecordType = "example.com:nested", Data = init }] };
+        }
+
+        Assert.Throws<TypeErrorException>(() => new NdefMessage(init));
+        Assert.Single(new NdefMessage((NdefMessageInit)init.Records[0].Data!).Records);
+    }
+
+    [Fact]
+    public void NdefRecord_TextRecordFromScript_UsesTheLanguageOfTheDocument()
+    {
+        var document = Load("""
+            <html lang=fr>
+            <script>
+            const record = new NDEFRecord({ recordType: 'text', data: new TextEncoder().encode('Bonjour') });
+            document.title = [record.lang, record.encoding, new TextDecoder().decode(record.data), record.data instanceof DataView].join();
+            </script>
+            """);
+
+        Assert.Equal("fr,utf-8,Bonjour,true", Run(document));
+    }
+
+    [Fact]
+    public void NdefReader_WithoutAdapter_IsRejectedWithNotSupportedError()
+    {
+        const string Script = "<script>new NDEFReader().scan().then(() => document.title = 'started', e => document.title = e.name);</script>";
+
+        Assert.Equal("NotAllowedError", Run(Load(Script)));
+        Assert.Equal("NotSupportedError", Run(Load(Script, new BrowsingContextOptions { Permissions = GrantedPermissions("nfc") })));
+    }
+
+    [Fact]
+    public void NdefReader_AbortedSignal_IsRejectedWithTheReason()
+    {
+        var document = Load("<script>new NDEFReader().write('text', { signal: AbortSignal.abort('stop') }).then(() => document.title = 'written', e => document.title = e);</script>", new BrowsingContextOptions { Permissions = GrantedPermissions("nfc") });
+
+        Assert.Equal("stop", Run(document));
+    }
+
     // Web Authentication
 
     private const string WebAuthnScript = """

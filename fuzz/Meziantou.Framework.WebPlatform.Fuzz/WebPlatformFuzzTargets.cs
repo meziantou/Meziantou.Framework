@@ -142,6 +142,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-hsts-preload", data => HstsPreloadTarget(FuzzText.Decode(data))) { Seeds = GetHstsPreloadSeeds, Dictionary = HstsPreloadTokens },
         new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
         new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
+        new("webplatform-ndef-message", NdefMessageTarget) { Seeds = GetNdefMessageSeeds, Dictionary = NdefMessageTokens },
     ];
 
     /// <summary>

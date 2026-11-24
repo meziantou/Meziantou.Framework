@@ -9,31 +9,32 @@ description: "The results of the web-platform-tests of web-nfc, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2 | 11 | 0 | 18% |
+| [Stable](#stable-tests) | 7 | 11 | 0 | 64% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **2** | **11** | **0** | **18%** |
+| **All** | **7** | **11** | **0** | **64%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 9
-  - `hardware`: 9
+- **REQUIRES**: 4
+  - `hardware`: 4
+- **TEST RUNNER**: 4
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`NDEFMessage_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_constructor.https.window.js) | Fail | 0 / 5 | REQUIRES(hardware) | Web NFC |
-| [`NDEFMessage_recursion-limit.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_recursion-limit.https.window.js) | Fail | 0 / 5 | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_make-read-only.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReader_make-read-only.https.window.js) | Error | 0 / 14 | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_scan.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan.https.html) | Error | 0 / 18 | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_scan_iframe.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan_iframe.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | Web NFC |
-| [`NDEFReader_write.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_write.https.html) | Error | 0 / 29 | REQUIRES(hardware) | Web NFC |
-| [`NDEFReadingEvent_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReadingEvent_constructor.https.window.js) | Fail | 0 / 6 | REQUIRES(hardware) | Web NFC |
-| [`NDEFRecord_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFRecord_constructor.https.window.js) | Fail | 0 / 25 | REQUIRES(hardware) | Web NFC |
-| [`idlharness.https.window.js`](https://wpt.fyi/results/web-nfc/idlharness.https.window.js) | Fail | 2 / 67 | REQUIRES(hardware) | Web NFC |
+| [`NDEFMessage_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_constructor.https.window.js) | Pass | 5 / 5 |  |  |
+| [`NDEFMessage_recursion-limit.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFMessage_recursion-limit.https.window.js) | Pass | 5 / 5 |  |  |
+| [`NDEFReader_make-read-only.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReader_make-read-only.https.window.js) | Error | 0 / 14 | REQUIRES(hardware), TEST RUNNER | an NFC adapter: the library has none, so `NDEFReader.scan()`, `write()` and `makeReadOnly()` reject with a `NotSupportedError` once the `nfc` permission is granted; needs the Chromium MojoJS mock of the NFC adapter (`WebNFCTest` of `/resources/chromium/nfc-mock.js`) |
+| [`NDEFReader_scan.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan.https.html) | Error | 0 / 18 | REQUIRES(hardware), TEST RUNNER | an NFC adapter: the library has none, so `NDEFReader.scan()`, `write()` and `makeReadOnly()` reject with a `NotSupportedError` once the `nfc` permission is granted; needs the Chromium MojoJS mock of the NFC adapter (`WebNFCTest` of `/resources/chromium/nfc-mock.js`) |
+| [`NDEFReader_scan_iframe.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_scan_iframe.https.html) | Fail | 0 / 1 | REQUIRES(hardware), TEST RUNNER | an NFC adapter: the library has none, so `NDEFReader.scan()`, `write()` and `makeReadOnly()` reject with a `NotSupportedError` once the `nfc` permission is granted; needs the Chromium MojoJS mock of the NFC adapter (`WebNFCTest` of `/resources/chromium/nfc-mock.js`) |
+| [`NDEFReader_write.https.html`](https://wpt.fyi/results/web-nfc/NDEFReader_write.https.html) | Error | 0 / 29 | REQUIRES(hardware), TEST RUNNER | an NFC adapter: the library has none, so `NDEFReader.scan()`, `write()` and `makeReadOnly()` reject with a `NotSupportedError` once the `nfc` permission is granted; needs the Chromium MojoJS mock of the NFC adapter (`WebNFCTest` of `/resources/chromium/nfc-mock.js`) |
+| [`NDEFReadingEvent_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFReadingEvent_constructor.https.window.js) | Pass | 6 / 6 |  |  |
+| [`NDEFRecord_constructor.https.window.js`](https://wpt.fyi/results/web-nfc/NDEFRecord_constructor.https.window.js) | Pass | 25 / 25 |  |  |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/web-nfc/idlharness.https.window.js) | Pass | 67 / 67 |  |  |
 | [`nfc_insecure_context.html`](https://wpt.fyi/results/web-nfc/nfc_insecure_context.html) | Pass | 1 / 1 |  |  |
 | [`nfc_permission.https.window.js`](https://wpt.fyi/results/web-nfc/nfc_permission.https.window.js) | Pass | 2 / 2 |  |  |

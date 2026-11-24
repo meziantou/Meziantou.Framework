@@ -336,7 +336,9 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   property before remembering it).
 - Property tables (`Runtime/PropertyTable.cs`): 32-byte entries, an open-addressing index above 8 properties, with the
   hash codes of the keys stored by position next to it (a probe compares the hashes first, and a removal or a growth of
-  the index does not hash the string keys again: a dictionary-like object that adds and deletes keys). An object
+  the index does not hash the string keys again: a dictionary-like object that adds and deletes keys). The bits of the
+  hash codes are mixed before they pick a slot: an array index is its own hash code, and the runs of consecutive indices
+  of a sparse array would otherwise fill runs of slots that the probe of a missing index walks through. An object
   with lazy properties (prototypes, global objects) uses a table, not a chain of shapes; a host can size it once with
   `JsObject.ReserveProperties` (and read the size of an object with `JsObject.OwnPropertyCount`, as the WebIDL bindings
   of WebPlatform do). A `BuiltinMethodTable` learns the number of properties of the objects that get its methods

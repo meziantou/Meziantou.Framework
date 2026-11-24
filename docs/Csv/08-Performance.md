@@ -27,8 +27,9 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 - **Use the spans.** [Span](cref:Meziantou.Framework.Csv.CsvField.Span), [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) do not allocate. Call [ToString](cref:Meziantou.Framework.Csv.CsvField.ToString) only for the values you keep.
 - **Parse floating-point numbers with the invariant culture.** With the default [FormatProvider](cref:Meziantou.Framework.Csv.CsvReaderOptions.FormatProvider),
   [Parse](cref:Meziantou.Framework.Csv.CsvField.Parse) and [TryParse](cref:Meziantou.Framework.Csv.CsvField.TryParse) read a `double`, a `float` or a `Half` with few digits, such as `-123.45` or `1.5e-3`,
-  through a faster path, with the same value. Values with more digits, such as the round-trip format of a
-  `double`, are often parsed by the same path; the others are left to `double.Parse`.
+  through a faster path, with the same value. A `double` with up to 19 digits, such as its round-trip format (`0.30000000000000004`),
+  also has a faster path when its exponent is from about -48 to 80: about twice as fast as `double.Parse`. The other values are left to
+  the parsers of the BCL.
 - **Read UTF-8 files with [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader).** It does not decode the data, and parses numbers from the bytes.
   The scan also notes the records whose bytes are all ASCII: [ToString](cref:Meziantou.Framework.Csv.Utf8CsvField.ToString), and the deserialization of UTF-8 data into
   `string` members with the default converter, widen their values into strings without checking them again.

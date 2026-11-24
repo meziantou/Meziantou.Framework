@@ -1017,6 +1017,23 @@ public class CsvSerializerTests
     [InlineData("12345.678901234567")]
     [InlineData("1.7976931348623157E+308")]
     [InlineData("4.9406564584124654E-324")]
+    [InlineData("0.30000000000000004")]
+    [InlineData("9007199254740995")]
+    [InlineData("18014398509481986")]
+    [InlineData("18014398509481990")]
+    [InlineData("9007199254740993e5")]
+    [InlineData("9223372036854775807")]
+    [InlineData("18446744073709551615")]
+    [InlineData("1.0000000000000002")]
+    [InlineData("0.9999999999999999")]
+    [InlineData("2.2250738585072014E-308")]
+    [InlineData("1.2345678901234567E-48")]
+    [InlineData("1.2345678901234567E-49")]
+    [InlineData("1.2345678901234567E+80")]
+    [InlineData("1.2345678901234567E+81")]
+    [InlineData("123456789012345678e64")]
+    [InlineData("0e100")]
+    [InlineData("-0e-100")]
     [InlineData("1e400")]
     [InlineData("NaN")]
     [InlineData("-Infinity")]
@@ -1069,6 +1086,76 @@ public class CsvSerializerTests
 
         // The values that overflow, such as 100e4, are left to the BCL
         Assert.True(accepted > 12_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void FloatingPoint_PowersOfFive()
+    {
+        // The table of the algorithm of Eisel and Lemire, as fast_float computes it: the 128 most significant bits of 5^q, truncated for a positive q,
+        // and the reciprocal of 5^-q rounded up for a negative q
+        var powers = InvariantFloatingPoint.PowersOfFive;
+        Assert.HasCount(2 * (InvariantFloatingPoint.MaxPowerOfFive - InvariantFloatingPoint.MinPowerOfFive + 1), powers.ToArray());
+        var two128 = BigInteger.One << 128;
+        for (var q = InvariantFloatingPoint.MinPowerOfFive; q <= InvariantFloatingPoint.MaxPowerOfFive; q++)
+        {
+            BigInteger expected;
+            if (q < 0)
+            {
+                var power = BigInteger.Pow(5, -q);
+                var bits = (int)power.GetBitLength();
+                var shift = q >= -27 ? bits + 127 : (2 * bits) + 128;
+                expected = ((BigInteger.One << shift) / power) + 1;
+                while (expected >= two128)
+                {
+                    expected >>= 1;
+                }
+            }
+            else
+            {
+                expected = BigInteger.Pow(5, q);
+                while (expected < (BigInteger.One << 127))
+                {
+                    expected <<= 1;
+                }
+
+                while (expected >= two128)
+                {
+                    expected >>= 1;
+                }
+            }
+
+            var index = 2 * (q - InvariantFloatingPoint.MinPowerOfFive);
+            Assert.Equal(expected, ((BigInteger)powers[index] << 64) | powers[index + 1], "5^" + q.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_RoundTripDoublesMatchBcl()
+    {
+        // The round-trip format of doubles has up to 17 digits: those whose power of ten is in the table of Eisel-Lemire take the fast path, and those
+        // written with fewer digits and their neighbors give the same values as the BCL
+        var state = 0x2545F4914F6CDD1DUL;
+        var accepted = 0;
+        for (var i = 0; i < 50_000; i++)
+        {
+            var exponent = (int)(Next(ref state) % 130) - 50;
+            var number = (double)(Next(ref state) >> 11) / (1UL << 53) * Math.Pow(10, exponent);
+            var text = number.ToString("R", CultureInfo.InvariantCulture);
+            accepted += AssertMatchesBcl<double>(text) ? 1 : 0;
+            AssertMatchesBcl<double>("-" + text);
+            AssertMatchesBcl<double>(BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(number) + 1).ToString("R", CultureInfo.InvariantCulture));
+            AssertMatchesBcl<double>(number.ToString("E18", CultureInfo.InvariantCulture));
+        }
+
+        Assert.True(accepted > 45_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
     }
 
     [Fact]

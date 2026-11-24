@@ -125,7 +125,8 @@ public sealed class MailboxAddress : IEquatable<MailboxAddress>
     {
         // An address cannot contain angle brackets or line breaks: they are removed
         var address = GetWritableAddress();
-        var needsAngleBrackets = address.AsSpan().IndexOfAny(" \t,;:()\"[]") >= 0;
+        // The reader removes the whitespace of a bare address: char.IsWhiteSpace, such as U+00A0 or U+2003, not only the spaces and tabs
+        var needsAngleBrackets = address.AsSpan().IndexOfAny(",;:()\"[]") >= 0 || address.Any(char.IsWhiteSpace);
         if (Name is null)
         {
             return needsAngleBrackets ? "<" + address + ">" : address;

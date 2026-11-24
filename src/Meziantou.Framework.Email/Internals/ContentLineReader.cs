@@ -74,10 +74,18 @@ internal static class ContentLineReader
             return false;
         }
 
+        // Only the encoding that decodes the value makes "=" a soft line break, not a parameter whose value is QUOTED-PRINTABLE (X-A=QUOTED-PRINTABLE)
         var text = line.ToString();
         var colon = FindValueStart(text);
-        return colon > 0 && text.AsSpan(0, colon).Contains("QUOTED-PRINTABLE", StringComparison.OrdinalIgnoreCase);
+        return colon > 0 && IsQuotedPrintable(SplitParameters(text[..colon]).Skip(1).Select(ParseParameter));
     }
+
+    /// <summary>Gets whether the value of a line is in quoted-printable: its last encoding is <c>ENCODING=QUOTED-PRINTABLE</c> or <c>QUOTED-PRINTABLE</c> (vCard 2.1).</summary>
+    private static bool IsQuotedPrintable(IEnumerable<ContentLineParameter> parameters) => parameters.LastOrDefault(IsEncoding) is { } encoding && IsQuotedPrintable(encoding);
+
+    private static bool IsQuotedPrintable(ContentLineParameter parameter) => IsEncoding(parameter) && string.Equals(parameter.Values.FirstOrDefault(), "QUOTED-PRINTABLE", StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsEncoding(ContentLineParameter parameter) => parameter.Name is "ENCODING" || (parameter.Name is null && parameter.Values is [var bare] && bare.Equals("QUOTED-PRINTABLE", StringComparison.OrdinalIgnoreCase));
 
     /// <summary>Returns the position of the colon that starts the value: the first one outside a quoted parameter value.</summary>
     private static int FindValueStart(string line)
@@ -124,48 +132,48 @@ internal static class ContentLineReader
         }
 
         var result = new ContentLine(name, line[(colon + 1)..]) { Group = group };
-        string? encoding = null;
-        ContentLineParameter? encodingParameter = null;
         string? charset = null;
         for (var i = 1; i < parts.Count; i++)
         {
-            var part = parts[i];
-            var equal = part.IndexOf('=', StringComparison.Ordinal);
-            ContentLineParameter parameter;
-            if (equal < 0 || part[..equal].Trim() is not { Length: > 0 } candidate || !IsName(candidate))
-            {
-                // vCard 2.1: a parameter without a name (TEL;WORK;VOICE), or an encoding (ENCODING is implied). A part
-                // whose name is not a name (a quote, a semicolon...) is kept the same way, as it was read
-                parameter = new ContentLineParameter(null, part.Trim());
-            }
-            else
-            {
-                var parameterName = part[..equal].Trim().ToUpperInvariant();
-                parameter = new ContentLineParameter(parameterName, SplitValues(part[(equal + 1)..]));
-            }
-
+            var parameter = ParseParameter(parts[i]);
             result.Parameters.Add(parameter);
-            if (parameter.Name is "ENCODING" || (parameter.Name is null && parameter.Values is [var bare] && bare.Equals("QUOTED-PRINTABLE", StringComparison.OrdinalIgnoreCase)))
-            {
-                encoding = parameter.Values.FirstOrDefault();
-                encodingParameter = parameter;
-            }
-            else if (parameter.Name is "CHARSET")
+            if (parameter.Name is "CHARSET")
             {
                 charset = parameter.Values.FirstOrDefault();
             }
         }
 
-        if (string.Equals(encoding, "QUOTED-PRINTABLE", StringComparison.OrdinalIgnoreCase))
+        if (IsQuotedPrintable(result.Parameters))
         {
-            // The value becomes a text of vCard 3.0: the bytes in the charset, with ";" and "," kept as they are
+            // The value becomes a text of vCard 3.0: the bytes in the charset, with ";" and "," kept as they are. All the
+            // QUOTED-PRINTABLE encodings are removed: one left would decode the value again when it is read back
             var bytes = MimeEncoding.DecodeQuotedPrintable(Encoding.Latin1.GetBytes(result.Value));
             result.Value = ContentLineWriter.ReplaceLineBreaks((MimeEncoding.GetCharset(charset) ?? Encoding.UTF8).GetString(bytes), "\\n");
-            result.Parameters.Remove(encodingParameter!);
+            for (var i = result.Parameters.Count - 1; i >= 0; i--)
+            {
+                if (IsQuotedPrintable(result.Parameters[i]))
+                {
+                    result.Parameters.RemoveAt(i);
+                }
+            }
+
             result.SetParameter("CHARSET", value: null);
         }
 
         return result;
+    }
+
+    private static ContentLineParameter ParseParameter(string part)
+    {
+        var equal = part.IndexOf('=', StringComparison.Ordinal);
+        if (equal < 0 || part[..equal].Trim() is not { Length: > 0 } candidate || !IsName(candidate))
+        {
+            // vCard 2.1: a parameter without a name (TEL;WORK;VOICE), or an encoding (ENCODING is implied). A part
+            // whose name is not a name (a quote, a semicolon...) is kept the same way, as it was read
+            return new ContentLineParameter(null, part.Trim());
+        }
+
+        return new ContentLineParameter(candidate.ToUpperInvariant(), SplitValues(part[(equal + 1)..]));
     }
 
     private static bool IsName(string name)

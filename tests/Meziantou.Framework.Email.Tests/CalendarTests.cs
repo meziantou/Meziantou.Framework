@@ -529,6 +529,22 @@ public sealed class CalendarTests
         Assert.Equal("Unclosed", unclosed.Events.Single().Summary);
     }
 
+    [Theory]
+    [InlineData("X-A;X-B=QUOTED-PRINTABLE:a=", "a=")]
+    [InlineData("X-A;X-QUOTED-PRINTABLE:a=", "a=")]
+    [InlineData("X-A;ENCODING=QUOTED-PRINTABLE;ENCODING=8BIT:a=", "a=")]
+    [InlineData("X-A;ENCODING=QUOTED-PRINTABLE;QUOTED-PRINTABLE:a=3D3D", "a=3D")]
+    public void ICalendar_QuotedPrintable(string line, string expected)
+    {
+        // Only an encoding in quoted-printable makes "=" at the end of a line a soft line break, and its value is decoded once
+        var calendar = VCalendar.Parse("BEGIN:VCALENDAR\r\n" + line + "\r\nEND:VCALENDAR\r\n").Single();
+        Assert.Equal(expected, calendar.GetProperty("X-A")?.Value);
+        var written = calendar.ToString();
+        var copy = VCalendar.Parse(written).Single();
+        Assert.Equal(expected, copy.GetProperty("X-A")?.Value);
+        Assert.Equal(written, copy.ToString());
+    }
+
     private static IEnumerable<T> FindItems<T>(PstFolder folder)
         where T : MapiMessage
     {

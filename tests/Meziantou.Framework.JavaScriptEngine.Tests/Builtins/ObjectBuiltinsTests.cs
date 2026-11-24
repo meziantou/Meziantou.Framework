@@ -7,7 +7,7 @@ public sealed class ObjectBuiltinsTests
     [Fact]
     public void PropertyTable_RepeatedAddAndRemove_KeepsTheOrder()
     {
-        // String keys and array indices whose hash codes collide in the index (the indices are their own hash codes)
+        // String keys and array indices (multiples of 32, which share the low bits of their hash codes), added and removed in a random order
         var table = new PropertyTable();
         var expected = new List<PropertyKey>();
         var seed = 42u;
@@ -46,6 +46,38 @@ public sealed class ObjectBuiltinsTests
                 Assert.Equal(expected.Where(k => k.IsArrayIndex).Select(k => k.ArrayIndex).Order(), table.GetSortedIndices().ToArray());
             }
         }
+    }
+
+    [Fact]
+    public void PropertyTable_RunsOfConsecutiveIndices_FindsThePresentAndMissingKeys()
+    {
+        // The reverse index of an encoding: long runs of consecutive indices, and indices spread over a range, then some
+        // removed; every index of the range is looked up, most of them missing
+        var table = new PropertyTable();
+        var expected = new Dictionary<uint, int>();
+        for (var i = 0; i < 3000; i++)
+        {
+            expected[0xAC00u + (uint)i] = table.Add(new PropertyKey(0xAC00u + (uint)i), i, PropertyFlags.Default);
+        }
+
+        for (var i = 0; i < 2000; i++)
+        {
+            expected[0x4E00u + ((uint)i * 3)] = table.Add(new PropertyKey(0x4E00u + ((uint)i * 3)), i, PropertyFlags.Default);
+        }
+
+        foreach (var index in expected.Keys.Where(index => index % 5 == 0).ToList())
+        {
+            table.Remove(expected[index]);
+            expected.Remove(index);
+        }
+
+        for (var index = 0x3000u; index < 0xD800u; index++)
+        {
+            var position = table.Find(new PropertyKey(index));
+            Assert.Equal(expected.TryGetValue(index, out var expectedPosition) ? expectedPosition : -1, position);
+        }
+
+        Assert.Equal(expected.Count, table.Count);
     }
 
     [Fact]

@@ -524,9 +524,9 @@ public static partial class CsvFuzzTargets
         }
 
         var utf8 = Encoding.UTF8.GetBytes(text);
-        Check<int>(text, utf8, static value => value.ToString(CultureInfo.InvariantCulture));
-        Check<long>(text, utf8, static value => value.ToString(CultureInfo.InvariantCulture));
-        Check<double>(text, utf8, static value => BitConverter.DoubleToInt64Bits(value).ToString(CultureInfo.InvariantCulture));
+        Check<int>(text, utf8, value => value.ToString(CultureInfo.InvariantCulture));
+        Check<long>(text, utf8, value => value.ToString(CultureInfo.InvariantCulture));
+        Check<double>(text, utf8, value => BitConverter.DoubleToInt64Bits(value).ToString(CultureInfo.InvariantCulture));
 
         static void Check<T>(string text, byte[] utf8, Func<T, string> describe)
             where T : ISpanParsable<T>

@@ -33,25 +33,25 @@ public class ConverterBenchmark
     }
 
     [Benchmark]
-    public long ReadInt32() => Run<int>(0, static v => v);
+    public long ReadInt32() => Run<int>(0, v => v);
 
     [Benchmark]
-    public long ReadInt64() => Run<long>(1, static v => v);
+    public long ReadInt64() => Run<long>(1, v => v);
 
     [Benchmark]
-    public long ReadDouble() => Run<double>(2, static v => (long)v);
+    public long ReadDouble() => Run<double>(2, v => (long)v);
 
     [Benchmark]
-    public long ReadDoubleShort() => Run<double>(3, static v => (long)v);
+    public long ReadDoubleShort() => Run<double>(3, v => (long)v);
 
     [Benchmark]
-    public long ReadDecimal() => Run<decimal>(4, static v => (long)v);
+    public long ReadDecimal() => Run<decimal>(4, v => (long)v);
 
     [Benchmark]
-    public long ReadDateTime() => Run<DateTime>(5, static v => v.Ticks);
+    public long ReadDateTime() => Run<DateTime>(5, v => v.Ticks);
 
     [Benchmark]
-    public long ReadBoolean() => Run<bool>(6, static v => v ? 1 : 0);
+    public long ReadBoolean() => Run<bool>(6, v => v ? 1 : 0);
 
     private long Run<T>(int column, Func<T, long> toLong)
     {

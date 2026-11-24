@@ -50,8 +50,8 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 - **Keep the default formats.** Dates and times in the ISO 8601 round-trip format (`O`), which the serializer writes,
   and decimals written as plain numbers, such as `-123.45`, with the invariant culture, are parsed and written by a
   faster path than the other formats. `int`, `long` and `double` values written as plain numbers with the invariant
-  culture, such as `42` or `-12.5` (a `double` of 15 digits or less, without an exponent), are parsed 2 to 4 times faster
-  than with the general parsers of .NET, with the same results. The numbers and the dates written in the default formats with the invariant
+  culture, such as `42` or `-12.5` (a `double` of 15 digits or less, without an exponent), are parsed by a faster path
+  than the general parsers of .NET, with the same results. The numbers and the dates written in the default formats with the invariant
   culture are not searched for characters that need quotes, unless the separator, the quote or the new line is one of
   their characters.
 - **Serialize to a string only when you need one.** The text is kept in chunks and copied once, into the string;
@@ -59,9 +59,8 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 - **Stream large files** with [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) or [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable) instead of loading every record.
 - **Loading every record is cheap on the garbage collector.** [Deserialize](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.Deserialize) and [DeserializeAsync](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsync)
   collect the records in small arrays, then copy them once to a list of the exact size. A list that grows while the records
-  are read puts its larger arrays on the large object heap, which starts full collections of every record read so far:
-  reading 10,000 records was 2.5 times slower that way. Most of the remaining time of a file with text values is the
-  allocation of the strings and the records.
+  are read puts its larger arrays on the large object heap, which starts full collections of every record read so far.
+  Most of the remaining time of a file with text values is the allocation of the strings and the records.
 
 ## Benchmarks
 

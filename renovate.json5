@@ -82,6 +82,10 @@
       "enabled": false
     },
     {
+      // A major version of these packages only supports the matching TargetFramework (11.0.0 supports net11.0 only:
+      // NU1202 on net10.0), so the references of the ItemGroups conditioned on net10.0 stay on 10.x. Matching the
+      // version written in the project instead of the files keeps the updates of the net11.0 references of the same projects, and
+      // covers the new projects without listing them.
       "matchPackageNames": [
         "Microsoft.AspNetCore.Components",
         "Microsoft.AspNetCore.Components.Web",
@@ -90,21 +94,8 @@
         "Microsoft.AspNetCore.TestHost",
         "Microsoft.AspNetCore.OpenApi"
       ],
-      "matchFileNames": [
-        "src/Meziantou.AspNetCore.Components.LogViewer/Meziantou.AspNetCore.Components.LogViewer.csproj",
-        "src/Meziantou.AspNetCore.Components.WebAssembly/Meziantou.AspNetCore.Components.WebAssembly.csproj",
-        "src/Meziantou.AspNetCore.Components/Meziantou.AspNetCore.Components.csproj",
-        "src/Meziantou.AspNetCore.ServiceDefaults/Meziantou.AspNetCore.ServiceDefaults.csproj",
-        "src/Meziantou.Framework.HttpClientMock/Meziantou.Framework.HttpClientMock.csproj",
-        "tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests/Meziantou.AspNetCore.Authentication.HttpBasic.Tests.csproj",
-        "tests/Meziantou.AspNetCore.Tests/Meziantou.AspNetCore.Tests.csproj",
-        "tests/Meziantou.Framework.DnsProxy.Tests/Meziantou.Framework.DnsProxy.Tests.csproj",
-        "tests/Meziantou.Framework.HttpClientMock.Tests/Meziantou.Framework.HttpClientMock.Tests.csproj",
-        "tests/Meziantou.Framework.Http.Caching.Tests/Meziantou.Framework.Http.Caching.Tests.csproj",
-        "tests/Meziantou.Framework.OpenTelemetry.Tests/Meziantou.Framework.OpenTelemetry.Tests.csproj"
-      ],
-      "matchUpdateTypes": [ "major", "minor" ], // Only allow patch updates
-      "groupName": "all dependencies",
+      "matchCurrentValue": "/^10\\./",
+      "matchUpdateTypes": [ "major" ],
       "enabled": false
     },
     {

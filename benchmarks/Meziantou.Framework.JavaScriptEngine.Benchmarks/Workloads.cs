@@ -180,6 +180,19 @@ internal static class Workloads
               return s + text.search(/id=6199\b/) + text.replace(/ok/g, 'OK').length;
             }
             """,
+        ["LegacyDecoder"] = """
+            const streams = Array.from({ length: 200 }, (_, i) => (0x81 + (i % 100)).toString(16).toUpperCase() + ' ' + (0x41 + (i % 150)).toString(16).toUpperCase());
+            function decode(stream) {
+              stream = stream.replace(/%/g, ' ');
+              stream = stream.replace(/[\s]+/g, ' ').trim();
+              const bytes = stream.split(' ');
+              for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(bytes[i], 16);
+              let out = '';
+              while (bytes.length) out += String.fromCharCode(bytes.shift());
+              return out;
+            }
+            function run() { let n = 0; for (const s of streams) n += decode(s).length; return n; }
+            """,
         ["LoopCapture"] = """
             function run() { let sum = 0; for (let i = 0; i < 100000; i++) { if (i < 0) { let f = () => i; sum += f(); } else { sum += i; } } return sum; }
             """,

@@ -1146,7 +1146,10 @@ public sealed class FontFace
         }
     }
 
-    /// <summary>Gets the box of the bitmap of a glyph of a font without outlines, in font units, from the largest strike that has it.</summary>
+    /// <summary>
+    /// Gets the box of the bitmap of a glyph of a font without outlines, in font units, from the largest strike: the
+    /// largest strike of <c>sbix</c>, whether it has the glyph or not, else the largest one of the other tables that has it.
+    /// </summary>
     private bool TryGetBitmapBounds(int glyphId, out GlyphBox bounds)
     {
         bounds = default;

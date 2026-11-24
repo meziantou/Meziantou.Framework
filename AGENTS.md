@@ -3,9 +3,17 @@
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
 Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
-When building and running tests, use `/p:TreatsWarningsAsErrors=true`.
+When building and running tests, use `/p:TreatWarningsAsErrors=true`.
 Also, do not assume that tests pass just because you did not see any failures in your last test run; verify that all relevant tests were actually run.
 When running tests, you can ignore the warning about "Blame" data collector errors.
+
+A Debug build and `dotnet test` do not report all the diagnostics that CI reports. The code-style rules (`IDExxxx`, such as the naming rules of `IDE1006`) run only in Release or on CI (`EnforceCodeStyleInBuild`), and `dotnet test` turns off all the analyzers (`RunAnalyzers=false`). Before committing, build every project you changed or added in Release, as CI does: the libraries, and also their test, fuzz, sample and benchmark projects. For example:
+
+```shell
+dotnet build fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj --configuration Release
+```
+
+The build must report no errors and no warnings.
 
 In addition to building and testing your changes, you MUST run the following scripts:
 - `dotnet run ./eng/update-all.cs`

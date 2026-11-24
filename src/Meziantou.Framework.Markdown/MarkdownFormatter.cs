@@ -488,21 +488,23 @@ public static class MarkdownFormatter
                     if (!blankLine && previous is not null && tableLines.Count > 0)
                     {
                         var continuedBlock = new ContinuedBlock(string.Join('\n', lines.Skip(previousStart)), previous.Kind());
-                        if (!IsContinuation(continuedBlock, string.Join('\n', tableLines), table.Kind(), underline: null))
+                        if (!IsTableAfter(continuedBlock, tableLines, table) && !IsTableAfterWrittenBlock(ref continuedBlock, tableLines, table))
                         {
                             // The first row of a pipe table that follows a paragraph is a line of the paragraph for Markdig
+                            var indented = false;
                             if (previous is MarkdownParagraphSyntax && table.IsPipeTable && !IsParagraphContinuation(lines[^1].TrimStart(' '), tableLines[0]))
                             {
                                 tableLines[0] = "    " + tableLines[0];
+                                indented = true;
                             }
 
                             // The rows of the table can be lazy lines of the paragraph that ends the block before it, such as a list,
                             // or make a grid table of a paragraph that starts with +: the rows of the text, which the parser read as
                             // a table after the block, are written instead, or a blank line between them
-                            if (!IsContinuation(continuedBlock, string.Join('\n', tableLines), table.Kind(), underline: null))
+                            if (!indented || !IsTableAfter(continuedBlock, tableLines, table))
                             {
                                 var sourceLines = aligned ? GetTableLines(table) : null;
-                                if (sourceLines is not null && IsContinuation(continuedBlock, string.Join('\n', sourceLines), table.Kind(), underline: null))
+                                if (sourceLines is not null && IsTableAfter(continuedBlock, sourceLines, table))
                                 {
                                     tableLines = sourceLines;
                                 }
@@ -665,6 +667,21 @@ public static class MarkdownFormatter
         {
             var blocks = MarkdownSyntaxTree.ParseText(continuedBlock.Text + "\n" + text + (underline is null ? "" : "\n" + underline), parseOptions).GetRoot().Blocks;
             return blocks.Length >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
+        }
+
+        private bool IsTableAfter(ContinuedBlock continuedBlock, List<string> tableLines, MarkdownTableSyntax table) => IsContinuation(continuedBlock, string.Join('\n', tableLines), table.Kind(), underline: null);
+
+        // The block before the table can be written as another kind, such as a setext heading as an ATX heading, or an indented
+        // code block as a fenced one: the table is checked after the block that the lines are. A paragraph is written as one.
+        private bool IsTableAfterWrittenBlock(ref ContinuedBlock continuedBlock, List<string> tableLines, MarkdownTableSyntax table)
+        {
+            if (continuedBlock.Kind == SyntaxKind.Paragraph || MarkdownSyntaxTree.ParseText(continuedBlock.Text, parseOptions).GetRoot().Blocks is not [.., var written] || written.Kind() == continuedBlock.Kind)
+            {
+                return false;
+            }
+
+            continuedBlock = continuedBlock with { Kind = written.Kind() };
+            return IsTableAfter(continuedBlock, tableLines, table);
         }
 
         // The blocks tell whether the text is a paragraph, without parsing its inlines and building its tree, except for the pipe

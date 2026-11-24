@@ -2280,6 +2280,22 @@ public sealed class MarkdownSyntaxTreeTests
     }
 
     [Theory]
+    [InlineData("- intro\n- Title\n  ===\n  | a |\n  | --- |\n", "- intro\n- # Title\n  | a   |\n  | --- |\n")]
+    [InlineData("- x\n-     code\n  | a |\n  | --- |\n", "- x\n- ```\n  code\n  ```\n  | a   |\n  | --- |\n")]
+    [InlineData("    code\n| a |\n| --- |\n", "```\ncode\n```\n| a   |\n| --- |\n")]
+    public void FormatterWritesTheTableAfterTheBlockAsItIsWritten(string text, string expected)
+    {
+        // The setext heading is written as an ATX heading and the indented code block as a fenced one: the table follows them
+        // without a blank line, which would make the list loose
+        var tree = MarkdownSyntaxTree.ParseText(text, MarkdownParseOptions.GitHubFlavored);
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal(expected, formatted.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+    }
+
+    [Theory]
     [InlineData("\n")]
     [InlineData("\r\n")]
     [InlineData("\r")]

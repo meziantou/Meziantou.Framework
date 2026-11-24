@@ -11,6 +11,8 @@ public class SerializerBenchmark
     private string _text = "";
     private byte[] _utf8 = [];
     private List<BenchmarkRow> _rows = [];
+    private string _numericText = "";
+    private byte[] _numericUtf8 = [];
 
     [Params(10_000, 100_000)]
     public int Rows { get; set; }
@@ -21,6 +23,8 @@ public class SerializerBenchmark
         _rows = BenchmarkData.CreateRows(Rows);
         _text = BenchmarkData.CreateText(Rows);
         _utf8 = Encoding.UTF8.GetBytes(_text);
+        _numericText = BenchmarkData.CreateNumericText(Rows);
+        _numericUtf8 = Encoding.UTF8.GetBytes(_numericText);
     }
 
     [Benchmark(Baseline = true)]
@@ -31,6 +35,13 @@ public class SerializerBenchmark
 
     [Benchmark]
     public int Deserialize_Reflection() => CsvSerializer.Deserialize<BenchmarkRow>(_text).Count;
+
+    /// <summary>Reads records without text values: the conversion of the numbers is not hidden by the allocation of strings.</summary>
+    [Benchmark]
+    public int DeserializeNumeric_Generated() => CsvSerializer.Deserialize(_numericText, BenchmarkCsvContext.Default.NumericRow).Count;
+
+    [Benchmark]
+    public int DeserializeNumeric_Generated_Utf8() => CsvSerializer.Deserialize(_numericUtf8.AsMemory(), BenchmarkCsvContext.Default.NumericRow).Count;
 
     [Benchmark]
     public int Serialize_Generated() => CsvSerializer.Serialize(_rows, BenchmarkCsvContext.Default.BenchmarkRow).Length;

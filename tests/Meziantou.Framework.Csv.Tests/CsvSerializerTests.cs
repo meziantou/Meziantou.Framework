@@ -69,6 +69,43 @@ public class CsvSerializerTests
         static string[] Describe(IEnumerable<Person> people) => [.. people.Select(p => $"{p.Name}|{p.Age.ToString(CultureInfo.InvariantCulture)}|{p.BirthDate?.ToString("O", CultureInfo.InvariantCulture)}")];
     }
 
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(33)]
+    [InlineData(8_192)]
+    [InlineData(8_193)]
+    [InlineData(30_001)]
+    public async Task Deserialize_RecordCount(int count)
+    {
+        // The records are collected in segments, then copied to the list: the list has every record, in order, whatever the number of segments
+        var csv = string.Concat(Enumerable.Range(0, count).Select(i => i.ToString(CultureInfo.InvariantCulture) + "\n"));
+        var bytes = Encoding.UTF8.GetBytes(csv);
+        var options = new CsvSerializerOptions { HasHeaderRow = false };
+        var expected = Enumerable.Range(0, count).Select(i => (decimal)i).ToList();
+
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(csv, options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(bytes, options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(new StringReader(csv), options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(new MemoryStream(bytes), options)));
+        Assert.Equal(expected, Values(await CsvSerializer.DeserializeAsync<DecimalModel>(new MemoryStream(bytes), options)));
+        Assert.Equal(expected, Values(await CsvSerializer.DeserializeAsync<DecimalModel>(new StringReader(csv), options)));
+
+        // A value type is collected in segments of its own size
+        var structs = CsvSerializer.Deserialize<StructModel>(csv, options);
+        Assert.Equal(count, structs.Count);
+        Assert.Equal(Enumerable.Range(0, count), structs.Select(item => item.X));
+
+        static List<decimal> Values(List<DecimalModel> models)
+        {
+            Assert.Equal(models.Count, models.Capacity);
+            return [.. models.Select(model => model.Value)];
+        }
+    }
+
     [Fact]
     public void Serialize_TextIsWrittenAsTheWriterWritesIt()
     {
@@ -485,6 +522,174 @@ public class CsvSerializerTests
             Assert.Equal(decimal.GetBits(bcl), decimal.GetBits(CsvSerializer.Deserialize<DecimalModel>(value, options)[0].Value));
             Assert.Equal(decimal.GetBits(bcl), decimal.GetBits(CsvSerializer.Deserialize<DecimalModel>(utf8, options)[0].Value));
         }
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("0.0")]
+    [InlineData("-0.00")]
+    [InlineData("007")]
+    [InlineData("-007")]
+    [InlineData("1.5")]
+    [InlineData("-123.45")]
+    [InlineData("0.1")]
+    [InlineData("0.3")]
+    [InlineData("123456789")]
+    [InlineData("-123456789")]
+    [InlineData("999999999")]
+    [InlineData("1234567890")]
+    [InlineData("2147483647")]
+    [InlineData("-2147483648")]
+    [InlineData("2147483648")]
+    [InlineData("123456789012345678")]
+    [InlineData("-123456789012345678")]
+    [InlineData("999999999999999999")]
+    [InlineData("9223372036854775807")]
+    [InlineData("-9223372036854775808")]
+    [InlineData("9223372036854775808")]
+    [InlineData("999999999999999")]
+    [InlineData("9999999999999999")]
+    [InlineData("0.123456789012345")]
+    [InlineData("0.1234567890123456")]
+    [InlineData("12345678.9012345")]
+    [InlineData("9007199254740993")]
+    [InlineData("1.")]
+    [InlineData(".5")]
+    [InlineData("1..2")]
+    [InlineData("1.2.3")]
+    [InlineData("+1")]
+    [InlineData(" 1")]
+    [InlineData("1 ")]
+    [InlineData("1,000")]
+    [InlineData("1e3")]
+    [InlineData("NaN")]
+    [InlineData("-")]
+    [InlineData("--1")]
+    [InlineData("")]
+    public void PlainNumbers_MatchBcl(string value)
+    {
+        // The fast parsers accept a subset of what the BCL accepts, and give the same values, with the same sign for zero
+        var utf8 = Encoding.UTF8.GetBytes(value);
+        var invariant = CultureInfo.InvariantCulture;
+        AssertMatches<int>(value, utf8);
+        AssertMatches<long>(value, utf8);
+        AssertMatches<double>(value, utf8);
+
+        // Other types and cultures go through the general parsers
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, short>(value, invariant, out _));
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, decimal>(value, invariant, out _));
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, int>(value, (CultureInfo)invariant.Clone(), out _));
+
+        static void AssertMatches<T>(string value, byte[] utf8)
+            where T : ISpanParsable<T>, IUtf8SpanParsable<T>
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var parsed = Serialization.Converters.PlainNumberParser.TryParse<char, T>(value, invariant, out var result);
+            Assert.Equal(parsed, Serialization.Converters.PlainNumberParser.TryParse<byte, T>(utf8, invariant, out var utf8Result));
+            if (parsed)
+            {
+                var expected = T.Parse(value, invariant);
+                AssertSame(expected, result);
+                AssertSame(expected, utf8Result);
+            }
+
+            // The converters give the values and the errors of the BCL
+            var converter = CsvMetadataServices.GetConverter<T>(CsvSerializerOptions.Default);
+            var context = new CsvConverterContext(CsvSerializerOptions.Default);
+            if (T.TryParse(value, invariant, out var bcl))
+            {
+                AssertSame(bcl, converter.Read(value, context));
+                AssertSame(bcl, converter.Read(utf8, context));
+            }
+            else
+            {
+                Assert.ThrowsAny<Exception>(() => converter.Read(value, context));
+                Assert.ThrowsAny<Exception>(() => converter.Read(utf8, context));
+            }
+        }
+
+        static void AssertSame<T>(T expected, T actual)
+        {
+            // Compares the bits of the doubles, so that 0 and -0 are different
+            if (expected is double expectedDouble && actual is double actualDouble)
+            {
+                Assert.Equal(BitConverter.DoubleToInt64Bits(expectedDouble), BitConverter.DoubleToInt64Bits(actualDouble));
+            }
+            else
+            {
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    public void PlainNumbers_MatchBcl_Random()
+    {
+        // xorshift: deterministic values, without the warnings about Random
+        var state = 0x9E3779B97F4A7C15UL;
+        ulong Next()
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+
+        var invariant = CultureInfo.InvariantCulture;
+        var values = new List<string>();
+        for (var i = 0; i < 20_000; i++)
+        {
+            var random = Next();
+            var digits = (int)(Next() % 19) + 1;
+            var integer = random % (ulong)Math.Pow(10, Math.Min(digits, 18));
+            var text = integer.ToString(invariant);
+            if (Next() % 2 == 0)
+            {
+                text = "-" + text;
+            }
+
+            values.Add(text);
+
+            // Decimals of 1 to 16 digits in all, with up to 15 after the dot
+            var scale = (int)(Next() % 16);
+            if (scale > 0)
+            {
+                var fraction = (Next() % (ulong)Math.Pow(10, scale)).ToString(invariant).PadLeft(scale, '0');
+                values.Add(text + "." + fraction);
+            }
+
+            // The shortest text of a random double, as the serializer writes it
+            values.Add(BitConverter.Int64BitsToDouble((long)(Next() >> 2) + 0x3000000000000000).ToString("R", invariant));
+            values.Add(Math.Round(BitConverter.UInt64BitsToDouble(0x3FF0000000000000 | (Next() >> 12)) * 1000, (int)(Next() % 6)).ToString(invariant));
+        }
+
+        var parsedCount = 0;
+        foreach (var value in values)
+        {
+            var utf8 = Encoding.UTF8.GetBytes(value);
+            if (Serialization.Converters.PlainNumberParser.TryParse<char, double>(value, invariant, out var result))
+            {
+                parsedCount++;
+                var expected = BitConverter.DoubleToInt64Bits(double.Parse(value, invariant));
+                Assert.Equal(expected, BitConverter.DoubleToInt64Bits(result));
+                Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, double>(utf8, invariant, out var utf8Result));
+                Assert.Equal(expected, BitConverter.DoubleToInt64Bits(utf8Result));
+            }
+
+            if (Serialization.Converters.PlainNumberParser.TryParse<char, long>(value, invariant, out var longResult))
+            {
+                Assert.Equal(long.Parse(value, invariant), longResult);
+            }
+
+            if (Serialization.Converters.PlainNumberParser.TryParse<char, int>(value, invariant, out var intResult))
+            {
+                Assert.Equal(int.Parse(value, invariant), intResult);
+            }
+        }
+
+        // Most values take the fast path: the test checks it, not only the general parser
+        Assert.True(parsedCount > values.Count / 2, parsedCount.ToString(invariant));
     }
 
     [Fact]

@@ -25,7 +25,26 @@ public sealed class BenchmarkRow
     public string? Notes { get; set; }
 }
 
+// A record without text: the deserialization is not dominated by the allocation of strings
+public sealed class NumericRow
+{
+    public int Id { get; set; }
+
+    public long Count { get; set; }
+
+    public double Value { get; set; }
+
+    public double Temperature { get; set; }
+
+    public decimal Price { get; set; }
+
+    public DateTime Timestamp { get; set; }
+
+    public bool Flag { get; set; }
+}
+
 [CsvSerializable(typeof(BenchmarkRow))]
+[CsvSerializable(typeof(NumericRow))]
 internal sealed partial class BenchmarkCsvContext : CsvSerializerContext
 {
 }
@@ -74,7 +93,30 @@ internal static class BenchmarkData
         return rows;
     }
 
-    public static string CreateText(int count) => CsvSerializer.Serialize(CreateRows(count), BenchmarkCsvContext.Default.BenchmarkRow);
+    public static List<NumericRow> CreateNumericRows(int count)
+    {
+        var random = new Random(42);
+        var rows = new List<NumericRow>(count);
+        for (var i = 0; i < count; i++)
+        {
+            rows.Add(new NumericRow
+            {
+                Id = i,
+                Count = random.NextInt64(0, 10_000_000_000),
+                Value = random.NextDouble() * 1000,
+                Temperature = Math.Round((random.NextDouble() * 60) - 20, 1, MidpointRounding.AwayFromZero),
+                Price = random.Next(0, 1_000_000) / 100m,
+                Timestamp = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddMinutes(random.Next(0, 3_000_000)),
+                Flag = random.Next(2) == 0,
+            });
+        }
+
+        return rows;
+    }
+
+    public static string CreateNumericText(int count) => CsvSerializer.Serialize(CreateNumericRows(count), BenchmarkCsvContext.Default.NumericRow);
+
+    public static string CreateText(int count) =>CsvSerializer.Serialize(CreateRows(count), BenchmarkCsvContext.Default.BenchmarkRow);
 
     public static byte[] CreateUtf8(int count) => Encoding.UTF8.GetBytes(CreateText(count));
 }

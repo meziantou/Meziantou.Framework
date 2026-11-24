@@ -14,6 +14,11 @@ internal sealed class CsvRecordBinder<T>
     private readonly CsvConstructorArguments? _arguments;
     private readonly bool _throwOnUnmappedColumn;
 
+    // The columns whose member is set after the object is created, in the order of the columns: the loop over the values of a record does not
+    // skip the columns without a member, and does not call CanSet for each value
+    private readonly int[] _setColumns;
+    private readonly CsvPropertyInfo<T>[] _setProperties;
+
     private CsvRecordBinder(CsvTypeInfo<T> typeInfo, CsvPropertyInfo<T>?[] columns, int[] requiredColumns, bool throwOnUnmappedColumn)
     {
         _typeInfo = typeInfo;
@@ -24,6 +29,20 @@ internal sealed class CsvRecordBinder<T>
         {
             _arguments = typeInfo.CreateArguments();
         }
+
+        var setColumns = new List<int>();
+        var setProperties = new List<CsvPropertyInfo<T>>();
+        for (var i = 0; i < columns.Length; i++)
+        {
+            if (columns[i] is { CanSet: true } property)
+            {
+                setColumns.Add(i);
+                setProperties.Add(property);
+            }
+        }
+
+        _setColumns = [.. setColumns];
+        _setProperties = [.. setProperties];
     }
 
     public static CsvRecordBinder<T> Create<TChar>(CsvTypeInfo<T> typeInfo, CsvParser<TChar> parser)
@@ -149,13 +168,20 @@ internal sealed class CsvRecordBinder<T>
             ((ICsvOnDeserializing)obj!).OnDeserializing();
         }
 
-        for (var column = 0; column < count; column++)
+        // The ends of the columns are read once for the record, instead of checking the index of each value
+        var columnEnds = parser.RowColumnEnds;
+        var setColumns = _setColumns;
+        var setProperties = _setProperties;
+        for (var i = 0; i < setColumns.Length; i++)
         {
-            var property = columns[column];
-            if (property is null || !property.CanSet)
-                continue;
+            // The columns are in ascending order: the next ones are not in the record either
+            var column = setColumns[i];
+            if (column >= columnCount)
+                break;
 
-            parser.GetField(row, column, out var value, out _, out _);
+            var property = setProperties[i];
+            var start = columnEnds[column] + 1;
+            parser.GetValue(column, row[start..columnEnds[column + 1]], out var value, out _);
             try
             {
                 if (typeof(TChar) == typeof(char))

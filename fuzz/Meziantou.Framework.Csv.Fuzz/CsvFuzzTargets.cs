@@ -46,6 +46,7 @@ public static partial class CsvFuzzTargets
         new("csv-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
         new("csv-iso8601", ParseIso8601) { Seeds = GetIso8601Seeds, Dictionary = ["-", ":", "T", "Z", ".", "+", "2024", "02", "29", "23", "59", "0000000", "+02:00", "+14:00", "0001-01-01", "9999-12-31"] },
         new("csv-decimal", ParseDecimal) { Seeds = GetDecimalSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.50", "123456789", "999999999999999999", " ", ",", "+", "e"] },
+        new("csv-numbers", ParseNumbers) { Seeds = GetNumberSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.5", "999999999", "2147483648", "999999999999999", "9223372036854775808", " ", ",", "+", "e", "E", "NaN"] },
     ];
 
     /// <summary>
@@ -500,6 +501,67 @@ public static partial class CsvFuzzTargets
         }
 
         static string Describe(decimal value) => string.Join(',', decimal.GetBits(value));
+    }
+
+    /// <summary>
+    /// <c>mode, value</c>: when bit 0 of <c>mode</c> is set and <c>value</c> has 8 bytes, they are a double, written with its shortest text or with
+    /// up to 15 decimals (bits 1-4); otherwise <c>value</c> is the text. The fast parsers of <see cref="int"/>, <see cref="long"/> and
+    /// <see cref="double"/> agree in UTF-16 and UTF-8, and give the value of the BCL, with the same sign for zero.
+    /// </summary>
+    private static void ParseNumbers(ReadOnlySpan<byte> data)
+    {
+        var mode = FuzzInput.ReadByte(ref data);
+        string text;
+        if ((mode & 1) != 0 && data.Length >= 8)
+        {
+            var number = BinaryPrimitives.ReadDoubleLittleEndian(data);
+            var decimals = (mode >> 1) & 0x0F;
+            text = decimals == 0 ? number.ToString("R", CultureInfo.InvariantCulture) : number.ToString("F" + Math.Min(decimals, 15).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            text = FuzzInput.ReadText(data);
+        }
+
+        var utf8 = Encoding.UTF8.GetBytes(text);
+        Check<int>(text, utf8, static value => value.ToString(CultureInfo.InvariantCulture));
+        Check<long>(text, utf8, static value => value.ToString(CultureInfo.InvariantCulture));
+        Check<double>(text, utf8, static value => BitConverter.DoubleToInt64Bits(value).ToString(CultureInfo.InvariantCulture));
+
+        static void Check<T>(string text, byte[] utf8, Func<T, string> describe)
+            where T : ISpanParsable<T>
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var parsed = Serialization.Converters.PlainNumberParser.TryParse<char, T>(text, invariant, out var result);
+            var utf8Parsed = Serialization.Converters.PlainNumberParser.TryParse<byte, T>(utf8, invariant, out var utf8Result);
+            FuzzAssert.Equal(parsed, utf8Parsed, "The UTF-16 and UTF-8 fast parsers disagree: " + typeof(T).Name);
+            if (!parsed)
+                return;
+
+            if (!T.TryParse(text, invariant, out var expected))
+                FuzzAssert.Fail("The BCL rejects a value the fast parser accepts: " + typeof(T).Name + " " + FuzzAssert.Format(text));
+
+            FuzzAssert.Equal(describe(expected), describe(result), "The number is not the number of the BCL: " + typeof(T).Name);
+            FuzzAssert.Equal(describe(expected), describe(utf8Result), "The UTF-8 number is not the number of the BCL: " + typeof(T).Name);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumberSeeds()
+    {
+        string[] values = ["0", "-0", "0.0", "-0.00", "007", "1.5", "-123.45", "0.1", "999999999", "1234567890", "2147483648", "-2147483648", "999999999999999999", "9223372036854775808", "999999999999999", "9999999999999999", "0.123456789012345", "12345678.9012345", "9007199254740993", "1.", ".5", "1e3", "+1", " 1", "1,000", "NaN"];
+        for (var i = 0; i < values.Length; i++)
+        {
+            yield return FuzzSeed.FromText("number-" + i.ToString(CultureInfo.InvariantCulture), [0], values[i]);
+        }
+
+        double[] doubles = [0.1, 123.456, -42.5, 1e-7, 1e22, 6.02214076e23, double.Epsilon, double.MaxValue, -0.0, 23.4];
+        for (var i = 0; i < doubles.Length; i++)
+        {
+            var bytes = new byte[9];
+            bytes[0] = (byte)(1 | ((i % 8) << 1));
+            BinaryPrimitives.WriteDoubleLittleEndian(bytes.AsSpan(1), doubles[i]);
+            yield return new FuzzSeed("double-" + i.ToString(CultureInfo.InvariantCulture), bytes);
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetDecimalSeeds()

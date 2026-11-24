@@ -277,6 +277,27 @@ internal static class CsvSimd
             separators3 | quotes3 | Vector128.Equals(value3, cr) | Vector128.Equals(value3, lf));
     }
 
+    /// <summary>Gets a value indicating whether the bytes of a block are ASCII.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsAscii(ref byte start, int vectorSize)
+    {
+        var nonAscii = Vector128.Create((byte)0x80);
+        switch (vectorSize)
+        {
+            case 64 when Vector512.IsHardwareAccelerated:
+                return (unsafe(Vector512.LoadUnsafe(ref start)) & Vector512.Create((byte)0x80)) == Vector512<byte>.Zero;
+
+            case 64:
+                return ((unsafe(Vector128.LoadUnsafe(ref start)) | unsafe(Vector128.LoadUnsafe(ref start, 16)) | unsafe(Vector128.LoadUnsafe(ref start, 32)) | unsafe(Vector128.LoadUnsafe(ref start, 48))) & nonAscii) == Vector128<byte>.Zero;
+
+            case 32:
+                return ((unsafe(Vector128.LoadUnsafe(ref start)) | unsafe(Vector128.LoadUnsafe(ref start, 16))) & nonAscii) == Vector128<byte>.Zero;
+
+            default:
+                return (unsafe(Vector128.LoadUnsafe(ref start)) & nonAscii) == Vector128<byte>.Zero;
+        }
+    }
+
     /// <summary>Gets, for each bit of <paramref name="value"/>, the XOR of this bit and of the bits below it.</summary>
     /// <remarks>
     /// With the mask of the quotes of a block, the bits that are set are the elements after an odd number of quotes: the elements of the quoted

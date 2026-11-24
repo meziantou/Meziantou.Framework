@@ -83,6 +83,7 @@ internal sealed class CsvParser<T> : IDisposable
     private int _rowColumnStart;
     private int _columnCount;
     private bool _rowIsPlain;
+    private bool _rowIsAscii; // See RowEntry.IsAscii
     private int _rowSimpleQuotedColumns; // The quoted values of the columns before this index have no escaped quote: see RowEntry.FirstComplexQuoteColumn
     private long _lineNumber;
     private long _recordIndex = -1;
@@ -98,6 +99,8 @@ internal sealed class CsvParser<T> : IDisposable
     private bool _scanRowHasQuote;
     private int _scanFirstComplexQuoteColumn; // See RowEntry.FirstComplexQuoteColumn
     private ulong _scanOpeningQuotes; // The opening quotes of the block of ScanRecords, in the records it has not ended
+    private bool _scanBlockIsAscii; // The block of ScanRecords is UTF-8 data whose bytes are all ASCII
+    private bool _scanRowIsAscii; // The blocks of the record that ScanRecords reads are UTF-8 data whose bytes are all ASCII
     private int _scanColumnStart;
     private bool _scanSkipRow; // The bad data handler asked to skip the record being scanned
     private long _nextLineNumber = 1;
@@ -426,6 +429,7 @@ internal sealed class CsvParser<T> : IDisposable
         _columnCount = row.ColumnCount;
         _lineNumber = row.LineNumber;
         _rowIsPlain = !row.HasQuote && !_trimOuter;
+        _rowIsAscii = row.IsAscii;
         _rowSimpleQuotedColumns = row.HasQuote && !_trimOuter && !_trimInside ? row.FirstComplexQuoteColumn : 0;
         _rowVersion++;
         _scratchUsed = 0;
@@ -574,6 +578,7 @@ internal sealed class CsvParser<T> : IDisposable
         _scanRowHasQuote = false;
         _scanFirstComplexQuoteColumn = int.MaxValue;
         _scanOpeningQuotes = 0;
+        _scanRowIsAscii = typeof(T) == typeof(byte);
 
         // Only the locals used for each separator are in the loop: the state of the records and of the blocks is in fields, or in a few bits
         ulong events = 0; // The separators and the line terminators outside the quoted values, and the escaped quotes, not read yet
@@ -615,6 +620,13 @@ internal sealed class CsvParser<T> : IDisposable
                 else
                 {
                     CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, blockStart)), vectorSize, _separatorByte, _quoteByte, out blockSeparators, out quotes, out specials);
+                }
+
+                // A record with a byte from 0x80, or that shares a block with one, is not marked: its values are validated when they become strings
+                if (typeof(T) == typeof(byte))
+                {
+                    _scanBlockIsAscii = CsvSimd.IsAscii(ref unsafe(Unsafe.As<T, byte>(ref Unsafe.Add(ref dataRef, blockStart))), vectorSize);
+                    _scanRowIsAscii &= _scanBlockIsAscii;
                 }
 
                 offset = blockStart - rowStart;
@@ -732,7 +744,7 @@ internal sealed class CsvParser<T> : IDisposable
             var columnCount = columnTotal - columnStart - 1;
             if (!_skipEmptyLines || columnCount > 0)
             {
-                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, hasQuote, _scanFirstComplexQuoteColumn);
+                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, hasQuote, _scanRowIsAscii, _scanFirstComplexQuoteColumn);
             }
 
             _nextLineNumber++;
@@ -745,6 +757,7 @@ internal sealed class CsvParser<T> : IDisposable
             columnEnds[columnTotal++] = -1;
             _scanRowHasQuote = false;
             _scanFirstComplexQuoteColumn = int.MaxValue;
+            _scanRowIsAscii = _scanBlockIsAscii;
         }
 
     // The record is scanned again by ScanAny
@@ -1165,7 +1178,7 @@ internal sealed class CsvParser<T> : IDisposable
             }
             else if (!_skipEmptyLines || columnCount > 0)
             {
-                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, _scanRowHasQuote, _scanFirstComplexQuoteColumn);
+                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, _scanRowHasQuote, isAscii: false, _scanFirstComplexQuoteColumn);
             }
 
             _nextLineNumber += _scanLineTerminators + (rowEnd > contentEnd ? 1 : 0);
@@ -1458,23 +1471,35 @@ internal sealed class CsvParser<T> : IDisposable
         return _header.TryGetIndex(columnName, out index);
     }
 
+    // The values of the records known to be ASCII (see RowEntry.IsAscii) are not validated. The string pool is in another method: its stack buffer
+    // prevents the inlining of this one in the callers.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public string GetString(ReadOnlySpan<T> value)
     {
+        if (_stringPool is not null)
+            return GetPooledString(_stringPool, value);
+
         if (typeof(T) == typeof(char))
-        {
-            var chars = unsafe(MemoryMarshal.Cast<T, char>(value));
-            return _stringPool is not null ? _stringPool.GetOrAdd(chars) : new string(chars);
-        }
+            return new string(unsafe(MemoryMarshal.Cast<T, char>(value)));
 
         var bytes = unsafe(MemoryMarshal.Cast<T, byte>(value));
-        if (_stringPool is not null && bytes.Length <= CsvStringPool.MaxLength)
+        return _rowIsAscii ? Utf8Transcoder.GetAsciiString(bytes) : Utf8Transcoder.GetString(bytes);
+    }
+
+    private string GetPooledString(CsvStringPool stringPool, ReadOnlySpan<T> value)
+    {
+        if (typeof(T) == typeof(char))
+            return stringPool.GetOrAdd(unsafe(MemoryMarshal.Cast<T, char>(value)));
+
+        var bytes = unsafe(MemoryMarshal.Cast<T, byte>(value));
+        if (bytes.Length <= CsvStringPool.MaxLength)
         {
             Span<char> buffer = unsafe(stackalloc char[CsvStringPool.MaxLength]);
             Utf8.ToUtf16(bytes, buffer, out _, out var charsWritten, replaceInvalidSequences: true);
-            return _stringPool.GetOrAdd(buffer[..charsWritten]);
+            return stringPool.GetOrAdd(buffer[..charsWritten]);
         }
 
-        return Utf8Transcoder.GetString(bytes);
+        return _rowIsAscii ? Utf8Transcoder.GetAsciiString(bytes) : Utf8Transcoder.GetString(bytes);
     }
 
     /// <summary>Creates an exception about the current record.</summary>
@@ -1577,10 +1602,10 @@ internal sealed class CsvParser<T> : IDisposable
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct RowEntry(int start, int length, int columnStart, int columnCount, long lineNumber, bool hasQuote, int firstComplexQuoteColumn)
+    private readonly struct RowEntry(int start, int length, int columnStart, int columnCount, long lineNumber, bool hasQuote, bool isAscii, int firstComplexQuoteColumn)
     {
-        // The flag is in the lowest bit of the column count
-        private readonly int _columnCountAndFlag = (columnCount << 1) | (hasQuote ? 1 : 0);
+        // The flags are in the lowest bits of the column count
+        private readonly int _columnCountAndFlags = (columnCount << 2) | (isAscii ? 2 : 0) | (hasQuote ? 1 : 0);
 
         public int Start { get; } = start;
 
@@ -1590,9 +1615,12 @@ internal sealed class CsvParser<T> : IDisposable
 
         public long LineNumber { get; } = lineNumber;
 
-        public int ColumnCount => _columnCountAndFlag >> 1;
+        public int ColumnCount => _columnCountAndFlags >> 2;
 
-        public bool HasQuote => (_columnCountAndFlag & 1) != 0;
+        public bool HasQuote => (_columnCountAndFlags & 1) != 0;
+
+        /// <summary>Gets a value indicating whether the record is UTF-8 data whose bytes are all ASCII. It is false when the scan did not check it.</summary>
+        public bool IsAscii => (_columnCountAndFlags & 2) != 0;
 
         /// <summary>Gets the index of the first column with a quote that does not only open or close its value, or <see cref="int.MaxValue"/>.</summary>
         /// <remarks>

@@ -1045,6 +1045,48 @@ public class CsvReaderTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(ReaderKinds))]
+    public void Utf8StringsOfAsciiAndOtherRecords(ReaderKind kind, int vectorSize)
+    {
+        // The values of the records whose blocks are ASCII become strings without validation: a character from U+0080 anywhere, in a record or in a
+        // record that shares a block with it, gives the strings of the UTF-16 reader
+        for (var length = 0; length < 140; length++)
+        {
+            var sb = new StringBuilder();
+            for (var record = 0; record < 6; record++)
+            {
+                sb.Append('a', length).Append(',').Append(record % 3 is 1 ? "é" : "b").Append(",\"c\"\"d\",").Append('e', record * 9).Append('\n');
+            }
+
+            sb.Append("f,😀\n");
+            var text = sb.ToString();
+            var expected = ReadAll(text, ReaderKind.Utf16Memory, new CsvReaderOptions { HasHeaderRow = false, VectorSize = 0 });
+            var actual = ReadAll(text, kind, new CsvReaderOptions { HasHeaderRow = false, VectorSize = vectorSize });
+            Assert.Equal(Describe(expected), Describe(actual), $"Input: {text.ReplaceLineEndings("\\n")}");
+        }
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(16)]
+    [InlineData(32)]
+    [InlineData(64)]
+    public void Utf8InvalidBytesInLongRecordsAreReplaced(int vectorSize)
+    {
+        // A byte that is not valid UTF-8 is not ASCII: the values of its record are validated, and the invalid sequence is replaced with U+FFFD
+        var ascii = new string('a', 70);
+        byte[] data = [.. Encoding.UTF8.GetBytes(ascii + ",b\n"), 0x63, 0xFF, 0x2C, .. Encoding.UTF8.GetBytes("d\n" + ascii + ",e\n")];
+        using var reader = Utf8CsvReader.Create(data, new CsvReaderOptions { HasHeaderRow = false, VectorSize = vectorSize });
+        var records = new List<string[]>();
+        while (reader.Read())
+        {
+            records.Add(reader.Current.ToStringArray());
+        }
+
+        Assert.Equal(Describe([[ascii, "b"], ["c�", "d"], [ascii, "e"]]), Describe([.. records]));
+    }
+
     // The values and line numbers of the records, and the error that stops the reading
     private static string ReadSnapshot(string text, ReaderKind kind, CsvReaderOptions options)
     {

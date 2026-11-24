@@ -320,3 +320,55 @@ converted: to skip records by their values, such as a total line at the end of a
 
 A type that implements [ICsvOnDeserializing](cref:Meziantou.Framework.Csv.Serialization.ICsvOnDeserializing), [ICsvOnDeserialized](cref:Meziantou.Framework.Csv.Serialization.ICsvOnDeserialized), [ICsvOnSerializing](cref:Meziantou.Framework.Csv.Serialization.ICsvOnSerializing) or [ICsvOnSerialized](cref:Meziantou.Framework.Csv.Serialization.ICsvOnSerialized) is notified before and
 after its members are read or written, for instance to validate a record.
+
+## Convert the records in parallel
+
+Most of the time spent reading typed records goes to converting the values: parsing numbers and dates, creating strings
+and objects. Set [MaxDegreeOfParallelism](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.MaxDegreeOfParallelism) to convert the records on the thread pool:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_ParallelModel;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed class ParallelModel
+{
+    public int X { get; set; }
+
+    public double Y { get; set; }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_Parallel;format=md-fenced-code-block;dedent=true -->
+```csharp
+var csv = "X,Y\n" + string.Concat(Enumerable.Range(0, 10_000).Select(i => FormattableString.Invariant($"{i},{i * 0.5}\n")));
+
+// The data is split into records on the calling thread, and the records are converted to objects on the thread pool
+var options = new CsvSerializerOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+var values = CsvSerializer.Deserialize<ParallelModel>(csv, options);
+
+Assert.HasCount(10_000, values);
+Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the records
+```
+<!-- endref -->
+
+- The data is still split into records on the calling thread: whether a line terminator ends a record depends on the
+  quotes before it, so the data cannot be split anywhere else. The records are grouped in batches of a few hundred, and
+  a task of the thread pool converts each batch, unless the calling thread takes the batch first because no task has
+  started it. A batch copies the records read from a stream or a text reader, but refers to the data when it is
+  already in memory (a string or a memory block).
+- The objects are returned in the order of the records, and the exceptions are the ones reading the records one by one
+  throws: the records before an error are returned first by [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) and
+  [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable), which read a few batches ahead of the objects they return.
+- `-1` uses every processor. The default, `1`, converts the records on the calling thread. The browser and WASI always do.
+- The constructors, the setters, the converters and the callbacks of the type run on several threads at the same time:
+  they must not change shared state without synchronization. The
+  [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler) is called by one thread at a time, but not in the
+  order of the records, and it can be called for records after the error that ends the reading.
+- The records are converted ahead of the objects returned. The token passed to
+  [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable) is checked when the next object is requested, as
+  when converting the records one by one, but when the code of the type cancels it, the cancellation can stop the
+  enumeration before objects that were already converted are returned: fewer objects can be returned than with `1`.
+
+The gain is largest when the values take time to convert, such as numbers and dates. When most values are strings,
+allocating them is the limit and adding threads helps less, unless the application uses the server garbage collector.
+Splitting the data on one thread limits the gain to a few times, whatever the number of processors: measure with your
+data before choosing a value, and a few threads are often as fast as every processor.

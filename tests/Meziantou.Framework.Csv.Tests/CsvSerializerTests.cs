@@ -1331,7 +1331,7 @@ public class CsvSerializerTests
     {
         CsvBadDataHandler badDataHandler = _ => CsvBadDataAction.Skip;
         CsvDeserializationErrorHandler errorHandler = _ => CsvDeserializationErrorAction.Ignore;
-        var options = new CsvSerializerOptions { Separator = ';', PropertyNameCaseInsensitive = true, Converters = [new PointConverter()], BadDataHandler = badDataHandler, DeserializationErrorHandler = errorHandler };
+        var options = new CsvSerializerOptions { Separator = ';', PropertyNameCaseInsensitive = true, Converters = [new PointConverter()], BadDataHandler = badDataHandler, DeserializationErrorHandler = errorHandler, MaxDegreeOfParallelism = 3 };
         var copy = new CsvSerializerOptions(options) { NewLine = "\n" };
         Assert.Same(badDataHandler, copy.BadDataHandler);
         Assert.Same(errorHandler, copy.DeserializationErrorHandler);
@@ -1339,6 +1339,252 @@ public class CsvSerializerTests
         Assert.True(copy.PropertyNameCaseInsensitive);
         Assert.Single(copy.Converters);
         Assert.Equal("\n", copy.NewLine);
+        Assert.Equal(3, copy.MaxDegreeOfParallelism);
+    }
+
+    [Fact]
+    public void Parallel()
+    {
+        #region CsvSerializer_Parallel
+        var csv = "X,Y\n" + string.Concat(Enumerable.Range(0, 10_000).Select(i => FormattableString.Invariant($"{i},{i * 0.5}\n")));
+
+        // The data is split into records on the calling thread, and the records are converted to objects on the thread pool
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+        var values = CsvSerializer.Deserialize<ParallelModel>(csv, options);
+
+        Assert.HasCount(10_000, values);
+        Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the records
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(0, 2)]
+    [InlineData(1, 2)]
+    [InlineData(255, 2)]
+    [InlineData(256, 2)]
+    [InlineData(257, 2)]
+    [InlineData(5_000, 2)]
+    [InlineData(5_000, 3)]
+    [InlineData(5_000, -1)]
+    public async Task Parallel_MatchesSequential(int count, int degreeOfParallelism)
+    {
+        // Quoted values, escaped quotes and line terminators in values: the positions, the line numbers and the unescaped values come from the copies of the records
+        var csv = new StringBuilder("Id,Name,Price\n");
+        var peopleCsv = new StringBuilder("Name,Age\n");
+        for (var i = 0; i < count; i++)
+        {
+            var name = (i % 7) switch
+            {
+                0 => "\"Name, with a separator\"",
+                1 => "\"Name with \"\"quotes\"\"\"",
+                2 => "\"Name on\ntwo lines\"",
+                3 => "Ünïcödé " + i.ToString(CultureInfo.InvariantCulture),
+                4 => "",
+                _ => "Name " + i.ToString(CultureInfo.InvariantCulture),
+            };
+
+            csv.Append(CultureInfo.InvariantCulture, $"{i},{name},{i * 1.25m}\n");
+            peopleCsv.Append(CultureInfo.InvariantCulture, $"{name},{i}\n");
+            if (i % 100 == 0)
+            {
+                csv.Append('\n'); // An empty line is skipped
+            }
+        }
+
+        var text = csv.ToString();
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var sequential = new CsvSerializerOptions();
+        var parallel = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+        var expected = CsvSerializer.Deserialize<Product>(text, sequential);
+        Assert.HasCount(count, expected);
+
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(text, parallel));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(bytes, parallel));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(new StringReader(text), parallel));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(new MemoryStream(bytes), parallel));
+        Assert.Equal(expected, await CsvSerializer.DeserializeAsync<Product>(new MemoryStream(bytes), parallel));
+        Assert.Equal(expected, await CsvSerializer.DeserializeAsync<Product>(new StringReader(text), parallel));
+        Assert.Equal(expected, CsvSerializer.DeserializeEnumerable<Product>(new StringReader(text), parallel).ToList());
+        Assert.Equal(expected, CsvSerializer.DeserializeEnumerable<Product>(new MemoryStream(bytes), parallel).ToList());
+        Assert.Equal(expected, await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Product>(new StringReader(text), parallel)));
+        Assert.Equal(expected, await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Product>(new MemoryStream(bytes), parallel)));
+
+        // A type with setters, and a generated context
+        var context = new TestCsvContext(new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism });
+        var people = peopleCsv.ToString();
+        Assert.Equal(
+            CsvSerializer.Deserialize(people, TestCsvContext.Default.Person).Select(p => (p.Name, p.Age)),
+            CsvSerializer.Deserialize(people, context.Person).Select(p => (p.Name, p.Age)));
+    }
+
+    [Fact]
+    public async Task Parallel_ErrorsAreThrownInOrder()
+    {
+        // A conversion error in record 2000, then another one in record 2500, then malformed data in record 2800
+        static string CreateCsv(bool conversionErrors)
+        {
+            var csv = new StringBuilder("Id,Name,Price\n");
+            for (var i = 0; i < 3_000; i++)
+            {
+                var id = conversionErrors && i is 2_000 or 2_500 ? "x" : i.ToString(CultureInfo.InvariantCulture);
+                var name = i is 2_800 ? "\"a\"b" : "a";
+                csv.Append(CultureInfo.InvariantCulture, $"{id},{name},1\n");
+            }
+
+            return csv.ToString();
+        }
+
+        foreach (var (data, expectedCount) in new[] { (CreateCsv(conversionErrors: true), 2_000), (CreateCsv(conversionErrors: false), 2_800) })
+        {
+            var sequential = new CsvSerializerOptions { Strict = true };
+            var parallel = new CsvSerializerOptions { Strict = true, MaxDegreeOfParallelism = 4 };
+            var expected = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(data, sequential));
+            Assert.Equal(expectedCount, expected.RowIndex);
+
+            void Check(CsvException exception)
+            {
+                Assert.Equal(expected.Message, exception.Message);
+                Assert.Equal(expected.RowIndex, exception.RowIndex);
+                Assert.Equal(expected.LineNumber, exception.LineNumber);
+                Assert.Equal(expected.Position, exception.Position);
+            }
+
+            Check(Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(data, parallel)));
+            Check(Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(new MemoryStream(Encoding.UTF8.GetBytes(data)), parallel)));
+            Check(await Assert.ThrowsAsync<CsvException>(() => CsvSerializer.DeserializeAsync<Product>(new StringReader(data), parallel)));
+
+            // The enumerable overloads return the records before the error
+            var read = 0;
+            Check(Assert.Throws<CsvException>(() =>
+            {
+                foreach (var product in CsvSerializer.DeserializeEnumerable<Product>(new StringReader(data), parallel))
+                {
+                    Assert.Equal(read, product.Id);
+                    read++;
+                }
+            }));
+            Assert.Equal(expectedCount, read);
+
+            read = 0;
+            Check(await Assert.ThrowsAsync<CsvException>(async () =>
+            {
+                await foreach (var product in CsvSerializer.DeserializeAsyncEnumerable<Product>(new MemoryStream(Encoding.UTF8.GetBytes(data)), parallel))
+                {
+                    read++;
+                }
+            }));
+            Assert.Equal(expectedCount, read);
+        }
+    }
+
+    [Fact]
+    public async Task Parallel_LongRecords()
+    {
+        // Records longer than the buffer of a batch, alone in their batch or after short records
+        var csv = new StringBuilder("Id,Name,Price\n");
+        for (var i = 0; i < 600; i++)
+        {
+            var name = i % 50 == 0 ? new string((char)('a' + (i % 26)), 70_000 + i) : "\"a\"\"b\"";
+            csv.Append(CultureInfo.InvariantCulture, $"{i},{name},{i}\n");
+        }
+
+        var text = csv.ToString();
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = 3 };
+        var expected = CsvSerializer.Deserialize<Product>(text);
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(text, options));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(new StringReader(text), options));
+        Assert.Equal(expected, await CsvSerializer.DeserializeAsync<Product>(new MemoryStream(bytes), options));
+    }
+
+    [Fact]
+    public void Parallel_StopEnumerating()
+    {
+        var csv = "Id,Name,Price\n" + string.Concat(Enumerable.Range(0, 10_000).Select(i => $"{i},a,1\n"));
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = 4 };
+        Assert.Equal([0, 1, 2], CsvSerializer.DeserializeEnumerable<Product>(new StringReader(csv), options).Take(3).Select(p => p.Id));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    public async Task Parallel_CancelEnumerating(int degreeOfParallelism)
+    {
+        // The records are read before the first one is returned: the cancellation is still checked for each record
+        var csv = "Id,Name,Price\n1,a,1\n2,b,2\n3,c,3\n";
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+        using var cts = new CancellationTokenSource();
+        var ids = new List<int>();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var product in CsvSerializer.DeserializeAsyncEnumerable<Product>(new StringReader(csv), options, cts.Token))
+            {
+                ids.Add(product.Id);
+                await cts.CancelAsync();
+            }
+        });
+
+        Assert.Equal([1], ids);
+    }
+
+    [Fact]
+    public async Task Parallel_ConversionErrorBeforeCancellation()
+    {
+        // The setter of the second record cancels the token, then fails: the first record and the error come first, like reading the records one by one
+        var csv = "Id\n1\n2\n3\n";
+        foreach (var degreeOfParallelism in new[] { 1, 4 })
+        {
+            using var cts = new CancellationTokenSource();
+            CancelingModel.Source = cts;
+            var options = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+            var ids = new List<int>();
+            var exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
+            {
+                await foreach (var item in CsvSerializer.DeserializeAsyncEnumerable<CancelingModel>(new StringReader(csv), options, cts.Token))
+                {
+                    ids.Add(item.Id);
+                }
+            });
+
+            Assert.Equal([1], ids);
+            Assert.IsNotAssignableTo<OperationCanceledException>(exception);
+        }
+    }
+
+    [Fact]
+    public void Parallel_DeserializationErrorHandler()
+    {
+        var csv = "Id,Name,Price\n" + string.Concat(Enumerable.Range(0, 5_000).Select(i => i % 10 == 0 ? "x,a,1\n" : $"{i},a,1\n"));
+        var callers = 0;
+        var maxCallers = 0;
+        var errors = new List<long?>();
+        var options = new CsvSerializerOptions
+        {
+            MaxDegreeOfParallelism = 4,
+            DeserializationErrorHandler = context =>
+            {
+                // The handler is not called by two threads at the same time
+                var current = Interlocked.Increment(ref callers);
+                maxCallers = Math.Max(maxCallers, current);
+                errors.Add(context.RowIndex);
+                Thread.SpinWait(1_000);
+                Interlocked.Decrement(ref callers);
+                return CsvDeserializationErrorAction.SkipRecord;
+            },
+        };
+
+        var products = CsvSerializer.Deserialize<Product>(csv, options);
+        Assert.Equal(Enumerable.Range(0, 5_000).Where(i => i % 10 != 0), products.Select(p => p.Id));
+        Assert.Equal(1, maxCallers);
+        Assert.Equal(Enumerable.Range(0, 500).Select(i => (long?)(i * 10)), errors.Order());
+    }
+
+    [Fact]
+    public void Parallel_InvalidDegreeOfParallelism()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CsvSerializerOptions { MaxDegreeOfParallelism = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CsvSerializerOptions { MaxDegreeOfParallelism = -2 });
+        Assert.Equal(1, CsvSerializerOptions.Default.MaxDegreeOfParallelism);
     }
 
     private static async Task<List<T>> ToListAsync<T>(IAsyncEnumerable<T> values)
@@ -1472,6 +1718,35 @@ public sealed class LabeledItem(int id, string label, int rank)
     public string Label { get; } = label;
 
     public int Rank { get; } = rank;
+}
+
+#region CsvSerializer_ParallelModel
+public sealed class ParallelModel
+{
+    public int X { get; set; }
+
+    public double Y { get; set; }
+}
+#endregion
+
+public sealed class CancelingModel
+{
+    public static CancellationTokenSource? Source { get; set; }
+
+    public int Id
+    {
+        get;
+        set
+        {
+            if (value == 2)
+            {
+                Source?.Cancel();
+                throw new InvalidOperationException("Invalid id");
+            }
+
+            field = value;
+        }
+    }
 }
 
 public sealed class DecimalModel

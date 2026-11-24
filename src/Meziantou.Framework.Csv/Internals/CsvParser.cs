@@ -104,6 +104,12 @@ internal sealed class CsvParser<T> : IDisposable
     private int _rowVersion;
     private UnescapedValue[] _unescapedValues = [];
 
+    // Batch mode (see CreateBatch): the records copied from another parser, whose data is in _buffer and whose columns are in _columnEnds
+    private BatchRow[] _batchRows = [];
+    private int _batchRowCount;
+    private int _batchLength;
+    private readonly bool _sharesData; // The records of the batch are in the data of the parser that created it
+
     public CsvParser(CsvReaderOptions options, CsvSource<T>? source, ReadOnlyMemory<T> data)
     {
         CsvReaderOptions.Validate(options, utf8: typeof(T) == typeof(byte));
@@ -158,6 +164,52 @@ internal sealed class CsvParser<T> : IDisposable
             _data = _buffer;
             _array = _buffer;
         }
+    }
+
+    // A batch of records with the options of another parser: see CreateBatch
+    private CsvParser(CsvParser<T> owner)
+    {
+        _rows = [];
+        _columnEnds = ArrayPool<int>.Shared.Rent(256);
+        if (owner._source is null)
+        {
+            // The data is in memory and does not change: the records are read from it, without copying them
+            _sharesData = true;
+            _data = owner._data;
+            _array = owner._array;
+            _arrayOffset = owner._arrayOffset;
+            _string = owner._string;
+            _stringOffset = owner._stringOffset;
+            _dataEnd = owner._dataEnd;
+        }
+        else
+        {
+            _buffer = ArrayPool<T>.Shared.Rent(4096);
+            _data = _buffer;
+            _array = _buffer;
+        }
+
+        _endOfData = true;
+        _bomChecked = true;
+
+        _hasQuote = owner._hasQuote;
+        _quote = owner._quote;
+        _hasComment = owner._hasComment;
+        _comment = owner._comment;
+        _trimOuter = owner._trimOuter;
+        _trimInside = owner._trimInside;
+        _skipEmptyLines = owner._skipEmptyLines;
+        _validateColumnCount = owner._validateColumnCount;
+        _strict = owner._strict;
+        _badDataHandler = owner._badDataHandler;
+        _hasHeaderRow = owner._hasHeaderRow;
+        _maxRowLength = owner._maxRowLength;
+        _vectorSize = owner._vectorSize;
+        _columnNameComparer = owner._columnNameComparer;
+        _stringPool = owner._stringPool is null ? null : new CsvStringPool(); // A pool is not thread-safe
+        FormatProvider = owner.FormatProvider;
+        _header = owner._header;
+        SetSeparator(owner.Separator);
     }
 
     private enum ScanState
@@ -417,6 +469,97 @@ internal sealed class CsvParser<T> : IDisposable
         _rowIsPlain = !row.HasQuote && !_trimOuter;
         _rowVersion++;
         _scratchUsed = 0;
+    }
+
+    /// <summary>Creates an empty batch of records with the options and the header of this parser, to read its records on another thread.</summary>
+    /// <remarks>
+    /// The records are added by <see cref="AppendRow"/>, once accepted by this parser: the batch is not scanned again. The records are copied, unless the
+    /// data is in memory: the batch then reads them from the data, which does not change, and copies only where their columns end. <see cref="MoveToRow"/> makes a
+    /// record of the batch the current record, with the position, the line number and the index it had in this parser, so that the values and the
+    /// exceptions are the same as when reading the record from this parser.
+    /// </remarks>
+    public CsvParser<T> CreateBatch() => new(this);
+
+    public int BatchRowCount => _batchRowCount;
+
+    // The number of elements of the records of the batch
+    public int BatchLength => _batchLength;
+
+    /// <summary>Adds the current record of the parser that created the batch at the end of the batch.</summary>
+    public void AppendRow(CsvParser<T> source)
+    {
+        var columnEnds = source.RowColumnEnds;
+        var columnStart = _columnTotal;
+        if (_columnEnds.Length - columnStart < columnEnds.Length)
+        {
+            Grow(_columnEnds, columnStart + columnEnds.Length);
+        }
+
+        if (_batchRowCount == _batchRows.Length)
+        {
+            Array.Resize(ref _batchRows, Math.Max(_batchRows.Length * 2, 64));
+        }
+
+        columnEnds.CopyTo(_columnEnds.AsSpan(columnStart));
+        _columnTotal = columnStart + columnEnds.Length;
+        var rowLength = source._rowLength;
+        _batchLength += rowLength;
+        int dataStart;
+        if (_sharesData)
+        {
+            dataStart = source._rowStart;
+        }
+        else
+        {
+            dataStart = _dataEnd;
+            CopyRow(source.RowSpan, dataStart);
+            _dataEnd = dataStart + rowLength;
+        }
+
+        _batchRows[_batchRowCount++] = new BatchRow(dataStart, rowLength, columnStart, source._columnCount, source._lineNumber, source._recordIndex, source.Position, source._rowIsPlain);
+    }
+
+    private void CopyRow(ReadOnlySpan<T> row, int dataStart)
+    {
+        if (_buffer!.Length - dataStart < row.Length)
+        {
+            var newBuffer = ArrayPool<T>.Shared.Rent(Math.Max(_buffer.Length * 2, dataStart + row.Length));
+            _buffer.AsSpan(0, dataStart).CopyTo(newBuffer);
+            ArrayPool<T>.Shared.Return(_buffer);
+            _buffer = newBuffer;
+            _data = newBuffer;
+            _array = newBuffer;
+        }
+
+        row.CopyTo(_buffer.AsSpan(dataStart));
+    }
+
+    /// <summary>Makes a record of the batch the current record.</summary>
+    public void MoveToRow(int index)
+    {
+        ref readonly var row = ref _batchRows[index];
+        _rowStart = row.Start;
+        _rowLength = row.Length;
+        _rowColumnStart = row.ColumnStart;
+        _columnCount = row.ColumnCount;
+        _lineNumber = row.LineNumber;
+        _recordIndex = row.RecordIndex;
+        _bufferOffset = row.Position - row.Start;
+        _rowIsPlain = row.IsPlain;
+        _rowVersion++;
+        _scratchUsed = 0;
+    }
+
+    /// <summary>Removes the records of the batch, keeping its buffers.</summary>
+    public void ClearBatch()
+    {
+        _batchRowCount = 0;
+        _batchLength = 0;
+        _columnTotal = 0;
+        if (!_sharesData)
+        {
+            _dataEnd = 0;
+        }
     }
 
     private bool TrySkipByteOrderMark(ReadOnlySpan<T> data)
@@ -1251,8 +1394,15 @@ internal sealed class CsvParser<T> : IDisposable
 
         ArrayPool<int>.Shared.Return(_columnEnds);
         _columnEnds = [];
-        ArrayPool<RowEntry>.Shared.Return(_rows);
-        _rows = [];
+
+        // A batch has no array of scanned records
+        if (_rows.Length > 0)
+        {
+            ArrayPool<RowEntry>.Shared.Return(_rows);
+            _rows = [];
+        }
+
+        _batchRowCount = 0;
 
         if (_scratch is not null)
         {
@@ -1279,6 +1429,9 @@ internal sealed class CsvParser<T> : IDisposable
 
         public bool HasQuote => (_columnCountAndFlag & 1) != 0;
     }
+
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct BatchRow(int Start, int Length, int ColumnStart, int ColumnCount, long LineNumber, long RecordIndex, long Position, bool IsPlain);
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct UnescapedValue(int Version, int Start, int Length);

@@ -18,7 +18,11 @@ public sealed class CsvDeserializationErrorContext
     /// <summary>Gets the type of the objects being read.</summary>
     public Type Type { get; }
 
-    /// <summary>Gets the name of the column of the member, as written in the header row, or <see langword="null"/> when the column has no member.</summary>
+    /// <summary>Gets the column name of the member, as the type defines it, or <see langword="null"/> when the column has no member.</summary>
+    /// <remarks>
+    /// When <see cref="CsvSerializerOptions.PropertyNameCaseInsensitive"/> is <see langword="true"/>, the header row can write it differently: <see cref="ColumnName"/>
+    /// is the name as written in the header row.
+    /// </remarks>
     public string? MemberName { get; }
 
     /// <summary>Gets the value that cannot be converted, for <see cref="CsvDeserializationErrorKind.ConversionFailed"/>; otherwise, <see langword="null"/>.</summary>

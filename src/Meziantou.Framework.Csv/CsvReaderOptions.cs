@@ -67,14 +67,19 @@ public sealed record CsvReaderOptions
     /// <para>
     /// The handler is called for the errors that <see cref="Strict"/> reports (see <see cref="CsvBadDataKind"/>), whatever the value of <see cref="Strict"/>,
     /// and for a record with an unexpected number of columns when <see cref="ValidateColumnCount"/> is <see langword="true"/>.
-    /// When it is <see langword="null"/>, <see cref="Strict"/> decides: the reader throws in strict mode and accepts the data otherwise.
+    /// When it is <see langword="null"/>, <see cref="Strict"/> decides for the quoting errors: the reader throws in strict mode and accepts the data otherwise.
+    /// A record with an unexpected number of columns throws whenever <see cref="ValidateColumnCount"/> is <see langword="true"/>, whatever the value of
+    /// <see cref="Strict"/>.
     /// </para>
     /// <para>
     /// The handler is called in the order of the data, once every record before the malformed one has been read, and before the reader returns the malformed
     /// record. A record can have several errors, reported one by one until the handler returns <see cref="CsvBadDataAction.Skip"/>.
     /// The handler must not call the methods of the reader. It may throw its own exception, which ends the reading.
     /// </para>
-    /// <para>The handler does not change how the data is read when it is valid, and it is not called for a row longer than <see cref="MaxRowLength"/>, which always throws.</para>
+    /// <para>
+    /// The handler does not change how the data is read when it is valid, and it is not called for a row longer than <see cref="MaxRowLength"/>, which always
+    /// throws. The quoting errors of such a row can be reported before the reader finds that the row is too long.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs" ref:region="CsvReader_BadDataHandler" ref:dedent="true">

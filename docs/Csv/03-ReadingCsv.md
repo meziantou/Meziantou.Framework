@@ -316,7 +316,7 @@ Assert.Equal(["line 3, column Comment: A quoted value is followed by characters 
 - A skipped record still counts in [RowIndex](cref:Meziantou.Framework.Csv.CsvReader.RowIndex). [LineNumber](cref:Meziantou.Framework.Csv.CsvReader.LineNumber) gives the line where the record starts. Skipping the header row makes the
   next row the header row.
 - The handler must not call the reader. An exception it throws ends the reading.
-- A row longer than [MaxRowLength](cref:Meziantou.Framework.Csv.CsvReaderOptions.MaxRowLength) always throws.
+- A row longer than [MaxRowLength](cref:Meziantou.Framework.Csv.CsvReaderOptions.MaxRowLength) always throws, even when the handler has already been called for the quoting errors of that row.
 
 Without a handler, the reader reads the data as before: the handler costs nothing when it is not set.
 

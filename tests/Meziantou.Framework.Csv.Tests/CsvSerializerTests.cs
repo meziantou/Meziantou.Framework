@@ -1505,6 +1505,28 @@ public class CsvSerializerTests
         Assert.Equal([0, 1, 2], CsvSerializer.DeserializeEnumerable<Product>(new StringReader(csv), options).Take(3).Select(p => p.Id));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    public async Task Parallel_CancelEnumerating(int degreeOfParallelism)
+    {
+        // The records are read before the first one is returned: the cancellation is still checked for each record
+        var csv = "Id,Name,Price\n1,a,1\n2,b,2\n3,c,3\n";
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+        using var cts = new CancellationTokenSource();
+        var ids = new List<int>();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var product in CsvSerializer.DeserializeAsyncEnumerable<Product>(new StringReader(csv), options, cts.Token))
+            {
+                ids.Add(product.Id);
+                await cts.CancelAsync();
+            }
+        });
+
+        Assert.Equal([1], ids);
+    }
+
     [Fact]
     public void Parallel_DeserializationErrorHandler()
     {

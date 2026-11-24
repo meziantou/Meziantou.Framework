@@ -613,6 +613,8 @@ public static class CsvSerializer
                 {
                     foreach (var item in deserializer.Current)
                     {
+                        // Reading the records one by one checks the token for each record
+                        cancellationToken.ThrowIfCancellationRequested();
                         yield return item;
                     }
                 }

@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Csv.Serialization.Internals;
 /// <remarks>
 /// <para>
 /// Splitting the data into records is a small part of the time, and it cannot start in the middle of the data: whether a line terminator ends a record
-/// depends on the quotes before it. The parser reads the records on the calling thread; each accepted record is copied to a batch, and a task converts
+/// depends on the quotes before it. The parser reads the records on the calling thread; each accepted record is added to a batch (copied, unless the data is in memory), and a task converts
 /// the records of the batch. The batches are returned in the order of the records, so the objects and the exceptions are the same as when reading the
 /// records one by one: an error of the parser is thrown once the records before it are returned.
 /// </para>
@@ -97,6 +97,8 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
     /// <returns><see langword="false"/> when every record is read.</returns>
     public async ValueTask<bool> MoveNextAsync(CsvParser<TChar> parser, CancellationToken cancellationToken)
     {
+        // The parser checks the token when it reads a record: the batches read before the cancellation are not returned either
+        cancellationToken.ThrowIfCancellationRequested();
         ReleaseCurrent();
         _conversionError?.Throw();
         if (!_endOfRecords)
@@ -173,17 +175,14 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
                 }
             }
 
-            // A batch converted by the consumer is reused once its task, which then does nothing, has ended
-            if (!_free.TryPeek(out batch) || !batch.IsIdle)
+            // A batch converted by the consumer is reused even when its task has not run yet: that task does nothing (see Batch.Start), so the
+            // number of batches does not grow when the thread pool is busy
+            if (!_free.TryPop(out batch))
             {
 #pragma warning disable CA2000 // The parser of the batch is disposed with the batches, in Dispose
                 batch = new Batch(parser.CreateBatch(), _binder.Clone(_errorHandler), _maxBatchRows);
 #pragma warning restore CA2000
                 _batches.Add(batch);
-            }
-            else
-            {
-                _free.Pop();
             }
 
             _filling = batch;
@@ -228,12 +227,15 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
         }
     }
 
-    // The tasks use the buffers of their batch: they must end before the buffers go back to the pool
+    // The tasks use the buffers of their batch: they must end before the buffers go back to the pool. The batches no task has started are not converted.
     public void Dispose()
     {
         foreach (var batch in _batches)
         {
-            batch.WaitForCompletion();
+            if (!batch.TryCancel())
+            {
+                batch.WaitForCompletion();
+            }
         }
 
         DisposeBatches();
@@ -243,7 +245,7 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
     {
         foreach (var batch in _batches)
         {
-            if (batch.Task is { } task)
+            if (!batch.TryCancel() && batch.Task is { } task)
             {
                 await task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
             }
@@ -270,7 +272,11 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
     {
         private readonly T[] _results = new T[maxRows];
         private int _count;
-        private int _claimed; // 1 once the task or the consumer converts the batch
+
+        // Start numbers the conversions of the batch. The task or the consumer claims a conversion by setting _claimed to its number: the task of an
+        // earlier conversion, which the consumer did itself, cannot claim a later one, so the batch is reused without waiting for that task
+        private int _generation;
+        private int _claimed;
 
         public CsvParser<TChar> Parser => parser;
 
@@ -278,15 +284,20 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
 
         public ArraySegment<T> Results => new(_results, 0, _count);
 
-        public bool IsIdle => Task is null || Task.IsCompleted;
-
         // The error that stopped the conversion of the batch, after the objects of Results
         public ExceptionDispatchInfo? Error { get; private set; }
 
         public void Start()
         {
-            _claimed = 0;
-            Task = Task.Factory.StartNew(static state => ((Batch)state!).TryConvert(), this, CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
+            var generation = ++_generation;
+            Task = Task.Factory.StartNew(static state =>
+            {
+                var (batch, generation) = ((Batch, int))state!;
+                if (batch.TryClaim(generation))
+                {
+                    batch.Convert();
+                }
+            }, (this, generation), CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
         /// <summary>Converts the records of the batch, unless the task or the consumer already does.</summary>
@@ -297,12 +308,18 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
         /// <returns><see langword="true"/> when the batch was converted by this call.</returns>
         public bool TryConvert()
         {
-            if (Interlocked.Exchange(ref _claimed, 1) != 0)
+            if (!TryClaim(_generation))
                 return false;
 
             Convert();
             return true;
         }
+
+        /// <summary>Prevents the task from converting the records when it has not started.</summary>
+        /// <returns><see langword="true"/> when no task uses the batch; otherwise, the last task or the consumer converted it.</returns>
+        public bool TryCancel() => _generation == 0 || TryClaim(_generation);
+
+        private bool TryClaim(int generation) => Interlocked.CompareExchange(ref _claimed, generation, generation - 1) == generation - 1;
 
         private void Convert()
         {

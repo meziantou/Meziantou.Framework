@@ -351,8 +351,10 @@ Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the reco
 <!-- endref -->
 
 - The data is still split into records on the calling thread: whether a line terminator ends a record depends on the
-  quotes before it, so the data cannot be split anywhere else. The records are copied in batches of a few hundred, and
-  each batch is converted by a task.
+  quotes before it, so the data cannot be split anywhere else. The records are grouped in batches of a few hundred, and
+  a task of the thread pool converts each batch, unless the calling thread takes the batch first because no task has
+  started it. A batch copies the records read from a stream or a text reader, but refers to the data when it is
+  already in memory (a string or a memory block).
 - The objects are returned in the order of the records, and the exceptions are the ones reading the records one by one
   throws: the records before an error are returned first by [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) and
   [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable), which read a few batches ahead of the objects they return.

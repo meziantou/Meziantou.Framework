@@ -490,7 +490,8 @@ public static class CsvSerializer
     private static List<T> ReadAll<T, TChar>(CsvParser<TChar> parser, CsvTypeInfo<T> typeInfo)
         where TChar : unmanaged, IBinaryInteger<TChar>
     {
-        var result = new List<T>();
+        // The records are not added to a list as they are read: see SegmentedListBuilder
+        var result = new SegmentedListBuilder<T>();
         CsvRecordBinder<T>? binder = null;
         while (parser.Read())
         {
@@ -498,7 +499,7 @@ public static class CsvSerializer
             result.Add(binder.Read(parser));
         }
 
-        return result;
+        return result.ToList();
     }
 
     private static async Task<List<T>> ReadAllAsync<T, TChar>(CsvParser<TChar> parser, CsvTypeInfo<T> typeInfo, CancellationToken cancellationToken)
@@ -506,7 +507,7 @@ public static class CsvSerializer
     {
         using (parser)
         {
-            var result = new List<T>();
+            var result = new SegmentedListBuilder<T>();
             CsvRecordBinder<T>? binder = null;
             while (await parser.ReadAsync(cancellationToken).ConfigureAwait(false))
             {
@@ -514,7 +515,7 @@ public static class CsvSerializer
                 result.Add(binder.Read(parser));
             }
 
-            return result;
+            return result.ToList();
         }
     }
 

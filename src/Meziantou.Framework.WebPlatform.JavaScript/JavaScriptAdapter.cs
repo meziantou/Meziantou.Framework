@@ -583,11 +583,13 @@ internal class JavaScriptPlatformObject(JsObject? prototype, object target, bool
 internal class JavaScriptLegacyPlatformObject : JavaScriptPlatformObject
 {
     private readonly IJsHostObjectHandler<object> _handler;
+    private readonly ILegacyPlatformObjectHandler<object>? _legacyHandler;
 
     public JavaScriptLegacyPlatformObject(JsObject? prototype, object target, IJsHostObjectHandler<object> handler)
         : base(prototype, target, hasOrdinaryInternalMethods: false)
     {
         _handler = handler;
+        _legacyHandler = handler as ILegacyPlatformObjectHandler<object>;
 
         // A legacy platform object without named properties is only exotic for the array indices: the engine uses its
         // inline caches for the other properties (e.g. the length of a NodeList)
@@ -600,6 +602,23 @@ internal class JavaScriptLegacyPlatformObject : JavaScriptPlatformObject
         {
             descriptor = ToDescriptor(indexed);
             return true;
+        }
+
+        if (_legacyHandler is not null)
+        {
+            // An ordinary own property hides the named property of the same name (named property visibility), and it is
+            // the result when there is no indexed or named property: the ordinary lookup, which has no side effect, comes
+            // first, so the handler does not look for it again through the adapter
+            if (base.GetOwnPropertyCore(key, out descriptor))
+                return true;
+
+            if (_legacyHandler.TryGetOwnPropertyWithoutOrdinaryProperty(this, FromKey(key), out var named))
+            {
+                descriptor = ToDescriptor(named);
+                return true;
+            }
+
+            return false;
         }
 
         if (_handler.TryGetOwnProperty(this, FromKey(key), out var handled))

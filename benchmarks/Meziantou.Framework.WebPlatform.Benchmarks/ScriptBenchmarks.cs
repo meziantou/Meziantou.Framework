@@ -72,6 +72,59 @@ public class ScriptBenchmarks
     }
 }
 
+/// <summary>
+/// The named properties of element.dataset (a legacy platform object), read in a loop as the encoding tests of WPT do. The
+/// page is loaded once: each operation runs the same listener, so it measures the reads, not the compilation of the script.
+/// </summary>
+[MemoryDiagnoser]
+public class DatasetBenchmarks
+{
+    private JavaScriptScriptEngine? _engine;
+    private BrowsingContext? _context;
+    private Element? _target;
+
+    [GlobalSetup]
+    public void Setup()
+    {
+        _engine = new JavaScriptScriptEngine();
+        _context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = _engine });
+        var document = _context.Navigate("https://example.com/", _ => """
+            <div id=target></div>
+            <script>
+              const target = document.getElementById('target');
+              for (let i = 0; i < 200; i++) {
+                const span = document.createElement('span');
+                span.setAttribute('data-cp', String(i));
+                span.setAttribute('data-bytes', 'A' + i);
+                target.appendChild(span);
+              }
+
+              const spans = document.querySelectorAll('span');
+              target.addEventListener('read', () => {
+                let n = 0;
+                for (let i = 0; i < spans.length; i++) {
+                  n += spans[i].dataset.cp.length + spans[i].dataset.bytes.length;
+                }
+
+                document.title = String(n);
+              });
+            </script>
+            """);
+        _context.EventLoop.RunUntilIdle();
+        _target = document.GetElementById("target");
+    }
+
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _context?.Dispose();
+        _engine?.Dispose();
+    }
+
+    [Benchmark]
+    public bool ReadNamedProperties() => _target!.DispatchEvent(new Event("read"));
+}
+
 /// <summary>Runs a scenario of <see cref="ScriptBenchmarks"/> in a loop, to profile it (time and allocations per operation).</summary>
 internal static class ScriptProfile
 {

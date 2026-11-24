@@ -234,10 +234,48 @@ public static class MarkdownEscaper
     /// <returns>The escaped text.</returns>
     /// <remarks>
     /// A row of a pipe table cannot span several lines, so the line endings are replaced by spaces. Then the text is escaped as
-    /// with <see cref="Escape(string)"/>, which also escapes the pipes. To write a code span in a cell, replace the pipes of the
-    /// result of <see cref="CreateCodeSpan(string)"/> with <c>\|</c>.
+    /// with <see cref="Escape(string)"/>, which also escapes the pipes. The parser trims the spaces, the tabs, the vertical tabs
+    /// and the form feeds around the text of a cell, so the ones that start or end the text are written as entities, such as
+    /// <c>&amp;#11;</c>. To write a code span in a cell, replace the pipes of the result of <see cref="CreateCodeSpan(string)"/>
+    /// with <c>\|</c>.
     /// </remarks>
-    public static string EscapeTableCell(string text) => Escape(ReplaceLineEndingsWithSpaces(text));
+    public static string EscapeTableCell(string text)
+    {
+        text = ReplaceLineEndingsWithSpaces(text);
+
+        // Escape writes the spaces and the tabs that start or end the text as entities, but not the vertical tabs and the form
+        // feeds, nor the spaces and the tabs that follow or precede them
+        var start = 0;
+        while (start < text.Length && TableScanner.IsSpace(text[start]))
+        {
+            start++;
+        }
+
+        var end = text.Length;
+        while (end > start && TableScanner.IsSpace(text[end - 1]))
+        {
+            end--;
+        }
+
+        if (start == 0 && end == text.Length)
+        {
+            return Escape(text);
+        }
+
+        var builder = new StringBuilder(text.Length + (8 * (text.Length - end + start)));
+        AppendCharacterReferences(builder, text.AsSpan(0, start));
+        builder.Append(Escape(text[start..end]));
+        AppendCharacterReferences(builder, text.AsSpan(end));
+        return builder.ToString();
+
+        static void AppendCharacterReferences(StringBuilder builder, ReadOnlySpan<char> value)
+        {
+            foreach (var c in value)
+            {
+                builder.Append("&#").Append(((int)c).ToString(CultureInfo.InvariantCulture)).Append(';');
+            }
+        }
+    }
 
     // The info string of a fenced code block, whose fence is not written
     internal static string EscapeInfoString(string infoString)

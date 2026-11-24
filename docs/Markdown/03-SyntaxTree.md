@@ -336,8 +336,10 @@ The spaces and the tabs at the start and at the end of a line of escaped text ar
 the parser would strip them, and they would start an indented code block or end the line with a hard line break. An empty
 line still starts a new paragraph. A line of a code span, of a link label or of a link title could start a block, such as
 `# a`, so the line endings of a code span and of a label are written as spaces, which the parser makes of them anyway, and
-the ones of a title as entities. The ones of a table cell are spaces too. A label that starts with `^` is escaped, as it
-would be a footnote, and so is a `{` of the info string of a fenced code block, which would start generic attributes.
+the ones of a title as entities. The ones of a table cell are spaces too, and the spaces, the tabs, the vertical tabs and
+the form feeds that start or end a cell are written as entities, as the parser trims them. A label that starts with `^` is
+escaped, as it would be a footnote, and so is a `{` of the info string of a fenced code block, which would start generic
+attributes.
 
 [Escape](cref:Meziantou.Framework.Markdown.MarkdownEscaper.Escape(System.String)) only knows CommonMark. When the text is
 parsed with extensions,

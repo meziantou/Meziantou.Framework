@@ -160,7 +160,8 @@ public static class MarkdownFuzzTargets
         var formattedText = formatted.GetRoot().ToFullString();
         var html = MarkdownHtmlRenderer.ToHtml(tree).ReplaceLineEndings("\n");
         FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(formatted).ReplaceLineEndings("\n") == html, $"The formatted text {FuzzAssert.Format(formattedText)} does not render as the text {FuzzAssert.Format(text)}");
-        FuzzAssert.True(MarkdownFormatter.FormatText(formatted, formattingOptions) == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it: {FuzzAssert.Format(text)}");
+        var formattedTwice = MarkdownFormatter.FormatText(formatted, formattingOptions);
+        FuzzAssert.True(formattedTwice == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it to {FuzzAssert.Format(formattedTwice)}: {FuzzAssert.Format(text)}");
 
         // The formatter compares the HTML with its line endings as \n, without replacing them
         CheckEqualsIgnoringLineEndings(text, formattedText);

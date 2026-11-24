@@ -96,7 +96,7 @@ public class CsvSerializerTests
 
         // A value type is collected in segments of its own size
         var structs = CsvSerializer.Deserialize<StructModel>(csv, options);
-        Assert.Equal(count, structs.Count);
+        Assert.HasCount(count, structs);
         Assert.Equal(Enumerable.Range(0, count), structs.Select(item => item.X));
 
         static List<decimal> Values(List<DecimalModel> models)
@@ -623,60 +623,27 @@ public class CsvSerializerTests
         }
     }
 
-    [Fact]
-    public void PlainNumbers_MatchBcl_Random()
+    [Theory]
+    [InlineData(0x9E3779B97F4A7C15UL)]
+    public void PlainNumbers_MatchBcl_Random(ulong seed)
     {
-        // xorshift: deterministic values, without the warnings about Random
-        var state = 0x9E3779B97F4A7C15UL;
-        ulong Next()
-        {
-            state ^= state << 13;
-            state ^= state >> 7;
-            state ^= state << 17;
-            return state;
-        }
-
-        var invariant = CultureInfo.InvariantCulture;
-        var values = new List<string>();
-        for (var i = 0; i < 20_000; i++)
-        {
-            var random = Next();
-            var digits = (int)(Next() % 19) + 1;
-            var integer = random % (ulong)Math.Pow(10, Math.Min(digits, 18));
-            var text = integer.ToString(invariant);
-            if (Next() % 2 == 0)
-            {
-                text = "-" + text;
-            }
-
-            values.Add(text);
-
-            // Decimals of 1 to 16 digits in all, with up to 15 after the dot
-            var scale = (int)(Next() % 16);
-            if (scale > 0)
-            {
-                var fraction = (Next() % (ulong)Math.Pow(10, scale)).ToString(invariant).PadLeft(scale, '0');
-                values.Add(text + "." + fraction);
-            }
-
-            // The shortest text of a random double, as the serializer writes it
-            values.Add(BitConverter.Int64BitsToDouble((long)(Next() >> 2) + 0x3000000000000000).ToString("R", invariant));
-            values.Add(Math.Round(BitConverter.UInt64BitsToDouble(0x3FF0000000000000 | (Next() >> 12)) * 1000, (int)(Next() % 6)).ToString(invariant));
-        }
-
+        var values = CreateRandomNumbers(seed, 20_000);
         var parsedCount = 0;
         foreach (var value in values)
         {
-            var utf8 = Encoding.UTF8.GetBytes(value);
-            if (Serialization.Converters.PlainNumberParser.TryParse<char, double>(value, invariant, out var result))
+            if (MatchesBcl(value))
             {
                 parsedCount++;
-                var expected = BitConverter.DoubleToInt64Bits(double.Parse(value, invariant));
-                Assert.Equal(expected, BitConverter.DoubleToInt64Bits(result));
-                Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, double>(utf8, invariant, out var utf8Result));
-                Assert.Equal(expected, BitConverter.DoubleToInt64Bits(utf8Result));
             }
+        }
 
+        // Most values take the fast path: the test checks it, not only the general parser
+        Assert.True(parsedCount > values.Count / 2, parsedCount.ToString(CultureInfo.InvariantCulture));
+
+        // Returns whether the double parser accepts the value
+        static bool MatchesBcl(string value)
+        {
+            var invariant = CultureInfo.InvariantCulture;
             if (Serialization.Converters.PlainNumberParser.TryParse<char, long>(value, invariant, out var longResult))
             {
                 Assert.Equal(long.Parse(value, invariant), longResult);
@@ -686,10 +653,52 @@ public class CsvSerializerTests
             {
                 Assert.Equal(int.Parse(value, invariant), intResult);
             }
+
+            if (!Serialization.Converters.PlainNumberParser.TryParse<char, double>(value, invariant, out var result))
+                return false;
+
+            var expected = BitConverter.DoubleToInt64Bits(double.Parse(value, invariant));
+            Assert.Equal(expected, BitConverter.DoubleToInt64Bits(result));
+            Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, double>(Encoding.UTF8.GetBytes(value), invariant, out var utf8Result));
+            Assert.Equal(expected, BitConverter.DoubleToInt64Bits(utf8Result));
+            return true;
+        }
+    }
+
+    // Integers of 1 to 19 digits, decimals of up to 15 decimals, and doubles as the serializer writes them, with a deterministic xorshift generator
+    // (no warnings about Random). The seed is a parameter of the test, not a constant: the value content analysis of the security analyzers
+    // (CA3xxx, CA5xxx) computes the possible values of a variable, and from a constant seed, the values of each step of the generator in the loop
+    // grew until the compilation used more than 25 GB.
+    private static List<string> CreateRandomNumbers(ulong seed, int count)
+    {
+        var invariant = CultureInfo.InvariantCulture;
+        var state = seed;
+        var values = new List<string>();
+        for (var i = 0; i < count; i++)
+        {
+            var integer = Next(ref state) % (ulong)Math.Pow(10, Math.Min((int)(Next(ref state) % 19) + 1, 18));
+            var text = (Next(ref state) % 2 == 0 ? "-" : "") + integer.ToString(invariant);
+            values.Add(text);
+
+            var scale = (int)(Next(ref state) % 16);
+            if (scale > 0)
+            {
+                values.Add(text + "." + (Next(ref state) % (ulong)Math.Pow(10, scale)).ToString(invariant).PadLeft(scale, '0'));
+            }
+
+            values.Add(BitConverter.Int64BitsToDouble((long)(Next(ref state) >> 2) + 0x3000000000000000).ToString("R", invariant));
+            values.Add(Math.Round(BitConverter.UInt64BitsToDouble(0x3FF0000000000000 | (Next(ref state) >> 12)) * 1000, (int)(Next(ref state) % 6), MidpointRounding.ToEven).ToString(invariant));
         }
 
-        // Most values take the fast path: the test checks it, not only the general parser
-        Assert.True(parsedCount > values.Count / 2, parsedCount.ToString(invariant));
+        return values;
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
     }
 
     [Fact]

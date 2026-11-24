@@ -63,16 +63,16 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         _setter!(ref obj, result);
     }
 
-    public override void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value, ref bool converted)
+    public override void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value, bool isAscii, ref bool converted)
     {
-        var result = Read(utf8Value);
+        var result = Read(utf8Value, isAscii);
         converted = true;
         _setter!(ref obj, result);
     }
 
     public override void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<char> value) => ((CsvArgumentSlot<TValue>)slot).Value = Read(value);
 
-    public override void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<byte> utf8Value) => ((CsvArgumentSlot<TValue>)slot).Value = Read(utf8Value);
+    public override void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<byte> utf8Value, bool isAscii) => ((CsvArgumentSlot<TValue>)slot).Value = Read(utf8Value, isAscii);
 
     private TValue Read(ReadOnlySpan<char> value)
     {
@@ -82,10 +82,14 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         return _converter.Read(value, _context);
     }
 
-    private TValue Read(ReadOnlySpan<byte> utf8Value)
+    private TValue Read(ReadOnlySpan<byte> utf8Value, bool isAscii)
     {
         if (utf8Value.IsEmpty && default(TValue) is null && !_converter.HandleNull)
             return default!;
+
+        // The default converter of strings validates the value: the values of the records whose bytes are all ASCII are widened without it
+        if (_isDefaultString && isAscii)
+            return (TValue)(object)(utf8Value.IsEmpty ? "" : Utf8Transcoder.GetAsciiString(utf8Value));
 
         return _converter.Read(utf8Value, _context);
     }

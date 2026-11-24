@@ -30,7 +30,8 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
   through a faster path, with the same value. Values with more digits, such as the round-trip format of a
   `double`, are often parsed by the same path; the others are left to `double.Parse`.
 - **Read UTF-8 files with [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader).** It does not decode the data, and parses numbers from the bytes.
-  The scan also notes the records whose bytes are all ASCII: [ToString](cref:Meziantou.Framework.Csv.Utf8CsvField.ToString) widens their values into strings without checking them again.
+  The scan also notes the records whose bytes are all ASCII: [ToString](cref:Meziantou.Framework.Csv.Utf8CsvField.ToString), and the deserialization of UTF-8 data into
+  `string` members with the default converter, widen their values into strings without checking them again.
 - **Pass memory when you already have it.** [CsvReader.Create](cref:Meziantou.Framework.Csv.CsvReader.Create) with a `ReadOnlyMemory<char>`, [CreateFromString](cref:Meziantou.Framework.Csv.CsvReader.CreateFromString) and
   [Utf8CsvReader.Create](cref:Meziantou.Framework.Csv.Utf8CsvReader.Create) with a `ReadOnlyMemory<byte>` read the data in place, without a copy.
 - **Pool repeated strings.** When the data repeats short values, such as categories or country codes,

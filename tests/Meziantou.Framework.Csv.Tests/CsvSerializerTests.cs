@@ -194,6 +194,30 @@ public class CsvSerializerTests
     }
 
     [Fact]
+    public void Utf8StringsOfAsciiAndOtherRecords()
+    {
+        // The strings of the records whose bytes are all ASCII are not validated, for the members and the constructor parameters: a character from
+        // U+0080 anywhere, in a record or in a record that shares a SIMD block with it, gives the strings of UTF-16 data
+        for (var length = 0; length < 140; length++)
+        {
+            var sb = new StringBuilder("Id,Name,Price\n");
+            for (var record = 0; record < 8; record++)
+            {
+                var name = new string('a', length) + (record % 4) switch { 1 => "é", 2 => "😀", 3 => "", _ => "b" };
+                sb.Append(record).Append(',').Append(record % 3 is 0 ? "\"" + name + "\"\"x\"" : name).Append(",1.5\n");
+            }
+
+            var text = sb.ToString();
+            var bytes = Encoding.UTF8.GetBytes(text);
+            Assert.Equal(CsvSerializer.Deserialize<Product>(text), CsvSerializer.Deserialize<Product>(bytes));
+
+            var expected = CsvSerializer.Deserialize<Person>(text.Replace("Id,", "Age,", StringComparison.Ordinal)).Select(person => person.Name);
+            var actual = CsvSerializer.Deserialize<Person>(Encoding.UTF8.GetBytes(text.Replace("Id,", "Age,", StringComparison.Ordinal))).Select(person => person.Name);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
     public void Records()
     {
         #region CsvSerializer_Records

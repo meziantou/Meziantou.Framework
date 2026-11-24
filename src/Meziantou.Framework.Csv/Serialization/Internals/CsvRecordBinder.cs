@@ -187,7 +187,7 @@ internal sealed class CsvRecordBinder<T>
                     }
                     else
                     {
-                        property.ReadInto(slot, unsafe(MemoryMarshal.Cast<TChar, byte>(value)));
+                        property.ReadInto(slot, unsafe(MemoryMarshal.Cast<TChar, byte>(value)), parser.RowIsAscii);
                     }
                 }
                 catch (Exception ex) when (IsConversionException(ex))
@@ -236,7 +236,7 @@ internal sealed class CsvRecordBinder<T>
                 }
                 else
                 {
-                    property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, byte>(value)), ref converted);
+                    property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, byte>(value)), parser.RowIsAscii, ref converted);
                 }
             }
             catch (Exception ex) when (IsConversionException(ex))

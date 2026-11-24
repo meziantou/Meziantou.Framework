@@ -223,6 +223,9 @@ internal sealed class CsvParser<T> : IDisposable
     // The values of the current record are its raw values: it has no quote character and the values are not trimmed
     public bool RowIsPlain => _rowIsPlain;
 
+    // The current record is UTF-8 data whose bytes are all ASCII: see RowEntry.IsAscii
+    public bool RowIsAscii => _rowIsAscii;
+
     // -1, then the end of each column of the current record, relative to the start of the record: column i is between ends[i] + 1 and ends[i + 1]
     public ReadOnlySpan<int> RowColumnEnds => new(_columnEnds, _rowColumnStart, _columnCount + 1);
 

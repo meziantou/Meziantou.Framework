@@ -1528,6 +1528,30 @@ public class CsvSerializerTests
     }
 
     [Fact]
+    public async Task Parallel_ConversionErrorBeforeCancellation()
+    {
+        // The setter of the second record cancels the token, then fails: the first record and the error come first, like reading the records one by one
+        var csv = "Id\n1\n2\n3\n";
+        foreach (var degreeOfParallelism in new[] { 1, 4 })
+        {
+            using var cts = new CancellationTokenSource();
+            CancelingModel.Source = cts;
+            var options = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+            var ids = new List<int>();
+            var exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
+            {
+                await foreach (var item in CsvSerializer.DeserializeAsyncEnumerable<CancelingModel>(new StringReader(csv), options, cts.Token))
+                {
+                    ids.Add(item.Id);
+                }
+            });
+
+            Assert.Equal([1], ids);
+            Assert.IsNotAssignableTo<OperationCanceledException>(exception);
+        }
+    }
+
+    [Fact]
     public void Parallel_DeserializationErrorHandler()
     {
         var csv = "Id,Name,Price\n" + string.Concat(Enumerable.Range(0, 5_000).Select(i => i % 10 == 0 ? "x,a,1\n" : $"{i},a,1\n"));
@@ -1704,6 +1728,26 @@ public sealed class ParallelModel
     public double Y { get; set; }
 }
 #endregion
+
+public sealed class CancelingModel
+{
+    public static CancellationTokenSource? Source { get; set; }
+
+    public int Id
+    {
+        get;
+        set
+        {
+            if (value == 2)
+            {
+                Source?.Cancel();
+                throw new InvalidOperationException("Invalid id");
+            }
+
+            field = value;
+        }
+    }
+}
 
 public sealed class DecimalModel
 {

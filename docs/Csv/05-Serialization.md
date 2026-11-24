@@ -363,6 +363,9 @@ Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the reco
   they must not change shared state without synchronization. The
   [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler) is called by one thread at a time, but not in the
   order of the records, and it can be called for records after the error that ends the reading.
+- The records are converted ahead of the objects returned. When the code of the type cancels the token passed to
+  [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable), the objects of the records converted before the
+  cancellation, but not returned yet, are not returned.
 
 The gain is largest when the values take time to convert, such as numbers and dates. When most values are strings,
 allocating them is the limit and adding threads helps less, unless the application uses the server garbage collector.

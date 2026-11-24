@@ -97,10 +97,11 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
     /// <returns><see langword="false"/> when every record is read.</returns>
     public async ValueTask<bool> MoveNextAsync(CsvParser<TChar> parser, CancellationToken cancellationToken)
     {
-        // The parser checks the token when it reads a record: the batches read before the cancellation are not returned either
-        cancellationToken.ThrowIfCancellationRequested();
         ReleaseCurrent();
         _conversionError?.Throw();
+
+        // Reading the records one by one checks the token before reading each record, after the error of the previous one
+        cancellationToken.ThrowIfCancellationRequested();
         if (!_endOfRecords)
         {
             try
@@ -230,12 +231,9 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
     // The tasks use the buffers of their batch: they must end before the buffers go back to the pool. The batches no task has started are not converted.
     public void Dispose()
     {
-        foreach (var batch in _batches)
+        foreach (var batch in CancelBatches())
         {
-            if (!batch.TryCancel())
-            {
-                batch.WaitForCompletion();
-            }
+            batch.WaitForCompletion();
         }
 
         DisposeBatches();
@@ -243,15 +241,30 @@ internal sealed class CsvParallelDeserializer<T, TChar> : IDisposable, IAsyncDis
 
     public async ValueTask DisposeAsync()
     {
-        foreach (var batch in _batches)
+        foreach (var batch in CancelBatches())
         {
-            if (!batch.TryCancel() && batch.Task is { } task)
+            if (batch.Task is { } task)
             {
                 await task.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
             }
         }
 
         DisposeBatches();
+    }
+
+    // Every batch no task has started is canceled before waiting for the others: a batch does not start while waiting for a slow one
+    private List<Batch> CancelBatches()
+    {
+        var running = new List<Batch>();
+        foreach (var batch in _batches)
+        {
+            if (!batch.TryCancel())
+            {
+                running.Add(batch);
+            }
+        }
+
+        return running;
     }
 
     private void DisposeBatches()

@@ -611,11 +611,17 @@ public static class CsvSerializer
             {
                 while (await deserializer.MoveNextAsync(parser, cancellationToken).ConfigureAwait(false))
                 {
-                    foreach (var item in deserializer.Current)
+                    // Reading the records one by one checks the token when the next record is requested. MoveNextAsync checks it for the first
+                    // record of a batch, after the error that ends the previous batch.
+                    var items = deserializer.Current;
+                    for (var i = 0; i < items.Count; i++)
                     {
-                        // Reading the records one by one checks the token for each record
-                        cancellationToken.ThrowIfCancellationRequested();
-                        yield return item;
+                        if (i > 0)
+                        {
+                            cancellationToken.ThrowIfCancellationRequested();
+                        }
+
+                        yield return items[i];
                     }
                 }
             }

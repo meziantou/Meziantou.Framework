@@ -483,37 +483,38 @@ public static class MarkdownFormatter
                     break;
 
                 case MarkdownTableSyntax table:
-                    var tableLines = new List<string>();
-                    if (options.AlignTables && CanAlign(table))
+                    var aligned = options.AlignTables && CanAlign(table);
+                    var tableLines = aligned ? GetAlignedTableLines(table) : GetTableLines(table);
+                    if (!blankLine && previous is not null && tableLines.Count > 0)
                     {
-                        WriteTable(tableLines, table);
-                    }
-                    else
-                    {
-                        tableLines.AddRange(GetLines(table));
-
-                        // A row of whitespace other than spaces, such as \v, has no token when it ends the document
-                        if (table.ChildNodes().LastOrDefault() is MarkdownTableRowSyntax { FullSpan.Length: 0 })
+                        var continuedBlock = new ContinuedBlock(string.Join('\n', lines.Skip(previousStart)), previous.Kind());
+                        var blocks = ParseWithTable(continuedBlock, tableLines);
+                        if (!IsTableAfter(blocks, continuedBlock.Kind, table) && !IsTableAfterWrittenBlock(ref continuedBlock, blocks, table))
                         {
-                            tableLines.Add("| |");
-                        }
-
-                        // The rows of a pipe table are lines of a paragraph: a row that would start a block is indented
-                        for (var i = 1; table.IsPipeTable && i < tableLines.Count; i++)
-                        {
-                            if (!IsSingleParagraph("a\n" + tableLines[i], WithoutTables))
+                            // The first row of a pipe table that follows a paragraph is a line of the paragraph for Markdig
+                            var indented = false;
+                            if (previous is MarkdownParagraphSyntax && table.IsPipeTable && !IsParagraphContinuation(lines[^1].TrimStart(' '), tableLines[0]))
                             {
-                                tableLines[i] = "    " + tableLines[i];
+                                tableLines[0] = "    " + tableLines[0];
+                                indented = true;
+                            }
+
+                            // The rows of the table can be lazy lines of the paragraph that ends the block before it, such as a list,
+                            // or make a grid table of a paragraph that starts with +: the rows of the text, which the parser read as
+                            // a table after the block, are written instead, or a blank line between them
+                            if (!indented || !IsTableAfter(continuedBlock, tableLines, table))
+                            {
+                                var sourceLines = aligned ? GetTableLines(table) : null;
+                                if (sourceLines is not null && IsTableAfter(continuedBlock, sourceLines, table))
+                                {
+                                    tableLines = sourceLines;
+                                }
+                                else
+                                {
+                                    AddBlankLine(lines);
+                                }
                             }
                         }
-                    }
-
-                    // The first row of a pipe table that follows a paragraph is a line of the paragraph for Markdig
-                    if (!blankLine && previous is MarkdownParagraphSyntax && table.IsPipeTable && tableLines.Count > 0
-                        && !IsContinuation(new ContinuedBlock(string.Join('\n', lines.Skip(previousStart)), SyntaxKind.Paragraph), string.Join('\n', tableLines), table.Kind(), underline: null)
-                        && !IsParagraphContinuation(lines[^1].TrimStart(' '), tableLines[0]))
-                    {
-                        tableLines[0] = "    " + tableLines[0];
                     }
 
                     lines.AddRange(tableLines);
@@ -667,6 +668,26 @@ public static class MarkdownFormatter
         {
             var blocks = MarkdownSyntaxTree.ParseText(continuedBlock.Text + "\n" + text + (underline is null ? "" : "\n" + underline), parseOptions).GetRoot().Blocks;
             return blocks.Length >= 2 && blocks[^2].Kind() == continuedBlock.Kind && blocks[^1].Kind() == kind;
+        }
+
+        private bool IsTableAfter(ContinuedBlock continuedBlock, List<string> tableLines, MarkdownTableSyntax table) => IsTableAfter(ParseWithTable(continuedBlock, tableLines), continuedBlock.Kind, table);
+
+        private static bool IsTableAfter(ImmutableArray<MarkdownBlockSyntax> blocks, SyntaxKind kind, MarkdownTableSyntax table) => blocks.Length >= 2 && blocks[^2].Kind() == kind && blocks[^1].Kind() == table.Kind();
+
+        private ImmutableArray<MarkdownBlockSyntax> ParseWithTable(ContinuedBlock continuedBlock, List<string> tableLines) => MarkdownSyntaxTree.ParseText(continuedBlock.Text + "\n" + string.Join('\n', tableLines), parseOptions).GetRoot().Blocks;
+
+        // The block before the table can be written as another kind, such as a setext heading as an ATX heading, or an indented
+        // code block as a fenced one: the blocks of the block and the table are checked with the kind of the block that the lines
+        // are. A paragraph is written as one.
+        private bool IsTableAfterWrittenBlock(ref ContinuedBlock continuedBlock, ImmutableArray<MarkdownBlockSyntax> blocks, MarkdownTableSyntax table)
+        {
+            if (continuedBlock.Kind == SyntaxKind.Paragraph || MarkdownSyntaxTree.ParseText(continuedBlock.Text, parseOptions).GetRoot().Blocks is not [.., var written] || written.Kind() == continuedBlock.Kind)
+            {
+                return false;
+            }
+
+            continuedBlock = continuedBlock with { Kind = written.Kind() };
+            return IsTableAfter(blocks, continuedBlock.Kind, table);
         }
 
         // The blocks tell whether the text is a paragraph, without parsing its inlines and building its tree, except for the pipe
@@ -1054,6 +1075,36 @@ public static class MarkdownFormatter
                     }
                 }
             }
+        }
+
+        private static List<string> GetAlignedTableLines(MarkdownTableSyntax table)
+        {
+            var lines = new List<string>();
+            WriteTable(lines, table);
+            return lines;
+        }
+
+        // The rows of the table as they are in the text
+        private List<string> GetTableLines(MarkdownTableSyntax table)
+        {
+            var lines = GetLines(table);
+
+            // A row of whitespace other than spaces, such as \v, has no token when it ends the document
+            if (table.ChildNodes().LastOrDefault() is MarkdownTableRowSyntax { FullSpan.Length: 0 })
+            {
+                lines.Add("| |");
+            }
+
+            // The rows of a pipe table are lines of a paragraph: a row that would start a block is indented
+            for (var i = 1; table.IsPipeTable && i < lines.Count; i++)
+            {
+                if (!IsSingleParagraph("a\n" + lines[i], WithoutTables))
+                {
+                    lines[i] = "    " + lines[i];
+                }
+            }
+
+            return lines;
         }
 
         private bool CanAlign(MarkdownTableSyntax table)

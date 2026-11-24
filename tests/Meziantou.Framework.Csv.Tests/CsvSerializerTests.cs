@@ -449,11 +449,17 @@ public class CsvSerializerTests
     {
         var calls = 0;
         var options = new CsvSerializerOptions { DeserializationErrorHandler = _ => { calls++; return CsvDeserializationErrorAction.Ignore; } };
-        Assert.Throws<ArgumentOutOfRangeException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1", options));
+        var exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1", options));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        Assert.Equal(0L, exception.RowIndex);
         Assert.Equal(0, calls);
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"));
-        Assert.Throws<ArgumentOutOfRangeException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"u8.ToArray(), options));
+        // The same exception as without a handler
+        exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"u8.ToArray(), options));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        Assert.Equal(0, calls);
 
         // The conversion errors are still reported
         var models = CsvSerializer.Deserialize<ValidatingSetterModel>("Value\nabc\n2", options);

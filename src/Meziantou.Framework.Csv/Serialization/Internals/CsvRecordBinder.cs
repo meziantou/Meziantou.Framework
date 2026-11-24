@@ -213,9 +213,10 @@ internal sealed class CsvRecordBinder<T>
                     property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, byte>(value)), ref converted);
                 }
             }
-            catch (Exception ex) when (!converted && IsConversionException(ex))
+            catch (Exception ex) when (IsConversionException(ex))
             {
-                if (typeof(TMode) == typeof(WithoutErrorHandler))
+                // An exception of the setter is not reported to the handler, but it is wrapped as without a handler, with the position of the value
+                if (typeof(TMode) == typeof(WithoutErrorHandler) || converted)
                     throw CreateConversionException(parser, column, property, parser.GetString(value), ex);
 
                 // The member keeps its value when the error is ignored

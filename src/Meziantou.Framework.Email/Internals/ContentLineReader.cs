@@ -36,6 +36,9 @@ internal static class ContentLineReader
         var lines = text.Split('\n');
         var current = new StringBuilder();
         var hasCurrent = false;
+
+        // Whether the value of the current line is in quoted-printable, known once the value starts: the text appended after it cannot change it
+        bool? isQuotedPrintable = null;
         for (var i = 0; i < lines.Length; i++)
         {
             var line = lines[i] is [.., '\r'] ? lines[i][..^1] : lines[i];
@@ -45,7 +48,7 @@ internal static class ContentLineReader
                 continue;
             }
 
-            if (hasCurrent && IsQuotedPrintableContinuation(current))
+            if (hasCurrent && current.Length > 0 && current[^1] == '=' && (isQuotedPrintable ??= IsQuotedPrintableValue(current)) is true)
             {
                 current.Length--;
                 current.Append(line);
@@ -59,6 +62,7 @@ internal static class ContentLineReader
 
             current.Clear().Append(line);
             hasCurrent = true;
+            isQuotedPrintable = null;
         }
 
         if (hasCurrent)
@@ -67,16 +71,17 @@ internal static class ContentLineReader
         }
     }
 
-    private static bool IsQuotedPrintableContinuation(StringBuilder line)
+    /// <summary>Gets whether the value of a line is in quoted-printable, or <see langword="null"/> when the value has not started yet (no colon).</summary>
+    private static bool? IsQuotedPrintableValue(StringBuilder line)
     {
-        if (line.Length == 0 || line[^1] != '=')
-        {
-            return false;
-        }
-
         // Only the encoding that decodes the value makes "=" a soft line break, not a parameter whose value is QUOTED-PRINTABLE (X-A=QUOTED-PRINTABLE)
         var text = line.ToString();
         var colon = FindValueStart(text);
+        if (colon < 0)
+        {
+            return null;
+        }
+
         return colon > 0 && IsQuotedPrintable(SplitParameters(text[..colon]).Skip(1).Select(ParseParameter));
     }
 

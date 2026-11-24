@@ -42,7 +42,7 @@ public static partial class CsvFuzzTargets
     private static readonly FuzzCsvContext ErrorHandlerCsvContext = new(new CsvSerializerOptions { DeserializationErrorHandler = OnDeserializationError });
 
     [ThreadStatic]
-    private static DeserializeErrorState? t_deserializeErrorState;
+    private static DeserializeErrorState? s_deserializeErrorState;
 
     private static readonly string[] Tokens = [",", ";", "\t", "|", "\"", "\"\"", "'", "\r", "\n", "\r\n", ",\"", "\",", "\"\r\n", "\uFEFF", "\u8000", "\uFF0C", "\u0100", "😀", "é", "true", "1.5", "2026-11-21", "First", "Text,Number,Ratio,Kind,Date,Flag,bytes"];
 
@@ -310,7 +310,7 @@ public static partial class CsvFuzzTargets
         static List<string> DeserializeWithErrors(string text, bool utf8, bool generated, CsvDeserializationErrorAction action, out List<DeserializeError> errors)
         {
             var state = new DeserializeErrorState(action);
-            t_deserializeErrorState = state;
+            s_deserializeErrorState = state;
             try
             {
                 List<FuzzRecord> records;
@@ -329,14 +329,14 @@ public static partial class CsvFuzzTargets
             }
             finally
             {
-                t_deserializeErrorState = null;
+                s_deserializeErrorState = null;
             }
         }
     }
 
     private static CsvDeserializationErrorAction OnDeserializationError(CsvDeserializationErrorContext context)
     {
-        var state = t_deserializeErrorState ?? throw new InvalidOperationException("No deserialization is in progress");
+        var state = s_deserializeErrorState ?? throw new InvalidOperationException("No deserialization is in progress");
         FuzzAssert.True(context.Type == typeof(FuzzRecord), "The error is not about the type read");
         FuzzAssert.Equal(context.Kind is CsvDeserializationErrorKind.ConversionFailed, context.RawValue is not null, "Only a conversion error has a value");
         FuzzAssert.Equal(context.Kind is CsvDeserializationErrorKind.ConversionFailed, context.Exception.InnerException is not null, "Only a conversion error has an inner exception");

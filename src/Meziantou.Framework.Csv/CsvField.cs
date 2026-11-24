@@ -42,7 +42,7 @@ public readonly ref struct CsvField
     public T Parse<T>()
         where T : ISpanParsable<T>
     {
-        if (T.TryParse(Span, GetFormatProvider(), out var result))
+        if (TryParse<T>(out var result))
             return result;
 
         throw CreateParseException(typeof(T));
@@ -55,7 +55,11 @@ public readonly ref struct CsvField
     public bool TryParse<T>([MaybeNullWhen(false)] out T result)
         where T : ISpanParsable<T>
     {
-        return T.TryParse(Span, GetFormatProvider(), out result);
+        var formatProvider = GetFormatProvider();
+        if (InvariantFloatingPoint.IsSupported<T>() && InvariantNumbers.IsInvariant(formatProvider) && InvariantFloatingPoint.TryParse(Span, out result))
+            return true;
+
+        return T.TryParse(Span, formatProvider, out result);
     }
 
     /// <summary>Parses the value as the name or the number of a member of an enumeration.</summary>

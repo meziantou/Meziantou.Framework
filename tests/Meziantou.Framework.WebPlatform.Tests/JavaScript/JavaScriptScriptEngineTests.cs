@@ -936,6 +936,63 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void ExternalScripts_CachedScriptIsParsedAgainWhenItsTextChanges()
+    {
+        // The cache of the prepared scripts is shared by the engines of the process: the URL is unique to the test
+        var url = "https://example.com/cached-" + Guid.NewGuid().ToString("N") + ".js";
+        using var engine = new CachingScriptEngine();
+        var loader = new RecordingLoader();
+        string Run(string script)
+        {
+            loader.Resources[url] = new DocumentResource(script) { Headers = [new("Content-Type", "text/javascript"), new("Cache-Control", "no-store")] };
+            return Load($"<script src={url}></script>", engine, loader).Title;
+        }
+
+        Assert.Equal("first", Run("document.title = 'first'"));
+        Assert.Equal("first", Run("document.title = 'first'"));
+        Assert.Equal("second", Run("document.title = 'second'"));
+        Assert.Equal("first", Run("document.title = 'first'"));
+        Assert.Empty(_errors);
+    }
+
+    /// <summary>A script engine that caches the prepared external scripts for the process.</summary>
+    private sealed class CachingScriptEngine : JavaScriptScriptEngine
+    {
+        internal override bool ShouldCacheScript(ClassicScript script) => true;
+    }
+
+    [Fact]
+    public void RunningScript_IsNotReadFromOtherThreads()
+    {
+        // An algorithm that runs in parallel on another thread (e.g. the fetch of the script of a service worker, which may
+        // report a violation of a content security policy) sees no running script, while the thread of the engine runs one
+        using var engine = new ScriptLocationScriptEngine();
+        var document = Load("<script>document.title = locations();</script>", engine);
+        Assert.Empty(_errors);
+        Assert.Equal("https://example.com/ https://example.com/ https://example.com/|null null null", document.Title);
+    }
+
+    /// <summary>A script engine whose windows have a <c>locations</c> function: the running script and the current global object, seen from the thread of the engine and from another thread.</summary>
+    private sealed class ScriptLocationScriptEngine : JavaScriptScriptEngine
+    {
+        protected override void OnRealmCreated(GlobalScope global, JsObject globalObject)
+        {
+            var realm = Engine.CurrentRealm!;
+            globalObject.SetProperty("locations", realm.CreateFunction("locations", 0, (_, _) =>
+            {
+                var current = Describe();
+                var other = "";
+                var thread = new Thread(() => other = Describe());
+                thread.Start();
+                thread.Join();
+                return JsValue.FromString(current + "|" + other);
+            }));
+        }
+
+        private string Describe() => (GetCurrentScriptLocation()?.Url ?? "null") + " " + ((GetCurrentGlobal() as Window)?.Document.Url ?? "null") + " " + (GetActiveScriptBaseUrl() ?? "null");
+    }
+
+    [Fact]
     public void CustomElements()
     {
         var document = Load("""

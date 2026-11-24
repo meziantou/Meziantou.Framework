@@ -244,7 +244,8 @@ Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Person>("Name,Countr
 <!-- endref -->
 
 A required member, declared with the `required` keyword or [CsvRequiredAttribute](cref:Meziantou.Framework.Csv.Serialization.CsvRequiredAttribute), throws when its column is missing from the
-header row, and when a record is too short to have a value for it.
+header row, and when a record is too short to have a value for it. A [deserialization error handler](#skip-or-ignore-errors) can
+ignore these errors instead.
 
 ## Errors
 
@@ -261,6 +262,56 @@ Assert.Equal("Id", exception.ColumnName);
 Assert.StartsWith("The value 'x' of the column 'Id' cannot be converted", exception.Message);
 ```
 <!-- endref -->
+
+## Skip or ignore errors
+
+To log the invalid records of an import and keep reading, set [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler). The serializer calls it
+instead of throwing, with a [CsvDeserializationErrorContext](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext) that gives the kind of error, the member, the value, the position, and the
+exception it would throw:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_DeserializationErrorHandler;format=md-fenced-code-block;dedent=true -->
+```csharp
+var errors = new List<string>();
+var options = new CsvSerializerOptions
+{
+    DeserializationErrorHandler = context =>
+    {
+        errors.Add($"line {context.LineNumber}: '{context.RawValue}' is not a valid {context.MemberName}");
+        return CsvDeserializationErrorAction.SkipRecord; // or Ignore to keep the default value, or Throw
+    },
+};
+
+var products = CsvSerializer.Deserialize<Product>("Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99\n3,Screen,199", options);
+
+Assert.Equal(["Keyboard", "Screen"], products.Select(p => p.Name));
+Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
+```
+<!-- endref -->
+
+| Action | Effect |
+|---|---|
+| [CsvDeserializationErrorAction.Throw](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction.Throw) | Throws the [CsvException](cref:Meziantou.Framework.Csv.CsvException) of [Exception](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.Exception). |
+| [CsvDeserializationErrorAction.Ignore](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction.Ignore) | The member keeps its default value (a constructor parameter gets its default value), or the column is ignored. |
+| [CsvDeserializationErrorAction.SkipRecord](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction.SkipRecord) | The record is not returned, and the serializer continues with the next one. |
+
+[Kind](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.Kind) is one of the errors that throw without a handler:
+
+- [ConversionFailed](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.ConversionFailed): a value cannot be converted. [RawValue](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.RawValue) is the value, and the error of the converter is
+  the inner exception of [Exception](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.Exception).
+- [MissingRequiredValue](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.MissingRequiredValue): a record is too short to have a value for a required member.
+- [MissingColumn](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.MissingColumn) and [UnmappedColumn](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.UnmappedColumn): the header row has no column for a required member, or the
+  columns do not match the members when [MissingColumnHandling](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.MissingColumnHandling) or [UnmappedColumnHandling](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.UnmappedColumnHandling) is `Throw`. These
+  errors of the header row are reported when the first record is read, and apply to every record: skipping is the
+  same as ignoring them.
+
+A record can have several errors, reported one by one until the handler skips it. The handler works with the
+reflection-based metadata and with a [generated context](07-SourceGeneration.md) alike. The exceptions of the members, the
+constructors and the callbacks of the type are not reported.
+
+[BadDataHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.BadDataHandler) handles the malformed data of the file, such as a quote in a value that is not quoted, as the
+[readers do](03-ReadingCsv.md#report-and-skip-bad-data). The serializer has no filter that skips records before they are
+converted: to skip records by their values, such as a total line at the end of a report, read them with
+[CsvReader](cref:Meziantou.Framework.Csv.CsvReader).
 
 ## Callbacks
 

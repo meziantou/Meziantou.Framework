@@ -15,6 +15,11 @@ description: What the library does not do, so you can plan around it.
 - **No header detection.** Set [HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReaderOptions.HasHeaderRow) to match the data.
 - **Spaces only.** [Trim](cref:Meziantou.Framework.Csv.CsvReaderOptions.Trim) removes the space character, not tabs or other white spaces.
 - **No parallel parsing.** A reader reads the records one after the other.
+- **No record filter in the serializer.** [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler) skips the records that cannot be
+  converted, but the serializer cannot skip a valid record by its values before converting it. Read such data with
+  [CsvReader](cref:Meziantou.Framework.Csv.CsvReader), or filter the objects after reading them.
+- **No line repair.** A bad data handler can accept or skip a malformed record, not rewrite it: a quoted value that is
+  never closed takes the rest of the data, and skipping it skips the rest of the data.
 - **Not thread-safe.** Use a reader or a writer from one thread at a time. [CsvSerializerOptions](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions) and the
   contexts can be shared.
 
@@ -28,7 +33,8 @@ except where it follows RFC 4180 or keeps the data as it is:
 - **The characters after a closing quote are part of the value.** `"a" ,b` reads `a ` as the first value; Papa Parse
   ignores the spaces before the separator. Set [Trim](cref:Meziantou.Framework.Csv.CsvReaderOptions.Trim) to [CsvTrimOptions.Outer](cref:Meziantou.Framework.Csv.CsvTrimOptions.Outer) to remove them.
 - **A quote closes a quoted value even when a separator does not follow it.** `"a"b,c` is two values, `ab` and `c`;
-  Papa Parse reads the quote as a character and continues the value. [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) rejects such data.
+  Papa Parse reads the quote as a character and continues the value. [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) rejects such data, and
+  [BadDataHandler](cref:Meziantou.Framework.Csv.CsvReaderOptions.BadDataHandler) reports it.
 - **Every line terminator ends a record.** `\n`, `\r\n` and `\r` can be mixed in the same data; Papa Parse uses the first
   one it finds and reads the others as characters.
 - **A quote is escaped by doubling it.** Another escape character, such as `\"`, is not supported.

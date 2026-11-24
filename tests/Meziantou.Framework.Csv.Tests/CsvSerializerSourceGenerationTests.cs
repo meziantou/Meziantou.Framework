@@ -67,6 +67,29 @@ public class CsvSerializerSourceGenerationTests
     }
 
     [Fact]
+    public void DeserializationErrorHandler()
+    {
+        // The generated metadata goes through the same binder as reflection
+        var errors = new List<CsvDeserializationErrorContext>();
+        foreach (var action in (CsvDeserializationErrorAction[])[CsvDeserializationErrorAction.Ignore, CsvDeserializationErrorAction.SkipRecord])
+        {
+            errors.Clear();
+            var context = new TestCsvContext(new CsvSerializerOptions { DeserializationErrorHandler = c => { errors.Add(c); return action; } });
+            const string Csv = "Id,Name,Price\n1,a,x\n2,b,3";
+            var generated = CsvSerializer.Deserialize(Csv, context.Product);
+            var reflection = CsvSerializer.Deserialize<Product>(Csv, new CsvSerializerOptions { DeserializationErrorHandler = _ => action });
+            Assert.Equal(reflection, generated);
+            Assert.Equal(action is CsvDeserializationErrorAction.Ignore ? [new Product(1, "a", 0), new Product(2, "b", 3)] : [new Product(2, "b", 3)], generated);
+            Assert.Equal(CsvDeserializationErrorKind.ConversionFailed, Assert.Single(errors).Kind);
+
+            errors.Clear();
+            var people = CsvSerializer.Deserialize(Encoding.UTF8.GetBytes("Name,Age\nAlice,x\nBob,3"), context.Person);
+            Assert.Equal(action is CsvDeserializationErrorAction.Ignore ? ["Alice", "Bob"] : ["Bob"], people.Select(p => p.Name));
+            Assert.Equal("x", Assert.Single(errors).RawValue);
+        }
+    }
+
+    [Fact]
     public void Members()
     {
         var model = CsvSerializer.Deserialize("Init,Required,Private,PrivateSetter,Field,ReadOnly\n1,2,3,4,5,6", TestCsvContext.Default.MembersModel)[0];

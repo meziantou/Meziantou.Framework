@@ -43,7 +43,7 @@ public sealed record CsvReaderOptions
     public bool SkipEmptyLines { get; init; }
 
     /// <summary>Gets a value indicating whether every record must have the same number of columns as the header row, or as the first record when there is no header row.</summary>
-    /// <remarks>A record with a different number of columns throws a <see cref="CsvException"/>.</remarks>
+    /// <remarks>A record with a different number of columns throws a <see cref="CsvException"/>, unless <see cref="BadDataHandler"/> decides otherwise.</remarks>
     public bool ValidateColumnCount { get; init; }
 
     /// <summary>Gets the comparer used to find a column by name. Default is <see cref="StringComparer.Ordinal"/>.</summary>
@@ -58,8 +58,48 @@ public sealed record CsvReaderOptions
     /// of a value, and a quoted value that does not end before the end of the data are errors.
     /// Otherwise, a quote character inside a value that is not quoted is part of the value, the characters after a closing quote are part of the value, and an
     /// unterminated quoted value ends at the end of the data.
+    /// When <see cref="BadDataHandler"/> is set, it decides what happens to these errors, and this property is not used.
     /// </remarks>
     public bool Strict { get; init; }
+
+    /// <summary>Gets the method called for malformed data, which decides whether the reader throws, accepts the data, or skips the record. Default is <see langword="null"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// The handler is called for the errors that <see cref="Strict"/> reports (see <see cref="CsvBadDataKind"/>), whatever the value of <see cref="Strict"/>,
+    /// and for a record with an unexpected number of columns when <see cref="ValidateColumnCount"/> is <see langword="true"/>.
+    /// When it is <see langword="null"/>, <see cref="Strict"/> decides: the reader throws in strict mode and accepts the data otherwise.
+    /// </para>
+    /// <para>
+    /// The handler is called in the order of the data, once every record before the malformed one has been read, and before the reader returns the malformed
+    /// record. A record can have several errors, reported one by one until the handler returns <see cref="CsvBadDataAction.Skip"/>.
+    /// The handler must not call the methods of the reader. It may throw its own exception, which ends the reading.
+    /// </para>
+    /// <para>The handler does not change how the data is read when it is valid, and it is not called for a row longer than <see cref="MaxRowLength"/>, which always throws.</para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs" ref:region="CsvReader_BadDataHandler" ref:dedent="true">
+    /// var errors = new List&lt;string&gt;();
+    /// var options = new CsvReaderOptions
+    /// {
+    ///     BadDataHandler = context =&gt;
+    ///     {
+    ///         errors.Add($"line {context.LineNumber}, column {context.ColumnName}: {context.Message}");
+    ///         return CsvBadDataAction.Skip; // or Accept to read the value as is, or Throw
+    ///     },
+    /// };
+    ///
+    /// using var reader = CsvReader.CreateFromString("Name,Comment\nAlice,ok\nBob,\"quoted\" text\nCharlie,ok", options);
+    /// var names = new List&lt;string&gt;();
+    /// while (reader.Read())
+    /// {
+    ///     names.Add(reader.Current["Name"].ToString());
+    /// }
+    ///
+    /// Assert.Equal(["Alice", "Charlie"], names);
+    /// Assert.Equal(["line 3, column Comment: A quoted value is followed by characters that are not a separator."], errors);
+    /// </code>
+    /// </example>
+    public CsvBadDataHandler? BadDataHandler { get; init; }
 
     /// <summary>Gets a value indicating whether the strings of short values are reused instead of allocated again. Default is <see langword="false"/>.</summary>
     /// <remarks>Each reader keeps its own pool of strings of at most 32 characters. This reduces the allocations when the data repeats the same values, such as categories or flags.</remarks>

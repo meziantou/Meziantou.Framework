@@ -4,6 +4,35 @@
 
 namespace Meziantou.Framework.Csv
 {
+    public enum CsvBadDataAction
+    {
+        Throw = 0,
+        Accept = 1,
+        Skip = 2,
+    }
+
+    public sealed class CsvBadDataContext
+    {
+        public int? ColumnIndex { get => throw null; }
+        public string? ColumnName { get => throw null; }
+        public Meziantou.Framework.Csv.CsvException Exception { get => throw null; }
+        public Meziantou.Framework.Csv.CsvBadDataKind Kind { get => throw null; }
+        public long LineNumber { get => throw null; }
+        public string Message { get => throw null; }
+        public long Position { get => throw null; }
+        public long? RowIndex { get => throw null; }
+    }
+
+    public delegate Meziantou.Framework.Csv.CsvBadDataAction CsvBadDataHandler(Meziantou.Framework.Csv.CsvBadDataContext context);
+
+    public enum CsvBadDataKind
+    {
+        QuoteInUnquotedValue = 0,
+        CharactersAfterClosingQuote = 1,
+        UnterminatedQuotedValue = 2,
+        ColumnCountMismatch = 3,
+    }
+
     public sealed class CsvException : System.Exception
     {
         public int? ColumnIndex { get => throw null; }
@@ -73,6 +102,7 @@ namespace Meziantou.Framework.Csv
     {
         public const char DefaultQuote = '"';
         public const char DefaultSeparator = ',';
+        public Meziantou.Framework.Csv.CsvBadDataHandler? BadDataHandler { get => throw null; init { } }
         public int BufferSize { get => throw null; init { } }
         public System.Collections.Generic.IEqualityComparer<string> ColumnNameComparer { get => throw null; init { } }
         public char? CommentCharacter { get => throw null; init { } }
@@ -291,6 +321,37 @@ namespace Meziantou.Framework.Csv.Serialization
         public abstract bool TryFormat(T value, System.Span<char> destination, out int charsWritten, Meziantou.Framework.Csv.Serialization.CsvConverterContext context);
     }
 
+    public enum CsvDeserializationErrorAction
+    {
+        Throw = 0,
+        Ignore = 1,
+        SkipRecord = 2,
+    }
+
+    public sealed class CsvDeserializationErrorContext
+    {
+        public int? ColumnIndex { get => throw null; }
+        public string? ColumnName { get => throw null; }
+        public Meziantou.Framework.Csv.CsvException Exception { get => throw null; }
+        public Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind Kind { get => throw null; }
+        public long? LineNumber { get => throw null; }
+        public string? MemberName { get => throw null; }
+        public long? Position { get => throw null; }
+        public string? RawValue { get => throw null; }
+        public long? RowIndex { get => throw null; }
+        public System.Type Type { get => throw null; }
+    }
+
+    public delegate Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction CsvDeserializationErrorHandler(Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext context);
+
+    public enum CsvDeserializationErrorKind
+    {
+        ConversionFailed = 0,
+        MissingRequiredValue = 1,
+        MissingColumn = 2,
+        UnmappedColumn = 3,
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class CsvFormatAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
     {
@@ -451,10 +512,12 @@ namespace Meziantou.Framework.Csv.Serialization
 
     public sealed class CsvSerializerOptions
     {
+        public Meziantou.Framework.Csv.CsvBadDataHandler? BadDataHandler { get => throw null; init { } }
         public int BufferSize { get => throw null; init { } }
         public char? CommentCharacter { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.CsvConverter> Converters { get => throw null; init { } }
         public static Meziantou.Framework.Csv.Serialization.CsvSerializerOptions Default { get => throw null; }
+        public Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorHandler? DeserializationErrorHandler { get => throw null; init { } }
         public bool EscapeFormulas { get => throw null; init { } }
         public System.IFormatProvider? FormatProvider { get => throw null; init { } }
         public bool HasHeaderRow { get => throw null; init { } }

@@ -67,6 +67,35 @@ public sealed class LegacyCollectionTests
     }
 
     [Fact]
+    public void DomStringMap_NamedProperties()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div data-cp=A1 data-foo-bar=1 data-=3 data-a-=4 data-x></div>");
+        var div = (HtmlElement)document.QuerySelector("div")!;
+        div.SetAttributeNS("urn:other", "data-ns", "5");
+        div.SetAttributeNS(@namespace: null, "data-up-Per", "6");
+        var dataset = div.Dataset;
+        Assert.Equal("A1", dataset["cp"]);
+        Assert.Equal("1", dataset["fooBar"]);
+        Assert.Equal("1", dataset["foo-bar"]);
+        Assert.Null(dataset["upPer"]);
+        Assert.Equal("3", dataset[""]);
+        Assert.Equal("4", dataset["a-"]);
+        Assert.Equal("", dataset["x"]);
+        Assert.Null(dataset["ns"]);
+        Assert.Null(dataset["c"]);
+        Assert.Null(dataset["cpx"]);
+        Assert.Null(dataset["fooBarX"]);
+        Assert.Null(dataset["foo"]);
+
+        var names = (ISupportedPropertyNames)dataset;
+        Assert.True(names.IsSupportedPropertyName("fooBar"));
+        Assert.True(names.IsSupportedPropertyName(""));
+        Assert.False(names.IsSupportedPropertyName("foo-bar"));
+        Assert.False(names.IsSupportedPropertyName("ns"));
+        Assert.Equal(["cp", "fooBar", "", "a-", "x"], dataset.Select(pair => pair.Key));
+    }
+
+    [Fact]
     public void DomStringList()
     {
         var list = new DomStringList(["a", "b"]);

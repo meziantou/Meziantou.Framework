@@ -1187,7 +1187,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // https://webidl.spec.whatwg.org/#internally-create-a-new-object-implementing-the-interface
         var prototype = GetPrototypeFromConstructor(newTarget, binding);
 
-        if (Agent.Wrappers.TryGetValue(instance, out var existing))
+        if (TryGetExistingWrapper(instance, out var existing))
             return existing;
 
         return GetWrapper(instance, prototype);
@@ -1205,10 +1205,22 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (target is Window window)
             return GetWindowProxy(window);
 
-        if (Agent.Wrappers.TryGetValue(target, out var wrapper))
+        if (TryGetExistingWrapper(target, out var wrapper))
             return wrapper;
 
         return CreateWrapper(target, prototype);
+    }
+
+    /// <summary>Gets the JavaScript object of a .NET platform object created by the agent, if any.</summary>
+    private bool TryGetExistingWrapper(object target, [MaybeNullWhen(false)] out TValue wrapper)
+    {
+        if (target is IScriptWrapperHolder { ScriptWrapper: { } slot } && ReferenceEquals(slot.Agent, Agent))
+        {
+            wrapper = (TValue)slot.Wrapper;
+            return true;
+        }
+
+        return Agent.Wrappers.TryGetValue(target, out wrapper);
     }
 
     // Not in GetWrapper: the lambdas capture the new wrapper, and their closure would be allocated by each call of GetWrapper
@@ -1248,7 +1260,16 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 #pragma warning restore WEBPLATEXP0014
         }
 
-        Agent.Wrappers.AddOrUpdate(target, wrapper);
+        // The object keeps its wrapper when it keeps the window of the realm alive (which keeps the agent alive)
+        if (target is IScriptWrapperHolder holder && Window is { } window && ReferenceEquals(holder.ScriptWrapperWindow, window))
+        {
+            holder.ScriptWrapper = new ScriptWrapperSlot(Agent, wrapper);
+        }
+        else
+        {
+            Agent.Wrappers.AddOrUpdate(target, wrapper);
+        }
+
         if (target is Location)
         {
             // The internal methods of a Location object depend on the current realm: its members are defined in its realm

@@ -7,7 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>https://dom.spec.whatwg.org/#interface-node</summary>
 /// <seealso href="https://dom.spec.whatwg.org/#node"/>
 [IdlInterface("Node", "https://dom.spec.whatwg.org/#node")]
-public abstract partial class Node : EventTarget
+public abstract partial class Node : EventTarget, Scripting.IScriptWrapperHolder
 {
     /// <summary>The node type of an element.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-node-element_node"/>
@@ -158,6 +158,12 @@ public abstract partial class Node : EventTarget
 
     /// <summary>Records the realm where the node was created, before it is adopted by a document of another realm.</summary>
     internal void KeepCreationRealm(Window window) => CreationRealms.TryAdd(this, window);
+
+    /// <inheritdoc/>
+    Scripting.ScriptWrapperSlot? Scripting.IScriptWrapperHolder.ScriptWrapper { get; set; }
+
+    /// <inheritdoc/>
+    Window? Scripting.IScriptWrapperHolder.ScriptWrapperWindow => NodeDocument.RealmWindow;
 
     /// <summary>Gets the name of the node, which depends on its type.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nodename"/>

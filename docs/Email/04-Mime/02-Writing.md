@@ -39,9 +39,10 @@ var bytes = message.ToByteArray();
 
 - The headers that are not ASCII are encoded ([RFC 2047]), and so are the display names of the addresses and the
   parameters ([RFC 2231]). The long headers are folded at 78 characters.
-- An address without a display name is written in angle brackets when it contains whitespace (Unicode whitespace such
-  as U+00A0 included) or a special character, so that it reads back unchanged: the reader removes the whitespace of an
-  address written without angle brackets.
+- The writer removes the whitespace at the ends of an address, and the characters a header cannot contain in it (`<`,
+  `>` and the line breaks). An address without a display name is written in angle brackets when it still contains
+  whitespace (Unicode whitespace such as U+00A0 included) or a special character: the reader removes the whitespace of
+  an address written without angle brackets, and keeps it between them.
 - [SetText](cref:Meziantou.Framework.Email.MimePart.SetText) and
   [SetContent](cref:Meziantou.Framework.Email.MimePart.SetContent) set the content of a part. The writer encodes it with
   the transfer encoding of the part, or chooses one when the part has none: none for a short ASCII text,

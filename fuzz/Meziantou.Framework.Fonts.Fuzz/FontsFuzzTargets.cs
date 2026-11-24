@@ -481,10 +481,27 @@ public static class FontsFuzzTargets
         foreach (var face in faces.Take(2))
         {
             CheckHinting(face, size, mode, GetHintedGlyphs(face));
-            if (instance != 0 && face.Axes.Length > 0)
+            if (instance != 0 && face.Axes.Length > 0 && TryGetInstance(face, instance) is { } instanceFace)
             {
-                CheckHinting(face.WithCoordinates(GetInstanceCoordinates(face, instance)), size, mode, GetHintedGlyphs(face));
+                CheckHinting(instanceFace, size, mode, GetHintedGlyphs(face));
             }
+        }
+    }
+
+    /// <summary>
+    /// Gets the face of an instance (see <see cref="GetInstanceCoordinates"/>); <see langword="null"/> when a table that
+    /// varies the font is malformed, which <see cref="FontFace.WithCoordinates"/> reports with a <see cref="FontException"/>
+    /// (it reads the regions of the variation stores and the records of <c>MVAR</c>, which loading the font does not validate).
+    /// </summary>
+    private static FontFace? TryGetInstance(FontFace face, int selector)
+    {
+        try
+        {
+            return face.WithCoordinates(GetInstanceCoordinates(face, selector));
+        }
+        catch (FontException)
+        {
+            return null;
         }
     }
 
@@ -511,7 +528,10 @@ public static class FontsFuzzTargets
             if (defaultFace.Outlines is not (FontOutlineKind.Cff or FontOutlineKind.Cff2))
                 continue;
 
-            var face = instance != 0 && defaultFace.Axes.Length > 0 ? defaultFace.WithCoordinates(GetInstanceCoordinates(defaultFace, instance)) : defaultFace;
+            var face = instance != 0 && defaultFace.Axes.Length > 0 ? TryGetInstance(defaultFace, instance) : defaultFace;
+            if (face is null)
+                continue;
+
             using var scratch = new GlyphScratch(SharedEnvironment.CreateAllocator("fuzz"));
             foreach (var glyph in GetHintedGlyphs(face))
             {
@@ -601,7 +621,9 @@ public static class FontsFuzzTargets
     /// <summary>
     /// Reads a <c>cvar</c> table: option bytes give the number of axes (1 to 4), the number of control values, and the
     /// normalized coordinates of the instance (16 bits each), then come the bytes of the table. The sums of the deltas
-    /// must be finite, and none at the default instance, where every region has a scalar of zero.
+    /// must be finite, and none at the default instance, where every region has a scalar of zero, unless a tuple
+    /// variation has a peak of zero on every axis: such a tuple ignores every axis, so it applies everywhere, the default
+    /// included, as in HarfBuzz and FreeType.
     /// </summary>
     private static void ControlValueVariations(ReadOnlySpan<byte> data)
     {
@@ -637,7 +659,29 @@ public static class FontsFuzzTargets
         var atDefault = new double[controlValueCount];
         budget = new GlyphBudget(Limits);
         CvarTable.AddDeltas(data, axisCount, new int[axisCount], atDefault, ref budget);
-        FuzzAssert.True(atDefault.All(sum => sum == 0), "The default instance has deltas");
+        FuzzAssert.True(atDefault.All(sum => sum == 0) || HasTupleWithoutAxes(data, axisCount), "The default instance has deltas");
+    }
+
+    /// <summary>
+    /// Gets whether a <c>cvar</c> table that <see cref="CvarTable.AddDeltas"/> read has a tuple variation whose peak is
+    /// zero on every axis. The headers of the tuple variations follow the header of the table: a size, a flags and
+    /// index field, the peak, then the start and the end of an intermediate region.
+    /// </summary>
+    private static bool HasTupleWithoutAxes(ReadOnlySpan<byte> table, int axisCount)
+    {
+        var tupleCount = BinaryPrimitives.ReadUInt16BigEndian(table[4..]) & 0x0FFF;
+        var header = 8;
+        for (var tuple = 0; tuple < tupleCount; tuple++)
+        {
+            var index = BinaryPrimitives.ReadUInt16BigEndian(table[(header + 2)..]);
+            var peak = table.Slice(header + 4, axisCount * 2);
+            if (!peak.ContainsAnyExcept((byte)0))
+                return true;
+
+            header += 4 + (axisCount * 2) + ((index & 0x4000) != 0 ? axisCount * 4 : 0);
+        }
+
+        return false;
     }
 
     /// <summary>

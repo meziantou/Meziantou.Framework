@@ -307,9 +307,9 @@ Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
 A record can have several errors, reported one by one until the handler skips it. The handler works with the
 reflection-based metadata and with a [generated context](07-SourceGeneration.md) alike. The exceptions of the members, the
 constructors and the callbacks of the type are not reported, and the handler does not change how they are thrown. For
-instance, a setter that throws an `ArgumentException`, a `FormatException`, an `OverflowException` or an
-`InvalidCastException` throws a [CsvException](cref:Meziantou.Framework.Csv.CsvException) with that exception as the inner exception, and its other
-exceptions, such as an `InvalidOperationException`, are not wrapped.
+instance, when a setter throws an `ArgumentException`, a `FormatException`, an `OverflowException`, an
+`InvalidCastException` or a [CsvException](cref:Meziantou.Framework.Csv.CsvException), the serializer throws a new [CsvException](cref:Meziantou.Framework.Csv.CsvException) with that exception as the
+inner exception. The other exceptions, such as an `InvalidOperationException`, are not wrapped.
 
 [BadDataHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.BadDataHandler) handles the malformed data of the file, such as a quote in a value that is not quoted, as the
 [readers do](03-ReadingCsv.md#report-and-skip-bad-data). The serializer has no filter that skips records before they are

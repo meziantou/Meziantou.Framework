@@ -29,6 +29,9 @@ public class ConverterBenchmark
         }
 
         _columns = [.. Enumerable.Range(0, 7).Select(c => rows.Select(r => r[c]).ToArray())];
+
+        // The values of the Value column in the round-trip format of a float, which has up to 9 digits
+        _columns = [.. _columns, [.. _columns[2].Select(value => ((float)double.Parse(value, CultureInfo.InvariantCulture)).ToString("R", CultureInfo.InvariantCulture))]];
         _context = new CsvConverterContext(CsvSerializerOptions.Default);
     }
 
@@ -43,6 +46,9 @@ public class ConverterBenchmark
 
     [Benchmark]
     public long ReadDoubleShort() => Run<double>(3, v => (long)v);
+
+    [Benchmark]
+    public long ReadSingle() => Run<float>(7, v => (long)v);
 
     [Benchmark]
     public long ReadDecimal() => Run<decimal>(4, v => (long)v);

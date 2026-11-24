@@ -1130,10 +1130,10 @@ public class CsvSerializerTests
     }
 
     [Fact]
-    public void FloatingPoint_RoundTripDoublesMatchBcl()
+    public void FloatingPoint_RoundTripValuesMatchBcl()
     {
-        // The round-trip format of doubles has up to 17 digits: those whose power of ten is in the table of Eisel-Lemire take the fast path, and those
-        // written with fewer digits and their neighbors give the same values as the BCL
+        // The round-trip format of doubles has up to 17 digits, and the one of floats up to 9: those whose power of ten is in the table of Eisel-Lemire
+        // take the fast path, and those written with more digits and their neighbors give the same values as the BCL
         var state = 0x2545F4914F6CDD1DUL;
         var accepted = 0;
         for (var i = 0; i < 50_000; i++)
@@ -1148,6 +1148,20 @@ public class CsvSerializerTests
         }
 
         Assert.True(accepted > 45_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+
+        var acceptedSingles = 0;
+        for (var i = 0; i < 50_000; i++)
+        {
+            var exponent = (int)(Next(ref state) % 76) - 38;
+            var number = (float)((double)(Next(ref state) >> 11) / (1UL << 53) * Math.Pow(10, exponent));
+            var text = number.ToString("R", CultureInfo.InvariantCulture);
+            acceptedSingles += AssertMatchesBcl<float>(text) ? 1 : 0;
+            AssertMatchesBcl<float>("-" + text);
+            AssertMatchesBcl<float>(BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(number) + 1).ToString("R", CultureInfo.InvariantCulture));
+            AssertMatchesBcl<float>(number.ToString("E12", CultureInfo.InvariantCulture));
+        }
+
+        Assert.True(acceptedSingles > 45_000, "Too few floats take the fast path: " + acceptedSingles.ToString(CultureInfo.InvariantCulture));
 
         static ulong Next(ref ulong state)
         {

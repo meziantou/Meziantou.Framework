@@ -10,9 +10,10 @@ namespace Meziantou.Framework.Csv.Internals;
 /// the power of ten is also exact, one IEEE multiplication or division gives the correctly rounded value, which is what the BCL returns.
 /// </para>
 /// <para>
-/// A <see cref="double"/> with more digits, such as the round-trip format of most values, goes through the algorithm of Eisel and Lemire, the
-/// second step of fast_float (Lemire, "Number Parsing at a Gigabyte per Second", 2021): the digits are multiplied by the 128 most significant bits
-/// of the power of five, which is always enough to round correctly (Mushtak and Lemire, "Fast Number Parsing Without Fallback", 2023).
+/// A <see cref="double"/> or a <see cref="float"/> with more digits, such as the round-trip format of most values, goes through the algorithm of
+/// Eisel and Lemire, the second step of fast_float (Lemire, "Number Parsing at a Gigabyte per Second", 2021): the digits are multiplied by the 128
+/// most significant bits of the power of five, which is always enough to round correctly (Mushtak and Lemire, "Fast Number Parsing Without
+/// Fallback", 2023).
 /// </para>
 /// <para>
 /// The other values, such as values with more than 19 digits, large exponents, subnormal values, white spaces, group separators or <c>NaN</c>, are
@@ -207,7 +208,11 @@ internal static class InvariantFloatingPoint
                 number = (double)mantissa;
                 number = exponent < 0 ? number / DoublePowersOf10[-exponent] : number * DoublePowersOf10[exponent];
             }
-            else if (!TryComputeDouble(mantissa, exponent, out number))
+            else if (TryCompute(mantissa, exponent, mantissaBits: 52, bias: 1023, minRoundToEven: -4, maxRoundToEven: 23, out var bits))
+            {
+                number = BitConverter.UInt64BitsToDouble(bits);
+            }
+            else
             {
                 return false;
             }
@@ -218,11 +223,21 @@ internal static class InvariantFloatingPoint
 
         if (typeof(T) == typeof(float))
         {
-            if (mantissa > (1UL << 24) || exponent is < -10 or > 10)
+            float number;
+            if (mantissa <= (1UL << 24) && exponent is >= -10 and <= 10)
+            {
+                number = (float)mantissa;
+                number = exponent < 0 ? number / SinglePowersOf10[-exponent] : number * SinglePowersOf10[exponent];
+            }
+            else if (TryCompute(mantissa, exponent, mantissaBits: 23, bias: 127, minRoundToEven: -17, maxRoundToEven: 10, out var bits))
+            {
+                number = BitConverter.UInt32BitsToSingle((uint)bits);
+            }
+            else
+            {
                 return false;
+            }
 
-            var number = (float)mantissa;
-            number = exponent < 0 ? number / SinglePowersOf10[-exponent] : number * SinglePowersOf10[exponent];
             result = (T)(object)(negative ? -number : number);
             return true;
         }
@@ -249,18 +264,23 @@ internal static class InvariantFloatingPoint
         return false;
     }
 
-    /// <summary>Computes the <see cref="double"/> nearest to <paramref name="digits"/> × 10^<paramref name="exponent"/> (Eisel-Lemire).</summary>
+    /// <summary>Computes the bits of the IEEE binary number nearest to <paramref name="digits"/> × 10^<paramref name="exponent"/> (Eisel-Lemire).</summary>
+    /// <param name="digits">The decimal digits, as an integer.</param>
+    /// <param name="exponent">The power of ten.</param>
+    /// <param name="mantissaBits">The explicit bits of the mantissa of the type: 52 for a <see cref="double"/>, 23 for a <see cref="float"/>.</param>
+    /// <param name="bias">The bias of the exponent of the type.</param>
+    /// <param name="minRoundToEven">The smallest power of ten whose product can be exactly between two values of the type.</param>
+    /// <param name="maxRoundToEven">The largest power of ten whose product can be exactly between two values of the type.</param>
+    /// <param name="bits">The bits of the value, without the sign.</param>
     /// <returns><see langword="false"/> when the BCL must compute it: the power of ten is not in the table, or the value is subnormal or infinite.</returns>
-    /// <remarks>This is <c>compute_float</c> of fast_float for a <see cref="double"/>, without the subnormal values.</remarks>
-    private static bool TryComputeDouble(ulong digits, int exponent, out double result)
+    /// <remarks>This is <c>compute_float</c> of fast_float, without the subnormal values.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryCompute(ulong digits, int exponent, int mantissaBits, int bias, int minRoundToEven, int maxRoundToEven, out ulong bits)
     {
+        bits = 0;
         if (digits == 0)
-        {
-            result = 0;
             return true;
-        }
 
-        result = 0;
         if (exponent is < MinPowerOfFive or > MaxPowerOfFive)
             return false;
 
@@ -271,8 +291,9 @@ internal static class InvariantFloatingPoint
         var index = 2 * (exponent - MinPowerOfFive);
         var high = Math.BigMul(digits, powers[index], out var low);
 
-        // The low half of the power of five only matters when the bits below the 55 that are kept are all set: it could carry into them
-        if ((high & 0x1FF) == 0x1FF)
+        // The low half of the power of five only matters when the bits below the ones that are kept are all set: it could carry into them
+        var precisionMask = ulong.MaxValue >> (mantissaBits + 3);
+        if ((high & precisionMask) == precisionMask)
         {
             var secondHigh = Math.BigMul(digits, powers[index + 1], out _);
             low += secondHigh;
@@ -282,18 +303,19 @@ internal static class InvariantFloatingPoint
             }
         }
 
-        // 54 bits: the 52 bits of the mantissa, the implicit bit, and a bit to round
+        // The bits of the mantissa, the implicit bit, and a bit to round
         var upperBit = (int)(high >> 63);
-        var shift = upperBit + 9;
+        var shift = upperBit + 64 - mantissaBits - 3;
         var mantissa = high >> shift;
 
-        // The binary exponent of 10^exponent is about exponent × log2(10), which is 217706 / 2^16. 1023 is the bias of the exponent of a double.
-        var binaryExponent = ((217706 * exponent) >> 16) + 63 + upperBit - leadingZeros + 1023;
+        // The binary exponent of 10^exponent is about exponent × log2(10), which is 217706 / 2^16
+        var binaryExponent = ((217706 * exponent) >> 16) + 63 + upperBit - leadingZeros + bias;
         if (binaryExponent <= 0)
             return false;
 
-        // A value exactly between two doubles rounds to the even one. It can only be exact when 5^exponent fits in 64 bits, from 5^-4 to 5^23.
-        if (low <= 1 && exponent is >= -4 and <= 23 && (mantissa & 3) == 1 && (mantissa << shift) == high)
+        // A value exactly between two values rounds to the even one. It can only be exact when the product of 5^exponent is: from 5^-4 to 5^23 for
+        // a double.
+        if (low <= 1 && exponent >= minRoundToEven && exponent <= maxRoundToEven && (mantissa & 3) == 1 && (mantissa << shift) == high)
         {
             mantissa &= ~1UL;
         }
@@ -302,16 +324,17 @@ internal static class InvariantFloatingPoint
         mantissa >>= 1;
 
         // Rounding up can carry into a new bit
-        if (mantissa >= (2UL << 52))
+        if (mantissa >= (2UL << mantissaBits))
         {
-            mantissa = 1UL << 52;
+            mantissa = 1UL << mantissaBits;
             binaryExponent++;
         }
 
-        if (binaryExponent >= 0x7FF)
+        // The largest exponent is the one of the infinities
+        if (binaryExponent >= (2 * bias) + 1)
             return false;
 
-        result = BitConverter.UInt64BitsToDouble((mantissa & ~(1UL << 52)) | ((ulong)binaryExponent << 52));
+        bits = (mantissa & ~(1UL << mantissaBits)) | ((ulong)binaryExponent << mantissaBits);
         return true;
     }
 

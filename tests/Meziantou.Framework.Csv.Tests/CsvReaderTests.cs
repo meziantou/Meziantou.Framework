@@ -667,6 +667,38 @@ public class CsvReaderTests
     }
 
     [Fact]
+    public void Utf8ValuesOfLongRecordsAreDecodedAsUtf8()
+    {
+        // Values of many lengths in long records, read in any order and read again, with values that are quoted, escaped, not ASCII or not valid
+        // UTF-8, decode as Encoding.UTF8 does
+        string[] specials = ["\"q\"", "\"a,\"\"b\"", "été", "日", ""];
+        for (var length = 1; length < 300; length += 7)
+        {
+            var values = new List<byte[]>();
+            for (var i = 0; i < 40; i++)
+            {
+                var value = i % 9 == 4 ? specials[i % specials.Length] : new string((char)('a' + (i % 26)), (length * (i + 1)) % 301);
+                values.Add(i % 13 == 7 ? [.. Encoding.UTF8.GetBytes(value), 0xFF] : Encoding.UTF8.GetBytes(value));
+            }
+
+            var data = values.SelectMany((value, i) => i == 0 ? value : [(byte)',', .. value]).ToArray();
+            var expected = ReadAll(Encoding.UTF8.GetString(data), ReaderKind.Utf16Memory, new CsvReaderOptions { HasHeaderRow = false }).Single();
+            foreach (var order in (int[][])[[.. Enumerable.Range(0, 40)], [.. Enumerable.Range(0, 40).Reverse()], [.. Enumerable.Range(0, 40).Select(i => (i * 17) % 40)]])
+            {
+                using var reader = Utf8CsvReader.Create(data, new CsvReaderOptions { HasHeaderRow = false });
+                Assert.True(reader.Read());
+                foreach (var column in order)
+                {
+                    Assert.Equal(expected[column], reader.Current[column].ToString());
+                }
+
+                // A value read again gives the same string
+                Assert.Equal(expected[order[0]], reader.Current[order[0]].ToString());
+            }
+        }
+    }
+
+    [Fact]
     public void PoolStrings()
     {
         var options = new CsvReaderOptions { HasHeaderRow = false, PoolStrings = true };
@@ -870,6 +902,48 @@ public class CsvReaderTests
 
     [Theory]
     [MemberData(nameof(ReaderKinds))]
+    public void QuotedValuesFollowedBySeparators(ReaderKind kind, int vectorSize)
+    {
+        // Quoted values that close anywhere in a SIMD block, followed by separators in the same block and the next ones: quoted separators, escaped
+        // quotes, a quote in a value that is not quoted, and a closing quote followed by other characters
+        for (var length = 0; length < 140; length++)
+        {
+            var value = new string('a', length);
+            var text = "\"" + value + "\",b,c,\"d,e\",f\"g,h,\"i\"\"j\",k,\"l\"m,n,o\n" +
+                "p,\"" + value + ",\"\"\",q,r,s,t,u,v,w,x,y,z\r\n" +
+                "\"" + value + "\"\n\"\",\"\",,\"\"\"\",\"\r\n\",1,2,3,4,5,6,7,8,9";
+            var expected = ReferenceParser.Parse(text, ',', '"');
+            var actual = ReadAll(text, kind, new CsvReaderOptions { HasHeaderRow = false, VectorSize = vectorSize, BufferSize = 1 + (length % 13) });
+            Assert.Equal(Describe(expected), Describe(actual), $"Input: {text.ReplaceLineEndings("\\n")}");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ReaderKinds))]
+    public void EscapedQuotesAtAllPositions(ReaderKind kind, int vectorSize)
+    {
+        // Doubled quotes at every position of quoted values of every length, before and after quoted values without doubled quotes in the same
+        // record, with text after the closing quote, and a value that is not closed
+        var options = new CsvReaderOptions { HasHeaderRow = false, VectorSize = vectorSize };
+        for (var length = 0; length < 150; length++)
+        {
+            var sb = new StringBuilder();
+            for (var position = 0; position <= length; position += 1 + (length / 30))
+            {
+                var value = new string('a', position) + "\"\"" + new string('b', length - position);
+                sb.Append('"').Append(value).Append("\",\"").Append(value).Append("\"\"\"").Append(value).Append("\"c,\"\"\"\",x\n");
+            }
+
+            sb.Append('"').Append('d', length).Append("\"\"e");
+            var text = sb.ToString();
+            var expected = ReferenceParser.Parse(text, ',', '"');
+            var actual = ReadAll(text, kind, options);
+            Assert.Equal(Describe(expected), Describe(actual), $"Input: {text.ReplaceLineEndings("\\n")}");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ReaderKinds))]
     public void NullSeparatorAndQuote(ReaderKind kind, int vectorSize)
     {
         // The SIMD path narrows the code units from U+8000 to 0x00: a separator or a quote U+0000 must not match them
@@ -914,6 +988,77 @@ public class CsvReaderTests
         var lineNumbers = new List<long>();
         ReadRecords(text, kind, new CsvReaderOptions { HasHeaderRow = false, VectorSize = vectorSize, BufferSize = 3 }, (lineNumber, _) => lineNumbers.Add(lineNumber));
         Assert.Equal([1, 3, 4, 6], lineNumbers);
+    }
+
+    [Theory]
+    [MemberData(nameof(ReaderKinds))]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void RandomRecordsReadAsWithoutSimd(ReaderKind kind, int vectorSize)
+    {
+        // The SIMD scan reads the regular records and leaves the others to the general scan, from their start: records of every shape, whose quotes
+        // and line terminators fall anywhere in the blocks, give the same values, line numbers and errors as without SIMD
+        string[] values = ["", "a", "abc", "\"\"", "\"a\"", "\"a,b\"", "\"a\"\"b\"", "\"\"\"\"", "\"a\r\nb\"", "\"a\nb\"", "a\"b", "\"a\"b", " \"a\" ", "\"a", "#a", "é😀", new string('x', 40), "\"" + new string('y', 70) + "\""];
+        string[] terminators = ["\n", "\r\n", "\r", "\n\n"];
+        CsvReaderOptions[] optionsList =
+        [
+            new() { HasHeaderRow = false },
+            new() { HasHeaderRow = false, Strict = true },
+            new() { HasHeaderRow = false, BadDataHandler = _ => CsvBadDataAction.Skip },
+            new() { HasHeaderRow = false, SkipEmptyLines = true },
+            new() { HasHeaderRow = false, Trim = CsvTrimOptions.All },
+            new() { HasHeaderRow = false, CommentCharacter = '#' },
+            new() { HasHeaderRow = false, MaxRowLength = 150, BufferSize = 16 },
+        ];
+
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 40; iteration++)
+        {
+            // The quotes that make a record irregular are rare in most documents: the general scan reads these records, and the next ones go back to
+            // the SIMD scan
+            var irregular = random.Next(4) == 0 ? values.Length : 13;
+            var sb = new StringBuilder();
+            var recordCount = random.Next(1, 200);
+            for (var record = 0; record < recordCount; record++)
+            {
+                var columnCount = random.Next(0, 10);
+                for (var column = 0; column < columnCount; column++)
+                {
+                    if (column > 0)
+                    {
+                        sb.Append(',');
+                    }
+
+                    var value = values[random.Next(random.Next(20) == 0 ? values.Length : irregular)];
+                    sb.Append(value);
+                }
+
+                sb.Append(terminators[random.Next(terminators.Length)]);
+            }
+
+            var text = sb.ToString();
+            foreach (var options in optionsList)
+            {
+                var expected = ReadSnapshot(text, kind, options with { VectorSize = 0 });
+                var actual = ReadSnapshot(text, kind, options with { VectorSize = vectorSize });
+                Assert.Equal(expected, actual, $"Input: {text.ReplaceLineEndings("\\n")}");
+            }
+        }
+    }
+
+    // The values and line numbers of the records, and the error that stops the reading
+    private static string ReadSnapshot(string text, ReaderKind kind, CsvReaderOptions options)
+    {
+        var sb = new StringBuilder();
+        try
+        {
+            ReadRecords(text, kind, options, (lineNumber, values) => sb.Append(lineNumber).Append(':').Append(Describe([values])).Append('\n'));
+        }
+        catch (CsvException ex)
+        {
+            sb.Append("Error ").Append(ex.RowIndex).Append(' ').Append(ex.LineNumber).Append(' ').Append(ex.ColumnIndex);
+        }
+
+        return sb.ToString();
     }
 
     private static IEnumerable<(string Input, string[][] Expected)> GetScenarios()

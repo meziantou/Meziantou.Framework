@@ -10,7 +10,13 @@ characters or bytes at a time with the separator, the quote and the line termina
 of the processor (AVX-512, AVX2, SSE or NEON; on Arm64, a block of 64 is four NEON vectors), and stores where each
 record starts and where each of its columns ends.
 Each character is compared once, and the separators are found from the result of the comparison without reading the
-data again. Reading a record then only takes the next entry of the batch, and reading a value only slices the buffer.
+data again. The quotes of a block are resolved at once too: the characters after an odd number of quotes are in a quoted
+value, so its separators are skipped without reading them one by one. A comment line, and a record whose quotes do more
+than open a value, close it or escape a quote, that has a line break in a quoted value, or whose values are trimmed, go
+through a slower path that reads each quote and line break on its own; the next records go back to the faster one.
+Reading a record then only takes the next entry of the batch, and reading a value only slices the buffer.
+The scan also notes the first column of each record with a doubled quote, or with another quote that does not only open
+or close its value: the quoted values of the columns before it are slices of the buffer too, between their quotes.
 A quoted value that contains doubled quotes is unescaped the first time it is read, into a buffer reused for every
 record. When a record does not fit, the buffer grows and the scan continues where it stopped.
 
@@ -74,4 +80,11 @@ strings), the writer (strings and formatted values), the serializer (generated m
 
 ```shell
 dotnet run -c Release --project benchmarks/Meziantou.Framework.Csv.Benchmarks -- --filter "*"
+```
+
+The `SepReadComparisonBenchmark` and `SepWriteComparisonBenchmark` classes read and write the same data with
+[Sep](https://github.com/nietras/Sep), with values that are never quoted, sometimes quoted, or always quoted:
+
+```shell
+dotnet run -c Release --project benchmarks/Meziantou.Framework.Csv.Benchmarks -- --filter "*Sep*"
 ```

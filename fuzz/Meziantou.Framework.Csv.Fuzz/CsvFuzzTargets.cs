@@ -1237,6 +1237,10 @@ public static partial class CsvFuzzTargets
         yield return ("comments", "# c,\"x\na,b\n#\n\n\"#q\",1\r\n# end,\r\nz");
         yield return ("bom", "\uFEFFa,b\n1,2");
         yield return ("long", new string('a', 100) + "," + new string('b', 70) + "\n\"" + new string('q', 50) + "\"\"\"");
+
+        // Records longer than the SIMD blocks, whose quotes, escaped quotes and line terminators fall anywhere in them, then records the SIMD scan
+        // leaves to the general scan, and regular records again
+        yield return ("long-records", string.Concat(Enumerable.Range(0, 12).Select(i => "\"" + new string('a', i * 7) + "\"\"x\"," + new string('b', 61 - i) + ",\"c,d\"" + (i % 3 is 0 ? "\r\n" : "\n"))) + "\"e\"f,g\nh,\"i\nj\"\n\"k\",l\r\n" + string.Concat(Enumerable.Repeat("m,\"n\"\"o\",p\n", 10)));
     }
 
     [GeneratedRegex("""(?<![@$"\\])"(?<value>(?:[^"\\\r\n]|\\.)*)"(?!")""", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]

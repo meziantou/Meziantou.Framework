@@ -43,6 +43,18 @@ public sealed class NumericRow
     public bool Flag { get; set; }
 }
 
+public enum CsvDataShape
+{
+    /// <summary>No value is quoted.</summary>
+    Unquoted,
+
+    /// <summary>Half of the rows have a quoted value that contains a separator and escaped quotes; the other values are not quoted.</summary>
+    Mixed,
+
+    /// <summary>The data of <see cref="Mixed"/>, with every value quoted.</summary>
+    Quoted,
+}
+
 [CsvSerializable(typeof(BenchmarkRow))]
 [CsvSerializable(typeof(NumericRow))]
 internal sealed partial class BenchmarkCsvContext : CsvSerializerContext
@@ -54,7 +66,22 @@ internal static class BenchmarkData
     private static readonly string[] Countries = ["France", "Germany", "United States", "Japan", "Brazil"];
     private static readonly string[] AccentedCountries = ["France", "Österreich", "日本", "España", "Brasil"];
 
-    public static List<BenchmarkRow> CreateRows(int count)
+    public static List<BenchmarkRow> CreateRows(int count) => CreateRows(count, quotedNotesPercent: 10);
+
+    /// <summary>Creates the rows of a <see cref="CsvDataShape"/>.</summary>
+    public static List<BenchmarkRow> CreateRows(int count, CsvDataShape shape) => CreateRows(count, shape is CsvDataShape.Unquoted ? 0 : 50);
+
+    /// <summary>Creates the CSV text of a <see cref="CsvDataShape"/>, with a header row.</summary>
+    public static string CreateText(int count, CsvDataShape shape)
+    {
+        var rows = CreateRows(count, shape);
+        if (shape is CsvDataShape.Quoted)
+            return CsvSerializer.Serialize(rows, new BenchmarkCsvContext(new CsvSerializerOptions { QuoteMode = CsvQuoteMode.Always }).BenchmarkRow);
+
+        return CsvSerializer.Serialize(rows, BenchmarkCsvContext.Default.BenchmarkRow);
+    }
+
+    private static List<BenchmarkRow> CreateRows(int count, int quotedNotesPercent)
     {
         var random = new Random(42);
         var rows = new List<BenchmarkRow>(count);
@@ -70,8 +97,8 @@ internal static class BenchmarkData
                 Active = random.Next(2) == 0,
                 Country = Countries[random.Next(Countries.Length)],
 
-                // A tenth of the notes need quotes
-                Notes = random.Next(10) == 0 ? "Quoted, with \"quotes\" and a separator" : "Plain note number " + random.Next(1000).ToString(CultureInfo.InvariantCulture),
+                // Some notes need quotes: they contain a separator and escaped quotes
+                Notes = random.Next(100) < quotedNotesPercent ?"Quoted, with \"quotes\" and a separator" : "Plain note number " + random.Next(1000).ToString(CultureInfo.InvariantCulture),
             });
         }
 

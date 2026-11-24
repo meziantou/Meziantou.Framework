@@ -16,6 +16,14 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     private Document? _cacheDocument;
     private int _cacheVersion = -1;
 
+    // The first element of each supported property name, for a version of the document (see GetNamedItems)
+    private Dictionary<string, Element>? _namedItems;
+    private Document? _namedItemsDocument;
+    private int _namedItemsVersion = -1;
+    private Document? _namedLookupDocument;
+    private int _namedLookupVersion = -1;
+    private int _namedLookupCount;
+
     private readonly Action<List<Element>>? _populate;
 
     /// <param name="root">The root of the collection.</param>
@@ -112,6 +120,9 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
         if (key.Length == 0)
             return null;
 
+        if (GetNamedItems() is { } namedItems)
+            return namedItems.GetValueOrDefault(key);
+
         foreach (var element in Elements)
         {
             if (element.IdValue == key || (element.IsHtmlNamespace && element.GetAttributeValue("name") == key))
@@ -161,6 +172,9 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
 
     bool ISupportedPropertyNames.IsSupportedPropertyName(string name)
     {
+        if (GetNamedItems() is { } namedItems)
+            return namedItems.ContainsKey(name);
+
         foreach (var element in Elements)
         {
             if (element.IdValue == name || (name.Length > 0 && element.IsHtmlNamespace && element.GetAttributeValue("name") == name))
@@ -168,6 +182,51 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Gets the first element of each supported property name (its id, or its name for an HTML element), or null for the
+    /// first lookups of a version of the document: a named property lookup scans the elements, and each property of the
+    /// collection that is not an index is one (e.g. its length, in a loop). The map is built by a later lookup of the same
+    /// version, so the code that changes the document between a few lookups (a named property read is two: whether the
+    /// name is supported, then the element) keeps scanning instead of building the map each time.
+    /// </summary>
+    private Dictionary<string, Element>? GetNamedItems()
+    {
+        var document = _root.NodeDocument;
+        var version = document.DomVersion;
+        if (_namedItems is not null && _namedItemsVersion == version && ReferenceEquals(_namedItemsDocument, document))
+            return _namedItems;
+
+        if (_namedLookupVersion != version || !ReferenceEquals(_namedLookupDocument, document))
+        {
+            _namedLookupVersion = version;
+            _namedLookupDocument = document;
+            _namedLookupCount = 0;
+        }
+
+        if (++_namedLookupCount <= 3)
+            return null;
+
+        var namedItems = _namedItems ?? new Dictionary<string, Element>(StringComparer.Ordinal);
+        namedItems.Clear();
+        foreach (var element in Elements)
+        {
+            if (element.IdValue is { } id)
+            {
+                namedItems.TryAdd(id, element);
+            }
+
+            if (element.IsHtmlNamespace && element.GetAttributeValue("name") is { Length: > 0 } name)
+            {
+                namedItems.TryAdd(name, element);
+            }
+        }
+
+        _namedItems = namedItems;
+        _namedItemsDocument = document;
+        _namedItemsVersion = version;
+        return namedItems;
     }
 
     /// <inheritdoc/>

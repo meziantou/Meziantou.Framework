@@ -67,6 +67,54 @@ public sealed class LegacyCollectionTests
     }
 
     [Fact]
+    public void HtmlCollection_NamedItems_FollowTheChanges()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div><p name=a></p><p id=a></p><p id=b name=c></p><svg name=d></svg></div>");
+        var div = document.QuerySelector("div")!;
+        var children = div.Children;
+        var names = (ISupportedPropertyNames)children;
+        var first = children[0];
+
+        // The first lookups scan the elements, the next ones use a map: each assertion runs both
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(first, children.NamedItem("a"));
+            Assert.Same(children[2], children.NamedItem("c"));
+            Assert.True(names.IsSupportedPropertyName("b"));
+            Assert.False(names.IsSupportedPropertyName("d"));
+            Assert.False(names.IsSupportedPropertyName(""));
+            Assert.Null(children.NamedItem(""));
+            Assert.Null(children.NamedItem("e"));
+        }
+
+        first.SetAttribute("name", "e");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(children[1], children.NamedItem("a"));
+            Assert.Same(first, children.NamedItem("e"));
+        }
+
+        children[2].Id = "f";
+        var span = document.CreateElement("span");
+        span.Id = "a";
+        div.InsertBefore(span, first);
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(span, children.NamedItem("a"));
+            Assert.False(names.IsSupportedPropertyName("b"));
+            Assert.True(names.IsSupportedPropertyName("f"));
+        }
+
+        span.Remove();
+        first.RemoveAttribute("name");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Equal("a", children.NamedItem("a")!.Id);
+            Assert.False(names.IsSupportedPropertyName("e"));
+        }
+    }
+
+    [Fact]
     public void DomStringMap_NamedProperties()
     {
         var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div data-cp=A1 data-foo-bar=1 data-=3 data-a-=4 data-x></div>");

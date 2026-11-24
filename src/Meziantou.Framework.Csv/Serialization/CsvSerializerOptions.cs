@@ -164,8 +164,8 @@ public sealed class CsvSerializerOptions
     /// <para>
     /// The constructors, the setters, the converters and the callbacks of the records are called from several threads at the same time. The
     /// <see cref="DeserializationErrorHandler"/> is not called by two threads at the same time, but it can be called for the records in another order, and
-    /// for records after the error that ends the reading. The <see cref="BadDataHandler"/> is called on the calling thread. The browser runs the records
-    /// on the calling thread.
+    /// for records after the error that ends the reading. The <see cref="BadDataHandler"/> is called on the calling thread. The browser and WASI convert
+    /// the records on the calling thread.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is 0 or less than -1.</exception>

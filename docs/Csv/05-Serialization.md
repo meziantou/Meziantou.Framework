@@ -358,7 +358,7 @@ Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the reco
 - The objects are returned in the order of the records, and the exceptions are the ones reading the records one by one
   throws: the records before an error are returned first by [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) and
   [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable), which read a few batches ahead of the objects they return.
-- `-1` uses every processor. The default, `1`, converts the records on the calling thread. The browser always does.
+- `-1` uses every processor. The default, `1`, converts the records on the calling thread. The browser and WASI always do.
 - The constructors, the setters, the converters and the callbacks of the type run on several threads at the same time:
   they must not change shared state without synchronization. The
   [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler) is called by one thread at a time, but not in the

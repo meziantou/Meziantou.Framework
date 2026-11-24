@@ -338,6 +338,94 @@ internal static class InvariantFloatingPoint
         return true;
     }
 
+    /// <summary>Formats a <see cref="double"/> with few decimals, such as <c>-12.3</c>, as <c>value.ToString(CultureInfo.InvariantCulture)</c> does.</summary>
+    /// <returns><see langword="true"/> when the value is handled, written or with <paramref name="tooSmall"/> set; <see langword="false"/> to use the BCL.</returns>
+    /// <remarks>
+    /// <para>
+    /// The BCL writes the shortest decimal number that parses back to the value, about 45 ns for a value with few decimals. That number has the
+    /// fewest decimals: it is found with a few multiplications and divisions, whose results are exact or correctly rounded (see
+    /// <see cref="TryParse{TChar, T}"/>).
+    /// </para>
+    /// <para>
+    /// The values from 10^-4 to 10^9, which the BCL writes without an exponent, are handled when their shortest number has at most 9 decimals and
+    /// fits in 2^53 once scaled. The others, such as the round-trip format of most results of computations (<c>0.30000000000000004</c>), are
+    /// rejected after one multiplication, and left to the BCL.
+    /// </para>
+    /// </remarks>
+    public static bool TryFormat<TChar>(double value, Span<TChar> destination, out int written, out bool tooSmall)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        written = 0;
+        tooSmall = false;
+        var magnitude = Math.Abs(value);
+        if (!(magnitude >= 1e-4 && magnitude < 1e9))
+            return false;
+
+        // The most decimals whose scaled value is below 10^15. A number with fewer decimals that rounds to the value is an integer once scaled, up to the
+        // rounding of the value and of the product: 2 × 2^-53 of it, about 2.2e-16. The numbers that round to the value are then less than 0.22 apart
+        // once scaled: for each number of decimals, at most one of them parses back to the value, and it is the one the BCL writes.
+        var maxDecimals = magnitude < 1e6 ? 9 : magnitude < 1e7 ? 8 : magnitude < 1e8 ? 7 : 6;
+        var scaled = magnitude * DoublePowersOf10[maxDecimals];
+        if (Math.Abs(scaled - Math.Round(scaled, MidpointRounding.ToEven)) > scaled * 3e-16)
+            return false;
+
+        for (var decimals = 0; decimals <= maxDecimals; decimals++)
+        {
+            // The digits of the number, as an integer, are the scaled value rounded, or one of its neighbors when the product is not exact
+            var power = DoublePowersOf10[decimals];
+            var digits = Math.Round(magnitude * power, MidpointRounding.ToEven);
+            if (digits / power != magnitude)
+                continue;
+
+            WriteFixed((ulong)digits, decimals, value < 0, destination, out written, out tooSmall);
+            return true;
+        }
+
+        return false;
+    }
+
+    // Writes digits × 10^-decimals with an optional minus sign, without the trailing zeros of the decimals
+    private static void WriteFixed<TChar>(ulong digits, int decimals, bool negative, Span<TChar> destination, out int written, out bool tooSmall)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        while (decimals > 0 && digits % 10 == 0)
+        {
+            digits /= 10;
+            decimals--;
+        }
+
+        // The text is written from the end: the decimals, the dot, then the integer part, at least one digit. 16 digits, the dot, a zero and the sign
+        // fit in 32 elements.
+        Span<TChar> buffer = unsafe(stackalloc TChar[32]);
+        var position = buffer.Length;
+        for (var i = 0; i < decimals; i++)
+        {
+            (digits, var digit) = Math.DivRem(digits, 10);
+            buffer[--position] = TChar.CreateTruncating('0' + (int)digit);
+        }
+
+        if (decimals > 0)
+        {
+            buffer[--position] = TChar.CreateTruncating('.');
+        }
+
+        do
+        {
+            (digits, var digit) = Math.DivRem(digits, 10);
+            buffer[--position] = TChar.CreateTruncating('0' + (int)digit);
+        }
+        while (digits != 0);
+
+        if (negative)
+        {
+            buffer[--position] = TChar.CreateTruncating('-');
+        }
+
+        var text = buffer[position..];
+        tooSmall = !text.TryCopyTo(destination);
+        written = tooSmall ? 0 : text.Length;
+    }
+
     /// <summary>Splits <c>[+-]digits[.digits][(e|E)[+-]digits]</c> into a sign, the digits as an integer, and the power of ten to apply to it.</summary>
     private static bool TryParseParts<TChar>(ReadOnlySpan<TChar> value, out bool negative, out ulong mantissa, out int exponent)
         where TChar : unmanaged, IBinaryInteger<TChar>

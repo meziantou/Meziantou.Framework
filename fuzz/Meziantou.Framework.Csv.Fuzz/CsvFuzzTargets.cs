@@ -930,7 +930,8 @@ public static partial class CsvFuzzTargets
     /// <summary>
     /// The fast parser of <see cref="double"/>, <see cref="float"/> and <see cref="Half"/> values accepts a subset of what the BCL accepts with the
     /// invariant culture, and gives the same values, with the same sign, in UTF-16 and in UTF-8. The data is read as text, and its first bytes as the
-    /// bits of a value, written as the BCL writes it, so that the values around the limits of the fast path are covered.
+    /// bits of a value, written as the BCL writes it, so that the values around the limits of the fast path are covered. The fast formatter of
+    /// <see cref="double"/> values writes the text of the BCL for this value, and for the value rounded to a few decimals.
     /// </summary>
     private static void ParseFloatingPoint(ReadOnlySpan<byte> data)
     {
@@ -941,6 +942,8 @@ public static partial class CsvFuzzTargets
             CheckFloatingPoint<double>(number.ToString("R", CultureInfo.InvariantCulture));
             CheckFloatingPoint<double>(number.ToString("F" + decimals, CultureInfo.InvariantCulture));
             CheckFloatingPoint<double>(number.ToString("E" + decimals, CultureInfo.InvariantCulture));
+            CheckFormat(number);
+            CheckFormat(Math.Round(number % 1e9, data[0] & 0x7, MidpointRounding.ToEven));
 
             var single = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data));
             CheckFloatingPoint<float>(single.ToString("R", CultureInfo.InvariantCulture));
@@ -955,6 +958,22 @@ public static partial class CsvFuzzTargets
         CheckFloatingPoint<double>(text);
         CheckFloatingPoint<float>(text);
         CheckFloatingPoint<Half>(text);
+    }
+
+    // The fast formatter of doubles writes the text of the BCL, in UTF-16 and UTF-8, when it handles a value
+    private static void CheckFormat(double value)
+    {
+        Span<char> chars = stackalloc char[64];
+        Span<byte> bytes = stackalloc byte[64];
+        var handled = Internals.InvariantFloatingPoint.TryFormat(value, chars, out var written, out var tooSmall);
+        FuzzAssert.Equal(handled, Internals.InvariantFloatingPoint.TryFormat(value, bytes, out var bytesWritten, out _), "The UTF-16 and UTF-8 formatters disagree on " + value.ToString("R", CultureInfo.InvariantCulture));
+        if (handled)
+        {
+            var expected = value.ToString(CultureInfo.InvariantCulture);
+            FuzzAssert.False(tooSmall, "The destination is too small for " + expected);
+            FuzzAssert.Equal(expected, chars[..written].ToString(), "The text is not the text of the BCL");
+            FuzzAssert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]), "The UTF-8 text is not the text of the BCL");
+        }
     }
 
     private static void CheckFloatingPoint<T>(string text)

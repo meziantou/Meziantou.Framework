@@ -25,6 +25,9 @@ public sealed partial class JsEngine
     /// <summary>Gets the shapes of the new arguments objects (created on first use).</summary>
     internal Interpreter.ArgumentsShapes ArgumentsShapes => field ??= new(ShapeRoots);
 
+    /// <summary>Gets the shape of the new RegExp objects: their own lastIndex (created on first use).</summary>
+    internal Shape RegExpShape => field ??= ShapeRoots.GetRoot(ShapeKind.Ordinary).AddProperty(JsRegExpObject.LastIndexKey, PropertyFlags.Writable) ?? throw new InvalidOperationException("The shape of a RegExp object cannot be created");
+
     /// <summary>Gets the inline caches of the code of a template for the frames of this engine.</summary>
     internal PropertyCacheEntry?[] GetInlineCaches(FunctionTemplate template)
     {

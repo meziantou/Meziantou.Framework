@@ -193,6 +193,9 @@ internal static class Workloads
             }
             function run() { let n = 0; for (const s of streams) n += decode(s).length; return n; }
             """,
+        ["RegExpLiteral"] = """
+            function run() { let n = 0; for (let i = 0; i < 20000; i++) { n += /[\s]+/g.lastIndex + /^[\w.+-]+@[\w-]+\.[\w.]+$/i.lastIndex + 1; } return n; }
+            """,
         ["LoopCapture"] = """
             function run() { let sum = 0; for (let i = 0; i < 100000; i++) { if (i < 0) { let f = () => i; sum += f(); } else { sum += i; } } return sum; }
             """,

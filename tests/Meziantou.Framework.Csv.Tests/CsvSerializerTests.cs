@@ -1088,6 +1088,89 @@ public class CsvSerializerTests
         Assert.True(accepted > 12_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
     }
 
+    [Theory]
+    [InlineData(0.1)]
+    [InlineData(0.2)]
+    [InlineData(0.29)]
+    [InlineData(0.3)]
+    [InlineData(0.30000000000000004)]
+    [InlineData(-12.3)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(1e8)]
+    [InlineData(1e-4)]
+    [InlineData(9.9e-5)]
+    [InlineData(0.0001234)]
+    [InlineData(999999999.9)]
+    [InlineData(1e9)]
+    [InlineData(123456789.123)]
+    [InlineData(4503599627370497.0)]
+    [InlineData(5e-324)]
+    [InlineData(double.MaxValue)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(0.0)]
+    public void FloatingPoint_FormatMatchesBcl(double value)
+    {
+        AssertFormatMatchesBcl(value);
+        AssertFormatMatchesBcl(-value);
+    }
+
+    [Fact]
+    public void FloatingPoint_FormatMatchesBclForRandomValues()
+    {
+        // Numbers with up to 12 decimals and up to 16 digits, and the doubles around them: the fast path writes those with few decimals, with the text
+        // of the BCL, and leaves the others to it
+        var state = 0x853C49E6748FEA9BUL;
+        var handled = 0;
+        for (var i = 0; i < 200_000; i++)
+        {
+            var decimals = (int)(Next(ref state) % 13);
+            var digits = Next(ref state) % (Next(ref state) % 2 == 0 ? 100_000UL : 10_000_000_000_000_000UL);
+            var value = (double)digits / Math.Pow(10, decimals) * (Next(ref state) % 2 == 0 ? 1 : -1);
+            handled += AssertFormatMatchesBcl(value) ? 1 : 0;
+            AssertFormatMatchesBcl(Math.BitIncrement(value));
+            AssertFormatMatchesBcl(Math.BitDecrement(value));
+            AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble((long)Next(ref state)));
+        }
+
+        Assert.True(handled > 50_000, "Too few values take the fast path: " + handled.ToString(CultureInfo.InvariantCulture));
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    // The fast path writes the text of the BCL in UTF-16 and UTF-8, or reports a destination too small
+    private static bool AssertFormatMatchesBcl(double value)
+    {
+        var expected = value.ToString(CultureInfo.InvariantCulture);
+        var chars = new char[64];
+        if (!InvariantFloatingPoint.TryFormat(value, chars.AsSpan(), out var written, out var tooSmall))
+        {
+            Assert.False(InvariantFloatingPoint.TryFormat(value, new byte[64].AsSpan(), out _, out _));
+            return false;
+        }
+
+        Assert.False(tooSmall);
+        Assert.Equal(expected, new string(chars, 0, written));
+
+        var bytes = new byte[64];
+        Assert.True(InvariantFloatingPoint.TryFormat(value, bytes.AsSpan(), out var bytesWritten, out tooSmall));
+        Assert.False(tooSmall);
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+
+        Assert.True(InvariantFloatingPoint.TryFormat(value, new char[expected.Length - 1].AsSpan(), out written, out tooSmall));
+        Assert.True(tooSmall);
+        Assert.Equal(0, written);
+        return true;
+    }
+
     [Fact]
     public void FloatingPoint_PowersOfFive()
     {

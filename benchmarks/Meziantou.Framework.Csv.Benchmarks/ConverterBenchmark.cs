@@ -4,11 +4,14 @@ using Meziantou.Framework.Csv.Serialization.Metadata;
 
 namespace Meziantou.Framework.Csv.Benchmarks;
 
-/// <summary>Reads the 10,000 values of each column of <see cref="NumericRow"/> with the default converter of its type.</summary>
+/// <summary>Reads the 10,000 values of each column of <see cref="NumericRow"/> with the default converter of its type, and formats some of them.</summary>
 public class ConverterBenchmark
 {
     private string[][] _columns = [];
     private CsvConverterContext _context = null!;
+    private double[] _doubles = [];
+    private double[] _shortDoubles = [];
+    private readonly char[] _buffer = new char[64];
 
     [GlobalSetup]
     public void Setup()
@@ -33,6 +36,8 @@ public class ConverterBenchmark
         // The values of the Value column in the round-trip format of a float, which has up to 9 digits
         _columns = [.. _columns, [.. _columns[2].Select(value => ((float)double.Parse(value, CultureInfo.InvariantCulture)).ToString("R", CultureInfo.InvariantCulture))]];
         _context = new CsvConverterContext(CsvSerializerOptions.Default);
+        _doubles = [.. _columns[2].Select(value => double.Parse(value, CultureInfo.InvariantCulture))];
+        _shortDoubles = [.. _columns[3].Select(value => double.Parse(value, CultureInfo.InvariantCulture))];
     }
 
     [Benchmark]
@@ -58,6 +63,27 @@ public class ConverterBenchmark
 
     [Benchmark]
     public long ReadBoolean() => Run<bool>(6, v => v ? 1 : 0);
+
+    /// <summary>Formats the round-trip doubles of the Value column.</summary>
+    [Benchmark]
+    public long FormatDouble() => Format(_doubles);
+
+    /// <summary>Formats the doubles with one decimal of the Temperature column.</summary>
+    [Benchmark]
+    public long FormatDoubleShort() => Format(_shortDoubles);
+
+    private long Format(double[] values)
+    {
+        var converter = CsvMetadataServices.GetConverter<double>(CsvSerializerOptions.Default);
+        long sum = 0;
+        foreach (var value in values)
+        {
+            converter.TryFormat(value, _buffer, out var written, _context);
+            sum += written;
+        }
+
+        return sum;
+    }
 
     private long Run<T>(int column, Func<T, long> toLong)
     {

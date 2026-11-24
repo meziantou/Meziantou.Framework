@@ -25,6 +25,25 @@ internal sealed class FloatingPointCsvConverter<T> : SpanParsableCsvConverter<T>
         return T.Parse(utf8Value, context.FormatProvider);
     }
 
+    public override bool TryFormat(T value, Span<char> destination, out int charsWritten, CsvConverterContext context)
+    {
+        if (typeof(T) == typeof(double) && context.Format is null && InvariantNumbers.IsInvariant(context.FormatProvider) &&
+            InvariantFloatingPoint.TryFormat((double)(object)value, destination, out charsWritten, out var tooSmall))
+        {
+            return !tooSmall;
+        }
+
+        return value.TryFormat(destination, out charsWritten, context.Format, context.FormatProvider);
+    }
+
     public override bool TryFormat(T value, Span<byte> utf8Destination, out int bytesWritten, CsvConverterContext context)
-        => value.TryFormat(utf8Destination, out bytesWritten, context.Format, context.FormatProvider);
+    {
+        if (typeof(T) == typeof(double) && context.Format is null && InvariantNumbers.IsInvariant(context.FormatProvider) &&
+            InvariantFloatingPoint.TryFormat((double)(object)value, utf8Destination, out bytesWritten, out var tooSmall))
+        {
+            return !tooSmall;
+        }
+
+        return value.TryFormat(utf8Destination, out bytesWritten, context.Format, context.FormatProvider);
+    }
 }

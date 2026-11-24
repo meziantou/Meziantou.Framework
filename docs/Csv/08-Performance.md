@@ -48,6 +48,8 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 
 - **Write formattable values directly.** [WriteField](cref:Meziantou.Framework.Csv.CsvWriter.WriteField) formats numbers and dates into the buffer of the writer, without a string.
   Decimals in the default format of the invariant culture are written by a faster path than `decimal.TryFormat`, which writes the same text.
+  So are doubles with up to 9 decimals from 0.0001 to 10^9, such as `-12.3`, about four times as fast as `double.TryFormat`; the serializer
+  writes them the same way.
   Integers and decimals in the default format of the invariant culture, and dates in the round-trip format (`O`), are not
   searched for characters that need quotes.
 - **Write UTF-8 with [Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter)** when the output is a file, a stream or a network response.

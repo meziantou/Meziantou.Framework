@@ -324,6 +324,14 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
+        // Doubles with few decimals too (see InvariantFloatingPoint.TryFormat)
+        if (typeof(TValue) == typeof(double) && format.IsEmpty && InvariantNumbers.IsInvariant(formatProvider) &&
+            InvariantFloatingPoint.TryFormat((double)(object)value, destination, out var doubleWritten, out var doubleTooSmall) && !doubleTooSmall)
+        {
+            CommitNumber(start, doubleWritten, isInvariantNumber);
+            return;
+        }
+
         while (true)
         {
             if (value.TryFormat(destination, out var written, format, formatProvider))
@@ -354,6 +362,14 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             DecimalCsvConverter.TryFormatPlain((decimal)(object)value, destination, out var plainWritten, out var tooSmall) && !tooSmall)
         {
             CommitNumber(start, plainWritten, isInvariantNumber);
+            return;
+        }
+
+        // Doubles with few decimals too (see InvariantFloatingPoint.TryFormat)
+        if (typeof(TValue) == typeof(double) && format.IsEmpty && InvariantNumbers.IsInvariant(formatProvider) &&
+            InvariantFloatingPoint.TryFormat((double)(object)value, destination, out var doubleWritten, out var doubleTooSmall) && !doubleTooSmall)
+        {
+            CommitNumber(start, doubleWritten, isInvariantNumber);
             return;
         }
 

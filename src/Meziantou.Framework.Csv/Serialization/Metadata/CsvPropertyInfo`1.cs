@@ -20,11 +20,12 @@ internal abstract class CsvPropertyInfo<TDeclaring> : CsvPropertyInfo
     // converted is set once the value is converted, before the setter is called: an exception of the setter is not reported to the error handler
     public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<char> value, ref bool converted);
 
-    public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value, ref bool converted);
+    // isAscii: the value is from a record whose bytes are all ASCII (see CsvParser<T>.RowIsAscii), which a string does not need to validate
+    public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value, bool isAscii, ref bool converted);
 
     public abstract void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<char> value);
 
-    public abstract void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<byte> utf8Value);
+    public abstract void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<byte> utf8Value, bool isAscii);
 
     public abstract void Write(CsvWriterCore<char> writer, TDeclaring obj);
 

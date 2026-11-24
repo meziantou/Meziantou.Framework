@@ -1241,6 +1241,9 @@ public static partial class CsvFuzzTargets
         // Records longer than the SIMD blocks, whose quotes, escaped quotes and line terminators fall anywhere in them, then records the SIMD scan
         // leaves to the general scan, and regular records again
         yield return ("long-records", string.Concat(Enumerable.Range(0, 12).Select(i => "\"" + new string('a', i * 7) + "\"\"x\"," + new string('b', 61 - i) + ",\"c,d\"" + (i % 3 is 0 ? "\r\n" : "\n"))) + "\"e\"f,g\nh,\"i\nj\"\n\"k\",l\r\n" + string.Concat(Enumerable.Repeat("m,\"n\"\"o\",p\n", 10)));
+
+        // ASCII records, whose values become strings without validation, around records with other characters in the same blocks
+        yield return ("ascii-records", string.Concat(Enumerable.Range(0, 16).Select(i => new string('a', i * 5) + "," + (i % 4 is 1 ? "é" : i % 4 is 2 ? "😀" : "b") + ",\"c\"\"d\"\n")));
     }
 
     [GeneratedRegex("""(?<![@$"\\])"(?<value>(?:[^"\\\r\n]|\\.)*)"(?!")""", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]

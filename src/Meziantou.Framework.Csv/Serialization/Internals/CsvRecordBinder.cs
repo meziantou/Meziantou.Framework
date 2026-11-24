@@ -117,14 +117,18 @@ internal sealed class CsvRecordBinder<T>
     {
         var columns = _columns;
         var columnCount = parser.ColumnCount;
-        if (_throwOnUnmappedColumn && columnCount > columns.Length)
+        if (_throwOnUnmappedColumn)
         {
-            var exception = parser.CreateException($"The column {columns.Length.ToString(CultureInfo.InvariantCulture)} has no member in '{typeof(T)}'.", columns.Length);
-            if (typeof(TMode) == typeof(WithoutErrorHandler))
-                throw exception;
+            // Each extra column is reported, so that a handler can accept some of them and not the others
+            for (var column = columns.Length; column < columnCount; column++)
+            {
+                var exception = parser.CreateException($"The column {column.ToString(CultureInfo.InvariantCulture)} has no member in '{typeof(T)}'.", column);
+                if (typeof(TMode) == typeof(WithoutErrorHandler))
+                    throw exception;
 
-            if (!ReportError(_errorHandler, CsvDeserializationErrorKind.UnmappedColumn, exception, memberName: null, rawValue: null))
-                goto Skip;
+                if (!ReportError(_errorHandler, CsvDeserializationErrorKind.UnmappedColumn, exception, memberName: null, rawValue: null))
+                    goto Skip;
+            }
         }
 
         foreach (var required in _requiredColumns)
@@ -197,18 +201,19 @@ internal sealed class CsvRecordBinder<T>
                 continue;
 
             parser.GetField(row, column, out var value, out _, out _);
+            var converted = false;
             try
             {
                 if (typeof(TChar) == typeof(char))
                 {
-                    property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, char>(value)));
+                    property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, char>(value)), ref converted);
                 }
                 else
                 {
-                    property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, byte>(value)));
+                    property.ReadAndSet(ref obj, unsafe(MemoryMarshal.Cast<TChar, byte>(value)), ref converted);
                 }
             }
-            catch (Exception ex) when (IsConversionException(ex))
+            catch (Exception ex) when (!converted && IsConversionException(ex))
             {
                 if (typeof(TMode) == typeof(WithoutErrorHandler))
                     throw CreateConversionException(parser, column, property, parser.GetString(value), ex);

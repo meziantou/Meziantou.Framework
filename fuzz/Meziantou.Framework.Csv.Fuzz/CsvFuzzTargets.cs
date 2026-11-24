@@ -848,7 +848,7 @@ public static partial class CsvFuzzTargets
         foreach (var (name, text) in GetTexts())
         {
             // Comma and double quote, with and without a header, read whole or in small chunks; then other dialects
-            var dialect = (byte)(index % 4 switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
+            var dialect = (byte)((index % 4) switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
             if (index % 5 is 0)
             {
                 dialect |= 0x80;
@@ -865,7 +865,7 @@ public static partial class CsvFuzzTargets
         foreach (var (name, text) in GetTexts())
         {
             // Comma and double quote, with and without a header, with the column count checked, with the values trimmed, then other dialects
-            var dialect = (byte)(index % 4 switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
+            var dialect = (byte)((index % 4) switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
             var chunks = (byte)((index % 3 is 0 ? 0 : 0x13) | (index % 5 is 1 ? 0x40 : 0) | (index % 7 is 2 ? 0x80 : 0));
             yield return FuzzSeed.FromText("bad-data-" + name, [dialect, chunks], text);
             index++;

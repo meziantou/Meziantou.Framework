@@ -17,9 +17,10 @@ internal abstract class CsvPropertyInfo<TDeclaring> : CsvPropertyInfo
 
     public abstract CsvArgumentSlot CreateArgumentSlot(bool hasDefaultValue, object? defaultValue);
 
-    public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<char> value);
+    // converted is set once the value is converted, before the setter is called: an exception of the setter is not a conversion error
+    public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<char> value, ref bool converted);
 
-    public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value);
+    public abstract void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value, ref bool converted);
 
     public abstract void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<char> value);
 

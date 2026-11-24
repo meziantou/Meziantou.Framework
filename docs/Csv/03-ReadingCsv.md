@@ -313,7 +313,7 @@ Assert.Equal(["line 3, column Comment: A quoted value is followed by characters 
   columns when [ValidateColumnCount](cref:Meziantou.Framework.Csv.CsvReaderOptions.ValidateColumnCount) is `true`. [Kind](cref:Meziantou.Framework.Csv.CsvBadDataContext.Kind) says which.
 - The errors are reported in the order of the data, before the record is returned. A record with several errors is
   reported once per error, until the handler skips it.
-- A skipped record still counts in [RowIndex](cref:Meziantou.Framework.Csv.CsvReader.RowIndex): the indexes match the lines of the file. Skipping the header row makes the
+- A skipped record still counts in [RowIndex](cref:Meziantou.Framework.Csv.CsvReader.RowIndex). [LineNumber](cref:Meziantou.Framework.Csv.CsvReader.LineNumber) gives the line where the record starts. Skipping the header row makes the
   next row the header row.
 - The handler must not call the reader. An exception it throws ends the reading.
 - A row longer than [MaxRowLength](cref:Meziantou.Framework.Csv.CsvReaderOptions.MaxRowLength) always throws.

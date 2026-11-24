@@ -56,9 +56,19 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         return new CsvArgumentSlot<TValue>(value);
     }
 
-    public override void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<char> value) => _setter!(ref obj, Read(value));
+    public override void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<char> value, ref bool converted)
+    {
+        var result = Read(value);
+        converted = true;
+        _setter!(ref obj, result);
+    }
 
-    public override void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value) => _setter!(ref obj, Read(utf8Value));
+    public override void ReadAndSet(ref TDeclaring obj, ReadOnlySpan<byte> utf8Value, ref bool converted)
+    {
+        var result = Read(utf8Value);
+        converted = true;
+        _setter!(ref obj, result);
+    }
 
     public override void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<char> value) => ((CsvArgumentSlot<TValue>)slot).Value = Read(value);
 

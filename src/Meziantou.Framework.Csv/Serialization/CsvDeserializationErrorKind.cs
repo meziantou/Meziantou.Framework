@@ -6,7 +6,7 @@ public enum CsvDeserializationErrorKind
     /// <summary>The value of a column cannot be converted to the type of its member. <see cref="CsvDeserializationErrorContext.Exception"/> has the error of the converter as its inner exception.</summary>
     ConversionFailed,
 
-    /// <summary>The record has no value for a required member, because it has fewer columns than the data without a header row describes.</summary>
+    /// <summary>The record ends before the column of a required member, with or without a header row.</summary>
     MissingRequiredValue,
 
     /// <summary>The header row has no column for a required member, or for a member when <see cref="CsvSerializerOptions.MissingColumnHandling"/> is <see cref="CsvMissingColumnHandling.Throw"/>.</summary>

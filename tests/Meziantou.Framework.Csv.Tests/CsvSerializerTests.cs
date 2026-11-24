@@ -435,6 +435,30 @@ public class CsvSerializerTests
         Assert.Equal([0L, 1L], errors.Select(e => e.RowIndex!.Value));
         Assert.All(errors, e => Assert.Equal(CsvDeserializationErrorKind.UnmappedColumn, e.Kind));
         Assert.All(errors, e => Assert.Equal(3, e.ColumnIndex));
+
+        // Each extra column is reported: the handler can accept one and not the next
+        errors.Clear();
+        options = new CsvSerializerOptions { HasHeaderRow = false, UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw, DeserializationErrorHandler = context => { errors.Add(context); return context.ColumnIndex == 3 ? CsvDeserializationErrorAction.Ignore : CsvDeserializationErrorAction.SkipRecord; } };
+        products = CsvSerializer.Deserialize<Product>("1,a,2,extra\n2,b,3,extra,extra\n3,c,4", options);
+        Assert.Equal([1, 3], products.Select(p => p.Id));
+        Assert.Equal(["0 3", "1 3", "1 4"], errors.Select(e => $"{e.RowIndex} {e.ColumnIndex}"));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_SetterExceptionsAreNotReported()
+    {
+        var calls = 0;
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = _ => { calls++; return CsvDeserializationErrorAction.Ignore; } };
+        Assert.Throws<ArgumentOutOfRangeException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1", options));
+        Assert.Equal(0, calls);
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"u8.ToArray(), options));
+
+        // The conversion errors are still reported
+        var models = CsvSerializer.Deserialize<ValidatingSetterModel>("Value\nabc\n2", options);
+        Assert.Equal([0, 2], models.Select(m => m.Value));
+        Assert.Equal(1, calls);
     }
 
     [Fact]
@@ -1220,6 +1244,15 @@ public sealed class DefaultValuesModel(int a, int b = 42, string c = "default", 
     public decimal Ratio { get; } = ratio;
 
     public char Letter { get; } = letter;
+}
+
+public sealed class ValidatingSetterModel
+{
+    public int Value
+    {
+        get;
+        set => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+    }
 }
 
 public sealed class ParameterOnlyModel(int value, int factor)

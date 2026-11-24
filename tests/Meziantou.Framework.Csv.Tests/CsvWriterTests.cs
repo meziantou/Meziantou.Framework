@@ -296,6 +296,54 @@ public class CsvWriterTests
     }
 
     [Fact]
+    public void WriteField_QuotesAtEveryPosition()
+    {
+        // Quotes at every position of values of every length, apostrophes that are the quote of some options, consecutive quotes, and long values
+        CsvWriterOptions[] options = [new() { NewLine = "\n" }, new() { NewLine = "\n", QuoteMode = CsvQuoteMode.Always }, new() { Quote = '\'', EscapeFormulas = true }];
+        var values = new List<string>();
+        for (var length = 1; length <= 150; length++)
+        {
+            for (var position = 0; position < length; position += 1 + (length / 40))
+            {
+                var chars = Enumerable.Range(0, length).Select(i => (char)('a' + (i % 26))).ToArray();
+                chars[position] = '"';
+                chars[(position * 7) % length] = '\'';
+                chars[length - 1 - (position / 2)] = '"';
+                values.Add("=" + new string(chars) + ",");
+            }
+        }
+
+        values.Add(string.Concat(Enumerable.Repeat("x\"'y,", 500)));
+        values.Add(new string('"', 2000));
+        foreach (var option in options)
+        {
+            foreach (var value in values)
+            {
+                string[] row = [value, "a"];
+                var expected = Reference(row, option);
+
+                var output = new StringBuilder();
+                using (var writer = CsvWriter.Create(output, option))
+                {
+                    writer.WriteRow(row);
+                }
+
+                Assert.Equal(expected, output.ToString());
+
+                var buffer = new ArrayBufferWriter<byte>();
+                using (var writer = Utf8CsvWriter.Create(buffer, option))
+                {
+                    writer.WriteRow(row);
+                    writer.WriteField(Encoding.UTF8.GetBytes(value));
+                    writer.EndRow();
+                }
+
+                Assert.Equal(expected + Reference([value], option), Encoding.UTF8.GetString(buffer.WrittenSpan));
+            }
+        }
+    }
+
+    [Fact]
     public void WriteField_SpecialCharactersOfNumbers()
     {
         // Numbers and dates written with the invariant culture are not searched for characters that need quotes, unless one of their characters is

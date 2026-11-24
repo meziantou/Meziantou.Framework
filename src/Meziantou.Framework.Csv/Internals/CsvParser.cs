@@ -34,6 +34,7 @@ internal sealed class CsvParser<T> : IDisposable
     private readonly CsvSource<T>? _source;
     private readonly bool _hasQuote;
     private readonly T _quote;
+    private readonly ulong _quoteFilter; // The mask of the quotes of a block is the line feeds without quote character: see SetSeparator
     private readonly bool _hasComment;
     private readonly T _comment;
     private readonly bool _trimOuter;
@@ -82,6 +83,7 @@ internal sealed class CsvParser<T> : IDisposable
     private int _rowColumnStart;
     private int _columnCount;
     private bool _rowIsPlain;
+    private int _rowSimpleQuotedColumns; // The quoted values of the columns before this index have no escaped quote: see RowEntry.FirstComplexQuoteColumn
     private long _lineNumber;
     private long _recordIndex = -1;
     private int _expectedColumnCount = -1;
@@ -94,6 +96,8 @@ internal sealed class CsvParser<T> : IDisposable
     private bool _scanInQuote;
     private int _scanLineTerminators;
     private bool _scanRowHasQuote;
+    private int _scanFirstComplexQuoteColumn; // See RowEntry.FirstComplexQuoteColumn
+    private ulong _scanOpeningQuotes; // The opening quotes of the block of ScanRecords, in the records it has not ended
     private int _scanColumnStart;
     private bool _scanSkipRow; // The bad data handler asked to skip the record being scanned
     private long _nextLineNumber = 1;
@@ -115,6 +119,7 @@ internal sealed class CsvParser<T> : IDisposable
         _source = source;
         _hasQuote = options.Quote.HasValue;
         _quote = T.CreateTruncating(options.Quote.GetValueOrDefault());
+        _quoteFilter = _hasQuote ? ulong.MaxValue : 0;
         _hasComment = options.CommentCharacter.HasValue;
         _comment = T.CreateTruncating(options.CommentCharacter.GetValueOrDefault());
         _trimOuter = options.Trim.HasFlag(CsvTrimOptions.Outer);
@@ -166,6 +171,12 @@ internal sealed class CsvParser<T> : IDisposable
         Comment,
         Scanning,
     }
+
+    // The state at the end of a block for ScanRecords: its last element is a closing quote, is a separator or a line terminator outside the quoted
+    // values, or is in a quoted value
+    private const ulong CarryClosingQuote = 1;
+    private const ulong CarryValueStart = 2;
+    private const ulong CarryQuoted = 4;
 
     private enum ParseStatus
     {
@@ -415,6 +426,7 @@ internal sealed class CsvParser<T> : IDisposable
         _columnCount = row.ColumnCount;
         _lineNumber = row.LineNumber;
         _rowIsPlain = !row.HasQuote && !_trimOuter;
+        _rowSimpleQuotedColumns = row.HasQuote && !_trimOuter && !_trimInside ? row.FirstComplexQuoteColumn : 0;
         _rowVersion++;
         _scratchUsed = 0;
     }
@@ -503,16 +515,266 @@ internal sealed class CsvParser<T> : IDisposable
 
     /// <summary>Scans the records of the buffer, from the saved scan state, until the batch is full or more data is needed.</summary>
     /// <remarks>
+    /// The records go through <see cref="ScanRecords"/>, a loop that only reads regular records, as long as it can. The others go through
+    /// <see cref="ScanAny"/>, which reads any data, from their start. They are separate methods: the JIT keeps the state of each loop in registers.
+    /// </remarks>
+    private void ScanBatch(ReadOnlySpan<T> data)
+    {
+        if (_vectorSize == 0)
+        {
+            ScanAny(data, returnAfterRecord: false);
+            return;
+        }
+
+        while (true)
+        {
+            if (_scanState is ScanState.Start)
+            {
+                ScanRecords(data);
+            }
+
+            if (!ScanAny(data, returnAfterRecord: true))
+                return;
+        }
+    }
+
+    /// <summary>Scans the records from the start of a record while they are regular, with the masks of the blocks of the vector size.</summary>
+    /// <remarks>
+    /// <para>
+    /// The quotes of a block are resolved from its masks: the elements after an odd number of quotes, counted from the start of the quoted value the
+    /// block may start in, are the elements of the quoted values, with their opening quote and without their closing quote (see
+    /// <see cref="CsvSimd.PrefixXor"/>). The block is regular when <see cref="ScanAny"/> would read it the same way: each quote that is not escaped
+    /// opens a value, or closes it before a separator, a line terminator or the quote it escapes, and no line terminator is in a quoted value, where
+    /// the lines are counted. Then, only the separators and the line terminators outside the quoted values, and the escaped quotes, are read.
+    /// </para>
+    /// <para>
+    /// It stops at the start of a record: when the batch is full, at a comment, or when a block of the record is not regular, does not fit in the
+    /// data, or makes the record too long. Then, <see cref="ScanAny"/> scans the record from its start, and reports its errors. The values are not
+    /// resolved when they are trimmed: spaces can be around their quotes.
+    /// </para>
+    /// </remarks>
+    private void ScanRecords(ReadOnlySpan<T> data)
+    {
+        var end = data.Length;
+        ref var dataRef = ref unsafe(MemoryMarshal.GetReference(data));
+        var columnEnds = _columnEnds;
+        var columnTotal = _columnTotal;
+        var rowStart = _scanRowStart;
+        if (_batchCount == MaxBatchRows || rowStart >= end || (_hasComment && unsafe(Unsafe.Add(ref dataRef, rowStart)) == _comment))
+            return;
+
+        if (columnEnds.Length == columnTotal)
+        {
+            columnEnds = Grow(columnEnds, columnTotal + 1);
+        }
+
+        // Each record starts with the end of a virtual column before it, so the start of a value is the end of the previous one plus one
+        var columnStart = columnTotal;
+        columnEnds[columnTotal++] = -1;
+        _scanRowHasQuote = false;
+        _scanFirstComplexQuoteColumn = int.MaxValue;
+        _scanOpeningQuotes = 0;
+
+        // Only the locals used for each separator are in the loop: the state of the records and of the blocks is in fields, or in a few bits
+        ulong events = 0; // The separators and the line terminators outside the quoted values, and the escaped quotes, not read yet
+        ulong separators = 0;
+        var offset = 0; // The start of the block, relative to the start of the record
+        var nextBlock = rowStart;
+        var carry = CarryValueStart; // The state at the end of the previous block (see the constants); the first block starts a record
+        ulong pendingSeparators = 0;
+        ulong pendingQuotes = 0;
+        ulong pendingSpecials = 0;
+        var pendingBase = -1;
+        while (true)
+        {
+            if (events == 0)
+            {
+                // The opening quotes left in the block are in the record
+                _scanRowHasQuote |= _scanOpeningQuotes != 0;
+
+                var blockStart = nextBlock;
+                var vectorSize = _vectorSize;
+                if (end - blockStart < vectorSize)
+                    goto Restart;
+
+                // Each element of the block adds at most two column ends: a separator adds one, a line terminator ends a record and starts the next one
+                if (columnEnds.Length - columnTotal < 2 * vectorSize)
+                {
+                    columnEnds = Grow(columnEnds, columnTotal + (2 * vectorSize));
+                }
+
+                ulong blockSeparators;
+                ulong quotes;
+                ulong specials;
+                if (pendingBase == blockStart)
+                {
+                    blockSeparators = pendingSeparators;
+                    quotes = pendingQuotes;
+                    specials = pendingSpecials;
+                }
+                else
+                {
+                    CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, blockStart)), vectorSize, _separatorByte, _quoteByte, out blockSeparators, out quotes, out specials);
+                }
+
+                offset = blockStart - rowStart;
+                nextBlock = blockStart + vectorSize;
+
+                // The masks of the next block are computed now: when the end of this block is mispredicted, they are not on the critical path
+                if (end - nextBlock >= vectorSize)
+                {
+                    CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, nextBlock)), vectorSize, _separatorByte, _quoteByte, out pendingSeparators, out pendingQuotes, out pendingSpecials);
+                    pendingBase = nextBlock;
+                }
+                else
+                {
+                    pendingBase = -1;
+                }
+
+                var lastBit = vectorSize - 1;
+                if (((quotes & _quoteFilter) | (carry & CarryQuoted)) == 0)
+                {
+                    // A closing quote at the end of the previous block is followed by a separator or a line terminator
+                    if ((carry & CarryClosingQuote & ~specials) != 0)
+                        goto Restart;
+
+                    events = specials;
+                    separators = blockSeparators;
+                    _scanOpeningQuotes = 0;
+                    carry = ((specials >> lastBit) & 1) << 1;
+                }
+                else
+                {
+                    if (_trimOuter)
+                        goto Restart;
+
+                    var quoted = CsvSimd.PrefixXor(quotes) ^ (0UL - ((carry >> 2) & 1));
+                    var opening = quotes & quoted;
+                    var closing = quotes & ~quoted;
+                    var delimiters = specials & ~quotes & ~quoted;
+                    var afterClosing = (closing << 1) | (carry & CarryClosingQuote);
+                    var escaped = opening & afterClosing;
+                    var unexpected = (specials & ~blockSeparators & ~quotes & quoted) // A line terminator in a quoted value
+                        | (afterClosing & ~specials & (ulong.MaxValue >> (64 - vectorSize))) // A closing quote followed by another character
+                        | (opening & ~escaped & ~((delimiters << 1) | ((carry >> 1) & 1))); // A quote that is not at the start of a value
+                    if (unexpected != 0)
+                        goto Restart;
+
+                    events = delimiters | escaped;
+                    separators = blockSeparators & ~quoted;
+                    _scanOpeningQuotes = opening;
+                    carry = ((closing >> lastBit) & 1) | (((delimiters >> lastBit) & 1) << 1) | (((quoted >> lastBit) & 1) << 2);
+                }
+
+                continue;
+            }
+
+            var bit = BitOperations.TrailingZeroCount(events);
+            events &= events - 1;
+            if (((separators >> bit) & 1) != 0)
+            {
+                columnEnds[columnTotal++] = offset + bit;
+                continue;
+            }
+
+            // The other characters are line terminators, and the escaped quotes of the quoted values
+            var index = rowStart + offset + bit;
+            var value = unsafe(Unsafe.Add(ref dataRef, index));
+            var rowEnd = index + 1;
+            if (value != Lf)
+            {
+                // An escaped quote: the value of the column is unescaped when it is read
+                if (value != Cr)
+                {
+                    _scanFirstComplexQuoteColumn = Math.Min(_scanFirstComplexQuoteColumn, columnTotal - columnStart - 1);
+                    continue;
+                }
+
+                // The general path knows whether a line feed follows a carriage return at the end of the buffer
+                if (rowEnd == end)
+                    goto Restart;
+
+                if (unsafe(Unsafe.Add(ref dataRef, rowEnd)) == Lf)
+                {
+                    rowEnd++;
+
+                    // The line feed is consumed with the carriage return: it is in this block or starts the next one
+                    if (bit < _vectorSize - 1)
+                    {
+                        events &= ~(2UL << bit);
+                    }
+                    else
+                    {
+                        nextBlock = rowEnd;
+                    }
+                }
+            }
+
+            var length = index - rowStart;
+            if (_source is not null && length > _maxRowLength)
+                goto Restart;
+
+            if (length > 0 || columnTotal > columnStart + 1)
+            {
+                columnEnds[columnTotal++] = length;
+            }
+
+            // The opening quotes up to the line terminator are in the record
+            var hasQuote = _scanRowHasQuote;
+            var openingQuotes = _scanOpeningQuotes;
+            if (openingQuotes != 0)
+            {
+                var recordElements = (2UL << bit) - 1;
+                hasQuote |= (openingQuotes & recordElements) != 0;
+                _scanOpeningQuotes = openingQuotes & ~recordElements;
+            }
+
+            var columnCount = columnTotal - columnStart - 1;
+            if (!_skipEmptyLines || columnCount > 0)
+            {
+                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, hasQuote, _scanFirstComplexQuoteColumn);
+            }
+
+            _nextLineNumber++;
+            offset -= rowEnd - rowStart;
+            rowStart = rowEnd;
+            if (_batchCount == MaxBatchRows || rowStart >= end || (_hasComment && unsafe(Unsafe.Add(ref dataRef, rowStart)) == _comment))
+                goto Save;
+
+            columnStart = columnTotal;
+            columnEnds[columnTotal++] = -1;
+            _scanRowHasQuote = false;
+            _scanFirstComplexQuoteColumn = int.MaxValue;
+        }
+
+    // The record is scanned again by ScanAny
+    Restart:
+        columnTotal = columnStart;
+
+    Save:
+        _columnEnds = columnEnds;
+        _columnTotal = columnTotal;
+        _scanRowStart = rowStart;
+        _scanPosition = rowStart;
+    }
+
+    /// <summary>Scans any record, from the saved scan state, until the batch is full or more data is needed.</summary>
+    /// <param name="data">The data.</param>
+    /// <param name="returnAfterRecord">Whether to stop at the start of a record after a record, for <see cref="ScanRecords"/>.</param>
+    /// <returns><see langword="true"/> when it stopped at the start of a record because of <paramref name="returnAfterRecord"/>.</returns>
+    /// <remarks>
     /// The outer loop starts the records and skips the comment lines; the inner loop goes through the special characters of a record. Only the state
     /// used for every special character is in locals, so that the JIT keeps it in registers: the options, the line numbers and the batch, used once
     /// per record or less, are read from the fields. The SIMD masks are kept from one record to the next.
     /// </remarks>
-    private void ScanBatch(ReadOnlySpan<T> data)
+    private bool ScanAny(ReadOnlySpan<T> data, bool returnAfterRecord)
     {
         var end = data.Length;
         ref var dataRef = ref unsafe(MemoryMarshal.GetReference(data));
 
         var state = _scanState;
+        var firstRowStart = _scanRowStart;
+        var result = false;
         var rowStart = _scanRowStart;
         var position = _scanPosition;
         var inQuote = _scanInQuote;
@@ -522,6 +784,7 @@ internal sealed class CsvParser<T> : IDisposable
 
         ulong mask = 0;
         ulong separators = 0;
+        ulong blockSeparators = 0; // The separators of the block, including the ones cleared while in a quoted value
         var maskBase = 0;
         var nextBlock = position;
         ulong pendingMask = 0;
@@ -536,6 +799,13 @@ internal sealed class CsvParser<T> : IDisposable
                     if (_batchCount == MaxBatchRows || rowStart >= end)
                     {
                         position = rowStart;
+                        goto Save;
+                    }
+
+                    if (returnAfterRecord && rowStart != firstRowStart)
+                    {
+                        position = rowStart;
+                        result = true;
                         goto Save;
                     }
 
@@ -554,6 +824,7 @@ internal sealed class CsvParser<T> : IDisposable
                         inQuote = false;
                         _scanLineTerminators = 0;
                         _scanRowHasQuote = false;
+                        _scanFirstComplexQuoteColumn = int.MaxValue;
                         columnStart = columnTotal;
 
                         // Each record starts with the end of a virtual column before it, so the start of a value is the end of the previous one plus one
@@ -652,7 +923,7 @@ internal sealed class CsvParser<T> : IDisposable
                         }
                         else
                         {
-                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, blockStart)), vectorSize, _separatorByte, _quoteByte, out separators, out mask);
+                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, blockStart)), vectorSize, _separatorByte, _quoteByte, out separators, out _, out mask);
                         }
 
                         maskBase = blockStart;
@@ -661,7 +932,7 @@ internal sealed class CsvParser<T> : IDisposable
                         // The masks of the next block are computed now: when the end of this block is mispredicted, they are not on the critical path
                         if (end - nextBlock >= vectorSize)
                         {
-                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, nextBlock)), vectorSize, _separatorByte, _quoteByte, out pendingSeparators, out pendingMask);
+                            CsvSimd.GetMasks(ref unsafe(Unsafe.Add(ref dataRef, nextBlock)), vectorSize, _separatorByte, _quoteByte, out pendingSeparators, out _, out pendingMask);
                             pendingBase = nextBlock;
                         }
                         else
@@ -670,6 +941,7 @@ internal sealed class CsvParser<T> : IDisposable
                         }
 
                         // Inside a quoted value, the separators are part of the value: they go through the general path, which checks the state
+                        blockSeparators = separators;
                         if (inQuote)
                         {
                             separators = 0;
@@ -685,6 +957,11 @@ internal sealed class CsvParser<T> : IDisposable
                         {
                             position = end;
                             goto Save;
+                        }
+
+                        if (inQuote)
+                        {
+                            SetComplexQuote(columnTotal - columnStart - 1);
                         }
 
                         if (inQuote && _strict)
@@ -718,19 +995,26 @@ internal sealed class CsvParser<T> : IDisposable
                             var next = unsafe(Unsafe.Add(ref dataRef, index + 1));
                             if (next == _quote)
                             {
+                                SetComplexQuote(columnTotal - columnStart - 1);
                                 position = index + 2;
                                 continue;
                             }
 
-                            if (_strict && next != _separator && next != Cr && next != Lf && !(_trimOuter && next == Space))
+                            if (next != _separator && next != Cr && next != Lf)
                             {
-                                if (_batchCount > 0)
-                                    goto RestartRow;
+                                SetComplexQuote(columnTotal - columnStart - 1);
+                                if (_strict && !(_trimOuter && next == Space))
+                                {
+                                    if (_batchCount > 0)
+                                        goto RestartRow;
 
-                                ReportScanError(CsvBadDataKind.CharactersAfterClosingQuote, "A quoted value is followed by characters that are not a separator.", rowStart, columnTotal - columnStart - 1);
+                                    ReportScanError(CsvBadDataKind.CharactersAfterClosingQuote, "A quoted value is followed by characters that are not a separator.", rowStart, columnTotal - columnStart - 1);
+                                }
                             }
 
+                            // The separators after the closing quote take the fast path again. The bits before it are already out of the mask.
                             inQuote = false;
+                            separators = blockSeparators;
                             position = index + 1;
                             continue;
                         }
@@ -738,6 +1022,7 @@ internal sealed class CsvParser<T> : IDisposable
                         if (_endOfData)
                         {
                             inQuote = false;
+                            separators = blockSeparators;
                             position = index + 1;
                             continue;
                         }
@@ -836,12 +1121,16 @@ internal sealed class CsvParser<T> : IDisposable
                         inQuote = true;
                         separators = 0;
                     }
-                    else if (_strict)
+                    else
                     {
-                        if (_batchCount > 0)
-                            goto RestartRow;
+                        SetComplexQuote(columnTotal - columnStart - 1);
+                        if (_strict)
+                        {
+                            if (_batchCount > 0)
+                                goto RestartRow;
 
-                        ReportScanError(CsvBadDataKind.QuoteInUnquotedValue, "A value that is not quoted contains a quote character.", rowStart, columnTotal - columnStart - 1);
+                            ReportScanError(CsvBadDataKind.QuoteInUnquotedValue, "A value that is not quoted contains a quote character.", rowStart, columnTotal - columnStart - 1);
+                        }
                     }
                 }
 
@@ -876,7 +1165,7 @@ internal sealed class CsvParser<T> : IDisposable
             }
             else if (!_skipEmptyLines || columnCount > 0)
             {
-                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, _scanRowHasQuote);
+                _rows[_batchCount++] = new RowEntry(rowStart, length, columnStart, columnCount, _nextLineNumber, _scanRowHasQuote, _scanFirstComplexQuoteColumn);
             }
 
             _nextLineNumber += _scanLineTerminators + (rowEnd > contentEnd ? 1 : 0);
@@ -899,6 +1188,7 @@ internal sealed class CsvParser<T> : IDisposable
         _scanColumnStart = columnStart;
         _columnEnds = columnEnds;
         _columnTotal = columnTotal;
+        return result;
     }
 
     // Creating SearchValues is costly compared to reading a short file: the instances are shared by the readers with the same separator and quote
@@ -938,6 +1228,9 @@ internal sealed class CsvParser<T> : IDisposable
         ArrayPool<int>.Shared.Return(array);
         return result;
     }
+
+    // A quote that does not only open or close a value, in the column of the record being scanned: see RowEntry.FirstComplexQuoteColumn
+    private void SetComplexQuote(int column) => _scanFirstComplexQuoteColumn = Math.Min(_scanFirstComplexQuoteColumn, column);
 
     private static bool IsSpaces(ReadOnlySpan<T> value) => !value.ContainsAnyExcept(Space);
 
@@ -1038,11 +1331,33 @@ internal sealed class CsvParser<T> : IDisposable
             return;
         }
 
+#if NET11_0_OR_GREATER
+        // The quotes of the column only open and close its value: the value is between them, without escaped quote, and is not searched again. The
+        // limit is 0 when the values are trimmed. Inlined here, it saves a call per quoted value. With .NET 10, the larger method is no longer
+        // inlined as well in the loops of the callers, and reading the values of most data is slower: the check is in GetValueSlow there.
+        if (index < _rowSimpleQuotedColumns)
+        {
+            value = raw[1..^1];
+            isQuoted = true;
+            return;
+        }
+#endif
+
         GetValueSlow(index, raw, out value, out isQuoted);
     }
 
     private void GetValueSlow(int index, ReadOnlySpan<T> raw, out ReadOnlySpan<T> value, out bool isQuoted)
     {
+#if !NET11_0_OR_GREATER
+        // See GetValue
+        if (index < _rowSimpleQuotedColumns)
+        {
+            value = raw[1..^1];
+            isQuoted = true;
+            return;
+        }
+#endif
+
         var span = raw;
         if (_trimOuter)
         {
@@ -1262,9 +1577,9 @@ internal sealed class CsvParser<T> : IDisposable
     }
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly struct RowEntry(int start, int length, int columnStart, int columnCount, long lineNumber, bool hasQuote)
+    private readonly struct RowEntry(int start, int length, int columnStart, int columnCount, long lineNumber, bool hasQuote, int firstComplexQuoteColumn)
     {
-        // The flag is in the lowest bit of the column count, so that an entry is 24 bytes
+        // The flag is in the lowest bit of the column count
         private readonly int _columnCountAndFlag = (columnCount << 1) | (hasQuote ? 1 : 0);
 
         public int Start { get; } = start;
@@ -1278,6 +1593,14 @@ internal sealed class CsvParser<T> : IDisposable
         public int ColumnCount => _columnCountAndFlag >> 1;
 
         public bool HasQuote => (_columnCountAndFlag & 1) != 0;
+
+        /// <summary>Gets the index of the first column with a quote that does not only open or close its value, or <see cref="int.MaxValue"/>.</summary>
+        /// <remarks>
+        /// Such a quote is an escaped quote, a quote in a value that is not quoted, a closing quote followed by another character than a separator or a
+        /// line terminator, or the quote of a value that is not closed. It only changes the value of its column: a quoted value of a column before
+        /// this one is the content between its first and its last character.
+        /// </remarks>
+        public int FirstComplexQuoteColumn { get; } = firstComplexQuoteColumn;
     }
 
     [StructLayout(LayoutKind.Auto)]

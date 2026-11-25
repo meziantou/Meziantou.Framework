@@ -23,7 +23,14 @@ public static partial class WebPlatformFuzzTargets
     {
         var attributes = PseudoAttributes.Parse(input);
         var document = new Document();
-        var pi = document.CreateProcessingInstruction("t", input.Replace("?>", "", StringComparison.Ordinal));
+        // (removing "?>" can join a "?" and a ">" into another one: "??>>")
+        var data = input;
+        while (data.Contains("?>", StringComparison.Ordinal))
+        {
+            data = data.Replace("?>", "", StringComparison.Ordinal);
+        }
+
+        var pi = document.CreateProcessingInstruction("t", data);
         if (attributes is null)
             return;
 

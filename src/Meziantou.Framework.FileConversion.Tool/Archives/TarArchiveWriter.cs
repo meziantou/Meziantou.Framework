@@ -78,6 +78,10 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
     public override bool AddSymbolicLink(string name, string target, DateTimeOffset? lastWriteTime)
     {
+        // The records of a pax header cannot contain a null character (the readers reject them)
+        if (target.Contains('\0', StringComparison.Ordinal))
+            return false;
+
         var entry = CreateEntry(TarEntryType.SymbolicLink, name, lastWriteTime);
         entry.LinkName = target;
         _writer.WriteEntry(entry);
@@ -86,6 +90,9 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
     public override bool AddHardLink(string name, string target, DateTimeOffset? lastWriteTime)
     {
+        if (target.Contains('\0', StringComparison.Ordinal))
+            return false;
+
         var entry = CreateEntry(TarEntryType.HardLink, name, lastWriteTime);
         entry.LinkName = target;
         _writer.WriteEntry(entry);
@@ -103,6 +110,9 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
     private static PaxTarEntry CreateEntry(TarEntryType entryType, string name, DateTimeOffset? lastWriteTime)
     {
+        if (name.Contains('\0', StringComparison.Ordinal))
+            throw new ArgumentException($"The name '{name.Replace('\0', '\uFFFD')}' cannot be stored in a tar archive: it contains a null character", nameof(name));
+
         var entry = new PaxTarEntry(entryType, name);
         if (lastWriteTime is { } time)
         {

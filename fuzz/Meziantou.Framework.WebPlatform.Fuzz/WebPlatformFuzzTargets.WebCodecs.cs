@@ -668,6 +668,8 @@ public static partial class WebPlatformFuzzTargets
             }
         }
 
+        // (the header is written with the first frame, or by WriteHeader: a stream without frames has one too)
+        writer.WriteHeader();
         output.AddRange(writer.TakeBytes());
         FuzzAssert.Equal(0L, writer.PendingLength, "TakeBytes clears the pending bytes");
 

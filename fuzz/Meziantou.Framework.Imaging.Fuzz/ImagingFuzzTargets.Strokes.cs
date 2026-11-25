@@ -42,7 +42,9 @@ public static partial class ImagingFuzzTargets
     /// </summary>
     /// <remarks>
     /// In perspective, the round and square caps of dashes can end anywhere on a curve, and the curve is cut for all the
-    /// pen reaches around it: their pens are at most 24 pixels wide, so that an input near a horizon stays fast.
+    /// pen reaches around it: their pens are at most 24 pixels wide, and their patterns at least 4 pixels long, so
+    /// that an input near a horizon stays fast (fuzz regression: dashes of 1/8 pixel with round caps on the plane seen
+    /// nearly edge-on took 35 seconds).
     /// </remarks>
     private static void StrokeTarget(ReadOnlySpan<byte> data)
     {
@@ -106,6 +108,16 @@ public static partial class ImagingFuzzTargets
         if (isInPerspective && dashes.Length != 0 && cap != LineCap.Butt)
         {
             penWidth = Math.Min(penWidth, 24);
+
+            // (a pattern without length is rejected by the pen)
+            var patternLength = dashes.Sum();
+            if (patternLength is > 0 and < 4)
+            {
+                for (var i = 0; i < dashes.Length; i++)
+                {
+                    dashes[i] *= 4 / patternLength;
+                }
+            }
         }
 
         Pen pen;

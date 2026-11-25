@@ -27,7 +27,10 @@ internal static class DataBarExpandedDecoder
         /// <summary>Gets the last scan line that reads the row, when the caller knows it.</summary>
         public int LastLine { get; init; }
 
-        public string Signature => string.Join(";", Pairs.Select(pair => FormattableString.Invariant($"{pair.Finder},{pair.IsOddPair},{pair.LeftValue},{pair.RightValue}")));
+        /// <summary>Gets whether the row is read from the right of the scan lines, when the caller knows it.</summary>
+        public bool IsReversed { get; init; }
+
+        public string Signature => string.Join(";", Pairs.Select(pair => FormattableString.Invariant($"{pair.Finder},{pair.IsOddPair},{pair.LeftValue},{pair.RightValue}"))) + (IsReversed ? ";R" : "");
     }
 
     /// <summary>Reads the pairs of a row, from the dark run of its left guard.</summary>
@@ -207,6 +210,16 @@ internal static class DataBarExpandedDecoder
                 return null;
 
             if (ordered.Count > 1 && isAfter != (previous.FirstLine > ordered[^2].LastLine))
+                return null;
+
+            // ISO/IEC 24724, 7.2.8: the rows are read in the direction of the first row, except the even rows of the rows of an
+            // even number of pairs, which are read in the other direction (but a last row with an odd number of pairs): an
+            // even pair read from the other side looks like an odd pair, which would let rows read the wrong way pass for
+            // the next ones (the check character of the symbol has 211 values only)
+            var pairsPerRow = ordered[0].Pairs.Length;
+            var isLastRow = offset + row.Pairs.Length == sequence.Length;
+            var isOtherDirection = ordered.Count % 2 is 1 && pairsPerRow % 2 is 0 && !(isLastRow && row.Pairs.Length % 2 is 1);
+            if (row.IsReversed != (ordered[0].IsReversed ^ isOtherDirection))
                 return null;
         }
 

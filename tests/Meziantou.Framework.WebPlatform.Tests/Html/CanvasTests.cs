@@ -81,6 +81,32 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void ContentDrawable_FixedPositionedDrawableElementIsPlacedByItsCanvasTransform()
+    {
+        var context = _contexts.Create(new BrowsingContextOptions
+        {
+            ScriptEngine = _engine,
+            UnhandledScriptError = (_, error) => _errors.Add(error),
+        });
+
+        // The element is laid out in the viewport, out of the contents of the canvas: its geometry is still where it is drawn
+        var document = context.Navigate("https://example.com/", _ => """
+            <body style="margin: 0">
+            <canvas id=c content=drawable style="position: absolute; left: 10px; top: 20px; width: 200px; height: 100px">
+              <div><div drawable id=child style="position: fixed; top: 0; width: 50px; height: 40px"></div></div>
+            </canvas>
+            <script>
+            c.updateElementGeometry(child, { canvasTransform: new DOMMatrix().translate(30, 40) });
+            const rect = child.getBoundingClientRect();
+            document.title = [rect.left, rect.top, rect.width, rect.height].join();
+            </script>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+        Assert.Empty(_errors);
+        Assert.Equal("40,60,50,40", document.Title);
+    }
+
+    [Fact]
     public void ContentDrawable_DrawableElementEstablishesAnIndependentFormattingContext()
     {
         var context = _contexts.Create(new BrowsingContextOptions

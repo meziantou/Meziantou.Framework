@@ -67,8 +67,9 @@ internal sealed class ReportingEndpoint(string name, UrlRecord url)
         {
             document = JsonDocument.Parse("[" + value + "]");
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // (ArgumentException: a header value of a lone surrogate, which no bytes give, is not JSON)
             return null;
         }
 

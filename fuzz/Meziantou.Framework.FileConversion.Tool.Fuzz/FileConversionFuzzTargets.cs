@@ -319,9 +319,10 @@ public static class FileConversionFuzzTargets
         {
             entries = [.. ArchiveInputDocument.GetPageEntries(archive)];
         }
-        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException)
+        catch (Exception ex) when (ex is InvalidDataException or NotSupportedException or ArchivePasswordException)
         {
-            // An archive with too many entries, or a symbolic link whose target cannot be read
+            // An archive with too many entries, or a symbolic link whose target cannot be read (or is encrypted: the archive is
+            // opened without password)
             return;
         }
 
@@ -470,10 +471,11 @@ public static class FileConversionFuzzTargets
             MsgFile.Load(msg);
             EmlxFile.Load(emlx);
 
-            // The mbox file has the two messages, and the lines of an EML input (the mbox format escapes the lines that start with "From ")
+            // The mbox file has the two messages, and the lines of an EML input (the mbox format escapes the lines that start with "From ",
+            // and its lines end with LF: a line that ends with CR before its CRLF line break reads as a line that ends with CRLF)
             var messages = MboxReader.ReadMessages(mbox).ToList();
             FuzzAssert.Equal(2, messages.Count, "The mbox file does not have a message per input");
-            if (format == FileFormat.Eml && !Encoding.Latin1.GetString(data).ReplaceLineEndings("\n").Contains("\nFrom ", StringComparison.Ordinal) && !data.StartsWith("From "u8))
+            if (format == FileFormat.Eml && !Encoding.Latin1.GetString(data).ReplaceLineEndings("\n").Contains("\nFrom ", StringComparison.Ordinal) && !data.StartsWith("From "u8) && data.IndexOf("\r\r\n"u8) < 0)
             {
                 FuzzAssert.Equal(ToLines(data), ToLines(messages[0].Content.Span), "The mbox file does not have the lines of the EML input");
             }

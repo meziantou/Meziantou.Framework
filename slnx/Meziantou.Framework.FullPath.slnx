@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/fuzz/">
     <Project Path="../fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.AnsiFormatting.Fuzz/Meziantou.Framework.AnsiFormatting.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Assertions.Fuzz/Meziantou.Framework.Assertions.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
@@ -61,6 +62,7 @@
   </Folder>
   <Folder Name="/src/">
     <Project Path="../src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
+    <Project Path="../src/Meziantou.Framework.AnsiFormatting/Meziantou.Framework.AnsiFormatting.csproj" />
     <Project Path="../src/Meziantou.Framework.Assertions.Analyzer/Meziantou.Framework.Assertions.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.Assertions.CodeFix/Meziantou.Framework.Assertions.CodeFix.csproj" />
     <Project Path="../src/Meziantou.Framework.Assertions/Meziantou.Framework.Assertions.csproj" />

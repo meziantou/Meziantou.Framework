@@ -65,7 +65,11 @@ internal static partial class ColumnBreaker
 
     /// <summary>Fills fragmentainers with the content of a portion of the strip (see <see cref="FindBreaks(FragmentationFlow, double, double, double, List{FragmentainerBreak}, out double, FlowMap?, int)"/>).</summary>
     /// <param name="lastExtent">Receives the block size of the last fragmentainer that is used by the content and by its parallel flows.</param>
-    public static bool FindBreaks(FragmentationFlow flow, double start, double end, in FragmentainerSizes sizes, List<FragmentainerBreak> breaks, out double minimalShortage, out double lastExtent, FlowMap? map = null, int baseIndex = 0)
+    /// <param name="startSequence">
+    /// The order in the content of the column spanner that ends at <paramref name="start"/> (<see cref="ColumnSpannerPlacement.Sequence"/>),
+    /// or 0: a box without block size at its position, before it in the content, is in the fragmentainers before the portion.
+    /// </param>
+    public static bool FindBreaks(FragmentationFlow flow, double start, double end, in FragmentainerSizes sizes, List<FragmentainerBreak> breaks, out double minimalShortage, out double lastExtent, FlowMap? map = null, int baseIndex = 0, int startSequence = 0)
     {
         breaks.Clear();
         flow.ClearMonolithicSlices();
@@ -78,7 +82,7 @@ internal static partial class ColumnBreaker
         // first page starts with the space of the break, e.g. a repeated table header)
         var resumes = flow.IsPaged && baseIndex > 0 && start > Epsilon;
         var startDisplayOffset = resumes ? GetDisplayOffsetAt(flow, start) - flow.ResumeShift + flow.ResumeLeadingBlockSize : 0;
-        map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start - startDisplayOffset, isBreak: true);
+        map.Add(map.Count == 0 ? double.NegativeInfinity : start, baseIndex, start - startDisplayOffset, isBreak: true, startSequence);
         if (flow.IsPaged && baseIndex > 0)
         {
             KeepFloatsBefore(flow, start, baseIndex);

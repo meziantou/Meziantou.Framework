@@ -527,9 +527,28 @@ internal static partial class CssSerializer
                 builder.Append(' ');
             }
 
-            pendingSpace = false;
+            var start = builder.Length;
             SerializeComponentValue(builder, value, keywords, zeroIsLength);
+            if (!pendingSpace && adjacent && i > 0 && values[i - 1] is CssPreservedToken { Type: CssTokenType.Delim } previous && StartsWithDigits(builder, start, previous.Token.Value))
+            {
+                // A number serialized without its sign is parsed with the delimiter before it ("+" followed by "+1" written "+1")
+                builder.Insert(start, "/**/");
+            }
+
+            pendingSpace = false;
             componentEnd = builder.Length;
+        }
+
+        // Whether the text appended at start would be parsed with the delimiter before it as a number
+        static bool StartsWithDigits(StringBuilder builder, int start, string delimiter)
+        {
+            if (delimiter is not ("+" or "-" or "."))
+                return false;
+
+            if (start < builder.Length && char.IsAsciiDigit(builder[start]))
+                return true;
+
+            return delimiter is not "." && start + 1 < builder.Length && builder[start] == '.' && char.IsAsciiDigit(builder[start + 1]);
         }
 
         // The last character of a serialization followed by a name: an ident code point, the space ending an escape, @ (an
@@ -709,6 +728,10 @@ internal static partial class CssSerializer
                         return;
                     case CssTokenType.Dimension when s_preserveColors:
                         builder.Append(token.NumericValue.ToString("R", System.Globalization.CultureInfo.InvariantCulture)).Append(SerializeIdentifier(InfraAscii.ToAsciiLowercase(token.Value)));
+                        return;
+                    case CssTokenType.Number when token.IsInteger && double.IsFinite(token.NumericValue) && Math.Abs(token.NumericValue) >= 1e21:
+                        // The exponent notation of a large number is not an <integer>: the serialization would not be parsed as the same value
+                        builder.Append(token.NumericValue.ToString("F0", System.Globalization.CultureInfo.InvariantCulture));
                         return;
                     case CssTokenType.Number:
                         builder.Append(SerializeNumber(token.NumericValue));

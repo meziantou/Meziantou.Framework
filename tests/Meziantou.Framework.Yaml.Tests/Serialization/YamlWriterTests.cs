@@ -1138,6 +1138,54 @@ public sealed class YamlWriterTests
     }
 
     [Fact]
+    public void MappingKey_QuotesDocumentMarkersAtTheFirstColumn()
+    {
+        var value = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["... a"] = "v1",
+            ["--- b"] = "v2",
+            ["..."] = "v3",
+            ["---"] = "v4",
+            ["---c"] = "v5",
+            ["nested"] = new Dictionary<string, object?>(StringComparer.Ordinal)
+            {
+                ["--- d"] = "v6",
+                ["... e"] = "v7",
+            },
+        };
+
+        var yaml = YamlSerializer.Serialize(value, new YamlSerializerOptions { WriteIndented = true });
+
+        // An indented key cannot be read as a document marker, so the keys of the nested mapping stay plain.
+        Assert.Equal("\"... a\": v1\n\"--- b\": v2\n\"...\": v3\n\"---\": v4\n---c: v5\nnested:\n  --- d: v6\n  ... e: v7\n", yaml);
+        var roundTrip = YamlSerializer.Deserialize<Dictionary<string, object?>>(yaml);
+        Assert.NotNull(roundTrip);
+        Assert.Equal(["... a", "--- b", "...", "---", "---c", "nested"], roundTrip.Keys);
+        var nested = Assert.IsType<Dictionary<object, object?>>(roundTrip["nested"]);
+        Assert.Equal("v6", nested["--- d"]);
+        Assert.Equal("v7", nested["... e"]);
+    }
+
+    [Fact]
+    public void MappingKey_QuotesDocumentMarkersAfterTheAnchorOfTheMapping()
+    {
+        var value = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["--- a"] = "v1",
+            ["... b"] = "v2",
+        };
+
+        var options = new YamlSerializerOptions { WriteIndented = true, ReferenceHandling = YamlReferenceHandling.Preserve };
+        var yaml = YamlSerializer.Serialize(value, options);
+
+        Assert.Equal("&id001\n\"--- a\": v1\n\"... b\": v2\n", yaml);
+        var roundTrip = YamlSerializer.Deserialize<Dictionary<string, string>>(yaml, options);
+        Assert.NotNull(roundTrip);
+        Assert.Equal("v1", roundTrip["--- a"]);
+        Assert.Equal("v2", roundTrip["... b"]);
+    }
+
+    [Fact]
     public void MappingKey_QuotesTheMergeKey()
     {
         var value = new Dictionary<string, string>(StringComparer.Ordinal)

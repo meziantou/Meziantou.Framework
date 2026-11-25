@@ -148,8 +148,9 @@ internal sealed class EpubPackage
             document.Load(reader);
             return document;
         }
-        catch (XmlException ex)
+        catch (Exception ex) when (ex is XmlException or ArgumentException)
         {
+            // (ArgumentException: an XML declaration that the reader reads but XmlDocument rejects, such as a version that is not "1.n")
             throw new InvalidDataException($"The file '{name}' of the book is not valid XML: {ex.Message}", ex);
         }
     }

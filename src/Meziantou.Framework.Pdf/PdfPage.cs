@@ -39,19 +39,20 @@ public sealed partial class PdfPage
     /// <summary>Gets the page dictionary.</summary>
     public PdfDictionary Dictionary { get; }
 
-    /// <summary>Gets or sets the media box: the boundaries of the medium the page is printed on. It is inherited from the page tree; the default is US Letter.</summary>
+    /// <summary>Gets or sets the media box: the boundaries of the medium the page is printed on. It is inherited from the page tree; the default is US Letter, also for a box without width or height.</summary>
     /// <exception cref="ArgumentException">A coordinate of the value is not a finite number.</exception>
     public PdfRectangle MediaBox
     {
-        get => PdfRectangle.TryRead(GetInherited(PdfNames.MediaBox) as PdfArray, out var box) ? box : DefaultMediaBox;
+        // (as in pdf.js, an empty box is not valid)
+        get => PdfRectangle.TryRead(GetInherited(PdfNames.MediaBox) as PdfArray, out var box) && box.Width > 0 && box.Height > 0 ? box : DefaultMediaBox;
         set => SetBox(PdfNames.MediaBox, value);
     }
 
-    /// <summary>Gets or sets the crop box: the region of the page that is displayed or printed. It is inherited from the page tree; the default is the media box.</summary>
+    /// <summary>Gets or sets the crop box: the region of the page that is displayed or printed. It is inherited from the page tree; the default is the media box, also for a box without width or height.</summary>
     /// <exception cref="ArgumentException">A coordinate of the value is not a finite number.</exception>
     public PdfRectangle CropBox
     {
-        get => PdfRectangle.TryRead(GetInherited(PdfNames.CropBox) as PdfArray, out var box) ? box : MediaBox;
+        get => PdfRectangle.TryRead(GetInherited(PdfNames.CropBox) as PdfArray, out var box) && box.Width > 0 && box.Height > 0 ? box : MediaBox;
         set => SetBox(PdfNames.CropBox, value);
     }
 

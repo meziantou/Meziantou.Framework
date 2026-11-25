@@ -11,6 +11,8 @@ internal sealed class BZip2BlockCompressor
     private const int MaxEncodedCodeLength = 17;
     private const byte LesserCost = 0;
     private const byte GreaterCost = 15;
+    private const int CostBits = 10;
+    private const ulong CostMask = (1 << CostBits) - 1;
 
     private int[] _suffixArray = [];
     private ushort[] _text = [];
@@ -242,8 +244,7 @@ internal sealed class BZip2BlockCompressor
             }
 
             var position = list[1..usedCount].IndexOf(mapped) + 1;
-            list[..position].CopyTo(list[1..]);
-            list[0] = mapped;
+            BZip2Constants.MoveToFront(list, position);
             symbols[count++] = (ushort)(position + 1);
         }
 
@@ -322,7 +323,7 @@ internal sealed class BZip2BlockCompressor
 
         // Choose the cheapest table of each group, and compute the tables of the groups that chose them
         var selectorCount = 0;
-        Span<int> costs = stackalloc int[BZip2Constants.MaxGroups];
+        Span<ulong> packedLengths = stackalloc ulong[BZip2Constants.MaxAlphabetSize];
         for (var iteration = 0; iteration < Iterations; iteration++)
         {
             for (var t = 0; t < groupCount; t++)
@@ -330,29 +331,38 @@ internal sealed class BZip2BlockCompressor
                 Array.Clear(_frequencies[t]);
             }
 
+            // The lengths of each symbol in every table, CostBits bits per table, so that one addition per symbol computes the
+            // cost of a group in every table: a group costs at most 50 × 17 bits, which fits in CostBits bits
+            for (var symbol = 0; symbol < alphabetSize; symbol++)
+            {
+                ulong packed = 0;
+                for (var t = 0; t < groupCount; t++)
+                {
+                    packed |= (ulong)_lengths[t][symbol] << (t * CostBits);
+                }
+
+                packedLengths[symbol] = packed;
+            }
+
             selectorCount = 0;
             for (var groupStart = 0; groupStart < symbolCount; groupStart += BZip2Constants.GroupSize)
             {
                 var group = symbols.Slice(groupStart, Math.Min(BZip2Constants.GroupSize, symbolCount - groupStart));
-                costs.Clear();
-                for (var t = 0; t < groupCount; t++)
+                ulong costs = 0;
+                foreach (var symbol in group)
                 {
-                    var lengths = _lengths[t];
-                    var cost = 0;
-                    foreach (var symbol in group)
-                    {
-                        cost += lengths[symbol];
-                    }
-
-                    costs[t] = cost;
+                    costs += packedLengths[symbol];
                 }
 
                 var best = 0;
+                var bestCost = costs & CostMask;
                 for (var t = 1; t < groupCount; t++)
                 {
-                    if (costs[t] < costs[best])
+                    var cost = (costs >> (t * CostBits)) & CostMask;
+                    if (cost < bestCost)
                     {
                         best = t;
+                        bestCost = cost;
                     }
                 }
 

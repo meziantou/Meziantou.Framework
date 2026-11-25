@@ -23,6 +23,7 @@ internal sealed class RarHeaderReader
     private byte[]? _rar5HeaderKey;
     private bool _rar4HeadersEncrypted;
     private bool _ended;
+    private Exception? _error;
 
     public RarHeaderReader(RarInput input, ArchiveReaderOptions options, RarKeyStore keys)
     {
@@ -66,6 +67,31 @@ internal sealed class RarHeaderReader
         if (_ended)
             return null;
 
+        // A header that could not be read may have been read in part: the position of the next one is unknown
+        if (_error is not null)
+        {
+            var message = "A previous header of the RAR archive could not be read. " + _error.Message;
+            throw _error switch
+            {
+                NotSupportedException => new NotSupportedException(message, _error),
+                ArchivePasswordException => new ArchivePasswordException(message, _error),
+                _ => new InvalidDataException(message, _error),
+            };
+        }
+
+        try
+        {
+            return ReadNextCore();
+        }
+        catch (Exception ex) when (ex is InvalidDataException or ArchivePasswordException or NotSupportedException)
+        {
+            _error = ex;
+            throw;
+        }
+    }
+
+    private RarHeader? ReadNextCore()
+    {
         var position = _input.Position;
         if (position < _nextHeaderPosition)
         {

@@ -37,7 +37,8 @@ An EPUB book or a comic book archive converts to an archive format the same way:
 
 The tar and zip formats store symbolic links, and tar stores hard links: they are copied as links. The 7z output does not
 store them: the tool skips the symbolic links, writes the content of the file a hard link points to, and reports each
-skipped link on the error output.
+skipped link on the error output. A tar output does the same with the links whose target contains a null character, which
+a zip archive can store (the target of a zip link is the content of its entry), but not a tar archive.
 
 ## Compression
 

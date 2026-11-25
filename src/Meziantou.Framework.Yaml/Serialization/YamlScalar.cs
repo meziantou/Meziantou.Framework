@@ -749,9 +749,29 @@ public static class YamlScalar
             return false;
         }
 
+        // The only non-string rules of the built-in schemas that match a scalar starting with a letter are the null
+        // and boolean words, so the rules are not evaluated for any other word, such as "name" or "type".
+        if (value.Length > 0 && char.IsAsciiLetter(value[0]) && !IsSchemaKeyword(value))
+        {
+            return false;
+        }
+
         var scalar = new ScalarEvent(anchor: null, tag: null, value.ToString(), ScalarStyle.Plain, isPlainImplicit: true, isQuotedImplicit: false);
         return GetSchema(schemaKind).TryParse(scalar, decodeValue: false, out var tag, out _) &&
                !string.Equals(tag, SchemaBase.StrShortTag, StringComparison.Ordinal);
+    }
+
+    /// <summary>Determines whether <paramref name="value"/> is one of the null or boolean words of a built-in schema.</summary>
+    internal static bool IsSchemaKeyword(ReadOnlySpan<char> value)
+    {
+        return value switch
+        {
+            "null" or "Null" or "NULL" => true,
+            "true" or "True" or "TRUE" or "false" or "False" or "FALSE" => true,
+            "y" or "Y" or "yes" or "Yes" or "YES" or "on" or "On" or "ON" => true,
+            "n" or "N" or "no" or "No" or "NO" or "off" or "Off" or "OFF" => true,
+            _ => false,
+        };
     }
 
     private static bool IsNull(ReadOnlySpan<char> value, ScalarStyle style) => IsPlainStyle(style) && IsNull(value);

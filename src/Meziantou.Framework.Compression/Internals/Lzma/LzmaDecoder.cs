@@ -238,7 +238,7 @@ internal sealed class LzmaDecoder : IDisposable
                 {
                     do
                     {
-                        symbol = (symbol << 1) | DecodeBit(probs, literal + (int)symbol, ref range, ref code, input, ref inPos);
+                        symbol = (symbol << 1) | DecodeBitBranchless(probs, literal + (int)symbol, ref range, ref code, input, ref inPos);
                     }
                     while (symbol < 0x100);
                 }
@@ -255,18 +255,13 @@ internal sealed class LzmaDecoder : IDisposable
                     do
                     {
                         matchByte <<= 1;
-                        var bit = matchByte & offset;
-                        var probIndex = literal + (int)(offset + bit + symbol);
-                        if (DecodeBit(probs, probIndex, ref range, ref code, input, ref inPos) == 0)
-                        {
-                            symbol <<= 1;
-                            offset &= ~bit;
-                        }
-                        else
-                        {
-                            symbol = (symbol << 1) | 1;
-                            offset &= bit;
-                        }
+                        var matchBit = matchByte & offset;
+                        var probIndex = literal + (int)(offset + matchBit + symbol);
+                        var bit = DecodeBitBranchless(probs, probIndex, ref range, ref code, input, ref inPos);
+                        symbol = (symbol << 1) | bit;
+
+                        // offset &= bit is 0 ? ~matchBit : matchBit
+                        offset &= ~(matchBit ^ (0 - bit));
                     }
                     while (symbol < 0x100);
                 }
@@ -308,7 +303,7 @@ internal sealed class LzmaDecoder : IDisposable
                         uint m = 1;
                         for (var i = 0; i < numDirectBits; i++)
                         {
-                            var bit = DecodeBit(probs, specProbs + (int)m, ref range, ref code, input, ref inPos);
+                            var bit = DecodeBitBranchless(probs, specProbs + (int)m, ref range, ref code, input, ref inPos);
                             m = (m << 1) | bit;
                             distance |= bit << i;
                         }
@@ -334,7 +329,7 @@ internal sealed class LzmaDecoder : IDisposable
                         uint m = 1;
                         for (var i = 0; i < LzmaConstants.NumAlignBits; i++)
                         {
-                            var bit = DecodeBit(probs, Align + (int)m, ref range, ref code, input, ref inPos);
+                            var bit = DecodeBitBranchless(probs, Align + (int)m, ref range, ref code, input, ref inPos);
                             m = (m << 1) | bit;
                             distance |= bit << i;
                         }
@@ -491,6 +486,31 @@ internal sealed class LzmaDecoder : IDisposable
             probs[index] = (ushort)(prob - (prob >> NumMoveBits));
             bit = 1;
         }
+
+        if (range < TopValue)
+        {
+            range <<= 8;
+            code = (code << 8) | input[inPos++];
+        }
+
+        return bit;
+    }
+
+    /// <summary>Decodes a bit as <see cref="DecodeBit"/> does, without a branch on its value: for the bits of the literals and of the low bits of the distances, which are hard to predict (the branches are faster for the other bits, which are more regular).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint DecodeBitBranchless(ushort[] probs, int index, ref uint range, ref uint code, byte[] input, ref int inPos)
+    {
+        uint prob = probs[index];
+        var bound = (range >> NumBitModelTotalBits) * prob;
+        var bit = code >= bound ? 1u : 0u;
+        var mask = 0 - bit; // All ones for a 1, zero for a 0
+        code -= bound & mask;
+        range = (bound & ~mask) | ((range - bound) & mask);
+
+        // A 0 moves the probability towards BitModelTotal, and a 1 towards 0: prob - (prob >> NumMoveBits) is
+        // prob + ((31 - prob) >> NumMoveBits) with an arithmetic shift
+        var target = ((1u << NumMoveBits) - 1) + (~mask & (BitModelTotal - ((1u << NumMoveBits) - 1)));
+        probs[index] = (ushort)(prob + (uint)((int)(target - prob) >> NumMoveBits));
 
         if (range < TopValue)
         {

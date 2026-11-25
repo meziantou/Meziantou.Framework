@@ -68,6 +68,9 @@ public sealed class ReportingTests : IDisposable
         Assert.Equal(1.0, image.GetProperty("sampling_fraction").GetDouble());
         Assert.Equal(1, NetworkErrorLoggingPolicyHeader.Parse("""{"max_age": 0}""")!.FailureFraction);
         Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("""{"max_age": 60}"""));
+
+        // (a lone surrogate, which no bytes give, is not JSON)
+        Assert.Null(NetworkErrorLoggingPolicyHeader.Parse("{\"report_to\": \"\uDC9F\", \"max_age\": 60}"));
     }
 
     [Theory]

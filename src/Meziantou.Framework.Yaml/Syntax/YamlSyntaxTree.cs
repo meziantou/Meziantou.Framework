@@ -41,20 +41,22 @@ public sealed class YamlSyntaxTree
         ArgumentNullException.ThrowIfNull(yaml);
         options ??= new YamlSyntaxOptions();
 
-        ValidateYaml(yaml);
+        var scannerTokens = ValidateYaml(yaml);
 
-        var tokens = new List<YamlSyntaxToken>();
-        AddScannerTokens(yaml, tokens);
+        var tokens = new List<YamlSyntaxToken>(scannerTokens.Count);
+        AddScannerTokens(yaml, scannerTokens, tokens);
         if (options.IncludeTrivia)
         {
             // Trivia is read from the text the scanner did not claim: a '#' inside a quoted or block scalar is
             // content, not the start of a comment.
-            AddTriviaTokens(yaml, tokens, GetUncoveredRanges(yaml, tokens));
+            var trivia = new List<YamlSyntaxToken>();
+            AddTriviaTokens(yaml, trivia, GetUncoveredRanges(yaml, tokens));
+            tokens = MergeInSourceOrder(tokens, trivia);
         }
-
-        // The sort must be stable: the scanner emits several empty tokens at the same position (KEY and
-        // BLOCK-MAPPING-START, BLOCK-END and STREAM-END), and their order must not depend on the trivia around them.
-        tokens = [.. tokens.OrderBy(token => token.Span.Start.Index).ThenBy(token => token.Span.End.Index)];
+        else if (!IsInSourceOrder(tokens))
+        {
+            tokens = SortInSourceOrder(tokens);
+        }
 
         var endMark = CreateMark(yaml, yaml.Length);
         var fullSpan = new YamlSourceSpan(new Mark(0, 0, 0), endMark);
@@ -78,12 +80,92 @@ public sealed class YamlSyntaxTree
         writer.Write(Text);
     }
 
-    private static void ValidateYaml(string yaml)
+    /// <summary>Parses <paramref name="yaml"/> to check that it is valid, and returns the tokens the scanner produced.</summary>
+    /// <remarks>
+    /// The parser reads every token of a valid stream, in the order a scanner alone produces them, so the tokens do
+    /// not need to be scanned a second time.
+    /// </remarks>
+    private static List<Token> ValidateYaml(string yaml)
     {
-        var parser = Parser.CreateParser(new StringReader(yaml));
+        var parser = new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml));
+        var tokens = new List<Token>();
+        parser.Scanner.ConsumedTokens = tokens;
         while (parser.MoveNext())
         {
         }
+
+        return tokens;
+    }
+
+    /// <summary>
+    /// Returns the scanner tokens and the trivia tokens ordered by start, then by end. The order is stable, and the
+    /// scanner tokens come before the trivia tokens that have the same position.
+    /// </summary>
+    /// <remarks>
+    /// Each list is usually in source order already, so merging them gives the same result as sorting their
+    /// concatenation, without the cost of a sort.
+    /// </remarks>
+    private static List<YamlSyntaxToken> MergeInSourceOrder(List<YamlSyntaxToken> scannerTokens, List<YamlSyntaxToken> triviaTokens)
+    {
+        if (!IsInSourceOrder(scannerTokens) || !IsInSourceOrder(triviaTokens))
+        {
+            scannerTokens.AddRange(triviaTokens);
+            return SortInSourceOrder(scannerTokens);
+        }
+
+        var result = new List<YamlSyntaxToken>(scannerTokens.Count + triviaTokens.Count);
+        var scannerIndex = 0;
+        var triviaIndex = 0;
+        while (scannerIndex < scannerTokens.Count && triviaIndex < triviaTokens.Count)
+        {
+            // On a tie, the scanner token comes first, as it does in the stable sort of the concatenation.
+            if (CompareSourcePosition(triviaTokens[triviaIndex], scannerTokens[scannerIndex]) < 0)
+            {
+                result.Add(triviaTokens[triviaIndex++]);
+            }
+            else
+            {
+                result.Add(scannerTokens[scannerIndex++]);
+            }
+        }
+
+        for (; scannerIndex < scannerTokens.Count; scannerIndex++)
+        {
+            result.Add(scannerTokens[scannerIndex]);
+        }
+
+        for (; triviaIndex < triviaTokens.Count; triviaIndex++)
+        {
+            result.Add(triviaTokens[triviaIndex]);
+        }
+
+        return result;
+    }
+
+    private static bool IsInSourceOrder(List<YamlSyntaxToken> tokens)
+    {
+        for (var index = 1; index < tokens.Count; index++)
+        {
+            if (CompareSourcePosition(tokens[index - 1], tokens[index]) > 0)
+                return false;
+        }
+
+        return true;
+    }
+
+    private static int CompareSourcePosition(YamlSyntaxToken left, YamlSyntaxToken right)
+    {
+        var result = left.Span.Start.Index.CompareTo(right.Span.Start.Index);
+        return result != 0 ? result : left.Span.End.Index.CompareTo(right.Span.End.Index);
+    }
+
+    /// <remarks>
+    /// The sort must be stable: the scanner emits several empty tokens at the same position (KEY and
+    /// BLOCK-MAPPING-START, BLOCK-END and STREAM-END), and their order must not depend on the trivia around them.
+    /// </remarks>
+    private static List<YamlSyntaxToken> SortInSourceOrder(List<YamlSyntaxToken> tokens)
+    {
+        return [.. tokens.OrderBy(token => token.Span.Start.Index).ThenBy(token => token.Span.End.Index)];
     }
 
     private static YamlSourceSpan BuildNodeSpan(List<YamlSyntaxToken> tokens, YamlSourceSpan fallback)
@@ -114,12 +196,10 @@ public sealed class YamlSyntaxTree
         return fallback;
     }
 
-    private static void AddScannerTokens(string yaml, List<YamlSyntaxToken> target)
+    private static void AddScannerTokens(string yaml, List<Token> scannerTokens, List<YamlSyntaxToken> target)
     {
-        var scanner = new Scanner<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml));
-        while (scanner.MoveNext())
+        foreach (var token in scannerTokens)
         {
-            var token = scanner.Current;
             var start = token.Start;
             var end = token.End;
             var safeStart = Clamp(start.Index, 0, yaml.Length);

@@ -53,10 +53,12 @@ internal static class SuffixArray
             types[i] = current < next || (current == next && types[i + 1]);
         }
 
+        // The text of this level does not change: count its symbols once, and copy the bounds of the buckets from the counts
+        var bounds = CountSymbols(text, length, alphabetSize);
         var buckets = new int[alphabetSize];
 
         // Stage 1: sort the LMS substrings
-        GetBuckets(text, length, buckets, end: true);
+        GetBuckets(bounds, buckets, end: true);
         Array.Fill(sa, -1, 0, length);
         for (var i = 1; i < length; i++)
         {
@@ -66,8 +68,8 @@ internal static class SuffixArray
             }
         }
 
-        InduceL(text, sa, length, buckets, types);
-        InduceS(text, sa, length, buckets, types);
+        InduceL(text, sa, length, bounds, buckets, types);
+        InduceS(text, sa, length, bounds, buckets, types);
 
         // Compact the sorted LMS substrings into the first items
         var lmsCount = 0;
@@ -159,7 +161,7 @@ internal static class SuffixArray
         }
 
         Array.Fill(sa, -1, lmsCount, length - lmsCount);
-        GetBuckets(text, length, buckets, end: true);
+        GetBuckets(bounds, buckets, end: true);
         for (var i = lmsCount - 1; i >= 0; i--)
         {
             var j = sa[i];
@@ -167,33 +169,36 @@ internal static class SuffixArray
             sa[--buckets[text[j]]] = j;
         }
 
-        InduceL(text, sa, length, buckets, types);
-        InduceS(text, sa, length, buckets, types);
+        InduceL(text, sa, length, bounds, buckets, types);
+        InduceS(text, sa, length, bounds, buckets, types);
     }
 
     private static bool IsLms(bool[] types, int index) => index > 0 && types[index] && !types[index - 1];
 
-    private static void GetBuckets<TText>(TText text, int length, int[] buckets, bool end)
+    /// <summary>Returns the bounds of the buckets of the symbols: the bucket of the symbol <c>c</c> is <c>[bounds[c], bounds[c + 1])</c>.</summary>
+    private static int[] CountSymbols<TText>(TText text, int length, int alphabetSize)
         where TText : struct, IText
     {
-        Array.Clear(buckets);
+        var bounds = new int[alphabetSize + 1];
         for (var i = 0; i < length; i++)
         {
-            buckets[text[i]]++;
+            bounds[text[i] + 1]++;
         }
 
-        var sum = 0;
-        for (var i = 0; i < buckets.Length; i++)
+        for (var i = 0; i < alphabetSize; i++)
         {
-            sum += buckets[i];
-            buckets[i] = end ? sum : sum - buckets[i];
+            bounds[i + 1] += bounds[i];
         }
+
+        return bounds;
     }
 
-    private static void InduceL<TText>(TText text, int[] sa, int length, int[] buckets, bool[] types)
+    private static void GetBuckets(int[] bounds, int[] buckets, bool end) => bounds.AsSpan(end ? 1 : 0, buckets.Length).CopyTo(buckets);
+
+    private static void InduceL<TText>(TText text, int[] sa, int length, int[] bounds, int[] buckets, bool[] types)
         where TText : struct, IText
     {
-        GetBuckets(text, length, buckets, end: false);
+        GetBuckets(bounds, buckets, end: false);
         for (var i = 0; i < length; i++)
         {
             var j = sa[i] - 1;
@@ -204,10 +209,10 @@ internal static class SuffixArray
         }
     }
 
-    private static void InduceS<TText>(TText text, int[] sa, int length, int[] buckets, bool[] types)
+    private static void InduceS<TText>(TText text, int[] sa, int length, int[] bounds, int[] buckets, bool[] types)
         where TText : struct, IText
     {
-        GetBuckets(text, length, buckets, end: true);
+        GetBuckets(bounds, buckets, end: true);
         for (var i = length - 1; i >= 0; i--)
         {
             var j = sa[i] - 1;

@@ -86,47 +86,40 @@ internal sealed partial class Ppmd8Model
 
             ref var see = ref MakeEscFreq(numMasked, out var escFreq);
             mc = ref Ctx(_minContext);
-            var stats = mc.Stats;
-            var count = (uint)mc.NumStats + 1;
+            var states = PpmdMemory.States(_memory, mc.Stats, mc.NumStats + 1);
+            var charMask = _charMask;
             uint sum = 0;
-            for (uint j = 0; j < count; j++)
+            for (var j = 0; j < states.Length; j++)
             {
-                var s = stats + (j * StateSize);
-                ref var state = ref St(s);
-                if (IsMasked(state.Symbol))
-                    continue;
-
-                if (state.Symbol == symbol)
+                ref var state = ref states[j];
+                if (state.Symbol == symbol && !IsMasked(state.Symbol))
                 {
                     // The total is the escape frequency and the frequencies of all the symbols that are not masked
                     var low = sum;
                     uint freq = state.Freq;
                     var total = sum + escFreq;
-                    for (var k = j; k < count; k++)
+                    foreach (ref readonly var other in states[j..])
                     {
-                        ref var other = ref St(stats + (k * StateSize));
-                        if (!IsMasked(other.Symbol))
-                        {
-                            total += other.Freq;
-                        }
+                        total += other.Freq & (uint)charMask[other.Symbol];
                     }
 
                     rc.Encode(low, freq, total);
                     see.Update();
-                    _foundState = s;
+                    _foundState = mc.Stats + ((uint)j * StateSize);
                     Update2();
                     return;
                 }
 
-                sum += state.Freq;
+                // The mask of a masked symbol is 0: its frequency is not added
+                sum += state.Freq & (uint)charMask[state.Symbol];
             }
 
             var escapeTotal = sum + escFreq;
             see.Summ = (ushort)(see.Summ + escapeTotal);
             rc.Encode(sum, escapeTotal - sum, escapeTotal);
-            for (uint j = 0; j < count; j++)
+            foreach (ref readonly var state in states)
             {
-                Mask(St(stats + (j * StateSize)).Symbol);
+                charMask[state.Symbol] = 0;
             }
         }
     }

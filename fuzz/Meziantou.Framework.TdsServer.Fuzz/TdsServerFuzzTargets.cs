@@ -296,12 +296,78 @@ public static partial class TdsServerFuzzTargets
         }
 
         FuzzAssert.True(Enum.IsDefined(mode), $"Unexpected encryption mode {mode}");
+        var requestOptions = ReadPreLoginOptions(data);
+        var expectedLength = 0L;
+        foreach (var option in requestOptions)
+        {
+            expectedLength += IsOneBytePreLoginAnswer(option.Token) ? 1 : option.Length;
+        }
+
+        expectedLength += (requestOptions.Count * 5) + 1;
         foreach (var responseMode in (TdsPreLoginEncryptionMode[])[TdsPreLoginEncryptionMode.Off, TdsPreLoginEncryptionMode.On, TdsPreLoginEncryptionMode.NotSupported, TdsPreLoginEncryptionMode.Required])
         {
-            var response = TdsPreLoginMessage.CreateResponse(data, responseMode);
-            FuzzAssert.Equal(data.Length, response.Length, "The response must keep the options of the request");
+            byte[] response;
+            try
+            {
+                response = TdsPreLoginMessage.CreateResponse(data, responseMode);
+            }
+            catch (InvalidDataException)
+            {
+                FuzzAssert.True(expectedLength > ushort.MaxValue, "CreateResponse must answer every request ParseEncryptionMode accepts, unless the response does not fit the 16-bit offsets");
+                return;
+            }
+
+            FuzzAssert.Equal(expectedLength, (long)response.Length, "The response must have the options of the request, and the data of ENCRYPTION and INSTOPT must be 1 byte long");
             FuzzAssert.Equal(responseMode, TdsPreLoginMessage.ParseEncryptionMode(response), "The response must carry the negotiated encryption mode");
+
+            // As SqlClient checks: the options are the ones of the request, the data follows the option table without
+            // gaps, and the server answers INSTOPT with one byte, 0 when the instance name matches.
+            var responseOptions = ReadPreLoginOptions(response);
+            FuzzAssert.Equal(requestOptions.Count, responseOptions.Count, "The response must have the options of the request");
+            var dataOffset = (requestOptions.Count * 5) + 1;
+            for (var i = 0; i < requestOptions.Count; i++)
+            {
+                var requestOption = requestOptions[i];
+                var responseOption = responseOptions[i];
+                FuzzAssert.Equal(requestOption.Token, responseOption.Token, "The response must keep the order of the options");
+                FuzzAssert.Equal(dataOffset, responseOption.Offset, "The option data must follow the option table without gaps");
+                switch (responseOption.Token)
+                {
+                    case 0x01:
+                        FuzzAssert.Equal(1, responseOption.Length, "ENCRYPTION must be 1 byte long");
+                        break;
+
+                    case 0x02:
+                        FuzzAssert.Equal(1, responseOption.Length, "INSTOPT must be 1 byte long");
+                        FuzzAssert.Equal((byte)0, response[responseOption.Offset], "INSTOPT must state that the instance name matches");
+                        break;
+
+                    default:
+                        FuzzAssert.True(
+                            response.AsSpan(responseOption.Offset, responseOption.Length).SequenceEqual(data.Slice(requestOption.Offset, requestOption.Length)),
+                            "The response must repeat the data of the other options");
+                        break;
+                }
+
+                dataOffset += responseOption.Length;
+            }
+
+            FuzzAssert.Equal(response.Length, dataOffset, "The options must describe every byte of the response");
         }
+    }
+
+    private static bool IsOneBytePreLoginAnswer(byte token) => token is 0x01 or 0x02; // ENCRYPTION, INSTOPT
+
+    /// <summary>Reads the option table of a PRELOGIN payload that <see cref="TdsPreLoginMessage.ParseEncryptionMode"/> accepted.</summary>
+    private static List<(byte Token, int Offset, int Length)> ReadPreLoginOptions(ReadOnlySpan<byte> payload)
+    {
+        var options = new List<(byte Token, int Offset, int Length)>();
+        for (var position = 0; payload[position] != 0xFF; position += 5)
+        {
+            options.Add((payload[position], BinaryPrimitives.ReadUInt16BigEndian(payload.Slice(position + 1, 2)), BinaryPrimitives.ReadUInt16BigEndian(payload.Slice(position + 3, 2))));
+        }
+
+        return options;
     }
 
     /// <summary>The input is the SQL text of a SQLBatch request, run against in-memory query roots.</summary>
@@ -1010,6 +1076,29 @@ public static partial class TdsServerFuzzTargets
             0x00, 0x00, 0x1A, 0x00, 0x06, 0x01, 0x00, 0x20, 0x00, 0x01, 0x02, 0x00, 0x21, 0x00, 0x01, 0x03, 0x00, 0x22, 0x00, 0x04, 0x04, 0x00, 0x26, 0x00, 0x01, 0xFF,
             0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
         });
+
+        // The same, with the instance name SALES in INSTOPT, as SqlClient sends it to connect to host\SALES
+        yield return Seed("sqlclient-instance", new byte[]
+        {
+            0x00, 0x00, 0x1A, 0x00, 0x06, 0x01, 0x00, 0x20, 0x00, 0x01, 0x02, 0x00, 0x21, 0x00, 0x06, 0x03, 0x00, 0x27, 0x00, 0x04, 0x04, 0x00, 0x2B, 0x00, 0x01, 0xFF,
+            0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte)'S', (byte)'A', (byte)'L', (byte)'E', (byte)'S', 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        });
+
+        // Two TRACEID options describe the same 60000 bytes: answering them would not fit the 16-bit offsets of the response
+        var overlapping = new byte[16 + 60000];
+        overlapping[0] = 0x01;
+        BinaryPrimitives.WriteUInt16BigEndian(overlapping.AsSpan(1, 2), 16);
+        BinaryPrimitives.WriteUInt16BigEndian(overlapping.AsSpan(3, 2), 1);
+        for (var position = 5; position < 15; position += 5)
+        {
+            overlapping[position] = 0x05;
+            BinaryPrimitives.WriteUInt16BigEndian(overlapping.AsSpan(position + 1, 2), 16);
+            BinaryPrimitives.WriteUInt16BigEndian(overlapping.AsSpan(position + 3, 2), 60000);
+        }
+
+        overlapping[15] = 0xFF;
+        overlapping[16] = 0x02;
+        yield return Seed("overlapping-options", overlapping);
     }
 
     /// <summary>The SQL texts of the query engine tests.</summary>

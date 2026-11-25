@@ -103,6 +103,8 @@ builder.AddTdsServer(options =>
 
 - The responder answers the requests for one instance name, without case sensitivity, and the requests that list the
   instances of the host. It ignores the requests for the dedicated administrator connection (DAC).
+- The client also sends the instance name when it connects. The TCP endpoints accept any instance name, so a client
+  that reaches the port another way, without the SQL Server Browser, connects too.
 - Clients only send their requests to port 1434, and one program can listen on it per address. It fails to start when
   the port is in use, for instance by the SQL Server Browser service of a local SQL Server.
 - Like the TCP endpoints, it binds to the loopback address by default. Pass `bindAddress` to answer the clients of

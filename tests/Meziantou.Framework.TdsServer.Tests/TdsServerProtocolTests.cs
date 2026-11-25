@@ -796,6 +796,64 @@ public sealed class TdsServerProtocolTests
         Assert.Equal(ConnectionState.Open, connection.State);
     }
 
+    [Fact]
+    public async Task TdsServer_PreLogin_AnswersInstanceOptionWithOneByte()
+    {
+        // The client sends the instance name in INSTOPT. SqlClient rejects a response whose INSTOPT is not 1 byte long,
+        // as when it connects through the SQL Server Browser.
+        // VERSION, ENCRYPTION (OFF), INSTOPT ("SALES"), THREADID, MARS
+        byte[] request =
+        [
+            0x00, 0x00, 0x1A, 0x00, 0x06, 0x01, 0x00, 0x20, 0x00, 0x01, 0x02, 0x00, 0x21, 0x00, 0x06, 0x03, 0x00, 0x27, 0x00, 0x04, 0x04, 0x00, 0x2B, 0x00, 0x01, 0xFF,
+            0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00,
+            (byte)'S', (byte)'A', (byte)'L', (byte)'E', (byte)'S', 0x00,
+            0x01, 0x02, 0x03, 0x04,
+            0x00,
+        ];
+
+        var (packetType, payload) = await RawTdsClient.SendPreLoginAsync(request);
+
+        // The data of the options follows the option table without gaps. ENCRYPTION is NOT_SUP, as the server has no
+        // certificate, and INSTOPT is 0: the instance name matches.
+        byte[] expected =
+        [
+            0x00, 0x00, 0x1A, 0x00, 0x06, 0x01, 0x00, 0x20, 0x00, 0x01, 0x02, 0x00, 0x21, 0x00, 0x01, 0x03, 0x00, 0x22, 0x00, 0x04, 0x04, 0x00, 0x26, 0x00, 0x01, 0xFF,
+            0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x02,
+            0x00,
+            0x01, 0x02, 0x03, 0x04,
+            0x00,
+        ];
+        Assert.Equal(0x12, packetType);
+        Assert.Equal(expected, payload);
+    }
+
+    [Fact]
+    public async Task TdsServer_PreLogin_WithResponseLongerThanTheOffsetsAllow_IsRejected()
+    {
+        // Two TRACEID options describe the same 60000 bytes. The response repeats the data of each option, and would
+        // be longer than the 16-bit offsets of the option table can address.
+        var request = new byte[16 + 60000];
+        request[0] = 0x01; // ENCRYPTION
+        BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(1, 2), 16);
+        BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(3, 2), 1);
+        for (var position = 5; position < 15; position += 5)
+        {
+            request[position] = 0x05; // TRACEID
+            BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(position + 1, 2), 16);
+            BinaryPrimitives.WriteUInt16BigEndian(request.AsSpan(position + 3, 2), 60000);
+        }
+
+        request[15] = 0xFF;
+        request[16] = 0x02;
+
+        var (packetType, payload) = await RawTdsClient.SendPreLoginAsync(request);
+
+        Assert.Equal(0x04, packetType); // tabular result
+        Assert.True(payload.AsSpan().IndexOf(Encoding.Unicode.GetBytes("Invalid pre-login packet")) >= 0, "The response should be the pre-login error");
+    }
+
     private static bool IsUdpPortAvailable(int port)
     {
         try

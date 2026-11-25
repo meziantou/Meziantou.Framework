@@ -10,17 +10,16 @@ description: "The results of the web-platform-tests of screen-details, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
-| [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
+| [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **1** | **3** | **0** | **33%** |
+| **All** | **2** | **3** | **0** | **67%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 2
-  - `hardware`: 2
+- **TEST BUG**: 1
 
 ## Stable tests
 
@@ -32,5 +31,5 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`getScreenDetails.tentative.https.window.js`](https://wpt.fyi/results/screen-details/getScreenDetails.tentative.https.window.js) | Fail | 0 / 5 | REQUIRES(hardware) | Window Management API, multiple screens |
-| [`isExtended.tentative.https.window.js`](https://wpt.fyi/results/screen-details/isExtended.tentative.https.window.js) | Fail | 0 / 2 | REQUIRES(hardware) | Window Management API, multiple screens |
+| [`getScreenDetails.tentative.https.window.js`](https://wpt.fyi/results/screen-details/getScreenDetails.tentative.https.window.js) | Timeout | 3 / 5 | TEST BUG | 2 of 5 subtests: the test waits for the `unload` event of the initial about:blank document of a removed iframe, which is not fired (as tested by dom/nodes/insertion-removing-steps/insertion-removing-steps-iframe.window.js); the last subtest does not run after the timeout |
+| [`isExtended.tentative.https.window.js`](https://wpt.fyi/results/screen-details/isExtended.tentative.https.window.js) | Pass | 2 / 2 |  |  |

@@ -658,6 +658,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Scheduler"] = Binding_Scheduler<TAdapter, TValue>.Binding,
             ["Scheduling"] = Binding_Scheduling<TAdapter, TValue>.Binding,
             ["Screen"] = Binding_Screen<TAdapter, TValue>.Binding,
+            ["ScreenDetailed"] = Binding_ScreenDetailed<TAdapter, TValue>.Binding,
+            ["ScreenDetails"] = Binding_ScreenDetails<TAdapter, TValue>.Binding,
             ["ScreenOrientation"] = Binding_ScreenOrientation<TAdapter, TValue>.Binding,
             ["ScriptProcessorNode"] = Binding_ScriptProcessorNode<TAdapter, TValue>.Binding,
             ["ScrollTimeline"] = Binding_ScrollTimeline<TAdapter, TValue>.Binding,
@@ -2871,6 +2873,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow> taskSystem_Threading_Tasks_Task_Dom_PictureInPictureWindow_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PictureInPictureWindow_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ScreenDetails> taskSystem_Threading_Tasks_Task_Dom_ScreenDetails_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ScreenDetails_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationAvailability> taskSystem_Threading_Tasks_Task_Dom_SecurePaymentConfirmationAvailability_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_SecurePaymentConfirmationAvailability_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SecurePaymentConfirmationAvailability(v)));

@@ -23,8 +23,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Posture (https://w3c.github.io/device-posture/), Network Information (https://wicg.github.io/netinfo/), Device Memory
 /// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/), the early detection of
 /// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/), the device
-/// orientation and motion events (https://w3c.github.io/deviceorientation/), WebUSB (https://usb.spec.whatwg.org/) and Web
-/// Bluetooth (https://bluetooth.spec.whatwg.org/).
+/// orientation and motion events (https://w3c.github.io/deviceorientation/), WebUSB (https://usb.spec.whatwg.org/), Web
+/// Bluetooth (https://bluetooth.spec.whatwg.org/) and Window Management (https://w3c.github.io/window-management/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -68,6 +68,7 @@ public sealed class HostDeviceApisTests : IDisposable
             Gamepads = options.Gamepads,
             Usb = options.Usb,
             Bluetooth = options.Bluetooth,
+            Screens = options.Screens,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -1935,6 +1936,133 @@ public sealed class HostDeviceApisTests : IDisposable
     public void Bluetooth_IsOnlyExposedToTheSecureContexts()
     {
         Assert.Equal("false,true", Run(Load("<script>document.title = ['bluetooth' in navigator, typeof BluetoothDevice === 'undefined'].join();</script>", url: "http://example.com/")));
+    }
+
+    // Window Management
+
+    private static PermissionStore GrantWindowManagement()
+    {
+        var permissions = new PermissionStore();
+        permissions.SetState("window-management", PermissionState.Granted);
+        return permissions;
+    }
+
+    [Fact]
+    public async Task WindowManagement_GetScreenDetails_ListsTheScreensOfTheProvider()
+    {
+        #region WebPlatform_Screens
+        // A laptop with an external monitor on its left: the coordinates are relative to the top left corner of the laptop screen
+        var screens = new ScreenProvider();
+        screens.AddScreen(new DeviceScreen(0, 0, 1440, 900) { AvailHeight = 875, IsPrimary = true, IsInternal = true, DevicePixelRatio = 2, Label = "Built-in Retina Display" });
+        screens.AddScreen(new DeviceScreen(-2560, 0, 2560, 1440) { Label = "External Monitor" });
+        var options = new BrowsingContextOptions
+        {
+            Screens = new ScreenOptions { Provider = screens },
+        };
+        #endregion
+
+        options = new BrowsingContextOptions { Screens = options.Screens, Permissions = GrantWindowManagement() };
+        var document = Load("<script>window.log = [];</script>", options);
+        Assert.Equal("true,1440,875|External Monitor,-2560,false|Built-in Retina Display,0,true|Built-in Retina Display,true", await RunAsync(document, """
+            (async () => {
+              const details = await getScreenDetails();
+              log.push([screen.isExtended, screen.width, screen.availHeight].join());
+              for (const s of details.screens) log.push([s.label, s.left, s.isPrimary].join());
+              log.push([details.currentScreen.label, details.currentScreen === details.screens[1] && details === await getScreenDetails()].join());
+              document.title = log.join('|');
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task WindowManagement_WithoutProvider_HasTheScreenOfTheViewport()
+    {
+        var document = Load("<script></script>", new BrowsingContextOptions { Permissions = GrantWindowManagement() });
+
+        Assert.Equal("false,1,true,0,true", await RunAsync(document, """
+            getScreenDetails().then(d => document.title = [
+              screen.isExtended, d.screens.length, d.screens[0].width === screen.width && d.screens[0].height === screen.height,
+              d.currentScreen.left, d.currentScreen.isPrimary].join())
+            """));
+    }
+
+    [Fact]
+    public async Task WindowManagement_PermissionDenied_IsRejectedWithNotAllowedError()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("NotAllowedError", await RunAsync(document, "getScreenDetails().catch(e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public async Task WindowManagement_FullscreenOnAScreen_MovesTheWindow()
+    {
+        var screens = new ScreenProvider();
+        screens.AddScreen(new DeviceScreen(0, 0, 1920, 1080) { IsPrimary = true, Label = "A" });
+        screens.AddScreen(new DeviceScreen(1920, 0, 1280, 1024) { Label = "B" });
+        var document = Load("""
+            <script>
+            window.log = [];
+            getScreenDetails().then(d => {
+              window.details = d;
+              d.oncurrentscreenchange = () => log.push('current ' + d.currentScreen.label);
+            });
+            </script>
+            """, new BrowsingContextOptions { Screens = new ScreenOptions { Provider = screens }, Permissions = GrantWindowManagement() });
+        await RunAsync(document);
+
+        Activate(document);
+        Assert.Equal("1920,0,1280x1024", await RunAsync(document, """
+            document.documentElement.requestFullscreen({ screen: details.screens[1] })
+              .then(() => document.title = [screenX, screenY, outerWidth + 'x' + outerHeight].join())
+            """));
+        Assert.Equal("current B|current A|0,A", await RunAsync(document, """
+            document.exitFullscreen()
+              .then(() => new Promise(resolve => setTimeout(resolve, 0)))
+              .then(() => document.title = [...log, [screenX, details.currentScreen.label].join()].join('|'))
+            """));
+    }
+
+    [Fact]
+    public async Task WindowManagement_ScreenChanges_FireTheEvents()
+    {
+        var screens = new ScreenProvider();
+        var laptop = new DeviceScreen(0, 0, 1920, 1080) { IsPrimary = true, Label = "Laptop" };
+        screens.AddScreen(laptop);
+        var document = Load("""
+            <script>
+            window.log = [];
+            screen.onchange = () => log.push('screen change ' + screen.width);
+            getScreenDetails().then(d => {
+              d.onscreenschange = () => log.push('screens ' + d.screens.length);
+              d.oncurrentscreenchange = () => log.push('current ' + d.currentScreen.label);
+              d.screens[0].onchange = e => log.push('change ' + e.target.label);
+            });
+            </script>
+            """, new BrowsingContextOptions { Screens = new ScreenOptions { Provider = screens }, Permissions = GrantWindowManagement() });
+        await RunAsync(document);
+
+        laptop.Label = "Built-in display";
+        await RunAsync(document);
+        var monitor = new DeviceScreen(1920, 0, 2560, 1440) { Label = "Monitor" };
+        screens.AddScreen(monitor);
+        await RunAsync(document);
+        laptop.Width = 1600;
+        await RunAsync(document);
+        Assert.True(screens.RemoveScreen(monitor));
+        await RunAsync(document);
+
+        Assert.Equal("change Built-in display|current Built-in display|screens 2|change Built-in display|current Built-in display|screen change 1600|screens 1", await RunAsync(document, "document.title = log.join('|')"));
+    }
+
+    [Fact]
+    public async Task WindowManagement_DisplayStateChanges_AreRejectedOutsideOfAnInstalledWebApp()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("InvalidStateError,InvalidStateError,InvalidStateError,InvalidStateError", await RunAsync(document, """
+            Promise.allSettled([maximize(), minimize(), restore(), setResizable(false)]).then(r => document.title = r.map(x => x.reason.name).join())
+            """));
     }
 
     // CPU Performance

@@ -420,6 +420,7 @@ public sealed partial class BrowsingContext : IDisposable
     {
         ClientWindowLeft = Math.Max(0, x);
         ClientWindowTop = Math.Max(0, y);
+        OnClientWindowChanged();
     }
 
     /// <summary>
@@ -442,6 +443,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         EventLoop.RequestRenderingOpportunity(Document);
+        OnClientWindowChanged();
     }
 
     /// <summary>
@@ -462,11 +464,56 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     internal void EnterFullscreen(FullscreenOptions options)
     {
-        if (_isFullscreen || IsDestroyed)
+        if (IsDestroyed)
             return;
 
+        // https://w3c.github.io/window-management/#api-element-requestfullscreen-method-definition-changes: the client window
+        // moves to the target screen, whose size is the size of the viewport, also when it is already fullscreen
+        var target = WindowScreens.GetTargetScreen(Document, options.Screen);
+        if (_isFullscreen)
+        {
+            if (target is { } targetScreen)
+            {
+                PlaceClientWindow(targetScreen.Left, targetScreen.Top);
+                SetFullscreenViewportSize(Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options) ?? new FullscreenViewportSize(targetScreen.Width, targetScreen.Height));
+                OnClientWindowChanged();
+            }
+
+            return;
+        }
+
         _isFullscreen = true;
-        SetFullscreenViewportSize(Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options));
+        _clientWindowPositionBeforeFullscreen = (ClientWindowLeft, ClientWindowTop);
+        if (target is { } screen)
+        {
+            PlaceClientWindow(screen.Left, screen.Top);
+        }
+
+        var size = Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options);
+        SetFullscreenViewportSize(size ?? (target is { } fullscreenScreen ? new FullscreenViewportSize(fullscreenScreen.Width, fullscreenScreen.Height) : null));
+        OnClientWindowChanged();
+    }
+
+    /// <summary>The position of the client window before it was moved to the screen of a fullscreen request.</summary>
+    private (int Left, int Top)? _clientWindowPositionBeforeFullscreen;
+
+    /// <summary>Places the client window at a position of the virtual screen arrangement (a screen, whose coordinates may be negative).</summary>
+    private void PlaceClientWindow(int left, int top)
+    {
+        ClientWindowLeft = left;
+        ClientWindowTop = top;
+    }
+
+    /// <summary>The client window moved or was resized: the windows of the browsing context compare their current screen with the one they observed.</summary>
+    internal void OnClientWindowChanged()
+    {
+        if (IsDestroyed)
+            return;
+
+        foreach (var navigable in GetInclusiveDescendantNavigables())
+        {
+            navigable.Document.RelevantWindow?.ScreensStateOrNull?.QueueUpdate();
+        }
     }
 
     /// <summary>https://fullscreen.spec.whatwg.org/#exit-fullscreen: "resize doc's viewport to its "normal" dimensions".</summary>
@@ -485,7 +532,14 @@ public sealed partial class BrowsingContext : IDisposable
             ScreenOrientationModel.FullyUnlock(Document);
         }
 
+        if (_clientWindowPositionBeforeFullscreen is { } position)
+        {
+            PlaceClientWindow(position.Left, position.Top);
+            _clientWindowPositionBeforeFullscreen = null;
+        }
+
         SetFullscreenViewportSize(null);
+        OnClientWindowChanged();
     }
 
     private ViewportOptions? _viewport;
@@ -526,6 +580,7 @@ public sealed partial class BrowsingContext : IDisposable
                 }
 
                 EventLoop.RequestRenderingOpportunity(Document);
+                OnClientWindowChanged();
             }
         }
     }

@@ -15,7 +15,7 @@ styles and the layout follow the new viewport.
 | --- | --- |
 | [Width](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.Width), [Height](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.Height) | The size of the viewport, in CSS pixels |
 | [DevicePixelRatio](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.DevicePixelRatio) | The number of device pixels per CSS pixel: the `resolution` media feature and the size of the screenshots |
-| [ScreenWidth](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenWidth), [ScreenHeight](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenHeight) | The size of the screen (`device-width`, `screen.width`): the viewport by default |
+| [ScreenWidth](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenWidth), [ScreenHeight](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenHeight) | The size of the screen (`device-width`, and `screen.width` without [Screens](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Screens)): the viewport by default |
 | [IsMobile](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.IsMobile), [HasTouch](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.HasTouch) | A mobile device: the `viewport` meta element sets the layout viewport; a touch screen: `pointer: coarse`, `hover: none` |
 | [MediaType](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.MediaType) | `screen` (default) or `print` |
 | [PreferredColorScheme](cref:Meziantou.Framework.WebPlatform.Dom.PreferredColorScheme), [PreferredContrast](cref:Meziantou.Framework.WebPlatform.Dom.PreferredContrast) | `prefers-color-scheme`, `prefers-contrast` |

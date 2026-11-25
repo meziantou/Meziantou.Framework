@@ -562,6 +562,33 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
         var result = o.GetSelection(); return r.Wrap(result);
     }
+    private static TValue Op_getScreenDetails(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.GetScreenDetails(); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+    }
+    private static TValue Op_minimize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.Minimize(); return r.ToPromise(result);
+    }
+    private static TValue Op_maximize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.Maximize(); return r.ToPromise(result);
+    }
+    private static TValue Op_restore(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.Restore(); return r.ToPromise(result);
+    }
+    private static TValue Op_setResizable(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("setResizable", 1, a.Length);
+        var a0 = r.ToBoolean(a[0]);
+        var result = o.SetResizable(a0); return r.ToPromise(result);
+    }
     private static TValue Op_reportError(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
@@ -889,6 +916,11 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineOperation(instanceTarget, "requestIdleCallback", 1, Op_requestIdleCallback);
         r.DefineOperation(instanceTarget, "cancelIdleCallback", 1, Op_cancelIdleCallback);
         r.DefineOperation(instanceTarget, "getSelection", 0, Op_getSelection);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "getScreenDetails", 0, Op_getScreenDetails, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "minimize", 0, Op_minimize, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "maximize", 0, Op_maximize, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "restore", 0, Op_restore, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setResizable", 1, Op_setResizable, returnsPromise: true);
         r.DefineOperation(instanceTarget, "reportError", 1, Op_reportError);
         r.DefineOperation(instanceTarget, "btoa", 1, Op_btoa);
         r.DefineOperation(instanceTarget, "atob", 1, Op_atob);

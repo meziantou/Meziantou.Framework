@@ -737,6 +737,15 @@ public sealed partial record BrowsingContextOptions
     public BluetoothOptions? Bluetooth { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the Window Management API (https://w3c.github.io/window-management/, <c>window.screen</c>,
+    /// <c>window.getScreenDetails()</c> and the fullscreen requests on a screen): <see cref="ScreenOptions.Provider"/> lists
+    /// the screens of the device and their arrangement. The <c>window-management</c> permission is checked with
+    /// <see cref="Permissions"/> and <see cref="RequestPermission"/>. The default is null: the device has one screen, the
+    /// size of the viewport.
+    /// </summary>
+    public ScreenOptions? Screens { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

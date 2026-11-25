@@ -3983,6 +3983,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? SameDocumentNavigated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ScreenOrientationOptions? ScreenOrientation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ScreenOptions? Screens { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DeviceSensorsOptions? Sensors { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend? ServiceWorkers { get => throw null; init { } }
@@ -5368,6 +5369,24 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class DeviceSensor
     {
+    public sealed class DeviceScreen
+    {
+        public int AvailHeight { get => throw null; set { } }
+        public int AvailLeft { get => throw null; set { } }
+        public int AvailTop { get => throw null; set { } }
+        public int AvailWidth { get => throw null; set { } }
+        public uint ColorDepth { get => throw null; set { } }
+        public float DevicePixelRatio { get => throw null; set { } }
+        public int Height { get => throw null; set { } }
+        public bool IsInternal { get => throw null; set { } }
+        public bool IsPrimary { get => throw null; set { } }
+        public string Label { get => throw null; set { } }
+        public int Left { get => throw null; set { } }
+        public int Top { get => throw null; set { } }
+        public int Width { get => throw null; set { } }
+        public DeviceScreen(int left, int top, int width, int height) { }
+    }
+
         public bool CanProvideReadings { get => throw null; }
         public bool IsRemoved { get => throw null; }
         public double MaximumSamplingFrequency { get => throw null; }
@@ -7116,6 +7135,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class FocusEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
     {
+    public enum FlowControlType
+    {
+        None = 0,
+        Hardware = 1,
+    }
+
         public Meziantou.Framework.WebPlatform.Dom.EventTarget? RelatedTarget { get => throw null; }
         public FocusEvent(string type, Meziantou.Framework.WebPlatform.Dom.FocusEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.UIEventInit)) { }
     }
@@ -7255,6 +7280,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI NavigationUI { get => throw null; init { } }
     }
 
+        public Meziantou.Framework.WebPlatform.Dom.ScreenDetailed? Screen { get => throw null; init { } }
     public readonly struct FullscreenViewportSize : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.FullscreenViewportSize>
     {
         public double Height { get => throw null; init { } }
@@ -12086,6 +12112,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string UserHint { get => throw null; set { } }
         public System.Threading.Tasks.Task EnableDelegations(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDelegation> delegations) => throw null;
     }
+    public enum ParityType
+    {
+        None = 0,
+        Even = 1,
+        Odd = 2,
+    }
+
 
     public sealed class PaymentMethodChangeEvent : Meziantou.Framework.WebPlatform.Dom.PaymentRequestUpdateEvent
     {
@@ -13699,7 +13732,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool IsInputPending(Meziantou.Framework.WebPlatform.Dom.IsInputPendingOptions? isInputPendingOptions = null) => throw null;
     }
 
-    public sealed class Screen
+    public class Screen : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public int AvailHeight { get => throw null; }
         public int AvailWidth { get => throw null; }
@@ -13882,17 +13915,45 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         Enforce = 0,
         Report = 1,
+        public bool IsExtended { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
     }
 
     public sealed class SecurityPolicyViolationEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
     {
         public string BlockedUri { get => throw null; init { } }
+    public sealed class ScreenDetailed : Meziantou.Framework.WebPlatform.Dom.Screen
+    {
+        public int AvailLeft { get => throw null; }
+        public int AvailTop { get => throw null; }
+        public float DevicePixelRatio { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceScreen DeviceScreen { get => throw null; }
+        public bool IsInternal { get => throw null; }
+        public bool IsPrimary { get => throw null; }
+        public string Label { get => throw null; }
+        public int Left { get => throw null; }
+        public int Top { get => throw null; }
+    }
+
+    public sealed class ScreenDetails : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ScreenDetailed? CurrentScreen { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCurrentScreenChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnScreensChange { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ScreenDetailed> Screens { get => throw null; }
+    }
+
         public uint ColumnNumber { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.SecurityPolicyViolationEventDisposition Disposition { get => throw null; init { } }
         public string DocumentUri { get => throw null; init { } }
         public string EffectiveDirective { get => throw null; init { } }
         public uint LineNumber { get => throw null; init { } }
         public string OriginalPolicy { get => throw null; init { } }
+    public sealed class ScreenOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ScreenProvider? Provider { get => throw null; init { } }
+    }
+
         public string Referrer { get => throw null; init { } }
         public string Sample { get => throw null; init { } }
         public string SourceFile { get => throw null; init { } }
@@ -13923,6 +13984,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Modify(string? alter = null, string? direction = null, string? granularity = null) { }
         public void RemoveAllRanges() { }
         public void RemoveRange(Meziantou.Framework.WebPlatform.Dom.Range range) { }
+    public sealed class ScreenProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DeviceScreen> Screens { get => throw null; }
+        public void AddScreen(Meziantou.Framework.WebPlatform.Dom.DeviceScreen screen) { }
+        public bool RemoveScreen(Meziantou.Framework.WebPlatform.Dom.DeviceScreen screen) => throw null;
+    }
+
         public void SelectAllChildren(Meziantou.Framework.WebPlatform.Dom.Node node) { }
         public void SetBaseAndExtent(Meziantou.Framework.WebPlatform.Dom.Node anchorNode, uint anchorOffset, Meziantou.Framework.WebPlatform.Dom.Node focusNode, uint focusOffset) { }
         public void SetPosition(Meziantou.Framework.WebPlatform.Dom.Node? node, uint offset = 0U) { }
@@ -17951,8 +18019,11 @@ namespace Meziantou.Framework.WebPlatform.Dom.FileApi
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.FileApi.File? Item(uint index) => throw null;
         Meziantou.Framework.WebPlatform.Dom.FileApi.File System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FileApi.File>.get_Item(int index) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.ScreenDetails> GetScreenDetails() => throw null;
     }
 
+        public System.Threading.Tasks.Task Maximize() => throw null;
+        public System.Threading.Tasks.Task Minimize() => throw null;
     public sealed class FilePropertyBag : Meziantou.Framework.WebPlatform.Dom.FileApi.BlobPropertyBag
     {
         public long? LastModified { get => throw null; init { } }
@@ -17966,12 +18037,14 @@ namespace Meziantou.Framework.WebPlatform.Dom.FileApi
         public Meziantou.Framework.WebPlatform.Dom.DomException? Error { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAbort { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
+        public System.Threading.Tasks.Task Restore() => throw null;
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLoad { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLoadEnd { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLoadStart { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnProgress { get => throw null; set { } }
         public ushort ReadyState { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.FileApi.FileReaderResult? Result { get => throw null; }
+        public System.Threading.Tasks.Task SetResizable(bool resizable) => throw null;
         public void Abort() { }
         public void ReadAsArrayBuffer(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob blob) { }
         public void ReadAsBinaryString(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob blob) { }

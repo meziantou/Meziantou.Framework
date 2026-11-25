@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screens, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -35,6 +35,7 @@ the device in a test, or to connect the API to your application.
 | [Gamepads](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Gamepads) | `navigator.getGamepads()`, the `gamepadconnected` and `gamepaddisconnected` events | No gamepad is connected |
 | [Usb](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Usb) | `navigator.usb` (WebUSB), in the pages and the workers | No USB device is connected |
 | [Bluetooth](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Bluetooth) | `navigator.bluetooth` (Web Bluetooth) | There is no Bluetooth adapter |
+| [Screens](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Screens) | `window.screen`, `window.getScreenDetails()` and the fullscreen requests on a screen (Window Management) | The device has one screen, the size of the viewport |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -579,6 +580,44 @@ var options = new BrowsingContextOptions
 };
 ```
 <!-- endref -->
+
+## Screens
+
+`window.screen` and `window.getScreenDetails()` (Window Management) use the screens of a
+[ScreenProvider](cref:Meziantou.Framework.WebPlatform.Dom.ScreenProvider). Each
+[DeviceScreen](cref:Meziantou.Framework.WebPlatform.Dom.DeviceScreen) has a position in the virtual screen arrangement
+(the coordinates may be negative), a size, an available area (without the taskbars of the system), a device pixel ratio
+and a label:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Screens;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A laptop with an external monitor on its left: the coordinates are relative to the top left corner of the laptop screen
+var screens = new ScreenProvider();
+screens.AddScreen(new DeviceScreen(0, 0, 1440, 900) { AvailHeight = 875, IsPrimary = true, IsInternal = true, DevicePixelRatio = 2, Label = "Built-in Retina Display" });
+screens.AddScreen(new DeviceScreen(-2560, 0, 2560, 1440) { Label = "External Monitor" });
+var options = new BrowsingContextOptions
+{
+    Screens = new ScreenOptions { Provider = screens },
+};
+```
+<!-- endref -->
+
+- The current screen of a window is the screen with the largest intersection with its client window (`screenX`,
+  `screenY`, `outerWidth`, `outerHeight`), or the primary screen: `window.screen` reports its size, and
+  `screen.isExtended` is true when there are several screens. Without provider, the device has one screen, the size of
+  the viewport ([ScreenWidth](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenWidth)).
+- `getScreenDetails()` needs the `window-management` permission
+  ([Permissions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Permissions) or
+  [RequestPermission](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.RequestPermission)) and the
+  `window-management` permissions policy feature. Its `screens` are sorted by position, and `currentScreen` is one of
+  them.
+- Adding, removing and changing the screens fire the `screenschange`, `currentscreenchange` and `change` events, and so
+  does moving the client window to another screen.
+- `element.requestFullscreen({ screen })` moves the client window to the screen, and the viewport gets the size of the
+  screen (unless [EnterFullscreen](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.EnterFullscreen)
+  returns another size); a request on another screen while fullscreen moves it again, and exiting fullscreen puts it back.
+- The windows are not installed web applications: `maximize()`, `minimize()`, `restore()` and `setResizable()` fail with an
+  `InvalidStateError`, as in Chromium. The `display-state` and `resizable` media features are not supported.
 
 ## Screen orientation
 

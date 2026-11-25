@@ -10,16 +10,16 @@ description: "The results of the web-platform-tests of screen-capture, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 12 | 13 | 0 | 92% |
-| [Tentative](#tentative-tests) | 1 | 2 | 0 | 50% |
+| [Tentative](#tentative-tests) | 2 | 2 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **13** | **15** | **0** | **87%** |
+| **All** | **14** | **15** | **0** | **93%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -44,4 +44,4 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`getallscreensmedia-exposure.tentative.https.window.js`](https://wpt.fyi/results/screen-capture/getallscreensmedia-exposure.tentative.https.window.js) | Pass | 2 / 2 |  |  |
-| [`tentative/getdisplaymedia-captured-surface-resolution.https.html`](https://wpt.fyi/results/screen-capture/tentative/getdisplaymedia-captured-surface-resolution.https.html) | Fail | 2 / 6 | NOT IMPLEMENTED | the Window Management API (`window.getScreenDetails()`), which the test uses to compare the size of the captured screen |
+| [`tentative/getdisplaymedia-captured-surface-resolution.https.html`](https://wpt.fyi/results/screen-capture/tentative/getdisplaymedia-captured-surface-resolution.https.html) | Pass | 6 / 6 |  |  |

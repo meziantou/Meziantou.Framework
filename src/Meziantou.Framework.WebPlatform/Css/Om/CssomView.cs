@@ -768,12 +768,15 @@ public sealed partial class Range
 }
 
 /// <summary>
-/// The screen of the output device (https://drafts.csswg.org/cssom-view/#the-screen-interface): the size of the viewport of
-/// the top-level browsing context (see <see cref="ViewportOptions"/>), or 0 when the window has no browsing context.
+/// The screen of the output device (https://drafts.csswg.org/cssom-view/#the-screen-interface): the current screen of the
+/// window (https://w3c.github.io/window-management/#current-screen), one of the screens of
+/// <see cref="BrowsingContextOptions.Screens"/>, or the size of the viewport of the top-level browsing context without
+/// screens (see <see cref="ViewportOptions"/>); 0 when the window has no browsing context. As required by the Window
+/// Management API, it is an <see cref="EventTarget"/>.
 /// </summary>
 /// <seealso href="https://drafts.csswg.org/cssom-view/#screen"/>
 [IdlInterface("Screen", "https://drafts.csswg.org/cssom-view/#screen")]
-public sealed partial class Screen : IRealmBoundPlatformObject
+public partial class Screen : EventTarget, IRealmBoundPlatformObject
 {
     private readonly Window _window;
 
@@ -784,30 +787,35 @@ public sealed partial class Screen : IRealmBoundPlatformObject
 
     Window? IRealmBoundPlatformObject.RealmWindow => _window;
 
-    /// <summary>Gets the available width of the screen (https://drafts.csswg.org/cssom-view/#dom-screen-availwidth): the width of the screen.</summary>
+    internal override GlobalScope? RelevantGlobal => _window;
+
+    /// <summary>Gets the available width of the screen (https://drafts.csswg.org/cssom-view/#dom-screen-availwidth): the width of the screen without the taskbars of the system.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-availwidth"/>
     [IdlMember("availWidth", "https://drafts.csswg.org/cssom-view/#dom-screen-availwidth")]
-    public int AvailWidth => Width;
+    public int AvailWidth => Values.AvailWidth;
 
-    /// <summary>Gets the available height of the screen (https://drafts.csswg.org/cssom-view/#dom-screen-availheight): the height of the screen.</summary>
+    /// <summary>Gets the available height of the screen (https://drafts.csswg.org/cssom-view/#dom-screen-availheight): see <see cref="AvailWidth"/>.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-availheight"/>
     [IdlMember("availHeight", "https://drafts.csswg.org/cssom-view/#dom-screen-availheight")]
-    public int AvailHeight => Height;
+    public int AvailHeight => Values.AvailHeight;
 
     /// <summary>Gets the width of the screen in CSS pixels (https://drafts.csswg.org/cssom-view/#dom-screen-width).</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-width"/>
     [IdlMember("width", "https://drafts.csswg.org/cssom-view/#dom-screen-width")]
-    public int Width => _window.BrowsingContext is null ? 0 : (int)StyleEngine.CreateEnvironment(_window.Document).DeviceWidth;
+    public int Width => Values.Width;
 
     /// <summary>Gets the height of the screen in CSS pixels (https://drafts.csswg.org/cssom-view/#dom-screen-height).</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-height"/>
     [IdlMember("height", "https://drafts.csswg.org/cssom-view/#dom-screen-height")]
-    public int Height => _window.BrowsingContext is null ? 0 : (int)StyleEngine.CreateEnvironment(_window.Document).DeviceHeight;
+    public int Height => Values.Height;
 
-    /// <summary>Gets the number of bits used to represent the colors (https://drafts.csswg.org/cssom-view/#dom-screen-colordepth): 24, as recommended when it is unknown.</summary>
+    /// <summary>Gets the number of bits used to represent the colors (https://drafts.csswg.org/cssom-view/#dom-screen-colordepth): 24 by default, as recommended when it is unknown.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-colordepth"/>
     [IdlMember("colorDepth", "https://drafts.csswg.org/cssom-view/#dom-screen-colordepth")]
-    public uint ColorDepth => 24;
+    public uint ColorDepth => Values.ColorDepth;
+
+    /// <summary>The properties of the screen: the ones of the current screen of the window (a screen of size 0 without browsing context).</summary>
+    private protected virtual ScreenValues Values => _window.BrowsingContext is null ? WindowScreens.EmptyScreenValues : _window.GetScreensState().GetCurrentValues();
 
     /// <summary>Gets the number of bits used to represent the colors (https://drafts.csswg.org/cssom-view/#dom-screen-pixeldepth): <see cref="ColorDepth"/>.</summary>
     /// <seealso href="https://drafts.csswg.org/cssom-view/#dom-screen-pixeldepth"/>

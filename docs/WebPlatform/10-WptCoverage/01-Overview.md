@@ -49,21 +49,21 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 28,048 | 30,158 | 80 | 93% |
-| [Tentative](#tentative-tests) | 1,676 | 3,073 | 174 | 58% |
+| [Stable](#stable-tests) | 28,061 | 30,158 | 80 | 93% |
+| [Tentative](#tentative-tests) | 1,684 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,693** | **65,062** | **326** | **94%** |
+| **All** | **60,714** | **65,062** | **326** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 150
-- **TEST BUG**: 1,126
-- **NOT IMPLEMENTED**: 2,805
-- **REQUIRES**: 220
-  - `hardware`: 38
+- **TEST BUG**: 1,128
+- **NOT IMPLEMENTED**: 2,801
+- **REQUIRES**: 201
+  - `hardware`: 19
   - `layout`: 22
   - `media`: 16
   - `user-input`: 144
@@ -186,7 +186,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`css/css-writing-modes`](css/css-writing-modes.md) | 82 | 85 | 0 | 96% |
 | [`css/CSS2`](css/CSS2.md) | 74 | 74 | 0 | 100% |
 | [`css/cssom`](css/cssom.md) | 259 | 265 | 0 | 98% |
-| [`css/cssom-view`](css/cssom-view.md) | 221 | 234 | 0 | 94% |
+| [`css/cssom-view`](css/cssom-view.md) | 220 | 234 | 0 | 94% |
 | [`css/fetching`](css/fetching.md) | 1 | 1 | 0 | 100% |
 | [`css/fill-stroke`](css/fill-stroke.md) | 5 | 8 | 0 | 63% |
 | [`css/filter-effects`](css/filter-effects.md) | 38 | 38 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **28,048** | **30,158** | **80** | **93%** |
+| **Total (341 sections)** | **28,061** | **30,158** | **80** | **93%** |
 
 ## Tentative tests
 
@@ -498,7 +498,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`fetch`](fetch.md#tentative-tests) | 48 | 78 | 0 | 62% |
 | [`font-access`](font-access.md#tentative-tests) | 0 | 6 | 0 | 0% |
 | [`fs`](fs.md#tentative-tests) | 2 | 8 | 0 | 25% |
-| [`fullscreen`](fullscreen.md#tentative-tests) | 2 | 3 | 0 | 67% |
+| [`fullscreen`](fullscreen.md#tentative-tests) | 3 | 3 | 0 | 100% |
 | [`hsts`](hsts.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`html-aam`](html-aam.md#tentative-tests) | 8 | 9 | 0 | 89% |
 | [`html/anonymous-iframe`](html/anonymous-iframe.md#tentative-tests) | 17 | 18 | 0 | 94% |
@@ -546,8 +546,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`resource-timing`](resource-timing.md#tentative-tests) | 30 | 33 | 0 | 91% |
 | [`sanitizer-api`](sanitizer-api.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`scheduler`](scheduler.md#tentative-tests) | 15 | 15 | 0 | 100% |
-| [`screen-capture`](screen-capture.md#tentative-tests) | 1 | 2 | 0 | 50% |
-| [`screen-details`](screen-details.md#tentative-tests) | 0 | 2 | 0 | 0% |
+| [`screen-capture`](screen-capture.md#tentative-tests) | 2 | 2 | 0 | 100% |
+| [`screen-details`](screen-details.md#tentative-tests) | 1 | 2 | 0 | 50% |
 | [`scroll-animations`](scroll-animations.md#tentative-tests) | 41 | 79 | 0 | 52% |
 | [`scroll-performance-timing`](scroll-performance-timing.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`secure-contexts`](secure-contexts.md#tentative-tests) | 2 | 2 | 0 | 100% |
@@ -585,11 +585,11 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`webrtc-encoded-transform`](webrtc-encoded-transform.md#tentative-tests) | 0 | 18 | 0 | 0% |
 | [`websockets`](websockets.md#tentative-tests) | 9 | 12 | 0 | 75% |
 | [`webtransport`](webtransport.md#tentative-tests) | 0 | 2 | 0 | 0% |
-| [`window-management`](window-management.md#tentative-tests) | 0 | 5 | 0 | 0% |
+| [`window-management`](window-management.md#tentative-tests) | 5 | 5 | 0 | 100% |
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 2 | 2 | 0 | 100% |
-| **Total (166 sections)** | **1,676** | **3,073** | **174** | **58%** |
+| **Total (166 sections)** | **1,684** | **3,073** | **174** | **58%** |
 
 ## Reftests
 

@@ -139,6 +139,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.FragmentResultOptions Defaults_Dom_FragmentResultOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.FullscreenOptions Defaults_Dom_FullscreenOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions Defaults_Dom_GyroscopeSensorOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions Defaults_Dom_IdbGetAllOptions = new();
@@ -2256,6 +2258,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var result = r.CreateObject();
         r.SetMember(result, "keyboardLock", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FullscreenKeyboardLock(value.KeyboardLock)));
         r.SetMember(result, "navigationUI", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FullscreenNavigationUI(value.NavigationUI)));
+        if (value.Screen is not null) r.SetMember(result, "screen", r.Wrap(value.Screen));
         return result;
     }
 
@@ -9995,10 +9998,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"none" : r.ToEnumerationValue(m0_value, "FullscreenKeyboardLock", WebIdlHelpers<TAdapter, TValue>.Enum_FullscreenKeyboardLock_Values);
         var m1_value = r.GetDictionaryMember(value, "navigationUI");
         var m1 = r.Adapter.IsUndefined(m1_value) ? (string)"auto" : r.ToEnumerationValue(m1_value, "FullscreenNavigationUI", WebIdlHelpers<TAdapter, TValue>.Enum_FullscreenNavigationUI_Values);
+        var m2_value = r.GetDictionaryMember(value, "screen");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (global::Meziantou.Framework.WebPlatform.Dom.ScreenDetailed?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.ScreenDetailed>(m2_value, "ScreenDetailed") : default;
         return new global::Meziantou.Framework.WebPlatform.Dom.FullscreenOptions
         {
             KeyboardLock = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_FullscreenKeyboardLock(m0),
             NavigationUI = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_FullscreenNavigationUI(m1),
+            Screen = m2_present ? m2 : Defaults_Dom_FullscreenOptions.Screen,
         };
     }
 

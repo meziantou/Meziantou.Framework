@@ -317,6 +317,10 @@ internal sealed partial class WptTestRunner
                 // The simulated Bluetooth adapter of test_driver.bidi.bluetooth
                 Bluetooth = new BluetoothOptions { Provider = _bluetooth },
 
+                // Two screens side by side for the tests of the Window Management API (the other tests have one screen, the
+                // size of the viewport)
+                Screens = _test.RelativePath.StartsWith("window-management/", StringComparison.Ordinal) ? new ScreenOptions { Provider = CreateWindowManagementScreens() } : null,
+
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
 
@@ -472,6 +476,15 @@ internal sealed partial class WptTestRunner
     }
 
     private static readonly ViewportOptions DefaultViewport = new() { SmoothUserScrolling = true };
+
+    /// <summary>The screens of the Window Management tests: a primary internal screen with a taskbar, and an external screen on its right.</summary>
+    private static ScreenProvider CreateWindowManagementScreens()
+    {
+        var provider = new ScreenProvider();
+        provider.AddScreen(new DeviceScreen(0, 0, 1920, 1080) { AvailHeight = 1040, IsPrimary = true, IsInternal = true, Label = "Built-in display" });
+        provider.AddScreen(new DeviceScreen(1920, 0, 1280, 1024) { DevicePixelRatio = 2, Label = "External display" });
+        return provider;
+    }
 
     /// <summary>
     /// The HTTPS upgrades of the tests of the https-upgrades directory (https://github.com/whatwg/fetch/pull/1655), as

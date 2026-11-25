@@ -146,6 +146,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-webusb", WebUsb) { Seeds = GetWebUsbSeeds },
         new("webplatform-bluetooth-uuid", data => BluetoothUuidTarget(FuzzText.Decode(data))) { Seeds = GetBluetoothUuidSeeds, Dictionary = BluetoothUuidTokens },
         new("webplatform-bluetooth-request-device", BluetoothRequestDeviceTarget) { Seeds = GetBluetoothRequestDeviceSeeds, Dictionary = BluetoothRequestDeviceTokens },
+        new("webplatform-screen-details", ScreenDetailsTarget) { Seeds = GetScreenDetailsSeeds },
     ];
 
     /// <summary>

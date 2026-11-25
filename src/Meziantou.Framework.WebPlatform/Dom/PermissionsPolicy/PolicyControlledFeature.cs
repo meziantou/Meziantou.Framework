@@ -139,6 +139,9 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature WebShare { get; } = new("web-share", isAllowedForAllByDefault: false);
 
+    /// <summary>https://w3c.github.io/window-management/#api-permission-policy-integration</summary>
+    public static PolicyControlledFeature WindowManagement { get; } = new("window-management", isAllowedForAllByDefault: false);
+
     /// <summary>
     /// The supported features (https://w3c.github.io/webappsec-permissions-policy/#supported-features), in the order of
     /// <c>PermissionsPolicy.features()</c>: the features that the library enforces, and features whose API is not implemented
@@ -197,6 +200,7 @@ internal sealed partial class PolicyControlledFeature
         Unload,
         new("usb", isAllowedForAllByDefault: false),
         WebShare,
+        WindowManagement,
         new("xr-spatial-tracking", isAllowedForAllByDefault: false),
     ];
 

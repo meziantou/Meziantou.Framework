@@ -3731,6 +3731,18 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   are delayed in a prerendering document. Not implemented: the advertisements (`watchAdvertisements()` rejects with a
   `NotSupportedError`; `BluetoothAdvertisingEvent`, the data maps and the scanning API), `referringDevice` (always null),
   `BluetoothPermissionResult` and the `bluetooth` permission of the Permissions API, and the service changed events.
+- **Window Management** ([Window Management](https://w3c.github.io/window-management/)): `window.getScreenDetails()`
+  (`ScreenDetails`, `ScreenDetailed`, the `screenschange` and `currentscreenchange` events), `screen.isExtended` and the
+  `change` event of `Screen` (which derives from `EventTarget`, as the specification requires), on the `DeviceScreen`
+  objects of `Screens.Provider` (one screen, the size of the viewport, without provider). The current screen has the
+  largest intersection with the client window; the screens are sorted by position. `getScreenDetails()` requests the
+  `window-management` permission and checks the permissions policy feature (default allowlist `self`), and rejects with
+  an `InvalidStateError` for a window without browsing context (as in Chromium, whose cached `ScreenDetails` then has no
+  screen). `requestFullscreen({ screen })` moves the client window to the screen and gives the viewport its size, also
+  while fullscreen; exiting fullscreen moves it back. `maximize()`, `minimize()`, `restore()` and `setResizable()` reject
+  with an `InvalidStateError` (no installed web application, as in Chromium). Not implemented: the `display-state` and
+  `resizable` media features, and the waiver of the transient activation of `window.open()` after a fullscreen request
+  on a screen (the popups do not need an activation).
 - **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
   steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
   `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the

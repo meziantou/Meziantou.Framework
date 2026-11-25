@@ -227,6 +227,15 @@ public sealed class MimeMessageTests
         Assert.Equal(address, MailboxAddress.Parse(formatted)?.Address);
     }
 
+    [Theory]
+    [InlineData("@route:alice@example.com", "alice@example.com")]
+    [InlineData("@a>;b:", "")]
+    public void Address_FormatObsoleteRoute(string address, string expected)
+    {
+        // In angle brackets, @...: is an obsolete route that the reader removes: only the address after it is written
+        Assert.Equal(expected, MailboxAddress.FormatList([new MailboxAddress(name: null, address)]));
+    }
+
     [Fact]
     public void Load_DeepNesting_IsLimited()
     {

@@ -1,15 +1,14 @@
 name: Documentation
 
 # The API pages are generated from the packages of the checked-out commit, so the site is rebuilt on every push to
-# main. Pull requests only build it when the documentation or its build changes.
+# main. Pull requests, including the stacked ones whose base is not main, only build it when the documentation or its
+# build changes.
 on:
   workflow_dispatch:
   push:
     branches:
       - main
   pull_request:
-    branches:
-      - main
     paths:
       - 'docs/**'
       - 'docgen.json'

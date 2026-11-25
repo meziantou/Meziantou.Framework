@@ -1,224 +1,153 @@
 {
   "bluetooth/bidi/adapter/adapter-absent-getAvailability.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/adapter/adapter-powered-off-getAvailability.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/adapter/adapter-powered-on-getAvailability.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/adapter/cross-origin-iframe-getAvailability.sub.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/characteristicProperties.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptor/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptor/gen-descriptor-get-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptor/gen-service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptors/gen-characteristic-is-removed-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptors/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptors/gen-descriptor-get-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptors/gen-service-is-removed-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/getDescriptors/gen-service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/notifications/characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/notifications/service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/add-multiple-event-listeners.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/event-is-fired.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/read-succeeds.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/read-updates-value.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/readValue/service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/service-same-from-2-characteristics.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/service-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/startNotifications/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValue/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithResponse/characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithResponse/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithResponse/service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithResponse/write-succeeds.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithoutResponse/characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithoutResponse/gen-characteristic-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/characteristic/writeValueWithoutResponse/service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/descriptor/readValue/gen-service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/descriptor/readValue/read-succeeds.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/descriptor/writeValue/gen-service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/device/forget/connect-after-forget.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/device/forget/getDevices.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/device/gattserverdisconnected-event/disconnected.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/device/gattserverdisconnected-event/disconnected_gc.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/device/gattserverdisconnected-event/one-event-per-disconnection.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/device/gattserverdisconnected-event/reconnect-during-disconnected-event.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/getDevices/granted-devices-with-services.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/getDevices/no-granted-devices.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/getDevices/reject_opaque_origin.https.html": {
-    "total": 1,
-    "failures": {
-      "Calls to Bluetooth APIs from an origin with opaque top origin get blocked.": "FAIL"
-    }
+    "total": 1
   },
   "bluetooth/bidi/getDevices/returns-same-bluetooth-device-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/idl/idl-Bluetooth.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Bluetooth IDL test": "FAIL"
-    }
+    "total": 1
   },
   "bluetooth/bidi/idl/idl-BluetoothDevice.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 2
   },
   "bluetooth/bidi/idl/idl-BluetoothUUID.window.js": {
-    "total": 14,
-    "failures": {
-      "0x0 should produce valid UUID.": "FAIL",
-      "0xdeadbeef should produce valid UUID.": "FAIL",
-      "A 32bit *String* alias is invalid.": "FAIL",
-      "A UUID String with uppercase letters is an invalid UUID.": "FAIL",
-      "A UUID with invalid characters is an invalid UUID.": "FAIL",
-      "A valid UUID String should return the same UUID.": "FAIL",
-      "A valid UUID from a name.": "FAIL",
-      "Infinity returns base UUID": "FAIL",
-      "Invalid Descriptor name": "FAIL",
-      "Make sure attributes don't share a map": "FAIL",
-      "NaN returns basic uuid": "FAIL",
-      "Non-number and non-strings": "FAIL",
-      "Only first 32bits should be used.": "FAIL",
-      "Values between 0xfffffffff (8 digits) and 0xffffffffffffff (14 digits)should return max UUID": "FAIL"
-    }
+    "total": 14
   },
   "bluetooth/bidi/idl/idl-NavigatorBluetooth.https.window.js": {
-    "total": 2,
-    "failures": {
-      "navigator.bluetooth IDL test": "FAIL"
-    }
+    "total": 2
   },
   "bluetooth/bidi/idl/idl-NavigatorBluetooth.window.js": {
     "total": 1
@@ -226,36 +155,6 @@
   "bluetooth/bidi/idl/idlharness.tentative.https.window.js": {
     "total": 209,
     "failures": {
-      "Bluetooth interface object length": "FAIL",
-      "Bluetooth interface object name": "FAIL",
-      "Bluetooth interface: attribute onadvertisementreceived": "FAIL",
-      "Bluetooth interface: attribute onavailabilitychanged": "FAIL",
-      "Bluetooth interface: attribute oncharacteristicvaluechanged": "FAIL",
-      "Bluetooth interface: attribute ongattserverdisconnected": "FAIL",
-      "Bluetooth interface: attribute onserviceadded": "FAIL",
-      "Bluetooth interface: attribute onservicechanged": "FAIL",
-      "Bluetooth interface: attribute onserviceremoved": "FAIL",
-      "Bluetooth interface: attribute referringDevice": "FAIL",
-      "Bluetooth interface: calling requestDevice(optional RequestDeviceOptions) on navigator.bluetooth with too few arguments must throw TypeError": "FAIL",
-      "Bluetooth interface: existence and properties of interface object": "FAIL",
-      "Bluetooth interface: existence and properties of interface prototype object": "FAIL",
-      "Bluetooth interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "Bluetooth interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"getAvailability()\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"getDevices()\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"onadvertisementreceived\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"onavailabilitychanged\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"oncharacteristicvaluechanged\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"ongattserverdisconnected\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"onserviceadded\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"onservicechanged\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"onserviceremoved\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"referringDevice\" with the proper type": "FAIL",
-      "Bluetooth interface: navigator.bluetooth must inherit property \"requestDevice(optional RequestDeviceOptions)\" with the proper type": "FAIL",
-      "Bluetooth interface: operation getAvailability()": "FAIL",
-      "Bluetooth interface: operation getDevices()": "FAIL",
-      "Bluetooth interface: operation requestDevice(optional RequestDeviceOptions)": "FAIL",
-      "Bluetooth must be primary interface of navigator.bluetooth": "FAIL",
       "BluetoothAdvertisingEvent interface object length": "FAIL",
       "BluetoothAdvertisingEvent interface object name": "FAIL",
       "BluetoothAdvertisingEvent interface: attribute appearance": "FAIL",
@@ -279,39 +178,6 @@
       "BluetoothAdvertisingEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "BluetoothAdvertisingEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "BluetoothAdvertisingEvent must be primary interface of event": "FAIL",
-      "BluetoothCharacteristicProperties interface object length": "FAIL",
-      "BluetoothCharacteristicProperties interface object name": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute authenticatedSignedWrites": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute broadcast": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute indicate": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute notify": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute read": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute reliableWrite": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute writableAuxiliaries": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute write": "FAIL",
-      "BluetoothCharacteristicProperties interface: attribute writeWithoutResponse": "FAIL",
-      "BluetoothCharacteristicProperties interface: existence and properties of interface object": "FAIL",
-      "BluetoothCharacteristicProperties interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothCharacteristicProperties interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothCharacteristicProperties interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothDevice interface object length": "FAIL",
-      "BluetoothDevice interface object name": "FAIL",
-      "BluetoothDevice interface: attribute gatt": "FAIL",
-      "BluetoothDevice interface: attribute id": "FAIL",
-      "BluetoothDevice interface: attribute name": "FAIL",
-      "BluetoothDevice interface: attribute onadvertisementreceived": "FAIL",
-      "BluetoothDevice interface: attribute oncharacteristicvaluechanged": "FAIL",
-      "BluetoothDevice interface: attribute ongattserverdisconnected": "FAIL",
-      "BluetoothDevice interface: attribute onserviceadded": "FAIL",
-      "BluetoothDevice interface: attribute onservicechanged": "FAIL",
-      "BluetoothDevice interface: attribute onserviceremoved": "FAIL",
-      "BluetoothDevice interface: attribute watchingAdvertisements": "FAIL",
-      "BluetoothDevice interface: existence and properties of interface object": "FAIL",
-      "BluetoothDevice interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothDevice interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothDevice interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothDevice interface: operation forget()": "FAIL",
-      "BluetoothDevice interface: operation watchAdvertisements(optional WatchAdvertisementsOptions)": "FAIL",
       "BluetoothManufacturerDataMap interface object length": "FAIL",
       "BluetoothManufacturerDataMap interface object name": "FAIL",
       "BluetoothManufacturerDataMap interface: existence and properties of interface object": "FAIL",
@@ -326,65 +192,6 @@
       "BluetoothPermissionResult interface: existence and properties of interface prototype object": "FAIL",
       "BluetoothPermissionResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "BluetoothPermissionResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface object length": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface object name": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: attribute oncharacteristicvaluechanged": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: attribute properties": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: attribute service": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: attribute uuid": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: attribute value": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: existence and properties of interface object": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation getDescriptor(BluetoothDescriptorUUID)": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation getDescriptors(optional BluetoothDescriptorUUID)": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation readValue()": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation startNotifications()": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation stopNotifications()": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation writeValue(BufferSource)": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation writeValueWithResponse(BufferSource)": "FAIL",
-      "BluetoothRemoteGATTCharacteristic interface: operation writeValueWithoutResponse(BufferSource)": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface object length": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface object name": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: attribute characteristic": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: attribute uuid": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: attribute value": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: existence and properties of interface object": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: operation readValue()": "FAIL",
-      "BluetoothRemoteGATTDescriptor interface: operation writeValue(BufferSource)": "FAIL",
-      "BluetoothRemoteGATTServer interface object length": "FAIL",
-      "BluetoothRemoteGATTServer interface object name": "FAIL",
-      "BluetoothRemoteGATTServer interface: attribute connected": "FAIL",
-      "BluetoothRemoteGATTServer interface: attribute device": "FAIL",
-      "BluetoothRemoteGATTServer interface: existence and properties of interface object": "FAIL",
-      "BluetoothRemoteGATTServer interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothRemoteGATTServer interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothRemoteGATTServer interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothRemoteGATTServer interface: operation connect()": "FAIL",
-      "BluetoothRemoteGATTServer interface: operation disconnect()": "FAIL",
-      "BluetoothRemoteGATTServer interface: operation getPrimaryService(BluetoothServiceUUID)": "FAIL",
-      "BluetoothRemoteGATTServer interface: operation getPrimaryServices(optional BluetoothServiceUUID)": "FAIL",
-      "BluetoothRemoteGATTService interface object length": "FAIL",
-      "BluetoothRemoteGATTService interface object name": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute device": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute isPrimary": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute oncharacteristicvaluechanged": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute onserviceadded": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute onservicechanged": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute onserviceremoved": "FAIL",
-      "BluetoothRemoteGATTService interface: attribute uuid": "FAIL",
-      "BluetoothRemoteGATTService interface: existence and properties of interface object": "FAIL",
-      "BluetoothRemoteGATTService interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothRemoteGATTService interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothRemoteGATTService interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothRemoteGATTService interface: operation getCharacteristic(BluetoothCharacteristicUUID)": "FAIL",
-      "BluetoothRemoteGATTService interface: operation getCharacteristics(optional BluetoothCharacteristicUUID)": "FAIL",
-      "BluetoothRemoteGATTService interface: operation getIncludedService(BluetoothServiceUUID)": "FAIL",
-      "BluetoothRemoteGATTService interface: operation getIncludedServices(optional BluetoothServiceUUID)": "FAIL",
       "BluetoothServiceDataMap interface object length": "FAIL",
       "BluetoothServiceDataMap interface object name": "FAIL",
       "BluetoothServiceDataMap interface: existence and properties of interface object": "FAIL",
@@ -392,453 +199,334 @@
       "BluetoothServiceDataMap interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
       "BluetoothServiceDataMap interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "BluetoothServiceDataMap interface: maplike<UUID, DataView>": "FAIL",
-      "BluetoothUUID interface object length": "FAIL",
-      "BluetoothUUID interface object name": "FAIL",
-      "BluetoothUUID interface: existence and properties of interface object": "FAIL",
-      "BluetoothUUID interface: existence and properties of interface prototype object": "FAIL",
-      "BluetoothUUID interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "BluetoothUUID interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "BluetoothUUID interface: operation canonicalUUID(unsigned long)": "FAIL",
-      "BluetoothUUID interface: operation getCharacteristic((DOMString or unsigned long))": "FAIL",
-      "BluetoothUUID interface: operation getDescriptor((DOMString or unsigned long))": "FAIL",
-      "BluetoothUUID interface: operation getService((DOMString or unsigned long))": "FAIL",
-      "Navigator interface: attribute bluetooth": "FAIL",
-      "Navigator interface: navigator must inherit property \"bluetooth\" with the proper type": "FAIL",
-      "Stringification of event": "FAIL",
-      "Stringification of navigator.bluetooth": "FAIL",
-      "ValueEvent interface object length": "FAIL",
-      "ValueEvent interface object name": "FAIL",
-      "ValueEvent interface: attribute value": "FAIL",
-      "ValueEvent interface: existence and properties of interface object": "FAIL",
-      "ValueEvent interface: existence and properties of interface prototype object": "FAIL",
-      "ValueEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "ValueEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
+      "Stringification of event": "FAIL"
     }
   },
   "bluetooth/bidi/requestDevice/acceptAllDevices/device-with-empty-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/acceptAllDevices/device-with-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/acceptAllDevices/optional-services-missing.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/acceptAllDevices/optional-services-present.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/blocklisted-manufacturer-data-in-filter.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/blocklisted-service-in-filter.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/blocklisted-service-in-optionalServices.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/data-prefix-and-mask-size.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/dataPrefix-buffer-is-detached.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/device-name-longer-than-29-bytes.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-dataPrefix.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-exclusion-filter.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-exclusion-filters-member.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-filter.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-filters-member.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-manufacturerData-member.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-namePrefix.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/empty-services-member.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/exclusion-filters-require-filters.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/filters-xor-acceptAllDevices.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/invalid-companyIdentifier.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/mask-buffer-is-detached.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-exceeded-name-unicode.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-exceeded-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-exceeded-namePrefix-unicode.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-exceeded-namePrefix.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-name-unicode.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-namePrefix-unicode.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/max-length-namePrefix.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/no-arguments.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/same-company-identifier.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/unicode-valid-length-name-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/unicode-valid-length-name-namePrefix.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/wrong-service-in-optionalServices-member.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/canonicalizeFilter/wrong-service-in-services-member.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/cross-origin-iframe.sub.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/discovery-succeeds.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/doesnt-consume-user-gesture.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/filter-matches.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/name-empty-device-from-name-empty-filter.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/not-processing-user-gesture.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/radio-not-present.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/reject_opaque_origin.https.html": {
-    "total": 1,
-    "failures": {
-      "Calls to Bluetooth APIs from an origin with opaque top origin get blocked.": "FAIL"
-    }
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/same-device.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/requestDevice/single-filter-single-service.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/connect/connection-succeeds.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/connect/garbage-collection-ran-during-success.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/connect/get-same-gatt-server.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/device-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/disconnect/connect-disconnect-twice.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/disconnect/disconnect-twice-in-a-row.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-disconnect-called-before.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-disconnect-called-during-error.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-disconnect-called-during-success.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-disconnect-invalidates-objects.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-disconnected-device.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-garbage-collection-ran-during-error.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-garbage-collection-ran-during-success.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-get-different-service-after-reconnection.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-get-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-invalid-service-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/gen-service-not-found.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryService/service-found.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/blocklisted-services-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/blocklisted-services.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-called-before-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-called-before.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-called-during-error-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-called-during-error.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-called-during-success-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-called-during-success.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-invalidates-objects-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnect-invalidates-objects.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnected-device-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-disconnected-device.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-garbage-collection-ran-during-error-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-garbage-collection-ran-during-error.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-garbage-collection-ran-during-success-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-garbage-collection-ran-during-success.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-get-different-service-after-reconnection-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-get-different-service-after-reconnection.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-get-same-object-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-get-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-invalid-service-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/gen-service-not-found-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/getPrimaryServices/services-not-found.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/server/maxWriteWithoutResponseSize/default-att-mtu.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "maxWriteWithoutResponseSize reflects the default ATT_MTU while no larger MTU has been negotiated.": "FAIL"
+    }
   },
   "bluetooth/bidi/server/maxWriteWithoutResponseSize/mtu-change.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "A negotiated ATT_MTU updates maxWriteWithoutResponseSize and fires maxwritewithoutresponsesizechanged.": "FAIL"
+    }
   },
   "bluetooth/bidi/server/maxWriteWithoutResponseSize/reconnect.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1,
+    "failures": {
+      "A reconnected device reports the default ATT_MTU again, because the MTU is negotiated per connection.": "FAIL"
+    }
   },
   "bluetooth/bidi/service/device-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristic/characteristic-found.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristic/gen-blocklisted-characteristic.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristic/gen-garbage-collection-ran-during-error.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristic/gen-get-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristic/gen-invalid-characteristic-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristic/gen-service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/blocklisted-characteristics.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-blocklisted-characteristic-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-garbage-collection-ran-during-error-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-garbage-collection-ran-during-error.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-get-same-object-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-get-same-object.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-invalid-characteristic-name.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-service-is-removed-with-uuid.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   },
   "bluetooth/bidi/service/getCharacteristics/gen-service-is-removed.https.window.js": {
-    "harness": "ERROR",
-    "total": 0
+    "total": 1
   }
 }

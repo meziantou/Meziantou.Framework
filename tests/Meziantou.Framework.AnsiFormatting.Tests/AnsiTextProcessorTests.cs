@@ -458,6 +458,9 @@ public class AnsiTextProcessorTests
     [InlineData("\u001b[ 4m")]
     [InlineData("\u001b[+4m")]
     [InlineData("\u001b[-4m")]
+    [InlineData("\u001b[\u00004m")]
+    [InlineData("\u001b[4\u00001m")]
+    [InlineData("\u001b[2147483648m")]
     public void ParseTextWithAnsiStyles_NonDigitSgrParametersAreIgnored(string sequence)
     {
         // ECMA-48 parameter bytes are digits, ';' and ':' only
@@ -466,6 +469,17 @@ public class AnsiTextProcessorTests
         var run = Assert.Single(parsed.Runs);
         Assert.True(run.Style.Bold);
         Assert.False(run.Style.Underline);
+    }
+
+    [Theory]
+    [InlineData("\u001b[4\u0000m")]
+    [InlineData("\u001b[004m")]
+    [InlineData("\u001b[2147483647;4m")]
+    public void ParseTextWithAnsiStyles_SgrParametersAreReadLikeIntTryParse(string sequence)
+    {
+        var parsed = AnsiTextProcessor.ParseTextWithAnsiStyles(sequence + "A");
+
+        Assert.True(Assert.Single(parsed.Runs).Style.Underline);
     }
 
     private static AnsiTextProcessor.AnsiStyle SingleColonRunStyle(string input)
@@ -545,6 +559,62 @@ public class AnsiTextProcessorTests
     public void ParseTextWithAnsiStyles_PlainText()
     {
         Assert.Equal(AnsiTextProcessor.AnsiStyle.None, SingleRunStyle("Hello World", "Hello World"));
+    }
+
+    [Theory]
+    [InlineData("Hello World")]
+    [InlineData("a\u001bb")]
+    [InlineData("Done\u001b[1;3")]
+    [InlineData("\u001b]0;no terminator here")]
+    public void ParseTextWithAnsiStyles_ReturnsOriginalWhenNoSequences(string input)
+    {
+        var parsed = Parse(input);
+        Assert.Same(input, parsed.Text);
+        Assert.Same(AnsiTextProcessor.AnsiStyle.None, Assert.Single(parsed.Runs).Style);
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_StyleBackToDefaultIsNone()
+    {
+        var parsed = Parse("\u001b[1;31mA\u001b[22mB\u001b[39mC");
+        Assert.Equal("ABC", parsed.Text);
+        Assert.HasCount(3, parsed.Runs);
+        Assert.Same(AnsiTextProcessor.AnsiStyle.None, parsed.Runs[2].Style);
+    }
+
+    [Theory]
+    [InlineData(100)]
+    [InlineData(511)]
+    [InlineData(512)]
+    [InlineData(513)]
+    [InlineData(5000)]
+    public void ParseTextWithAnsiStyles_LengthsAroundStackAllocThreshold(int textLength)
+    {
+        var text = new string('a', textLength);
+        var parsed = Parse("\u001b[1m" + text + "\u001b[0mb");
+        Assert.Equal(text + "b", parsed.Text);
+        Assert.Equal([(0, textLength, true), (textLength, textLength + 1, false)], parsed.Runs.Select(run => (run.Start, run.End, run.Style.Bold)));
+    }
+
+    [Fact]
+    public void ParseTextWithAnsiStyles_ManyParameters()
+    {
+        var style = SingleRunStyle("\u001b[" + string.Join(';', Enumerable.Repeat("1", 40)) + ";38;2;10;20;30mA", "A");
+        Assert.True(style.Bold);
+        Assert.Equal(AnsiTextProcessor.AnsiColor.FromRgb(10, 20, 30), style.Foreground);
+    }
+
+    [Fact]
+    public void ManyOscSequencesWithoutTerminator()
+    {
+        var input = string.Concat(Enumerable.Repeat("\u001b]0;", 20_000)) + "A";
+
+        Assert.False(AnsiTextProcessor.ContainsAnsiSequences(input));
+        Assert.Same(input, AnsiTextProcessor.RemoveAnsiSequences(input));
+
+        var parsed = Parse(input);
+        Assert.Same(input, parsed.Text);
+        Assert.Same(AnsiTextProcessor.AnsiStyle.None, Assert.Single(parsed.Runs).Style);
     }
 
     [Fact]

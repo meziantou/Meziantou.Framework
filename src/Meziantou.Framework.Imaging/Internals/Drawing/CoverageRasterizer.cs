@@ -74,6 +74,9 @@ internal sealed class CoverageRasterizer : IDisposable
     /// <summary>The number of events of a row up to which they are sorted by insertion.</summary>
     private const int MaxInsertionSortLength = 16;
 
+    /// <summary>The number of packed events up to which <see cref="SortVector512"/> sorts them, in at most 128 vectors (8 KiB of stack).</summary>
+    internal const int MaxVectorSortLength = 1024;
+
     /// <summary>The number of columns of a row from which the entries of the difference row that are zero are skipped.</summary>
     private const int MinZeroSkipWidth = 32;
 
@@ -1009,15 +1012,7 @@ internal sealed class CoverageRasterizer : IDisposable
     {
         var bits = unsafe(MemoryMarshal.Cast<double, long>(keys));
         slots = slots[..bits.Length];
-        var lowest = long.MaxValue;
-        var highest = long.MinValue;
-        var slotMask = 0;
-        for (var i = 0; i < bits.Length; i++)
-        {
-            lowest = Math.Min(lowest, bits[i]);
-            highest = Math.Max(highest, bits[i]);
-            slotMask |= slots[i];
-        }
+        GetPackingRange(bits, slots, out var lowest, out var highest, out var slotMask);
 
         // -0 and the negative heights have the sign bit, the NaNs are above the infinity
         if (lowest < 0 || highest > BitConverter.DoubleToInt64Bits(double.PositiveInfinity) || slotMask < 0)
@@ -1026,6 +1021,12 @@ internal sealed class CoverageRasterizer : IDisposable
         var slotBits = Math.Max(32 - BitOperations.LeadingZeroCount((uint)slotMask), 1);
         if (((ulong)(highest - lowest) >> (64 - slotBits)) != 0)
             return false;
+
+        if (Vector512.IsHardwareAccelerated && bits.Length <= MaxVectorSortLength)
+        {
+            SortPackedVector512(bits, slots, lowest, slotBits);
+            return true;
+        }
 
         var packed = unsafe(MemoryMarshal.Cast<double, ulong>(keys));
         for (var i = 0; i < packed.Length; i++)
@@ -1043,6 +1044,178 @@ internal sealed class CoverageRasterizer : IDisposable
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Sorts integers in ascending order, as <see cref="MemoryExtensions.Sort{T}(Span{T})"/> does, with a bitonic network
+    /// of AVX-512 vectors: the values, followed by as many <see cref="ulong.MaxValue"/> as make a power of two of at least
+    /// eight, are sorted in each vector, then the sorted sequences of each size are merged in pairs (a comparison of each
+    /// value with its mirror in the other sequence, then half-cleaners at decreasing distances, across vectors and then
+    /// in them). The network makes the same comparisons whatever the values: no branch to mispredict, where a comparison
+    /// sort of the hundred events of a row of text mispredicts about every other comparison.
+    /// </summary>
+    /// <param name="values">At most <see cref="MaxVectorSortLength"/> values.</param>
+    internal static void SortVector512(Span<ulong> values)
+    {
+        Debug.Assert(Vector512.IsHardwareAccelerated && values.Length <= MaxVectorSortLength);
+        Span<Vector512<ulong>> vectors = stackalloc Vector512<ulong>[GetSortVectorCount(values.Length)];
+        var lanes = unsafe(MemoryMarshal.Cast<Vector512<ulong>, ulong>(vectors));
+        values.CopyTo(lanes);
+        lanes[values.Length..].Fill(ulong.MaxValue);
+        SortVectors(vectors);
+        lanes[..values.Length].CopyTo(values);
+    }
+
+    /// <summary>
+    /// Sorts packed events (<see cref="TrySortPacked"/>) with the network of <see cref="SortVector512"/>: they are packed
+    /// into its vectors and taken out of them eight at a time.
+    /// </summary>
+    private static void SortPackedVector512(Span<long> bits, Span<int> slots, long lowest, int slotBits)
+    {
+        var count = bits.Length;
+        Span<Vector512<ulong>> vectors = stackalloc Vector512<ulong>[GetSortVectorCount(count)];
+        var lanes = unsafe(MemoryMarshal.Cast<Vector512<ulong>, ulong>(vectors));
+        var lowestLanes = Vector512.Create(lowest);
+        var i = 0;
+        for (; i + 8 <= count; i += 8)
+        {
+            var slotLanes = Vector512.WidenLower(Vector256.Create(slots.Slice(i, 8)).ToVector512());
+            vectors[i >> 3] = ((Vector512.Create(bits.Slice(i, 8)) - lowestLanes).AsUInt64() << slotBits) | slotLanes.AsUInt64();
+        }
+
+        for (; i < count; i++)
+        {
+            lanes[i] = ((ulong)(bits[i] - lowest) << slotBits) | (uint)slots[i];
+        }
+
+        lanes[count..].Fill(ulong.MaxValue);
+        SortVectors(vectors);
+        var slotMaskBits = (1UL << slotBits) - 1;
+        var slotMaskLanes = Vector512.Create(slotMaskBits);
+        for (i = 0; i + 8 <= count; i += 8)
+        {
+            var value = vectors[i >> 3];
+            (lowestLanes + (value >> slotBits).AsInt64()).CopyTo(bits.Slice(i, 8));
+            Vector512.Narrow((value & slotMaskLanes).AsInt64(), Vector512<long>.Zero).GetLower().CopyTo(slots.Slice(i, 8));
+        }
+
+        for (; i < count; i++)
+        {
+            var value = lanes[i];
+            slots[i] = (int)(value & slotMaskBits);
+            bits[i] = lowest + (long)(value >> slotBits);
+        }
+    }
+
+    /// <summary>Gets the number of vectors of the network that sorts a number of values: a power of two.</summary>
+    private static int GetSortVectorCount(int count) => (int)BitOperations.RoundUpToPowerOf2((uint)(Math.Max(count, 1) + 7) / 8);
+
+    /// <summary>Gets the lowest and the highest bits of the heights of events, and the bits set in their slots.</summary>
+    private static void GetPackingRange(ReadOnlySpan<long> bits, ReadOnlySpan<int> slots, out long lowest, out long highest, out int slotMask)
+    {
+        lowest = long.MaxValue;
+        highest = long.MinValue;
+        slotMask = 0;
+        var i = 0;
+        if (Vector512.IsHardwareAccelerated && bits.Length >= 16)
+        {
+            var lowestLanes = Vector512.Create(long.MaxValue);
+            var highestLanes = Vector512.Create(long.MinValue);
+            var slotLanes = Vector512<int>.Zero;
+            for (; i + 16 <= bits.Length; i += 16)
+            {
+                var first = Vector512.Create(bits.Slice(i, 8));
+                var second = Vector512.Create(bits.Slice(i + 8, 8));
+                lowestLanes = Vector512.Min(lowestLanes, Vector512.Min(first, second));
+                highestLanes = Vector512.Max(highestLanes, Vector512.Max(first, second));
+                slotLanes |= Vector512.Create(slots.Slice(i, 16));
+            }
+
+            for (var lane = 0; lane < Vector512<long>.Count; lane++)
+            {
+                lowest = Math.Min(lowest, lowestLanes.GetElement(lane));
+                highest = Math.Max(highest, highestLanes.GetElement(lane));
+            }
+
+            for (var lane = 0; lane < Vector512<int>.Count; lane++)
+            {
+                slotMask |= slotLanes.GetElement(lane);
+            }
+        }
+
+        for (; i < bits.Length; i++)
+        {
+            lowest = Math.Min(lowest, bits[i]);
+            highest = Math.Max(highest, bits[i]);
+            slotMask |= slots[i];
+        }
+    }
+
+    /// <summary>The network of <see cref="SortVector512"/>, on its vectors.</summary>
+    private static void SortVectors(Span<Vector512<ulong>> vectors)
+    {
+        var vectorCount = vectors.Length;
+
+        // The partner of each lane at a distance of 1, 2 and 4 lanes, and its mirror in pairs, fours and the whole vector;
+        // a lane keeps the smaller value when it is the first of the two
+        var next1 = Vector512.Create(1UL, 0, 3, 2, 5, 4, 7, 6);
+        var next2 = Vector512.Create(2UL, 3, 0, 1, 6, 7, 4, 5);
+        var next4 = Vector512.Create(4UL, 5, 6, 7, 0, 1, 2, 3);
+        var mirror4 = Vector512.Create(3UL, 2, 1, 0, 7, 6, 5, 4);
+        var reverse = Vector512.Create(7UL, 6, 5, 4, 3, 2, 1, 0);
+        var first1 = Vector512.Create(ulong.MaxValue, 0, ulong.MaxValue, 0, ulong.MaxValue, 0, ulong.MaxValue, 0);
+        var first2 = Vector512.Create(ulong.MaxValue, ulong.MaxValue, 0, 0, ulong.MaxValue, ulong.MaxValue, 0, 0);
+        var first4 = Vector512.Create(ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, ulong.MaxValue, 0, 0, 0, 0);
+        foreach (ref var vector in vectors)
+        {
+            var value = Exchange(vector, next1, first1);
+            value = Exchange(Exchange(value, mirror4, first2), next1, first1);
+            vector = Exchange(Exchange(Exchange(value, reverse, first4), next2, first2), next1, first1);
+        }
+
+        for (var size = 2; size <= vectorCount; size <<= 1)
+        {
+            // Each pair of sorted sequences of half that size: every value with its mirror, then the half-cleaners
+            for (var block = 0; block < vectorCount; block += size)
+            {
+                for (var i = 0; i < size / 2; i++)
+                {
+                    ref var low = ref vectors[block + i];
+                    ref var high = ref vectors[block + size - 1 - i];
+                    var mirrored = Vector512.Shuffle(high, reverse);
+                    var smaller = Vector512.Min(low, mirrored);
+                    high = Vector512.Shuffle(Vector512.Max(low, mirrored), reverse);
+                    low = smaller;
+                }
+            }
+
+            for (var distance = size / 4; distance > 0; distance >>= 1)
+            {
+                for (var block = 0; block < vectorCount; block += 2 * distance)
+                {
+                    for (var i = block; i < block + distance; i++)
+                    {
+                        ref var low = ref vectors[i];
+                        ref var high = ref vectors[i + distance];
+                        var smaller = Vector512.Min(low, high);
+                        high = Vector512.Max(low, high);
+                        low = smaller;
+                    }
+                }
+            }
+
+            foreach (ref var vector in vectors)
+            {
+                vector = Exchange(Exchange(Exchange(vector, next4, first4), next2, first2), next1, first1);
+            }
+        }
+
+        // Each lane gets the smaller of its value and the value of its partner when it is the first of the two, the larger otherwise
+        static Vector512<ulong> Exchange(Vector512<ulong> value, Vector512<ulong> partners, Vector512<ulong> isFirst)
+        {
+            var partner = Vector512.Shuffle(value, partners);
+            return Vector512.ConditionalSelect(isFirst, Vector512.Min(value, partner), Vector512.Max(value, partner));
+        }
     }
 
     /// <summary>Sorts events, with a heap sort once <paramref name="depthLimit"/> partitions are nested.</summary>

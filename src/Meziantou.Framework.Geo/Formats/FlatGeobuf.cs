@@ -159,8 +159,8 @@ public static class FlatGeobuf
     /// <exception cref="ArgumentException">A position is not finite.</exception>
     public static byte[] Write(GeoFeatureCollection features, FlatGeobufWriterOptions? options = null)
     {
-        using var stream = new MemoryStream();
-        Write(features, stream, options);
-        return stream.ToArray();
+        ArgumentNullException.ThrowIfNull(features);
+        GeoValidation.EnsureFinite(features, nameof(features));
+        return FlatGeobufWriter.Write(features, options ?? new FlatGeobufWriterOptions());
     }
 }

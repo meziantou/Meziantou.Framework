@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of webaudio, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 287 | 299 | 0 | 96% |
+| [Stable](#stable-tests) | 288 | 299 | 0 | 96% |
 | [Tentative](#tentative-tests) | 2 | 5 | 0 | 40% |
 | Reftests | 0 | 0 | 0 | – |
 | [Crash tests](#crash-tests) | 7 | 7 | 0 | 100% |
-| **All** | **296** | **311** | **0** | **95%** |
+| **All** | **297** | **311** | **0** | **95%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 2
 - **TEST BUG**: 3
-- **NOT IMPLEMENTED**: 5
+- **NOT IMPLEMENTED**: 4
 - **REQUIRES**: 3
   - `media`: 3
 - **TEST RUNNER**: 2
@@ -273,7 +273,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSourceToScriptProcessorTest.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSourceToScriptProcessorTest.html) | Fail | 1 / 3 | REQUIRES(media) | the media backend does not decode the audio of the media resources: a `MediaElementAudioSourceNode` outputs silence, and the test checks the audio of a file |
 | [`the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_volumeChange.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/mediaElementAudioSource_volumeChange.html) | Timeout | 0 / 2 | REQUIRES(media) | the media backend does not decode the audio of the media resources: a `MediaElementAudioSourceNode` outputs silence, and the test checks the audio of a file |
 | [`the-audio-api/the-mediaelementaudiosourcenode-interface/no-cors.https.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/no-cors.https.html) | Pass | 13 / 13 |  |  |
-| [`the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html) | Fail | 0 / 3 | NOT IMPLEMENTED | Audio Output Devices API (`HTMLMediaElement.setSinkId()`, `navigator.mediaDevices.selectAudioOutput()`) |
+| [`the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html) | Pass | 3 / 3 |  |  |
 | [`the-audio-api/the-mediastreamaudiodestinationnode-interface/closed-audiocontext-construction.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/closed-audiocontext-construction.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-mediastreamaudiodestinationnode-interface/ctor-mediastreamaudiodestination.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/ctor-mediastreamaudiodestination.html) | Pass | 4 / 4 |  |  |
 | [`the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-ctor.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-mediastreamaudiosourcenode-interface/mediastreamaudiosourcenode-ctor.html) | Pass | 4 / 4 |  |  |

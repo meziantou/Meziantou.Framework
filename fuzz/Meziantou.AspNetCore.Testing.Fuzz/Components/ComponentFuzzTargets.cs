@@ -126,14 +126,42 @@ public static class ComponentFuzzTargets
     private static void Render(ComponentTestHost host, RenderedComponent<ModelComponent> component, ModelContainer root)
     {
         host.InvokeAsync(component.Instance.Refresh).GetAwaiter().GetResult();
-        var actual = component.GetMarkup(new MarkupOptions { Indent = false, IncludeFormState = false });
-
-        // The HTML of the static renderer, parsed and serialized by the same HTML serializer as the DOM of the test host
-        var html = RenderStatic(root);
-        var template = (HtmlTemplateElement)host.Document.CreateElement("template");
-        template.InnerHtml = html;
-        var expected = HtmlFormatter.Default.Format(template.Content).Trim();
+        // The HTML of the static renderer and the DOM of the test host, parsed and serialized by the same HTML serializer. The
+        // attributes are in the order of their names: as in a browser, the diffs set an attribute that is added again after the
+        // others (setAttribute), while the static renderer writes them in the order of the render tree
+        var actual = Normalize(host.Document, component.GetMarkup(new MarkupOptions { Indent = false, IncludeFormState = false }));
+        var expected = Normalize(host.Document, RenderStatic(root));
         FuzzAssert.Equal(expected, actual, "The DOM of the test host differs from the output of HtmlRenderer");
+
+        static string Normalize(Document document, string html)
+        {
+            var template = (HtmlTemplateElement)document.CreateElement("template");
+            template.InnerHtml = html;
+            SortAttributes(template.Content);
+            return HtmlFormatter.Default.Format(template.Content).Trim();
+        }
+
+        static void SortAttributes(Node node)
+        {
+            for (var child = node.FirstChild; child is not null; child = child.NextSibling)
+            {
+                if (child is Element element)
+                {
+                    var attributes = element.GetAttributeNames().Select(name => (Name: name, Value: element.GetAttribute(name)!)).ToList();
+                    foreach (var (name, _) in attributes)
+                    {
+                        element.RemoveAttribute(name);
+                    }
+
+                    foreach (var (name, value) in attributes.OrderBy(attribute => attribute.Name, StringComparer.Ordinal))
+                    {
+                        element.SetAttribute(name, value);
+                    }
+                }
+
+                SortAttributes(child);
+            }
+        }
     }
 
     private static string RenderStatic(ModelContainer root)

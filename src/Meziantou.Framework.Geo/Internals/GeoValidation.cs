@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Geo.Internals;
 
 /// <summary>Checks the arguments of the writers of the formats.</summary>
@@ -18,10 +20,32 @@ internal static class GeoValidation
     /// <summary>Throws when a position of a geometry is not finite, as no format can write it.</summary>
     public static void EnsureFinite(GeoGeometry geometry, string paramName)
     {
-        foreach (var position in geometry.GetPositions())
+        var visitor = new FiniteVisitor();
+        if (!GeoPositionSpans.Visit(geometry, ref visitor))
+            throw new ArgumentException($"The position {visitor.Invalid} is not finite.", paramName);
+    }
+
+    private static bool IsFinite(in GeoPosition position) =>
+        double.IsFinite(position.Longitude) && double.IsFinite(position.Latitude) && !(position.Altitude is { } altitude && !double.IsFinite(altitude)) && !(position.Measure is { } measure && !double.IsFinite(measure));
+
+    /// <summary>Stops at the first position that is not finite.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct FiniteVisitor : IGeoPositionSpanVisitor
+    {
+        public GeoPosition Invalid { get; private set; }
+
+        public bool Visit(ReadOnlySpan<GeoPosition> positions)
         {
-            if (!double.IsFinite(position.Longitude) || !double.IsFinite(position.Latitude) || position.Altitude is { } altitude && !double.IsFinite(altitude) || position.Measure is { } measure && !double.IsFinite(measure))
-                throw new ArgumentException($"The position {position} is not finite.", paramName);
+            foreach (ref readonly var position in positions)
+            {
+                if (!IsFinite(position))
+                {
+                    Invalid = position;
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

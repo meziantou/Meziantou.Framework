@@ -99,6 +99,9 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature MediaPlaybackWhileNotVisible { get; } = new("media-playback-while-not-visible", isAllowedForAllByDefault: true);
 
+    /// <summary>https://w3c.github.io/gamepad/#permission-policy: its default allowlist is *.</summary>
+    public static PolicyControlledFeature Gamepad { get; } = new("gamepad", isAllowedForAllByDefault: true);
+
     /// <summary>https://w3c.github.io/mediacapture-main/#permissions-policy-integration: its default allowlist is 'self'.</summary>
     public static PolicyControlledFeature Microphone { get; } = new("microphone", isAllowedForAllByDefault: false);
 
@@ -136,6 +139,18 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature WebShare { get; } = new("web-share", isAllowedForAllByDefault: false);
 
+    /// <summary>https://serial.spec.whatwg.org/#permissions-policy</summary>
+    public static PolicyControlledFeature Serial { get; } = new("serial", isAllowedForAllByDefault: false);
+
+    /// <summary>https://hid.spec.whatwg.org/#permissions-policy</summary>
+    public static PolicyControlledFeature Hid { get; } = new("hid", isAllowedForAllByDefault: false);
+
+    /// <summary>https://webaudio.github.io/web-midi-api/#permissions-policy-integration</summary>
+    public static PolicyControlledFeature Midi { get; } = new("midi", isAllowedForAllByDefault: false);
+
+    /// <summary>https://w3c.github.io/window-management/#api-permission-policy-integration</summary>
+    public static PolicyControlledFeature WindowManagement { get; } = new("window-management", isAllowedForAllByDefault: false);
+
     /// <summary>
     /// The supported features (https://w3c.github.io/webappsec-permissions-policy/#supported-features), in the order of
     /// <c>PermissionsPolicy.features()</c>: the features that the library enforces, and features whose API is not implemented
@@ -167,8 +182,10 @@ internal sealed partial class PolicyControlledFeature
         ExecutionWhileOutOfViewport,
         FocusWithoutUserActivation,
         Fullscreen,
+        Gamepad,
         Geolocation,
         Gyroscope,
+        Hid,
         IdentityCredentialsGet,
         IdleDetection,
         KeyboardMap,
@@ -176,7 +193,7 @@ internal sealed partial class PolicyControlledFeature
         Magnetometer,
         MediaPlaybackWhileNotVisible,
         Microphone,
-        new("midi", isAllowedForAllByDefault: false),
+        Midi,
         Payment,
         PictureInPicture,
         new("private-state-token-issuance", isAllowedForAllByDefault: false),
@@ -185,7 +202,7 @@ internal sealed partial class PolicyControlledFeature
         PublicKeyCredentialsCreate,
         PublicKeyCredentialsGet,
         ScreenWakeLock,
-        new("serial", isAllowedForAllByDefault: false),
+        Serial,
         SpeakerSelection,
         StorageAccess,
         SyncXhr,
@@ -193,6 +210,7 @@ internal sealed partial class PolicyControlledFeature
         Unload,
         new("usb", isAllowedForAllByDefault: false),
         WebShare,
+        WindowManagement,
         new("xr-spatial-tracking", isAllowedForAllByDefault: false),
     ];
 

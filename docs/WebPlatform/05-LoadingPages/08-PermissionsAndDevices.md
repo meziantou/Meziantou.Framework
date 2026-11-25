@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, Web Authentication, network information, device memory, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screens, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, serial ports, HID devices, MIDI ports, presentation displays, contacts, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -16,7 +16,7 @@ the device in a test, or to connect the API to your application.
 | [Share](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Share) | `navigator.share()` | There is no share target: the promise is rejected with an `AbortError` |
 | [Vibrate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Vibrate) | `navigator.vibrate()` | Nothing vibrates |
 | [Geolocation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Geolocation) | `navigator.geolocation` | The position is unavailable |
-| [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()` | There is no camera, microphone nor screen: `getUserMedia()` fails with a `NotFoundError` |
+| [MediaCapture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaCapture) | `navigator.mediaDevices.getUserMedia()`, `enumerateDevices()`, `getDisplayMedia()`, `selectAudioOutput()`, `setSinkId()` | There is no camera, microphone, speaker nor screen: `getUserMedia()` fails with a `NotFoundError` |
 | [MediaKeysStorage](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaKeysStorage) | The `persistent-license` sessions of `navigator.requestMediaKeySystemAccess()` (Clear Key) | The sessions are stored in memory, for the browsing contexts of the group |
 | [ShowNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowNotification), [CloseNotification](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.CloseNotification) | `new Notification()`, `registration.showNotification()` | The notifications are displayed nowhere |
 | [Badging](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Badging) | `navigator.setAppBadge()`, `navigator.clearAppBadge()` | The badge is shown nowhere |
@@ -32,6 +32,15 @@ the device in a test, or to connect the API to your application.
 | [ComputePressure](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ComputePressure) | `PressureObserver` | The `cpu` source is supported, but reports no state |
 | [IdleDetection](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.IdleDetection) | `IdleDetector` | The user is active and the screen is unlocked |
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
+| [Gamepads](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Gamepads) | `navigator.getGamepads()`, the `gamepadconnected` and `gamepaddisconnected` events | No gamepad is connected |
+| [Usb](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Usb) | `navigator.usb` (WebUSB), in the pages and the workers | No USB device is connected |
+| [Bluetooth](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Bluetooth) | `navigator.bluetooth` (Web Bluetooth) | There is no Bluetooth adapter |
+| [Screens](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Screens) | `window.screen`, `window.getScreenDetails()` and the fullscreen requests on a screen (Window Management) | The device has one screen, the size of the viewport |
+| [Serial](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Serial) | `navigator.serial` (Web Serial), in the pages and the dedicated workers | There is no serial port |
+| [Hid](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Hid) | `navigator.hid` (WebHID), in the pages and the workers | No HID device is connected |
+| [Midi](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Midi) | `navigator.requestMIDIAccess()` (Web MIDI) | There is no MIDI port |
+| [Presentation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Presentation) | `navigator.presentation` and `PresentationRequest` (Presentation API) | There is no presentation display |
+| [Contacts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Contacts) | `navigator.contacts` (Contact Picker) | No contact property is supported |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -227,6 +236,12 @@ private sealed class SolidColorCamera : MediaCaptureBackend
   can give together with the other live tracks of the device: constraints that only another mode satisfies reject the
   call with an `OverconstrainedError`, and neither the track nor the device change.
 - The capture stops when the last track of a device stops, or when the document is unloaded: the source is disposed.
+- The library does not track the cursor over a captured surface: the `capturedmousechange` event of `CaptureController`
+  (Captured Mouse Events) is never fired.
+- The `capture` attribute of a file input (`<input type=file accept="image/*" capture=user>`) only asks for a camera:
+  the files of the input come from
+  [ShowFilePicker](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ShowFilePicker), which can read
+  [Capture](cref:Meziantou.Framework.WebPlatform.Dom.HtmlInputElement.Capture) to take a photo.
 
 The streams also come from the page itself: `canvas.captureStream()` captures a canvas when it changes, at most
 `frameRate` times per second when the page gives a frame rate (only on `requestFrame()` for a rate of 0). Once the
@@ -239,6 +254,40 @@ seeked, once a [MediaBackend](cref:Meziantou.Framework.WebPlatform.Media.MediaBa
 `MediaRecorder` records the streams with the codecs of a codec backend (see
 [Audio and video codecs](10-AudioAndVideoCodecs.md#record-a-stream)). The audio of the media elements is not decoded (the
 media backend gives no audio), so `createMediaElementSource()` outputs silence.
+
+### Audio output devices
+
+A page plays its audio on another device with `audio.setSinkId(deviceId)` (and `AudioContext.setSinkId()`). It can use
+the speakers of a microphone it captured (the `audiooutput` devices of the same group, which `enumerateDevices()` lists
+once the microphone was captured), or a device the user chose with `navigator.mediaDevices.selectAudioOutput()`. List the
+speakers of the machine with the devices of the backend, and override
+[SelectAudioOutput](cref:Meziantou.Framework.WebPlatform.Media.MediaCaptureBackend.SelectAudioOutput) to play the role
+of the prompt of the browser:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_AudioOutputBackend;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The speakers and the headphones of the machine: the user picks the headphones in the prompt of selectAudioOutput()
+private sealed class Speakers : MediaCaptureBackend
+{
+    public override IReadOnlyList<MediaCaptureDevice> GetDevices() =>
+    [
+        new MediaCaptureDevice { Id = "speakers", Kind = MediaDeviceKind.AudioOutput, Label = "Speakers" },
+        new MediaCaptureDevice { Id = "headphones", Kind = MediaDeviceKind.AudioOutput, Label = "Headphones" },
+    ];
+
+    public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => throw new NotSupportedException();
+
+    public override MediaCaptureDevice? SelectAudioOutput(AudioOutputRequest request)
+        => request.Devices.FirstOrDefault(device => device.Label == "Headphones");
+}
+```
+<!-- endref -->
+
+`selectAudioOutput()` needs a user activation, and is rejected with a `NotAllowedError` when the user cancels (the
+default of `SelectAudioOutput`), when the `speaker-selection` permission is denied, or in a frame that the
+`speaker-selection` permissions policy does not allow. The chosen device is then listed by `enumerateDevices()`, and
+`setSinkId()` accepts it. The library does not play the audio of the media elements, so the device only changes
+`sinkId`.
 
 ### Processing the frames of a track
 
@@ -511,6 +560,13 @@ with the requests to the secure origins.
 between 0.25 and 8 to make the users harder to fingerprint. The library does not read the memory of the machine: without
 value, the pages see 8, but the `Sec-CH-Device-Memory` client hint is not sent.
 
+## CPU performance
+
+`navigator.cpuPerformance` is the performance tier of the CPU, in the secure pages: 1 for a single processor, 2 for up
+to 4 processors, 3 for up to 10, and 4 above. The library computes it from the number of processors of the machine
+([Environment.ProcessorCount](https://learn.microsoft.com/dotnet/api/system.environment.processorcount)), like
+`navigator.hardwareConcurrency`, and does not adjust it for the model of the CPU.
+
 ## Global Privacy Control
 
 `navigator.globalPrivacyControl` tells the pages that the user does not want their data sold or shared, and the
@@ -529,6 +585,44 @@ var options = new BrowsingContextOptions
 };
 ```
 <!-- endref -->
+
+## Screens
+
+`window.screen` and `window.getScreenDetails()` (Window Management) use the screens of a
+[ScreenProvider](cref:Meziantou.Framework.WebPlatform.Dom.ScreenProvider). Each
+[DeviceScreen](cref:Meziantou.Framework.WebPlatform.Dom.DeviceScreen) has a position in the virtual screen arrangement
+(the coordinates may be negative), a size, an available area (without the taskbars of the system), a device pixel ratio
+and a label:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Screens;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A laptop with an external monitor on its left: the coordinates are relative to the top left corner of the laptop screen
+var screens = new ScreenProvider();
+screens.AddScreen(new DeviceScreen(0, 0, 1440, 900) { AvailHeight = 875, IsPrimary = true, IsInternal = true, DevicePixelRatio = 2, Label = "Built-in Retina Display" });
+screens.AddScreen(new DeviceScreen(-2560, 0, 2560, 1440) { Label = "External Monitor" });
+var options = new BrowsingContextOptions
+{
+    Screens = new ScreenOptions { Provider = screens },
+};
+```
+<!-- endref -->
+
+- The current screen of a window is the screen with the largest intersection with its client window (`screenX`,
+  `screenY`, `outerWidth`, `outerHeight`), or the primary screen: `window.screen` reports its size, and
+  `screen.isExtended` is true when there are several screens. Without provider, the device has one screen, the size of
+  the viewport ([ScreenWidth](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenWidth)).
+- `getScreenDetails()` needs the `window-management` permission
+  ([Permissions](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Permissions) or
+  [RequestPermission](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.RequestPermission)) and the
+  `window-management` permissions policy feature. Its `screens` are sorted by position, and `currentScreen` is one of
+  them.
+- Adding, removing and changing the screens fire the `screenschange`, `currentscreenchange` and `change` events, and so
+  does moving the client window to another screen.
+- `element.requestFullscreen({ screen })` moves the client window to the screen, and the viewport gets the size of the
+  screen (unless [EnterFullscreen](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.EnterFullscreen)
+  returns another size); a request on another screen while fullscreen moves it again, and exiting fullscreen puts it back.
+- The windows are not installed web applications: `maximize()`, `minimize()`, `restore()` and `setResizable()` fail with an
+  `InvalidStateError`, as in Chromium. The `display-state` and `resizable` media features are not supported.
 
 ## Screen orientation
 
@@ -698,6 +792,661 @@ posture.Posture = DevicePostureType.Folded;
 Changing [Posture](cref:Meziantou.Framework.WebPlatform.Dom.DevicePostureProvider.Posture) fires the `change` event of
 `navigator.devicePosture`, and the `change` event of the media query lists such as `matchMedia('(device-posture: folded)')`.
 A hidden page gets the event when it becomes visible. All the frames of a tab have the posture of the tab.
+
+## Gamepads
+
+`navigator.getGamepads()` and the `gamepadconnected` and `gamepaddisconnected` events read the gamepads of a
+[GamepadProvider](cref:Meziantou.Framework.WebPlatform.Dom.GamepadProvider). Connect a
+[GamepadDevice](cref:Meziantou.Framework.WebPlatform.Dom.GamepadDevice) and update its buttons and axes as the user
+plays:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Gamepads;format=md-fenced-code-block;dedent=true -->
+```csharp
+var gamepads = new GamepadProvider();
+var options = new BrowsingContextOptions
+{
+    Gamepads = new GamepadOptions { Provider = gamepads },
+};
+
+// A standard gamepad (17 buttons, 4 axes): the pages see it once the user presses a button or moves an axis
+var controller = new GamepadDevice("Test controller (Vendor: 045e Product: 02ea)", buttonCount: 17, axisCount: 4) { Mapping = GamepadMappingType.Standard };
+gamepads.Connect(controller);
+controller.SetButton(0, 1);
+```
+<!-- endref -->
+
+A device gives its values in the order of the `buttons` and `axes` of the pages: the values of a button are between 0
+and 1 (pressed above 0.5, unless you pass `pressed`), and the values of an axis between -1 and 1. Set
+[Mapping](cref:Meziantou.Framework.WebPlatform.Dom.GamepadDevice.Mapping) to `Standard` when they follow the
+[standard gamepad](https://w3c.github.io/gamepad/#remapping) layout.
+
+As in the browsers, a page only sees the gamepads once it uses the API (it calls `getGamepads()` or listens to a
+gamepad event), and `getGamepads()` returns them once the user pressed a button or moved an axis while the page was
+visible: the page then gets a `gamepadconnected` event for each gamepad. `getGamepads()` returns snapshots, and throws a
+`SecurityError` in a frame that the `gamepad` permissions policy does not allow.
+
+The `vibrationActuator` of a gamepad plays the effects of
+[HapticEffects](cref:Meziantou.Framework.WebPlatform.Dom.GamepadDevice.HapticEffects). Override
+[PlayEffect](cref:Meziantou.Framework.WebPlatform.Dom.GamepadProvider.PlayEffect) to make the device vibrate: its task
+completes when the effect completes, and its cancellation token is canceled when the page stops it (`reset()`, another
+effect, or a hidden page). The default implementation only waits for the duration of the effect. The touch surfaces are
+not supported: `touches` is always empty. A prerendered page sees no gamepad: it gets a `gamepadconnected` event for each
+gamepad once it is shown.
+
+## USB devices
+
+`navigator.usb` (WebUSB) uses the USB devices of a [UsbProvider](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider),
+in the pages and in their workers. Implement each device with a
+[UsbHostDevice](cref:Meziantou.Framework.WebPlatform.Dom.UsbHostDevice): its descriptors, and the
+[UsbDeviceSession](cref:Meziantou.Framework.WebPlatform.Dom.UsbDeviceSession) that `device.open()` opens, which performs
+the operations of the page. The library validates them first (the device is opened and configured, the interface is
+claimed, the endpoint exists and has the right type, the class of the interface is not protected, the transfer is at most
+32 MiB), so a session only talks to the device:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UsbHostDevice;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A device of the application: one configuration with a vendor-specific interface, whose bulk OUT endpoint 1 stores
+// the data that its bulk IN endpoint 1 returns
+private sealed class LoopbackUsbDevice() : UsbHostDevice(new UsbDeviceDescriptor
+{
+    VendorId = 0x1234,
+    ProductId = 0x0001,
+    ProductName = "Loopback",
+    Configurations =
+    [
+        new UsbConfigurationDescriptor
+        {
+            ConfigurationValue = 1,
+            Interfaces =
+            [
+                new UsbInterfaceDescriptor
+                {
+                    InterfaceNumber = 0,
+                    Alternates =
+                    [
+                        new UsbAlternateInterfaceDescriptor
+                        {
+                            InterfaceClass = 0xFF,
+                            Endpoints =
+                            [
+                                new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.In, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                                new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.Out, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                            ],
+                        },
+                    ],
+                },
+            ],
+        },
+    ],
+})
+{
+    public override Task<UsbDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<UsbDeviceSession>(new Session());
+
+    // The library validates the operations of the page (the opened device, the configuration, the claimed interfaces...)
+    private sealed class Session : UsbDeviceSession
+    {
+        private byte[] _buffer = [];
+
+        public override Task CloseAsync() => Task.CompletedTask;
+
+        public override Task SelectConfigurationAsync(byte configurationValue, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ClaimInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ReleaseInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task SelectAlternateInterfaceAsync(byte interfaceNumber, byte alternateSetting, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ResetAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        public override Task ClearHaltAsync(UsbDirection direction, byte endpointNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+        // The device stalls the control requests
+        public override Task<UsbInTransfer> ControlTransferInAsync(UsbControlTransferSetup setup, ushort length, CancellationToken cancellationToken)
+            => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Stall, ReadOnlyMemory<byte>.Empty));
+
+        public override Task<UsbOutTransfer> ControlTransferOutAsync(UsbControlTransferSetup setup, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            => Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Stall, 0));
+
+        public override Task<UsbInTransfer> TransferInAsync(byte endpointNumber, uint length, CancellationToken cancellationToken)
+            => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Ok, _buffer.AsMemory(0, (int)Math.Min(length, (uint)_buffer.Length))));
+
+        public override Task<UsbOutTransfer> TransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            _buffer = data.ToArray();
+            return Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Ok, (uint)data.Length));
+        }
+
+        public override Task<IReadOnlyList<UsbInTransfer>> IsochronousTransferInAsync(byte endpointNumber, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+            => throw new UsbException("The device has no isochronous endpoint");
+
+        public override Task<IReadOnlyList<UsbOutTransfer>> IsochronousTransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+            => throw new UsbException("The device has no isochronous endpoint");
+    }
+}
+```
+<!-- endref -->
+
+A page can use a device once its origin is allowed to: call
+[Allow](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider.Allow), or let the user choose a device for
+`navigator.usb.requestDevice()` by overriding
+[RequestDevice](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider.RequestDevice), which plays the role of the device
+chooser of the browser:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_UsbDeviceChooser;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+private sealed class FirstDeviceChooser : UsbProvider
+{
+    public override Task<UsbHostDevice?> RequestDevice(UsbDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Usb;format=md-fenced-code-block;dedent=true -->
+```csharp
+var usb = new FirstDeviceChooser();
+usb.Connect(new LoopbackUsbDevice());
+var options = new BrowsingContextOptions
+{
+    Usb = new UsbOptions { Provider = usb },
+};
+```
+<!-- endref -->
+
+- `getDevices()` returns the connected devices that the origin can use (override
+  [IsAllowed](cref:Meziantou.Framework.WebPlatform.Dom.UsbProvider.IsAllowed) to use your own permission storage), and
+  `device.forget()` revokes the permission. The devices of the
+  [WebUSB blocklist](https://github.com/WICG/webusb/blob/main/blocklist.txt) (security keys) are never offered.
+- `requestDevice()` needs a click of the user, and offers the devices that match the filters of the page. Both methods
+  fail with a `SecurityError` when the `usb` permissions policy does not allow the frame, or when the top-level page has
+  an opaque origin.
+- `Connect` and `Disconnect` fire the `connect` and `disconnect` events of the pages that can use the device. A
+  disconnection closes the device, and its pending operations fail with a `NotFoundError`. Unloading a page or
+  terminating a worker ends the sessions it opened.
+- A session reports an error by throwing a [UsbException](cref:Meziantou.Framework.WebPlatform.Dom.UsbException): its
+  [Error](cref:Meziantou.Framework.WebPlatform.Dom.UsbException.Error) chooses the `DOMException` of the page
+  (`NetworkError`, `SecurityError`, `TimeoutError`, `AbortError` or `NotFoundError`). A stalled endpoint or a babble is
+  the status of a successful transfer. The cancellation token of an operation is canceled when it is aborted (`reset()`,
+  a new configuration or alternate setting, a disconnection).
+- As in Chromium, an operation fails with an `InvalidStateError` while another one changes the state of the device or
+  of its interface, `close()` lets the operations already sent to the device complete, and the standard control
+  requests are not restricted. A prerendered page gets the devices once it is shown. `navigator.permissions.query()` does
+  not support the `usb` permission.
+
+## Bluetooth devices
+
+`navigator.bluetooth` (Web Bluetooth) uses the Bluetooth Low Energy devices of a
+[BluetoothProvider](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider), which plays the role of the Bluetooth
+adapter of the machine. Implement each device with a
+[BluetoothHostDevice](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice): its name and advertised data, and the
+tree of its GATT server. The services, the characteristics and the descriptors store their value by default: derive from
+[BluetoothHostCharacteristic](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic) and
+[BluetoothHostDescriptor](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostDescriptor) to talk to the device, and
+[BluetoothUuid](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothUuid) converts the names of the GATT assigned numbers to
+UUIDs:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_BluetoothHostDevice;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A heart rate monitor of the application: its Heart Rate service has a Heart Rate Measurement characteristic, which
+// notifies the measurements, and a Body Sensor Location characteristic, which the page can read and write
+private static BluetoothHostDevice CreateHeartRateMonitor()
+{
+    var device = new BluetoothHostDevice("00:11:22:33:44:55", "Heart Rate Monitor")
+    {
+        ServiceUuids = [BluetoothUuid.GetService("heart_rate")],
+    };
+    var service = device.AddService(new BluetoothHostService(BluetoothUuid.GetService("heart_rate")));
+    service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("heart_rate_measurement"), BluetoothCharacteristicPropertyFlags.Notify));
+    service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("body_sensor_location"), BluetoothCharacteristicPropertyFlags.Read | BluetoothCharacteristicPropertyFlags.Write)
+    {
+        Value = new byte[] { 1 },
+    });
+    return device;
+}
+```
+<!-- endref -->
+
+A page can use a device once its origin is allowed to: call
+[Allow](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.Allow) with the services the origin can use, or let the
+user choose a device for `navigator.bluetooth.requestDevice()` by overriding
+[RequestDevice](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.RequestDevice), which plays the role of the
+device chooser of the browser. The origin can then use the services of the filters and the optional services of the
+page:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_BluetoothDeviceChooser;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+private sealed class FirstBluetoothDeviceChooser : BluetoothProvider
+{
+    public override Task<BluetoothHostDevice?> RequestDevice(BluetoothDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Bluetooth;format=md-fenced-code-block;dedent=true -->
+```csharp
+var bluetooth = new FirstBluetoothDeviceChooser();
+bluetooth.AddDevice(CreateHeartRateMonitor());
+var options = new BrowsingContextOptions
+{
+    Bluetooth = new BluetoothOptions { Provider = bluetooth },
+};
+```
+<!-- endref -->
+
+- `getAvailability()` is true when the provider has an adapter that supports Bluetooth Low Energy, even when it is turned
+  off ([AdapterState](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.AdapterState)); a change fires the
+  `availabilitychanged` event. Without an adapter, `requestDevice()` fails with a `NotFoundError`, and a turned off
+  adapter finds no device.
+- `requestDevice()` needs a click of the user (it does not consume it), and offers the devices in range
+  ([AddDevice](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.AddDevice)) that match the filters of the page.
+  `getDevices()` returns the devices the origin can use, in range or not, and `device.forget()` revokes the permission.
+  Both methods fail with a `SecurityError` when the `bluetooth` permissions policy does not allow the frame, or when the
+  top-level page has an opaque origin.
+- The pages share the connection of a device: `device.gatt.connect()` calls `ConnectAsync` when the device is not
+  connected, and the connection is released when no page uses it. Call
+  [Disconnect](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice.Disconnect) when the connection is lost: the
+  pages get a `gattserverdisconnected` event, and their services, characteristics and descriptors are invalid (the pages
+  get them again after reconnecting).
+- [NotifyValueChanged](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic.NotifyValueChanged) delivers a
+  notification to the pages that called `startNotifications()`. An operation reports an error by throwing a
+  [BluetoothAttException](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothAttException) (an ATT error code, mapped to
+  the `DOMException` of the specification) or a `DomException`.
+- The UUIDs of the [GATT blocklist](https://github.com/WebBluetoothCG/registries/blob/master/gatt_blocklist.txt) (e.g.
+  `human_interface_device`) are never exposed, and a filter of a blocklisted service or manufacturer data fails with a
+  `SecurityError`. As in Chromium, the error messages tell which check failed, and a write without response does not wait.
+- Scanning for advertisements is not supported: `watchAdvertisements()` fails with a `NotSupportedError`, and
+  `BluetoothAdvertisingEvent` and `requestLEScan()` do not exist. `navigator.permissions.query()` does not support the
+  `bluetooth` permission, and `referringDevice` is always null. A prerendered page gets the devices once it is shown.
+
+## Serial ports
+
+`navigator.serial` (Web Serial) uses the serial ports of a [SerialProvider](cref:Meziantou.Framework.WebPlatform.Dom.SerialProvider),
+in the pages and their dedicated workers. Implement each port with a
+[SerialHostPort](cref:Meziantou.Framework.WebPlatform.Dom.SerialHostPort): its USB or Bluetooth identifiers, and the
+[SerialConnection](cref:Meziantou.Framework.WebPlatform.Dom.SerialConnection) that `port.open()` opens. The library
+validates the parameters and runs the `readable` (a readable byte stream) and `writable` streams of the page, so a
+connection only reads and writes bytes:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_SerialHostPort;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A port of the application (an Arduino Uno): the device sends back the bytes it receives
+private sealed class LoopbackSerialPort() : SerialHostPort(usbVendorId: 0x2341, usbProductId: 0x0043)
+{
+    public override Task<SerialConnection> OpenAsync(SerialConnectionOptions options, CancellationToken cancellationToken) => Task.FromResult<SerialConnection>(new Connection());
+
+    // The library validates the parameters and runs the streams of the page: the connection only moves the bytes
+    private sealed class Connection : SerialConnection
+    {
+        private readonly Queue<byte> _received = new();
+        private TaskCompletionSource? _dataAvailable;
+
+        public override async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            while (_received.Count == 0)
+            {
+                _dataAvailable = new TaskCompletionSource();
+                await _dataAvailable.Task.WaitAsync(cancellationToken);
+            }
+
+            var count = 0;
+            while (count < buffer.Length && _received.TryDequeue(out var value))
+            {
+                buffer.Span[count++] = value;
+            }
+
+            return count;
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            foreach (var value in data.Span)
+            {
+                _received.Enqueue(value);
+            }
+
+            _dataAvailable?.TrySetResult();
+            return Task.CompletedTask;
+        }
+
+        public override Task<SerialInputSignals> GetSignalsAsync(CancellationToken cancellationToken)
+            => Task.FromResult(new SerialInputSignals { DataCarrierDetect = true, ClearToSend = true, RingIndicator = false, DataSetReady = true });
+
+        public override Task CloseAsync() => Task.CompletedTask;
+    }
+}
+```
+<!-- endref -->
+
+A page can use a port once its origin is allowed to: call
+[Allow](cref:Meziantou.Framework.WebPlatform.Dom.SerialProvider.Allow), or let the user choose a port for
+`navigator.serial.requestPort()` by overriding
+[RequestPort](cref:Meziantou.Framework.WebPlatform.Dom.SerialProvider.RequestPort):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_SerialPortChooser;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The port chooser of requestPort(): the user picks the first port that matches the filters of the page
+private sealed class FirstSerialPortChooser : SerialProvider
+{
+    public override Task<SerialHostPort?> RequestPort(SerialPortRequest request) => Task.FromResult(request.Ports.Count > 0 ? request.Ports[0] : null);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Serial;format=md-fenced-code-block;dedent=true -->
+```csharp
+var serial = new FirstSerialPortChooser();
+serial.Connect(new LoopbackSerialPort());
+var options = new BrowsingContextOptions
+{
+    Serial = new WebSerialOptions { Provider = serial },
+};
+```
+<!-- endref -->
+
+- `requestPort()` needs a click of the user, and offers the available ports that match the filters of the page. The
+  Bluetooth ports are offered when they use the Serial Port Profile or a custom service class of
+  `allowedBluetoothServiceClassIds` (the other standard service classes are blocked). `getPorts()` and `requestPort()`
+  fail with a `SecurityError` when the `serial` permissions policy does not allow the frame.
+- A read completes when [ReadAsync](cref:Meziantou.Framework.WebPlatform.Dom.SerialConnection.ReadAsync) returns bytes. A
+  [SerialException](cref:Meziantou.Framework.WebPlatform.Dom.SerialException) chooses the error of the stream
+  (`BreakError`, `BufferOverrunError`, `FramingError`, `ParityError`, `UnknownError`): the next `readable` is a new
+  stream, except after a disconnection (`NetworkError`, then null).
+- `close()` cancels the readable stream and aborts the writable stream: it fails with a `TypeError` while a stream is
+  locked (the port stays open, as in Chromium). `Connect` and `Disconnect` fire the `connect` and `disconnect` events of
+  the ports, which bubble to `navigator.serial`; a disconnection errors the streams of an open port. Unloading a page or
+  terminating a worker closes its ports.
+- A prerendered page gets the ports, and asks the user, once it is shown.
+
+## HID devices
+
+`navigator.hid` (WebHID) uses the HID interfaces of a [HidProvider](cref:Meziantou.Framework.WebPlatform.Dom.HidProvider),
+in the pages and their workers. Implement each one with a [HidHostDevice](cref:Meziantou.Framework.WebPlatform.Dom.HidHostDevice):
+its identifiers, its report descriptor, which the library parses into `device.collections`, and the
+[HidDeviceSession](cref:Meziantou.Framework.WebPlatform.Dom.HidDeviceSession) that `device.open()` opens:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_HidHostDevice;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A vendor-defined device of the application: it sends back the output reports as input reports, and stores its feature report
+private sealed class EchoHidDevice() : HidHostDevice(0x1234, 0x5678, "Echo Device", EchoReportDescriptor)
+{
+    // Usage page 0xFF00, application collection: the input and output report 1 (8 bytes), the feature report 2 (4 bytes)
+    private static readonly byte[] EchoReportDescriptor =
+    [
+        0x06, 0x00, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x08,
+        0x09, 0x02, 0x81, 0x02, 0x09, 0x03, 0x91, 0x02, 0x85, 0x02, 0x95, 0x04, 0x09, 0x04, 0xB1, 0x02, 0xC0,
+    ];
+
+    public override Task<HidDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<HidDeviceSession>(new Session());
+
+    // The library parses the collections and checks the report IDs: the session only exchanges the reports
+    private sealed class Session : HidDeviceSession
+    {
+        private byte[] _feature = [1, 2, 3, 4];
+
+        public override Task SendReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            OnInputReport(reportId, data);
+            return Task.CompletedTask;
+        }
+
+        public override Task SendFeatureReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            _feature = data.ToArray();
+            return Task.CompletedTask;
+        }
+
+        public override Task<ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, CancellationToken cancellationToken) => Task.FromResult<ReadOnlyMemory<byte>>(_feature);
+
+        public override Task CloseAsync() => Task.CompletedTask;
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Hid;format=md-fenced-code-block;dedent=true -->
+```csharp
+var hid = new FirstHidDeviceChooser();
+hid.Connect(new EchoHidDevice());
+var options = new BrowsingContextOptions
+{
+    Hid = new HidOptions { Provider = hid },
+};
+```
+<!-- endref -->
+
+- `requestDevice()` needs a click of the user, and offers the connected devices that match the filters (their
+  identifiers, and the usage of a top-level collection) and none of the exclusion filters. Override
+  [RequestDevice](cref:Meziantou.Framework.WebPlatform.Dom.HidProvider.RequestDevice) to choose one; when the user cancels,
+  the page gets no device. `getDevices()` and `requestDevice()` fail with a `SecurityError` when the `hid` permissions
+  policy does not allow the frame.
+- [OnInputReport](cref:Meziantou.Framework.WebPlatform.Dom.HidDeviceSession.OnInputReport) fires the `inputreport` event
+  of the page. The report IDs are checked (0 when the descriptor has no Report ID item), and the reports of the
+  [HID blocklist](https://github.com/whatwg/hid/blob/main/blocklist.txt) (FIDO keys, mice, keyboards, system controls)
+  are blocked: the page gets a `NotAllowedError`, and no input report.
+- `close()` and `forget()` reject the pending reports with an `AbortError`; a disconnection closes the device. As in
+  Chromium, the logical and physical limits of the report items are signed.
+- A prerendered page gets the devices, and asks the user, once it is shown.
+
+## MIDI ports
+
+`navigator.requestMIDIAccess()` (Web MIDI) uses the ports of a [MidiProvider](cref:Meziantou.Framework.WebPlatform.Dom.MidiProvider).
+An input port is a [MidiHostInput](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostInput): give it the bytes of the device
+with [Receive](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostInput.Receive), and the library splits them into the
+messages of the `midimessage` events (the running status, the system exclusive messages split over several calls, and the
+clock messages inside other messages are handled). Implement an output port with a
+[MidiHostOutput](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostOutput), which gets the messages of `output.send()`:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MidiHostOutput;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A synthesizer of the application: it plays the messages that the page sends
+private sealed class Synthesizer() : MidiHostOutput("synth-1")
+{
+    public List<byte[]> Messages { get; } = [];
+
+    public override void Send(ReadOnlyMemory<byte> data, TimeSpan delay) => Messages.Add(data.ToArray());
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Midi;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A keyboard (the application gives it the bytes of the device) and a synthesizer
+var keyboard = new MidiHostInput("keyboard-1") { Name = "Keyboard", Manufacturer = "Contoso" };
+var synthesizer = new Synthesizer { Name = "Synthesizer" };
+var midi = new MidiProvider();
+midi.Connect(keyboard);
+midi.Connect(synthesizer);
+var options = new BrowsingContextOptions
+{
+    Midi = new WebMidiOptions { Provider = midi },
+};
+```
+<!-- endref -->
+
+- `requestMIDIAccess()` asks for the `midi` permission (see [Permissions](#permissions)), which also covers the system
+  exclusive messages: it fails with a `NotAllowedError` when the permission is denied or the `midi` permissions policy
+  does not allow the frame. Each call returns a new `MIDIAccess`, and a prerendered page gets it once it is shown.
+- `send()` checks the messages: a `TypeError` for an incomplete message or the running status, a `NotAllowedError` for
+  a system exclusive message when the page did not ask for `sysex`, an `InvalidStateError` when the port is
+  disconnected. The `timestamp` becomes the delay of [Send](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostOutput.Send),
+  and `clear()` calls [Clear](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostOutput.Clear).
+- Opening a port (`open()`, a `midimessage` listener, or `send()`) calls
+  [OpenAsync](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostPort.OpenAsync); when it fails, `open()` fails with a
+  `NotAllowedError`. `Connect` and `Disconnect` fire the `statechange` events of the ports and of `MIDIAccess`: an open
+  port that is disconnected becomes `pending`, and is opened again when it is connected again.
+- The ports whose [IsSoftwareSynthesizer](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostPort.IsSoftwareSynthesizer)
+  is set are listed only when the page asks for `software`. Unloading a page closes its ports.
+
+## Presentation displays
+
+`PresentationRequest.start()` (Presentation API) shows a page on a display of a
+[PresentationProvider](cref:Meziantou.Framework.WebPlatform.Dom.PresentationProvider). Implement each display with a
+[PresentationDisplay](cref:Meziantou.Framework.WebPlatform.Dom.PresentationDisplay): `StartAsync` starts the presentation,
+and the [PresentationSession](cref:Meziantou.Framework.WebPlatform.Dom.PresentationSession) it returns connects each
+controlling page with a [PresentationChannel](cref:Meziantou.Framework.WebPlatform.Dom.PresentationChannel), which carries
+the messages of `connection.send()`. [CreatePair](cref:Meziantou.Framework.WebPlatform.Dom.PresentationChannel.CreatePair)
+creates two channels connected in memory, one for each side:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_PresentationDisplay;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A second screen of the application: a presentation runs in a receiving browsing context that the application creates
+// with PresentationOptions.Receiver, and each controller gets a channel connected in memory to it
+private sealed class SecondScreen() : PresentationDisplay("Second screen")
+{
+    public PresentationReceivingContext? Receiver { get; private set; }
+
+    public override Task<PresentationSession> StartAsync(PresentationStartRequest request, CancellationToken cancellationToken)
+    {
+        Receiver = new PresentationReceivingContext(request.Url, request.Id);
+        return Task.FromResult<PresentationSession>(new Session(Receiver));
+    }
+
+    private sealed class Session(PresentationReceivingContext receiver) : PresentationSession(receiver.Url, receiver.Id)
+    {
+        public override Task<PresentationChannel> ConnectAsync(CancellationToken cancellationToken)
+        {
+            var (controller, receiving) = PresentationChannel.CreatePair();
+            receiver.Connect(receiving);
+            return Task.FromResult(controller);
+        }
+    }
+}
+
+// The display chooser of start(): the user picks the first display
+private sealed class FirstDisplayChooser : PresentationProvider
+{
+    public override Task<PresentationDisplay?> RequestDisplay(PresentationDisplayRequest request) => Task.FromResult<PresentationDisplay?>(request.Displays[0]);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Presentation;format=md-fenced-code-block;dedent=true -->
+```csharp
+var screen = new SecondScreen();
+var presentation = new FirstDisplayChooser();
+presentation.AddDisplay(screen);
+var options = new BrowsingContextOptions
+{
+    Presentation = new PresentationOptions { Provider = presentation },
+};
+```
+<!-- endref -->
+
+The presented page runs in a receiving browsing context: create it with a
+[PresentationReceivingContext](cref:Meziantou.Framework.WebPlatform.Dom.PresentationReceivingContext) in
+[Receiver](cref:Meziantou.Framework.WebPlatform.Dom.PresentationOptions.Receiver), and navigate it to the URL of the
+presentation. Its page gets the connections of the controllers in `navigator.presentation.receiver.connectionList`:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_PresentationReceiver;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Once the page started the presentation, the application loads its URL in a receiving browsing context
+var receiverOptions = new BrowsingContextOptions
+{
+    Presentation = new PresentationOptions { Receiver = screen.Receiver },
+};
+```
+<!-- endref -->
+
+- The `PresentationRequest` constructor keeps the `http` and `https` URLs: it fails with a `SecurityError` for a URL
+  that is not secure, or in a frame sandboxed without `allow-presentation`.
+- `start()` needs a click of the user (an `InvalidAccessError` without it), and one start at a time in a page (an
+  `OperationError`). The displays that can present a URL
+  ([CanPresent](cref:Meziantou.Framework.WebPlatform.Dom.PresentationDisplay.CanPresent)) are offered to
+  [RequestDisplay](cref:Meziantou.Framework.WebPlatform.Dom.PresentationProvider.RequestDisplay): it fails with a
+  `NotFoundError` when there is none, and a `NotAllowedError` when the user cancels.
+- `reconnect()` finds the presentations started by the pages that share the provider; `getAvailability()` tells whether
+  a display can present the URLs, and fires `change` when [AddDisplay](cref:Meziantou.Framework.WebPlatform.Dom.PresentationProvider.AddDisplay)
+  or `RemoveDisplay` change the answer.
+- `terminate()` calls [Terminate](cref:Meziantou.Framework.WebPlatform.Dom.PresentationSession.Terminate) on the
+  controlling side, and [PresentationReceivingContext.Terminate](cref:Meziantou.Framework.WebPlatform.Dom.PresentationReceivingContext.Terminate)
+  on the receiving side; [OnTerminated](cref:Meziantou.Framework.WebPlatform.Dom.PresentationSession.OnTerminated)
+  reports the end of a presentation to its controllers. When a page is unloaded, the other side of its connections gets
+  a `close` event whose reason is `wentaway`.
+
+## Contacts
+
+`navigator.contacts.select()` (Contact Picker) asks a [ContactsProvider](cref:Meziantou.Framework.WebPlatform.Dom.ContactsProvider),
+which plays the role of the address book and of the contact picker of the user:
+[SelectAsync](cref:Meziantou.Framework.WebPlatform.Dom.ContactsProvider.SelectAsync) returns the contacts that the user
+selected, and the page gets the properties it asked for:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_ContactsProvider;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The address book of the user: the user selects all the contacts that the page can get
+private sealed class AddressBook : ContactsProvider
+{
+    public override Task<IReadOnlyList<UserContact>> SelectAsync(ContactPickerRequest request)
+    {
+        IReadOnlyList<UserContact> contacts =
+        [
+            new UserContact { Names = ["Ada Lovelace"], Emails = ["ada@example.com"], Numbers = ["+44 20 7946 0000"] },
+            new UserContact { Names = ["Alan Turing"], Addresses = [new ContactAddress { City = "Wilmslow", Country = "gb", AddressLine = ["43 Adlington Road"] }] },
+        ];
+        return Task.FromResult(request.Multiple ? contacts : [contacts[0]]);
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Contacts;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new BrowsingContextOptions
+{
+    Contacts = new ContactsOptions { Provider = new AddressBook() },
+};
+```
+<!-- endref -->
+
+- `getProperties()` returns [SupportedProperties](cref:Meziantou.Framework.WebPlatform.Dom.ContactsProvider.SupportedProperties)
+  (all of them by default). Without provider, no property is supported, so `select()` fails with a `TypeError`.
+- `select()` works in the top-level page only (an `InvalidStateError` in a frame), needs a click of the user, which it
+  consumes (a `SecurityError` without it), and one picker at a time (an `InvalidStateError`). It returns one contact
+  unless the page asks for `multiple`, and an empty list when the user cancels. When `SelectAsync` fails or returns null,
+  `select()` fails with an `InvalidStateError`.
+
+## NFC
+
+The library has no NFC adapter, as a device without NFC: `new NDEFReader()` works, but `scan()`, `write()` and
+`makeReadOnly()` are rejected with a `NotSupportedError` once the `nfc` permission is granted (with a `NotAllowedError`
+before, and with an `InvalidStateError` in a frame).
+
+The NDEF messages and records themselves work, in the pages and in .NET:
+[NdefMessage](cref:Meziantou.Framework.WebPlatform.Dom.NdefMessage) and
+[NdefRecord](cref:Meziantou.Framework.WebPlatform.Dom.NdefRecord) validate the records as `NDEFReader.write()` does,
+for instance to check the messages your application writes to its tags:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_NdefMessage;format=md-fenced-code-block;dedent=true -->
+```csharp
+var message = new NdefMessage(new NdefMessageInit
+{
+    Records =
+    [
+        new NdefRecordInit { RecordType = "text", Data = "Hello", Lang = "en-US" },
+        new NdefRecordInit { RecordType = "url", Data = "https://example.com/products/42" },
+
+        // An external type record whose payload is another NDEF message
+        new NdefRecordInit
+        {
+            RecordType = "example.com:product",
+            Data = new NdefMessageInit
+            {
+                Records = [new NdefRecordInit { RecordType = "mime", MediaType = "application/json", Data = """{"id":42}"""u8.ToArray() }],
+            },
+        },
+    ],
+});
+
+Assert.Equal("Hello", Encoding.UTF8.GetString(message.Records[0].Data!.Value.Span));
+Assert.Equal("utf-8", message.Records[0].Encoding);
+Assert.Equal("application/json", message.Records[2].ToRecords()![0].MediaType);
+```
+<!-- endref -->
+
+A `text` record without `lang` has the language of the document (`en` when it has none, and in .NET). A record whose
+payload is a nested message (`smart-poster`, external and local types) gives its records with `ToRecords()`, and has no
+`Data`: the library does not serialize the NDEF messages, so `ToRecords()` returns null for a payload given as bytes.
 
 ## Web Authentication
 

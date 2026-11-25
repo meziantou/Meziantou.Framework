@@ -9,30 +9,30 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 68 | 94 | 0 | 72% |
+| [Stable](#stable-tests) | 78 | 94 | 0 | 83% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **82** | **118** | **0** | **69%** |
+| **All** | **92** | **118** | **0** | **78%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 23
+- **TEST BUG**: 12
+- **NOT IMPLEMENTED**: 12
 - **TEST RUNNER**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-default-permissions-policy.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
+| [`bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`bluetooth-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`bluetooth-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`bluetooth-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-default-permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`bluetooth-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
 | [`experimental-features/focus-without-user-activation-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/experimental-features/focus-without-user-activation-default-permissions-policy.https.sub.html) | Fail | 1 / 2 | TEST BUG | the test expects the default allowlist `*` for `focus-without-user-activation` (a cross-origin iframe is allowed); HTML defines `'self'` (https://html.spec.whatwg.org/multipage/infrastructure.html#policy-controlled-features); fails in every browser |
 | [`experimental-features/focus-without-user-activation-disabled-by-permissions-policy-cross-origin.https.sub.html`](https://wpt.fyi/results/permissions-policy/experimental-features/focus-without-user-activation-disabled-by-permissions-policy-cross-origin.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`experimental-features/focus-without-user-activation-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/experimental-features/focus-without-user-activation-disabled-by-permissions-policy.https.sub.html) | Pass | 1 / 1 |  |  |
@@ -85,8 +85,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`policy-extends-to-data-url-all.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-data-url-all.html) | Pass | 1 / 1 |  |  |
 | [`policy-extends-to-sandbox-all.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-sandbox-all.html) | Pass | 1 / 1 |  |  |
 | [`policy-extends-to-sandbox.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-sandbox.html) | Pass | 1 / 1 |  |  |
-| [`reporting/bluetooth-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`reporting/bluetooth-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
+| [`reporting/bluetooth-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-report-only.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | 1 of 5 subtests: Web Bluetooth Scanning (`navigator.bluetooth.requestLEScan()`) |
+| [`reporting/bluetooth-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-reporting.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | 1 of 5 subtests: Web Bluetooth Scanning (`navigator.bluetooth.requestLEScan()`) |
 | [`reporting/camera-potential-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-potential-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-report-only.https.html) | Pass | 1 / 1 |  |  |
@@ -101,8 +101,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/geolocation-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/microphone-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/microphone-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/midi-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-report-only.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
-| [`reporting/midi-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
+| [`reporting/midi-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/midi-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-reporting.https.html) | Fail | 0 / 1 | TEST BUG | the test expects `requestMIDIAccess()` to reject with a `SecurityError` (Chromium) in a document that is not allowed to use the `midi` feature; the specification rejects with a `NotAllowedError` (https://webaudio.github.io/web-midi-api/#dom-navigator-requestmidiaccess, steps 4 and 11), and the violation report is generated |
 | [`reporting/payment-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test rethrows the rejection of `show()` after checking the report, so it passes only when the user accepts a payment with `https://example.com/pay`, a payment method that the user agent does not support (`NotSupportedError`, https://w3c.github.io/payment-request/#show-method); Chromium fails it too |
 | [`reporting/payment-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/picture-in-picture-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-report-only.html) | Pass | 1 / 1 |  |  |
@@ -112,12 +112,12 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/report-to-multiple-endpoints.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/report-to-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-single-endpoint.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/screen-wake-lock-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/screen-wake-lock-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/serial-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-report-only.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
-| [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
+| [`reporting/serial-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-report-only.https.html) | Pass | 2 / 2 |  |  |
+| [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Pass | 2 / 2 |  |  |
 | [`reporting/sync-xhr-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-report-only.html) | Pass | 1 / 1 |  |  |
 | [`reporting/sync-xhr-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-reporting.html) | Pass | 1 / 1 |  |  |
-| [`reporting/usb-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | WebUSB (`navigator.usb`) |
-| [`reporting/usb-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-reporting.https.html) | Error | 0 / 1 | NOT IMPLEMENTED | WebUSB (`navigator.usb`) |
+| [`reporting/usb-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/usb-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/xr-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/xr-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebXR Device API (`navigator.xr`) |
 | [`reporting/xr-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/xr-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the WebXR Device API (`navigator.xr`) |
 | [`speaker-selection-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/speaker-selection-allowed-by-permissions-policy.https.sub.html) | Pass | 4 / 4 |  |  |

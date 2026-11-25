@@ -334,6 +334,42 @@ public class SchemaTests
         TryParse(schema, "5.5", JsonSchema.FloatShortTag, 5.5);
     }
 
+    [Fact]
+    public void ResolvesToNonString_LetterStartMatchesSchemaRules()
+    {
+        // The words of the null and boolean rules, with the other casings and near misses.
+        var words = new List<string>
+        {
+            "null", "Null", "NULL", "nULL", "nulls", "true", "True", "TRUE", "tRUE", "truex", "false", "False", "FALSE", "fALSE",
+            "yes", "Yes", "YES", "yES", "off", "Off", "OFF", "oFF", "offx", "tag0", "name", "inf", "nan", "NaN", "Infinity", "e1", "x0",
+        };
+
+        // Every word of up to three letters from the letters of the rules.
+        const string Letters = "nNuUlLtTrReEfFaAsSyYoOx";
+        foreach (var first in Letters)
+        {
+            words.Add(first.ToString());
+            foreach (var second in Letters)
+            {
+                words.Add(string.Concat(first, second));
+                foreach (var third in Letters)
+                {
+                    words.Add(string.Concat(first, second, third));
+                }
+            }
+        }
+
+        var schemas = new (YamlSchemaKind Kind, SchemaBase Schema)[] { (YamlSchemaKind.Json, new JsonSchema()), (YamlSchemaKind.Core, new CoreSchema()), (YamlSchemaKind.Extended, new ExtendedSchema()) };
+        foreach (var (kind, schema) in schemas)
+        {
+            foreach (var word in words)
+            {
+                var expected = schema.TryParse(new Scalar(null, null, word, ScalarStyle.Plain, true, false), decodeValue: false, out var tag, out _) && tag != SchemaBase.StrShortTag;
+                Assert.Equal(expected, Meziantou.Framework.Yaml.Serialization.YamlScalar.ResolvesToNonString(word, kind), $"{kind} {word}");
+            }
+        }
+    }
+
     private static void TestCoreSchemaCommon(CoreSchema schema)
     {
         TestJsonSchemaCommon(schema);

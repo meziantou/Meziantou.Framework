@@ -499,76 +499,34 @@
     "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/handle_request_device_prompt.https.html": {
-    "harness": "ERROR",
-    "total": 2,
-    "failures": {
-      "accept upon request_device_prompt_updated event": "NOTRUN",
-      "cancel upon request_device_prompt_updated event": "NOTRUN"
-    }
+    "total": 2
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_adapter.https.html": {
-    "total": 3,
-    "failures": {
-      "simulate bluetooth adapter 'absent'": "FAIL",
-      "simulate bluetooth adapter 'powered-off'": "FAIL",
-      "simulate bluetooth adapter 'powered-on'": "FAIL"
-    }
+    "total": 3
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_characteristic.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT characteristic.": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_characteristic_response.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT characteristic response": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_descriptor.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT descriptor.": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_descriptor_response.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT descriptor response": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_gatt_connection_response.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT connection response.": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_gatt_disconnection.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT disconnection.": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_preconnected_peripheral.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a preconnected peripheral.": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/bluetooth/simulate_service.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "simulate a GATT service.": "NOTRUN"
-    }
+    "total": 1
   },
   "infrastructure/testdriver/bidi/browsing_context/set_viewport.https.html": {
     "total": 2,

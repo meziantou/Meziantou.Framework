@@ -9,18 +9,18 @@ description: "The results of the web-platform-tests of infrastructure, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 56 | 106 | 0 | 53% |
+| [Stable](#stable-tests) | 66 | 106 | 0 | 62% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 37 | 61 | 0 | 61% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **97** | **171** | **0** | **57%** |
+| **All** | **107** | **171** | **0** | **63%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **NOT IMPLEMENTED**: 1
-- **TEST RUNNER**: 44
+- **TEST RUNNER**: 34
 - **OUT OF SCOPE**: 29
 
 ## Stable tests
@@ -80,16 +80,16 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`testdriver/actions/textEditCommands.html`](https://wpt.fyi/results/infrastructure/testdriver/actions/textEditCommands.html) | Pass | 1 / 1 |  |  |
 | [`testdriver/actions/touchPointerEventProperties.html`](https://wpt.fyi/results/infrastructure/testdriver/actions/touchPointerEventProperties.html) | Pass | 1 / 1 |  |  |
 | [`testdriver/actions/wheelScroll.html`](https://wpt.fyi/results/infrastructure/testdriver/actions/wheelScroll.html) | Pass | 1 / 1 |  |  |
-| [`testdriver/bidi/bluetooth/handle_request_device_prompt.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/handle_request_device_prompt.https.html) | Error | 0 / 2 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_adapter.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_adapter.https.html) | Fail | 0 / 3 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_characteristic.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_characteristic.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_characteristic_response.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_characteristic_response.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_descriptor.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_descriptor.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_descriptor_response.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_descriptor_response.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_gatt_connection_response.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_gatt_connection_response.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_gatt_disconnection.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_gatt_disconnection.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_preconnected_peripheral.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_preconnected_peripheral.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
-| [`testdriver/bidi/bluetooth/simulate_service.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_service.https.html) | Error | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
+| [`testdriver/bidi/bluetooth/handle_request_device_prompt.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/handle_request_device_prompt.https.html) | Pass | 2 / 2 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_adapter.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_adapter.https.html) | Pass | 3 / 3 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_characteristic.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_characteristic.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_characteristic_response.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_characteristic_response.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_descriptor.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_descriptor.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_descriptor_response.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_descriptor_response.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_gatt_connection_response.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_gatt_connection_response.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_gatt_disconnection.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_gatt_disconnection.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_preconnected_peripheral.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_preconnected_peripheral.https.html) | Pass | 1 / 1 |  |  |
+| [`testdriver/bidi/bluetooth/simulate_service.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/bluetooth/simulate_service.https.html) | Pass | 1 / 1 |  |  |
 | [`testdriver/bidi/browsing_context/set_viewport.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/browsing_context/set_viewport.https.html) | Fail | 0 / 2 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
 | [`testdriver/bidi/emulation/set_geolocation_override.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/emulation/set_geolocation_override.https.html) | Fail | 2 / 3 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |
 | [`testdriver/bidi/emulation/set_locale_override.https.html`](https://wpt.fyi/results/infrastructure/testdriver/bidi/emulation/set_locale_override.https.html) | Fail | 0 / 1 | TEST RUNNER | the WebDriver BiDi commands of the test driver (`test_driver.bidi.*`) that testdriver-vendor.js does not implement, or only for the current browsing context: the emulation overrides, the Bluetooth simulation, the permissions of other origins and the event subscriptions |

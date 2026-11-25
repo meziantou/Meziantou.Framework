@@ -192,6 +192,9 @@ internal sealed class WorkerAgent
             IdbFactory.CloseConnections(global);
             WebLocks.OnEnvironmentDiscarded(global);
             global.ReleaseFileSystemResources();
+            global.CloseUsbDevices();
+            global.CloseSerialPorts();
+            global.CloseHidDevices();
             ServiceWorkerRegistry.OnEnvironmentDiscarded(global.EnvironmentDocument);
             InsidePort?.Disentangle();
             try

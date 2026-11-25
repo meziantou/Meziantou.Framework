@@ -1,3 +1,4 @@
+using System.IO.Hashing;
 using Meziantou.Framework.Compression.Internals.IO;
 
 namespace Meziantou.Framework.Compression.Internals.BZip2;
@@ -37,7 +38,7 @@ internal sealed class BZip2DecoderStream : ReadOnlyStreamBase
 
     private State _state;
     private uint _streamCrc;
-    private uint _blockCrc;
+    private readonly Crc32 _blockCrc = new(BZip2Constants.CrcParameters);
     private uint _expectedBlockCrc;
 
     // The output of the current block: the position in the vector, the number of positions left, and the state of the
@@ -89,7 +90,7 @@ internal sealed class BZip2DecoderStream : ReadOnlyStreamBase
                 case State.BlockData:
                     var output = buffer[written..];
                     var count = _randomized ? WriteRandomized(output) : Write(output);
-                    _blockCrc = BZip2Constants.UpdateCrc(_blockCrc, output[..count]);
+                    _blockCrc.Append(output[..count]);
                     written += count;
                     if (_remaining is 0 && _repeat is 0)
                     {
@@ -167,7 +168,7 @@ internal sealed class BZip2DecoderStream : ReadOnlyStreamBase
         _repeat = 0;
         _randomCountdown = 0;
         _randomIndex = 0;
-        _blockCrc = uint.MaxValue;
+        _blockCrc.Reset();
         _state = State.BlockData;
     }
 
@@ -349,22 +350,7 @@ internal sealed class BZip2DecoderStream : ReadOnlyStreamBase
             if (length2 >= _blockSize)
                 throw new InvalidDataException("The bzip2 block is larger than the block size of the stream.");
 
-            // Move to front
-            var position = symbol - 1;
-            var b = mtf[position];
-            if (position < 16)
-            {
-                for (var j = position; j > 0; j--)
-                {
-                    mtf[j] = mtf[j - 1];
-                }
-            }
-            else
-            {
-                mtf[..position].CopyTo(mtf[1..]);
-            }
-
-            mtf[0] = b;
+            var b = BZip2Constants.MoveToFront(mtf, symbol - 1);
             tt[length2++] = b;
             counts[b]++;
         }
@@ -503,7 +489,7 @@ internal sealed class BZip2DecoderStream : ReadOnlyStreamBase
 
     private void EndBlock()
     {
-        var crc = ~_blockCrc;
+        var crc = _blockCrc.GetCurrentHashAsUInt32();
         if (crc != _expectedBlockCrc)
             throw new InvalidDataException("The CRC of the bzip2 block is incorrect.");
 

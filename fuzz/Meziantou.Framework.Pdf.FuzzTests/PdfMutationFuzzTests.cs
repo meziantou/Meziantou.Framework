@@ -328,6 +328,38 @@ public sealed class PdfMutationFuzzTests
     }
 
     [Fact]
+    public void RandomNumbersHaveTheValueOfTheGeneralParser()
+    {
+        // The short numbers have a parser of their own: it must give the value, the kind and the sign of zero that the
+        // general parser gives, for the tokens it accepts and for those it leaves to the general parser
+        var random = new PdfFuzzRandom(PdfFuzzSettings.Seed);
+        var token = new byte[24];
+        for (var i = 0; i < PdfFuzzSettings.Iterations * 2000; i++)
+        {
+            var length = random.Next(1, token.Length + 1);
+            for (var j = 0; j < length; j++)
+            {
+                token[j] = random.Next(16) switch
+                {
+                    0 => (byte)'.',
+                    1 => (byte)'-',
+                    2 => (byte)'+',
+                    3 => (byte)'0',
+                    4 => (byte)'9',
+                    5 => (byte)'e',
+                    _ => (byte)('0' + random.Next(10)),
+                };
+            }
+
+            var text = token.AsSpan(0, length);
+            var parsed = PdfLexer.TryParseNumber(text, out var isInteger, out var integer, out var real);
+            var expected = PdfLexer.TryParseAnyNumber(text, out var expectedIsInteger, out var expectedInteger, out var expectedReal);
+            var description = System.Text.Encoding.ASCII.GetString(text);
+            Assert.Equal((expected, expectedIsInteger, expectedInteger, BitConverter.DoubleToInt64Bits(expectedReal)), (parsed, isInteger, integer, BitConverter.DoubleToInt64Bits(real)), description);
+        }
+    }
+
+    [Fact]
     public void RandomTokensForTheParser()
     {
         var random = new PdfFuzzRandom(PdfFuzzSettings.Seed);

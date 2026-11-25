@@ -50,8 +50,9 @@ The library is split into packages, so that an application only references what 
   runs without a script engine, and no pixel is drawn without a rendering backend. You decide what a page can do.
 - **Same pixels everywhere.** The rendering is fully managed and the default fonts are part of the library: the same page
   gives the same screenshot on Windows, Linux and macOS.
-- **The web API, with .NET names.** Every member that maps a member of the web API has the
-  `[IdlMember(name, specUrl)]` attribute. The names follow the .NET guidelines: acronyms of 3 letters or more are
+- **The web API, with .NET names.** In the source code, every member that maps a member of the web API has the
+  `[IdlMember(name, specUrl)]` attribute (the published assembly does not carry it, to keep it smaller). The names
+  follow the .NET guidelines: acronyms of 3 letters or more are
   PascalCased and acronyms of 2 letters stay upper case (`innerHTML` is [InnerHtml](cref:Meziantou.Framework.WebPlatform.Dom.Element.InnerHtml), `toJSON` is `ToJson`,
   `getElementsByTagNameNS` is [GetElementsByTagNameNS](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetElementsByTagNameNS), `HTMLBRElement` is [HtmlBRElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlBRElement)).
 

@@ -10,8 +10,6 @@ on:
         default: false
         required: false
   pull_request:
-    branches:
-      - '*'
   # Pull requests and manual runs only test the projects that set GlobalizationSensitive in invariant
   # globalization mode. This run tests all of them in that mode, so a failure means the analyzer that
   # requires the property is missing a rule.

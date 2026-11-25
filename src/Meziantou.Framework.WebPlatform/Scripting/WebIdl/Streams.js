@@ -3391,25 +3391,41 @@
   // ------------------------------------------------------------------------------------------------------------------
 
   // Calls a function of the library: an exception rejects the returned promise
+  // The algorithms of the library return undefined, or a promise when they complete asynchronously (e.g. the writes to a
+  // serial port)
   function callPlatformAlgorithm(algorithm, argument) {
+    let result;
     try {
-      algorithm(argument);
+      result = algorithm(argument);
     } catch (e) {
       return promiseRejectedWith(e);
     }
 
-    return promiseResolvedWith(undefined);
+    return promiseResolvedWith(result);
   }
 
   // A ReadableStream whose underlying source is implemented by the library: source.pull() and source.cancel(reason) are
   // its pull and cancel algorithms. Returns the stream and the functions with which the library enqueues the chunks,
   // closes or errors it (they do nothing once the stream is closed or errored).
-  function createPlatformReadableStream(source, highWaterMark) {
-    const stream = createReadableStream(realm, () => undefined, () => callPlatformAlgorithm(source.pull, undefined), (reason) => callPlatformAlgorithm(source.cancel, reason), highWaterMark);
+  // A readable byte stream (bytes is true) has byte reading support: its chunks are Uint8Array objects, which fill the
+  // views of the BYOB readers. cancel(reason) cancels the stream as ReadableStream.prototype.cancel() does (it rejects with
+  // a TypeError when the stream is locked).
+  function createPlatformReadableStream(source, highWaterMark, bytes) {
+    const pull = () => callPlatformAlgorithm(source.pull, undefined);
+    const cancel = (reason) => callPlatformAlgorithm(source.cancel, reason);
+    const stream = bytes ? createReadableByteStream(realm, () => undefined, pull, cancel) : createReadableStream(realm, () => undefined, pull, cancel, highWaterMark);
     const controller = ObjectCreate(null);
-    controller.enqueue = (chunk) => readableStreamDefaultControllerEnqueue(stream.controller, chunk);
-    controller.close = () => readableStreamDefaultControllerClose(stream.controller);
-    controller.error = (e) => readableStreamDefaultControllerError(stream.controller, e);
+    if (bytes) {
+      controller.enqueue = (chunk) => readableByteStreamControllerEnqueue(stream.controller, chunk);
+      controller.close = () => readableByteStreamControllerClose(stream.controller);
+      controller.error = (e) => readableByteStreamControllerError(stream.controller, e);
+    } else {
+      controller.enqueue = (chunk) => readableStreamDefaultControllerEnqueue(stream.controller, chunk);
+      controller.close = () => readableStreamDefaultControllerClose(stream.controller);
+      controller.error = (e) => readableStreamDefaultControllerError(stream.controller, e);
+    }
+
+    controller.cancel = (reason) => isReadableStreamLocked(stream) ? promiseRejectedWith(new TypeError_('The stream is locked')) : readableStreamCancel(stream, reason);
     const result = ObjectCreate(null);
     result.stream = stream.object;
     result.controller = controller;
@@ -3428,6 +3444,9 @@
     controller.error = (e) => {
       if (stream.state === 'writable') writableStreamDefaultControllerErrorIfNeeded(stream.controller, e);
     };
+
+    // As WritableStream.prototype.abort(): it rejects with a TypeError when the stream is locked
+    controller.abort = (reason) => isWritableStreamLocked(stream) ? promiseRejectedWith(new TypeError_('The stream is locked')) : writableStreamAbort(stream, reason);
     const result = ObjectCreate(null);
     result.stream = stream.object;
     result.controller = controller;

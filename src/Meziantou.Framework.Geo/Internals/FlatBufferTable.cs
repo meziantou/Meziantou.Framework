@@ -86,30 +86,6 @@ internal readonly ref struct FlatBufferTable
         return _buffer.Slice(range.Start, range.Count * elementSize);
     }
 
-    public double[] GetDoubleVector(int field)
-    {
-        var bytes = GetVectorBytes(field, 8, out var count);
-        var result = new double[count];
-        for (var i = 0; i < count; i++)
-        {
-            result[i] = BinaryPrimitives.ReadDoubleLittleEndian(bytes[(i * 8)..]);
-        }
-
-        return result;
-    }
-
-    public uint[] GetUInt32Vector(int field)
-    {
-        var bytes = GetVectorBytes(field, 4, out var count);
-        var result = new uint[count];
-        for (var i = 0; i < count; i++)
-        {
-            result[i] = BinaryPrimitives.ReadUInt32LittleEndian(bytes[(i * 4)..]);
-        }
-
-        return result;
-    }
-
     public TableVector GetTableVector(int field)
     {
         if (GetVectorRange(field, elementSize: 4) is not { } range)

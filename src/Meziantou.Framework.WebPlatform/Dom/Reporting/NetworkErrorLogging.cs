@@ -173,8 +173,9 @@ internal sealed record NetworkErrorLoggingPolicyHeader
         {
             document = JsonDocument.Parse("[" + value + "]", new JsonDocumentOptions { MaxDepth = 16 });
         }
-        catch (JsonException)
+        catch (Exception ex) when (ex is JsonException or ArgumentException)
         {
+            // (ArgumentException: a header value of a lone surrogate, which no bytes give, is not JSON)
             return null;
         }
 

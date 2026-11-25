@@ -61,8 +61,7 @@ public static class WellKnownText
     {
         ArgumentNullException.ThrowIfNull(geometry);
         GeoValidation.EnsureFinite(geometry, nameof(geometry));
-        var hasAltitude = geometry.GetPositions().Any(position => position.Altitude is not null);
-        var hasMeasure = geometry.GetPositions().Any(position => position.Measure is not null);
+        var (hasAltitude, hasMeasure) = GeoPositionSpans.GetDimensions(geometry);
         var builder = new StringBuilder();
         WriteGeometry(builder, geometry, hasAltitude, hasMeasure);
         return builder.ToString();
@@ -136,7 +135,26 @@ public static class WellKnownText
 
     private static void WritePositions(StringBuilder builder, IReadOnlyList<GeoPosition> positions, bool hasAltitude, bool hasMeasure)
     {
-        WriteList(builder, positions, position => WritePosition(builder, position, hasAltitude, hasMeasure));
+        // The positions of a geometry are an array: no delegate call for each position
+        var span = positions is GeoPosition[] array ? array.AsSpan() : [.. positions];
+        if (span.IsEmpty)
+        {
+            builder.Append("EMPTY");
+            return;
+        }
+
+        builder.Append('(');
+        for (var i = 0; i < span.Length; i++)
+        {
+            if (i > 0)
+            {
+                builder.Append(", ");
+            }
+
+            WritePosition(builder, span[i], hasAltitude, hasMeasure);
+        }
+
+        builder.Append(')');
     }
 
     private static void WriteList<T>(StringBuilder builder, IReadOnlyList<T> items, Action<T> writeItem)
@@ -161,21 +179,18 @@ public static class WellKnownText
         builder.Append(')');
     }
 
-    private static void WritePosition(StringBuilder builder, GeoPosition position, bool hasAltitude, bool hasMeasure)
+    // The numbers are formatted in the builder, as double.ToString(CultureInfo.InvariantCulture) formats them, without a string for each one
+    private static void WritePosition(StringBuilder builder, in GeoPosition position, bool hasAltitude, bool hasMeasure)
     {
-        builder.Append(position.Longitude.ToString(CultureInfo.InvariantCulture));
-        builder.Append(' ');
-        builder.Append(position.Latitude.ToString(CultureInfo.InvariantCulture));
+        builder.Append(CultureInfo.InvariantCulture, $"{position.Longitude} {position.Latitude}");
         if (hasAltitude)
         {
-            builder.Append(' ');
-            builder.Append((position.Altitude ?? 0).ToString(CultureInfo.InvariantCulture));
+            builder.Append(CultureInfo.InvariantCulture, $" {position.Altitude ?? 0}");
         }
 
         if (hasMeasure)
         {
-            builder.Append(' ');
-            builder.Append((position.Measure ?? 0).ToString(CultureInfo.InvariantCulture));
+            builder.Append(CultureInfo.InvariantCulture, $" {position.Measure ?? 0}");
         }
     }
 

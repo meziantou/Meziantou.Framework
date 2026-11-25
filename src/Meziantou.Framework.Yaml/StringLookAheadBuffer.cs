@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Yaml;
 
-internal class StringLookAheadBuffer : ILookAheadBuffer
+internal sealed class StringLookAheadBuffer : ILookAheadBuffer
 {
     private readonly string _value;
 
@@ -14,6 +14,9 @@ internal class StringLookAheadBuffer : ILookAheadBuffer
     }
 
     public bool EndOfInput { get { return IsOutside(Position); } }
+
+    /// <summary>Gets the characters that are not consumed yet.</summary>
+    public ReadOnlySpan<char> Remaining => IsOutside(Position) ? default : _value.AsSpan(Position);
 
     public StringLookAheadBuffer(string value)
     {

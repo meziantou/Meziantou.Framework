@@ -1670,7 +1670,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (source.Value is TValue value)
             return value;
 
-        var created = FromBuffer(source.Kind, source.Bytes);
+        // A view of the buffer of another source (whose object is created first)
+        var created = source.ViewOf is { } viewed
+            ? Adapter.RunInRealm(EngineRealm, () => Adapter.CreateArrayBufferView(source.Kind, Adapter.Get(FromBufferSource(viewed), Adapter.FromString("buffer")), source.ViewOffset, source.Bytes.Length))
+            : FromBuffer(source.Kind, source.Bytes);
         if (Adapter.TryGetBufferSource(created, out _, out _, out var bytes))
         {
             source.Bind(created, bytes);

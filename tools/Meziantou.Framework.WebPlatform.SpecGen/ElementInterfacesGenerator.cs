@@ -45,6 +45,9 @@ internal static class ElementInterfacesGenerator
         // (touch-events is not included: "expose legacy touch event APIs" is false, as on desktop browsers)
         "css-animations-1", "css-transitions-1", "pointerevents4", "pointerlock-2", "uievents", "selection-api", "fullscreen",
         "css-contain-2", "css-scroll-snap-2",
+
+        // Event handlers of WindowEventHandlers
+        "gamepad",
     };
 
     /// <summary>The reflected IDL attributes whose getter or setter has additional steps (Trusted Types, a media stream): they are hand-written.</summary>
@@ -70,7 +73,7 @@ internal static class ElementInterfacesGenerator
     // Words used to convert event handler names to PascalCase (onmousedown -> OnMouseDown)
     private static readonly string[] EventWords =
     [
-        "abort", "activate", "after", "animation", "auto", "aux", "before", "blur", "cancel", "can", "capture", "change", "click", "close", "command",
+        "abort", "activate", "after", "connected", "disconnected", "gamepad", "animation", "auto", "aux", "before", "blur", "cancel", "can", "capture", "change", "click", "close", "command",
         "content", "context", "copy", "cue", "cut", "data", "dbl", "down", "drag", "drop", "duration", "element", "emptied", "end", "ended", "enter", "error",
         "focus", "form", "fullscreen", "geometry", "got", "hash", "input", "invalid", "iteration", "key", "language", "leave", "load", "loaded", "lock",
         "lost", "match", "menu", "message", "metadata", "mouse", "move", "offline", "online", "out", "over", "page", "paste", "pause", "play",

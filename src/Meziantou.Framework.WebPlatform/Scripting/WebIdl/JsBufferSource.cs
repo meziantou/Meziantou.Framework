@@ -79,6 +79,19 @@ internal sealed class JsBufferSource(JsBufferKind kind, Memory<byte> bytes)
     /// <summary>The realm of the JavaScript object, which detaches its buffer (null for bytes created by .NET code).</summary>
     public IJsBufferOwner? Owner { get; private set; }
 
+    /// <summary>
+    /// The source whose buffer this source views, or null: the bindings convert this source to a view of the buffer of the
+    /// object of <see cref="ViewOf"/> at <see cref="ViewOffset"/> (e.g. the packets of the result of an isochronous USB
+    /// transfer, which view the buffer of the data of the result).
+    /// </summary>
+    public JsBufferSource? ViewOf { get; private init; }
+
+    /// <summary>The offset of the view in the buffer of <see cref="ViewOf"/>.</summary>
+    public int ViewOffset { get; private init; }
+
+    /// <summary>Creates a <c>DataView</c> of a part of the buffer of another source created by .NET code (a <c>DataView</c> at the start of its buffer).</summary>
+    public static JsBufferSource CreateView(JsBufferSource source, int offset, int length) => new(JsBufferKind.DataView, source.Bytes.Slice(offset, length)) { ViewOf = source, ViewOffset = offset };
+
     /// <summary>Creates the source of a JavaScript object.</summary>
     public static JsBufferSource FromScript(JsBufferKind kind, Memory<byte> bytes, object value, IJsBufferOwner? owner = null) => new(kind, bytes) { Value = value, Owner = owner };
 

@@ -19,11 +19,10 @@ description: "The results of the web-platform-tests of contacts, and why the tes
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 1
-  - `hardware`: 1
+- **TEST BUG**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`contacts-select.https.window.js`](https://wpt.fyi/results/contacts/contacts-select.https.window.js) | Fail | 0 / 9 | REQUIRES(hardware) | Contact Picker API |
+| [`contacts-select.https.window.js`](https://wpt.fyi/results/contacts/contacts-select.https.window.js) | Fail | 7 / 9 | TEST BUG | the subtest of the picker that cannot be opened (`setSelectedContacts(null)`) expects a `TypeError`, as Chromium rejects; the specification rejects with an `InvalidStateError` when launching the contact picker fails (https://w3c.github.io/contact-picker/#dom-contactsmanager-select, step 11.1); the subtest of the second `select()` while the picker is showing expects an `InvalidStateError`; the first call consumes the user activation (step 5 of https://w3c.github.io/contact-picker/#dom-contactsmanager-select) before the flag of the showing picker is checked (step 6), so the second call has no transient activation and is rejected with a `SecurityError` (step 4) |

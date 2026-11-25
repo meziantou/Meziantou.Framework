@@ -51,6 +51,16 @@ public sealed class FullscreenOptions
     /// <seealso href="https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-navigationui"/>
     [IdlMember("navigationUI", "https://fullscreen.spec.whatwg.org/#dom-fullscreenoptions-navigationui")]
     public FullscreenNavigationUI NavigationUI { get; init; } = FullscreenNavigationUI.Auto;
+
+    /// <summary>
+    /// Gets the screen on which the element is displayed fullscreen (https://w3c.github.io/window-management/#dom-fullscreenoptions-screen),
+    /// one of <see cref="ScreenDetails.Screens"/>, or null for the current screen: the client window moves to the screen, and
+    /// its viewport gets the size of the screen (unless <see cref="BrowsingContextOptions.EnterFullscreen"/> returns another
+    /// size). It is ignored when the <c>window-management</c> permissions policy feature is not allowed.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/window-management/#dom-fullscreenoptions-screen"/>
+    [IdlMember("screen", "https://w3c.github.io/window-management/#dom-fullscreenoptions-screen")]
+    public ScreenDetailed? Screen { get; init; }
 }
 
 /// <summary>

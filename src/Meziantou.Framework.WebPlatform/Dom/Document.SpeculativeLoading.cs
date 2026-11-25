@@ -372,6 +372,22 @@ public partial class Document
     /// https://wicg.github.io/nav-speculation/prerendering.html#delay-while-prerendering, for an operation that returns a
     /// promise: in a prerendering document, the operation starts when the document is activated.
     /// </summary>
+    internal static Task DelayWhilePrerendering(GlobalScope? global, Func<Task> operation)
+    {
+        if (global is not Window { Document.Prerendering: true })
+            return operation();
+
+        return DelayWhilePrerendering(global, async () =>
+        {
+            await operation().ConfigureAwait(false);
+            return true;
+        });
+    }
+
+    /// <summary>
+    /// https://wicg.github.io/nav-speculation/prerendering.html#delay-while-prerendering, for an operation that returns a
+    /// promise of a value: in a prerendering document, the operation starts when the document is activated.
+    /// </summary>
     internal static Task<T> DelayWhilePrerendering<T>(GlobalScope? global, Func<Task<T>> operation)
     {
         if (global is not Window { Document: { Prerendering: true } document })

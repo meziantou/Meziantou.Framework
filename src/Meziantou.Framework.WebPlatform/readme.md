@@ -9,7 +9,8 @@ rasterizer, in a separate package) rasterizes for the screenshots and the canvas
 browsing context that fetches their resources over the network and runs their scripts with a pluggable JavaScript
 engine ([Meziantou.Framework.JavaScriptEngine](../Meziantou.Framework.JavaScriptEngine/readme.md) is provided).
 
-Every public member mapping a WebIDL member is annotated with `[IdlMember(name, specUrl)]`. The WebIDL names follow the
+Every public member mapping a WebIDL member is annotated with `[IdlMember(name, specUrl)]` in the source code (the attribute is
+conditional: the published assembly does not carry it, to keep it smaller). The WebIDL names follow the
 .NET naming guidelines: acronyms of 3 letters or more are PascalCased and acronyms of 2 letters stay upper case
 (`HTMLElement.innerHTML` → `HtmlElement.InnerHtml`, `toJSON` → `ToJson`, `CDATASection` → `CDataSection`, `UIEvent`
 and `HTMLBRElement` → `HtmlBRElement`). `MathML` and `XPath` keep their casing.

@@ -663,10 +663,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     /// <summary>The bytes of a Uint8Array created by Fetch.js.</summary>
     private byte[] GetBytes(TValue value) => TryToBufferSource(value, 1u << (int)JsBufferKind.Uint8Array, allowShared: false)?.Bytes.ToArray() ?? [];
 
+    /// <summary>Reads a script of the bindings, an embedded resource that the build compresses.</summary>
     private static string LoadEmbeddedScript(string name)
     {
-        using var stream = typeof(WebIdlRealm<TAdapter, TValue>).Assembly.GetManifestResourceStream(name)
-            ?? throw new InvalidOperationException($"The {name} resource is missing");
+        using var stream = CompressedResource.Open(typeof(WebIdlRealm<TAdapter, TValue>).Assembly, name);
         using var reader = new StreamReader(stream);
         return reader.ReadToEnd();
     }

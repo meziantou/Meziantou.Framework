@@ -1,7 +1,7 @@
 using System.Reflection;
+using System.Runtime.Loader;
 using System.Text;
 using System.Text.Json;
-using Meziantou.Framework.WebPlatform.Dom;
 using SpecGen.Idl;
 
 namespace Meziantou.Framework.WebPlatform.Wpt;
@@ -9,6 +9,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt;
 /// <summary>
 /// Checks that every IDL member of the in-scope specifications has a .NET member annotated with <see cref="IdlMemberAttribute"/>,
 /// or is listed in idl-exclusions.json with a reason. Stale exclusions (members that are now implemented) also fail the test.
+/// The attributes are conditional: they are read from the build of the library that emits them (idl-metadata/, see the
+/// project file), loaded in its own context, so their types are compared by name.
 /// </summary>
 public sealed class IdlCoverageTests
 {
@@ -21,18 +23,33 @@ public sealed class IdlCoverageTests
     public void AllIdlMembersAreImplementedOrExcluded()
     {
         // The full IDL of webref
-        var model = new BindingModel(IdlModel.Load(WptPaths.SpecData("webref", "ed", "idlparsed")));
+        var idl = IdlModel.Load(WptPaths.SpecData("webref", "ed", "idlparsed"));
         var exclusionsPath = Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "idl-exclusions.json");
         var exclusions = JsonSerializer.Deserialize<Dictionary<string, string>>(File.ReadAllText(exclusionsPath))!;
-        var clrTypes = typeof(Node).Assembly.GetTypes()
-            .Select(t => (Type: t, Attribute: t.GetCustomAttribute<IdlInterfaceAttribute>(inherit: false)))
-            .Where(t => t.Attribute is not null)
-            .GroupBy(t => t.Attribute!.Name)
+        var loadContext = new AssemblyLoadContext(nameof(IdlCoverageTests), isCollectible: true);
+        try
+        {
+            var assembly = loadContext.LoadFromAssemblyPath(Path.Combine(AppContext.BaseDirectory, "idl-metadata", "Meziantou.Framework.WebPlatform.dll"));
+            CheckCoverage(idl, exclusions, assembly);
+        }
+        finally
+        {
+            loadContext.Unload();
+        }
+    }
+
+    private static void CheckCoverage(IdlModel idl, Dictionary<string, string> exclusions, Assembly assembly)
+    {
+        var clrTypes = assembly.GetTypes()
+            .Select(t => (Type: t, Name: GetIdlNames(t, typeof(IdlInterfaceAttribute)).FirstOrDefault()))
+            .Where(t => t.Name is not null)
+            .GroupBy(t => t.Name!)
             .ToDictionary(g => g.Key, g => g.Select(t => t.Type).ToList());
+        Assert.NotEmpty(clrTypes);
 
         var missing = new List<string>();
         var implemented = 0;
-        foreach (var definition in model.Idl.Definitions.Values.OrderBy(d => d.Name, StringComparer.Ordinal))
+        foreach (var definition in idl.Definitions.Values.OrderBy(d => d.Name, StringComparer.Ordinal))
         {
             if (definition.Kind is not (IdlDefinitionKind.Interface or IdlDefinitionKind.CallbackInterface or IdlDefinitionKind.Dictionary or IdlDefinitionKind.Namespace))
                 continue;
@@ -107,14 +124,17 @@ public sealed class IdlCoverageTests
             {
                 foreach (var member in current.GetMembers(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly))
                 {
-                    foreach (var attribute in member.GetCustomAttributes<IdlMemberAttribute>(inherit: false))
-                    {
-                        result.Add(attribute.Name);
-                    }
+                    result.UnionWith(GetIdlNames(member, typeof(IdlMemberAttribute)));
                 }
             }
         }
 
         return result;
     }
+
+    /// <summary>The first argument (the IDL name) of the attributes of <paramref name="attributeType"/>, compared by name: the member comes from another load context.</summary>
+    private static IEnumerable<string> GetIdlNames(MemberInfo member, Type attributeType)
+        => member.GetCustomAttributesData()
+            .Where(attribute => attribute.AttributeType.FullName == attributeType.FullName)
+            .Select(attribute => (string)attribute.ConstructorArguments[0].Value!);
 }

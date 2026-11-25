@@ -64,6 +64,7 @@ namespace Meziantou.Framework.WebPlatform
     }
 
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Enum | System.AttributeTargets.Interface | System.AttributeTargets.Delegate, AllowMultiple = false, Inherited = false)]
+    [System.Diagnostics.Conditional("WEBPLATFORM_IDL_METADATA")]
     public sealed class IdlInterfaceAttribute : System.Attribute
     {
         public string Name { get => throw null; }
@@ -72,6 +73,7 @@ namespace Meziantou.Framework.WebPlatform
     }
 
     [System.AttributeUsage(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Event, AllowMultiple = true, Inherited = false)]
+    [System.Diagnostics.Conditional("WEBPLATFORM_IDL_METADATA")]
     public sealed class IdlMemberAttribute : System.Attribute
     {
         public string Name { get => throw null; }
@@ -80,6 +82,7 @@ namespace Meziantou.Framework.WebPlatform
     }
 
     [System.AttributeUsage(System.AttributeTargets.Constructor | System.AttributeTargets.Method | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Event, AllowMultiple = false, Inherited = false)]
+    [System.Diagnostics.Conditional("WEBPLATFORM_IDL_METADATA")]
     public sealed class NotInIdlAttribute : System.Attribute
     {
         public string? Reason { get => throw null; }
@@ -2902,7 +2905,9 @@ namespace Meziantou.Framework.WebPlatform.Css.TypedOm
         public uint Length { get => throw null; }
         public CssUnparsedValue(System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedSegment> members) { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedSegment> GetEnumerator() => throw null;
+        #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        #nullable restore
         public override string ToString() => throw null;
         Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedSegment System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Css.TypedOm.CssUnparsedSegment>.get_Item(int index) => throw null;
     }
@@ -10659,7 +10664,9 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public uint Size { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus? Get(System.ReadOnlySpan<byte> keyId) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<byte[], Meziantou.Framework.WebPlatform.Dom.MediaKeyStatus>> GetEnumerator() => throw null;
+        #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        #nullable restore
         public bool Has(System.ReadOnlySpan<byte> keyId) => throw null;
     }
 
@@ -20128,7 +20135,9 @@ namespace Meziantou.Framework.WebPlatform.WebAudio
         public int Count { get => throw null; }
         public Meziantou.Framework.WebPlatform.WebAudio.AudioParam? Get(string name) => throw null;
         public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.WebAudio.AudioParam>> GetEnumerator() => throw null;
+        #nullable disable
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        #nullable restore
         public bool Has(string name) => throw null;
     }
 

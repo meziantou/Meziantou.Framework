@@ -5,6 +5,7 @@
 //   Microsoft.Extensions.Logging.Abstractions (net10.0)
 //   Microsoft.Extensions.Logging.Configuration
 //   Microsoft.Extensions.Options (net10.0)
+//   System.Diagnostics.DiagnosticSource (net10.0)
 #nullable enable
 
 namespace Meziantou.Extensions.Logging

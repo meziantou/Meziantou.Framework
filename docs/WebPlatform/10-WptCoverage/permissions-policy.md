@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 70 | 94 | 0 | 74% |
+| [Stable](#stable-tests) | 75 | 94 | 0 | 80% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **84** | **118** | **0** | **71%** |
+| **All** | **89** | **118** | **0** | **75%** |
 
 ## Failure reasons
 
@@ -21,18 +21,18 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 21
+- **NOT IMPLEMENTED**: 16
 - **TEST RUNNER**: 1
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-default-permissions-policy.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`bluetooth-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
+| [`bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`bluetooth-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html) | Pass | 3 / 3 |  |  |
+| [`bluetooth-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`bluetooth-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-default-permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`bluetooth-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html) | Pass | 5 / 5 |  |  |
 | [`experimental-features/focus-without-user-activation-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/experimental-features/focus-without-user-activation-default-permissions-policy.https.sub.html) | Fail | 1 / 2 | TEST BUG | the test expects the default allowlist `*` for `focus-without-user-activation` (a cross-origin iframe is allowed); HTML defines `'self'` (https://html.spec.whatwg.org/multipage/infrastructure.html#policy-controlled-features); fails in every browser |
 | [`experimental-features/focus-without-user-activation-disabled-by-permissions-policy-cross-origin.https.sub.html`](https://wpt.fyi/results/permissions-policy/experimental-features/focus-without-user-activation-disabled-by-permissions-policy-cross-origin.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`experimental-features/focus-without-user-activation-disabled-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/permissions-policy/experimental-features/focus-without-user-activation-disabled-by-permissions-policy.https.sub.html) | Pass | 1 / 1 |  |  |
@@ -85,8 +85,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`policy-extends-to-data-url-all.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-data-url-all.html) | Pass | 1 / 1 |  |  |
 | [`policy-extends-to-sandbox-all.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-sandbox-all.html) | Pass | 1 / 1 |  |  |
 | [`policy-extends-to-sandbox.html`](https://wpt.fyi/results/permissions-policy/policy-extends-to-sandbox.html) | Pass | 1 / 1 |  |  |
-| [`reporting/bluetooth-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-report-only.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
-| [`reporting/bluetooth-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | Web Bluetooth (`navigator.bluetooth`) |
+| [`reporting/bluetooth-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-report-only.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | 1 of 5 subtests: Web Bluetooth Scanning (`navigator.bluetooth.requestLEScan()`) |
+| [`reporting/bluetooth-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/bluetooth-reporting.https.html) | Fail | 4 / 5 | NOT IMPLEMENTED | 1 of 5 subtests: Web Bluetooth Scanning (`navigator.bluetooth.requestLEScan()`) |
 | [`reporting/camera-potential-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-potential-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-potential-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/camera-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/camera-report-only.https.html) | Pass | 1 / 1 |  |  |

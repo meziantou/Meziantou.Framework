@@ -144,6 +144,8 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
         new("webplatform-ndef-message", NdefMessageTarget) { Seeds = GetNdefMessageSeeds, Dictionary = NdefMessageTokens },
         new("webplatform-webusb", WebUsb) { Seeds = GetWebUsbSeeds },
+        new("webplatform-bluetooth-uuid", data => BluetoothUuidTarget(FuzzText.Decode(data))) { Seeds = GetBluetoothUuidSeeds, Dictionary = BluetoothUuidTokens },
+        new("webplatform-bluetooth-request-device", BluetoothRequestDeviceTarget) { Seeds = GetBluetoothRequestDeviceSeeds, Dictionary = BluetoothRequestDeviceTokens },
     ];
 
     /// <summary>

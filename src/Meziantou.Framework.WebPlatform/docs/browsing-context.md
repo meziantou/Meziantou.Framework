@@ -3715,6 +3715,22 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   operations with a `NotFoundError` and closes the device; the sessions end when their window is unloaded or their worker
   terminated. `getDevices()` and `requestDevice()` are delayed in a prerendering document. Not implemented:
   `USBPermissionResult` and the `usb` permission of the Permissions API.
+- **Web Bluetooth** ([Web Bluetooth](https://bluetooth.spec.whatwg.org/)): `navigator.bluetooth` (`getAvailability()`,
+  `getDevices()`, `requestDevice()` and the `availabilitychanged` event), `BluetoothDevice`, `BluetoothRemoteGATTServer`,
+  `BluetoothRemoteGATTService`, `BluetoothRemoteGATTCharacteristic`, `BluetoothCharacteristicProperties`,
+  `BluetoothRemoteGATTDescriptor`, `BluetoothUUID` (the GATT assigned numbers of the WebBluetoothCG registries) and
+  `ValueEvent`, on the `BluetoothHostDevice` objects of `Bluetooth.Provider` (the adapter, its state and the devices in
+  range). `requestDevice()` canonicalizes the filters (`TypeError`), checks the GATT and manufacturer data blocklists
+  (`SecurityError`), needs transient activation (not consumed) and asks `BluetoothProvider.RequestDevice`; the permission
+  storage is the provider (`Allow`, `Revoke`, `forget()`), with the allowed services of each device. The pages share the
+  connection of a device (`ConnectAsync`, released when no page uses it); a disconnection fires `gattserverdisconnected`
+  and invalidates the attributes, whose objects are created once per connection (`[[attributeInstanceMap]]`). The
+  operations run with the gatt-connection-checking wrapper, map the ATT errors of `BluetoothAttException`, and deliver
+  `characteristicvaluechanged` (before the promise of `readValue()`, and for the notifications) along the Bluetooth tree.
+  The checks and the error messages are the ones of Chromium; the top-level origin must not be opaque, and the methods
+  are delayed in a prerendering document. Not implemented: the advertisements (`watchAdvertisements()` rejects with a
+  `NotSupportedError`; `BluetoothAdvertisingEvent`, the data maps and the scanning API), `referringDevice` (always null),
+  `BluetoothPermissionResult` and the `bluetooth` permission of the Permissions API, and the service changed events.
 - **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
   steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
   `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the

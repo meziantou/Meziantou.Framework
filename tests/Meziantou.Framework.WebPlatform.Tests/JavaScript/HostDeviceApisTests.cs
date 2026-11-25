@@ -22,8 +22,9 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Pressure (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/), Device
 /// Posture (https://w3c.github.io/device-posture/), Network Information (https://wicg.github.io/netinfo/), Device Memory
 /// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/), the early detection of
-/// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/) and the device
-/// orientation and motion events (https://w3c.github.io/deviceorientation/).
+/// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/), the device
+/// orientation and motion events (https://w3c.github.io/deviceorientation/), WebUSB (https://usb.spec.whatwg.org/) and Web
+/// Bluetooth (https://bluetooth.spec.whatwg.org/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -66,6 +67,7 @@ public sealed class HostDeviceApisTests : IDisposable
             DevicePosture = options.DevicePosture,
             Gamepads = options.Gamepads,
             Usb = options.Usb,
+            Bluetooth = options.Bluetooth,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -1751,6 +1753,188 @@ public sealed class HostDeviceApisTests : IDisposable
     public void Usb_IsOnlyExposedToTheSecureContexts()
     {
         Assert.Equal("false,true", Run(Load("<script>document.title = ['usb' in navigator, typeof USBDevice === 'undefined'].join();</script>", url: "http://example.com/")));
+    }
+
+    // Web Bluetooth
+
+    #region WebPlatform_BluetoothHostDevice
+    // A heart rate monitor of the application: its Heart Rate service has a Heart Rate Measurement characteristic, which
+    // notifies the measurements, and a Body Sensor Location characteristic, which the page can read and write
+    private static BluetoothHostDevice CreateHeartRateMonitor()
+    {
+        var device = new BluetoothHostDevice("00:11:22:33:44:55", "Heart Rate Monitor")
+        {
+            ServiceUuids = [BluetoothUuid.GetService("heart_rate")],
+        };
+        var service = device.AddService(new BluetoothHostService(BluetoothUuid.GetService("heart_rate")));
+        service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("heart_rate_measurement"), BluetoothCharacteristicPropertyFlags.Notify));
+        service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("body_sensor_location"), BluetoothCharacteristicPropertyFlags.Read | BluetoothCharacteristicPropertyFlags.Write)
+        {
+            Value = new byte[] { 1 },
+        });
+        return device;
+    }
+    #endregion
+
+    #region WebPlatform_BluetoothDeviceChooser
+    // The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+    private sealed class FirstBluetoothDeviceChooser : BluetoothProvider
+    {
+        public override Task<BluetoothHostDevice?> RequestDevice(BluetoothDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+    }
+    #endregion
+
+    private const string BluetoothScript = """
+        window.log = [];
+        window.request = options => navigator.bluetooth.requestDevice(options).then(d => { window.device = d; document.title = d.name; }, e => document.title = e.name);
+        window.count = () => navigator.bluetooth.getDevices().then(d => document.title = d.length);
+        """;
+
+    [Fact]
+    public async Task Bluetooth_RequestDevice_ConnectsAndReadsTheCharacteristics()
+    {
+        #region WebPlatform_Bluetooth
+        var bluetooth = new FirstBluetoothDeviceChooser();
+        bluetooth.AddDevice(CreateHeartRateMonitor());
+        var options = new BrowsingContextOptions
+        {
+            Bluetooth = new BluetoothOptions { Provider = bluetooth },
+        };
+        #endregion
+
+        var document = Load("<script>" + BluetoothScript + "</script>", options);
+        Assert.Equal("true", await RunAsync(document, "navigator.bluetooth.getAvailability().then(a => document.title = a)"));
+        Assert.Equal("0", await RunAsync(document, "count()"));
+        Assert.Equal("SecurityError", await RunAsync(document, "request({ filters: [{ services: ['heart_rate'] }] })"));
+
+        Activate(document);
+        Assert.Equal("TypeError", await RunAsync(document, "request({})"));
+        Assert.Equal("TypeError", await RunAsync(document, "request({ filters: [{ services: ['unknown_service'] }] })"));
+        Assert.Equal("NotFoundError", await RunAsync(document, "request({ filters: [{ services: ['glucose'] }] })"));
+        Assert.Equal("Heart Rate Monitor", await RunAsync(document, "request({ filters: [{ namePrefix: 'Heart' }], optionalServices: [0x180d] })"));
+        Assert.Equal("1", await RunAsync(document, "count()"));
+        Assert.Single(bluetooth.GetAllowedDevices("https://example.com"));
+
+        Assert.Equal("true,0000180d-0000-1000-8000-00805f9b34fb,1,2", await RunAsync(document, """
+            (async () => {
+              const server = await device.gatt.connect();
+              const service = await server.getPrimaryService('heart_rate');
+              const location = await service.getCharacteristic('body_sensor_location');
+              const value = await location.readValue();
+              await location.writeValueWithResponse(new Uint8Array([2]));
+              const measurement = await service.getCharacteristic('heart_rate_measurement');
+              measurement.oncharacteristicvaluechanged = e => log.push(e.target.value.getUint8(1));
+              navigator.bluetooth.addEventListener('characteristicvaluechanged', e => { log.push(e.target.value.getUint8(1)); document.title += '|' + log.join('|'); });
+              await measurement.startNotifications();
+              document.title = [server.connected, service.uuid, value.getUint8(0), location.value.getUint8(0)].join();
+            })()
+            """));
+
+        var characteristics = bluetooth.Devices[0].Services[0].Characteristics;
+        Assert.Equal(new byte[] { 2 }, characteristics[1].Value.ToArray());
+        characteristics[0].NotifyValueChanged(new byte[] { 0, 72 });
+        Assert.Equal("true,0000180d-0000-1000-8000-00805f9b34fb,1,2|72|72", await RunAsync(document));
+
+        Assert.Equal("0", await RunAsync(document, "device.forget().then(() => count())"));
+    }
+
+    [Fact]
+    public async Task Bluetooth_Disconnection_InvalidatesTheAttributes()
+    {
+        var bluetooth = new BluetoothProvider();
+        var device = CreateHeartRateMonitor();
+        bluetooth.AddDevice(device);
+        bluetooth.Allow(device, "https://example.com", [BluetoothUuid.GetService("heart_rate")]);
+        var document = Load("<script>" + BluetoothScript + "</script>", new BrowsingContextOptions { Bluetooth = new BluetoothOptions { Provider = bluetooth } });
+
+        await RunAsync(document, """
+            (async () => {
+              const [device] = await navigator.bluetooth.getDevices();
+              window.device = device;
+              device.ongattserverdisconnected = e => log.push('disconnected ' + e.bubbles);
+              await device.gatt.connect();
+              window.service = await device.gatt.getPrimaryService(0x180d);
+              document.title = device.gatt.connected;
+            })()
+            """);
+        Assert.True(device.IsConnected);
+
+        // The connection is lost: the page gets the event, and the service of the connection is invalid after a reconnection
+        device.Disconnect();
+        Assert.Equal("disconnected true|NetworkError|InvalidStateError|SecurityError", await RunAsync(document, """
+            (async () => {
+              await new Promise(resolve => setTimeout(resolve, 0));
+              await service.getCharacteristics().catch(e => log.push(e.name));
+              await device.gatt.connect();
+              await service.getCharacteristics().catch(e => log.push(e.name));
+              await device.gatt.getPrimaryService('generic_access').catch(e => log.push(e.name));
+              document.title = log.join('|');
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Bluetooth_Blocklist()
+    {
+        var bluetooth = new FirstBluetoothDeviceChooser();
+        var device = new BluetoothHostDevice("00:00:00:00:00:01", "Keyboard") { ServiceUuids = [BluetoothUuid.GetService("human_interface_device"), BluetoothUuid.GetService("battery_service")] };
+        device.AddService(new BluetoothHostService(BluetoothUuid.GetService("human_interface_device")));
+        device.AddService(new BluetoothHostService(BluetoothUuid.GetService("battery_service")));
+        bluetooth.AddDevice(device);
+        var document = Load("<script>" + BluetoothScript + "</script>", new BrowsingContextOptions { Bluetooth = new BluetoothOptions { Provider = bluetooth } });
+
+        Activate(document);
+        Assert.Equal("SecurityError", await RunAsync(document, "request({ filters: [{ services: ['human_interface_device'] }] })"));
+        Assert.Equal("Keyboard", await RunAsync(document, "request({ acceptAllDevices: true, optionalServices: ['human_interface_device', 'battery_service'] })"));
+
+        // The blocklisted service was removed from the optional services: the origin cannot use it
+        Assert.Equal("SecurityError,0000180f-0000-1000-8000-00805f9b34fb", await RunAsync(document, """
+            (async () => {
+              await device.gatt.connect();
+              const results = [];
+              await device.gatt.getPrimaryService('human_interface_device').catch(e => results.push(e.name));
+              results.push((await device.gatt.getPrimaryServices()).map(s => s.uuid).join());
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Bluetooth_AvailabilityChanged()
+    {
+        var bluetooth = new BluetoothProvider();
+        var document = Load("""
+            <script>
+            navigator.bluetooth.onavailabilitychanged = e => document.title = e.value;
+            </script>
+            """, new BrowsingContextOptions { Bluetooth = new BluetoothOptions { Provider = bluetooth } });
+
+        bluetooth.AdapterState = BluetoothAdapterState.PoweredOff;
+        Assert.Equal("", await RunAsync(document));
+        bluetooth.AdapterState = BluetoothAdapterState.Absent;
+        Assert.Equal("false", await RunAsync(document));
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "navigator.bluetooth.requestDevice({ acceptAllDevices: true }).catch(e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void BluetoothUuid_ResolvesTheNamesAndTheAliases()
+    {
+        Assert.Equal("0000180d-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetService("heart_rate"));
+        Assert.Equal("0000180d-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetService(0x180Du));
+        Assert.Equal("00002a37-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetCharacteristic("heart_rate_measurement"));
+        Assert.Equal("00002902-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetDescriptor("gatt.client_characteristic_configuration"));
+        Assert.Equal("deadbeef-0000-1000-8000-00805f9b34fb", BluetoothUuid.CanonicalUuid(0xDEADBEEF));
+
+        Assert.Throws<TypeErrorException>(() => BluetoothUuid.GetService("heart_rate_measurement"));
+        Assert.Throws<TypeErrorException>(() => BluetoothUuid.GetService("0000180D-0000-1000-8000-00805F9B34FB"));
+        Assert.False(BluetoothUuid.IsValidUuid("0000180d"));
+    }
+
+    [Fact]
+    public void Bluetooth_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false,true", Run(Load("<script>document.title = ['bluetooth' in navigator, typeof BluetoothDevice === 'undefined'].join();</script>", url: "http://example.com/")));
     }
 
     // CPU Performance

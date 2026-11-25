@@ -3750,6 +3750,9 @@ public sealed partial class BrowsingContext : IDisposable
 
             // The sessions of the USB devices of the window end
             window.CloseUsbDevices();
+
+            // The Bluetooth devices of the window are disconnected
+            window.CloseBluetoothDevices();
         }
 
         // The sensor objects are disconnected from the sensors of the device

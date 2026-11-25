@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 27,890 | 30,158 | 80 | 93% |
+| [Stable](#stable-tests) | 28,048 | 30,158 | 80 | 93% |
 | [Tentative](#tentative-tests) | 1,676 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,535** | **65,062** | **326** | **94%** |
+| **All** | **60,693** | **65,062** | **326** | **94%** |
 
 ## Failure reasons
 
@@ -61,9 +61,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 150
 - **TEST BUG**: 1,126
-- **NOT IMPLEMENTED**: 2,806
-- **REQUIRES**: 377
-  - `hardware`: 195
+- **NOT IMPLEMENTED**: 2,805
+- **REQUIRES**: 220
+  - `hardware`: 38
   - `layout`: 22
   - `media`: 16
   - `user-input`: 144
@@ -92,7 +92,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`badging`](badging.md) | 3 | 5 | 0 | 60% |
 | [`battery-status`](battery-status.md) | 9 | 17 | 0 | 53% |
 | [`beacon`](beacon.md) | 16 | 16 | 0 | 100% |
-| [`bluetooth`](bluetooth.md) | 1 | 157 | 0 | 0.6% |
+| [`bluetooth`](bluetooth.md) | 154 | 157 | 0 | 98% |
 | [`captured-mouse-events`](captured-mouse-events.md) | 4 | 4 | 0 | 100% |
 | [`clear-site-data`](clear-site-data.md) | 12 | 13 | 0 | 92% |
 | [`client-hints`](client-hints.md) | 122 | 132 | 0 | 92% |
@@ -317,7 +317,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`performance-timeline`](performance-timeline.md) | 32 | 44 | 0 | 73% |
 | [`periodic-background-sync`](periodic-background-sync.md) | 0 | 2 | 0 | 0% |
 | [`permissions`](permissions.md) | 15 | 15 | 0 | 100% |
-| [`permissions-policy`](permissions-policy.md) | 70 | 94 | 0 | 74% |
+| [`permissions-policy`](permissions-policy.md) | 75 | 94 | 0 | 80% |
 | [`permissions-request`](permissions-request.md) | 0 | 1 | 0 | 0% |
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 0 | 0% |
 | [`picture-in-picture`](picture-in-picture.md) | 18 | 18 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **27,890** | **30,158** | **80** | **93%** |
+| **Total (341 sections)** | **28,048** | **30,158** | **80** | **93%** |
 
 ## Tentative tests
 

@@ -18,6 +18,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         DefineMembers = DefineMembers,
     };
 
+    private static TValue Get_bluetooth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Bluetooth); }
     private static TValue Get_clipboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Clipboard); }
     private static TValue Get_cpuPerformance(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.CpuPerformance); }
     private static TValue Get_credentials(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Credentials); }
@@ -147,6 +148,7 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "bluetooth", Get_bluetooth, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "clipboard", Get_clipboard, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "cpuPerformance", Get_cpuPerformance, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "credentials", Get_credentials, null);

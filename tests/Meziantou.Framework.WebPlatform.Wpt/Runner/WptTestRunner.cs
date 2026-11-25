@@ -148,6 +148,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The fake USB devices of the WebUSB Testing API (navigator.usb.test).</summary>
     private readonly WptUsbProvider _usb = new();
 
+    /// <summary>The simulated Bluetooth adapter of the bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth).</summary>
+    private readonly WptBluetoothProvider _bluetooth = new();
+
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
 
@@ -310,6 +313,9 @@ internal sealed partial class WptTestRunner
 
                 // The fake devices of the WebUSB Testing API (navigator.usb.test of Runner/webusb-test.js)
                 Usb = new UsbOptions { Provider = _usb },
+
+                // The simulated Bluetooth adapter of test_driver.bidi.bluetooth
+                Bluetooth = new BluetoothOptions { Provider = _bluetooth },
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
@@ -1842,6 +1848,14 @@ internal sealed partial class WptTestRunner
             _usb.DefineTestApi(realm, WebUsbTestScript.Value);
         }
 
+        // The legacy Web Bluetooth Testing API of Chromium (navigator.bluetooth.test, on MojoJS), which bluetooth_test() of
+        // /bluetooth/resources/bluetooth-test.js requires: the permissions policy tests only check, after the test, that the
+        // fake responses were consumed (there is none, they do not simulate devices)
+        if (_test.RelativePath.StartsWith("permissions-policy/", StringComparison.Ordinal) && _test.RelativePath.Contains("bluetooth", StringComparison.Ordinal))
+        {
+            realm.EvaluateBuiltIn("if (self.navigator && navigator.bluetooth) Object.defineProperty(navigator.bluetooth, 'test', { value: { allResponsesConsumed: () => Promise.resolve(true) }, writable: true, enumerable: false, configurable: true });");
+        }
+
         // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
         if (realm.Window is null)
             return;
@@ -1863,6 +1877,9 @@ internal sealed partial class WptTestRunner
 
             return adapter.Undefined;
         });
+        // The bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth): __wpt_bluetooth and __wpt_bluetooth_dispatcher
+        _bluetooth.DefineTestApi(realm, QueueTask);
+
         Define("__wpt_bidi_log_dispatcher", 1, (_, args) =>
         {
             // The function of testdriver-vendor.js that emits the WebDriver BiDi log.entryAdded events of the realm

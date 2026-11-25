@@ -729,6 +729,14 @@ public sealed partial record BrowsingContextOptions
     public UsbOptions? Usb { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of Web Bluetooth (https://bluetooth.spec.whatwg.org/, <c>navigator.bluetooth</c>):
+    /// <see cref="BluetoothOptions.Provider"/> is the Bluetooth adapter and its nearby devices, stores the devices each origin
+    /// is allowed to use, and plays the role of the device chooser of <c>requestDevice()</c>. The default is null: the machine
+    /// has no Bluetooth adapter.
+    /// </summary>
+    public BluetoothOptions? Bluetooth { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

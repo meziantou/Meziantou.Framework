@@ -65,6 +65,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit Defaults_Dom_BlobEventInit = new() { Data = default! };
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit Defaults_Dom_BluetoothLEScanFilterInit = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit Defaults_Dom_BluetoothManufacturerDataFilterInit = new() { CompanyIdentifier = default! };
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit Defaults_Dom_BluetoothServiceDataFilterInit = new() { Service = default! };
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions Defaults_Dom_BoxQuadOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.BreakTokenOptions Defaults_Dom_BreakTokenOptions = new();
@@ -275,6 +281,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverOptions Defaults_Dom_ReportingObserverOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions Defaults_Dom_RequestDeviceOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.RouterCondition Defaults_Dom_RouterCondition = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.RouterSourceDict Defaults_Dom_RouterSourceDict = new();
@@ -314,6 +322,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.UsbDeviceFilter Defaults_Dom_UsbDeviceFilter = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration Defaults_Dom_VideoConfiguration = new() { ContentType = default!, Width = default!, Height = default!, Bitrate = default!, Framerate = default! };
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.WatchAdvertisementsOptions Defaults_Dom_WatchAdvertisementsOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo Defaults_Dom_WebSocketCloseInfo = new();
 
@@ -1281,6 +1291,43 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "data", r.Wrap(value.Data));
         r.SetMember(result, "timecode", r.FromNumber((double)value.Timecode));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_BluetoothDataFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.BluetoothDataFilterInit value)
+    {
+        var result = r.CreateObject();
+        if (value.DataPrefix is not null) r.SetMember(result, "dataPrefix", (value.DataPrefix is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        if (value.Mask is not null) r.SetMember(result, "mask", (value.Mask is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_BluetoothLEScanFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit value)
+    {
+        var result = r.CreateObject();
+        if (value.ManufacturerData is not null) r.SetMember(result, "manufacturerData", r.FromSequence(value.ManufacturerData, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothManufacturerDataFilterInit(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.Name is not null) r.SetMember(result, "name", r.FromString(value.Name));
+        if (value.NamePrefix is not null) r.SetMember(result, "namePrefix", r.FromString(value.NamePrefix));
+        if (value.ServiceData is not null) r.SetMember(result, "serviceData", r.FromSequence(value.ServiceData, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothServiceDataFilterInit(r, dictionaryValue2) : r.Adapter.Null)));
+        if (value.Services is not null) r.SetMember(result, "services", r.FromSequence(value.Services, static (r, e) => r.ToJs((object?)e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_BluetoothManufacturerDataFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit value)
+    {
+        var result = r.CreateObject();
+        if (value.DataPrefix is not null) r.SetMember(result, "dataPrefix", (value.DataPrefix is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        if (value.Mask is not null) r.SetMember(result, "mask", (value.Mask is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        r.SetMember(result, "companyIdentifier", r.FromNumber((double)value.CompanyIdentifier));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_BluetoothServiceDataFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit value)
+    {
+        var result = r.CreateObject();
+        if (value.DataPrefix is not null) r.SetMember(result, "dataPrefix", (value.DataPrefix is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        if (value.Mask is not null) r.SetMember(result, "mask", (value.Mask is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.ArrayBuffer, bytes) : r.Adapter.Null));
+        r.SetMember(result, "service", r.ToJs((object?)value.Service));
         return result;
     }
 
@@ -4069,6 +4116,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_RequestDeviceOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "acceptAllDevices", r.FromBoolean(value.AcceptAllDevices));
+        if (value.ExclusionFilters is not null) r.SetMember(result, "exclusionFilters", r.FromSequence(value.ExclusionFilters, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothLEScanFilterInit(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.Filters is not null) r.SetMember(result, "filters", r.FromSequence(value.Filters, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothLEScanFilterInit(r, dictionaryValue2) : r.Adapter.Null)));
+        r.SetMember(result, "optionalManufacturerData", r.FromSequence(value.OptionalManufacturerData, static (r, e) => r.FromNumber((double)e)));
+        r.SetMember(result, "optionalServices", r.FromSequence(value.OptionalServices, static (r, e) => r.ToJs((object?)e)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_ResizeObserverOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverOptions value)
     {
         var result = r.CreateObject();
@@ -4766,6 +4824,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_ValueEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ValueEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "value", r.ToJs((object?)value.Value));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_VideoConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration value)
     {
         var result = r.CreateObject();
@@ -4796,6 +4864,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.ReceiveTime is not null) r.SetMember(result, "receiveTime", (value.ReceiveTime.HasValue ? r.FromNumber((double)value.ReceiveTime.GetValueOrDefault()) : r.Adapter.Null));
         if (value.RtpTimestamp is not null) r.SetMember(result, "rtpTimestamp", (value.RtpTimestamp.HasValue ? r.FromNumber((double)value.RtpTimestamp.GetValueOrDefault()) : r.Adapter.Null));
         r.SetMember(result, "width", r.FromNumber((double)value.Width));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_WatchAdvertisementsOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.WatchAdvertisementsOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Signal is not null) r.SetMember(result, "signal", r.Wrap(value.Signal));
         return result;
     }
 
@@ -8088,6 +8163,74 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Composed = m2,
             Data = m3,
             Timecode = m4_present ? (double)(m4!) : Defaults_Dom_BlobEventInit.Timecode,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit ToDictionary_Dom_BluetoothLEScanFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "BluetoothLEScanFilterInit");
+        var m0_value = r.GetDictionaryMember(value, "manufacturerData");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_BluetoothManufacturerDataFilterInit(r, e)) : default;
+        var m1_value = r.GetDictionaryMember(value, "name");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (string?)r.ToDomString(m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "namePrefix");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (string?)r.ToDomString(m2_value) : default;
+        var m3_value = r.GetDictionaryMember(value, "serviceData");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit>(m3_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_BluetoothServiceDataFilterInit(r, e)) : default;
+        var m4_value = r.GetDictionaryMember(value, "services");
+        var m4_present = !r.Adapter.IsUndefined(m4_value);
+        var m4 = m4_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m4_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_4de306de(r, e)) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit
+        {
+            ManufacturerData = m0_present ? m0 : Defaults_Dom_BluetoothLEScanFilterInit.ManufacturerData,
+            Name = m1_present ? m1 : Defaults_Dom_BluetoothLEScanFilterInit.Name,
+            NamePrefix = m2_present ? m2 : Defaults_Dom_BluetoothLEScanFilterInit.NamePrefix,
+            ServiceData = m3_present ? m3 : Defaults_Dom_BluetoothLEScanFilterInit.ServiceData,
+            Services = m4_present ? global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(m4!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_BluetoothUuidName(r, e))) : Defaults_Dom_BluetoothLEScanFilterInit.Services,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit ToDictionary_Dom_BluetoothManufacturerDataFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "BluetoothManufacturerDataFilterInit");
+        var m0_value = r.GetDictionaryMember(value, "dataPrefix");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)r.ToBufferSource(m0_value, 32765u, false, "(ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))") : default;
+        var m1_value = r.GetDictionaryMember(value, "mask");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)r.ToBufferSource(m1_value, 32765u, false, "(ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))") : default;
+        var m2_value = r.GetDictionaryMember(value, "companyIdentifier");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("BluetoothManufacturerDataFilterInit", "companyIdentifier");
+        var m2 = r.ToUnsignedShort(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        return new global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit
+        {
+            DataPrefix = m0_present ? m0?.Bytes : Defaults_Dom_BluetoothManufacturerDataFilterInit.DataPrefix,
+            Mask = m1_present ? m1?.Bytes : Defaults_Dom_BluetoothManufacturerDataFilterInit.Mask,
+            CompanyIdentifier = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit ToDictionary_Dom_BluetoothServiceDataFilterInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "BluetoothServiceDataFilterInit");
+        var m0_value = r.GetDictionaryMember(value, "dataPrefix");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)r.ToBufferSource(m0_value, 32765u, false, "(ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))") : default;
+        var m1_value = r.GetDictionaryMember(value, "mask");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)r.ToBufferSource(m1_value, 32765u, false, "(ArrayBuffer or (Int8Array or Int16Array or Int32Array or Uint8Array or Uint16Array or Uint32Array or Uint8ClampedArray or BigInt64Array or BigUint64Array or Float16Array or Float32Array or Float64Array or DataView))") : default;
+        var m2_value = r.GetDictionaryMember(value, "service");
+        if (r.Adapter.IsUndefined(m2_value)) throw r.MissingRequiredDictionaryMember("BluetoothServiceDataFilterInit", "service");
+        var m2 = WebIdlHelpers<TAdapter, TValue>.ToUnion_4de306de(r, m2_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit
+        {
+            DataPrefix = m0_present ? m0?.Bytes : Defaults_Dom_BluetoothServiceDataFilterInit.DataPrefix,
+            Mask = m1_present ? m1?.Bytes : Defaults_Dom_BluetoothServiceDataFilterInit.Mask,
+            Service = WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_BluetoothUuidName(r, m2),
         };
     }
 
@@ -13304,6 +13447,31 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions ToDictionary_Dom_RequestDeviceOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "RequestDeviceOptions");
+        var m0_value = r.GetDictionaryMember(value, "acceptAllDevices");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "exclusionFilters");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit>(m1_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_BluetoothLEScanFilterInit(r, e)) : default;
+        var m2_value = r.GetDictionaryMember(value, "filters");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit>(m2_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_BluetoothLEScanFilterInit(r, e)) : default;
+        var m3_value = r.GetDictionaryMember(value, "optionalManufacturerData");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (global::System.Collections.Generic.List<ushort>)new global::System.Collections.Generic.List<ushort>() : r.ToSequence<ushort>(m3_value, static (r, e) => r.ToUnsignedShort(e, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None));
+        var m4_value = r.GetDictionaryMember(value, "optionalServices");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (global::System.Collections.Generic.List<object?>)new global::System.Collections.Generic.List<object?>() : r.ToSequence<object?>(m4_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_4de306de(r, e));
+        return new global::Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions
+        {
+            AcceptAllDevices = m0,
+            ExclusionFilters = m1_present ? m1 : Defaults_Dom_RequestDeviceOptions.ExclusionFilters,
+            Filters = m2_present ? m2 : Defaults_Dom_RequestDeviceOptions.Filters,
+            OptionalManufacturerData = m3,
+            OptionalServices = global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(m4!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_BluetoothUuidName(r, e))),
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverOptions ToDictionary_Dom_ResizeObserverOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "ResizeObserverOptions");
@@ -14600,6 +14768,26 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ValueEventInit ToDictionary_Dom_ValueEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ValueEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "value");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (object?)(object?)null : r.ToAny(m3_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ValueEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Value = m3,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.VideoConfiguration ToDictionary_Dom_VideoConfiguration(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "VideoConfiguration");
@@ -14649,6 +14837,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             SpatialScalability = m8_present ? m8 : Defaults_Dom_VideoConfiguration.SpatialScalability,
             TransferFunction = m9_present ? (m9 is { } enumValue_m9 ? WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_TransferFunction(enumValue_m9) : (global::Meziantou.Framework.WebPlatform.Dom.TransferFunction?)null) : Defaults_Dom_VideoConfiguration.TransferFunction,
             Width = m10,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.WatchAdvertisementsOptions ToDictionary_Dom_WatchAdvertisementsOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "WatchAdvertisementsOptions");
+        var m0_value = r.GetDictionaryMember(value, "signal");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::Meziantou.Framework.WebPlatform.Dom.AbortSignal?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.AbortSignal>(m0_value, "AbortSignal") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.WatchAdvertisementsOptions
+        {
+            Signal = m0_present ? m0 : Defaults_Dom_WatchAdvertisementsOptions.Signal,
         };
     }
 
@@ -17504,6 +17704,22 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.InvalidCastException("The value cannot be converted to CssUnparsedSegment"),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName ToUnionStruct_Dom_BluetoothUuidName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
+    {
+        uint v => v,
+        int v => (uint)v,
+        double v => (uint)v,
+        float v => (uint)v,
+        short v => (uint)v,
+        ushort v => (uint)v,
+        long v => (uint)v,
+        ulong v => (uint)v,
+        byte v => (uint)v,
+        sbyte v => (uint)v,
+        string v => v,
+        _ => throw new global::System.InvalidCastException("The value cannot be converted to BluetoothUuidName"),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble ToUnionStruct_Dom_BooleanOrConstrainDouble(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, object? value) => value switch
     {
         bool v => v,
@@ -18223,6 +18439,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         }
         if (r.Adapter.IsNumber(value)) return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
         return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+    }
+
+    /// <summary>(DOMString or unsigned long)</summary>
+    internal static object? ToUnion_4de306de(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        if (r.Adapter.IsObject(value))
+        {
+        }
+        if (r.Adapter.IsNumber(value)) return r.ToUnsignedLong(value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        return r.ToDomString(value);
     }
 
     /// <summary>(Text or Element or CSSPseudoElement or Document)</summary>

@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -34,6 +34,7 @@ the device in a test, or to connect the API to your application.
 | [DevicePosture](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.DevicePosture) | `navigator.devicePosture`, the `device-posture` media feature | The posture is `continuous` |
 | [Gamepads](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Gamepads) | `navigator.getGamepads()`, the `gamepadconnected` and `gamepaddisconnected` events | No gamepad is connected |
 | [Usb](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Usb) | `navigator.usb` (WebUSB), in the pages and the workers | No USB device is connected |
+| [Bluetooth](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Bluetooth) | `navigator.bluetooth` (Web Bluetooth) | There is no Bluetooth adapter |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -928,6 +929,92 @@ var options = new BrowsingContextOptions
   of its interface, `close()` lets the operations already sent to the device complete, and the standard control
   requests are not restricted. A prerendered page gets the devices once it is shown. `navigator.permissions.query()` does
   not support the `usb` permission.
+
+## Bluetooth devices
+
+`navigator.bluetooth` (Web Bluetooth) uses the Bluetooth Low Energy devices of a
+[BluetoothProvider](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider), which plays the role of the Bluetooth
+adapter of the machine. Implement each device with a
+[BluetoothHostDevice](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice): its name and advertised data, and the
+tree of its GATT server. The services, the characteristics and the descriptors store their value by default: derive from
+[BluetoothHostCharacteristic](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic) and
+[BluetoothHostDescriptor](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostDescriptor) to talk to the device, and
+[BluetoothUuid](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothUuid) converts the names of the GATT assigned numbers to
+UUIDs:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_BluetoothHostDevice;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A heart rate monitor of the application: its Heart Rate service has a Heart Rate Measurement characteristic, which
+// notifies the measurements, and a Body Sensor Location characteristic, which the page can read and write
+private static BluetoothHostDevice CreateHeartRateMonitor()
+{
+    var device = new BluetoothHostDevice("00:11:22:33:44:55", "Heart Rate Monitor")
+    {
+        ServiceUuids = [BluetoothUuid.GetService("heart_rate")],
+    };
+    var service = device.AddService(new BluetoothHostService(BluetoothUuid.GetService("heart_rate")));
+    service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("heart_rate_measurement"), BluetoothCharacteristicPropertyFlags.Notify));
+    service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("body_sensor_location"), BluetoothCharacteristicPropertyFlags.Read | BluetoothCharacteristicPropertyFlags.Write)
+    {
+        Value = new byte[] { 1 },
+    });
+    return device;
+}
+```
+<!-- endref -->
+
+A page can use a device once its origin is allowed to: call
+[Allow](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.Allow) with the services the origin can use, or let the
+user choose a device for `navigator.bluetooth.requestDevice()` by overriding
+[RequestDevice](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.RequestDevice), which plays the role of the
+device chooser of the browser. The origin can then use the services of the filters and the optional services of the
+page:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_BluetoothDeviceChooser;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+private sealed class FirstBluetoothDeviceChooser : BluetoothProvider
+{
+    public override Task<BluetoothHostDevice?> RequestDevice(BluetoothDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Bluetooth;format=md-fenced-code-block;dedent=true -->
+```csharp
+var bluetooth = new FirstBluetoothDeviceChooser();
+bluetooth.AddDevice(CreateHeartRateMonitor());
+var options = new BrowsingContextOptions
+{
+    Bluetooth = new BluetoothOptions { Provider = bluetooth },
+};
+```
+<!-- endref -->
+
+- `getAvailability()` is true when the provider has an adapter that supports Bluetooth Low Energy, even when it is turned
+  off ([AdapterState](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.AdapterState)); a change fires the
+  `availabilitychanged` event. Without an adapter, `requestDevice()` fails with a `NotFoundError`, and a turned off
+  adapter finds no device.
+- `requestDevice()` needs a click of the user (it does not consume it), and offers the devices in range
+  ([AddDevice](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothProvider.AddDevice)) that match the filters of the page.
+  `getDevices()` returns the devices the origin can use, in range or not, and `device.forget()` revokes the permission.
+  Both methods fail with a `SecurityError` when the `bluetooth` permissions policy does not allow the frame, or when the
+  top-level page has an opaque origin.
+- The pages share the connection of a device: `device.gatt.connect()` calls `ConnectAsync` when the device is not
+  connected, and the connection is released when no page uses it. Call
+  [Disconnect](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice.Disconnect) when the connection is lost: the
+  pages get a `gattserverdisconnected` event, and their services, characteristics and descriptors are invalid (the pages
+  get them again after reconnecting).
+- [NotifyValueChanged](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic.NotifyValueChanged) delivers a
+  notification to the pages that called `startNotifications()`. An operation reports an error by throwing a
+  [BluetoothAttException](cref:Meziantou.Framework.WebPlatform.Dom.BluetoothAttException) (an ATT error code, mapped to
+  the `DOMException` of the specification) or a `DomException`.
+- The UUIDs of the [GATT blocklist](https://github.com/WebBluetoothCG/registries/blob/master/gatt_blocklist.txt) (e.g.
+  `human_interface_device`) are never exposed, and a filter of a blocklisted service or manufacturer data fails with a
+  `SecurityError`. As in Chromium, the error messages tell which check failed, and a write without response does not wait.
+- Scanning for advertisements is not supported: `watchAdvertisements()` fails with a `NotSupportedError`, and
+  `BluetoothAdvertisingEvent` and `requestLEScan()` do not exist. `navigator.permissions.query()` does not support the
+  `bluetooth` permission, and `referringDevice` is always null. A prerendered page gets the devices once it is shown.
 
 ## NFC
 

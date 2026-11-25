@@ -62,6 +62,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["BiquadFilterNode"] = Binding_BiquadFilterNode<TAdapter, TValue>.Binding,
             ["Blob"] = Binding_Blob<TAdapter, TValue>.Binding,
             ["BlobEvent"] = Binding_BlobEvent<TAdapter, TValue>.Binding,
+            ["Bluetooth"] = Binding_Bluetooth<TAdapter, TValue>.Binding,
+            ["BluetoothCharacteristicProperties"] = Binding_BluetoothCharacteristicProperties<TAdapter, TValue>.Binding,
+            ["BluetoothDevice"] = Binding_BluetoothDevice<TAdapter, TValue>.Binding,
+            ["BluetoothRemoteGATTCharacteristic"] = Binding_BluetoothRemoteGATTCharacteristic<TAdapter, TValue>.Binding,
+            ["BluetoothRemoteGATTDescriptor"] = Binding_BluetoothRemoteGATTDescriptor<TAdapter, TValue>.Binding,
+            ["BluetoothRemoteGATTServer"] = Binding_BluetoothRemoteGATTServer<TAdapter, TValue>.Binding,
+            ["BluetoothRemoteGATTService"] = Binding_BluetoothRemoteGATTService<TAdapter, TValue>.Binding,
+            ["BluetoothUUID"] = Binding_BluetoothUUID<TAdapter, TValue>.Binding,
             ["BreakToken"] = Binding_BreakToken<TAdapter, TValue>.Binding,
             ["BroadcastChannel"] = Binding_BroadcastChannel<TAdapter, TValue>.Binding,
             ["BufferedChangeEvent"] = Binding_BufferedChangeEvent<TAdapter, TValue>.Binding,
@@ -735,6 +743,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["VTTCue"] = Binding_VTTCue<TAdapter, TValue>.Binding,
             ["VTTRegion"] = Binding_VTTRegion<TAdapter, TValue>.Binding,
             ["ValidityState"] = Binding_ValidityState<TAdapter, TValue>.Binding,
+            ["ValueEvent"] = Binding_ValueEvent<TAdapter, TValue>.Binding,
             ["VideoColorSpace"] = Binding_VideoColorSpace<TAdapter, TValue>.Binding,
             ["VideoDecoder"] = Binding_VideoDecoder<TAdapter, TValue>.Binding,
             ["VideoEncoder"] = Binding_VideoEncoder<TAdapter, TValue>.Binding,
@@ -894,6 +903,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BlobEventInit dictionaryDom_BlobEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BlobEventInit(r, dictionaryDom_BlobEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit dictionaryDom_BluetoothManufacturerDataFilterInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothManufacturerDataFilterInit(r, dictionaryDom_BluetoothManufacturerDataFilterInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit dictionaryDom_BluetoothServiceDataFilterInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothServiceDataFilterInit(r, dictionaryDom_BluetoothServiceDataFilterInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BufferedChangeEventInit dictionaryDom_BufferedChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BufferedChangeEventInit(r, dictionaryDom_BufferedChangeEventInit);
@@ -1135,6 +1150,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.UsbConnectionEventInit dictionaryDom_UsbConnectionEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UsbConnectionEventInit(r, dictionaryDom_UsbConnectionEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ValueEventInit dictionaryDom_ValueEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ValueEventInit(r, dictionaryDom_ValueEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WindowPostMessageOptions dictionaryDom_WindowPostMessageOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WindowPostMessageOptions(r, dictionaryDom_WindowPostMessageOptions);
                 return true;
@@ -1323,6 +1341,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BeginLayerOptions dictionaryDom_BeginLayerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BeginLayerOptions(r, dictionaryDom_BeginLayerOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.BluetoothDataFilterInit dictionaryDom_BluetoothDataFilterInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothDataFilterInit(r, dictionaryDom_BluetoothDataFilterInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit dictionaryDom_BluetoothLEScanFilterInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BluetoothLEScanFilterInit(r, dictionaryDom_BluetoothLEScanFilterInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.BoxQuadOptions dictionaryDom_BoxQuadOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_BoxQuadOptions(r, dictionaryDom_BoxQuadOptions);
@@ -1837,6 +1861,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ReportingObserverOptions dictionaryDom_ReportingObserverOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ReportingObserverOptions(r, dictionaryDom_ReportingObserverOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions dictionaryDom_RequestDeviceOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_RequestDeviceOptions(r, dictionaryDom_RequestDeviceOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ResizeObserverOptions dictionaryDom_ResizeObserverOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ResizeObserverOptions(r, dictionaryDom_ResizeObserverOptions);
                 return true;
@@ -1986,6 +2013,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.VideoFrameCallbackMetadata dictionaryDom_VideoFrameCallbackMetadata:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_VideoFrameCallbackMetadata(r, dictionaryDom_VideoFrameCallbackMetadata);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.WatchAdvertisementsOptions dictionaryDom_WatchAdvertisementsOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WatchAdvertisementsOptions(r, dictionaryDom_WatchAdvertisementsOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WebSocketCloseInfo dictionaryDom_WebSocketCloseInfo:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebSocketCloseInfo(r, dictionaryDom_WebSocketCloseInfo);
@@ -2716,6 +2746,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BatteryManager> taskSystem_Threading_Tasks_Task_Dom_BatteryManager_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BatteryManager_, static (r, v) => r.Wrap(v));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BluetoothDevice> taskSystem_Threading_Tasks_Task_Dom_BluetoothDevice_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BluetoothDevice_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic> taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattCharacteristic_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattCharacteristic_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattDescriptor> taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattDescriptor_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattDescriptor_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattServer> taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattServer_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattServer_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService> taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattService_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_BluetoothRemoteGattService_, static (r, v) => r.Wrap(v));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.Client> taskSystem_Threading_Tasks_Task_Dom_Client_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_Client_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2901,6 +2946,18 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Css.ParserApi.CssParserRule>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Css_ParserApi_CssParserRule__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Css_ParserApi_CssParserRule__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.BluetoothDevice>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothDevice__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothDevice__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothRemoteGattCharacteristic__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothRemoteGattCharacteristic__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattDescriptor>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothRemoteGattDescriptor__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothRemoteGattDescriptor__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothRemoteGattService__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_BluetoothRemoteGattService__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Client>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Client__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Client__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));

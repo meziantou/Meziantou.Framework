@@ -3488,6 +3488,289 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Region = 3,
     }
 
+    public sealed class Bluetooth : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAdvertisementReceived { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAvailabilityChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCharacteristicValueChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGattServerDisconnected { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceAdded { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceRemoved { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothDevice? ReferringDevice { get => throw null; }
+        public System.Threading.Tasks.Task<bool> GetAvailability() => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothDevice>> GetDevices() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothDevice> RequestDevice(Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions? options = null) => throw null;
+    }
+
+    public enum BluetoothAdapterState
+    {
+        Absent = 0,
+        PoweredOff = 1,
+        PoweredOn = 2,
+    }
+
+    public sealed class BluetoothAllowedDevice
+    {
+        public System.Collections.Generic.IReadOnlyList<ushort> AllowedManufacturerData { get => throw null; }
+        public System.Collections.Generic.IReadOnlySet<string>? AllowedServices { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice Device { get => throw null; }
+        public string DeviceId { get => throw null; }
+    }
+
+    public sealed class BluetoothAttException : System.Exception
+    {
+        public byte ErrorCode { get => throw null; }
+        public BluetoothAttException(byte errorCode) { }
+        public BluetoothAttException(string? message) { }
+        public BluetoothAttException(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class BluetoothCharacteristicProperties
+    {
+        public bool AuthenticatedSignedWrites { get => throw null; }
+        public bool Broadcast { get => throw null; }
+        public bool Indicate { get => throw null; }
+        public bool Notify { get => throw null; }
+        public bool Read { get => throw null; }
+        public bool ReliableWrite { get => throw null; }
+        public bool WritableAuxiliaries { get => throw null; }
+        public bool Write { get => throw null; }
+        public bool WriteWithoutResponse { get => throw null; }
+    }
+
+    [System.Flags]
+    public enum BluetoothCharacteristicPropertyFlags
+    {
+        None = 0,
+        Broadcast = 1,
+        Read = 2,
+        WriteWithoutResponse = 4,
+        Write = 8,
+        Notify = 16,
+        Indicate = 32,
+        AuthenticatedSignedWrites = 64,
+        ExtendedProperties = 128,
+        ReliableWrite = 256,
+        WritableAuxiliaries = 512,
+    }
+
+    public class BluetoothDataFilterInit
+    {
+        public System.ReadOnlyMemory<byte>? DataPrefix { get => throw null; init { } }
+        public System.ReadOnlyMemory<byte>? Mask { get => throw null; init { } }
+    }
+
+    public sealed class BluetoothDevice : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattServer? Gatt { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice HostDevice { get => throw null; }
+        public string Id { get => throw null; }
+        public string? Name { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAdvertisementReceived { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCharacteristicValueChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnGattServerDisconnected { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceAdded { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceRemoved { get => throw null; set { } }
+        public bool WatchingAdvertisements { get => throw null; }
+        public System.Threading.Tasks.Task Forget() => throw null;
+        public System.Threading.Tasks.Task WatchAdvertisements(Meziantou.Framework.WebPlatform.Dom.WatchAdvertisementsOptions? options = null) => throw null;
+    }
+
+    public sealed class BluetoothDeviceRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice> Devices { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> OptionalServices { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.RequestDeviceOptions Options { get => throw null; }
+    }
+
+    public class BluetoothHostCharacteristic
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothHostDescriptor> Descriptors { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothCharacteristicPropertyFlags Properties { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostService? Service { get => throw null; }
+        public string Uuid { get => throw null; }
+        public System.ReadOnlyMemory<byte> Value { get => throw null; set { } }
+        public BluetoothHostCharacteristic(string uuid, Meziantou.Framework.WebPlatform.Dom.BluetoothCharacteristicPropertyFlags properties) { }
+        public T AddDescriptor<T>(T descriptor) where T : Meziantou.Framework.WebPlatform.Dom.BluetoothHostDescriptor => throw null;
+        public void NotifyValueChanged(System.ReadOnlyMemory<byte> value) { }
+        protected internal virtual System.Threading.Tasks.Task<System.ReadOnlyMemory<byte>> ReadValueAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public bool RemoveDescriptor(Meziantou.Framework.WebPlatform.Dom.BluetoothHostDescriptor descriptor) => throw null;
+        protected internal virtual System.Threading.Tasks.Task StartNotificationsAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        protected internal virtual System.Threading.Tasks.Task StopNotificationsAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        protected internal virtual System.Threading.Tasks.Task WriteValueAsync(System.ReadOnlyMemory<byte> value, Meziantou.Framework.WebPlatform.Dom.BluetoothWriteType writeType, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
+    public class BluetoothHostDescriptor
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic? Characteristic { get => throw null; }
+        public string Uuid { get => throw null; }
+        public System.ReadOnlyMemory<byte> Value { get => throw null; set { } }
+        public BluetoothHostDescriptor(string uuid) { }
+        protected internal virtual System.Threading.Tasks.Task<System.ReadOnlyMemory<byte>> ReadValueAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        protected internal virtual System.Threading.Tasks.Task WriteValueAsync(System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
+    public class BluetoothHostDevice
+    {
+        public string Address { get => throw null; }
+        public bool IsConnected { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<ushort, System.ReadOnlyMemory<byte>> ManufacturerData { get => throw null; init { } }
+        public string? Name { get => throw null; }
+        public System.Collections.Generic.IReadOnlyDictionary<string, System.ReadOnlyMemory<byte>> ServiceData { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> ServiceUuids { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothHostService> Services { get => throw null; }
+        public BluetoothHostDevice(string address, string? name = null) { }
+        public T AddService<T>(T service) where T : Meziantou.Framework.WebPlatform.Dom.BluetoothHostService => throw null;
+        protected virtual System.Threading.Tasks.Task ConnectAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public void Disconnect() { }
+        protected virtual void OnLastClientDisconnected() { }
+        public bool RemoveService(Meziantou.Framework.WebPlatform.Dom.BluetoothHostService service) => throw null;
+    }
+
+    public class BluetoothHostService
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic> Characteristics { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice? Device { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothHostService> IncludedServices { get => throw null; }
+        public bool IsPrimary { get => throw null; }
+        public string Uuid { get => throw null; }
+        public BluetoothHostService(string uuid, bool isPrimary = true) { }
+        public T AddCharacteristic<T>(T characteristic) where T : Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic => throw null;
+        public void AddIncludedService(Meziantou.Framework.WebPlatform.Dom.BluetoothHostService service) { }
+        public bool RemoveCharacteristic(Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic characteristic) => throw null;
+        public bool RemoveIncludedService(Meziantou.Framework.WebPlatform.Dom.BluetoothHostService service) => throw null;
+    }
+
+    public sealed class BluetoothLEScanFilterInit
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothManufacturerDataFilterInit>? ManufacturerData { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public string? NamePrefix { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothServiceDataFilterInit>? ServiceData { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName>? Services { get => throw null; init { } }
+    }
+
+    public sealed class BluetoothManufacturerDataFilterInit : Meziantou.Framework.WebPlatform.Dom.BluetoothDataFilterInit
+    {
+        public required ushort CompanyIdentifier { get => throw null; init { } }
+    }
+
+    public sealed class BluetoothOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothProvider? Provider { get => throw null; init { } }
+    }
+
+    public class BluetoothProvider
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothAdapterState AdapterState { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice> Devices { get => throw null; }
+        public bool IsAvailable { get => throw null; }
+        public bool IsLowEnergySupported { get => throw null; set { } }
+        public void AddDevice(Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice device) { }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothAllowedDevice Allow(Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice device, string origin, System.Collections.Generic.IEnumerable<string>? services, System.Collections.Generic.IEnumerable<ushort>? manufacturerData = null) => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothAllowedDevice> GetAllowedDevices(string origin) => throw null;
+        public bool RemoveDevice(Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice device) => throw null;
+        public virtual System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice?> RequestDevice(Meziantou.Framework.WebPlatform.Dom.BluetoothDeviceRequest request) => throw null;
+        public bool Revoke(Meziantou.Framework.WebPlatform.Dom.BluetoothHostDevice device, string origin) => throw null;
+    }
+
+    public sealed class BluetoothRemoteGattCharacteristic : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostCharacteristic HostCharacteristic { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCharacteristicValueChanged { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothCharacteristicProperties Properties { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService Service { get => throw null; }
+        public string Uuid { get => throw null; }
+        public System.ReadOnlyMemory<byte>? Value { get => throw null; }
+        public object? ValueView { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattDescriptor> GetDescriptor(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName descriptor) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattDescriptor>> GetDescriptors(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName? descriptor = null) => throw null;
+        public System.Threading.Tasks.Task<object> ReadValue() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic> StartNotifications() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic> StopNotifications() => throw null;
+        public System.Threading.Tasks.Task WriteValue(System.ReadOnlyMemory<byte> value) => throw null;
+        public System.Threading.Tasks.Task WriteValueWithResponse(System.ReadOnlyMemory<byte> value) => throw null;
+        public System.Threading.Tasks.Task WriteValueWithoutResponse(System.ReadOnlyMemory<byte> value) => throw null;
+    }
+
+    public sealed class BluetoothRemoteGattDescriptor
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic Characteristic { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostDescriptor HostDescriptor { get => throw null; }
+        public string Uuid { get => throw null; }
+        public System.ReadOnlyMemory<byte>? Value { get => throw null; }
+        public object? ValueView { get => throw null; }
+        public System.Threading.Tasks.Task<object> ReadValue() => throw null;
+        public System.Threading.Tasks.Task WriteValue(System.ReadOnlyMemory<byte> value) => throw null;
+    }
+
+    public sealed class BluetoothRemoteGattServer
+    {
+        public bool Connected { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothDevice Device { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattServer> Connect() => throw null;
+        public void Disconnect() { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService> GetPrimaryService(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName service) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService>> GetPrimaryServices(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName? service = null) => throw null;
+    }
+
+    public sealed class BluetoothRemoteGattService : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothDevice Device { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothHostService HostService { get => throw null; }
+        public bool IsPrimary { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCharacteristicValueChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceAdded { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceChanged { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnServiceRemoved { get => throw null; set { } }
+        public string Uuid { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic> GetCharacteristic(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName characteristic) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattCharacteristic>> GetCharacteristics(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName? characteristic = null) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService> GetIncludedService(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName service) => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothRemoteGattService>> GetIncludedServices(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName? service = null) => throw null;
+    }
+
+    public sealed class BluetoothServiceDataFilterInit : Meziantou.Framework.WebPlatform.Dom.BluetoothDataFilterInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName Service { get => throw null; init { } }
+    }
+
+    public static class BluetoothUuid
+    {
+        public static string CanonicalUuid(uint alias) => throw null;
+        public static string GetCharacteristic(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName name) => throw null;
+        public static string GetDescriptor(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName name) => throw null;
+        public static string GetService(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName name) => throw null;
+        public static bool IsValidUuid(string? value) => throw null;
+    }
+
+    public readonly struct BluetoothUuidName : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName>
+    {
+        public uint? Alias { get => throw null; }
+        public string? Name { get => throw null; }
+        public object Value { get => throw null; }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName FromString(string value) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName FromUInt32(uint value) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName left, Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName left, Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName right) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName(string value) => throw null;
+        public static implicit operator Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName(uint value) => throw null;
+    }
+
+    public enum BluetoothWriteType
+    {
+        Default = 0,
+        WithResponse = 1,
+        WithoutResponse = 2,
+    }
+
     public readonly struct BooleanOrConstrainDouble : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.BooleanOrConstrainDouble>
     {
         public double? Bare { get => throw null; }
@@ -3649,6 +3932,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int BackForwardCacheSize { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.BadgingOptions? Badging { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.BatteryStatusOptions? BatteryStatus { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothOptions? Bluetooth { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? BrowsingContextCreated { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? BrowsingContextDestroyed { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CacheStorageBackend? CacheStorage { get => throw null; init { } }
@@ -11070,6 +11354,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string AppCodeName { get => throw null; }
         public string AppName { get => throw null; }
         public string AppVersion { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Bluetooth Bluetooth { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformation Connection { get => throw null; }
         public bool CookieEnabled { get => throw null; }
@@ -13119,6 +13404,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         AudioWorklet = 22,
         Xslt = 23,
         WebIdentity = 24,
+    }
+
+    public sealed class RequestDeviceOptions
+    {
+        public bool AcceptAllDevices { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit>? ExclusionFilters { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothLEScanFilterInit>? Filters { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<ushort> OptionalManufacturerData { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName> OptionalServices { get => throw null; init { } }
     }
 
     public enum RequestMode
@@ -16577,6 +16871,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool ValueMissing { get => throw null; init { } }
     }
 
+    public sealed class ValueEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public object? Value { get => throw null; }
+        public ValueEvent(string type, Meziantou.Framework.WebPlatform.Dom.ValueEventInit? initDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class ValueEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public object? Value { get => throw null; init { } }
+    }
+
     public sealed class VideoConfiguration
     {
         public required ulong Bitrate { get => throw null; init { } }
@@ -16921,6 +17226,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public enum WakeLockType
     {
         Screen = 0,
+    }
+
+    public sealed class WatchAdvertisementsOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.AbortSignal? Signal { get => throw null; init { } }
     }
 
     public sealed class WebAuthenticationOptions

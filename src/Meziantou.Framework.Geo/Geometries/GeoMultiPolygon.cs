@@ -7,11 +7,14 @@ public sealed class GeoMultiPolygon : GeoGeometry
     /// <param name="polygons">The polygons.</param>
     public GeoMultiPolygon(IEnumerable<GeoPolygon> polygons)
     {
-        Polygons = ToArray(polygons, nameof(polygons));
+        PolygonArray = ToArray(polygons, nameof(polygons));
     }
 
     /// <summary>Gets the polygons.</summary>
-    public IReadOnlyList<GeoPolygon> Polygons { get; }
+    public IReadOnlyList<GeoPolygon> Polygons => PolygonArray;
+
+    /// <summary>Gets the array that <see cref="Polygons"/> returns, so that the operations read it without interface calls.</summary>
+    internal GeoPolygon[] PolygonArray { get; }
 
     /// <inheritdoc />
     public override GeoGeometryType Type => GeoGeometryType.MultiPolygon;
@@ -19,7 +22,16 @@ public sealed class GeoMultiPolygon : GeoGeometry
     /// <summary>Gets a value that indicates whether a position is inside one of the polygons. See <see cref="GeoPolygon.Contains(GeoPosition)"/>.</summary>
     /// <param name="position">The position. The altitude is ignored.</param>
     /// <returns><see langword="true"/> when the position is inside one of the polygons; otherwise, <see langword="false"/>.</returns>
-    public bool Contains(GeoPosition position) => Polygons.Any(polygon => polygon.Contains(position));
+    public bool Contains(GeoPosition position)
+    {
+        foreach (var polygon in PolygonArray)
+        {
+            if (polygon.Contains(position))
+                return true;
+        }
+
+        return false;
+    }
 
     /// <summary>Gets a value that indicates whether a position is inside one of the polygons, whose edges are drawn as an edge type says. See <see cref="GeoPolygon.Contains(GeoPosition, GeoEdgeType)"/>.</summary>
     /// <param name="position">The position. The altitude is ignored.</param>
@@ -28,7 +40,13 @@ public sealed class GeoMultiPolygon : GeoGeometry
     public bool Contains(GeoPosition position, GeoEdgeType edgeType)
     {
         GeoPolygon.ValidateEdgeType(edgeType);
-        return Polygons.Any(polygon => polygon.Contains(position, edgeType));
+        foreach (var polygon in PolygonArray)
+        {
+            if (polygon.Contains(position, edgeType))
+                return true;
+        }
+
+        return false;
     }
 
     /// <inheritdoc />

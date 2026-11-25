@@ -102,8 +102,7 @@ public static class WellKnownBinary
         ArgumentNullException.ThrowIfNull(geometry);
         ArgumentNullException.ThrowIfNull(writer);
         GeoValidation.EnsureFinite(geometry, nameof(geometry));
-        var hasAltitude = geometry.GetPositions().Any(position => position.Altitude is not null);
-        var hasMeasure = geometry.GetPositions().Any(position => position.Measure is not null);
+        var (hasAltitude, hasMeasure) = GeoPositionSpans.GetDimensions(geometry);
         WriteGeometry(writer, geometry, hasAltitude, hasMeasure);
     }
 
@@ -177,9 +176,31 @@ public static class WellKnownBinary
     private static void WritePositions(IBufferWriter<byte> writer, IReadOnlyList<GeoPosition> positions, bool hasAltitude, bool hasMeasure)
     {
         WriteCount(writer, positions.Count);
-        foreach (var position in positions)
+        if (positions is not GeoPosition[] array)
         {
-            WritePosition(writer, position, hasAltitude, hasMeasure);
+            foreach (var position in positions)
+            {
+                WritePosition(writer, position, hasAltitude, hasMeasure);
+            }
+
+            return;
+        }
+
+        // The positions of a geometry are an array: they are written in blocks, with a call to the writer for each block
+        const int BlockLength = 256;
+        var size = 16 + (hasAltitude ? 8 : 0) + (hasMeasure ? 8 : 0);
+        for (var start = 0; start < array.Length; start += BlockLength)
+        {
+            var block = array.AsSpan(start, Math.Min(BlockLength, array.Length - start));
+            var span = writer.GetSpan(block.Length * size);
+            var offset = 0;
+            foreach (ref readonly var position in block)
+            {
+                WritePosition(span[offset..], position, hasAltitude, hasMeasure);
+                offset += size;
+            }
+
+            writer.Advance(offset);
         }
     }
 
@@ -192,7 +213,12 @@ public static class WellKnownBinary
     private static void WritePosition(IBufferWriter<byte> writer, GeoPosition position, bool hasAltitude, bool hasMeasure)
     {
         var size = 16 + (hasAltitude ? 8 : 0) + (hasMeasure ? 8 : 0);
-        var span = writer.GetSpan(size);
+        WritePosition(writer.GetSpan(size), position, hasAltitude, hasMeasure);
+        writer.Advance(size);
+    }
+
+    private static void WritePosition(Span<byte> span, in GeoPosition position, bool hasAltitude, bool hasMeasure)
+    {
         BinaryPrimitives.WriteDoubleLittleEndian(span, position.Longitude);
         BinaryPrimitives.WriteDoubleLittleEndian(span[8..], position.Latitude);
         if (hasAltitude)
@@ -202,10 +228,8 @@ public static class WellKnownBinary
 
         if (hasMeasure)
         {
-            BinaryPrimitives.WriteDoubleLittleEndian(span[(size - 8)..], position.Measure ?? double.NaN);
+            BinaryPrimitives.WriteDoubleLittleEndian(span[(hasAltitude ? 24 : 16)..], position.Measure ?? double.NaN);
         }
-
-        writer.Advance(size);
     }
 
     private ref struct Reader
@@ -286,7 +310,7 @@ public static class WellKnownBinary
                     return double.IsNaN(position.Longitude) && double.IsNaN(position.Latitude) ? null : new GeoPoint(position);
 
                 case GeoGeometryType.LineString:
-                    return new GeoLineString(ReadPositions(hasZ, hasM, dimensions));
+                    return GeoLineString.FromOwnedArray(ReadPositions(hasZ, hasM, dimensions));
 
                 case GeoGeometryType.Polygon:
                     return ReadPolygon(hasZ, hasM, dimensions);
@@ -347,7 +371,7 @@ public static class WellKnownBinary
                 rings[i] = ReadPositions(hasZ, hasM, dimensions);
             }
 
-            return new GeoPolygon(rings);
+            return GeoPolygon.FromOwnedArrays(rings);
         }
 
         private GeoPosition[] ReadPositions(bool hasZ, bool hasM, int dimensions)

@@ -7,11 +7,22 @@ public sealed class GeoLineString : GeoGeometry
     /// <param name="positions">The positions, in order.</param>
     public GeoLineString(IEnumerable<GeoPosition> positions)
     {
-        Positions = ToArray(positions, nameof(positions));
+        PositionArray = ToArray(positions, nameof(positions));
+    }
+
+    private GeoLineString(GeoPosition[] positions, bool _)
+    {
+        PositionArray = positions;
     }
 
     /// <summary>Gets the positions, in order.</summary>
-    public IReadOnlyList<GeoPosition> Positions { get; }
+    public IReadOnlyList<GeoPosition> Positions => PositionArray;
+
+    /// <summary>Gets the array that <see cref="Positions"/> returns, so that the operations read it without interface calls.</summary>
+    internal GeoPosition[] PositionArray { get; }
+
+    /// <summary>Creates a line that keeps an array the caller no longer uses, instead of a copy of it.</summary>
+    internal static GeoLineString FromOwnedArray(GeoPosition[] positions) => new(positions, _: true);
 
     /// <inheritdoc />
     public override GeoGeometryType Type => GeoGeometryType.LineString;

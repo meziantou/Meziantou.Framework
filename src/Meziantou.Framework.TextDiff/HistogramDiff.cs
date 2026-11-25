@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
@@ -9,28 +10,37 @@ internal static class HistogramDiff
     // on the region and let the fallback algorithm handle it, as git's histogram diff does.
     private const int MaxAnchorScore = 64;
 
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
+    /// <summary>Diffs two regions of chunk codes, from 1 to <paramref name="codeCount"/>.</summary>
+    internal static void Compute(ReadOnlySpan<int> left, ReadOnlySpan<int> right, int codeCount, DiffBudget budget, Span<bool> leftModified, Span<bool> rightModified)
     {
-        var leftModified = new bool[left.Length];
-        var rightModified = new bool[right.Length];
-        Array.Fill(leftModified, true);
-        Array.Fill(rightModified, true);
+        leftModified.Fill(true);
+        rightModified.Fill(true);
 
-        ComputeRange(left, 0, left.Length, right, 0, right.Length, comparer, budget, leftModified, rightModified);
-        return new DiffComputationResult(leftModified, rightModified);
+        // One entry per code replaces the dictionary of strings built for each pass
+        var stats = ArrayPool<TokenStats>.Shared.Rent(codeCount + 1);
+        try
+        {
+            stats.AsSpan(0, codeCount + 1).Clear();
+            var search = new AnchorSearch(stats);
+            ComputeRange(left, 0, left.Length, right, 0, right.Length, budget, leftModified, rightModified, ref search);
+        }
+        finally
+        {
+            ArrayPool<TokenStats>.Shared.Return(stats);
+        }
     }
 
     private static void ComputeRange(
-        string[] left,
+        ReadOnlySpan<int> left,
         int leftStart,
         int leftEnd,
-        string[] right,
+        ReadOnlySpan<int> right,
         int rightStart,
         int rightEnd,
-        IEqualityComparer<string> comparer,
         DiffBudget budget,
-        bool[] leftModified,
-        bool[] rightModified)
+        Span<bool> leftModified,
+        Span<bool> rightModified,
+        ref AnchorSearch search)
     {
         // Each pass keeps every anchor it can find instead of a single one. Consuming one anchor per
         // occurrence table made the search quadratic: the table was rebuilt over the whole remaining
@@ -41,7 +51,7 @@ internal static class HistogramDiff
         // changed chunks.
         while (true)
         {
-            while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftStart], right[rightStart]))
+            while (leftStart < leftEnd && rightStart < rightEnd && left[leftStart] == right[rightStart])
             {
                 leftModified[leftStart] = false;
                 rightModified[rightStart] = false;
@@ -49,7 +59,7 @@ internal static class HistogramDiff
                 rightStart++;
             }
 
-            while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftEnd - 1], right[rightEnd - 1]))
+            while (leftStart < leftEnd && rightStart < rightEnd && left[leftEnd - 1] == right[rightEnd - 1])
             {
                 leftEnd--;
                 rightEnd--;
@@ -61,16 +71,21 @@ internal static class HistogramDiff
             if (leftStart >= leftEnd || rightStart >= rightEnd || budget.IsExpired())
                 return;
 
-            var anchors = FindAnchors(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer);
+            var anchors = FindAnchors(left, leftStart, leftEnd, right, rightStart, rightEnd, ref search);
             if (anchors.Count == 0)
             {
-                ApplyMyers(left, leftStart, leftEnd, right, rightStart, rightEnd, comparer, budget, leftModified, rightModified);
+                MyersDiff.Compute(
+                    left[leftStart..leftEnd],
+                    right[rightStart..rightEnd],
+                    budget,
+                    leftModified[leftStart..leftEnd],
+                    rightModified[rightStart..rightEnd]);
                 return;
             }
 
             foreach (var anchor in anchors)
             {
-                ComputeRange(left, leftStart, anchor.LeftIndex, right, rightStart, anchor.RightIndex, comparer, budget, leftModified, rightModified);
+                ComputeRange(left, leftStart, anchor.LeftIndex, right, rightStart, anchor.RightIndex, budget, leftModified, rightModified, ref search);
                 leftModified[anchor.LeftIndex] = false;
                 rightModified[anchor.RightIndex] = false;
                 leftStart = anchor.LeftIndex + 1;
@@ -79,36 +94,21 @@ internal static class HistogramDiff
         }
     }
 
-    private static void ApplyMyers(
-        string[] left,
-        int leftStart,
-        int leftEnd,
-        string[] right,
-        int rightStart,
-        int rightEnd,
-        IEqualityComparer<string> comparer,
-        DiffBudget budget,
-        bool[] leftModified,
-        bool[] rightModified)
+    private static List<Anchor> FindAnchors(ReadOnlySpan<int> left, int leftStart, int leftEnd, ReadOnlySpan<int> right, int rightStart, int rightEnd, ref AnchorSearch search)
     {
-        var subDiff = MyersDiff.Compute(
-            left.AsSpan(leftStart, leftEnd - leftStart),
-            right.AsSpan(rightStart, rightEnd - rightStart),
-            comparer,
-            budget);
-
-        DiffAlgorithmHelpers.ApplySubDiff(subDiff, leftModified, leftStart, rightModified, rightStart);
-    }
-
-    private static List<Anchor> FindAnchors(string[] left, int leftStart, int leftEnd, string[] right, int rightStart, int rightEnd, IEqualityComparer<string> comparer)
-    {
-        // A single map holds the occurrence counts on both sides and the first position of each token on
-        // each side. This replaces a second dictionary and the List<int> that used to be allocated per
-        // distinct token, which dominated the allocations of this pass.
-        var stats = new Dictionary<string, TokenStats>(comparer);
+        // A single entry per code holds the occurrence counts on both sides and the first position of the code on
+        // each side. A code whose entry has another stamp does not occur in this pass, so the entries need no
+        // clearing between passes.
+        var stamp = ++search.Stamp;
+        var stats = search.Stats;
         for (var i = leftEnd - 1; i >= leftStart; i--)
         {
-            ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(stats, left[i], out _);
+            ref var entry = ref stats[left[i]];
+            if (entry.Stamp != stamp)
+            {
+                entry = new TokenStats { Stamp = stamp };
+            }
+
             entry.LeftCount++;
             entry.FirstLeftIndex = i;
         }
@@ -116,16 +116,22 @@ internal static class HistogramDiff
         // Walking backwards leaves the smallest index of each token in FirstLeftIndex/FirstRightIndex.
         for (var i = rightEnd - 1; i >= rightStart; i--)
         {
-            ref var entry = ref CollectionsMarshal.GetValueRefOrAddDefault(stats, right[i], out _);
+            ref var entry = ref stats[right[i]];
+            if (entry.Stamp != stamp)
+            {
+                entry = new TokenStats { Stamp = stamp };
+            }
+
             entry.RightCount++;
             entry.FirstRightIndex = i;
         }
 
         // The histogram rule: anchor on the least frequent token the two sides share.
         var bestScore = int.MaxValue;
-        foreach (var entry in stats.Values)
+        for (var i = leftStart; i < leftEnd; i++)
         {
-            if (entry.LeftCount is 0 || entry.RightCount is 0)
+            var entry = stats[left[i]];
+            if (entry.RightCount is 0)
                 continue;
 
             var score = entry.LeftCount + entry.RightCount;
@@ -160,9 +166,17 @@ internal static class HistogramDiff
         return DiffAlgorithmHelpers.LongestIncreasingSubsequenceByRight(candidates);
     }
 
+    private ref struct AnchorSearch(TokenStats[] stats)
+    {
+        public readonly TokenStats[] Stats = stats;
+        public int Stamp;
+    }
+
     [StructLayout(LayoutKind.Auto)]
     private struct TokenStats
     {
+        /// <summary>The pass that wrote this entry. An entry of an earlier pass is unused.</summary>
+        public int Stamp;
         public int LeftCount;
         public int RightCount;
         public int FirstLeftIndex;

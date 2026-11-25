@@ -1,15 +1,15 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
 internal static class HuntSzymanskiDiff
 {
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
+    /// <summary>Diffs two regions of chunk codes, from 1 to <paramref name="codeCount"/>.</summary>
+    internal static void Compute(ReadOnlySpan<int> left, ReadOnlySpan<int> right, int codeCount, DiffBudget budget, Span<bool> leftModified, Span<bool> rightModified)
     {
-        var leftModified = new bool[left.Length];
-        var rightModified = new bool[right.Length];
-        Array.Fill(leftModified, true);
-        Array.Fill(rightModified, true);
+        leftModified.Fill(true);
+        rightModified.Fill(true);
 
         // Trim the common prefix and suffix first, as the other three algorithms already do. The number
         // of candidate pairs is quadratic in the number of repeated chunks inside the searched region,
@@ -19,7 +19,7 @@ internal static class HuntSzymanskiDiff
         var rightStart = 0;
         var rightEnd = right.Length;
 
-        while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftStart], right[rightStart]))
+        while (leftStart < leftEnd && rightStart < rightEnd && left[leftStart] == right[rightStart])
         {
             leftModified[leftStart] = false;
             rightModified[rightStart] = false;
@@ -27,7 +27,7 @@ internal static class HuntSzymanskiDiff
             rightStart++;
         }
 
-        while (leftStart < leftEnd && rightStart < rightEnd && comparer.Equals(left[leftEnd - 1], right[rightEnd - 1]))
+        while (leftStart < leftEnd && rightStart < rightEnd && left[leftEnd - 1] == right[rightEnd - 1])
         {
             leftEnd--;
             rightEnd--;
@@ -35,73 +35,100 @@ internal static class HuntSzymanskiDiff
             rightModified[rightEnd] = false;
         }
 
-        var rightPositions = BuildRightPositions(right, rightStart, rightEnd, comparer);
-        var current = BuildCandidateLinks(left, leftStart, leftEnd, rightPositions, budget);
-        while (current is not null)
+        // The positions of each code on the right side, as linked lists in decreasing order: lastPositions gives the
+        // last position of a code, and previousPositions the position before a given one. This replaces a dictionary
+        // of strings and a list per distinct chunk.
+        var lastPositions = ArrayPool<int>.Shared.Rent(codeCount + 1);
+        var previousPositions = ArrayPool<int>.Shared.Rent(right.Length);
+        try
         {
-            leftModified[current.LeftIndex] = false;
-            rightModified[current.RightIndex] = false;
-            current = current.Previous;
-        }
+            lastPositions.AsSpan(0, codeCount + 1).Fill(-1);
+            for (var i = rightStart; i < rightEnd; i++)
+            {
+                ref var last = ref lastPositions[right[i]];
+                previousPositions[i] = last;
+                last = i;
+            }
 
-        return new DiffComputationResult(leftModified, rightModified);
+            var nodes = new MatchNodes();
+            for (var current = BuildCandidateLinks(left, leftStart, leftEnd, lastPositions, previousPositions, budget, nodes); current >= 0; current = nodes[current].Previous)
+            {
+                var node = nodes[current];
+                leftModified[node.LeftIndex] = false;
+                rightModified[node.RightIndex] = false;
+            }
+        }
+        finally
+        {
+            ArrayPool<int>.Shared.Return(lastPositions);
+            ArrayPool<int>.Shared.Return(previousPositions);
+        }
     }
 
-    private static Dictionary<string, List<int>> BuildRightPositions(string[] right, int rightStart, int rightEnd, IEqualityComparer<string> comparer)
-    {
-        var positionsByToken = new Dictionary<string, List<int>>(comparer);
-        for (var i = rightStart; i < rightEnd; i++)
-        {
-            ref var positions = ref CollectionsMarshal.GetValueRefOrAddDefault(positionsByToken, right[i], out _);
-            positions ??= new List<int>();
-
-            positions.Add(i);
-        }
-
-        return positionsByToken;
-    }
-
-    private static MatchNode? BuildCandidateLinks(string[] left, int leftStart, int leftEnd, Dictionary<string, List<int>> rightPositions, DiffBudget budget)
+    /// <summary>Returns the index in <paramref name="nodes"/> of the last match of a longest common subsequence, or -1.</summary>
+    private static int BuildCandidateLinks(ReadOnlySpan<int> left, int leftStart, int leftEnd, int[] lastPositions, int[] previousPositions, DiffBudget budget, MatchNodes nodes)
     {
         var thresholds = new List<int>();
-        var links = new List<MatchNode?>();
+        var links = new List<int>(); // The index of a node in nodes
 
         for (var leftIndex = leftStart; leftIndex < leftEnd; leftIndex++)
         {
             // Without a match, every chunk of the region stays modified: it is reported as replaced
             if (budget.IsExpired())
-                return null;
+                return -1;
 
-            if (!rightPositions.TryGetValue(left[leftIndex], out var matches))
-                continue;
-
-            for (var i = matches.Count - 1; i >= 0; i--)
+            for (var rightIndex = lastPositions[left[leftIndex]]; rightIndex >= 0; rightIndex = previousPositions[rightIndex])
             {
-                var rightIndex = matches[i];
                 var position = DiffAlgorithmHelpers.LowerBound(thresholds, rightIndex);
 
-                // The node is only allocated once the candidate is known to improve the threshold list.
-                // On input with many duplicate chunks half of the candidates were allocated and dropped.
+                // The node is only added once the candidate is known to improve the threshold list.
+                // On input with many duplicate chunks half of the candidates were added and dropped.
                 if (position == thresholds.Count)
                 {
                     thresholds.Add(rightIndex);
-                    links.Add(new MatchNode(leftIndex, rightIndex, position > 0 ? links[position - 1] : null));
+                    links.Add(nodes.Add(new MatchNode(leftIndex, rightIndex, position > 0 ? links[position - 1] : -1)));
                 }
                 else if (rightIndex < thresholds[position])
                 {
                     thresholds[position] = rightIndex;
-                    links[position] = new MatchNode(leftIndex, rightIndex, position > 0 ? links[position - 1] : null);
+                    links[position] = nodes.Add(new MatchNode(leftIndex, rightIndex, position > 0 ? links[position - 1] : -1));
                 }
             }
         }
 
-        return links.Count == 0 ? null : links[^1];
+        return links.Count == 0 ? -1 : links[^1];
     }
 
-    private sealed class MatchNode(int leftIndex, int rightIndex, MatchNode? previous)
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct MatchNode(int LeftIndex, int RightIndex, int Previous);
+
+    /// <summary>
+    /// The nodes, stored in blocks rather than as linked objects: a region with many repeated chunks creates millions
+    /// of nodes, and the garbage collector had to trace each of them. Fixed-size blocks are never copied, and stay out
+    /// of the large object heap, unlike the array of a growing list.
+    /// </summary>
+    private sealed class MatchNodes
     {
-        internal int LeftIndex { get; } = leftIndex;
-        internal int RightIndex { get; } = rightIndex;
-        internal MatchNode? Previous { get; } = previous;
+        private const int BlockShift = 12;
+        private const int BlockSize = 1 << BlockShift; // 48 KB per block
+        private const int BlockMask = BlockSize - 1;
+
+        private readonly List<MatchNode[]> _blocks = [];
+        private int _count;
+
+        public MatchNode this[int index] => _blocks[index >> BlockShift][index & BlockMask];
+
+        /// <summary>Adds <paramref name="node"/> and returns its index.</summary>
+        public int Add(MatchNode node)
+        {
+            var offset = _count & BlockMask;
+            if (offset is 0)
+            {
+                _blocks.Add(new MatchNode[BlockSize]);
+            }
+
+            _blocks[^1][offset] = node;
+            return _count++;
+        }
     }
 }

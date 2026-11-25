@@ -16,7 +16,8 @@ public static partial class UnicodeFuzzTargets
     /// Grapheme clusters, word segments, sentences and script runs are contiguous, non-empty and cover the text; a script
     /// run never ends inside a grapheme cluster, and the sentences of a case of SentenceBreakTest.txt are those of the case. The line breaks are increasing, the last one is the end of the text and is
     /// mandatory, the mandatory breaks do not depend on the tailoring, and <see cref="UnicodeLineBreakStrictness.Anywhere"/>
-    /// breaks at every grapheme cluster boundary. Nothing splits a surrogate pair.
+    /// breaks at every grapheme cluster boundary. Nothing splits a surrogate pair. The shortcuts for the ASCII and Latin
+    /// characters give the word segments, their kinds and the script runs of the rules applied to each character.
     /// </summary>
     private static void Segmentation(ReadOnlySpan<byte> data)
     {
@@ -24,9 +25,15 @@ public static partial class UnicodeFuzzTargets
         var graphemeBoundaries = GetGraphemeBoundaries(text);
 
         var expectedStart = 0;
-        foreach (var word in Unicode.EnumerateWordBoundaries(text))
+        var words = Unicode.EnumerateWordBoundaries(text);
+        while (words.MoveNext())
         {
+            var word = words.Current;
             (_, expectedStart) = CheckSegment(text, word, expectedStart, "word segment");
+
+            var (offset, length) = word.GetOffsetAndLength(text.Length);
+            FuzzAssert.Equal(Unicode.GetWordSegmentLength(text.AsSpan(offset)), length, $"The word segment at {offset} differs from the one of the rules applied to each character");
+            FuzzAssert.Equal(Unicode.GetWordKind(text.AsSpan(offset, length)), words.CurrentKind, $"The kind of the word segment at {offset} differs from the kind of its last character");
         }
 
         FuzzAssert.Equal(text.Length, expectedStart, "The word segments do not cover the text");
@@ -46,14 +53,25 @@ public static partial class UnicodeFuzzTargets
         }
 
         expectedStart = 0;
+        var runs = new List<UnicodeScriptRun>();
         foreach (var run in Unicode.EnumerateScriptRuns(text))
         {
             var (_, end) = CheckSegment(text, new Range(run.Index, run.Index + run.Length), expectedStart, $"script run ({run.Script})");
             FuzzAssert.True(graphemeBoundaries[end], $"The script run {run.Index}..{end} ({run.Script}) ends inside a grapheme cluster");
             expectedStart = end;
+            runs.Add(run);
         }
 
         FuzzAssert.Equal(text.Length, expectedStart, "The script runs do not cover the text");
+
+        var index = 0;
+        foreach (var run in new UnicodeScriptRunEnumerator(text, skipSimpleCharacters: false))
+        {
+            FuzzAssert.True(index < runs.Count && runs[index] == run, $"The script run {run.Index}..{run.Index + run.Length} ({run.Script}) of the clusters differs from the one read with the shortcut for the Latin characters");
+            index++;
+        }
+
+        FuzzAssert.Equal(index, runs.Count, "The shortcut for the Latin characters gives more script runs than the clusters");
 
         string? expectedMandatory = null;
         foreach (var strictness in Strictnesses)

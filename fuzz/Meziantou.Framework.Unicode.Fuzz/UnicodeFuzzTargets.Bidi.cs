@@ -7,7 +7,8 @@ public static partial class UnicodeFuzzTargets
     /// <summary>
     /// The levels of a paragraph are between the paragraph level and <c>MaxExplicitDepth + 1</c>, the two halves of a
     /// surrogate pair have the same level, the returned paragraph level is the one of <c>GetParagraphLevel</c>, the
-    /// overload with a workspace (of the exact size, with garbage in it) gives the same levels, and a text for which
+    /// overload with a workspace (of the exact size, with garbage in it) gives the same levels, the general path gives
+    /// the same levels as the fast path of the paragraphs without explicit formatting characters, and a text for which
     /// <c>MayRequireBidi</c> is false has only level 0 when it is not right-to-left. After <c>ResetLineLevels</c>, the
     /// levels stay in range and <c>GetVisualOrder</c> is a permutation (the identity, or the reverse order, when every
     /// level is 0, or 1). The overload that takes the text gives the same order except that it keeps surrogate pairs in
@@ -49,6 +50,10 @@ public static partial class UnicodeFuzzTargets
         levels2.AsSpan().Fill(0xAB);
         FuzzAssert.Equal(paragraphLevel, UnicodeBidi.ResolveLevels(paragraph, direction, levels2, workspace), "The overload with a workspace returns another paragraph level");
         FuzzAssert.True(levels.AsSpan().SequenceEqual(levels2), "The overload with a workspace resolves other levels");
+
+        var generalLevels = new byte[paragraph.Length];
+        FuzzAssert.Equal(paragraphLevel, UnicodeBidi.ResolveLevels(paragraph, direction, generalLevels, workspace, allowFastPath: false), "The general path returns another paragraph level");
+        FuzzAssert.True(levels.AsSpan().SequenceEqual(generalLevels), "The general path resolves other levels");
 
         var mayRequireBidi = UnicodeBidi.MayRequireBidi(paragraph);
         for (var index = 0; index < levels.Length; index++)
@@ -139,5 +144,6 @@ public static partial class UnicodeFuzzTargets
         var deep = string.Concat(Enumerable.Repeat("\u202B\u202A\u2067", 50)) + "a\u05D0 1 " + string.Concat(Enumerable.Repeat("\u202C\u2069", 60));
         yield return FuzzSeed.FromText("deep-embeddings", [(byte)UnicodeBidiDirection.RightToLeft], deep);
         yield return FuzzSeed.FromText("brackets", [(byte)UnicodeBidiDirection.Auto], "\u05D0(a[b\u05D1]c)\u05D2 {\u0661\u0662} \u2068x\u2069");
+        yield return FuzzSeed.FromText("implicit", [(byte)UnicodeBidiDirection.Auto], "\u0627\u0644 (12.5%) \u05D0[\u0301b]\u0301\u05D1 \U0001F468\u200D\U0001F469 1,2 $3 \u0661\u066B\u0662 a\uD800b");
     }
 }

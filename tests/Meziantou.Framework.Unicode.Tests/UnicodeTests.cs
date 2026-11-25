@@ -3760,6 +3760,37 @@ public sealed class UnicodeTests
         Assert.Equal(new byte[] { 0, 1, 1, 1, 1, 0 }, levels);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("\u200D\u200D")]
+    [InlineData("\u0627\u0644 (12.5%) \u05D0[\u0301b]\u0301\u05D1 \U0001F468\u200D\U0001F469 1,2 $3 \u0661\u066B\u0662")]
+    [InlineData("\u05D0 1.2 -3 4,5 6%  \u0661/\u0662 (a) [\u05D1] {c\u05D2} \u2329\u05D3\u3009")]
+    [InlineData("\u0301\u05D0 abc\tdef \u0627\u0661\u0301 \u200B\u05D1")]
+    public void ResolveLevels_ParagraphWithoutExplicitFormattingMatchesTheGeneralPath(string text)
+    {
+        AssertResolveLevelsMatchesTheGeneralPath(text);
+    }
+
+    [Fact]
+    public void ResolveLevels_ParagraphWithUnpairedSurrogatesMatchesTheGeneralPath()
+    {
+        // Built in code: test data cannot hold an unpaired surrogate.
+        AssertResolveLevelsMatchesTheGeneralPath("a" + (char)0xD800 + "b \u05D0" + (char)0xDC00 + " (" + (char)0xDBFF + ")\u05D1");
+    }
+
+    private static void AssertResolveLevelsMatchesTheGeneralPath(string text)
+    {
+        foreach (var direction in (UnicodeBidiDirection[])[UnicodeBidiDirection.Auto, UnicodeBidiDirection.LeftToRight, UnicodeBidiDirection.RightToLeft])
+        {
+            var expected = new byte[text.Length];
+            var expectedParagraphLevel = UnicodeBidi.ResolveLevels(text, direction, expected, new int[UnicodeBidi.GetWorkspaceLength(text.Length)], allowFastPath: false);
+
+            var levels = new byte[text.Length];
+            Assert.Equal(expectedParagraphLevel, UnicodeBidi.ResolveLevels(text, direction, levels));
+            Assert.Equal(expected, levels);
+        }
+    }
+
     [Fact]
     public void ResetLineLevels_GivesTrailingWhiteSpaceTheParagraphLevel()
     {

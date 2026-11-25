@@ -1422,11 +1422,7 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-bluetooth.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Bluetooth API should be deferred until the\n   prerendered page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-broadcast-channel.https.html": {
     "total": 1
@@ -1498,26 +1494,16 @@
     "total": 3
   },
   "speculation-rules/prerender/restriction-midi-sysex.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Midi API should be deferred until the prerendered page is\n  activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-midi.https.html": {
-    "total": 1,
-    "failures": {
-      "the access to the Midi API should be deferred until the prerendered page is\n  activated": "FAIL"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-notification.https.html": {
     "total": 2
   },
   "speculation-rules/prerender/restriction-presentation-request.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "prerendering page cannot start presentation": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-prompt-by-before-unload.https.html": {
     "total": 1
@@ -1593,11 +1579,7 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-web-hid.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Web HID API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-web-locks.https.html": {
     "total": 2
@@ -1606,11 +1588,7 @@
     "total": 1
   },
   "speculation-rules/prerender/restriction-web-serial.tentative.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "the access to the Web Serial API should be deferred until the prerendered\n    page is activated": "TIMEOUT"
-    }
+    "total": 1
   },
   "speculation-rules/prerender/restriction-web-share.https.html": {
     "total": 1

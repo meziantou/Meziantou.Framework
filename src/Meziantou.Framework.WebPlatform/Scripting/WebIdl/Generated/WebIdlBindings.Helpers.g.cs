@@ -197,6 +197,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.MediaTrackConstraints Defaults_Dom_MediaTrackConstraints = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MidiConnectionEventInit Defaults_Dom_MidiConnectionEventInit = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MidiMessageEventInit Defaults_Dom_MidiMessageEventInit = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.MidiOptions Defaults_Dom_MidiOptions = new();
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions Defaults_Dom_ModelContextExecuteToolOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ModelContextGetToolOptions Defaults_Dom_ModelContextGetToolOptions = new();
@@ -489,6 +495,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_CompositeOperation_Values = new[] { "replace", "add", "accumulate" };
 
+    internal static readonly string[] Enum_ContactProperty_Values = new[] { "address", "email", "icon", "name", "tel" };
+
     internal static readonly string[] Enum_CookieSameSite_Values = new[] { "strict", "lax", "none" };
 
     internal static readonly string[] Enum_CredentialMediationRequirement_Values = new[] { "silent", "optional", "conditional", "required" };
@@ -622,6 +630,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_PredefinedColorSpace_Values = new[] { "srgb", "srgb-linear", "display-p3", "display-p3-linear" };
 
     internal static readonly string[] Enum_PremultiplyAlpha_Values = new[] { "none", "premultiply", "default" };
+
+    internal static readonly string[] Enum_PresentationConnectionCloseReason_Values = new[] { "error", "closed", "wentaway" };
 
     internal static readonly string[] Enum_PresentationStyle_Values = new[] { "unspecified", "inline", "attachment" };
 
@@ -1593,6 +1603,24 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         if (value.Min is not null) r.SetMember(result, "min", (value.Min.HasValue ? r.FromNumber((double)value.Min.GetValueOrDefault()) : r.Adapter.Null));
         if (value.Exact is not null) r.SetMember(result, "exact", (value.Exact.HasValue ? r.FromNumber((double)value.Exact.GetValueOrDefault()) : r.Adapter.Null));
         if (value.Ideal is not null) r.SetMember(result, "ideal", (value.Ideal.HasValue ? r.FromNumber((double)value.Ideal.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ContactInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ContactInfo value)
+    {
+        var result = r.CreateObject();
+        if (value.Address is not null) r.SetMember(result, "address", r.FromSequence(value.Address, static (r, e) => r.Wrap(e)));
+        if (value.Email is not null) r.SetMember(result, "email", r.FromSequence(value.Email, static (r, e) => r.FromString(e)));
+        if (value.Icon is not null) r.SetMember(result, "icon", r.FromSequence(value.Icon, static (r, e) => r.Wrap(e)));
+        if (value.Name is not null) r.SetMember(result, "name", r.FromSequence(value.Name, static (r, e) => r.FromString(e)));
+        if (value.Tel is not null) r.SetMember(result, "tel", r.FromSequence(value.Tel, static (r, e) => r.FromString(e)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_ContactsSelectOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ContactsSelectOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "multiple", r.FromBoolean(value.Multiple));
         return result;
     }
 
@@ -3342,6 +3370,34 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_MidiConnectionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MidiConnectionEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        if (value.Port is not null) r.SetMember(result, "port", r.Wrap(value.Port));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MidiMessageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MidiMessageEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        if (value.Data is not null) r.SetMember(result, "data", (value.Data is { } bytes ? r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.Uint8Array, bytes) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_MidiOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.MidiOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.Software is not null) r.SetMember(result, "software", r.FromBoolean(value.Software));
+        if (value.Sysex is not null) r.SetMember(result, "sysex", r.FromBoolean(value.Sysex));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_ModelContextExecuteToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions value)
     {
         var result = r.CreateObject();
@@ -4037,6 +4093,27 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "enableHighAccuracy", r.FromBoolean(value.EnableHighAccuracy));
         r.SetMember(result, "maximumAge", r.FromNumber((double)value.MaximumAge));
         r.SetMember(result, "timeout", r.FromNumber((double)value.Timeout));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_PresentationConnectionAvailableEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionAvailableEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "connection", r.Wrap(value.Connection));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_PresentationConnectionCloseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "message", r.FromString(value.Message));
+        r.SetMember(result, "reason", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PresentationConnectionCloseReason(value.Reason)));
         return result;
     }
 
@@ -6172,6 +6249,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_ContactProperty(global::Meziantou.Framework.WebPlatform.Dom.ContactProperty value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Address => "address",
+        global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Email => "email",
+        global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Icon => "icon",
+        global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Name => "name",
+        global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Tel => "tel",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_CookieSameSite(global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite.Strict => "strict",
@@ -6578,6 +6665,28 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_MidiPortConnectionState(global::Meziantou.Framework.WebPlatform.Dom.MidiPortConnectionState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortConnectionState.Open => "open",
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortConnectionState.Closed => "closed",
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortConnectionState.Pending => "pending",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MidiPortDeviceState(global::Meziantou.Framework.WebPlatform.Dom.MidiPortDeviceState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortDeviceState.Disconnected => "disconnected",
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortDeviceState.Connected => "connected",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_MidiPortType(global::Meziantou.Framework.WebPlatform.Dom.MidiPortType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortType.Input => "input",
+        global::Meziantou.Framework.WebPlatform.Dom.MidiPortType.Output => "output",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_MonitorTypeSurfaces(global::Meziantou.Framework.WebPlatform.Dom.MonitorTypeSurfaces value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.MonitorTypeSurfaces.Include => "include",
@@ -6743,6 +6852,23 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha.None => "none",
         global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha.Premultiply => "premultiply",
         global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha.Default => "default",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_PresentationConnectionCloseReason(global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason.Error => "error",
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason.Closed => "closed",
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason.WentAway => "wentaway",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_PresentationConnectionState(global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState.Connecting => "connecting",
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState.Connected => "connected",
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState.Closed => "closed",
+        global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState.Terminated => "terminated",
         _ => value.ToString(),
     };
 
@@ -8902,6 +9028,17 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Min = m1_present ? m1 : Defaults_Dom_ConstrainULongRange.Min,
             Exact = m2_present ? m2 : Defaults_Dom_ConstrainULongRange.Exact,
             Ideal = m3_present ? m3 : Defaults_Dom_ConstrainULongRange.Ideal,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ContactsSelectOptions ToDictionary_Dom_ContactsSelectOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "ContactsSelectOptions");
+        var m0_value = r.GetDictionaryMember(value, "multiple");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        return new global::Meziantou.Framework.WebPlatform.Dom.ContactsSelectOptions
+        {
+            Multiple = m0,
         };
     }
 
@@ -11905,6 +12042,64 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MidiConnectionEventInit ToDictionary_Dom_MidiConnectionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MIDIConnectionEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "port");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::Meziantou.Framework.WebPlatform.Dom.MidiPort?)r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.MidiPort>(m3_value, "MIDIPort") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.MidiConnectionEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Port = m3_present ? m3 : Defaults_Dom_MidiConnectionEventInit.Port,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MidiMessageEventInit ToDictionary_Dom_MidiMessageEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MIDIMessageEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "data");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (global::Meziantou.Framework.WebPlatform.Scripting.JsBufferSource?)r.ToBufferSource(m3_value, 16u, false, "Uint8Array") : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.MidiMessageEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Data = m3_present ? m3?.Bytes : Defaults_Dom_MidiMessageEventInit.Data,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.MidiOptions ToDictionary_Dom_MidiOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "MIDIOptions");
+        var m0_value = r.GetDictionaryMember(value, "software");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (bool?)r.ToBoolean(m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "sysex");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (bool?)r.ToBoolean(m1_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.MidiOptions
+        {
+            Software = m0_present ? m0 : Defaults_Dom_MidiOptions.Software,
+            Sysex = m1_present ? m1 : Defaults_Dom_MidiOptions.Sysex,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions ToDictionary_Dom_ModelContextExecuteToolOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "ModelContextExecuteToolOptions");
@@ -13349,6 +13544,51 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             EnableHighAccuracy = m0,
             MaximumAge = m1,
             Timeout = m2,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionAvailableEventInit ToDictionary_Dom_PresentationConnectionAvailableEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "PresentationConnectionAvailableEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "connection");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("PresentationConnectionAvailableEventInit", "connection");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.PresentationConnection>(m3_value, "PresentationConnection");
+        return new global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionAvailableEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Connection = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseEventInit ToDictionary_Dom_PresentationConnectionCloseEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "PresentationConnectionCloseEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "message");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"" : r.ToDomString(m3_value);
+        var m4_value = r.GetDictionaryMember(value, "reason");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("PresentationConnectionCloseEventInit", "reason");
+        var m4 = r.ToEnumerationValue(m4_value, "PresentationConnectionCloseReason", WebIdlHelpers<TAdapter, TValue>.Enum_PresentationConnectionCloseReason_Values);
+        return new global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Message = m3,
+            Reason = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_PresentationConnectionCloseReason(m4),
         };
     }
 
@@ -17066,6 +17306,16 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ContactProperty ToEnum_Dom_ContactProperty(string value) => value switch
+    {
+        "address" => global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Address,
+        "email" => global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Email,
+        "icon" => global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Icon,
+        "name" => global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Name,
+        "tel" => global::Meziantou.Framework.WebPlatform.Dom.ContactProperty.Tel,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite ToEnum_Dom_CookieSameSite(string value) => value switch
     {
         "strict" => global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite.Strict,
@@ -17469,6 +17719,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         "none" => global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha.None,
         "premultiply" => global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha.Premultiply,
         "default" => global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha.Default,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason ToEnum_Dom_PresentationConnectionCloseReason(string value) => value switch
+    {
+        "error" => global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason.Error,
+        "closed" => global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason.Closed,
+        "wentaway" => global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason.WentAway,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

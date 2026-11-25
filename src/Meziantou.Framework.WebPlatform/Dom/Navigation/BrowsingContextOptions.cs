@@ -762,6 +762,29 @@ public sealed partial record BrowsingContextOptions
     public HidOptions? Hid { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the Web MIDI API (https://webaudio.github.io/web-midi-api/, <c>navigator.requestMIDIAccess()</c>):
+    /// <see cref="WebMidiOptions.Provider"/> lists the MIDI input and output ports, and receives and sends their messages. The
+    /// <c>midi</c> permission is checked with <see cref="Permissions"/> and <see cref="RequestPermission"/>. The default is
+    /// null: there is no MIDI port.
+    /// </summary>
+    public WebMidiOptions? Midi { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Presentation API (https://w3c.github.io/presentation-api/, <c>navigator.presentation</c>
+    /// and <c>PresentationRequest</c>): <see cref="PresentationOptions.Provider"/> lists the presentation displays and plays the
+    /// role of the display chooser of <c>start()</c>, and <see cref="PresentationOptions.Receiver"/> makes the top-level
+    /// browsing contexts receiving browsing contexts. The default is null: there is no presentation display.
+    /// </summary>
+    public PresentationOptions? Presentation { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Contact Picker API (https://w3c.github.io/contact-picker/, <c>navigator.contacts</c>):
+    /// <see cref="ContactsOptions.Provider"/> is the contacts source of the user and plays the role of the contact picker. The
+    /// default is null: no contact property is supported.
+    /// </summary>
+    public ContactsOptions? Contacts { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

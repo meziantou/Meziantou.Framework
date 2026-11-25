@@ -238,23 +238,24 @@ public sealed class Serial : EventTarget
     /// <summary>
     /// Returns the available ports that the origin is allowed to use (https://serial.spec.whatwg.org/#getports-method). The task
     /// fails with a <c>SecurityError</c> <see cref="DomException"/> when the <c>serial</c> permissions policy feature is not
-    /// allowed, or the top-level origin is opaque.
+    /// allowed, or the top-level origin is opaque. A prerendering document gets the ports once it is activated.
     /// </summary>
     /// <seealso href="https://serial.spec.whatwg.org/#dom-serial-getports"/>
     [IdlMember("getPorts", "https://serial.spec.whatwg.org/#dom-serial-getports")]
-    public Task<IReadOnlyList<SerialPort>> GetPorts() => _state.GetPorts();
+    public Task<IReadOnlyList<SerialPort>> GetPorts() => Document.DelayWhilePrerendering(_state.Global, _state.GetPorts);
 
     /// <summary>
     /// Asks the user to choose a port (https://serial.spec.whatwg.org/#requestport-method) with
     /// <see cref="SerialProvider.RequestPort"/>: the origin is then allowed to use it. The window must have transient
     /// activation. The task fails with a <see cref="TypeErrorException"/> for an invalid filter, a <c>SecurityError</c>
     /// <see cref="DomException"/> without user activation or when the <c>serial</c> permissions policy feature is not allowed,
-    /// and a <c>NotFoundError</c> when the user does not choose a port.
+    /// and a <c>NotFoundError</c> when the user does not choose a port. A prerendering document asks the user once it is
+    /// activated (https://wicg.github.io/nav-speculation/prerendering.html#patch-serial).
     /// </summary>
     /// <param name="options">The filters of the ports.</param>
     /// <seealso href="https://serial.spec.whatwg.org/#dom-serial-requestport"/>
     [IdlMember("requestPort", "https://serial.spec.whatwg.org/#dom-serial-requestport")]
-    public Task<SerialPort> RequestPort(SerialPortRequestOptions? options = null) => _state.RequestPort(options ?? new SerialPortRequestOptions());
+    public Task<SerialPort> RequestPort(SerialPortRequestOptions? options = null) => Document.DelayWhilePrerendering(_state.Global, () => _state.RequestPort(options ?? new SerialPortRequestOptions()));
 }
 
 /// <summary>

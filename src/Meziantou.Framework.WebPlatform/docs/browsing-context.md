@@ -3752,7 +3752,7 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   `UnknownError`; a disconnection is a fatal `NetworkError`). `close()` cancels and aborts the streams and fails when one
   is locked (the port stays open, as in Chromium). The Bluetooth ports follow the Serial Port Profile and
   `allowedBluetoothServiceClassIds` (the service classes of the base UUID are blocked). The permission storage is the
-  provider.
+  provider. A prerendering document gets the ports once it is activated.
 - **WebHID** ([WebHID](https://hid.spec.whatwg.org/)): `navigator.hid` (`getDevices()`, `requestDevice()` in the windows,
   the `connect` and `disconnect` events), `HIDDevice` (`open()`, `close()`, `forget()`, `sendReport()`,
   `sendFeatureReport()`, `receiveFeatureReport()`, the `inputreport` event), `HIDConnectionEvent` and
@@ -3760,7 +3760,32 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   `HidHostDevice` objects of `Hid.Provider`. The report descriptor is parsed into the collections (the algorithm of the
   specification; the logical and physical limits are signed as in Chromium; at most 32 levels of collections and 256
   strings per item); the report IDs are checked, the reports of the HID blocklist are blocked (`NotAllowedError`, no
-  input report), and `close()` and `forget()` reject the pending reports with an `AbortError`.
+  input report), and `close()` and `forget()` reject the pending reports with an `AbortError`. A prerendering document
+  gets the devices once it is activated.
+- **Web MIDI** ([Web MIDI API](https://webaudio.github.io/web-midi-api/)): `navigator.requestMIDIAccess()` (the `midi`
+  permission and permissions policy feature; a prerendering document gets the access once it is activated), `MIDIAccess`
+  (`inputs`, `outputs`, `sysexEnabled`, the `statechange` event), `MIDIPort` (`state`, `connection`, `open()`, `close()`),
+  `MIDIInput` (the `midimessage` event; a listener opens the port), `MIDIOutput` (`send()`, `clear()`),
+  `MIDIMessageEvent` and `MIDIConnectionEvent`, on the `MidiHostInput` and `MidiHostOutput` ports of `Midi.Provider`. The
+  data of `send()` is validated (complete messages without running status; the System Real Time messages can appear
+  inside other messages, as in Chromium; the system exclusive messages need `sysex`); the bytes received by an input are
+  split into messages (the running status, the system exclusive messages split over several calls, and the System Real
+  Time messages, dispatched at once). An open port that is disconnected becomes `pending`, and is opened again when it is
+  connected again.
+- **Presentation API** ([Presentation API](https://w3c.github.io/presentation-api/)): `navigator.presentation`
+  (`defaultRequest`, `receiver`), `PresentationRequest` (the URLs, `start()`, `reconnect()`, `getAvailability()`, the
+  `connectionavailable` event), `PresentationAvailability`, `PresentationConnection` (`send()`, `close()`, `terminate()`,
+  `binaryType`, the `connect`, `close`, `terminate` and `message` events), the connection events, and the receiving side
+  (`PresentationReceiver`, `PresentationConnectionList`), on the displays of `Presentation.Provider` and the receiving
+  browsing contexts of `Presentation.Receiver`. The constructor keeps the potentially trustworthy `http` and `https` URLs
+  and checks the `allow-presentation` sandboxing flag; `start()` needs transient activation, and one start at a time in a
+  top-level browsing context; `reconnect()` searches the presentations of the windows that share the provider. The
+  connections of an unloaded window are closed with the `wentaway` reason on the other side.
+- **Contact Picker** ([Contact Picker API](https://w3c.github.io/contact-picker/)): `navigator.contacts`
+  (`getProperties()`, `select()`), `ContactAddress` and `ContactInfo`, on the contacts source of `Contacts.Provider`.
+  `select()` runs in the top-level window, consumes the transient activation, allows one picker at a time, and returns
+  the requested properties only (the other members of `ContactInfo` are not set); the country of the addresses is in
+  uppercase.
 - **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
   steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
   `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the

@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screens, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, serial ports, HID devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screens, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, serial ports, HID devices, MIDI ports, presentation displays, contacts, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -38,6 +38,9 @@ the device in a test, or to connect the API to your application.
 | [Screens](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Screens) | `window.screen`, `window.getScreenDetails()` and the fullscreen requests on a screen (Window Management) | The device has one screen, the size of the viewport |
 | [Serial](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Serial) | `navigator.serial` (Web Serial), in the pages and the dedicated workers | There is no serial port |
 | [Hid](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Hid) | `navigator.hid` (WebHID), in the pages and the workers | No HID device is connected |
+| [Midi](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Midi) | `navigator.requestMIDIAccess()` (Web MIDI) | There is no MIDI port |
+| [Presentation](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Presentation) | `navigator.presentation` and `PresentationRequest` (Presentation API) | There is no presentation display |
+| [Contacts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Contacts) | `navigator.contacts` (Contact Picker) | No contact property is supported |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -1154,6 +1157,7 @@ var options = new BrowsingContextOptions
   locked (the port stays open, as in Chromium). `Connect` and `Disconnect` fire the `connect` and `disconnect` events of
   the ports, which bubble to `navigator.serial`; a disconnection errors the streams of an open port. Unloading a page or
   terminating a worker closes its ports.
+- A prerendered page gets the ports, and asks the user, once it is shown.
 
 ## HID devices
 
@@ -1223,6 +1227,184 @@ var options = new BrowsingContextOptions
   are blocked: the page gets a `NotAllowedError`, and no input report.
 - `close()` and `forget()` reject the pending reports with an `AbortError`; a disconnection closes the device. As in
   Chromium, the logical and physical limits of the report items are signed.
+- A prerendered page gets the devices, and asks the user, once it is shown.
+
+## MIDI ports
+
+`navigator.requestMIDIAccess()` (Web MIDI) uses the ports of a [MidiProvider](cref:Meziantou.Framework.WebPlatform.Dom.MidiProvider).
+An input port is a [MidiHostInput](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostInput): give it the bytes of the device
+with [Receive](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostInput.Receive), and the library splits them into the
+messages of the `midimessage` events (the running status, the system exclusive messages split over several calls, and the
+clock messages inside other messages are handled). Implement an output port with a
+[MidiHostOutput](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostOutput), which gets the messages of `output.send()`:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_MidiHostOutput;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A synthesizer of the application: it plays the messages that the page sends
+private sealed class Synthesizer() : MidiHostOutput("synth-1")
+{
+    public List<byte[]> Messages { get; } = [];
+
+    public override void Send(ReadOnlyMemory<byte> data, TimeSpan delay) => Messages.Add(data.ToArray());
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Midi;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A keyboard (the application gives it the bytes of the device) and a synthesizer
+var keyboard = new MidiHostInput("keyboard-1") { Name = "Keyboard", Manufacturer = "Contoso" };
+var synthesizer = new Synthesizer { Name = "Synthesizer" };
+var midi = new MidiProvider();
+midi.Connect(keyboard);
+midi.Connect(synthesizer);
+var options = new BrowsingContextOptions
+{
+    Midi = new WebMidiOptions { Provider = midi },
+};
+```
+<!-- endref -->
+
+- `requestMIDIAccess()` asks for the `midi` permission (see [Permissions](#permissions)), which also covers the system
+  exclusive messages: it fails with a `NotAllowedError` when the permission is denied or the `midi` permissions policy
+  does not allow the frame. Each call returns a new `MIDIAccess`, and a prerendered page gets it once it is shown.
+- `send()` checks the messages: a `TypeError` for an incomplete message or the running status, a `NotAllowedError` for
+  a system exclusive message when the page did not ask for `sysex`, an `InvalidStateError` when the port is
+  disconnected. The `timestamp` becomes the delay of [Send](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostOutput.Send),
+  and `clear()` calls [Clear](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostOutput.Clear).
+- Opening a port (`open()`, a `midimessage` listener, or `send()`) calls
+  [OpenAsync](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostPort.OpenAsync); when it fails, `open()` fails with a
+  `NotAllowedError`. `Connect` and `Disconnect` fire the `statechange` events of the ports and of `MIDIAccess`: an open
+  port that is disconnected becomes `pending`, and is opened again when it is connected again.
+- The ports whose [IsSoftwareSynthesizer](cref:Meziantou.Framework.WebPlatform.Dom.MidiHostPort.IsSoftwareSynthesizer)
+  is set are listed only when the page asks for `software`. Unloading a page closes its ports.
+
+## Presentation displays
+
+`PresentationRequest.start()` (Presentation API) shows a page on a display of a
+[PresentationProvider](cref:Meziantou.Framework.WebPlatform.Dom.PresentationProvider). Implement each display with a
+[PresentationDisplay](cref:Meziantou.Framework.WebPlatform.Dom.PresentationDisplay): `StartAsync` starts the presentation,
+and the [PresentationSession](cref:Meziantou.Framework.WebPlatform.Dom.PresentationSession) it returns connects each
+controlling page with a [PresentationChannel](cref:Meziantou.Framework.WebPlatform.Dom.PresentationChannel), which carries
+the messages of `connection.send()`. [CreatePair](cref:Meziantou.Framework.WebPlatform.Dom.PresentationChannel.CreatePair)
+creates two channels connected in memory, one for each side:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_PresentationDisplay;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A second screen of the application: a presentation runs in a receiving browsing context that the application creates
+// with PresentationOptions.Receiver, and each controller gets a channel connected in memory to it
+private sealed class SecondScreen() : PresentationDisplay("Second screen")
+{
+    public PresentationReceivingContext? Receiver { get; private set; }
+
+    public override Task<PresentationSession> StartAsync(PresentationStartRequest request, CancellationToken cancellationToken)
+    {
+        Receiver = new PresentationReceivingContext(request.Url, request.Id);
+        return Task.FromResult<PresentationSession>(new Session(Receiver));
+    }
+
+    private sealed class Session(PresentationReceivingContext receiver) : PresentationSession(receiver.Url, receiver.Id)
+    {
+        public override Task<PresentationChannel> ConnectAsync(CancellationToken cancellationToken)
+        {
+            var (controller, receiving) = PresentationChannel.CreatePair();
+            receiver.Connect(receiving);
+            return Task.FromResult(controller);
+        }
+    }
+}
+
+// The display chooser of start(): the user picks the first display
+private sealed class FirstDisplayChooser : PresentationProvider
+{
+    public override Task<PresentationDisplay?> RequestDisplay(PresentationDisplayRequest request) => Task.FromResult<PresentationDisplay?>(request.Displays[0]);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Presentation;format=md-fenced-code-block;dedent=true -->
+```csharp
+var screen = new SecondScreen();
+var presentation = new FirstDisplayChooser();
+presentation.AddDisplay(screen);
+var options = new BrowsingContextOptions
+{
+    Presentation = new PresentationOptions { Provider = presentation },
+};
+```
+<!-- endref -->
+
+The presented page runs in a receiving browsing context: create it with a
+[PresentationReceivingContext](cref:Meziantou.Framework.WebPlatform.Dom.PresentationReceivingContext) in
+[Receiver](cref:Meziantou.Framework.WebPlatform.Dom.PresentationOptions.Receiver), and navigate it to the URL of the
+presentation. Its page gets the connections of the controllers in `navigator.presentation.receiver.connectionList`:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_PresentationReceiver;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Once the page started the presentation, the application loads its URL in a receiving browsing context
+var receiverOptions = new BrowsingContextOptions
+{
+    Presentation = new PresentationOptions { Receiver = screen.Receiver },
+};
+```
+<!-- endref -->
+
+- The `PresentationRequest` constructor keeps the `http` and `https` URLs: it fails with a `SecurityError` for a URL
+  that is not secure, or in a frame sandboxed without `allow-presentation`.
+- `start()` needs a click of the user (an `InvalidAccessError` without it), and one start at a time in a page (an
+  `OperationError`). The displays that can present a URL
+  ([CanPresent](cref:Meziantou.Framework.WebPlatform.Dom.PresentationDisplay.CanPresent)) are offered to
+  [RequestDisplay](cref:Meziantou.Framework.WebPlatform.Dom.PresentationProvider.RequestDisplay): it fails with a
+  `NotFoundError` when there is none, and a `NotAllowedError` when the user cancels.
+- `reconnect()` finds the presentations started by the pages that share the provider; `getAvailability()` tells whether
+  a display can present the URLs, and fires `change` when [AddDisplay](cref:Meziantou.Framework.WebPlatform.Dom.PresentationProvider.AddDisplay)
+  or `RemoveDisplay` change the answer.
+- `terminate()` calls [Terminate](cref:Meziantou.Framework.WebPlatform.Dom.PresentationSession.Terminate) on the
+  controlling side, and [PresentationReceivingContext.Terminate](cref:Meziantou.Framework.WebPlatform.Dom.PresentationReceivingContext.Terminate)
+  on the receiving side; [OnTerminated](cref:Meziantou.Framework.WebPlatform.Dom.PresentationSession.OnTerminated)
+  reports the end of a presentation to its controllers. When a page is unloaded, the other side of its connections gets
+  a `close` event whose reason is `wentaway`.
+
+## Contacts
+
+`navigator.contacts.select()` (Contact Picker) asks a [ContactsProvider](cref:Meziantou.Framework.WebPlatform.Dom.ContactsProvider),
+which plays the role of the address book and of the contact picker of the user:
+[SelectAsync](cref:Meziantou.Framework.WebPlatform.Dom.ContactsProvider.SelectAsync) returns the contacts that the user
+selected, and the page gets the properties it asked for:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_ContactsProvider;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The address book of the user: the user selects all the contacts that the page can get
+private sealed class AddressBook : ContactsProvider
+{
+    public override Task<IReadOnlyList<UserContact>> SelectAsync(ContactPickerRequest request)
+    {
+        IReadOnlyList<UserContact> contacts =
+        [
+            new UserContact { Names = ["Ada Lovelace"], Emails = ["ada@example.com"], Numbers = ["+44 20 7946 0000"] },
+            new UserContact { Names = ["Alan Turing"], Addresses = [new ContactAddress { City = "Wilmslow", Country = "gb", AddressLine = ["43 Adlington Road"] }] },
+        ];
+        return Task.FromResult(request.Multiple ? contacts : [contacts[0]]);
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Contacts;format=md-fenced-code-block;dedent=true -->
+```csharp
+var options = new BrowsingContextOptions
+{
+    Contacts = new ContactsOptions { Provider = new AddressBook() },
+};
+```
+<!-- endref -->
+
+- `getProperties()` returns [SupportedProperties](cref:Meziantou.Framework.WebPlatform.Dom.ContactsProvider.SupportedProperties)
+  (all of them by default). Without provider, no property is supported, so `select()` fails with a `TypeError`.
+- `select()` works in the top-level page only (an `InvalidStateError` in a frame), needs a click of the user, which it
+  consumes (a `SecurityError` without it), and one picker at a time (an `InvalidStateError`). It returns one contact
+  unless the page asks for `multiple`, and an empty list when the user cancels. When `SelectAsync` fails or returns null,
+  `select()` fails with an `InvalidStateError`.
 
 ## NFC
 

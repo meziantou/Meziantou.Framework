@@ -25,7 +25,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/), the device
 /// orientation and motion events (https://w3c.github.io/deviceorientation/), WebUSB (https://usb.spec.whatwg.org/), Web
 /// Bluetooth (https://bluetooth.spec.whatwg.org/), Window Management (https://w3c.github.io/window-management/), Web Serial
-/// (https://serial.spec.whatwg.org/) and WebHID (https://hid.spec.whatwg.org/).
+/// (https://serial.spec.whatwg.org/), WebHID (https://hid.spec.whatwg.org/), Web MIDI (https://webaudio.github.io/web-midi-api/),
+/// Presentation (https://w3c.github.io/presentation-api/) and Contact Picker (https://w3c.github.io/contact-picker/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -72,6 +73,9 @@ public sealed class HostDeviceApisTests : IDisposable
             Screens = options.Screens,
             Serial = options.Serial,
             Hid = options.Hid,
+            Midi = options.Midi,
+            Presentation = options.Presentation,
+            Contacts = options.Contacts,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -115,6 +119,21 @@ public sealed class HostDeviceApisTests : IDisposable
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         await _contexts.EventLoop.RunUntilIdleAsync(timeout.Token);
+        Assert.Empty(_errors);
+        return document.Title;
+    }
+
+    /// <summary>Runs a script in <paramref name="document"/>, then the event loops of both documents until they are idle.</summary>
+    private async Task<string> RunBothAsync(Document document, Document other, string script)
+    {
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, script);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        for (var i = 0; i < 3; i++)
+        {
+            await document.BrowsingContext!.EventLoop.RunUntilIdleAsync(timeout.Token);
+            await other.BrowsingContext!.EventLoop.RunUntilIdleAsync(timeout.Token);
+        }
+
         Assert.Empty(_errors);
         return document.Title;
     }
@@ -2345,6 +2364,330 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal([0x00010030u, 0x00010031u], items[2].Usages);
         Assert.Equal(-127, items[2].LogicalMinimum);
         Assert.False(items[2].IsAbsolute);
+    }
+
+    // Web MIDI
+
+    #region WebPlatform_MidiHostOutput
+    // A synthesizer of the application: it plays the messages that the page sends
+    private sealed class Synthesizer() : MidiHostOutput("synth-1")
+    {
+        public List<byte[]> Messages { get; } = [];
+
+        public override void Send(ReadOnlyMemory<byte> data, TimeSpan delay) => Messages.Add(data.ToArray());
+    }
+    #endregion
+
+    private static PermissionStore GrantMidi()
+    {
+        var permissions = new PermissionStore();
+        permissions.SetState("midi", PermissionState.Granted);
+        return permissions;
+    }
+
+    [Fact]
+    public async Task Midi_RequestAccess_ReceivesAndSendsMessages()
+    {
+        #region WebPlatform_Midi
+        // A keyboard (the application gives it the bytes of the device) and a synthesizer
+        var keyboard = new MidiHostInput("keyboard-1") { Name = "Keyboard", Manufacturer = "Contoso" };
+        var synthesizer = new Synthesizer { Name = "Synthesizer" };
+        var midi = new MidiProvider();
+        midi.Connect(keyboard);
+        midi.Connect(synthesizer);
+        var options = new BrowsingContextOptions
+        {
+            Midi = new WebMidiOptions { Provider = midi },
+        };
+        #endregion
+
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Midi = options.Midi, Permissions = GrantMidi() });
+        Assert.Equal("1,1,Keyboard,Contoso,input,connected,open", await RunAsync(document, """
+            (async () => {
+              window.access = await navigator.requestMIDIAccess();
+              const input = access.inputs.get('keyboard-1');
+              input.onmidimessage = e => log.push(Array.from(e.data).join(' '));
+              await new Promise(resolve => input.onstatechange = resolve);
+              document.title = [access.inputs.size, access.outputs.size, input.name, input.manufacturer, input.type, input.state, input.connection].join();
+            })()
+            """));
+
+        // A note on and a note off with the running status, a system exclusive message split in two, and a clock inside it
+        keyboard.Receive([0x90, 0x3C, 0x7F, 0x3C, 0x00]);
+        keyboard.Receive([0xF0, 0x7E, 0xF8]);
+        keyboard.Receive([0x01, 0xF7]);
+        Assert.Equal("144 60 127|144 60 0|248", await RunAsync(document, "setTimeout(() => document.title = log.join('|'), 0)"));
+
+        Assert.Equal("TypeError,TypeError,NotAllowedError,closed", await RunAsync(document, """
+            (async () => {
+              const output = access.outputs.get('synth-1');
+              const results = [];
+              for (const data of [[0x3C, 0x7F], [0x90, 0x3C], [0xF0, 0x01, 0xF7]]) {
+                try { output.send(data); } catch (e) { results.push(e.name); }
+              }
+
+              results.push(output.connection);
+              output.send([0x90, 0x3C, 0x7F, 0xFE, 0x80, 0x3C, 0x00]);
+              document.title = results.join();
+            })()
+            """));
+        Assert.Equal("144 60 127 254 128 60 0", string.Join(' ', synthesizer.Messages.Single()));
+    }
+
+    [Fact]
+    public async Task Midi_Disconnect_MakesTheOpenPortPending()
+    {
+        var synthesizer = new Synthesizer();
+        var midi = new MidiProvider();
+        midi.Connect(synthesizer);
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Midi = new WebMidiOptions { Provider = midi }, Permissions = GrantMidi() });
+        await RunAsync(document, """
+            (async () => {
+              window.access = await navigator.requestMIDIAccess({ sysex: true });
+              window.output = access.outputs.get('synth-1');
+              await output.open();
+              access.onstatechange = e => log.push(e.port.id + ' ' + e.port.state + ' ' + e.port.connection);
+            })()
+            """);
+
+        Assert.True(midi.Disconnect(synthesizer));
+        Assert.Equal("synth-1 disconnected pending|0|InvalidStateError", await RunAsync(document, """
+            setTimeout(() => {
+              try { output.send([0xF0, 0x01, 0xF7]); } catch (e) { log.push(access.outputs.size, e.name); }
+              document.title = log.join('|');
+            }, 0)
+            """));
+
+        Run(document, """
+            log.length = 0;
+            access.addEventListener('statechange', () => {
+              output.send([0xF0, 0x01, 0xF7]);
+              document.title = [...log, access.outputs.size, access.sysexEnabled].join('|');
+            });
+            """);
+        midi.Connect(synthesizer);
+        Assert.Equal("synth-1 connected open|1|true", await RunAsync(document));
+        Assert.Equal("240 1 247", string.Join(' ', synthesizer.Messages.Single()));
+    }
+
+    [Fact]
+    public async Task Midi_RequestAccess_RequiresThePermission()
+    {
+        var document = Load("", new BrowsingContextOptions { Midi = new WebMidiOptions { Provider = new MidiProvider() } });
+        Assert.Equal("NotAllowedError", await RunAsync(document, "navigator.requestMIDIAccess().then(() => document.title = 'granted', e => document.title = e.name)"));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x90, 0x3C, 0x7F }, true, false)]
+    [InlineData(new byte[] { 0x90, 0xF8, 0x3C, 0x7F, 0xC0, 0x01, 0xF6 }, true, false)]
+    [InlineData(new byte[] { 0xF0, 0x01, 0xFE, 0x02, 0xF7, 0xF2, 0x00, 0x00 }, true, true)]
+    [InlineData(new byte[] { }, false, false)]
+    [InlineData(new byte[] { 0x3C }, false, false)]
+    [InlineData(new byte[] { 0x90, 0x3C }, false, false)]
+    [InlineData(new byte[] { 0x90, 0x3C, 0x80, 0x3C, 0x00 }, false, false)]
+    [InlineData(new byte[] { 0xF0, 0x01, 0x90, 0xF7 }, false, true)]
+    [InlineData(new byte[] { 0xF0, 0x01 }, false, true)]
+    [InlineData(new byte[] { 0xF7 }, false, false)]
+    [InlineData(new byte[] { 0xF4 }, false, false)]
+    public void Midi_Validate_ChecksTheMessages(byte[] data, bool isValid, bool containsSysEx)
+    {
+        Assert.Equal(isValid, MidiMessages.Validate(data, out var sysEx) is null);
+        Assert.Equal(containsSysEx, sysEx);
+    }
+
+    // Presentation API
+
+    #region WebPlatform_PresentationDisplay
+    // A second screen of the application: a presentation runs in a receiving browsing context that the application creates
+    // with PresentationOptions.Receiver, and each controller gets a channel connected in memory to it
+    private sealed class SecondScreen() : PresentationDisplay("Second screen")
+    {
+        public PresentationReceivingContext? Receiver { get; private set; }
+
+        public override Task<PresentationSession> StartAsync(PresentationStartRequest request, CancellationToken cancellationToken)
+        {
+            Receiver = new PresentationReceivingContext(request.Url, request.Id);
+            return Task.FromResult<PresentationSession>(new Session(Receiver));
+        }
+
+        private sealed class Session(PresentationReceivingContext receiver) : PresentationSession(receiver.Url, receiver.Id)
+        {
+            public override Task<PresentationChannel> ConnectAsync(CancellationToken cancellationToken)
+            {
+                var (controller, receiving) = PresentationChannel.CreatePair();
+                receiver.Connect(receiving);
+                return Task.FromResult(controller);
+            }
+        }
+    }
+
+    // The display chooser of start(): the user picks the first display
+    private sealed class FirstDisplayChooser : PresentationProvider
+    {
+        public override Task<PresentationDisplay?> RequestDisplay(PresentationDisplayRequest request) => Task.FromResult<PresentationDisplay?>(request.Displays[0]);
+    }
+    #endregion
+
+    [Fact]
+    public async Task Presentation_Start_ConnectsTheControllerAndTheReceiver()
+    {
+        #region WebPlatform_Presentation
+        var screen = new SecondScreen();
+        var presentation = new FirstDisplayChooser();
+        presentation.AddDisplay(screen);
+        var options = new BrowsingContextOptions
+        {
+            Presentation = new PresentationOptions { Provider = presentation },
+        };
+        #endregion
+
+        var controller = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Presentation = options.Presentation });
+        Assert.Equal("InvalidAccessError", await RunAsync(controller, "new PresentationRequest('slides.html').start().catch(e => document.title = e.name)"));
+
+        Activate(controller);
+        Assert.Equal("connecting,https://example.com/slides.html,32|connectionavailable|connect", await RunAsync(controller, """
+            (async () => {
+              const request = new PresentationRequest(['unsupported://example.com', 'slides.html']);
+              request.onconnectionavailable = e => log.push(e.type);
+              window.connection = await request.start();
+              log.push([connection.state, connection.url, connection.id.length].join());
+              connection.onconnect = e => { log.push(e.type); document.title = log.join('|'); };
+            })()
+            """));
+
+        #region WebPlatform_PresentationReceiver
+        // Once the page started the presentation, the application loads its URL in a receiving browsing context
+        var receiverOptions = new BrowsingContextOptions
+        {
+            Presentation = new PresentationOptions { Receiver = screen.Receiver },
+        };
+        #endregion
+
+        var receiver = Load("""
+            <script>
+              navigator.presentation.receiver.connectionList.then(list => {
+                const [connection] = list.connections;
+                connection.onmessage = e => connection.send('echo ' + e.data);
+                document.title = [list.connections.length, connection.state, connection.url].join();
+              });
+            </script>
+            """, receiverOptions, url: "https://example.com/slides.html");
+        Assert.Equal("1,connected,https://example.com/slides.html", await RunAsync(receiver));
+
+        // The two browsing contexts have their own event loop: both run until the messages are delivered
+        Assert.Equal("echo hello", await RunBothAsync(controller, receiver, "connection.addEventListener('message', e => document.title = e.data, { once: true }); connection.send('hello');"));
+        Assert.Equal("terminated", await RunBothAsync(controller, receiver, "connection.addEventListener('terminate', () => document.title = connection.state); connection.terminate();"));
+    }
+
+    [Fact]
+    public async Task Presentation_RequestAndAvailability_Errors()
+    {
+        var presentation = new PresentationProvider();
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Presentation = new PresentationOptions { Provider = presentation } });
+        Assert.Equal("NotSupportedError,SyntaxError,NotSupportedError,SecurityError", Run(document, """
+            for (const urls of [[], ['https://@'], ['unsupported://example.com'], ['http://example.org/']]) {
+              try { new PresentationRequest(urls); } catch (e) { log.push(e.name); }
+            }
+
+            document.title = log.join();
+            """));
+
+        Activate(document);
+        Assert.Equal("NotFoundError,NotFoundError,false", await RunAsync(document, """
+            (async () => {
+              window.request = new PresentationRequest('slides.html');
+              const results = [];
+              await request.start().catch(e => results.push(e.name));
+              await request.reconnect('0123456789abcdef').catch(e => results.push(e.name));
+              window.availability = await request.getAvailability();
+              results.push(availability.value, (await request.getAvailability()) === availability);
+              availability.onchange = () => log.push('change ' + availability.value);
+              document.title = results.slice(0, 3).join();
+            })()
+            """));
+
+        presentation.AddDisplay(new SecondScreen());
+        Activate(document);
+        Assert.Equal("change true|NotAllowedError", await RunAsync(document, """
+            log.length = 0;
+            setTimeout(() => request.start().catch(e => { log.push(e.name); document.title = log.join('|'); }), 0)
+            """));
+    }
+
+    // Contact Picker API
+
+    #region WebPlatform_ContactsProvider
+    // The address book of the user: the user selects all the contacts that the page can get
+    private sealed class AddressBook : ContactsProvider
+    {
+        public override Task<IReadOnlyList<UserContact>> SelectAsync(ContactPickerRequest request)
+        {
+            IReadOnlyList<UserContact> contacts =
+            [
+                new UserContact { Names = ["Ada Lovelace"], Emails = ["ada@example.com"], Numbers = ["+44 20 7946 0000"] },
+                new UserContact { Names = ["Alan Turing"], Addresses = [new ContactAddress { City = "Wilmslow", Country = "gb", AddressLine = ["43 Adlington Road"] }] },
+            ];
+            return Task.FromResult(request.Multiple ? contacts : [contacts[0]]);
+        }
+    }
+    #endregion
+
+    [Fact]
+    public async Task Contacts_Select_ReturnsTheRequestedProperties()
+    {
+        #region WebPlatform_Contacts
+        var options = new BrowsingContextOptions
+        {
+            Contacts = new ContactsOptions { Provider = new AddressBook() },
+        };
+        #endregion
+
+        var document = Load("<script>window.log = [];</script>", options);
+        Assert.Equal("address,email,icon,name,tel|SecurityError", await RunAsync(document, """
+            (async () => {
+              log.push((await navigator.contacts.getProperties()).join());
+              await navigator.contacts.select(['name']).catch(e => log.push(e.name));
+              document.title = log.join('|');
+            })()
+            """));
+
+        Activate(document);
+        Assert.Equal("""2|["Ada Lovelace"],["ada@example.com"],undefined|["Alan Turing"],[],Wilmslow,GB""", await RunAsync(document, """
+            (async () => {
+              const contacts = await navigator.contacts.select(['name', 'email', 'address'], { multiple: true });
+              document.title = [
+                contacts.length,
+                [JSON.stringify(contacts[0].name), JSON.stringify(contacts[0].email), String(contacts[0].tel)].join(),
+                [JSON.stringify(contacts[1].name), JSON.stringify(contacts[1].email), contacts[1].address[0].city, contacts[1].address[0].country].join(),
+              ].join('|');
+            })()
+            """));
+
+        Activate(document);
+        Assert.Equal("TypeError,InvalidStateError", await RunAsync(document, """
+            (async () => {
+              const results = [];
+              await navigator.contacts.select([]).catch(e => results.push(e.name));
+              const frame = document.createElement('iframe');
+              document.body.append(frame);
+              await frame.contentWindow.navigator.contacts.select(['name']).catch(e => results.push(e.name));
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Contacts_WithoutProvider_SupportsNoProperty()
+    {
+        var document = Load("");
+        Activate(document);
+        Assert.Equal("0,TypeError", await RunAsync(document, """
+            (async () => {
+              const properties = await navigator.contacts.getProperties();
+              const error = await navigator.contacts.select(['name']).catch(e => e.name);
+              document.title = [properties.length, error].join();
+            })()
+            """));
     }
 
     // CPU Performance

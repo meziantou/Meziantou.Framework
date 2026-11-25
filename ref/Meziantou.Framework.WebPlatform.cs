@@ -3942,6 +3942,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.Notification>? CloseNotification { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ComputePressureOptions? ComputePressure { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Scripting.ConsoleMessage>? ConsoleMessage { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ContactsOptions? Contacts { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ContentSecurityPolicyViolationReport>? ContentSecurityPolicyViolation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.CookieJar? CookieJar { get => throw null; init { } }
         public bool DeclarativeRefreshEnabled { get => throw null; init { } }
@@ -3973,10 +3974,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Media.MediaCodecBackend? MediaCodecs { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaKeysStorageBackend? MediaKeysStorage { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.MediaSessionOptions? MediaSession { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.WebMidiOptions? Midi { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkErrorLoggingCache? NetworkErrorLogging { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformationOptions? NetworkInformation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PendingInputOptions? PendingInput { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.PermissionStore? Permissions { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PresentationOptions? Presentation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ProtocolHandlerOptions? ProtocolHandlers { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Rendering.RenderingBackend? RenderingBackend { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, string, Meziantou.Framework.WebPlatform.Dom.PermissionState>? RequestPermission { get => throw null; init { } }
@@ -4873,6 +4876,54 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Recipient { get => throw null; init { } }
         public string Region { get => throw null; init { } }
         public string SortingCode { get => throw null; init { } }
+    }
+
+    public sealed class ContactInfo
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactAddress>? Address { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Email { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FileApi.Blob>? Icon { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Name { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Tel { get => throw null; init { } }
+    }
+
+    public sealed class ContactPickerRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public bool Multiple { get => throw null; }
+        public string Origin { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactProperty> Properties { get => throw null; }
+    }
+
+    public enum ContactProperty
+    {
+        Address = 0,
+        Email = 1,
+        Icon = 2,
+        Name = 3,
+        Tel = 4,
+    }
+
+    public sealed class ContactsManager
+    {
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactProperty>> GetProperties() => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactInfo>> Select(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactProperty> properties, Meziantou.Framework.WebPlatform.Dom.ContactsSelectOptions? options = null) => throw null;
+    }
+
+    public sealed class ContactsOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ContactsProvider? Provider { get => throw null; init { } }
+    }
+
+    public class ContactsProvider
+    {
+        public virtual System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactProperty> SupportedProperties { get => throw null; }
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.UserContact>> SelectAsync(Meziantou.Framework.WebPlatform.Dom.ContactPickerRequest request) => throw null;
+    }
+
+    public sealed class ContactsSelectOptions
+    {
+        public bool Multiple { get => throw null; init { } }
     }
 
     public sealed class ContentSecurityPolicyViolationReport
@@ -11208,6 +11259,138 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Start() { }
     }
 
+    public sealed class MidiAccess : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MidiInputMap Inputs { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnStateChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.MidiOutputMap Outputs { get => throw null; }
+        public bool SysexEnabled { get => throw null; }
+    }
+
+    public sealed class MidiConnectionEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MidiPort? Port { get => throw null; }
+        public MidiConnectionEvent(string type, Meziantou.Framework.WebPlatform.Dom.MidiConnectionEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class MidiConnectionEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MidiPort? Port { get => throw null; init { } }
+    }
+
+    public class MidiHostInput : Meziantou.Framework.WebPlatform.Dom.MidiHostPort
+    {
+        public MidiHostInput(string id) { }
+        public void Receive(System.ReadOnlySpan<byte> data) { }
+    }
+
+    public abstract class MidiHostOutput : Meziantou.Framework.WebPlatform.Dom.MidiHostPort
+    {
+        protected MidiHostOutput(string id) { }
+        public virtual void Clear() { }
+        public abstract void Send(System.ReadOnlyMemory<byte> data, System.TimeSpan delay);
+    }
+
+    public abstract class MidiHostPort
+    {
+        public string Id { get => throw null; }
+        public bool IsSoftwareSynthesizer { get => throw null; init { } }
+        public string? Manufacturer { get => throw null; init { } }
+        public string? Name { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.MidiProvider? Provider { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MidiPortType Type { get => throw null; }
+        public string? Version { get => throw null; init { } }
+        public virtual System.Threading.Tasks.Task CloseAsync() => throw null;
+        public virtual System.Threading.Tasks.Task OpenAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+    }
+
+    public sealed class MidiInput : Meziantou.Framework.WebPlatform.Dom.MidiPort
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMidiMessage { get => throw null; set { } }
+    }
+
+    public sealed class MidiInputMap : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.MidiInput>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.MidiInput>>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MidiInput? Get(string id) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.MidiInput>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Has(string id) => throw null;
+    }
+
+    public sealed class MidiMessageEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.ReadOnlyMemory<byte>? Data { get => throw null; }
+        public object? DataArray { get => throw null; }
+        public MidiMessageEvent(string type, Meziantou.Framework.WebPlatform.Dom.MidiMessageEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class MidiMessageEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public System.ReadOnlyMemory<byte>? Data { get => throw null; init { } }
+    }
+
+    public sealed class MidiOptions
+    {
+        public bool? Software { get => throw null; init { } }
+        public bool? Sysex { get => throw null; init { } }
+    }
+
+    public sealed class MidiOutput : Meziantou.Framework.WebPlatform.Dom.MidiPort
+    {
+        public void Clear() { }
+        public void Send(System.Collections.Generic.IReadOnlyList<byte> data, double timestamp = 0d) { }
+    }
+
+    public sealed class MidiOutputMap : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.MidiOutput>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.MidiOutput>>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MidiOutput? Get(string id) => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, Meziantou.Framework.WebPlatform.Dom.MidiOutput>> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Has(string id) => throw null;
+    }
+
+    public abstract class MidiPort : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MidiPortConnectionState Connection { get => throw null; }
+        public string Id { get => throw null; }
+        public string? Manufacturer { get => throw null; }
+        public string? Name { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnStateChange { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.MidiPortDeviceState State { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.MidiPortType Type { get => throw null; }
+        public string? Version { get => throw null; }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MidiPort> Close() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MidiPort> Open() => throw null;
+    }
+
+    public enum MidiPortConnectionState
+    {
+        Open = 0,
+        Closed = 1,
+        Pending = 2,
+    }
+
+    public enum MidiPortDeviceState
+    {
+        Disconnected = 0,
+        Connected = 1,
+    }
+
+    public enum MidiPortType
+    {
+        Input = 0,
+        Output = 1,
+    }
+
+    public class MidiProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MidiHostPort> Ports { get => throw null; }
+        public void Connect(Meziantou.Framework.WebPlatform.Dom.MidiHostPort port) { }
+        public bool Disconnect(Meziantou.Framework.WebPlatform.Dom.MidiHostPort port) => throw null;
+    }
+
     public sealed class ModelContext : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnToolActivated { get => throw null; set { } }
@@ -11558,6 +11741,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Bluetooth Bluetooth { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Clipboard Clipboard { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.NetworkInformation Connection { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.ContactsManager Contacts { get => throw null; }
         public bool CookieEnabled { get => throw null; }
         public ushort CpuPerformance { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.CredentialsContainer Credentials { get => throw null; }
@@ -11584,6 +11768,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Permissions Permissions { get => throw null; }
         public string Platform { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.PluginArray Plugins { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Presentation Presentation { get => throw null; }
         public string Product { get => throw null; }
         public string ProductSub { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Scheduling Scheduling { get => throw null; }
@@ -11606,6 +11791,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool JavaEnabled() => throw null;
         public void RegisterProtocolHandler(string scheme, string url) { }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemAccess> RequestMediaKeySystemAccess(string keySystem, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration> supportedConfigurations) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.MidiAccess> RequestMidiAccess(Meziantou.Framework.WebPlatform.Dom.MidiOptions? options = null) => throw null;
         public bool SendBeacon(string url, object? data = null) => throw null;
         public System.Threading.Tasks.Task SetAppBadge(ulong? contents = null) => throw null;
         public System.Threading.Tasks.Task Share(Meziantou.Framework.WebPlatform.Dom.ShareData? data = null) => throw null;
@@ -13137,6 +13323,162 @@ namespace Meziantou.Framework.WebPlatform.Dom
         None = 0,
         Premultiply = 1,
         Default = 2,
+    }
+
+    public sealed class Presentation
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PresentationRequest? DefaultRequest { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.PresentationReceiver? Receiver { get => throw null; }
+    }
+
+    public sealed class PresentationAvailability : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
+        public bool Value { get => throw null; }
+    }
+
+    public abstract class PresentationChannel
+    {
+        public abstract void Close(Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason reason, string message);
+        public static (Meziantou.Framework.WebPlatform.Dom.PresentationChannel Controller, Meziantou.Framework.WebPlatform.Dom.PresentationChannel Receiver) CreatePair() => throw null;
+        public void OnClosed(Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason reason, string message) { }
+        public void Receive(System.ReadOnlyMemory<byte> data) { }
+        public void Receive(string message) { }
+        public abstract void Send(System.ReadOnlyMemory<byte> data);
+        public abstract void Send(string message);
+    }
+
+    public sealed class PresentationConnection : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BinaryType BinaryType { get => throw null; set { } }
+        public string Id { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnClose { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnect { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnMessage { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnTerminate { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState State { get => throw null; }
+        public string Url { get => throw null; }
+        public void Close() { }
+        public void Send(object data) { }
+        public void Terminate() { }
+    }
+
+    public sealed class PresentationConnectionAvailableEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PresentationConnection Connection { get => throw null; }
+        public PresentationConnectionAvailableEvent(string type, Meziantou.Framework.WebPlatform.Dom.PresentationConnectionAvailableEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class PresentationConnectionAvailableEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.PresentationConnection Connection { get => throw null; init { } }
+    }
+
+    public sealed class PresentationConnectionCloseEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public string Message { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason Reason { get => throw null; }
+        public PresentationConnectionCloseEvent(string type, Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class PresentationConnectionCloseEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public string Message { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason Reason { get => throw null; init { } }
+    }
+
+    public enum PresentationConnectionCloseReason
+    {
+        Error = 0,
+        Closed = 1,
+        WentAway = 2,
+    }
+
+    public sealed class PresentationConnectionList : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PresentationConnection> Connections { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnectionAvailable { get => throw null; set { } }
+    }
+
+    public enum PresentationConnectionState
+    {
+        Connecting = 0,
+        Connected = 1,
+        Closed = 2,
+        Terminated = 3,
+    }
+
+    public abstract class PresentationDisplay
+    {
+        public string Name { get => throw null; }
+        protected PresentationDisplay(string name) { }
+        public virtual bool CanPresent(string url) => throw null;
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationSession> StartAsync(Meziantou.Framework.WebPlatform.Dom.PresentationStartRequest request, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class PresentationDisplayRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PresentationDisplay> Displays { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Urls { get => throw null; }
+    }
+
+    public sealed class PresentationOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.PresentationProvider? Provider { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.PresentationReceivingContext? Receiver { get => throw null; init { } }
+    }
+
+    public class PresentationProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PresentationDisplay> Displays { get => throw null; }
+        public void AddDisplay(Meziantou.Framework.WebPlatform.Dom.PresentationDisplay display) { }
+        public bool RemoveDisplay(Meziantou.Framework.WebPlatform.Dom.PresentationDisplay display) => throw null;
+        public virtual System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationDisplay?> RequestDisplay(Meziantou.Framework.WebPlatform.Dom.PresentationDisplayRequest request) => throw null;
+    }
+
+    public sealed class PresentationReceiver
+    {
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationConnectionList> ConnectionList { get => throw null; }
+    }
+
+    public class PresentationReceivingContext
+    {
+        public string Id { get => throw null; }
+        public string Url { get => throw null; }
+        public PresentationReceivingContext(string url, string id) { }
+        public void Connect(Meziantou.Framework.WebPlatform.Dom.PresentationChannel channel) { }
+        public void OnTerminated() { }
+        public virtual void Terminate() { }
+    }
+
+    public sealed class PresentationRequest : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnectionAvailable { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<string> Urls { get => throw null; }
+        public PresentationRequest(System.Collections.Generic.IReadOnlyList<string> urls) { }
+        public PresentationRequest(string url) { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationAvailability> GetAvailability() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationConnection> Reconnect(string presentationId) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationConnection> Start() => throw null;
+    }
+
+    public abstract class PresentationSession
+    {
+        public string Id { get => throw null; }
+        public bool IsTerminated { get => throw null; }
+        public string Url { get => throw null; }
+        protected PresentationSession(string url, string id) { }
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.PresentationChannel> ConnectAsync(System.Threading.CancellationToken cancellationToken);
+        public void OnTerminated() { }
+        public virtual void Terminate() { }
+    }
+
+    public sealed class PresentationStartRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public string Id { get => throw null; }
+        public string Url { get => throw null; }
     }
 
     public enum PresentationStyle
@@ -17189,6 +17531,15 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public virtual void ValidatePaymentMethodData(string methodIdentifier, string serializedData) { }
     }
 
+    public sealed class UserContact
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ContactAddress> Addresses { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Emails { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FileApi.Blob> Icons { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Names { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Numbers { get => throw null; init { } }
+    }
+
     public enum UserIdleState
     {
         Active = 0,
@@ -17633,6 +17984,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public Meziantou.Framework.WebPlatform.Dom.LockMode Mode { get => throw null; }
         public string Name { get => throw null; }
+    }
+
+    public sealed class WebMidiOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.MidiProvider? Provider { get => throw null; init { } }
     }
 
     public sealed class WebPlatformFeatures : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures>

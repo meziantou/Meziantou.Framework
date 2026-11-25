@@ -192,6 +192,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["CompositionEvent"] = Binding_CompositionEvent<TAdapter, TValue>.Binding,
             ["ConstantSourceNode"] = Binding_ConstantSourceNode<TAdapter, TValue>.Binding,
             ["ContactAddress"] = Binding_ContactAddress<TAdapter, TValue>.Binding,
+            ["ContactsManager"] = Binding_ContactsManager<TAdapter, TValue>.Binding,
             ["ContainerQueryList"] = Binding_ContainerQueryList<TAdapter, TValue>.Binding,
             ["ContentVisibilityAutoStateChangeEvent"] = Binding_ContentVisibilityAutoStateChangeEvent<TAdapter, TValue>.Binding,
             ["ConvolverNode"] = Binding_ConvolverNode<TAdapter, TValue>.Binding,
@@ -428,6 +429,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Location"] = Binding_Location<TAdapter, TValue>.Binding,
             ["Lock"] = Binding_Lock<TAdapter, TValue>.Binding,
             ["LockManager"] = Binding_LockManager<TAdapter, TValue>.Binding,
+            ["MIDIAccess"] = Binding_MIDIAccess<TAdapter, TValue>.Binding,
+            ["MIDIConnectionEvent"] = Binding_MIDIConnectionEvent<TAdapter, TValue>.Binding,
+            ["MIDIInput"] = Binding_MIDIInput<TAdapter, TValue>.Binding,
+            ["MIDIInputMap"] = Binding_MIDIInputMap<TAdapter, TValue>.Binding,
+            ["MIDIMessageEvent"] = Binding_MIDIMessageEvent<TAdapter, TValue>.Binding,
+            ["MIDIOutput"] = Binding_MIDIOutput<TAdapter, TValue>.Binding,
+            ["MIDIOutputMap"] = Binding_MIDIOutputMap<TAdapter, TValue>.Binding,
+            ["MIDIPort"] = Binding_MIDIPort<TAdapter, TValue>.Binding,
             ["Magnetometer"] = Binding_Magnetometer<TAdapter, TValue>.Binding,
             ["ManagedMediaSource"] = Binding_ManagedMediaSource<TAdapter, TValue>.Binding,
             ["ManagedSourceBuffer"] = Binding_ManagedSourceBuffer<TAdapter, TValue>.Binding,
@@ -549,6 +558,14 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["PluginArray"] = Binding_PluginArray<TAdapter, TValue>.Binding,
             ["PointerEvent"] = Binding_PointerEvent<TAdapter, TValue>.Binding,
             ["PopStateEvent"] = Binding_PopStateEvent<TAdapter, TValue>.Binding,
+            ["Presentation"] = Binding_Presentation<TAdapter, TValue>.Binding,
+            ["PresentationAvailability"] = Binding_PresentationAvailability<TAdapter, TValue>.Binding,
+            ["PresentationConnection"] = Binding_PresentationConnection<TAdapter, TValue>.Binding,
+            ["PresentationConnectionAvailableEvent"] = Binding_PresentationConnectionAvailableEvent<TAdapter, TValue>.Binding,
+            ["PresentationConnectionCloseEvent"] = Binding_PresentationConnectionCloseEvent<TAdapter, TValue>.Binding,
+            ["PresentationConnectionList"] = Binding_PresentationConnectionList<TAdapter, TValue>.Binding,
+            ["PresentationReceiver"] = Binding_PresentationReceiver<TAdapter, TValue>.Binding,
+            ["PresentationRequest"] = Binding_PresentationRequest<TAdapter, TValue>.Binding,
             ["PressureObserver"] = Binding_PressureObserver<TAdapter, TValue>.Binding,
             ["PressureRecord"] = Binding_PressureRecord<TAdapter, TValue>.Binding,
             ["ProcessingInstruction"] = Binding_ProcessingInstruction<TAdapter, TValue>.Binding,
@@ -1050,6 +1067,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MessageEventInit dictionaryDom_MessageEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MessageEventInit(r, dictionaryDom_MessageEventInit);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MidiConnectionEventInit dictionaryDom_MidiConnectionEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MidiConnectionEventInit(r, dictionaryDom_MidiConnectionEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MidiMessageEventInit dictionaryDom_MidiMessageEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MidiMessageEventInit(r, dictionaryDom_MidiMessageEventInit);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.NavigateEventInit dictionaryDom_NavigateEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_NavigateEventInit(r, dictionaryDom_NavigateEventInit);
                 return true;
@@ -1097,6 +1120,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PopStateEventInit dictionaryDom_PopStateEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PopStateEventInit(r, dictionaryDom_PopStateEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionAvailableEventInit dictionaryDom_PresentationConnectionAvailableEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PresentationConnectionAvailableEventInit(r, dictionaryDom_PresentationConnectionAvailableEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseEventInit dictionaryDom_PresentationConnectionCloseEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_PresentationConnectionCloseEventInit(r, dictionaryDom_PresentationConnectionCloseEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ProgressEventInit dictionaryDom_ProgressEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ProgressEventInit(r, dictionaryDom_ProgressEventInit);
@@ -1413,6 +1442,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ConstrainPoint2DParameters dictionaryDom_ConstrainPoint2DParameters:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ConstrainPoint2DParameters(r, dictionaryDom_ConstrainPoint2DParameters);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ContactInfo dictionaryDom_ContactInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ContactInfo(r, dictionaryDom_ContactInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ContactsSelectOptions dictionaryDom_ContactsSelectOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ContactsSelectOptions(r, dictionaryDom_ContactsSelectOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ConvertCoordinateOptions dictionaryDom_ConvertCoordinateOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ConvertCoordinateOptions(r, dictionaryDom_ConvertCoordinateOptions);
                 return true;
@@ -1718,6 +1753,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement dictionaryDom_MemoryMeasurement:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryDom_MemoryMeasurement);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MidiOptions dictionaryDom_MidiOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MidiOptions(r, dictionaryDom_MidiOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.ModelContextExecuteToolOptions dictionaryDom_ModelContextExecuteToolOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ModelContextExecuteToolOptions(r, dictionaryDom_ModelContextExecuteToolOptions);
@@ -2352,6 +2390,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.ConnectionType enumDom_ConnectionType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ConnectionType(enumDom_ConnectionType));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ContactProperty enumDom_ContactProperty:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ContactProperty(enumDom_ContactProperty));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.CookieSameSite enumDom_CookieSameSite:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_CookieSameSite(enumDom_CookieSameSite));
                 return true;
@@ -2499,6 +2540,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.MediaStreamTrackState enumDom_MediaStreamTrackState:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MediaStreamTrackState(enumDom_MediaStreamTrackState));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MidiPortConnectionState enumDom_MidiPortConnectionState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MidiPortConnectionState(enumDom_MidiPortConnectionState));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MidiPortDeviceState enumDom_MidiPortDeviceState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MidiPortDeviceState(enumDom_MidiPortDeviceState));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.MidiPortType enumDom_MidiPortType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MidiPortType(enumDom_MidiPortType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.MonitorTypeSurfaces enumDom_MonitorTypeSurfaces:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_MonitorTypeSurfaces(enumDom_MonitorTypeSurfaces));
                 return true;
@@ -2558,6 +2608,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PremultiplyAlpha enumDom_PremultiplyAlpha:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PremultiplyAlpha(enumDom_PremultiplyAlpha));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionCloseReason enumDom_PresentationConnectionCloseReason:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PresentationConnectionCloseReason(enumDom_PresentationConnectionCloseReason));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionState enumDom_PresentationConnectionState:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PresentationConnectionState(enumDom_PresentationConnectionState));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PresentationStyle enumDom_PresentationStyle:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PresentationStyle(enumDom_PresentationStyle));
@@ -2898,6 +2954,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MemoryMeasurement> taskSystem_Threading_Tasks_Task_Dom_MemoryMeasurement_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MemoryMeasurement_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_MemoryMeasurement(r, dictionaryValue) : r.Adapter.Null));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MidiAccess> taskSystem_Threading_Tasks_Task_Dom_MidiAccess_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MidiAccess_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.MidiPort> taskSystem_Threading_Tasks_Task_Dom_MidiPort_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_MidiPort_, static (r, v) => r.Wrap(v));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.NavigationHistoryEntry> taskSystem_Threading_Tasks_Task_Dom_NavigationHistoryEntry_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_NavigationHistoryEntry_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2927,6 +2989,15 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PictureInPictureWindow> taskSystem_Threading_Tasks_Task_Dom_PictureInPictureWindow_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PictureInPictureWindow_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PresentationAvailability> taskSystem_Threading_Tasks_Task_Dom_PresentationAvailability_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PresentationAvailability_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PresentationConnection> taskSystem_Threading_Tasks_Task_Dom_PresentationConnection_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PresentationConnection_, static (r, v) => r.Wrap(v));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.PresentationConnectionList> taskSystem_Threading_Tasks_Task_Dom_PresentationConnectionList_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_PresentationConnectionList_, static (r, v) => r.Wrap(v));
                 return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ScreenDetails> taskSystem_Threading_Tasks_Task_Dom_ScreenDetails_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ScreenDetails_, static (r, v) => r.Wrap(v));
@@ -3029,6 +3100,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.ClipboardItem>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ClipboardItem__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ClipboardItem__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.ContactInfo>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ContactInfo__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ContactInfo__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_ContactInfo(r, dictionaryValue) : r.Adapter.Null)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.ContactProperty>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ContactProperty__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ContactProperty__, static (r, v) => r.FromSequence(v, static (r, e) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ContactProperty(e))));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.CookieListItem>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieListItem__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieListItem__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieListItem(r, dictionaryValue) : r.Adapter.Null)));

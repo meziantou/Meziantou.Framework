@@ -463,18 +463,18 @@ public sealed class Hid : EventTarget
     /// <summary>
     /// Returns the connected devices that the origin is allowed to use (https://hid.spec.whatwg.org/#getdevices-method). The
     /// task fails with a <c>SecurityError</c> <see cref="DomException"/> when the <c>hid</c> permissions policy feature is not
-    /// allowed, and in a service worker.
+    /// allowed, and in a service worker. A prerendering document gets the devices once it is activated.
     /// </summary>
     /// <seealso href="https://hid.spec.whatwg.org/#dom-hid-getdevices"/>
     [IdlMember("getDevices", "https://hid.spec.whatwg.org/#dom-hid-getdevices")]
-    public Task<IReadOnlyList<HidDevice>> GetDevices() => _state.GetDevices();
+    public Task<IReadOnlyList<HidDevice>> GetDevices() => Document.DelayWhilePrerendering(_state.Global, _state.GetDevices);
 
     /// <summary>
     /// Asks the user to choose a device (https://hid.spec.whatwg.org/#requestdevice-method) with
     /// <see cref="HidProvider.RequestDevice"/>: the origin is then allowed to use it. The task gives the chosen device (no
     /// device when the user cancels). It fails with a <see cref="TypeErrorException"/> for an invalid filter, a
     /// <c>SecurityError</c> <see cref="DomException"/> without user activation or when the <c>hid</c> permissions policy feature
-    /// is not allowed, and a <c>NotSupportedError</c> in a worker.
+    /// is not allowed, and a <c>NotSupportedError</c> in a worker. A prerendering document asks the user once it is activated.
     /// </summary>
     /// <param name="options">The filters of the devices.</param>
     /// <seealso href="https://hid.spec.whatwg.org/#dom-hid-requestdevice"/>
@@ -482,7 +482,7 @@ public sealed class Hid : EventTarget
     public Task<IReadOnlyList<HidDevice>> RequestDevice(HidDeviceRequestOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return _state.RequestDevice(options);
+        return Document.DelayWhilePrerendering(_state.Global, () => _state.RequestDevice(options));
     }
 }
 

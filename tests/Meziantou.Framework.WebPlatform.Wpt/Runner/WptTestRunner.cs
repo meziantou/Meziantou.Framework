@@ -148,6 +148,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The fake USB devices of the WebUSB Testing API (navigator.usb.test).</summary>
     private readonly WptUsbProvider _usb = new();
 
+    /// <summary>The contacts of the Contact Picker tests, set by WebContactsTest.setSelectedContacts().</summary>
+    private readonly WptContactsProvider _contacts = new();
+
     /// <summary>The simulated Bluetooth adapter of the bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth).</summary>
     private readonly WptBluetoothProvider _bluetooth = new();
 
@@ -263,6 +266,11 @@ internal sealed partial class WptTestRunner
                 _permissionStore.SetState(name, PermissionState.Granted);
             }
 
+            // The midi permission is granted by default: the tests that do not set it expect the access (the report-only mode of
+            // the permissions policy, the prerendering restrictions), as Chromium gives it without asking for the messages
+            // that are not system exclusive messages
+            _permissionStore.SetState("midi", PermissionState.Granted);
+
             // The test page is loaded in a top-level browsing context. The documents of its iframes and the scripts are the files of the test suite.
             browsingContext = new BrowsingContext(new BrowsingContextOptions
             {
@@ -320,6 +328,11 @@ internal sealed partial class WptTestRunner
                 // Two screens side by side for the tests of the Window Management API (the other tests have one screen, the
                 // size of the viewport)
                 Screens = _test.RelativePath.StartsWith("window-management/", StringComparison.Ordinal) ? new ScreenOptions { Provider = CreateWindowManagementScreens() } : null,
+
+                // A MIDI output that loops back to a MIDI input for the Web MIDI tests, and the contacts of the WebContactsTest
+                // class for the Contact Picker tests
+                Midi = _test.RelativePath.StartsWith("webmidi/", StringComparison.Ordinal) ? new WebMidiOptions { Provider = WptMidi.CreateProvider() } : null,
+                Contacts = _test.RelativePath.StartsWith("contacts/", StringComparison.Ordinal) ? new ContactsOptions { Provider = _contacts } : null,
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
@@ -1859,6 +1872,12 @@ internal sealed partial class WptTestRunner
         if (_test.RelativePath.StartsWith("webusb/", StringComparison.Ordinal))
         {
             _usb.DefineTestApi(realm, WebUsbTestScript.Value);
+        }
+
+        // The WebContactsTest class of the Contact Picker tests (the mock of Chromium needs MojoJS)
+        if (_test.RelativePath.StartsWith("contacts/", StringComparison.Ordinal) && realm.Window is not null)
+        {
+            _contacts.DefineTestApi(realm);
         }
 
         // The legacy Web Bluetooth Testing API of Chromium (navigator.bluetooth.test, on MojoJS), which bluetooth_test() of

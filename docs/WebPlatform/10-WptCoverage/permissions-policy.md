@@ -9,19 +9,19 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 77 | 94 | 0 | 82% |
+| [Stable](#stable-tests) | 78 | 94 | 0 | 83% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **91** | **118** | **0** | **77%** |
+| **All** | **92** | **118** | **0** | **78%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 1
-- **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 14
+- **TEST BUG**: 12
+- **NOT IMPLEMENTED**: 12
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -101,8 +101,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/geolocation-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/geolocation-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/microphone-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-report-only.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/microphone-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/microphone-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/midi-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-report-only.https.html) | Timeout | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
-| [`reporting/midi-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-reporting.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the Web MIDI API (`navigator.requestMIDIAccess()`) |
+| [`reporting/midi-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-report-only.https.html) | Pass | 1 / 1 |  |  |
+| [`reporting/midi-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/midi-reporting.https.html) | Fail | 0 / 1 | TEST BUG | the test expects `requestMIDIAccess()` to reject with a `SecurityError` (Chromium) in a document that is not allowed to use the `midi` feature; the specification rejects with a `NotAllowedError` (https://webaudio.github.io/web-midi-api/#dom-navigator-requestmidiaccess, steps 4 and 11), and the violation report is generated |
 | [`reporting/payment-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-report-only.https.html) | Fail | 0 / 1 | TEST BUG | the test rethrows the rejection of `show()` after checking the report, so it passes only when the user accepts a payment with `https://example.com/pay`, a payment method that the user agent does not support (`NotSupportedError`, https://w3c.github.io/payment-request/#show-method); Chromium fails it too |
 | [`reporting/payment-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/payment-reporting.https.html) | Pass | 1 / 1 |  |  |
 | [`reporting/picture-in-picture-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/picture-in-picture-report-only.html) | Pass | 1 / 1 |  |  |

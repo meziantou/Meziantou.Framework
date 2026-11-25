@@ -148,6 +148,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-bluetooth-request-device", BluetoothRequestDeviceTarget) { Seeds = GetBluetoothRequestDeviceSeeds, Dictionary = BluetoothRequestDeviceTokens },
         new("webplatform-screen-details", ScreenDetailsTarget) { Seeds = GetScreenDetailsSeeds },
         new("webplatform-hid-report-descriptor", HidReportDescriptorTarget) { Seeds = GetHidReportDescriptorSeeds },
+        new("webplatform-midi-messages", MidiMessagesTarget) { Seeds = GetMidiMessagesSeeds },
     ];
 
     /// <summary>

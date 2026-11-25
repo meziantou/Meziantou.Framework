@@ -145,6 +145,9 @@ internal sealed partial class PolicyControlledFeature
     /// <summary>https://hid.spec.whatwg.org/#permissions-policy</summary>
     public static PolicyControlledFeature Hid { get; } = new("hid", isAllowedForAllByDefault: false);
 
+    /// <summary>https://webaudio.github.io/web-midi-api/#permissions-policy-integration</summary>
+    public static PolicyControlledFeature Midi { get; } = new("midi", isAllowedForAllByDefault: false);
+
     /// <summary>https://w3c.github.io/window-management/#api-permission-policy-integration</summary>
     public static PolicyControlledFeature WindowManagement { get; } = new("window-management", isAllowedForAllByDefault: false);
 
@@ -190,7 +193,7 @@ internal sealed partial class PolicyControlledFeature
         Magnetometer,
         MediaPlaybackWhileNotVisible,
         Microphone,
-        new("midi", isAllowedForAllByDefault: false),
+        Midi,
         Payment,
         PictureInPicture,
         new("private-state-token-issuance", isAllowedForAllByDefault: false),

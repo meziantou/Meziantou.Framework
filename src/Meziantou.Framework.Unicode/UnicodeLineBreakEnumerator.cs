@@ -30,9 +30,21 @@ public ref struct UnicodeLineBreakEnumerator
     private const byte DottedCircleFlag = 16;
     private const byte ComplexContextFlag = 32;
 
+    // The kinds of characters that SkipWord reads: see GetShortcutKind
+    internal const int WordCharacter = 1;
+    internal const int ClosingMark = 2;
+    internal const int OpeningMark = 4;
+    internal const int InnerMark = 8;
+    internal const int NumericAffix = 16;
+    internal const int Space = 32;
+
     private readonly ReadOnlySpan<char> _text;
     private readonly UnicodeLineBreakStrictness _strictness;
     private readonly UnicodeWordBreakBehavior _wordBreak;
+
+    // The words of letters and digits are read without the rules: false with BreakAll, which breaks inside them, and when
+    // the shortcuts are turned off to compare them with the rules.
+    private readonly bool _skipsWords;
 
     // The dictionary that segments the runs of Complex_Context characters, or null when it cannot add a break.
     private readonly LineBreakDictionary? _dictionary;
@@ -46,9 +58,9 @@ public ref struct UnicodeLineBreakEnumerator
     // The character that ended the last unit that was read, which rule LB9 looked up: the next unit starts with it.
     // _lookedUpIndex is -1 when there is none.
     private int _lookedUpIndex;
-    private int _lookedUpCodePoint;
     private int _lookedUpLength;
-    private int _lookedUpTuple;
+    private LineBreak _lookedUpClass;
+    private byte _lookedUpFlags;
 
     // The units before the position.
     private Unit _previous;
@@ -82,11 +94,12 @@ public ref struct UnicodeLineBreakEnumerator
     private bool _isCompleted;
     private UnicodeLineBreak _current;
 
-    internal UnicodeLineBreakEnumerator(ReadOnlySpan<char> text, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak, LineBreakDictionary? dictionary = null)
+    internal UnicodeLineBreakEnumerator(ReadOnlySpan<char> text, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak, LineBreakDictionary? dictionary = null, bool useShortcuts = true)
     {
         _text = text;
         _strictness = strictness;
         _wordBreak = wordBreak;
+        _skipsWords = useShortcuts && wordBreak is not UnicodeWordBreakBehavior.BreakAll;
 
         // A line already breaks between any two letters, or any two grapheme clusters, in the other modes.
         _dictionary = dictionary is { WordCount: > 0 } && wordBreak is not UnicodeWordBreakBehavior.BreakAll && strictness is not UnicodeLineBreakStrictness.Anywhere ? dictionary : null;
@@ -122,10 +135,8 @@ public ref struct UnicodeLineBreakEnumerator
 
         while (true)
         {
-            if (_previous.Class is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric && _wordBreak is not UnicodeWordBreakBehavior.BreakAll)
-            {
-                SkipAsciiLettersAndDigits();
-            }
+            if (_previous.Class is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric && _skipsWords && SkipWord())
+                return true;
 
             var next = Peek(0);
             if (next.Class is EndOfText)
@@ -163,7 +174,25 @@ public ref struct UnicodeLineBreakEnumerator
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private Decision Decide(Unit next)
+    {
+        var p = _previous.Class;
+        var n = next.Class;
+
+        // Between letters, digits and ideographs, only LB8a, LB23, LB28, LB28a (with a dotted circle) and LB31 apply.
+        if (p is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric or LineBreak.Ideographic
+            && n is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric or LineBreak.Ideographic
+            && !_previous.EndsWithJoiner && !_previous.Has(DottedCircleFlag) && !next.Has(DottedCircleFlag))
+        {
+            return (p is LineBreak.Ideographic || n is LineBreak.Ideographic) && _wordBreak is not UnicodeWordBreakBehavior.KeepAll ? Decision.Break : Decision.NoBreak;
+        }
+
+        return DecideByRules(next);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private Decision DecideByRules(Unit next)
     {
         var p = _previous.Class;
         var n = next.Class;
@@ -433,39 +462,201 @@ public ref struct UnicodeLineBreakEnumerator
         return offset < LineBreakDictionary.PieceLength && (_wordStarts[offset >> 6] & (1UL << (offset & 63))) != 0;
     }
 
-    /// <summary>Moves the position over the ASCII letters and digits that follow a letter or a digit, but the last one.</summary>
+    /// <summary>Moves the position over the letters and digits that follow a letter or a digit, and to the next word when only punctuation and spaces separate them.</summary>
+    /// <returns><see langword="true"/> when the break before the next word is found: it is <see cref="Current"/>.</returns>
     /// <remarks>
-    /// There is no break between a letter or a digit and an ASCII letter or digit (rules LB23, LB25 and LB28), and
-    /// what the rules remember after them only depends on the last two. The last one is read as usual: a combining
-    /// mark can follow it (LB9).
+    /// <para>
+    /// The rules give the same decision for these characters, whatever is before them:
+    /// </para>
+    /// <list type="bullet">
+    /// <item>
+    /// no break between a letter or a digit and an ASCII or Latin character of the classes Alphabetic or Numeric (LB23,
+    /// LB25, LB28), an apostrophe between letters or digits (LB19), a comma, a period, a colon or a semicolon before a
+    /// letter or a digit (LB15d, LB25, LB29), or a hyphen before a digit (LB21, LB25). What the rules remember after
+    /// them only depends on the last two;
+    /// </item>
+    /// <item>a break between a hyphen that follows a letter or a digit and a letter (LB31), unless the letter before the hyphen is Hebrew (LB21a);</item>
+    /// <item>no break between a letter or a digit and a percent sign or a prefix such as a currency symbol (LB24, LB25);</item>
+    /// <item>
+    /// no break before the marks that close a word (LB13: <c>! ? ) ] } /</c>, LB15d: <c>, . : ;</c>, LB15b and LB19:
+    /// <c>" ' ’ »</c>, LB12a: no-break space), nor before the spaces (LB7). The line breaks where the spaces end
+    /// (LB18): no rule of the form "X SP* ×" applies to a letter, a digit or these marks;
+    /// </item>
+    /// <item>
+    /// no break between a mark that opens a word and a letter or a digit (LB14: <c>( [ {</c>, LB19: <c>" '</c>, LB20a
+    /// and LB25: <c>-</c> after a space, LB24 and LB25: <c>$ + \ %</c>).
+    /// </item>
+    /// </list>
+    /// <para>
+    /// A unit is a character on its own when a printable ASCII character or a Latin letter follows it: they are not
+    /// combining marks (LB9). Otherwise the last letter is read as usual.
+    /// </para>
     /// </remarks>
-    private void SkipAsciiLettersAndDigits()
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private bool SkipWord()
     {
-        // The runs are words: a loop is faster than a vectorized search for them.
+        // The letters of the other scripts are read as usual.
+        return _position < _text.Length && _text[_position] is < '\u0180' or '\u2019' && SkipLatinWord();
+    }
+
+    /// <summary>See <see cref="SkipWord"/>.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private bool SkipLatinWord()
+    {
+        var text = _text;
         var end = _position;
-        while (end < _text.Length && char.IsAsciiLetterOrDigit(_text[end]))
+        var kind = GetShortcutKindAt(text, end);
+        while (true)
         {
-            end++;
+            if (kind is WordCharacter)
+            {
+                end++;
+            }
+            else if ((kind & InnerMark) != 0 && GetShortcutKindAt(text, end + 1) is WordCharacter && (text[end] is not '-' || char.IsAsciiDigit(text[end + 1])))
+            {
+                end += 2;
+            }
+            else
+            {
+                break;
+            }
+
+            kind = GetShortcutKindAt(text, end);
+        }
+
+        var index = end;
+        var breakIndex = -1;
+        if ((kind & InnerMark) != 0 && text[index] is '-' && (index > _position || _previous.Class is not LineBreak.HebrewLetter))
+        {
+            // The hyphen is followed by a letter, else it would be part of the word.
+            breakIndex = ++index;
+            kind = GetShortcutKindAt(text, index);
+        }
+        else
+        {
+            if ((kind & NumericAffix) != 0)
+            {
+                kind = GetShortcutKindAt(text, ++index);
+            }
+
+            while ((kind & ClosingMark) != 0)
+            {
+                kind = GetShortcutKindAt(text, ++index);
+            }
+
+            var spaces = index;
+            while (kind is Space)
+            {
+                kind = GetShortcutKindAt(text, ++index);
+            }
+
+            if (index > spaces)
+            {
+                breakIndex = index;
+                if ((kind & OpeningMark) != 0)
+                {
+                    kind = GetShortcutKindAt(text, ++index);
+                }
+            }
+        }
+
+        if (breakIndex >= 0 && kind is WordCharacter && (index + 1 == text.Length || IsUnitEnd(text[index + 1])))
+        {
+            _beforePrevious = index == breakIndex ? new Unit(LineBreak.Space, 0, index, endsWithJoiner: false) : CreateWordUnit(index - 1);
+            _previous = CreateWordUnit(index);
+            _beforeSpaces = _previous.Class;
+            _isAfterOpeningQuote = false;
+            _number = _previous.Class is LineBreak.Numeric ? 1 : 0;
+            _regionalIndicators = 0;
+            _position = index + 1;
+            _readAhead = 0;
+            _current = new UnicodeLineBreak(breakIndex, isMandatory: false);
+            return true;
         }
 
         var skipped = end - _position - 1;
         if (skipped <= 0)
-            return;
+            return false;
 
         end = _position + skipped;
-        _beforePrevious = skipped >= 2 ? CreateAsciiUnit(end - 2) : _previous;
-        _previous = CreateAsciiUnit(end - 1);
+        _beforePrevious = skipped >= 2 ? CreateWordUnit(end - 2) : _previous;
+        _previous = CreateWordUnit(end - 1);
         _beforeSpaces = _previous.Class;
         _isAfterOpeningQuote = false;
-        _number = _previous.Class is LineBreak.Numeric ? 1 : 0;
+        _number = _previous.Class is LineBreak.Numeric || (_previous.Class is LineBreak.InfixNumeric && _beforePrevious.Class is LineBreak.Numeric) ? 1 : 0;
         _regionalIndicators = 0;
         _position = end;
 
         // The units read ahead start at the old position: they are read again.
         _readAhead = 0;
+        return false;
     }
 
-    private readonly Unit CreateAsciiUnit(int index) => new(char.IsAsciiDigit(_text[index]) ? LineBreak.Numeric : LineBreak.Alphabetic, 0, index + 1, endsWithJoiner: false);
+    /// <summary>Gets the kind of the character at an index, or 0 at the end of the text: see <see cref="GetShortcutKind"/>.</summary>
+    private static int GetShortcutKindAt(ReadOnlySpan<char> text, int index) => (uint)index < (uint)text.Length ? GetShortcutKind(text[index]) : 0;
+
+    /// <summary>Gets what <see cref="SkipWord"/> reads of a character: <see cref="WordCharacter"/>, <see cref="Space"/>, a combination of <see cref="ClosingMark"/>, <see cref="OpeningMark"/>, <see cref="InnerMark"/> and <see cref="NumericAffix"/>, or 0.</summary>
+    /// <remarks>
+    /// The word characters are of the class Alphabetic, Ambiguous (resolved to Alphabetic) or Numeric, and the rules read
+    /// no other property of these characters but the final quotation mark <c>’</c>: <see cref="CreateWordUnit"/> creates their unit.
+    /// </remarks>
+    internal static int GetShortcutKind(char c)
+    {
+        if (c < 0x80)
+            return AsciiShortcutKinds[c];
+
+        return c switch
+        {
+            >= '\u00C0' and <= '\u017F' => WordCharacter,
+            '\u00A0' or '\u00BB' => ClosingMark,
+            '\u2019' => ClosingMark | InnerMark,
+            _ => 0,
+        };
+    }
+
+    // The kinds of the ASCII characters: see GetShortcutKind
+    private static ReadOnlySpan<byte> AsciiShortcutKinds =>
+    [
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+
+        // space ! " # $ % & ' ( ) * + , - . /
+        32, 2, 6, 1, 20, 20, 1, 14, 4, 2, 1, 20, 10, 12, 10, 2,
+
+        // 0-9 : ; < = > ?
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 10, 10, 1, 1, 1, 2,
+
+        // @ A-Z [ \ ] ^ _
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 20, 2, 1, 1,
+
+        // ` a-z { | } ~ DEL
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 4, 0, 2, 1, 0,
+    ];
+
+    /// <summary>Determines whether a character cannot be part of the unit before it (LB9).</summary>
+    private static bool IsUnitEnd(char c) => c is >= ' ' and <= '~' || GetShortcutKind(c) is WordCharacter;
+
+    /// <summary>Gets the class of a word character, an inner mark, an opening mark or a numeric affix: see <see cref="GetShortcutKind"/>.</summary>
+    internal static LineBreak GetShortcutClass(char c) => c switch
+    {
+        >= '0' and <= '9' => LineBreak.Numeric,
+        '\'' or '"' or '\u2019' => LineBreak.Quotation,
+        '-' => LineBreak.Hyphen,
+        '(' or '[' or '{' => LineBreak.OpenPunctuation,
+        ',' or '.' or ':' or ';' => LineBreak.InfixNumeric,
+        '$' or '+' or '\\' => LineBreak.PrefixNumeric,
+        '%' => LineBreak.PostfixNumeric,
+        _ => LineBreak.Alphabetic,
+    };
+
+    /// <summary>Creates the unit of a word character, an inner mark, an opening mark or a numeric affix that is not followed by a combining mark.</summary>
+    private readonly Unit CreateWordUnit(int index)
+    {
+        var c = _text[index];
+        return new Unit(GetShortcutClass(c), c is '\u2019' ? FinalQuoteFlag : (byte)0, index + 1, endsWithJoiner: false);
+    }
 
     /// <summary>Moves the position after the next unit and updates what the rules remember of the text before it.</summary>
     private void Consume()
@@ -545,22 +736,20 @@ public ref struct UnicodeLineBreakEnumerator
         if (index >= _text.Length)
             return new Unit(EndOfText, 0, _text.Length, endsWithJoiner: false);
 
-        int codePoint;
+        LineBreak value;
+        byte flags;
         int length;
-        int tuple;
         if (index == _lookedUpIndex)
         {
-            codePoint = _lookedUpCodePoint;
+            value = _lookedUpClass;
+            flags = _lookedUpFlags;
             length = _lookedUpLength;
-            tuple = _lookedUpTuple;
         }
         else
         {
-            codePoint = Unicode.DecodeAt(_text, index, out length);
-            tuple = UnicodeProperties.GetLineBreakTuple(codePoint);
+            value = Resolve(Unicode.DecodeAt(_text, index, out length), out flags);
         }
 
-        var value = Resolve(tuple, out var flags);
         var endsWithJoiner = value is LineBreak.ZWJ;
         index += length;
 
@@ -573,15 +762,13 @@ public ref struct UnicodeLineBreakEnumerator
                 if (_text[index] is >= ' ' and <= '~')
                     break;
 
-                var markCodePoint = Unicode.DecodeAt(_text, index, out length);
-                var markTuple = UnicodeProperties.GetLineBreakTuple(markCodePoint);
-                var mark = Resolve(markTuple, out _);
+                var mark = Resolve(Unicode.DecodeAt(_text, index, out length), out var markFlags);
                 if (mark is not (LineBreak.CombiningMark or LineBreak.ZWJ))
                 {
                     _lookedUpIndex = index;
-                    _lookedUpCodePoint = markCodePoint;
                     _lookedUpLength = length;
-                    _lookedUpTuple = markTuple;
+                    _lookedUpClass = mark;
+                    _lookedUpFlags = markFlags;
                     break;
                 }
 
@@ -595,10 +782,6 @@ public ref struct UnicodeLineBreakEnumerator
                 value = LineBreak.Alphabetic;
                 flags = 0;
             }
-            else if (codePoint == 0x25CC)
-            {
-                flags |= DottedCircleFlag;
-            }
         }
 
         if (_wordBreak is UnicodeWordBreakBehavior.BreakAll && value is LineBreak.Alphabetic or LineBreak.HebrewLetter or LineBreak.Numeric)
@@ -610,29 +793,74 @@ public ref struct UnicodeLineBreakEnumerator
     }
 
     /// <summary>Applies LB1 to the class of a code point and extracts the properties the rules read with it.</summary>
-    private readonly LineBreak Resolve(int tuple, out byte flags)
+    private readonly LineBreak Resolve(int codePoint, out byte flags)
     {
-        // See UnicodeTables.GetLineBreak for the layout of the high byte.
-        var properties = tuple >> 8;
-        var width = (UnicodeEastAsianWidth)(properties & 0x7);
-        flags = (byte)((width is UnicodeEastAsianWidth.Fullwidth or UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Halfwidth ? EastAsianFlag : 0)
-            | ((properties & 0x20) != 0 ? InitialQuoteFlag : 0)
-            | ((properties & 0x40) != 0 ? FinalQuoteFlag : 0)
-            | ((properties & 0x18) == 0x18 ? UnassignedPictographicFlag : 0));
-
-        var value = (LineBreak)(tuple & 0xFF);
-        if (value is LineBreak.ComplexContext)
+        var entry = (uint)codePoint < 0x80 ? ResolvedAsciiLineBreaks[codePoint] : ResolvedLineBreakTuples[UnicodeTables.GetLineBreak(codePoint)];
+        flags = (byte)(entry >> 8);
+        if (codePoint == 0x25CC)
         {
-            flags |= ComplexContextFlag;
+            flags |= DottedCircleFlag;
         }
 
-        return value switch
+        var value = (LineBreak)entry;
+        if (value is LineBreak.ConditionalJapaneseStarter)
         {
-            LineBreak.Ambiguous or LineBreak.Surrogate or LineBreak.Unknown => LineBreak.Alphabetic,
-            LineBreak.ComplexContext => (properties & 0x80) != 0 ? LineBreak.CombiningMark : LineBreak.Alphabetic,
-            LineBreak.ConditionalJapaneseStarter => _strictness is UnicodeLineBreakStrictness.Strict ? LineBreak.Nonstarter : LineBreak.Ideographic,
-            _ => value,
-        };
+            value = _strictness is UnicodeLineBreakStrictness.Strict ? LineBreak.Nonstarter : LineBreak.Ideographic;
+        }
+
+        return value;
+    }
+
+    // The entries of UnicodeTables.LineBreakTuples after LB1: the class, then the flags. Conditional_Japanese_Starter
+    // depends on the strictness, and is resolved by Resolve. The array has an entry for every byte, so that a lookup
+    // has no bounds check.
+    private static readonly ushort[] ResolvedLineBreakTuples = CreateResolvedLineBreakTuples();
+
+    // The entries of the ASCII characters, which need no lookup in the trie.
+    private static readonly ushort[] ResolvedAsciiLineBreaks = CreateResolvedAsciiLineBreaks();
+
+    private static ushort[] CreateResolvedLineBreakTuples()
+    {
+        var tuples = UnicodeTables.LineBreakTuples;
+        var result = new ushort[256];
+        for (var i = 0; i < tuples.Length / 2; i++)
+        {
+            // See UnicodeTables.GetLineBreak for the layout of the high byte.
+            var properties = tuples[(i * 2) + 1];
+            var width = (UnicodeEastAsianWidth)(properties & 0x7);
+            var flags = (width is UnicodeEastAsianWidth.Fullwidth or UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Halfwidth ? EastAsianFlag : 0)
+                | ((properties & 0x20) != 0 ? InitialQuoteFlag : 0)
+                | ((properties & 0x40) != 0 ? FinalQuoteFlag : 0)
+                | ((properties & 0x18) == 0x18 ? UnassignedPictographicFlag : 0);
+
+            var value = (LineBreak)tuples[i * 2];
+            if (value is LineBreak.ComplexContext)
+            {
+                flags |= ComplexContextFlag;
+            }
+
+            value = value switch
+            {
+                LineBreak.Ambiguous or LineBreak.Surrogate or LineBreak.Unknown => LineBreak.Alphabetic,
+                LineBreak.ComplexContext => (properties & 0x80) != 0 ? LineBreak.CombiningMark : LineBreak.Alphabetic,
+                _ => value,
+            };
+
+            result[i] = (ushort)((int)value | (flags << 8));
+        }
+
+        return result;
+    }
+
+    private static ushort[] CreateResolvedAsciiLineBreaks()
+    {
+        var result = new ushort[0x80];
+        for (var c = 0; c < result.Length; c++)
+        {
+            result[c] = ResolvedLineBreakTuples[UnicodeTables.GetLineBreak(c)];
+        }
+
+        return result;
     }
 
     private enum Decision

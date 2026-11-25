@@ -280,6 +280,60 @@ public static partial class Unicode
         return last;
     }
 
+    /// <summary>Gets the length of the first segment of a text delimited by a word boundary, when it is one of the segments that start with an ASCII character and need no lookup.</summary>
+    /// <returns>The length of the segment, or 0 when the rules must be applied: see <see cref="GetWordSegmentLength(ReadOnlySpan{char})"/>.</returns>
+    /// <remarks>
+    /// Most segments of a text are an ASCII word, a run of spaces or a punctuation mark followed by an ASCII character
+    /// that no rule joins to them. The method is small so that it is inlined in the enumerator, and the other segments
+    /// do not pay for a call.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static int GetAsciiWordSegmentLength(ReadOnlySpan<char> text)
+    {
+        if (text.IsEmpty)
+            return 0;
+
+        var first = text[0];
+        if (first >= 0x80)
+            return 0;
+
+        if (IsAsciiWordCharacter(first))
+        {
+            // A letter, a digit or a low line (WB5, WB8 to WB10, WB13a, WB13b) is followed by a character that does
+            // not join it: an ASCII character other than the punctuation of WB6, WB7, WB11 and WB12.
+            var end = GetAsciiWordRunEnd(text, 0);
+            return end == text.Length || (text[end] < 0x80 && text[end] is not ('\'' or '.' or ':' or ',' or ';')) ? end : 0;
+        }
+
+        if (first == ' ')
+            return GetSpaceSegmentLength(text);
+
+        // Any other ASCII character is a segment of its own before an ASCII character: the rules that join it to the
+        // next character need a character before it (WB6, WB7, WB11, WB12) or are WB3 (CR LF), WB3d (spaces) and WB4
+        // (Extend, Format and ZWJ are not ASCII).
+        return first is not '\r' && (text.Length == 1 || text[1] < 0x80) ? 1 : 0;
+    }
+
+    /// <summary>Gets the length of a segment that starts with a space.</summary>
+    /// <remarks>
+    /// WB3d joins the spaces, and WB4 the Extend, Format and ZWJ characters that follow them: no other rule joins a
+    /// space to the character after it. The ASCII characters are none of those, and the other ones are looked up.
+    /// </remarks>
+    private static int GetSpaceSegmentLength(ReadOnlySpan<char> text)
+    {
+        var end = 1;
+        while (end < text.Length && text[end] == ' ')
+        {
+            end++;
+        }
+
+        if (end == text.Length || text[end] < 0x80)
+            return end;
+
+        var next = (WordBreak)(UnicodeProperties.GetSegmentationTuple(DecodeAt(text, end, out _)) >> 8);
+        return next is WordBreak.Extend or WordBreak.Format or WordBreak.ZWJ or WordBreak.WSegSpace ? 0 : end;
+    }
+
     /// <summary>Gets the length of the first segment of a text delimited by a word boundary.</summary>
     internal static int GetWordSegmentLength(ReadOnlySpan<char> text)
     {
@@ -358,6 +412,32 @@ public static partial class Unicode
         }
 
         return index;
+    }
+
+    /// <summary>Gets the kind of a segment delimited by word boundaries that ends with an ASCII letter or digit, without a lookup.</summary>
+    /// <returns><see langword="false"/> when the segment does not end with one: see <see cref="GetWordKind(ReadOnlySpan{char})"/>.</returns>
+    /// <remarks>The kind is the one of the last character that WB4 does not ignore, and no ASCII character is ignored.</remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool TryGetAsciiWordKind(ReadOnlySpan<char> segment, out UnicodeWordKind kind)
+    {
+        if (!segment.IsEmpty)
+        {
+            var last = segment[^1];
+            if (char.IsAsciiLetter(last))
+            {
+                kind = UnicodeWordKind.Letter;
+                return true;
+            }
+
+            if (char.IsAsciiDigit(last))
+            {
+                kind = UnicodeWordKind.Number;
+                return true;
+            }
+        }
+
+        kind = UnicodeWordKind.None;
+        return false;
     }
 
     /// <summary>Gets the kind of a segment delimited by word boundaries: see <see cref="UnicodeWordKind"/>.</summary>

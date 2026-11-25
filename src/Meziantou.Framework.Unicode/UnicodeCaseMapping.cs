@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework;
 
 /// <summary>Converts a text to uppercase or to lowercase, with the case mappings that depend on the context and on the language.</summary>
@@ -42,6 +44,15 @@ public static class UnicodeCaseMapping
 {
     private const int CombiningDotAbove = 0x0307;
     private const int CapitalSigma = 0x03A3;
+
+    // The longest result of one code point, in UTF-16 code units: three code points, each of which can be supplementary.
+    private const int MaxExpansion = 6;
+
+    // The texts up to this length are converted in a buffer on the stack.
+    private const int StackallocThreshold = 256;
+
+    // The ASCII characters of a run up to this length are converted one by one: a vectorized conversion costs more for a word.
+    private const int ShortAsciiRunLength = 16;
 
     /// <summary>Converts a text to uppercase.</summary>
     /// <param name="value">The text.</param>
@@ -98,43 +109,134 @@ public static class UnicodeCaseMapping
 
     private static string Convert(string value, CaseLanguage language, bool toUpper)
     {
-        // The ASCII characters that are already in the target case are copied as is, without looking them up.
-        var index = 0;
-        while (index < value.Length && value[index] < 0x80 && !(toUpper ? char.IsAsciiLetterLower(value[index]) : char.IsAsciiLetterUpper(value[index])))
-        {
-            index++;
-        }
-
-        if (index == value.Length)
+        if (value.Length == 0)
             return value;
 
-        var result = new StringBuilder(value.Length + 16);
-        result.Append(value, 0, index);
-        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
-        while (index < value.Length)
+        // The result is written to a buffer and compared with the text at the end, so that the text itself is returned
+        // when no character changes.
+        char[]? rented = null;
+        var buffer = value.Length <= StackallocThreshold - MaxExpansion
+            ? stackalloc char[StackallocThreshold]
+            : (rented = ArrayPool<char>.Shared.Rent(value.Length + 16));
+        try
         {
-            var codePoint = Unicode.DecodeAt(value, index, out var length);
-            var count = toUpper
-                ? GetUppercaseMapping(value, index, codePoint, language, mapping)
-                : GetLowercaseMapping(value, index, length, codePoint, language, mapping);
-            foreach (var mapped in mapping[..count])
+            var written = 0;
+            var index = 0;
+            Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+            while (index < value.Length)
             {
-                if (mapped < 0x10000)
+                if (language is CaseLanguage.Default)
                 {
-                    // A lone surrogate is its own mapping: it is copied as is.
-                    result.Append((char)mapped);
+                    // Without a language, no ASCII character has a mapping that depends on the context: only the Turkic
+                    // and Lithuanian ones do (i, I and J). The first characters of a run are converted one by one, as
+                    // most runs are words, and the rest of a long run at once, with vectorized code.
+                    if (value[index] < 0x80)
+                    {
+                        var end = Math.Min(value.Length, index + ShortAsciiRunLength);
+                        EnsureCapacity(ref buffer, ref rented, written, ShortAsciiRunLength);
+                        do
+                        {
+                            buffer[written++] = toUpper ? ToUpperAscii(value[index]) : ToLowerAscii(value[index]);
+                            index++;
+                        }
+                        while (index < end && value[index] < 0x80);
+
+                        if (index == end && index < value.Length && value[index] < 0x80)
+                        {
+                            var run = value.AsSpan(index);
+                            var runLength = run.IndexOfAnyExceptInRange('\0', '\u007F');
+                            if (runLength < 0)
+                            {
+                                runLength = run.Length;
+                            }
+
+                            EnsureCapacity(ref buffer, ref rented, written, runLength);
+                            run = run[..runLength];
+                            var destination = buffer[written..];
+                            _ = toUpper ? Ascii.ToUpper(run, destination, out _) : Ascii.ToLower(run, destination, out _);
+                            written += runLength;
+                            index += runLength;
+                        }
+
+                        continue;
+                    }
+
+                    // The code points without a full mapping of SpecialCasing.txt, other than the capital sigma, have
+                    // their simple mapping: this is what GetUppercaseMapping and GetLowercaseMapping return for them.
+                    var current = Unicode.DecodeAt(value, index, out var currentLength);
+                    if (current != CapitalSigma && !UnicodeTables.MayHaveSpecialCasing(current))
+                    {
+                        EnsureCapacity(ref buffer, ref rented, written, 2);
+                        var mapped = toUpper ? UnicodeProperties.ToSimpleUppercase(current) : UnicodeProperties.ToSimpleLowercase(current);
+                        if (mapped < 0x10000)
+                        {
+                            // A lone surrogate is its own mapping: it is copied as is.
+                            buffer[written++] = (char)mapped;
+                        }
+                        else
+                        {
+                            buffer[written++] = (char)(0xD7C0 + (mapped >> 10));
+                            buffer[written++] = (char)(0xDC00 | (mapped & 0x3FF));
+                        }
+
+                        index += currentLength;
+                        continue;
+                    }
                 }
-                else
+
+                var codePoint = Unicode.DecodeAt(value, index, out var length);
+                var count = toUpper
+                    ? GetUppercaseMapping(value, index, codePoint, language, mapping)
+                    : GetLowercaseMapping(value, index, length, codePoint, language, mapping);
+                EnsureCapacity(ref buffer, ref rented, written, MaxExpansion);
+                foreach (var mapped in mapping[..count])
                 {
-                    result.Append((char)(0xD7C0 + (mapped >> 10)));
-                    result.Append((char)(0xDC00 | (mapped & 0x3FF)));
+                    if (mapped < 0x10000)
+                    {
+                        // A lone surrogate is its own mapping: it is copied as is.
+                        buffer[written++] = (char)mapped;
+                    }
+                    else
+                    {
+                        buffer[written++] = (char)(0xD7C0 + (mapped >> 10));
+                        buffer[written++] = (char)(0xDC00 | (mapped & 0x3FF));
+                    }
                 }
+
+                index += length;
             }
 
-            index += length;
+            var result = buffer[..written];
+            return result.SequenceEqual(value) ? value : result.ToString();
+        }
+        finally
+        {
+            if (rented is not null)
+            {
+                ArrayPool<char>.Shared.Return(rented);
+            }
+        }
+    }
+
+    private static char ToUpperAscii(char value) => char.IsAsciiLetterLower(value) ? (char)(value - 0x20) : value;
+
+    private static char ToLowerAscii(char value) => char.IsAsciiLetterUpper(value) ? (char)(value + 0x20) : value;
+
+    private static void EnsureCapacity(ref Span<char> buffer, ref char[]? rented, int written, int additional)
+    {
+        var required = written + additional;
+        if (required <= buffer.Length)
+            return;
+
+        var larger = ArrayPool<char>.Shared.Rent(Math.Max(required, checked(buffer.Length * 2)));
+        buffer[..written].CopyTo(larger);
+        if (rented is not null)
+        {
+            ArrayPool<char>.Shared.Return(rented);
         }
 
-        return result.Equals(value.AsSpan()) ? value : result.ToString();
+        rented = larger;
+        buffer = larger;
     }
 
     private static int GetUppercaseMapping(ReadOnlySpan<char> text, int index, int codePoint, CaseLanguage language, Span<int> destination)

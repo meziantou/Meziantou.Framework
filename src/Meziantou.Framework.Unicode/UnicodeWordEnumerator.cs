@@ -21,7 +21,14 @@ public ref struct UnicodeWordEnumerator
     /// <see cref="UnicodeWordKind.None"/>. See <see cref="UnicodeWordKind"/> for the rules. The kind is computed from
     /// the end of the segment when the property is read, so the enumeration costs nothing more when it is not used.
     /// </remarks>
-    public readonly UnicodeWordKind CurrentKind => Unicode.GetWordKind(_text[_start.._end]);
+    public readonly UnicodeWordKind CurrentKind
+    {
+        get
+        {
+            var segment = _text[_start.._end];
+            return Unicode.TryGetAsciiWordKind(segment, out var kind) ? kind : Unicode.GetWordKind(segment);
+        }
+    }
 
     /// <summary>Returns this instance, so that the enumerator can be used by a <see langword="foreach"/> statement.</summary>
     /// <returns>This instance.</returns>
@@ -35,7 +42,9 @@ public ref struct UnicodeWordEnumerator
             return false;
 
         _start = _end;
-        _end += Unicode.GetWordSegmentLength(_text[_start..]);
+        var remaining = _text[_start..];
+        var length = Unicode.GetAsciiWordSegmentLength(remaining);
+        _end += length > 0 ? length : Unicode.GetWordSegmentLength(remaining);
         return true;
     }
 }

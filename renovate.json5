@@ -92,7 +92,8 @@
         "Microsoft.AspNetCore.Components.WebAssembly",
         "Microsoft.AspNetCore.Mvc.Testing",
         "Microsoft.AspNetCore.TestHost",
-        "Microsoft.AspNetCore.OpenApi"
+        "Microsoft.AspNetCore.OpenApi",
+        "/^Microsoft\\.EntityFrameworkCore(\\..+)?$/"
       ],
       "matchCurrentValue": "/^10\\./",
       "matchUpdateTypes": [ "major" ],

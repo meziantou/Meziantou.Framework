@@ -5864,7 +5864,7 @@ public sealed class VectorizedKernelTests
         Assert.Equal(0, mismatches);
 
         var random = new Random(20261014);
-        int[] lengths = [4, 5, 7, 8, 9, 15, 16, 17, 33, 64, 101];
+        int[] lengths = [1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 33, 64, 101, 160];
         foreach (var length in lengths)
         {
             for (var round = 0; round < 64; round++)
@@ -5889,6 +5889,17 @@ public sealed class VectorizedKernelTests
                         2 => (uint)random.Next(1, 256),
                         _ => (uint)random.Next((int)CoverageRasterizer.FullCoverage + 1),
                     };
+                }
+
+                if (round % 2 == 1)
+                {
+                    // Runs covered entirely, as inside a shape: an opaque paint is written to their whole blocks
+                    for (var i = random.Next(8); i < length; i += random.Next(1, 24))
+                    {
+                        var end = Math.Min(length, i + random.Next(1, 48));
+                        coverage.AsSpan(i..end).Fill(CoverageRasterizer.FullCoverage);
+                        i = end;
+                    }
                 }
 
                 if (round >= 32)
@@ -5952,6 +5963,39 @@ public sealed class VectorizedKernelTests
                     actual = (byte[])pixels.Clone();
                     DrawingKernels.CompositeOver8Avx512(actual, coverage, new DrawingSource(colors));
                     Assert.Equal(expected, actual);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void DrawingEventSortMatchesTheScalarSort()
+    {
+        // The packed events of a row: random, many equal values, a descending run, and the value the network pads with
+        var random = new Random(20261125);
+        for (var length = 0; length <= CoverageRasterizer.MaxVectorSortLength; length++)
+        {
+            for (var round = 0; round < 4; round++)
+            {
+                var values = new ulong[length];
+                for (var i = 0; i < length; i++)
+                {
+                    values[i] = round switch
+                    {
+                        0 => (ulong)random.NextInt64(long.MinValue, long.MaxValue),
+                        1 => (ulong)random.Next(8),
+                        2 => (ulong)(length - i),
+                        _ => random.Next(4) == 0 ? ulong.MaxValue : (ulong)random.NextInt64() << 1,
+                    };
+                }
+
+                var expected = values.ToArray();
+                expected.AsSpan().Sort();
+                if (Vector512.IsHardwareAccelerated)
+                {
+                    CoverageRasterizer.SortVector512(values);
+                    Assert.Equal(expected, values);
                 }
             }
         }

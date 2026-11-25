@@ -15,4 +15,15 @@ public sealed class CsvObjectInfoValues<T>
 
     /// <summary>Gets the columns of the type, in declaration order, base types first.</summary>
     public required IReadOnlyList<CsvPropertyInfo> Properties { get; init; }
+
+    /// <summary>Gets the method that sets the members from a record of UTF-16 data, or <see langword="null"/> to set them with <see cref="CsvPropertyInfoValues{TDeclaring, TValue}.Setter"/>.</summary>
+    /// <remarks>
+    /// The source generator writes it, so that the value of each member is converted and set without a virtual call, and its converter can be
+    /// inlined. It is used when the columns of the members it sets are in the order of <see cref="Properties"/>, and there is no
+    /// <see cref="CsvSerializerOptions.DeserializationErrorHandler"/>: the members are then set in the order of the columns, and an error throws.
+    /// </remarks>
+    public CsvMembersReader<T>? MembersReader { get; init; }
+
+    /// <summary>Gets the method that sets the members from a record of UTF-8 data, or <see langword="null"/>. See <see cref="MembersReader"/>.</summary>
+    public Utf8CsvMembersReader<T>? Utf8MembersReader { get; init; }
 }

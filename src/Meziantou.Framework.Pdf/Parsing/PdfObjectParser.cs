@@ -216,19 +216,26 @@ internal sealed class PdfObjectParser
 
         // The length is missing or wrong: the data ends at the "endstream" keyword, without the end of line before it. In a
         // recovered file, the data of the lexer ends at the next object, so that the search does not read the file again for
-        // each damaged object
+        // each damaged object. The data does not run past the endobj keyword of the object: a stream without its endstream
+        // keyword would otherwise end at the keyword of a later stream, such as one an incremental update appends, and its
+        // data would change with the bytes after the object
         var data = span[start..];
         var endstream = data.IndexOf("endstream"u8);
+        var endobj = (endstream >= 0 ? data[..endstream] : data).IndexOf("endobj"u8);
         int dataEnd;
-        if (endstream >= 0)
+        if (endobj >= 0)
+        {
+            dataEnd = start + endobj;
+            Lexer.Position = dataEnd;
+        }
+        else if (endstream >= 0)
         {
             dataEnd = start + endstream;
             Lexer.Position = dataEnd + "endstream".Length;
         }
         else
         {
-            var endobj = data.IndexOf("endobj"u8);
-            dataEnd = endobj >= 0 ? start + endobj : span.Length;
+            dataEnd = span.Length;
             Lexer.Position = dataEnd;
             Lexer.ReachedEnd = true;
         }

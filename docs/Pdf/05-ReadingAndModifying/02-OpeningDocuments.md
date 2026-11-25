@@ -135,6 +135,8 @@ the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is t
   the file defines one generation of it only; when it defines several, the reference is the null object.
 - The bytes of a stream whose length is right, such as an uncompressed embedded PDF document, are not taken for objects
   of the file.
+- The data of a stream whose length is wrong ends at its `endstream` keyword, or at the `endobj` keyword of its object
+  when that comes first: an incremental update appended to the file does not change the data of the streams before it.
 - The objects are not read while the file is repaired, except the object streams, the trailers and the catalogs: the
   others are read when they are first used, as in a file that is not damaged.
 - A damaged compressed stream gives the data before the damage. A stream that cannot be decoded at all throws when its

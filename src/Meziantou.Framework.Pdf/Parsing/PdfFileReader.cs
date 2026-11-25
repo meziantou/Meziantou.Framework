@@ -177,11 +177,23 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
             if (lexer.IsKeyword(token, "stream"u8))
             {
-                var endOfStream = lexer.Span[token.End..].IndexOf("endstream"u8);
-                if (endOfStream < 0)
+                // The data ends at the endobj keyword of the object when it has no endstream keyword, as the parser reads
+                // it: the keyword of a stream of a later revision is not the end of this one
+                var streamData = lexer.Span[token.End..];
+                var endOfStream = streamData.IndexOf("endstream"u8);
+                var endOfObject = (endOfStream >= 0 ? streamData[..endOfStream] : streamData).IndexOf("endobj"u8);
+                if (endOfObject >= 0)
+                {
+                    lexer.Position = token.End + endOfObject;
+                }
+                else if (endOfStream >= 0)
+                {
+                    lexer.Position = token.End + endOfStream + "endstream"u8.Length;
+                }
+                else
+                {
                     return -1;
-
-                lexer.Position = token.End + endOfStream + "endstream"u8.Length;
+                }
             }
             else if (token.Kind == PdfTokenKind.Integer && lexer.IsKeyword(previous, "startxref"u8))
             {

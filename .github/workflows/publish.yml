@@ -5,8 +5,6 @@ on:
   push:
     branches:
       - 'main'
-  # No branch filter: '*' does not match a '/', so it skipped the pull requests whose base is a
-  # branch such as feature/x (stacked pull requests)
   pull_request:
 
 concurrency:

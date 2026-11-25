@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -831,7 +832,9 @@ internal sealed class CsvParser<T> : IDisposable
             events &= events - 1;
             if (((separators >> bit) & 1) != 0)
             {
-                columnEnds[columnTotal++] = offset + bit;
+                // The capacity was ensured for the block: without the bounds check, a separator takes 2 instructions fewer on Arm64
+                Debug.Assert(columnTotal < columnEnds.Length);
+                unsafe { Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(columnEnds), columnTotal++) = offset + bit; }
                 continue;
             }
 
@@ -1056,7 +1059,8 @@ internal sealed class CsvParser<T> : IDisposable
                     // The separator bits are cleared while in a quoted value.
                     if (((separators >> bit) & 1) != 0)
                     {
-                        columnEnds[columnTotal++] = index - rowStart;
+                        Debug.Assert(columnTotal < columnEnds.Length);
+                        unsafe { Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(columnEnds), columnTotal++) = index - rowStart; }
                         continue;
                     }
 

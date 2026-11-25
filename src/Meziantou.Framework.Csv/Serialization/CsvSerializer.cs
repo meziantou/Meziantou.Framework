@@ -301,6 +301,46 @@ public static class CsvSerializer
         return writer.CreateString();
     }
 
+    /// <summary>Writes records as UTF-8 CSV data.</summary>
+    /// <typeparam name="T">The type of the records.</typeparam>
+    /// <param name="values">The records.</param>
+    /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvSerializerOptions.Default"/>.</param>
+    /// <returns>The UTF-8 CSV data, without a byte order mark, with a header row when <see cref="CsvSerializerOptions.HasHeaderRow"/> is <see langword="true"/>.</returns>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs" ref:region="CsvSerializer_SerializeToUtf8Bytes" ref:dedent="true">
+    /// var people = new List&lt;Person&gt;
+    /// {
+    ///     new() { Name = "Alice", Age = 30 },
+    ///     new() { Name = "Bob", Age = 25 },
+    /// };
+    ///
+    /// // The values are written as UTF-8 bytes, without creating a string first
+    /// byte[] utf8Csv = CsvSerializer.SerializeToUtf8Bytes(people);
+    /// Assert.Equal("Name,Age,BirthDate\r\nAlice,30,\r\nBob,25,\r\n"u8.ToArray(), utf8Csv);
+    ///
+    /// var result = CsvSerializer.Deserialize&lt;Person&gt;(utf8Csv);
+    /// Assert.Equal("Bob", result[1].Name);
+    /// </code>
+    /// </example>
+    [RequiresUnreferencedCode(ReflectionMessage)]
+    [RequiresDynamicCode(ReflectionMessage)]
+    public static byte[] SerializeToUtf8Bytes<T>(IEnumerable<T> values, CsvSerializerOptions? options = null) => SerializeToUtf8Bytes(values, GetTypeInfo<T>(options));
+
+    /// <summary>Writes records as UTF-8 CSV data.</summary>
+    /// <typeparam name="T">The type of the records.</typeparam>
+    /// <param name="values">The records.</param>
+    /// <param name="typeInfo">The metadata of <typeparamref name="T"/>.</param>
+    /// <returns>The UTF-8 CSV data, without a byte order mark, with a header row when <see cref="CsvSerializerOptions.HasHeaderRow"/> is <see langword="true"/>.</returns>
+    public static byte[] SerializeToUtf8Bytes<T>(IEnumerable<T> values, CsvTypeInfo<T> typeInfo)
+    {
+        ArgumentNullException.ThrowIfNull(values);
+        ArgumentNullException.ThrowIfNull(typeInfo);
+        // Without a target, the writer keeps the data in its buffers: the array is created from them, without copying the data to another buffer first
+        using var writer = new CsvWriterCore<byte>(typeInfo.Options.WriterOptions, target: null);
+        WriteAll(writer, values, typeInfo);
+        return writer.CreateArray();
+    }
+
     /// <summary>Writes records as UTF-8 CSV data to a <see cref="Stream"/>.</summary>
     /// <typeparam name="T">The type of the records.</typeparam>
     /// <param name="utf8Stream">The stream to write the UTF-8 data to. It is flushed, not disposed.</param>

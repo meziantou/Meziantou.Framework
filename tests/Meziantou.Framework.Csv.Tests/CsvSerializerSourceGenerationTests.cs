@@ -366,6 +366,7 @@ public class CsvSerializerSourceGenerationTests
         var expected = CsvSerializer.Serialize(values, reflectionOptions);
         var actual = CsvSerializer.Serialize(values, typeInfo);
         Assert.Equal(expected, actual);
+        Assert.Equal(CsvSerializer.SerializeToUtf8Bytes(values, reflectionOptions), CsvSerializer.SerializeToUtf8Bytes(values, typeInfo));
 
         var expectedValues = CsvSerializer.Deserialize<T>(expected, reflectionOptions);
         var actualValues = CsvSerializer.Deserialize(actual, typeInfo);

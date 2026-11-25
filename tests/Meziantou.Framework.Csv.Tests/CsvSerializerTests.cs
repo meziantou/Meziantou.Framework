@@ -32,6 +32,25 @@ public class CsvSerializerTests
     }
 
     [Fact]
+    public void SerializeToUtf8Bytes()
+    {
+        #region CsvSerializer_SerializeToUtf8Bytes
+        var people = new List<Person>
+        {
+            new() { Name = "Alice", Age = 30 },
+            new() { Name = "Bob", Age = 25 },
+        };
+
+        // The values are written as UTF-8 bytes, without creating a string first
+        byte[] utf8Csv = CsvSerializer.SerializeToUtf8Bytes(people);
+        Assert.Equal("Name,Age,BirthDate\r\nAlice,30,\r\nBob,25,\r\n"u8.ToArray(), utf8Csv);
+
+        var result = CsvSerializer.Deserialize<Person>(utf8Csv);
+        Assert.Equal("Bob", result[1].Name);
+        #endregion
+    }
+
+    [Fact]
     public async Task Stream()
     {
         #region CsvSerializer_Stream
@@ -160,6 +179,9 @@ public class CsvSerializerTests
         CsvSerializer.Serialize(buffer, people);
         Assert.Equal(Expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
 
+        Assert.Equal(Expected, Encoding.UTF8.GetString(CsvSerializer.SerializeToUtf8Bytes(people)));
+        Assert.Empty(CsvSerializer.SerializeToUtf8Bytes(Array.Empty<Person>(), new CsvSerializerOptions { HasHeaderRow = false }));
+
         using var asyncWriter = new StringWriter();
         await CsvSerializer.SerializeAsync(asyncWriter, people);
         Assert.Equal(Expected, asyncWriter.ToString());
@@ -180,7 +202,7 @@ public class CsvSerializerTests
     [InlineData(100_000)]
     public void SerializeToString_LargeOutput(int count)
     {
-        // The text is kept in chunks of growing sizes: every size must give the same text as the other outputs
+        // The text and the bytes are kept in chunks of growing sizes: every size must give the same data as the other outputs
         var people = Enumerable.Range(0, count).Select(i => new Person { Name = "Person \"" + i.ToString(CultureInfo.InvariantCulture) + "\", " + new string('x', i % 50), Age = i }).ToArray();
         var options = new CsvSerializerOptions { BufferSize = 64 };
 
@@ -190,6 +212,8 @@ public class CsvSerializerTests
 
         Assert.Equal(expected, CsvSerializer.Serialize(people, options));
         Assert.Equal(expected, CsvSerializer.Serialize(people));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), CsvSerializer.SerializeToUtf8Bytes(people, options));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), CsvSerializer.SerializeToUtf8Bytes(people));
         Assert.HasCount(count, CsvSerializer.Deserialize<Person>(expected));
     }
 

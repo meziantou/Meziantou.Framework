@@ -10,8 +10,8 @@ namespace Meziantou.Framework.Csv.Internals;
 
 /// <summary>Writes UTF-16 (<see cref="char"/>) or UTF-8 (<see cref="byte"/>) CSV data into a pooled buffer, and sends the buffer to a target.</summary>
 /// <remarks>
-/// Without a target, a flush keeps the buffer in a list of chunks and continues in a new buffer, twice as large: <see cref="CreateString"/> copies the
-/// chunks once, into the string. Growing a single buffer would copy the data again at each growth.
+/// Without a target, a flush keeps the buffer in a list of chunks and continues in a new buffer, twice as large: <see cref="CreateString"/> and <see cref="CreateArray"/> copy the
+/// chunks once, into the result. Growing a single buffer would copy the data again at each growth.
 /// </remarks>
 internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
     where T : unmanaged, IBinaryInteger<T>
@@ -163,6 +163,27 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             var last = unsafe(MemoryMarshal.Cast<T, char>(writer.Buffer.AsSpan(0, writer._position)));
             last.CopyTo(destination);
         });
+    }
+
+    /// <summary>Creates an array from all the data, for a writer without a target.</summary>
+    public T[] CreateArray()
+    {
+        if (_target is not null)
+            throw new InvalidOperationException();
+
+        var result = new T[checked((int)(_chunksLength + _position))];
+        var destination = result.AsSpan();
+        if (_chunks is not null)
+        {
+            foreach (var (buffer, chunkLength) in _chunks)
+            {
+                buffer.AsSpan(0, chunkLength).CopyTo(destination);
+                destination = destination[chunkLength..];
+            }
+        }
+
+        Buffer.AsSpan(0, _position).CopyTo(destination);
+        return result;
     }
 
     private T[] Buffer

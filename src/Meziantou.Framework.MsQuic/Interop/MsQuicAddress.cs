@@ -14,7 +14,8 @@ internal static class MsQuicAddress
 
     private static readonly bool HasLengthByte = OperatingSystem.IsMacOS() || OperatingSystem.IsIOS() || OperatingSystem.IsTvOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsFreeBSD();
 
-    private static readonly ushort InterNetworkV6 = OperatingSystem.IsWindows() ? (ushort)23 : HasLengthByte ? (ushort)30 : (ushort)10;
+    // AF_INET6: 23 on Windows, 28 on FreeBSD, 30 on the Apple platforms, 10 on Linux
+    private static readonly ushort InterNetworkV6 = OperatingSystem.IsWindows() ? (ushort)23 : OperatingSystem.IsFreeBSD() ? (ushort)28 : HasLengthByte ? (ushort)30 : (ushort)10;
 
     public const ushort Unspecified = 0;
     public const ushort InterNetwork = 2;

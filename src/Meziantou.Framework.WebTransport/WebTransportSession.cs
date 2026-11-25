@@ -43,7 +43,8 @@ public sealed class WebTransportSession : IAsyncDisposable
         _connectStream = connectStream;
         _connectReader = connectReader;
         _ownsConnection = ownsConnection;
-        _datagrams = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(Math.Max(datagramQueueCapacity, 1)) { FullMode = BoundedChannelFullMode.DropOldest, SingleWriter = true });
+        // Two writers: the QUIC datagrams of the connection, and the DATAGRAM capsules of the CONNECT stream
+        _datagrams = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(Math.Max(datagramQueueCapacity, 1)) { FullMode = BoundedChannelFullMode.DropOldest });
         _ = _closed.Task.Exception;
     }
 
@@ -139,7 +140,8 @@ public sealed class WebTransportSession : IAsyncDisposable
             throw new WebTransportException(WebTransportError.ConnectionFailed, "The QUIC connection failed: " + ex.Message, ex);
         }
 
-        var connection = new Http3Connection(quic, onRequest: null);
+        // The server does not open sessions: the value only says that the client supports WebTransport
+        var connection = new Http3Connection(quic, onRequest: null, maxSessions: 1);
         WebTransportSession? session = null;
         try
         {

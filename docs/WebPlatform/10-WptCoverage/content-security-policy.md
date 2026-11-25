@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of content-security-policy, 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 872 | 901 | 0 | 97% |
+| [Stable](#stable-tests) | 874 | 901 | 0 | 97% |
 | [Tentative](#tentative-tests) | 8 | 15 | 0 | 53% |
 | [Reftests](#reftests) | 8 | 8 | 0 | 100% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **888** | **924** | **0** | **96%** |
+| **All** | **890** | **924** | **0** | **96%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 17
+- **NOT IMPLEMENTED**: 15
 - **OUT OF SCOPE**: 7
 
 ## Stable tests
@@ -69,9 +69,9 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`connect-src/connect-src-websocket-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-websocket-allowed.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-websocket-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-websocket-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-websocket-self.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-websocket-self.sub.html) | Pass | 1 / 1 |  |  |
-| [`connect-src/connect-src-webtransport-allowed.sub.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-webtransport-allowed.sub.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the `'webtransport-hashes'` source expression of `connect-src`: a session with `serverCertificateHashes` is checked as any other WebTransport session, so it is allowed by the URL and blocked by `'webtransport-hashes'` alone (1 subtest per file) |
+| [`connect-src/connect-src-webtransport-allowed.sub.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-webtransport-allowed.sub.https.html) | Pass | 3 / 3 |  |  |
 | [`connect-src/connect-src-webtransport-blocked.sub.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-webtransport-blocked.sub.https.html) | Pass | 2 / 2 |  |  |
-| [`connect-src/connect-src-webtransport-hashes.sub.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-webtransport-hashes.sub.https.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the `'webtransport-hashes'` source expression of `connect-src`: a session with `serverCertificateHashes` is checked as any other WebTransport session, so it is allowed by the URL and blocked by `'webtransport-hashes'` alone (1 subtest per file) |
+| [`connect-src/connect-src-webtransport-hashes.sub.https.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-webtransport-hashes.sub.https.html) | Pass | 3 / 3 |  |  |
 | [`connect-src/connect-src-xmlhttprequest-allowed.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-xmlhttprequest-allowed.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-xmlhttprequest-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-xmlhttprequest-blocked.sub.html) | Pass | 1 / 1 |  |  |
 | [`connect-src/connect-src-xmlhttprequest-redirect-to-blocked.sub.html`](https://wpt.fyi/results/content-security-policy/connect-src/connect-src-xmlhttprequest-redirect-to-blocked.sub.html) | Pass | 1 / 1 |  |  |

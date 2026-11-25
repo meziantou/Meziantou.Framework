@@ -771,10 +771,11 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Imaging.InteropTests')
         run: dotnet run eng/imaging/fetch-tests.cs
 
-      # MsQuic ships with .NET on Windows only. The tests of Meziantou.Framework.MsQuic and Meziantou.Framework.WebTransport
-      # skip without it, so it is installed on Linux (Microsoft package repository) and macOS (Homebrew)
+      # MsQuic ships with .NET on Windows only. The tests of Meziantou.Framework.MsQuic and Meziantou.Framework.WebTransport,
+      # and the WebTransport tests of Meziantou.Framework.WebPlatform (a real HTTP/3 server), skip without it, so it is
+      # installed on Linux (Microsoft package repository) and macOS (Homebrew)
       - name: Install libmsquic
-        if: steps.build-project.outputs.has-project == 'true' && !startsWith(matrix.runs-on, 'windows') && (contains(matrix.test-group.projects, 'Meziantou.Framework.MsQuic.') || contains(matrix.test-group.projects, 'Meziantou.Framework.WebTransport.'))
+        if: steps.build-project.outputs.has-project == 'true' && !startsWith(matrix.runs-on, 'windows') && (contains(matrix.test-group.projects, 'Meziantou.Framework.MsQuic.') || contains(matrix.test-group.projects, 'Meziantou.Framework.WebTransport.') || contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.Tests'))
         shell: bash
         run: |
           if [ "$RUNNER_OS" = "macOS" ]; then

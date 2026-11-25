@@ -49,11 +49,11 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 28,132 | 30,158 | 80 | 94% |
+| [Stable](#stable-tests) | 28,134 | 30,158 | 80 | 94% |
 | [Tentative](#tentative-tests) | 1,686 | 3,073 | 174 | 58% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,132 | 2,144 | 2 | 99.5% |
-| **All** | **60,788** | **65,062** | **326** | **94%** |
+| **All** | **60,790** | **65,062** | **326** | **94%** |
 
 ## Failure reasons
 
@@ -61,7 +61,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 150
 - **TEST BUG**: 1,132
-- **NOT IMPLEMENTED**: 2,748
+- **NOT IMPLEMENTED**: 2,746
 - **REQUIRES**: 186
   - `hardware`: 4
   - `layout`: 22
@@ -105,7 +105,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`contacts`](contacts.md) | 0 | 1 | 0 | 0% |
 | [`content-dpr`](content-dpr.md) | 1 | 1 | 0 | 100% |
 | [`content-index`](content-index.md) | 0 | 2 | 0 | 0% |
-| [`content-security-policy`](content-security-policy.md) | 872 | 901 | 0 | 97% |
+| [`content-security-policy`](content-security-policy.md) | 874 | 901 | 0 | 97% |
 | [`contenteditable`](contenteditable.md) | 4 | 4 | 0 | 100% |
 | [`cookies`](cookies.md) | 72 | 76 | 0 | 95% |
 | [`cookiestore`](cookiestore.md) | 55 | 55 | 0 | 100% |
@@ -417,7 +417,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 327 | 330 | 0 | 99% |
 | [`xml`](xml.md) | 12 | 12 | 0 | 100% |
-| **Total (341 sections)** | **28,132** | **30,158** | **80** | **94%** |
+| **Total (341 sections)** | **28,134** | **30,158** | **80** | **94%** |
 
 ## Tentative tests
 

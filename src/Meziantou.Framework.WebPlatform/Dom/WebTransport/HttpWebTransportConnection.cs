@@ -6,6 +6,10 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>A session of <c>Meziantou.Framework.WebTransport</c>, returned by <see cref="HttpDocumentLoader.ConnectWebTransportAsync"/>.</summary>
 internal sealed class HttpWebTransportConnection(WebTransportSession session) : WebTransportConnection
 {
+    // The payload of the datagrams, which the statistics of the QUIC connection do not separate from its overhead
+    private long _datagramBytesSent;
+    private long _datagramBytesReceived;
+
     private readonly Lazy<Task<WebTransportConnectionCloseInfo>> _closed = new(async () =>
     {
         var info = await session.Closed.ConfigureAwait(false);
@@ -44,23 +48,34 @@ internal sealed class HttpWebTransportConnection(WebTransportSession session) : 
     }
 
     public override async ValueTask SendDatagramAsync(ReadOnlyMemory<byte> datagram, CancellationToken cancellationToken)
-        => await session.SendDatagramAsync(datagram, cancellationToken).ConfigureAwait(false);
+    {
+        await session.SendDatagramAsync(datagram, cancellationToken).ConfigureAwait(false);
+        Interlocked.Add(ref _datagramBytesSent, datagram.Length);
+    }
 
-    public override ValueTask<ReadOnlyMemory<byte>> ReceiveDatagramAsync(CancellationToken cancellationToken) => session.ReceiveDatagramAsync(cancellationToken);
+    public override async ValueTask<ReadOnlyMemory<byte>> ReceiveDatagramAsync(CancellationToken cancellationToken)
+    {
+        var datagram = await session.ReceiveDatagramAsync(cancellationToken).ConfigureAwait(false);
+        Interlocked.Add(ref _datagramBytesReceived, datagram.Length);
+        return datagram;
+    }
 
     public override ValueTask CloseAsync(uint closeCode, string reason) => session.CloseAsync(closeCode, reason);
 
     public override ValueTask<WebTransportConnectionStatistics> GetStatisticsAsync(CancellationToken cancellationToken)
     {
+        // The payload is the data of the streams and of the datagrams; the overhead is the rest of the UDP payload. MsQuic
+        // does not count the acknowledged bytes (its stream byte counter grows when a frame is built, before an ACK): the
+        // member is absent.
         var statistics = session.GetConnectionStatistics();
+        var payloadSent = statistics.StreamBytesSent + Interlocked.Read(ref _datagramBytesSent);
         return ValueTask.FromResult(new WebTransportConnectionStatistics
         {
-            BytesSent = statistics.StreamBytesSent,
-            BytesSentOverhead = Math.Max(0, statistics.BytesSent - statistics.StreamBytesSent),
-            BytesAcknowledged = statistics.StreamBytesSent,
+            BytesSent = payloadSent,
+            BytesSentOverhead = Math.Max(0, statistics.BytesSent - payloadSent),
             PacketsSent = statistics.PacketsSent,
             PacketsLost = statistics.PacketsLost,
-            BytesReceived = statistics.StreamBytesReceived,
+            BytesReceived = statistics.StreamBytesReceived + Interlocked.Read(ref _datagramBytesReceived),
             PacketsReceived = statistics.PacketsReceived,
             SmoothedRtt = statistics.SmoothedRoundTripTime,
             RttVariation = statistics.RoundTripTimeVariation,

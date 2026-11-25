@@ -157,6 +157,11 @@ public sealed class Http3ProtocolTests
         Assert.Equal("\"a\", \"b c\", \"quote\\\"backslash\\\\\"", serialized);
         Assert.Equal(["a", "b c", "quote\"backslash\\"], StructuredFieldStrings.ParseList(serialized));
         Assert.Equal("proto", StructuredFieldStrings.ParseItem(" \"proto\";param=1 "));
+
+        // A comma or an escaped quote inside a quoted parameter value does not end the member
+        Assert.Equal(["echo", "other"], StructuredFieldStrings.ParseList("\"echo\";label=\"a,b\", \"other\""));
+        Assert.Equal(["echo", "other"], StructuredFieldStrings.ParseList("\"echo\";label=\"a\\\",b\";x=1, \"other\""));
+        Assert.Equal("echo", StructuredFieldStrings.ParseItem("\"echo\";label=\"a,b\""));
         Assert.Null(StructuredFieldStrings.ParseItem("token"));
         Assert.Null(StructuredFieldStrings.ParseList("\"a\","));
         Assert.Empty(StructuredFieldStrings.ParseList("")!);
@@ -182,17 +187,23 @@ public sealed class Http3ProtocolTests
     [Fact]
     public void Settings_Parse()
     {
-        var settings = Http3Settings.EncodeLocalSettings(1000);
+        var settings = Http3Settings.EncodeLocalSettings(1000, maxSessions: 10);
         Assert.True(VariableLengthInteger.TryRead(settings, out var type, out var typeLength));
         Assert.Equal(Http3FrameType.Settings, type);
         Assert.True(VariableLengthInteger.TryRead(settings.AsSpan(typeLength), out var length, out var lengthLength));
         var parsed = Http3Settings.Parse(settings.AsSpan(typeLength + lengthLength, (int)length));
         Assert.True(parsed.SupportsWebTransport);
         Assert.Equal(1000, parsed.Get(Http3SettingsIdentifier.MaxFieldSectionSize));
+        Assert.Equal(10, parsed.Get(Http3SettingsIdentifier.WebTransportMaxSessionsDraft07));
+        Assert.Null(parsed.Get(Http3SettingsIdentifier.WebTransportMaxSessions));
 
         // Duplicate and reserved settings
         Assert.Throws<Http3ProtocolException>(() => Http3Settings.Parse([0x06, 0x01, 0x06, 0x02]));
         Assert.Throws<Http3ProtocolException>(() => Http3Settings.Parse([0x02, 0x01]));
+
+        // Boolean settings other than 0 or 1
+        Assert.Equal(Http3ErrorCode.SettingsError, Assert.Throws<Http3ProtocolException>(() => Http3Settings.Parse([0x33, 0x02])).ErrorCode);
+        Assert.Equal(Http3ErrorCode.SettingsError, Assert.Throws<Http3ProtocolException>(() => Http3Settings.Parse([0x08, 0x02])).ErrorCode);
         Assert.False(Http3Settings.Parse([]).SupportsWebTransport);
     }
 }

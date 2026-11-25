@@ -190,6 +190,28 @@ public sealed class WebTransportTests : IDisposable
     }
 
     [Fact]
+    public async Task WebTransport_HashesWithUnsupportedAlgorithmsOnlyNeverMatch()
+    {
+        // The list is not empty, so a certificate must match one of its hashes: the PKI is not used instead
+        var loader = new StubLoader();
+        var context = CreateContext(loader);
+        var document = Load(context, """
+            <script>
+              const wt = new WebTransport('https://example.com:4433/session', {
+                serverCertificateHashes: [{ algorithm: 'sha-384', value: new Uint8Array(48) }],
+              });
+              wt.ready.catch(e => {
+                document.title = e.constructor.name + ':' + e.source;
+              });
+            </script>
+            """, "https://example.com/page");
+
+        await WaitForTitleAsync(document);
+        Assert.Equal("WebTransportError:session", document.Title);
+        Assert.Empty(loader.Requests);
+    }
+
+    [Fact]
     public void WebTransport_ValidatesTheArguments()
     {
         var context = CreateContext(new StubLoader());

@@ -26,6 +26,10 @@ internal sealed class Http3Settings
             if (!settings._values.TryAdd(identifier, value))
                 throw new Http3ProtocolException(Http3ErrorCode.SettingsError, $"The setting 0x{identifier:X} is duplicated.");
 
+            // The Boolean settings are 0 or 1 (RFC 9220, section 3; RFC 9297, section 2.1.1)
+            if (identifier is Http3SettingsIdentifier.EnableConnectProtocol or Http3SettingsIdentifier.H3Datagram && value > 1)
+                throw new Http3ProtocolException(Http3ErrorCode.SettingsError, $"The value {value} of the Boolean setting 0x{identifier:X} is not 0 or 1.");
+
             payload = payload[(identifierLength + valueLength)..];
         }
 
@@ -33,8 +37,10 @@ internal sealed class Http3Settings
     }
 
     // The settings of this endpoint: no dynamic table, extended CONNECT, HTTP datagrams and WebTransport with the
-    // identifiers of the successive drafts that browsers and servers use
-    public static byte[] EncodeLocalSettings(int maxFieldSectionSize)
+    // identifiers of the drafts whose features are implemented. SETTINGS_WT_MAX_SESSIONS (draft 09 and later) is not sent:
+    // it enables the flow control of the sessions (WT_MAX_DATA, WT_MAX_STREAMS...), which is not implemented, and whose
+    // initial limits would be 0. maxSessions is the number of sessions the peer can open on the connection.
+    public static byte[] EncodeLocalSettings(int maxFieldSectionSize, int maxSessions)
     {
         var payload = new List<byte>();
         void Add(long identifier, long value)
@@ -48,8 +54,7 @@ internal sealed class Http3Settings
         Add(Http3SettingsIdentifier.H3Datagram, 1);
         Add(Http3SettingsIdentifier.H3DatagramDraft04, 1);
         Add(Http3SettingsIdentifier.EnableWebTransport, 1);
-        Add(Http3SettingsIdentifier.WebTransportMaxSessionsDraft07, 1);
-        Add(Http3SettingsIdentifier.WebTransportMaxSessions, 1);
+        Add(Http3SettingsIdentifier.WebTransportMaxSessionsDraft07, maxSessions);
         return Http3FrameReader.EncodeFrame(Http3FrameType.Settings, [.. payload]);
     }
 }

@@ -46,8 +46,11 @@ internal sealed class WebTransportHostSession
     /// <summary>
     /// Starts to establish a session (https://w3c.github.io/webtransport/#initialize-webtransport-over-http): the request is
     /// blocked by the content security policies (connect-src) or as mixed content, else it is given to the loader.
+    /// <paramref name="usesCertificateHashes"/> is true when the page gave a non-empty <c>serverCertificateHashes</c>, even
+    /// when none of its algorithms is supported (<see cref="WebTransportConnectionRequest.ServerCertificateHashes"/> has the
+    /// SHA-256 hashes only).
     /// </summary>
-    public static WebTransportHostSession Connect(GlobalScope global, WebTransportConnectionRequest request, IWebTransportSessionEvents events)
+    public static WebTransportHostSession Connect(GlobalScope global, WebTransportConnectionRequest request, bool usesCertificateHashes, IWebTransportSessionEvents events)
     {
         var session = new WebTransportHostSession(global, events);
         var client = global.EnvironmentDocument;
@@ -57,9 +60,12 @@ internal sealed class WebTransportHostSession
             Origin = client.SerializeOrigin(),
             Destination = RequestDestination.Empty,
             RedirectMode = FetchRedirectMode.Error,
+            UsesWebTransportCertificateHashes = usesCertificateHashes,
         };
 
-        if (Fetching.IsBlocked(fetchRequest) || client.EnvironmentOptions?.DocumentLoader is not { } loader)
+        // https://w3c.github.io/webtransport/#verify-a-certificate-hash: no certificate matches a list of hashes whose
+        // algorithms are all unsupported, so the session fails; the PKI is not used instead
+        if (Fetching.IsBlocked(fetchRequest) || (usesCertificateHashes && request.ServerCertificateHashes.Count == 0) || client.EnvironmentOptions?.DocumentLoader is not { } loader)
         {
             session._state = SessionState.Ended;
             session.QueueTask(() => events.Failed("The WebTransport session is blocked"));
@@ -86,8 +92,14 @@ internal sealed class WebTransportHostSession
         return session;
     }
 
-    /// <summary>The context cleanup steps (https://w3c.github.io/webtransport/#webtransport-context-cleanup-steps): the sessions of an unloaded document or of an ended worker are closed.</summary>
-    public static void MakeDisappear(GlobalScope global)
+    /// <summary>
+    /// The context cleanup steps (https://w3c.github.io/webtransport/#webtransport-context-cleanup-steps): the sessions of
+    /// an unloaded document or of an ended worker are closed. When <paramref name="cleanUpScriptObjects"/> is true (a
+    /// document, whose objects other windows of its origin can still use), the <c>WebTransport</c> objects are cleaned up at
+    /// once (their promises are settled and their streams errored), as no task of the global object runs afterwards. The
+    /// script of an ended worker cannot run anymore, and no other global object sees its objects.
+    /// </summary>
+    public static void MakeDisappear(GlobalScope global, bool cleanUpScriptObjects)
     {
         if (!ActiveSessions.TryGetValue(global, out var sessions))
             return;
@@ -95,6 +107,10 @@ internal sealed class WebTransportHostSession
         foreach (var session in sessions.ToArray())
         {
             session.Close(0, "");
+            if (cleanUpScriptObjects)
+            {
+                session._events.Failed("The WebTransport session was closed: its document was unloaded");
+            }
         }
     }
 

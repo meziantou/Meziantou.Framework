@@ -3774,7 +3774,7 @@ public sealed partial class BrowsingContext : IDisposable
             WebLocks.OnEnvironmentDiscarded(oldWindow);
             oldWindow.ReleaseFileSystemResources();
             WebSocket.MakeDisappear(oldWindow);
-            WebTransportHostSession.MakeDisappear(oldWindow);
+            WebTransportHostSession.MakeDisappear(oldWindow, cleanUpScriptObjects: true);
             EventSource.ForciblyClose(oldWindow);
             IdbFactory.CloseConnections(oldWindow);
         }
@@ -3915,7 +3915,10 @@ public sealed partial class BrowsingContext : IDisposable
         {
             BroadcastChannel.RemoveChannels(documentWindow);
             WebSocket.MakeDisappear(documentWindow);
-            WebTransportHostSession.MakeDisappear(documentWindow);
+
+            // The unloading of the document cleaned up the WebTransport objects; a document destroyed without being
+            // unloaded (its browsing context is disposed) may not run scripts anymore
+            WebTransportHostSession.MakeDisappear(documentWindow, cleanUpScriptObjects: false);
             EventSource.ForciblyClose(documentWindow);
             IdbFactory.CloseConnections(documentWindow);
         }

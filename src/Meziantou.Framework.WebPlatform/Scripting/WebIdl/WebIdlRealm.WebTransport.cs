@@ -138,9 +138,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         }
 
         var hashes = new List<ReadOnlyMemory<byte>>();
+        var usesCertificateHashes = false;
         foreach (var hash in ToSequence(Member("serverCertificateHashes"), static (realm, value) => (Algorithm: realm.Adapter.ToString(realm.Adapter.Get(value, realm.Key("algorithm"))), Value: realm.ToBufferSource(realm.Adapter.Get(value, realm.Key("value")), BufferSourceKinds, allowShared: false, "BufferSource").Bytes.ToArray())))
         {
-            // https://w3c.github.io/webtransport/#verify-a-certificate-hash: only the SHA-256 hashes are used
+            // https://w3c.github.io/webtransport/#verify-a-certificate-hash: only the SHA-256 hashes are used, but a list
+            // without any still requires a match
+            usesCertificateHashes = true;
             if (string.Equals(hash.Algorithm, "sha-256", StringComparison.OrdinalIgnoreCase))
             {
                 hashes.Add(hash.Value);
@@ -161,7 +164,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         };
 
         var sessionEvents = new WebTransportSessionEvents(this, events);
-        var session = WebTransportHostSession.Connect(GlobalScope, request, sessionEvents);
+        var session = WebTransportHostSession.Connect(GlobalScope, request, usesCertificateHashes, sessionEvents);
         var handle = CreateWebTransportSessionHandle(session);
         sessionEvents.Handle = handle;
         return handle;
@@ -216,7 +219,11 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         var result = CreateObject();
         SetMember(result, "bytesSent", adapter.FromNumber(statistics.BytesSent));
         SetMember(result, "bytesSentOverhead", adapter.FromNumber(statistics.BytesSentOverhead));
-        SetMember(result, "bytesAcknowledged", adapter.FromNumber(statistics.BytesAcknowledged));
+        if (statistics.BytesAcknowledged is { } bytesAcknowledged)
+        {
+            SetMember(result, "bytesAcknowledged", adapter.FromNumber(bytesAcknowledged));
+        }
+
         SetMember(result, "packetsSent", adapter.FromNumber(statistics.PacketsSent));
         SetMember(result, "bytesLost", adapter.FromNumber(statistics.BytesLost));
         SetMember(result, "packetsLost", adapter.FromNumber(statistics.PacketsLost));

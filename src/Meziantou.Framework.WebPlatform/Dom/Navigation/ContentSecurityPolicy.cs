@@ -105,7 +105,7 @@ internal sealed partial class ContentSecurityPolicy
         if ((request.PolicyClient ?? request.Client) is not { ContentSecurityPoliciesOrNull: { } policies } client)
             return;
 
-        ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Report, request.IsPrefetch, request.ScriptLocation);
+        ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Report, request.IsPrefetch, request.ScriptLocation, request.UsesWebTransportCertificateHashes);
     }
 
     /// <summary>
@@ -120,7 +120,7 @@ internal sealed partial class ContentSecurityPolicy
         if ((request.PolicyClient ?? request.Client) is not { ContentSecurityPoliciesOrNull: { } policies } client)
             return false;
 
-        return ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Enforce, request.IsPrefetch, request.ScriptLocation);
+        return ShouldBlockRequest(policies, client.ContentSecurityPolicySelfOrigin, request.CurrentUrl, request.Destination, request.Initiator, request.ParserInserted, request.RedirectCount, request.Nonce, client, request.Url, SecurityPolicyViolationEventDisposition.Enforce, request.IsPrefetch, request.ScriptLocation, request.UsesWebTransportCertificateHashes);
     }
 
     /// <summary>
@@ -153,8 +153,9 @@ internal sealed partial class ContentSecurityPolicy
     /// a policy that has a <c>default-src</c> directive when no fetch directive of the policy allows its URL
     /// (https://w3c.github.io/webappsec-csp/#does-resource-hint-violate-policy). <paramref name="scriptLocation"/> is the
     /// location of the script that started the request, used when no script is running (see <see cref="FetchRequest.ScriptLocation"/>).
+    /// <paramref name="webTransportCertificateHashes"/> is <see cref="FetchRequest.UsesWebTransportCertificateHashes"/>.
     /// </summary>
-    private static bool ShouldBlockRequest(IReadOnlyList<ContentSecurityPolicy>? policies, OriginRecord selfOrigin, UrlRecord url, RequestDestination destination, Element? initiator, bool parserInserted, int redirectCount, string? nonce, Document? reportingClient, UrlRecord resource, SecurityPolicyViolationEventDisposition? disposition = null, bool resourceHint = false, Scripting.ScriptLocation? scriptLocation = null)
+    private static bool ShouldBlockRequest(IReadOnlyList<ContentSecurityPolicy>? policies, OriginRecord selfOrigin, UrlRecord url, RequestDestination destination, Element? initiator, bool parserInserted, int redirectCount, string? nonce, Document? reportingClient, UrlRecord resource, SecurityPolicyViolationEventDisposition? disposition = null, bool resourceHint = false, Scripting.ScriptLocation? scriptLocation = null, bool webTransportCertificateHashes = false)
     {
         if (policies is not { Count: > 0 } || GetEffectiveDirective(destination) is not { } effectiveDirective)
             return false;
@@ -192,7 +193,7 @@ internal sealed partial class ContentSecurityPolicy
 
                 nonce ??= initiator is null ? "" : GetNonceMetadata(initiator);
                 integrity ??= initiator is HtmlScriptElement or HtmlLinkElement ? initiator.GetAttributeValue("integrity") ?? "" : "";
-                if (IsBlocked(effectiveDirective, sourceList, url, destination, nonce, integrity, parserInserted, selfOrigin, redirectCount))
+                if (webTransportCertificateHashes && effectiveDirective == "connect-src" ? !AllowsWebTransportCertificateHashes(sourceList) : IsBlocked(effectiveDirective, sourceList, url, destination, nonce, integrity, parserInserted, selfOrigin, redirectCount))
                 {
                     // https://w3c.github.io/webappsec-csp/#create-violation-for-request
                     if (reportingClient is not null)
@@ -705,6 +706,14 @@ internal sealed partial class ContentSecurityPolicy
         "frame-src" => ["frame-src", "child-src", "default-src"],
         _ => [],
     };
+
+    /// <summary>
+    /// A WebTransport session whose server certificate is verified by its hashes is allowed by the
+    /// <c>'unsafe-webtransport-hashes'</c> keyword of the source list only, whatever its URL
+    /// (https://w3c.github.io/webappsec-csp/#match-request-to-source-list): the certificate is not verified by the PKI.
+    /// </summary>
+    private static bool AllowsWebTransportCertificateHashes(List<string> sourceList)
+        => sourceList.Exists(expression => InfraAscii.EqualsIgnoreAsciiCase(expression, "'unsafe-webtransport-hashes'"));
 
     /// <summary>The pre-request check of the effective directive, with the value of the directive that executes.</summary>
     private static bool IsBlocked(string effectiveDirective, List<string> sourceList, UrlRecord url, RequestDestination destination, string nonce, string integrity, bool parserInserted, OriginRecord selfOrigin, int redirectCount)

@@ -22,6 +22,11 @@ internal static class MsQuicCertificateValidation
         else
         {
             chain.ChainPolicy.RevocationMode = options.CertificateRevocationCheckMode;
+        }
+
+        // As SslStream does, a custom policy without application policies still requires the server authentication usage
+        if (chain.ChainPolicy.ApplicationPolicy.Count == 0)
+        {
             chain.ChainPolicy.ApplicationPolicy.Add(new Oid(ServerAuthenticationOid));
         }
 

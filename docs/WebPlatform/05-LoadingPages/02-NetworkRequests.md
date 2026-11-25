@@ -475,5 +475,10 @@ The `WebTransport` sessions of the scripts of the secure contexts are establishe
 - A custom loader gets a [WebTransportConnectionRequest](cref:Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionRequest): the URL, the headers (the `origin` header
   first), the protocols, the SHA-256 hashes of the `serverCertificateHashes` option and the congestion control. It returns
   a [WebTransportConnection](cref:Meziantou.Framework.WebPlatform.Dom.WebTransportConnection) (an in-memory session, for instance), or null to reject the session.
+- A session with `serverCertificateHashes` is allowed by the `'unsafe-webtransport-hashes'` keyword of `connect-src` only,
+  whatever its URL. A list whose hashes all use an unsupported algorithm fails the session without calling the loader:
+  the certificate must match one of the hashes.
+- The statistics of `getStats()` count the payload of the streams and the datagrams. `bytesAcknowledged` is absent when
+  the connection does not know it (MsQuic does not report it).
 - The sessions of a document are closed when the document is unloaded, and the sessions of a worker when the worker ends.
 - `exportKeyingMaterial()` is not supported.

@@ -12,4 +12,5 @@ description: What the MsQuic and WebTransport packages do not do.
   and the other requests get a 501 response.
 - A client session has its own QUIC connection: sessions are not pooled.
 - The flow control of WebTransport (the `WT_MAX_DATA` and `WT_MAX_STREAMS` capsules of draft 09 and later) is not
-  implemented: QUIC flow control applies.
+  implemented: QUIC flow control applies. So the endpoints do not send `SETTINGS_WT_MAX_SESSIONS`, which enables it, and
+  use `SETTINGS_WEBTRANSPORT_MAX_SESSIONS` and `SETTINGS_ENABLE_WEBTRANSPORT` of the earlier drafts.

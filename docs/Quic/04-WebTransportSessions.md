@@ -29,7 +29,9 @@ headers and the protocols the client offers. Accept it with
 [AcceptAsync](cref:Meziantou.Framework.WebTransport.WebTransportSessionRequest.AcceptAsync), with the protocol you pick
 and response headers, or reject it with
 [RejectAsync](cref:Meziantou.Framework.WebTransport.WebTransportSessionRequest.RejectAsync) and a status code. A
-connection can carry several sessions.
+connection can carry several sessions: the listener advertises
+[MaxIncomingStreams](cref:Meziantou.Framework.WebTransport.WebTransportListenerOptions.MaxIncomingStreams) as its maximum
+number of sessions (`SETTINGS_WEBTRANSPORT_MAX_SESSIONS`), since each session is a request stream.
 
 ## Streams and datagrams
 

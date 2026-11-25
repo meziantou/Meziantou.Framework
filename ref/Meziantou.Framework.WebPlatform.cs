@@ -18224,7 +18224,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
 
     public sealed class WebTransportConnectionStatistics : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics>
     {
-        public long BytesAcknowledged { get => throw null; init { } }
+        public long? BytesAcknowledged { get => throw null; init { } }
         public long BytesLost { get => throw null; init { } }
         public long BytesReceived { get => throw null; init { } }
         public long BytesSent { get => throw null; init { } }

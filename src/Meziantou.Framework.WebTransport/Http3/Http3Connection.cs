@@ -25,12 +25,15 @@ internal sealed class Http3Connection : IAsyncDisposable
     private int _hasPeerControlStream;
     private MsQuicStream? _controlStream;
     private Exception? _closeException;
+    private readonly int _maxSessions;
     private int _disposed;
 
-    public Http3Connection(MsQuicConnection connection, Action<Http3Connection, MsQuicStream, Http3FrameReader, List<QPackField>>? onRequest)
+    // maxSessions is the number of sessions the peer can open on the connection (SETTINGS_WEBTRANSPORT_MAX_SESSIONS)
+    public Http3Connection(MsQuicConnection connection, Action<Http3Connection, MsQuicStream, Http3FrameReader, List<QPackField>>? onRequest, int maxSessions)
     {
         Quic = connection;
         _onRequest = onRequest;
+        _maxSessions = maxSessions;
     }
 
     public MsQuicConnection Quic { get; }
@@ -44,7 +47,7 @@ internal sealed class Http3Connection : IAsyncDisposable
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         _controlStream = await Quic.OpenOutboundStreamAsync(MsQuicStreamType.Unidirectional, cancellationToken).ConfigureAwait(false);
-        var settings = Http3Settings.EncodeLocalSettings(MaxFieldSectionSize);
+        var settings = Http3Settings.EncodeLocalSettings(MaxFieldSectionSize, _maxSessions);
         var buffer = new byte[1 + settings.Length];
         buffer[0] = (byte)Http3StreamType.Control;
         settings.CopyTo(buffer, 1);

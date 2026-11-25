@@ -9,8 +9,8 @@ public sealed record WebTransportConnectionStatistics
     /// <summary>Gets the number of bytes of the protocol overhead sent.</summary>
     public long BytesSentOverhead { get; init; }
 
-    /// <summary>Gets the number of bytes sent and acknowledged by the server.</summary>
-    public long BytesAcknowledged { get; init; }
+    /// <summary>Gets the number of bytes sent and acknowledged by the server, or null when the connection does not know it (the member is then absent from the statistics of the script).</summary>
+    public long? BytesAcknowledged { get; init; }
 
     /// <summary>Gets the number of packets sent.</summary>
     public long PacketsSent { get; init; }

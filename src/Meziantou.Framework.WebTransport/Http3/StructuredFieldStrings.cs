@@ -109,12 +109,22 @@ internal static class StructuredFieldStrings
 
     private static void SkipParameters(string value, ref int position)
     {
-        // ;key=value parameters: skipped up to the next list separator
+        // ;key=value parameters: skipped up to the next list separator. A comma inside a quoted string value is not a
+        // separator, nor an escaped quote the end of the string.
         while (position < value.Length && value[position] == ';')
         {
-            while (position < value.Length && value[position] is not ',')
+            var inString = false;
+            while (position < value.Length && (inString || value[position] is not ','))
             {
-                position++;
+                var c = value[position++];
+                if (inString && c == '\\' && position < value.Length)
+                {
+                    position++;
+                }
+                else if (c == '"')
+                {
+                    inString = !inString;
+                }
             }
         }
     }

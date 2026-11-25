@@ -98,7 +98,8 @@ public sealed class WebTransportListener : IAsyncDisposable
 
     private async Task StartConnectionAsync(MsQuicConnection quic)
     {
-        var connection = new Http3Connection(quic, OnRequest);
+        // Each session is a request stream: the limit of the bidirectional streams bounds the sessions of a connection
+        var connection = new Http3Connection(quic, OnRequest, _options.MaxIncomingStreams);
         lock (_lock)
         {
             if (_disposed != 0)

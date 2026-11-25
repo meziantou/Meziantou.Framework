@@ -768,6 +768,7 @@
   </Folder>
   <Folder Name="/fuzz/">
     <Project Path="fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Assertions.Fuzz/Meziantou.Framework.Assertions.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />

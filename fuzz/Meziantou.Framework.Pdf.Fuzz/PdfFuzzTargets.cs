@@ -139,9 +139,10 @@ public static class PdfFuzzTargets
         FuzzAssert.True(PdfFormData.ParseFdf(fromFdf.ToFdf()).ToFdf().AsSpan().SequenceEqual(fromFdf.ToFdf()), "The FDF written is not a fixed point");
         FuzzAssert.Equal(formData.SourceFile is null, fromFdf.SourceFile is null, "The FDF written lost the source file");
 
-        var xfdf = formData.ToXfdf();
-        var fromXfdf = PdfFormData.ParseXfdf(xfdf);
-        FuzzAssert.Equal(xfdf, fromXfdf.ToXfdf(), "The XFDF written is not a fixed point");
+        // (as in FDF, a field without values is written, but not read back: the XFDF written from the data read back is a fixed point)
+        var fromXfdf = PdfFormData.ParseXfdf(formData.ToXfdf());
+        var xfdf = fromXfdf.ToXfdf();
+        FuzzAssert.Equal(xfdf, PdfFormData.ParseXfdf(xfdf).ToXfdf(), "The XFDF written is not a fixed point");
         var names = new HashSet<string>(fromXfdf.Fields.Select(field => field.Name), StringComparer.Ordinal);
         foreach (var field in fromFdf.Fields)
         {

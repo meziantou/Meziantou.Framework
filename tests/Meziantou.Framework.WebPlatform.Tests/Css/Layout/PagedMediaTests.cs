@@ -505,6 +505,25 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Theory]
+    [InlineData(400)]
+    [InlineData(200)]
+    public void Pages_EmptyColumnsBeforeAColumnSpannerWithoutBlockSizeAreInThePageOfTheSpanner(int firstPageWidth)
+    {
+        // The columns between two column spanners have no content with a block size and the second spanner has no block size:
+        // they end the first page with it, before the content that does not fit there (also when it continues on a page of
+        // another inline size)
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: {{firstPageWidth}}px 300px }</style>
+            <div style='columns: 2'><div style='column-span: all; height: 201px'></div><div id=e></div><div id=s style='column-span: all'></div><div id=a style='height: 100px; break-inside: avoid'></div><div style='height: 100px; break-inside: avoid'></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([0], GetPageRects(pages, document.GetElementById("e")!).Select(rect => rect.Page));
+        Assert.Equal([0], GetPageRects(pages, document.GetElementById("s")!).Select(rect => rect.Page));
+        Assert.Equal([1], GetPageRects(pages, document.GetElementById("a")!).Select(rect => rect.Page));
+    }
+
+    [Theory]
     [InlineData("<table style='width: 100%; border-spacing: 0'>", "<tr id={0} style='height: 100px'><td></td></tr>", "</table>")]
     [InlineData("<div style='display: flex; flex-direction: column'>", "<div id={0} style='height: 100px'></div>", "</div>")]
     [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 100px'>", "<div id={0}></div><div></div>", "</div>")]

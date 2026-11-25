@@ -41,7 +41,7 @@ internal static class DngTagReader
                 TiffFieldType.SByte => (sbyte)span[i],
                 TiffFieldType.Short => header.ReadUInt16(span[(i * 2)..]),
                 TiffFieldType.SShort => (short)header.ReadUInt16(span[(i * 2)..]),
-                TiffFieldType.Long => header.ReadUInt32(span[(i * 4)..]),
+                TiffFieldType.Long or TiffFieldType.Ifd => header.ReadUInt32(span[(i * 4)..]),
                 TiffFieldType.SLong => (int)header.ReadUInt32(span[(i * 4)..]),
                 TiffFieldType.Rational => ReadRational(header.ReadUInt32(span[(i * 8)..]), header.ReadUInt32(span[((i * 8) + 4)..]), name),
                 TiffFieldType.SRational => ReadRational((int)header.ReadUInt32(span[(i * 8)..]), (int)header.ReadUInt32(span[((i * 8) + 4)..]), name),

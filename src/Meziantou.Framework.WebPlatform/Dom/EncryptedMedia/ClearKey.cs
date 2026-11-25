@@ -354,7 +354,10 @@ internal static class ClearKey
     {
         try
         {
-            document = JsonDocument.Parse(json.ToArray(), new JsonDocumentOptions { MaxDepth = MaxJsonDepth });
+            // https://infra.spec.whatwg.org/#parse-json-bytes-to-a-javascript-value: the bytes are UTF-8 decoded (the invalid
+            // sequences are replaced, the byte order mark is removed); the JSON reader would only reject them in the strings it reads
+            var text = System.Text.Encoding.UTF8.GetString(json);
+            document = JsonDocument.Parse(text is [(char)0xFEFF, ..] ? text.AsMemory(1) : text.AsMemory(), new JsonDocumentOptions { MaxDepth = MaxJsonDepth });
         }
         catch (JsonException)
         {

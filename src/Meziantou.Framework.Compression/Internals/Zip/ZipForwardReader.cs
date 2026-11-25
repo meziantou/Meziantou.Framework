@@ -14,6 +14,7 @@ internal sealed class ZipForwardReader : ArchiveReader
     private const uint SplitMarkerSignature = 0x08074B50;
     private const uint TemporarySplitMarkerSignature = 0x30304B50;
     private const uint EndOfCentralDirectorySignature = 0x06054B50;
+    private const uint Zip64EndOfCentralDirectorySignature = 0x06064B50;
 
     private readonly Stream _source;
     private readonly bool _ownsSource;
@@ -55,7 +56,7 @@ internal sealed class ZipForwardReader : ArchiveReader
         {
             signature = ReadSignature(buffer);
         }
-        else if (!_started && signature is not (ZipEntryInfo.LocalHeaderSignature or EndOfCentralDirectorySignature))
+        else if (!_started && signature is not (ZipEntryInfo.LocalHeaderSignature or EndOfCentralDirectorySignature or Zip64EndOfCentralDirectorySignature))
         {
             // Data prepended to the archive (the stub of a self-extracting archive): the archive starts at the first header
             _input.Unread(buffer);
@@ -68,7 +69,7 @@ internal sealed class ZipForwardReader : ArchiveReader
             ZipEntryInfo.LocalHeaderSignature => ReadLocalHeader(),
 
             // The central directory, the end of central directory records, a digital signature, or the archive extra data record of an encrypted central directory
-            ZipEntryInfo.CentralHeaderSignature or EndOfCentralDirectorySignature or 0x06064B50 or 0x05054B50 or 0x08064B50 => null,
+            ZipEntryInfo.CentralHeaderSignature or EndOfCentralDirectorySignature or Zip64EndOfCentralDirectorySignature or 0x05054B50 or 0x08064B50 => null,
             _ => throw new InvalidDataException("The stream is not a zip archive, or the archive is corrupted: a local header is expected."),
         };
     }

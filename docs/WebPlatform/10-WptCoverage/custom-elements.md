@@ -144,7 +144,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reactions/customized-builtins/HTMLEmbedElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLEmbedElement.html) | Pass | 8 / 8 |  |  |
 | [`reactions/customized-builtins/HTMLFieldSetElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLFieldSetElement.html) | Pass | 4 / 4 |  |  |
 | [`reactions/customized-builtins/HTMLImageElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLImageElement.html) | Pass | 22 / 22 |  |  |
-| [`reactions/customized-builtins/HTMLInputElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLInputElement.html) | Pass | 1 / 1 |  |  |
+| [`reactions/customized-builtins/HTMLInputElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLInputElement.html) | Pass | 4 / 4 |  |  |
 | [`reactions/customized-builtins/HTMLLIElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLLIElement.html) | Pass | 6 / 6 |  |  |
 | [`reactions/customized-builtins/HTMLLabelElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLLabelElement.html) | Pass | 2 / 2 |  |  |
 | [`reactions/customized-builtins/HTMLMapElement.html`](https://wpt.fyi/results/custom-elements/reactions/customized-builtins/HTMLMapElement.html) | Pass | 2 / 2 |  |  |

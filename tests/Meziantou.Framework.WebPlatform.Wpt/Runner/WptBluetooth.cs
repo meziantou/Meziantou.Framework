@@ -81,7 +81,10 @@ internal sealed class WptBluetoothProvider : BluetoothProvider
                     return adapter.Call(reject, adapter.Undefined, [adapter.FromString(ex.Message)]);
                 }
 
-                return adapter.Call(resolve, adapter.Undefined, []);
+                // The response comes after the tasks that the command queued (e.g. the disconnection of a device clears
+                // gatt.connected in a task), as the browser processes the command before WebDriver answers
+                queueTask(() => realm.Run(() => adapter.Call(resolve, adapter.Undefined, [])));
+                return adapter.Undefined;
             }));
             return adapter.Undefined;
         });

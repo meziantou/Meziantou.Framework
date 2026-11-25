@@ -196,11 +196,27 @@ public sealed class PdfParserTests
 
     private static string ReadContent(string content)
     {
-        var reader = new ContentStreamReader(Encoding.Latin1.GetBytes(content));
+        // The operands as objects, and as tokens: each accessor of a token gives what its object has
+        var data = Encoding.Latin1.GetBytes(content);
+        var reader = new ContentStreamReader(data);
+        var tokenReader = new ContentStreamReader(data);
         var operands = new List<PdfObject>();
         var result = new StringBuilder();
-        while (reader.TryRead(operands, out var name))
+        while (true)
         {
+            var read = reader.TryRead(operands, out var name);
+            Assert.Equal(read, tokenReader.TryRead(out var tokenName));
+            Assert.Equal(name, tokenName);
+            Assert.Equal(reader.Position, tokenReader.Position);
+            Assert.HasCount(tokenReader.Operands.Length, operands);
+            for (var i = 0; i < operands.Count; i++)
+            {
+                AssertSameOperand(tokenReader, tokenReader.Operands[i], operands[i]);
+            }
+
+            if (!read)
+                break;
+
             foreach (var operand in operands)
             {
                 result.Append(Describe(operand)).Append(' ');
@@ -215,6 +231,26 @@ public sealed class PdfParserTests
         }
 
         return result.ToString();
+    }
+
+    private static void AssertSameOperand(ContentStreamReader reader, ContentOperand operand, PdfObject expected)
+    {
+        Assert.Equal(Describe(expected), Describe(reader.GetObject(operand)));
+        Assert.Equal(expected is PdfNumber, operand.TryGetNumber(out var number));
+        Assert.Equal(expected is PdfNumber expectedNumber ? expectedNumber.DoubleValue : 0, number);
+        Assert.Equal(expected is PdfString, reader.TryGetString(operand, out var bytes));
+        Assert.Equal(expected is PdfString expectedString ? Convert.ToHexString(expectedString.Span) : "", Convert.ToHexString(bytes));
+        Assert.Equal(expected is PdfName, reader.TryGetName(operand, out var name));
+        Assert.Equal((expected as PdfName)?.Key, name?.Key);
+        Assert.Equal(expected is PdfArray, reader.TryGetArray(operand, out var array));
+        if (expected is PdfArray expectedArray)
+        {
+            Assert.Equal(expectedArray.Count, array.Count);
+            for (var i = 0; i < array.Count; i++)
+            {
+                AssertSameOperand(reader, array[i], expectedArray[i]);
+            }
+        }
     }
 
     private static string Describe(PdfObject value) => value switch

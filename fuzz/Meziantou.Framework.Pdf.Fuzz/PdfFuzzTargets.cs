@@ -1,5 +1,9 @@
+using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Fuzzing;
+using Meziantou.Framework.Pdf.Content;
+using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Parsing;
 
 namespace Meziantou.Framework.Pdf.Fuzz;
 
@@ -65,6 +69,13 @@ public static class PdfFuzzTargets
         "while (true) {}", "function f() { f(); } f();", "new Array(1e9)", "throw 1;", "\u0000", "\n",
     ];
 
+    private static readonly string[] ContentStreamTokens =
+    [
+        "BT", "ET", "Tf", "Td", "TD", "Tm", "T*", "Tj", "TJ", "'", "\"", "Tc", "Tw", "Tz", "TL", "Ts", "Tr", "cm", "q", "Q", "Do", "BDC", "BMC", "EMC", "BI", "ID", "EI",
+        "re", "m", "l", "c", "f", "S", "rg", "RG", "k", "cs", "scn", "sh", "gs", "d", "true", "false", "null", "endobj", "stream", "obj", "R",
+        "[", "]", "<<", ">>", "(", ")", "<", ">", "{", "}", "/", "%", "\\", "\\(", "\\101", "#20", "/F1", "/ActualText", "/L", "-", ".", "0.5", "-1e3", "\r\n",
+    ];
+
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("pdf-fdf", Fdf) { Seeds = () => GetSeeds(".fdf"), Dictionary = FdfTokens },
@@ -87,6 +98,7 @@ public static class PdfFuzzTargets
         new("pdf-imposition", Imposition) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-script-extraction", ScriptExtraction) { Seeds = () => GetSeeds(".pdf"), Dictionary = PdfTokens },
         new("pdf-form-scripts", FormScripts) { Seeds = GetFormScriptSeeds, Dictionary = FormScriptTokens },
+        new("pdf-content-stream", ContentStream) { Seeds = GetContentStreamSeeds, Dictionary = ContentStreamTokens },
     ];
 
     /// <summary>
@@ -1155,6 +1167,121 @@ public static class PdfFuzzTargets
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// The input is a content stream. Each operand that <see cref="ContentStreamReader"/> keeps as a token is the object
+    /// <see cref="PdfObjectParser"/> parses at its position, its accessors agree with that object, and the operands read
+    /// as objects are the same. The text of a page that has the content is extracted without other exceptions than <see cref="PdfException"/>.
+    /// </summary>
+    private static void ContentStream(ReadOnlySpan<byte> data)
+    {
+        var bytes = data.ToArray();
+        var reader = new ContentStreamReader(bytes, maxDepth: 64);
+        var objectReader = new ContentStreamReader(bytes, maxDepth: 64);
+        var objects = new List<PdfObject>();
+        var position = 0;
+        try
+        {
+            for (var count = 0; count < 100_000; count++)
+            {
+                var read = reader.TryRead(out var name);
+                FuzzAssert.Equal(read, objectReader.TryRead(objects, out var objectName), "The two ways of reading the operations disagree on the end of the content");
+                FuzzAssert.Equal(objectName, name, "The two ways of reading the operations give different operators");
+                FuzzAssert.True(reader.Position >= position && reader.Position <= bytes.Length, "The position of the reader goes back or is outside of the content");
+                FuzzAssert.Equal(objects.Count, reader.Operands.Length, "The two ways of reading the operations give different operands");
+                for (var i = 0; i < objects.Count; i++)
+                {
+                    CheckOperand(reader, bytes, reader.Operands[i], objects[i]);
+                }
+
+                position = reader.Position;
+                if (!read)
+                    break;
+            }
+        }
+        catch (PdfResourceLimitException)
+        {
+        }
+
+        var file = Encoding.Latin1.GetBytes(
+            "%PDF-1.7\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n" +
+            "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> /XObject << /X 5 0 R >> >> /Contents 5 0 R >> endobj\n" +
+            "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >> endobj\n" +
+            "5 0 obj << /Type /XObject /Subtype /Form /Length " + bytes.Length.ToString(CultureInfo.InvariantCulture) + " >> stream\n").Concat(bytes).Concat(Encoding.Latin1.GetBytes("\nendstream endobj\ntrailer << /Root 1 0 R >>\n%%EOF")).ToArray();
+        try
+        {
+            var page = PdfDocument.Open(file, ReadOptions).Pages[0];
+            var layout = page.ExtractTextLayout();
+            FuzzAssert.Equal(layout.Text, page.ExtractText(), "The text of the layout is not the text of the page");
+        }
+        catch (PdfException)
+        {
+        }
+    }
+
+    private static void CheckOperand(ContentStreamReader reader, byte[] content, in ContentOperand operand, PdfObject expected)
+    {
+        FuzzAssert.True(AreSame(reader.GetObject(operand), expected), "An operand read as a token is not the operand read as an object");
+        FuzzAssert.Equal(expected is PdfNumber, operand.TryGetNumber(out var number), "A number operand is not a number");
+        FuzzAssert.True(expected is not PdfNumber expectedNumber || expectedNumber.DoubleValue.Equals(number), "A number operand has a different value");
+        FuzzAssert.Equal(expected is PdfString, reader.TryGetString(operand, out var bytes), "A string operand is not a string");
+        FuzzAssert.True(expected is not PdfString expectedString || expectedString.Span.SequenceEqual(bytes), "A string operand has different bytes");
+        FuzzAssert.Equal(expected is PdfName, reader.TryGetName(operand, out var name), "A name operand is not a name");
+        FuzzAssert.True(expected is not PdfName expectedName || expectedName.Equals(name), "A name operand is a different name");
+        FuzzAssert.Equal(expected is PdfArray, reader.TryGetArray(operand, out var array), "An array operand is not an array");
+        if (expected is PdfArray expectedArray)
+        {
+            FuzzAssert.Equal(expectedArray.Count, array.Count, "An array operand has a different number of items");
+            for (var i = 0; i < array.Count; i++)
+            {
+                CheckOperand(reader, content, array[i], expectedArray[i]);
+            }
+        }
+
+        // A token is the object the parser reads at its position
+        if (operand.Object is null && operand.Token.Kind is not PdfTokenKind.Keyword)
+        {
+            var parser = new PdfObjectParser(new PdfLexer(content, operand.Token.Start), objects: null, maxDepth: 64);
+            FuzzAssert.True(AreSame(parser.ParseObject(), expected), "An operand read as a token is not the object the parser reads at its position");
+            FuzzAssert.True(operand.Token.End <= reader.Position, "An operand ends after the operator");
+        }
+    }
+
+    private static bool AreSame(PdfObject left, PdfObject right) => (left, right) switch
+    {
+        (PdfInteger a, PdfInteger b) => a.Value == b.Value,
+        (PdfReal a, PdfReal b) => BitConverter.DoubleToInt64Bits(a.Value) == BitConverter.DoubleToInt64Bits(b.Value),
+        (PdfName a, PdfName b) => a.Equals(b),
+        (PdfString a, PdfString b) => a.IsHexadecimal == b.IsHexadecimal && a.Span.SequenceEqual(b.Span),
+        (PdfBoolean a, PdfBoolean b) => a.Value == b.Value,
+        (PdfNull, PdfNull) => true,
+        (PdfArray a, PdfArray b) => a.Count == b.Count && a.Zip(b).All(pair => AreSame(pair.First, pair.Second)),
+        (PdfDictionary a, PdfDictionary b) => a.Count == b.Count && a.All(entry => b.ContainsKey(entry.Key) && AreSame(entry.Value, b[entry.Key]!)),
+        _ => false,
+    };
+
+    private static IEnumerable<FuzzSeed> GetContentStreamSeeds()
+    {
+        // The contents of the tests of the content stream reader and of the text extraction
+        string[] contents =
+        [
+            "1 2.5 -3 /N (s) <41> [1 (a)] << /K 1 >> true false null op",
+            "1 ] 2 >> 3 ) 4 > { 5 } m",
+            "1 2 m 3 [1 2",
+            "[1 foo true 2] TJ [1 endobj 2] TJ [1 ) 2 >> 3 { } ] TJ [[1] (a)] TJ [<< /A 1 >>] TJ",
+            "(a\\(b\\)\\n\\101\r\nc\\\r\nd) Tj <4 1 4> <> <zz41> Tj /A#20B /#41 / /A#2 Tf",
+            "BI /W 1 /H 1 ID \u0000\u00FF EI Q",
+            "--1 1.2.3 .5 - . -0.0 -0. 1e5 m",
+            "/P << /A [1 2] /B >> BDC",
+            "BT /F1 12 Tf 72 720 Td [(Hel) 0 (lo)] TJ 0 -14 Td (World) Tj T* (x) ' 1 2 (y) \" ET",
+            "q 2 0 0 2 0 0 cm BT /F1 12 Tf 0 1 -1 0 300 300 Tm [(A) -500 (B) 250.5 (C)] TJ ET Q",
+            "/Span << /ActualText (fi) >> BDC BT /F1 12 Tf 72 720 Td (A) Tj ET EMC /X Do",
+        ];
+        for (var i = 0; i < contents.Length; i++)
+        {
+            yield return new FuzzSeed("content-" + i.ToString(CultureInfo.InvariantCulture), Encoding.Latin1.GetBytes(contents[i]));
+        }
     }
 
     private static IEnumerable<FuzzSeed> GetFlowLayoutSeeds()

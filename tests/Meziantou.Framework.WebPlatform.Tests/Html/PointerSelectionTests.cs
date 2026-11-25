@@ -1,4 +1,5 @@
 using Meziantou.Framework.WebPlatform.Dom;
+using Microsoft.Extensions.Time.Testing;
 
 namespace Meziantou.Framework.WebPlatform.Tests.Html;
 
@@ -7,11 +8,15 @@ public sealed class PointerSelectionTests : IDisposable
 {
     private readonly BrowsingContextScope _contexts = new();
 
+    // The presses of a multiple click must be less than 500ms apart: the clock does not advance, so a slow machine does not
+    // turn a double click into two single clicks
+    private readonly FakeTimeProvider _clock = new();
+
     public void Dispose() => _contexts.Dispose();
 
     private Document Load(string html)
     {
-        var document = _contexts.Create().Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0; font: 20px monospace } p { margin: 0 }</style>" + html);
+        var document = _contexts.Create(new BrowsingContextOptions { TimeProvider = _clock }).Navigate("https://example.com/", _ => "<!DOCTYPE html><style>body { margin: 0; font: 20px monospace } p { margin: 0 }</style>" + html);
         _contexts.EventLoop.RunUntilIdle();
         return document;
     }

@@ -19,7 +19,7 @@ internal static class ShapefileRings
             return null;
 
         if (rings.Count is 1)
-            return new GeoPolygon(rings);
+            return GeoPolygon.FromOwnedArrays([.. rings]);
 
         var infos = new RingInfo[rings.Count];
         for (var i = 0; i < rings.Count; i++)
@@ -30,9 +30,10 @@ internal static class ShapefileRings
         // A ring whose orientation cannot be computed (NaN, when the coordinates overflow) is an exterior ring, so it is never dropped
         var polygons = infos.Any(info => !IsHole(info)) ? AssembleByOrientation(infos) : AssembleByNesting(infos);
         if (polygons.Count is 1)
-            return new GeoPolygon(polygons[0]);
+            return GeoPolygon.FromOwnedArrays([.. polygons[0]]);
 
-        return new GeoMultiPolygon(polygons.Select(polygon => new GeoPolygon(polygon)));
+        // Each ring is in one polygon: the polygons keep the arrays the reader made
+        return new GeoMultiPolygon(polygons.Select(polygon => GeoPolygon.FromOwnedArrays([.. polygon])));
     }
 
     /// <summary>

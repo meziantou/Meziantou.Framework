@@ -13,19 +13,19 @@ internal static class SphericalGeometry
     }
 
     /// <summary>Gets a value that indicates whether a position is inside the rings (even-odd rule), whose edges are great-circle arcs.</summary>
-    public static bool Contains(IReadOnlyList<IReadOnlyList<GeoPosition>> rings, GeoPosition position)
+    public static bool Contains(GeoPosition[][] rings, GeoPosition position)
     {
         // A ring separates the position from the north pole when the meridian from the position to the pole crosses it an
         // odd number of times. A ring that turns around a pole contains the pole it is nearest to, and no other ring does.
         var inside = false;
         foreach (var ring in rings)
         {
-            if (ring.Count == 0)
+            if (ring.Length == 0)
                 continue;
 
             var winding = 0.0;
             var latitudes = 0.0;
-            for (int i = 0, j = ring.Count - 1; i < ring.Count; j = i++)
+            for (int i = 0, j = ring.Length - 1; i < ring.Length; j = i++)
             {
                 var a = ring[j];
                 var b = ring[i];

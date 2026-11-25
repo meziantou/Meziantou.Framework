@@ -1197,4 +1197,22 @@ if __name__ == "__main__":
     <span class="hljs-built_in">print</span>(<span class="hljs-string">f&quot;Loaded <span class="hljs-subst">{cfg.name!r}</span> with <span class="hljs-subst">{<span class="hljs-built_in">len</span>(cfg.values)}</span> values&quot;</span>)
 """);
     }
+
+    [Fact]
+    public void String_PrefixedTripleQuotes()
+    {
+        AssertHighlighter("python",
+""""
+a = rb'''raw'''
+b = U"""text"""
+c = Br'''x'''
+d = '''plain'''
+"""",
+"""
+a = <span class="hljs-string">rb&#x27;&#x27;&#x27;raw&#x27;&#x27;&#x27;</span>
+b = <span class="hljs-string">U&quot;&quot;&quot;text&quot;&quot;&quot;</span>
+c = <span class="hljs-string">Br&#x27;&#x27;&#x27;x&#x27;&#x27;&#x27;</span>
+d = <span class="hljs-string">&#x27;&#x27;&#x27;plain&#x27;&#x27;&#x27;</span>
+""");
+    }
 }

@@ -933,4 +933,16 @@ null
 \<span class="hljs-string">&quot;a&quot;</span><span class="hljs-punctuation">:</span><span class="hljs-number">1</span>
 """);
     }
+
+    [Fact]
+    public void Attribute_EscapedQuotesAndBackslashes()
+    {
+        AssertHighlighter("json",
+"""
+{"a\"b": 1, "c": ["x\":", "y"], "d\\": "e"}
+""",
+"""
+<span class="hljs-punctuation">{</span><span class="hljs-attr">&quot;a\&quot;b&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">1</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;c&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;x\&quot;:&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;y&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span> <span class="hljs-attr">&quot;d\\&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;e&quot;</span><span class="hljs-punctuation">}</span>
+""");
+    }
 }

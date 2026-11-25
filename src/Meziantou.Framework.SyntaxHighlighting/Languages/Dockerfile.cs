@@ -1,4 +1,5 @@
 using Meziantou.Framework.SyntaxHighlighting.Engine;
+using Meziantou.Framework.SyntaxHighlighting.Languages.Common;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
@@ -10,7 +11,7 @@ internal static class Dockerfile
     {
         var root = new Mode { Illegal = "</", CaseInsensitive = true, Keywords = Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["keyword"] = ["from", "maintainer", "expose", "env", "arg", "user", "onbuild", "stopsignal"] }) };
         var comment = new Mode { Scope = "comment", Begin = "#", End = "$" };
-        var docTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var docTag = CommonModes.DocTag;
         var commentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var singleQuotedString = new Mode { Scope = "string", Begin = "'", End = "'", Illegal = "\\n" };
         var escapeSequence = new Mode { Begin = "\\\\[\\s\\S]" };

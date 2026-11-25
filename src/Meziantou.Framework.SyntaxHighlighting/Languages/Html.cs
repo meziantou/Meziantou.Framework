@@ -1,4 +1,5 @@
 using Meziantou.Framework.SyntaxHighlighting.Engine;
+using Meziantou.Framework.SyntaxHighlighting.Languages.Common;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
@@ -26,7 +27,7 @@ internal static class Html
         var docTypeNestedDeclaration = new Mode { Scope = "meta", Begin = "<![a-z]", End = ">" };
 
         var comment = new Mode { Scope = "comment", Begin = "<!--", End = "-->" };
-        var commentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var commentDocTag = CommonModes.DocTag;
         var commentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
 
         var cdata = new Mode { Begin = "<!\\[CDATA\\[", End = "\\]\\]>" };

@@ -11,10 +11,10 @@ internal static class Less
     {
         var root = new Mode { Illegal = "[=>'/<($\"]", CaseInsensitive = true };
         var lineComment = new Mode { Scope = "comment", Begin = "//", End = "$" };
-        var lineCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var lineCommentDocTag = CommonModes.DocTag;
         var lineCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var blockComment = new Mode { Scope = "comment", Begin = "/\\*", End = "\\*/" };
-        var blockCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var blockCommentDocTag = CommonModes.DocTag;
         var blockCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var atRuleKeyword = new Mode { Scope = "keyword", Begin = "@(import|media|charset|font-face|(-[a-z]+-)?keyframes|supports|document|namespace|page|viewport|host)\\b" };
         var atRuleBody = new Mode { End = "[;{}]", ReturnEnd = true, KeywordPattern = "[a-z-]+", Keywords = Keywords.FromMap(new Dictionary<string, string[]>(StringComparer.Ordinal) { ["keyword"] = ["and", "or", "not", "only"], ["attribute"] = ["width", "update", "scripting", "scan", "resolution", "prefers-reduced-transparency", "prefers-reduced-motion", "prefers-contrast", "prefers-color-scheme", "pointer", "overflow-inline", "overflow-block", "orientation", "monochrome", "min-width", "min-height", "max-width", "max-height", "inverted-colors", "hover", "height", "grid", "forced-colors", "display-mode", "device-width", "device-height", "device-aspect-ratio", "color-index", "color-gamut", "color", "aspect-ratio", "any-pointer", "any-hover"] }) };

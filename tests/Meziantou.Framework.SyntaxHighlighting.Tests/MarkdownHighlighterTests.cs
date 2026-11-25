@@ -1342,4 +1342,22 @@ first line\
 second line
 """);
     }
+
+    [Fact]
+    public void Link_AllKinds()
+    {
+        AssertHighlighter("markdown",
+"""
+[ref][1] and [mail](mailto:me@example.com)
+[site](https://example.com) [rel](./docs/a.md) [anchor](#top)
+[other](ftp2+x://host) [plain](text) [a]b](c)
+[1]: https://example.com
+""",
+"""
+[<span class="hljs-string">ref</span>][<span class="hljs-symbol">1</span>] and [<span class="hljs-string">mail</span>](<span class="hljs-link">mailto:me@example.com</span>)
+[<span class="hljs-string">site</span>](<span class="hljs-link">https://example.com</span>) [<span class="hljs-string">rel</span>](<span class="hljs-link">./docs/a.md</span>) [<span class="hljs-string">anchor</span>](<span class="hljs-link">#top</span>)
+[<span class="hljs-string">other</span>](<span class="hljs-link">ftp2+x://host</span>) [<span class="hljs-string">plain</span>](<span class="hljs-link">text</span>) [<span class="hljs-string">a</span>]b](c)
+[<span class="hljs-symbol">1</span>]: <span class="hljs-link">https://example.com</span>
+""");
+    }
 }

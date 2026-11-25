@@ -1,4 +1,5 @@
 using Meziantou.Framework.SyntaxHighlighting.Engine;
+using Meziantou.Framework.SyntaxHighlighting.Languages.Common;
 
 namespace Meziantou.Framework.SyntaxHighlighting.Languages;
 
@@ -10,10 +11,10 @@ internal static class Scss
     {
         var root = new Mode { Illegal = "[=/|']", CaseInsensitive = true };
         var lineComment = new Mode { Scope = "comment", Begin = "//", End = "$" };
-        var lineCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var lineCommentDocTag = CommonModes.DocTag;
         var lineCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var blockComment = new Mode { Scope = "comment", Begin = "/\\*", End = "\\*/" };
-        var blockCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var blockCommentDocTag = CommonModes.DocTag;
         var blockCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var number = new Mode { Scope = "number", Begin = "\\b\\d+(\\.\\d+)?(svmin|svmax|lvmin|lvmax|dvmin|dvmax|cqmin|cqmax|vmin|vmax|turn|grad|dpcm|dppx|kHz|dpi|rem|cap|rlh|svw|svh|svi|svb|lvw|lvh|lvi|lvb|dvw|dvh|dvi|dvb|cqw|cqh|cqi|cqb|deg|rad|Hz|ms|em|ex|ch|ic|lh|vw|vh|vi|vb|cm|mm|in|pt|pc|px|fr|%|Q|s|x)?" };
         var selectorId = new Mode { Scope = "selector-id", Begin = "#[A-Za-z0-9_-]+" };

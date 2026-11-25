@@ -103,8 +103,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\tools\Meziantou.Framework.WebPlatform.Analyzers\Meziantou.Framework.WebPlatform.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
-  <!-- After every ProjectReference: an Update only applies to the items defined before it -->
-  <ItemGroup Condition="'$(WebPlatformIdlMetadata)' == 'true'">
-    <ProjectReference Update="@(ProjectReference)" GlobalPropertiesToRemove="%(GlobalPropertiesToRemove);WebPlatformIdlMetadata" />
-  </ItemGroup>
+  <!--
+    An item definition, not an Update: it also applies to the references that Directory.Build.targets adds after this file
+    (the analyzers), which would otherwise be built twice in the same directory
+  -->
+  <ItemDefinitionGroup Condition="'$(WebPlatformIdlMetadata)' == 'true'">
+    <ProjectReference>
+      <GlobalPropertiesToRemove>WebPlatformIdlMetadata</GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemDefinitionGroup>
 </Project>

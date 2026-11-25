@@ -4412,6 +4412,38 @@ public sealed class UnicodeTests
         Assert.Equal(text, decoded);
     }
 
+    [Theory]
+    [InlineData("B\u00FCcher.example")]
+    [InlineData("xn--bcher-kva.example")]
+    [InlineData("\u4F8B\u3048.\u30C6\u30B9\u30C8")]
+    [InlineData("\u0645\u062B\u0627\u0644.\u0625\u062E\u062A\u0628\u0627\u0631")]
+    [InlineData("\uFF37\uFF37\uFF37\u3002example\u3002com")]
+    [InlineData("\u043F\u0440\u0438\u043C\u0435\u0440.\u0438\u0441\u043F\u044B\u0442\u0430\u043D\u0438\u0435")]
+    [InlineData("a\u200Db.xn--a-ecp.-x")]
+    public void Idna_LongDomainNamesAreTheirLabelsJoined(string domainName)
+    {
+        // The labels are processed in buffers on the stack, which a long domain name outgrows
+        var options = new UnicodeIdnaOptions { VerifyDnsLength = false };
+        var expectedUnicode = UnicodeIdna.ToUnicode(domainName, options, out var expectedHasErrors);
+        var expectedIsValid = UnicodeIdna.TryToAscii(domainName, options, out var expectedAscii);
+        foreach (var count in (int[])[10, 30, 100])
+        {
+            var longDomainName = string.Join('.', Enumerable.Repeat(domainName, count));
+            Assert.Equal(string.Join('.', Enumerable.Repeat(expectedUnicode, count)), UnicodeIdna.ToUnicode(longDomainName, options, out var hasErrors));
+            Assert.Equal(expectedHasErrors, hasErrors);
+            Assert.Equal(expectedIsValid, UnicodeIdna.TryToAscii(longDomainName, options, out var ascii));
+            Assert.Equal(expectedIsValid ? string.Join('.', Enumerable.Repeat(expectedAscii, count)) : null, ascii);
+        }
+
+        var longLabel = string.Concat(Enumerable.Repeat(domainName.Replace(".", "", StringComparison.Ordinal).Replace("\u3002", "", StringComparison.Ordinal), 20));
+        var unicode = UnicodeIdna.ToUnicode(longLabel, options, out _);
+        if (UnicodeIdna.TryToAscii(longLabel, options, out var asciiLabel) && asciiLabel.StartsWith("xn--", StringComparison.Ordinal))
+        {
+            Assert.True(UnicodeIdna.TryDecodePunycode(asciiLabel.AsSpan(4), out var decoded));
+            Assert.Equal(unicode, decoded);
+        }
+    }
+
     [Fact]
     public void Punycode_EncodesWhatItDecodes()
     {

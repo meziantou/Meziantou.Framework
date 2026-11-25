@@ -135,7 +135,7 @@ internal static class GeoOperations
     {
         foreach (var simple in geometry.GetSimpleGeometries())
         {
-            if (simple is GeoPolygon polygon && !polygon.GetPositions().All(position => IsSupported(position.Longitude) && IsSupported(position.Latitude)))
+            if (simple is GeoPolygon polygon && !AreSupported(polygon))
             {
                 if (paramName is null)
                     throw new InvalidOperationException(UnsupportedCoordinateMessage);
@@ -143,6 +143,20 @@ internal static class GeoOperations
                 throw new ArgumentException(UnsupportedCoordinateMessage, paramName);
             }
         }
+    }
+
+    private static bool AreSupported(GeoPolygon polygon)
+    {
+        foreach (var ring in polygon.RingArrays)
+        {
+            foreach (ref readonly var position in ring.AsSpan())
+            {
+                if (!IsSupported(position.Longitude) || !IsSupported(position.Latitude))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     private static GeoPolygon TransformPolygon(GeoPolygon polygon, Func<GeoPosition, GeoPosition> transform) => new(polygon.Rings.Select(ring => ring.Select(transform)));
@@ -490,7 +504,7 @@ internal static class GeoOperations
         var polygons = new GeoPolygon[shells.Count];
         for (var i = 0; i < shells.Count; i++)
         {
-            polygons[i] = new GeoPolygon([ToRing(shells[i]), .. shellHoles[i].Select(ToRing)]);
+            polygons[i] = GeoPolygon.FromOwnedArrays([ToRing(shells[i]), .. shellHoles[i].Select(ToRing)]);
         }
 
         if (polygons.Length == 1 && !asMultiPolygon)

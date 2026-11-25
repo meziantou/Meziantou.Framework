@@ -8,8 +8,13 @@ public static class AnsiTextProcessor
     private const char BellCharacter = '\u0007';
     // Sequences shorter than this are processed using a stack-allocated buffer to avoid renting an array.
     private const int StackAllocThreshold = 512;
+    // The values of SGR sequences shorter than this are parsed into a stack-allocated buffer.
+    private const int SgrParametersStackAllocThreshold = 32;
     // The longest SGR parameter is 38:2:<color-space>:r:g:b
     private const int MaxSgrSubParameters = 6;
+
+    // AnsiColor is immutable, so the parser shares one instance per indexed color.
+    private static readonly AnsiColor?[] IndexedColors = new AnsiColor?[256];
 
     public static string RemoveAnsiSequences(string value)
     {
@@ -40,60 +45,152 @@ public static class AnsiTextProcessor
 
     public static bool ContainsAnsiSequences(ReadOnlySpan<char> value)
     {
-        var i = 0;
-        while (i < value.Length)
+        var searchFrom = 0;
+        var oscTerminatorMissing = false;
+        while (true)
         {
-            var escapeIndex = value[i..].IndexOf(EscapeCharacter);
-            if (escapeIndex < 0)
+            var relativeIndex = value[searchFrom..].IndexOf(EscapeCharacter);
+            if (relativeIndex < 0)
                 return false;
 
-            escapeIndex += i;
+            var escapeIndex = searchFrom + relativeIndex;
+            if (escapeIndex + 1 >= value.Length)
+                return false;
 
             // Only a sequence that reaches its terminator is one RemoveAnsiSequences would strip.
-            if (FindSequenceEnd(value, escapeIndex) >= 0)
-                return true;
+            switch (value[escapeIndex + 1])
+            {
+                case '[':
+                    // '[' and ']' end a CSI sequence: when this one has no terminator, no later sequence can start.
+                    return FindCsiTerminator(value, escapeIndex + 2) >= 0;
 
-            i = escapeIndex + 1;
+                case ']' when !oscTerminatorMissing:
+                    if (FindOscTerminator(value, escapeIndex + 2) >= 0)
+                        return true;
+
+                    // A later OSC sequence would search a part of the text this search already went through.
+                    oscTerminatorMissing = true;
+                    break;
+            }
+
+            searchFrom = escapeIndex + 1;
         }
-
-        return false;
     }
 
     public static AnsiText ParseTextWithAnsiStyles(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        var builder = new StringBuilder(text.Length);
         var runs = new List<AnsiTextRun>();
-        var currentStyle = AnsiStyle.None;
-        var currentRunStart = 0;
-        var index = 0;
-
-        while (index < text.Length)
+        var firstEscapeIndex = text.AsSpan().IndexOf(EscapeCharacter);
+        if (firstEscapeIndex < 0)
         {
-            if (TryConsumeControlSequence(text, ref index, out var sgrParameters))
-            {
-                if (sgrParameters is not null)
-                {
-                    var updatedStyle = ApplySgr(currentStyle, sgrParameters);
-                    if (updatedStyle != currentStyle)
-                    {
-                        AddRun(runs, currentStyle, currentRunStart, builder.Length);
-                        currentRunStart = builder.Length;
-                        currentStyle = updatedStyle;
-                    }
-                }
-
-                continue;
-            }
-
-            builder.Append(text[index]);
-            index++;
+            AddRun(runs, AnsiStyle.None, 0, text.Length);
+            return new AnsiText(text, runs);
         }
 
-        AddRun(runs, currentStyle, currentRunStart, builder.Length);
+        return ParseTextWithAnsiStylesCore(text, firstEscapeIndex, runs);
+    }
 
-        return new AnsiText(builder.ToString(), runs);
+    private static AnsiText ParseTextWithAnsiStylesCore(string text, int firstEscapeIndex, List<AnsiTextRun> runs)
+    {
+        char[]? rented = null;
+        var buffer = text.Length <= StackAllocThreshold
+            ? stackalloc char[StackAllocThreshold]
+            : (rented = ArrayPool<char>.Shared.Rent(text.Length));
+
+        try
+        {
+            var value = text.AsSpan();
+            var currentState = default(SgrState);
+            var currentStyle = AnsiStyle.None;
+            var currentRunStart = 0;
+            var written = 0;
+            var copiedFrom = 0;
+            var searchFrom = firstEscapeIndex;
+            var oscTerminatorMissing = false;
+
+            while (true)
+            {
+                var relativeIndex = value[searchFrom..].IndexOf(EscapeCharacter);
+                if (relativeIndex < 0)
+                    break;
+
+                var escapeIndex = searchFrom + relativeIndex;
+                if (escapeIndex + 1 >= value.Length)
+                    break;
+
+                int terminator;
+                var introducer = value[escapeIndex + 1];
+                if (introducer is '[')
+                {
+                    terminator = FindCsiTerminator(value, escapeIndex + 2);
+
+                    // '[' and ']' end a CSI sequence: when this one has no terminator, no later sequence can start.
+                    if (terminator < 0)
+                        break;
+                }
+                else if (introducer is ']' && !oscTerminatorMissing)
+                {
+                    // OSC sequences carry no styling, so they are consumed and dropped from the text.
+                    terminator = FindOscTerminator(value, escapeIndex + 2);
+                    if (terminator < 0)
+                    {
+                        // A later OSC sequence would search a part of the text this search already went through.
+                        oscTerminatorMissing = true;
+                        searchFrom = escapeIndex + 1;
+                        continue;
+                    }
+                }
+                else
+                {
+                    // Lone ESC, or a sequence cut off before its terminator: kept as-is.
+                    searchFrom = escapeIndex + 1;
+                    continue;
+                }
+
+                var segment = value[copiedFrom..escapeIndex];
+                segment.CopyTo(buffer[written..]);
+                written += segment.Length;
+                copiedFrom = terminator + 1;
+                searchFrom = terminator + 1;
+
+                if (introducer is '[' && value[terminator] is 'm')
+                {
+                    var updatedState = currentState;
+                    ApplySgr(ref updatedState, value[(escapeIndex + 2)..terminator]);
+                    if (updatedState != currentState)
+                    {
+                        AddRun(runs, currentStyle, currentRunStart, written);
+                        currentRunStart = written;
+                        currentStyle = CreateStyle(updatedState, currentState, currentStyle);
+                        currentState = updatedState;
+                    }
+                }
+            }
+
+            string result;
+            if (copiedFrom is 0)
+            {
+                written = text.Length;
+                result = text;
+            }
+            else
+            {
+                var tail = value[copiedFrom..];
+                tail.CopyTo(buffer[written..]);
+                written += tail.Length;
+                result = new string(buffer[..written]);
+            }
+
+            AddRun(runs, currentStyle, currentRunStart, written);
+            return new AnsiText(result, runs);
+        }
+        finally
+        {
+            if (rented is not null)
+                ArrayPool<char>.Shared.Return(rented);
+        }
     }
 
     private static string RemoveAnsiSequencesCore(ReadOnlySpan<char> value, int firstEscapeIndex, string? originalIfUnchanged)
@@ -159,112 +256,119 @@ public static class AnsiTextProcessor
         }
     }
 
-    private static bool TryConsumeControlSequence(string text, ref int index, out List<int>? sgrParameters)
+    private static void ApplySgr(ref SgrState state, ReadOnlySpan<char> sequenceContent)
     {
-        sgrParameters = null;
-
-        if (index >= text.Length || text[index] != EscapeCharacter)
-            return false;
-
-        if (index + 1 >= text.Length)
-            return false;
-
-        if (text[index + 1] is '[')
-            return TryConsumeCsiSequence(text, ref index, out sgrParameters);
-
-        if (text[index + 1] is ']')
-            return TryConsumeOscSequence(text, ref index);
-
-        return false;
-    }
-
-    private static bool TryConsumeCsiSequence(string text, ref int index, out List<int>? sgrParameters)
-    {
-        sgrParameters = null;
-
-        var sequenceStart = index;
-        index += 2;
-
-        while (index < text.Length)
+        // ESC[m, which carries no parameter at all, resets the style like ESC[0m.
+        if (sequenceContent.IsEmpty)
         {
-            var current = text[index];
-            if (current is >= '@' and <= '~')
+            state = default;
+            return;
+        }
+
+        // A parameter p produces at most p.Length + 1 values, so the sequence produces at most sequenceContent.Length + 1 values.
+        var maxCount = sequenceContent.Length + 1;
+        int[]? rented = null;
+        var parameters = maxCount <= SgrParametersStackAllocThreshold
+            ? stackalloc int[SgrParametersStackAllocThreshold]
+            : (rented = ArrayPool<int>.Shared.Rent(maxCount));
+
+        try
+        {
+            // Parameters are separated by ';', and the sub-parameters of a parameter (ITU T.416) by ':'.
+            Span<int> parts = stackalloc int[MaxSgrSubParameters];
+            var partCount = 0;
+            var ignoreParameter = false;
+            var count = 0;
+            var start = 0;
+            while (true)
             {
-                var sequenceContent = text.AsSpan(sequenceStart + 2, index - sequenceStart - 2);
-                if (current is 'm')
+                var end = start;
+                while (end < sequenceContent.Length && sequenceContent[end] is not (':' or ';'))
                 {
-                    sgrParameters = ParseSgrParameters(sequenceContent);
+                    end++;
                 }
 
-                index++;
-                return true;
+                if (!ignoreParameter)
+                {
+                    // More sub-parameters than any SGR parameter uses, or a value this parser does not understand:
+                    // the whole parameter is ignored rather than reset the style.
+                    if (partCount < parts.Length && TryParseSgrValue(sequenceContent[start..end], out var value))
+                    {
+                        parts[partCount++] = value;
+                    }
+                    else
+                    {
+                        ignoreParameter = true;
+                    }
+                }
+
+                if (end == sequenceContent.Length || sequenceContent[end] is ';')
+                {
+                    if (!ignoreParameter)
+                    {
+                        AddSgrParameter(parameters, ref count, parts[..partCount]);
+                    }
+
+                    if (end == sequenceContent.Length)
+                        break;
+
+                    partCount = 0;
+                    ignoreParameter = false;
+                }
+
+                start = end + 1;
             }
 
-            index++;
+            // When the sequence carries parameters but none of them could be parsed, it is ignored:
+            // a reset would drop styling the caller never asked to clear.
+            ApplySgrParameters(ref state, parameters[..count]);
         }
-
-        index = sequenceStart;
-        return false;
-    }
-
-    // OSC sequences carry no styling, so they are consumed and dropped from the text.
-    private static bool TryConsumeOscSequence(string text, ref int index)
-    {
-        var terminator = FindOscTerminator(text, index + 2);
-        if (terminator < 0)
-            return false;
-
-        index = terminator + 1;
-        return true;
-    }
-
-    private static List<int> ParseSgrParameters(ReadOnlySpan<char> sequenceContent)
-    {
-        if (sequenceContent.IsEmpty)
-            return [0];
-
-        var values = new List<int>();
-        foreach (var parameterRange in sequenceContent.Split(';'))
+        finally
         {
-            AddSgrParameter(values, sequenceContent[parameterRange]);
+            if (rented is not null)
+                ArrayPool<int>.Shared.Return(rented);
         }
-
-        return values;
     }
 
     /// <summary>
-    /// Normalizes a single ';'-delimited SGR parameter, which may carry ':'-delimited sub-parameters
+    /// Reads a value of an SGR parameter as <c>int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out _)</c>
+    /// does: ASCII digits, which may be followed by NUL characters, and no overflow. An empty value is 0.
+    /// </summary>
+    private static bool TryParseSgrValue(ReadOnlySpan<char> text, out int value)
+    {
+        value = 0;
+        var index = 0;
+        for (; index < text.Length; index++)
+        {
+            var digit = (uint)(text[index] - '0');
+            if (digit > 9)
+                break;
+
+            if (value >= int.MaxValue / 10 && (value > int.MaxValue / 10 || digit > int.MaxValue % 10))
+                return false;
+
+            value = (value * 10) + (int)digit;
+        }
+
+        if (index is 0)
+            return text.IsEmpty;
+
+        // Like int.TryParse, ignore trailing NUL characters
+        return text[index..].IndexOfAnyExcept('\0') < 0;
+    }
+
+    /// <summary>
+    /// Normalizes the values of a single ';'-delimited SGR parameter, which may carry ':'-delimited sub-parameters
     /// (ITU T.416), into the flat form the rest of the parser consumes.
     /// </summary>
-    private static void AddSgrParameter(List<int> values, ReadOnlySpan<char> parameter)
+    private static void AddSgrParameter(Span<int> values, ref int valueCount, ReadOnlySpan<int> parts)
     {
-        Span<int> parts = stackalloc int[MaxSgrSubParameters];
-        var count = 0;
-
-        foreach (var partRange in parameter.Split(':'))
-        {
-            if (count >= parts.Length)
-                return; // More sub-parameters than any SGR parameter uses: ignore the whole parameter
-
-            var part = parameter[partRange];
-            if (part.IsEmpty)
-            {
-                parts[count++] = 0;
-            }
-            else if (int.TryParse(part, NumberStyles.None, CultureInfo.InvariantCulture, out var value))
-            {
-                parts[count++] = value;
-            }
-            else
-            {
-                return; // Not a value this parser understands: ignore it rather than reset the style
-            }
-        }
+        var count = parts.Length;
 
         // No sub-parameters: the classic ';'-only form, which the rest of the parser reads directly.
         if (count is 1)
         {
-            values.Add(parts[0]);
+            values[valueCount++] = parts[0];
             return;
         }
 
@@ -273,16 +377,15 @@ public static class AnsiTextProcessor
         // parameter is applied and the sub-parameters are ignored.
         if (parts[0] is not (38 or 48))
         {
-            values.Add(parts[0]);
+            values[valueCount++] = parts[0];
             return;
         }
 
         // 38:5:n and 48:5:n
         if (count is 3 && parts[1] is 5)
         {
-            values.Add(parts[0]);
-            values.Add(parts[1]);
-            values.Add(parts[2]);
+            parts[..3].CopyTo(values[valueCount..]);
+            valueCount += 3;
             return;
         }
 
@@ -290,141 +393,138 @@ public static class AnsiTextProcessor
         if (parts[1] is 2 && count is 5 or 6)
         {
             var red = count is 6 ? 3 : 2;
-            values.Add(parts[0]);
-            values.Add(parts[1]);
-            values.Add(parts[red]);
-            values.Add(parts[red + 1]);
-            values.Add(parts[red + 2]);
+            values[valueCount] = parts[0];
+            values[valueCount + 1] = parts[1];
+            parts.Slice(red, 3).CopyTo(values[(valueCount + 2)..]);
+            valueCount += 5;
         }
     }
 
-    private static AnsiStyle ApplySgr(AnsiStyle style, List<int> parameters)
+    private static void ApplySgrParameters(ref SgrState state, ReadOnlySpan<int> parameters)
     {
-        // An empty list means the sequence carried parameters but none of them could be parsed.
-        // Such a sequence is ignored: a reset would drop styling the caller never asked to clear.
-        // ESC[m, which carries no parameter at all, is reported as [0] by ParseSgrParameters and
-        // still resets the style through the switch below.
-        if (parameters.Count is 0)
-            return style;
-
-        var result = style;
-
-        for (var i = 0; i < parameters.Count; i++)
+        for (var i = 0; i < parameters.Length; i++)
         {
             var parameter = parameters[i];
             switch (parameter)
             {
                 case 0:
-                    result = AnsiStyle.None;
+                    state = default;
                     break;
                 case 1:
-                    result = result with { Bold = true };
+                    state.Bold = true;
                     break;
                 case 3:
-                    result = result with { Italic = true };
+                    state.Italic = true;
                     break;
                 case 4:
-                    result = result with { Underline = true };
+                    state.Underline = true;
                     break;
                 case 7:
-                    result = result with { Inverse = true };
+                    state.Inverse = true;
                     break;
                 case 22:
-                    result = result with { Bold = false };
+                    state.Bold = false;
                     break;
                 case 23:
-                    result = result with { Italic = false };
+                    state.Italic = false;
                     break;
                 case 24:
-                    result = result with { Underline = false };
+                    state.Underline = false;
                     break;
                 case 27:
-                    result = result with { Inverse = false };
+                    state.Inverse = false;
                     break;
                 case 39:
-                    result = result with { Foreground = null };
+                    state.Foreground = SgrState.NoColor;
                     break;
                 case 49:
-                    result = result with { Background = null };
+                    state.Background = SgrState.NoColor;
                     break;
                 case >= 30 and <= 37:
-                    result = result with { Foreground = AnsiColor.FromIndexed(parameter - 30) };
+                    state.Foreground = SgrState.Indexed(parameter - 30);
                     break;
                 case >= 40 and <= 47:
-                    result = result with { Background = AnsiColor.FromIndexed(parameter - 40) };
+                    state.Background = SgrState.Indexed(parameter - 40);
                     break;
                 case >= 90 and <= 97:
-                    result = result with { Foreground = AnsiColor.FromIndexed(8 + parameter - 90) };
+                    state.Foreground = SgrState.Indexed(8 + parameter - 90);
                     break;
                 case >= 100 and <= 107:
-                    result = result with { Background = AnsiColor.FromIndexed(8 + parameter - 100) };
+                    state.Background = SgrState.Indexed(8 + parameter - 100);
                     break;
                 case 38:
+                    state.Foreground = ReadExtendedColor(parameters, ref i, state.Foreground);
+                    break;
                 case 48:
-                    result = ApplyExtendedColor(result, parameters, ref i, isForeground: parameter is 38);
+                    state.Background = ReadExtendedColor(parameters, ref i, state.Background);
                     break;
             }
         }
-
-        return result;
     }
 
-    private static AnsiStyle ApplyExtendedColor(AnsiStyle style, List<int> parameters, ref int index, bool isForeground)
+    // Returns the color an extended-color parameter (38 or 48) sets, or currentColor when the parameter is invalid,
+    // and moves index to the last value the parameter consumes.
+    private static int ReadExtendedColor(ReadOnlySpan<int> parameters, ref int index, int currentColor)
     {
-        if (index + 1 >= parameters.Count)
-            return style;
+        if (index + 1 >= parameters.Length)
+            return currentColor;
 
         var mode = parameters[index + 1];
         if (mode is 5)
         {
-            if (index + 2 < parameters.Count)
+            if (index + 2 < parameters.Length)
             {
                 var colorIndex = parameters[index + 2];
-                if (colorIndex is >= 0 and <= 255)
-                {
-                    style = isForeground
-                        ? style with { Foreground = AnsiColor.FromIndexed(colorIndex) }
-                        : style with { Background = AnsiColor.FromIndexed(colorIndex) };
-                }
-
                 index += 2;
-            }
-            else
-            {
-                index++;
+                return colorIndex is >= 0 and <= 255 ? SgrState.Indexed(colorIndex) : currentColor;
             }
 
-            return style;
+            index++;
+            return currentColor;
         }
 
         if (mode is 2)
         {
-            if (index + 4 < parameters.Count)
+            if (index + 4 < parameters.Length)
             {
                 var red = parameters[index + 2];
                 var green = parameters[index + 3];
                 var blue = parameters[index + 4];
-                if (red is >= 0 and <= 255 && green is >= 0 and <= 255 && blue is >= 0 and <= 255)
-                {
-                    var color = AnsiColor.FromRgb((byte)red, (byte)green, (byte)blue);
-                    style = isForeground
-                        ? style with { Foreground = color }
-                        : style with { Background = color };
-                }
-
                 index += 4;
+                return red is >= 0 and <= 255 && green is >= 0 and <= 255 && blue is >= 0 and <= 255
+                    ? SgrState.Rgb(red, green, blue)
+                    : currentColor;
             }
-            else
-            {
-                index++;
-            }
-        }
-        else
-        {
+
             index++;
+            return currentColor;
         }
 
-        return style;
+        index++;
+        return currentColor;
+    }
+
+    // Creates the style of a state, reusing the colors of the previous style when they did not change.
+    private static AnsiStyle CreateStyle(SgrState state, SgrState previousState, AnsiStyle previousStyle)
+    {
+        if (state == default)
+            return AnsiStyle.None;
+
+        var foreground = state.Foreground == previousState.Foreground ? previousStyle.Foreground : CreateColor(state.Foreground);
+        var background = state.Background == previousState.Background ? previousStyle.Background : CreateColor(state.Background);
+        return new AnsiStyle(foreground, background, state.Bold, state.Italic, state.Underline, state.Inverse);
+    }
+
+    private static AnsiColor? CreateColor(int color)
+    {
+        if (color is SgrState.NoColor)
+            return null;
+
+        if ((color & SgrState.RgbFlag) is not 0)
+            return AnsiColor.FromRgb((byte)(color >> 16), (byte)(color >> 8), (byte)color);
+
+        var index = color & 0xFF;
+        return IndexedColors[index] ??= AnsiColor.FromIndexed(index);
     }
 
     /// <summary>
@@ -459,6 +559,7 @@ public static class AnsiTextProcessor
         return -1;
     }
 
+    // CSI sequences are a few characters long: a scalar loop is faster than a vectorized search there.
     private static int FindCsiTerminator(ReadOnlySpan<char> value, int start)
     {
         for (var i = start; i < value.Length; i++)
@@ -476,6 +577,25 @@ public static class AnsiTextProcessor
         {
             runs.Add(new AnsiTextRun(start, end, style));
         }
+    }
+
+    // The style while parsing, without allocations. A color is NoColor (the default color), an indexed color, or an RGB color.
+    private record struct SgrState
+    {
+        public const int NoColor = 0;
+        public const int IndexedFlag = 1 << 24;
+        public const int RgbFlag = 1 << 25;
+
+        public int Foreground;
+        public int Background;
+        public bool Bold;
+        public bool Italic;
+        public bool Underline;
+        public bool Inverse;
+
+        public static int Indexed(int index) => IndexedFlag | index;
+
+        public static int Rgb(int red, int green, int blue) => RgbFlag | (red << 16) | (green << 8) | blue;
     }
 
     public sealed record AnsiText(string Text, IReadOnlyList<AnsiTextRun> Runs);

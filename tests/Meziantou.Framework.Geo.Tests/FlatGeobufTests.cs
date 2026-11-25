@@ -199,6 +199,14 @@ public sealed class FlatGeobufTests
 
         var data = FlatGeobuf.Write(features, new FlatGeobufWriterOptions { IncludeSpatialIndex = includeSpatialIndex, Name = "layer" });
         Assert.Equal(0, data.Length % 8);
+
+        // The array and the stream get the same data
+        using (var stream = new MemoryStream())
+        {
+            FlatGeobuf.Write(features, stream, new FlatGeobufWriterOptions { IncludeSpatialIndex = includeSpatialIndex, Name = "layer" });
+            Assert.Equal(data, stream.ToArray());
+        }
+
         var read = FlatGeobuf.Read(data);
         Assert.Equal("layer", read.Name);
         Assert.HasCount(features.Count, read);

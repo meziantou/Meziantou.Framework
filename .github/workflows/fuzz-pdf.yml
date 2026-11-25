@@ -50,12 +50,12 @@ jobs:
       # for the slowest test
       MEZIANTOU_FRAMEWORK_PDF_FUZZ_ITERATIONS: ${{ inputs.iterations || 50000 }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Fuzz
         run: ./eng/run-fuzz-tests.ps1 -Project fuzz/Meziantou.Framework.Pdf.FuzzTests -SettingsPrefix MEZIANTOU_FRAMEWORK_PDF_FUZZ -ArtifactsVariable ''
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: fuzz-results-Meziantou.Framework.Pdf.FuzzTests-${{ matrix.platform.arch }}
@@ -74,9 +74,9 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Download fuzz results
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: actions/download-artifact@v8.0.2
         with:
           # A pattern: one artifact per architecture, and a job that failed before uploading its results leaves none
           pattern: fuzz-results-Meziantou.Framework.Pdf.FuzzTests*

@@ -17,7 +17,8 @@ public static partial class UnicodeFuzzTargets
     /// run never ends inside a grapheme cluster, and the sentences of a case of SentenceBreakTest.txt are those of the case. The line breaks are increasing, the last one is the end of the text and is
     /// mandatory, the mandatory breaks do not depend on the tailoring, and <see cref="UnicodeLineBreakStrictness.Anywhere"/>
     /// breaks at every grapheme cluster boundary. Nothing splits a surrogate pair. The shortcuts for the ASCII and Latin
-    /// characters give the word segments, their kinds and the script runs of the rules applied to each character.
+    /// characters give the word segments, their kinds and the script runs of the rules applied to each character, and the
+    /// sentences that skip the code points that cannot end them are those of the rules applied to each code point.
     /// </summary>
     private static void Segmentation(ReadOnlySpan<byte> data)
     {
@@ -42,7 +43,9 @@ public static partial class UnicodeFuzzTargets
         var sentenceBoundaries = new List<int> { 0 };
         foreach (var sentence in Unicode.EnumerateSentenceBoundaries(text))
         {
-            (_, expectedStart) = CheckSegment(text, sentence, expectedStart, "sentence");
+            var (start, end) = CheckSegment(text, sentence, expectedStart, "sentence");
+            FuzzAssert.Equal(Unicode.GetSentenceLengthByRules(text.AsSpan(start)), end - start, $"The sentence at {start} differs from the one of the rules applied to each character");
+            expectedStart = end;
             sentenceBoundaries.Add(expectedStart);
         }
 

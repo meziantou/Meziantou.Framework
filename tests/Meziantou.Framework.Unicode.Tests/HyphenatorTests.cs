@@ -40,6 +40,22 @@ public sealed class HyphenatorTests
         Assert.Equal(3, hyphenator.RightHyphenMin);
     }
 
+    [Fact]
+    public void Hyphenate_LowercasesEveryAsciiCharacterAsTheUnicodeData()
+    {
+        // The ASCII characters are lowercased without looking them up: the patterns and the exceptions match the
+        // lowercase mapping of the Unicode Character Database.
+        var hyphenator = Hyphenator.Parse(LiangExample + " 1b", "hy-phe-na-tion", NoMinimum);
+        for (var c = (char)0; c < 0x80; c++)
+        {
+            foreach (var word in (string[])["hy" + c + "phenation", "hyphenation" + c, c + "hyphenation", "Hyphena" + c + "TION"])
+            {
+                var lowercase = string.Concat(word.Select(letter => (char)UnicodeProperties.ToSimpleLowercase(letter)));
+                Assert.Equal(GetBreaks(hyphenator, lowercase), GetBreaks(hyphenator, word));
+            }
+        }
+    }
+
     [Theory]
     // "hy-phen-ation": 2 letters before the first break, 5 after the last one.
     [InlineData(2, 5, new[] { 2, 6 })]

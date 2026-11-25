@@ -2296,6 +2296,178 @@ public sealed class UnicodeTests
         }
     }
 
+    [Fact]
+    public void GetSentenceLength_MatchesTheRulesForEveryShortAsciiText()
+    {
+        // The code points that cannot end a sentence are skipped without applying the rules to each of them.
+        Span<char> buffer = stackalloc char[3];
+        for (var length = 1; length <= 3; length++)
+        {
+            var text = buffer[..length];
+            var count = 1 << (7 * length);
+            for (var value = 0; value < count; value++)
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    text[i] = (char)((value >> (7 * i)) & 0x7F);
+                }
+
+                if (Unicode.GetSentenceLength(text) != Unicode.GetSentenceLengthByRules(text))
+                {
+                    Assert.Fail($"Text: {string.Join(' ', text.ToArray().Select(c => ((int)c).ToString("X2", CultureInfo.InvariantCulture)))}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void GetSentenceLength_MatchesTheRulesForRandomTexts()
+    {
+        // ASCII characters around terminal punctuation, closing punctuation, spaces, paragraph separators, marks,
+        // format characters, letters that are not ASCII, supplementary characters and unpaired surrogates.
+        string[] pieces =
+        [
+            "a", "Z", "7", " ", "  ", "'", "\"", "(", ")", ".", "!", "?", ",", ":", ";", "-", "\r", "\n", "\r\n", "\t", "\u00E9", "\u00C9", "\u0301", "\u00AD",
+            "\u200D", "\u2019", "\u00BB", "\u3002", "\uFF0E", "\u0085", "\u2028", "\u2029", "\u00A0", "\u4E2D", "\u0E01", "\u05D0", "\U0001D400", "\U0001F600", "\uD800", "\uDC00",
+        ];
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 16);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            for (var start = 0; start < text.Length; start++)
+            {
+                var segment = text.AsSpan(start);
+                Assert.Equal(Unicode.GetSentenceLengthByRules(segment), Unicode.GetSentenceLength(segment));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void GetGraphemeClusterLength_MatchesTheRulesForRandomTexts()
+    {
+        // The rules that only depend on the classes of two code points are read from a table.
+        string[] pieces =
+        [
+            "a", " ", "\r", "\n", "\u0000", "\u0301", "\u200D", "\u200C", "\u0915", "\u094D", "\u093F", "\u0903", "\u0600", "\u1100", "\u1161", "\u11A8", "\uAC00", "\uAC01",
+            "\U0001F1EB", "\U0001F1F7", "\U0001F468", "\U0001F3FD", "\u2764", "\uFE0F", "\u00A9", "\u0E01", "\u0E31", "\u0E33", "\uD800", "\uDC00", "\u2028",
+        ];
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 12);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            for (var start = 0; start < text.Length; start++)
+            {
+                var segment = text.AsSpan(start);
+                Assert.Equal(GetGraphemeClusterLengthByRules(segment), Unicode.GetGraphemeClusterLength(segment));
+            }
+        }
+    }
+
+    /// <summary>The rules of UAX #29 for the extended grapheme clusters, applied as the annex lists them.</summary>
+    private static int GetGraphemeClusterLengthByRules(ReadOnlySpan<char> text)
+    {
+        if (text.IsEmpty)
+            return 0;
+
+        var codePoints = new List<(int CodePoint, int Length)>();
+        for (var index = 0; index < text.Length;)
+        {
+            var length = char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]) ? 2 : 1;
+            codePoints.Add((length == 2 ? char.ConvertToUtf32(text[index], text[index + 1]) : text[index], length));
+            index += length;
+        }
+
+        var end = codePoints[0].Length;
+        for (var i = 1; i < codePoints.Count; i++)
+        {
+            var previous = UnicodeProperties.GetGraphemeClusterBreak(codePoints[i - 1].CodePoint);
+            var next = UnicodeProperties.GetGraphemeClusterBreak(codePoints[i].CodePoint);
+            if (!IsGraphemeJoined(codePoints, i, previous, next))
+                break;
+
+            end += codePoints[i].Length;
+        }
+
+        return end;
+
+        static bool IsGraphemeJoined(List<(int CodePoint, int Length)> codePoints, int i, UnicodeGraphemeClusterBreak previous, UnicodeGraphemeClusterBreak next)
+        {
+            if (previous is UnicodeGraphemeClusterBreak.CR && next is UnicodeGraphemeClusterBreak.LF)
+                return true;
+
+            if (previous is UnicodeGraphemeClusterBreak.Control or UnicodeGraphemeClusterBreak.CR or UnicodeGraphemeClusterBreak.LF || next is UnicodeGraphemeClusterBreak.Control or UnicodeGraphemeClusterBreak.CR or UnicodeGraphemeClusterBreak.LF)
+                return false;
+
+            if ((previous is UnicodeGraphemeClusterBreak.L && next is UnicodeGraphemeClusterBreak.L or UnicodeGraphemeClusterBreak.V or UnicodeGraphemeClusterBreak.LV or UnicodeGraphemeClusterBreak.LVT)
+                || (previous is UnicodeGraphemeClusterBreak.LV or UnicodeGraphemeClusterBreak.V && next is UnicodeGraphemeClusterBreak.V or UnicodeGraphemeClusterBreak.T)
+                || (previous is UnicodeGraphemeClusterBreak.LVT or UnicodeGraphemeClusterBreak.T && next is UnicodeGraphemeClusterBreak.T))
+            {
+                return true;
+            }
+
+            if (next is UnicodeGraphemeClusterBreak.Extend or UnicodeGraphemeClusterBreak.ZWJ or UnicodeGraphemeClusterBreak.SpacingMark || previous is UnicodeGraphemeClusterBreak.Prepend)
+                return true;
+
+            // GB9c, as GetGraphemeClusterLength applies it: [\p{InCB=Linker}] [\p{InCB=Extend}\p{InCB=Linker}]* × \p{InCB=Consonant}. The
+            // annex also requires an InCB=Consonant before the first linker.
+            if (UnicodeProperties.GetIndicConjunctBreak(codePoints[i].CodePoint) is UnicodeIndicConjunctBreak.Consonant)
+            {
+                for (var j = i - 1; j >= 0; j--)
+                {
+                    var conjunct = UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint);
+                    if (conjunct is UnicodeIndicConjunctBreak.Linker)
+                        return true;
+
+                    if (conjunct is not UnicodeIndicConjunctBreak.Extend)
+                        break;
+                }
+            }
+
+            // GB11: \p{Extended_Pictographic} Extend* ZWJ × \p{Extended_Pictographic}
+            if (previous is UnicodeGraphemeClusterBreak.ZWJ && UnicodeEmoji.IsExtendedPictographic(codePoints[i].CodePoint))
+            {
+                var j = i - 2;
+                while (j >= 0 && UnicodeProperties.GetGraphemeClusterBreak(codePoints[j].CodePoint) is UnicodeGraphemeClusterBreak.Extend)
+                {
+                    j--;
+                }
+
+                if (j >= 0 && UnicodeEmoji.IsExtendedPictographic(codePoints[j].CodePoint))
+                    return true;
+            }
+
+            // GB12, GB13: an odd number of regional indicators before the position
+            if (previous is UnicodeGraphemeClusterBreak.RegionalIndicator && next is UnicodeGraphemeClusterBreak.RegionalIndicator)
+            {
+                var count = 0;
+                for (var j = i - 1; j >= 0 && UnicodeProperties.GetGraphemeClusterBreak(codePoints[j].CodePoint) is UnicodeGraphemeClusterBreak.RegionalIndicator; j--)
+                {
+                    count++;
+                }
+
+                return count % 2 == 1;
+            }
+
+            return false;
+        }
+    }
+
     [Theory]
     [InlineData("", new string[0])]
     [InlineData("Hello.", new[] { "Hello." })]
@@ -4383,6 +4555,38 @@ public sealed class UnicodeTests
         Assert.True(UnicodeIdna.TryEncodePunycode(text, out encoded));
         Assert.True(UnicodeIdna.TryDecodePunycode(encoded, out decoded));
         Assert.Equal(text, decoded);
+    }
+
+    [Theory]
+    [InlineData("B\u00FCcher.example")]
+    [InlineData("xn--bcher-kva.example")]
+    [InlineData("\u4F8B\u3048.\u30C6\u30B9\u30C8")]
+    [InlineData("\u0645\u062B\u0627\u0644.\u0625\u062E\u062A\u0628\u0627\u0631")]
+    [InlineData("\uFF37\uFF37\uFF37\u3002example\u3002com")]
+    [InlineData("\u043F\u0440\u0438\u043C\u0435\u0440.\u0438\u0441\u043F\u044B\u0442\u0430\u043D\u0438\u0435")]
+    [InlineData("a\u200Db.xn--a-ecp.-x")]
+    public void Idna_LongDomainNamesAreTheirLabelsJoined(string domainName)
+    {
+        // The labels are processed in buffers on the stack, which a long domain name outgrows
+        var options = new UnicodeIdnaOptions { VerifyDnsLength = false };
+        var expectedUnicode = UnicodeIdna.ToUnicode(domainName, options, out var expectedHasErrors);
+        var expectedIsValid = UnicodeIdna.TryToAscii(domainName, options, out var expectedAscii);
+        foreach (var count in (int[])[10, 30, 100])
+        {
+            var longDomainName = string.Join('.', Enumerable.Repeat(domainName, count));
+            Assert.Equal(string.Join('.', Enumerable.Repeat(expectedUnicode, count)), UnicodeIdna.ToUnicode(longDomainName, options, out var hasErrors));
+            Assert.Equal(expectedHasErrors, hasErrors);
+            Assert.Equal(expectedIsValid, UnicodeIdna.TryToAscii(longDomainName, options, out var ascii));
+            Assert.Equal(expectedIsValid ? string.Join('.', Enumerable.Repeat(expectedAscii, count)) : null, ascii);
+        }
+
+        var longLabel = string.Concat(Enumerable.Repeat(domainName.Replace(".", "", StringComparison.Ordinal).Replace("\u3002", "", StringComparison.Ordinal), 20));
+        var unicode = UnicodeIdna.ToUnicode(longLabel, options, out _);
+        if (UnicodeIdna.TryToAscii(longLabel, options, out var asciiLabel) && asciiLabel.StartsWith("xn--", StringComparison.Ordinal))
+        {
+            Assert.True(UnicodeIdna.TryDecodePunycode(asciiLabel.AsSpan(4), out var decoded));
+            Assert.Equal(unicode, decoded);
+        }
     }
 
     [Fact]

@@ -281,6 +281,11 @@ public sealed class Hyphenator
         if (word.Length < 2 || word.Length > _maxWordLength)
             return 0;
 
+        // A break leaves LeftHyphenMin grapheme clusters before it and RightHyphenMin after it, and a cluster has at least
+        // one UTF-16 code unit: a shorter word has no break, and most words of a text are short.
+        if (word.Length < LeftHyphenMin + RightHyphenMin)
+            return 0;
+
         // The buffers take 13 bytes per UTF-16 code unit: a longer word than StackallocWordLength rents them, so that
         // the stack stays under 1 KB whatever MaxWordLength is.
         var hasExceptions = _exceptions.Count != 0;
@@ -320,7 +325,20 @@ public sealed class Hyphenator
         letters[0] = WordBoundary;
         for (var index = 0; index < word.Length;)
         {
-            var codePoint = UnicodeProperties.ToSimpleLowercase(Unicode.DecodeAt(word, index, out var length));
+            int codePoint;
+            int length;
+            var c = word[index];
+            if (char.IsAscii(c))
+            {
+                // The lowercase mapping of an ASCII character is ASCII
+                codePoint = char.IsAsciiLetterUpper(c) ? c | 0x20 : c;
+                length = 1;
+            }
+            else
+            {
+                codePoint = UnicodeProperties.ToSimpleLowercase(Unicode.DecodeAt(word, index, out length));
+            }
+
             offsets[letterCount] = index;
             letters[++letterCount] = codePoint == WordBoundary ? NoLetter : codePoint;
             if (hasExceptions)

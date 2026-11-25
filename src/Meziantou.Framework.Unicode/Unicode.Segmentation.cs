@@ -38,13 +38,31 @@ public static partial class Unicode
         return GetGraphemeClusterLengthCore(text);
     }
 
+    // Rules GB3 to GB9b only depend on the classes of the two code points around a position: bit n of
+    // GraphemeJoins[p] is set when one of them keeps a code point of class p with a following one of class n, and bit n
+    // of GraphemeBreaks[p] when GB4 or GB5 separates them. The other pairs are separated unless GB9c, GB11 or GB12
+    // and GB13 keep them, which depends on what precedes them.
+    private static readonly uint[] GraphemeJoins = CreateGraphemePairTable(joins: true);
+    private static readonly uint[] GraphemeBreaks = CreateGraphemePairTable(joins: false);
+
     private static int GetGraphemeClusterLengthCore(ReadOnlySpan<char> text)
     {
         var tuple = UnicodeProperties.GetSegmentationTuple(DecodeAt(text, 0, out var index));
-        var previous = (GraphemeBreak)(tuple & 0x1F);
+        return GetGraphemeClusterLengthCore(text, tuple, index, out _);
+    }
+
+    /// <summary>Gets the length of the first extended grapheme cluster of a text, whose first code point is already read.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="tuple">The segmentation tuple of the first code point of <paramref name="text"/>.</param>
+    /// <param name="index">The length of the first code point.</param>
+    /// <param name="next">The segmentation tuple of the code point that follows the cluster, with its length in bits 16 and up; -1 at the end of the text.</param>
+    /// <returns>The length of the cluster.</returns>
+    internal static int GetGraphemeClusterLengthCore(ReadOnlySpan<char> text, int tuple, int index, out int next)
+    {
+        var previous = tuple & 0x1F;
 
         // GB12 and GB13: the number of regional indicators that end at the previous code point.
-        var regionalIndicators = previous is GraphemeBreak.RegionalIndicator ? 1 : 0;
+        var regionalIndicators = previous == (int)GraphemeBreak.RegionalIndicator ? 1 : 0;
 
         // GB11: 1 after Extended_Pictographic Extend*, 2 after Extended_Pictographic Extend* ZWJ.
         var emoji = (tuple & 0x80) != 0 ? 1 : 0;
@@ -55,52 +73,28 @@ public static partial class Unicode
         while (index < text.Length)
         {
             tuple = UnicodeProperties.GetSegmentationTuple(DecodeAt(text, index, out var length));
-            var next = (GraphemeBreak)(tuple & 0x1F);
+            var current = tuple & 0x1F;
             var isPictographic = (tuple & 0x80) != 0;
             var conjunct = (UnicodeIndicConjunctBreak)((tuple >> 5) & 0x3);
 
-            if (previous is GraphemeBreak.CR && next is GraphemeBreak.LF)
+            var bit = 1u << current;
+            if ((GraphemeJoins[previous] & bit) == 0)
             {
-                // GB3
-            }
-            else if (previous is GraphemeBreak.Control or GraphemeBreak.CR or GraphemeBreak.LF
-                || next is GraphemeBreak.Control or GraphemeBreak.CR or GraphemeBreak.LF)
-            {
-                // GB4, GB5
-                break;
-            }
-            else if ((previous is GraphemeBreak.L && next is GraphemeBreak.L or GraphemeBreak.V or GraphemeBreak.LV or GraphemeBreak.LVT)
-                || (previous is GraphemeBreak.LV or GraphemeBreak.V && next is GraphemeBreak.V or GraphemeBreak.T)
-                || (previous is GraphemeBreak.LVT or GraphemeBreak.T && next is GraphemeBreak.T))
-            {
-                // GB6, GB7, GB8
-            }
-            else if (next is GraphemeBreak.Extend or GraphemeBreak.ZWJ or GraphemeBreak.SpacingMark || previous is GraphemeBreak.Prepend)
-            {
-                // GB9, GB9a, GB9b
-            }
-            else if (linker && conjunct is UnicodeIndicConjunctBreak.Consonant)
-            {
-                // GB9c
-            }
-            else if (emoji == 2 && isPictographic)
-            {
-                // GB11
-            }
-            else if (previous is GraphemeBreak.RegionalIndicator && next is GraphemeBreak.RegionalIndicator && (regionalIndicators & 1) != 0)
-            {
-                // GB12, GB13
-            }
-            else
-            {
-                // GB999
-                break;
+                // GB4, GB5, then GB9c, GB11, GB12 and GB13, then GB999
+                if ((GraphemeBreaks[previous] & bit) != 0
+                    || !((linker && conjunct is UnicodeIndicConjunctBreak.Consonant)
+                        || (emoji == 2 && isPictographic)
+                        || (current == (int)GraphemeBreak.RegionalIndicator && previous == (int)GraphemeBreak.RegionalIndicator && (regionalIndicators & 1) != 0)))
+                {
+                    next = tuple | (length << 16);
+                    return index;
+                }
             }
 
-            regionalIndicators = next is GraphemeBreak.RegionalIndicator ? regionalIndicators + 1 : 0;
+            regionalIndicators = current == (int)GraphemeBreak.RegionalIndicator ? regionalIndicators + 1 : 0;
             emoji = isPictographic ? 1
-                : emoji == 1 && next is GraphemeBreak.Extend ? 1
-                : emoji == 1 && next is GraphemeBreak.ZWJ ? 2
+                : emoji == 1 && current == (int)GraphemeBreak.Extend ? 1
+                : emoji == 1 && current == (int)GraphemeBreak.ZWJ ? 2
                 : 0;
             linker = conjunct switch
             {
@@ -109,11 +103,57 @@ public static partial class Unicode
                 _ => false,
             };
 
-            previous = next;
+            previous = current;
             index += length;
         }
 
+        next = -1;
         return index;
+    }
+
+    private static uint[] CreateGraphemePairTable(bool joins)
+    {
+        var table = new uint[32];
+        for (var previous = 0; previous < 32; previous++)
+        {
+            for (var next = 0; next < 32; next++)
+            {
+                var value = GetGraphemePairRule((GraphemeBreak)previous, (GraphemeBreak)next);
+                if (value == (joins ? 1 : -1))
+                {
+                    table[previous] |= 1u << next;
+                }
+            }
+        }
+
+        return table;
+    }
+
+    /// <summary>Applies the rules GB3 to GB9b to the classes around a position.</summary>
+    /// <returns>1 when a rule keeps them together, -1 when GB4 or GB5 separates them, 0 when the rules that follow decide.</returns>
+    private static int GetGraphemePairRule(GraphemeBreak previous, GraphemeBreak next)
+    {
+        // GB3
+        if (previous is GraphemeBreak.CR && next is GraphemeBreak.LF)
+            return 1;
+
+        // GB4, GB5
+        if (previous is GraphemeBreak.Control or GraphemeBreak.CR or GraphemeBreak.LF || next is GraphemeBreak.Control or GraphemeBreak.CR or GraphemeBreak.LF)
+            return -1;
+
+        // GB6, GB7, GB8
+        if ((previous is GraphemeBreak.L && next is GraphemeBreak.L or GraphemeBreak.V or GraphemeBreak.LV or GraphemeBreak.LVT)
+            || (previous is GraphemeBreak.LV or GraphemeBreak.V && next is GraphemeBreak.V or GraphemeBreak.T)
+            || (previous is GraphemeBreak.LVT or GraphemeBreak.T && next is GraphemeBreak.T))
+        {
+            return 1;
+        }
+
+        // GB9, GB9a, GB9b
+        if (next is GraphemeBreak.Extend or GraphemeBreak.ZWJ or GraphemeBreak.SpacingMark || previous is GraphemeBreak.Prepend)
+            return 1;
+
+        return 0;
     }
 
     /// <summary>Enumerates the extended grapheme clusters of a text.</summary>
@@ -589,7 +629,12 @@ public static partial class Unicode
     }
 
     /// <summary>Gets the length of the first sentence of a text.</summary>
-    internal static int GetSentenceLength(ReadOnlySpan<char> text)
+    internal static int GetSentenceLength(ReadOnlySpan<char> text) => GetSentenceLength(text, skipContinuations: true);
+
+    /// <summary>Gets the length of the first sentence of a text, applying the rules to every code point: the reference of the tests of <see cref="SkipSentenceContinuation"/>.</summary>
+    internal static int GetSentenceLengthByRules(ReadOnlySpan<char> text) => GetSentenceLength(text, skipContinuations: false);
+
+    private static int GetSentenceLength(ReadOnlySpan<char> text, bool skipContinuations)
     {
         if (text.IsEmpty)
             return 0;
@@ -607,6 +652,17 @@ public static partial class Unicode
 
         while (index < text.Length)
         {
+            if (skipContinuations && terminal is SentenceBreak.Other && actualPrevious is not (SentenceBreak.Sep or SentenceBreak.CR or SentenceBreak.LF))
+            {
+                // Most of a sentence is not after a terminal punctuation: only a paragraph separator or a terminal
+                // punctuation can change that.
+                index = SkipSentenceContinuation(text, index, ref previous);
+                if (index >= text.Length)
+                    break;
+
+                actualPrevious = previous;
+            }
+
             var next = UnicodeProperties.GetSentenceBreak(DecodeAt(text, index, out var length));
             if (actualPrevious is SentenceBreak.CR && next is SentenceBreak.LF)
             {
@@ -650,6 +706,91 @@ public static partial class Unicode
         }
 
         return index;
+    }
+
+    // The classes of the ASCII characters, and the classes that end SkipSentenceContinuation.
+    private static readonly byte[] AsciiSentenceBreaks = CreateAsciiSentenceBreaks();
+    private const int SentenceContinuationStops = (1 << (int)SentenceBreak.ATerm) | (1 << (int)SentenceBreak.STerm) | (1 << (int)SentenceBreak.Sep) | (1 << (int)SentenceBreak.CR) | (1 << (int)SentenceBreak.LF);
+
+    /// <summary>Skips the code points that the rules join to the text before them when it does not end with a terminal punctuation, a paragraph separator or a CR.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="index">The index of the first code point to read.</param>
+    /// <param name="previous">The class of the last code point that SB5 does not ignore; updated with the code points that are skipped.</param>
+    /// <returns>The index of the first code point that is a terminal punctuation or a paragraph separator, or the length of the text.</returns>
+    /// <remarks>
+    /// When the text before a position does not end with SATerm Close* Sp* nor with a paragraph separator, rules SB3 and
+    /// SB4 do not apply, and SB5, SB6, SB7 and SB998 join the next code point to it. Only an ATerm, an STerm or a
+    /// paragraph separator changes that. The class before the stop is all the general loop needs: SB7 reads the class
+    /// before an ATerm only once the ATerm is the previous code point.
+    /// </remarks>
+    private static int SkipSentenceContinuation(ReadOnlySpan<char> text, int index, ref SentenceBreak previous)
+    {
+        var classes = AsciiSentenceBreaks;
+        while ((uint)index < (uint)text.Length)
+        {
+            var c = text[index];
+            if (c < (uint)classes.Length)
+            {
+                var start = index;
+                do
+                {
+                    if ((SentenceContinuationStops & (1 << classes[c])) != 0)
+                        break;
+
+                    index++;
+                }
+                while ((uint)index < (uint)text.Length && (c = text[index]) < (uint)classes.Length);
+
+                if (index > start)
+                {
+                    UpdatePrevious(classes[text[index - 1]], ref previous);
+                }
+
+                if ((uint)index >= (uint)text.Length || c < (uint)classes.Length)
+                    break;
+            }
+
+            int value;
+            if (!char.IsSurrogate(c))
+            {
+                value = (int)UnicodeProperties.GetSentenceBreak(c);
+                if ((SentenceContinuationStops & (1 << value)) != 0)
+                    break;
+
+                index++;
+            }
+            else
+            {
+                value = (int)UnicodeProperties.GetSentenceBreak(DecodeAt(text, index, out var length));
+                if ((SentenceContinuationStops & (1 << value)) != 0)
+                    break;
+
+                index += length;
+            }
+
+            UpdatePrevious(value, ref previous);
+        }
+
+        return index;
+
+        static void UpdatePrevious(int value, ref SentenceBreak previous)
+        {
+            if ((SentenceBreak)value is not (SentenceBreak.Extend or SentenceBreak.Format))
+            {
+                previous = (SentenceBreak)value;
+            }
+        }
+    }
+
+    private static byte[] CreateAsciiSentenceBreaks()
+    {
+        var result = new byte[128];
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = (byte)UnicodeProperties.GetSentenceBreak(i);
+        }
+
+        return result;
     }
 
     /// <summary>Applies the rules SB6 to SB11 to the classes around a position.</summary>

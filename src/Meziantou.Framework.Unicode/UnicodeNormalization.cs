@@ -120,6 +120,22 @@ public static class UnicodeNormalization
         return length;
     }
 
+    /// <summary>Normalizes a text into a rented buffer, unless it is normalized already.</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="form">The normalization form.</param>
+    /// <param name="length">The length of the normalized text in the buffer.</param>
+    /// <returns>A buffer of <see cref="ArrayPool{T}.Shared"/> that the caller returns, or <see langword="null"/> when <paramref name="text"/> is normalized already.</returns>
+    internal static char[]? NormalizeToRentedBuffer(ReadOnlySpan<char> text, NormalizationForm form, out int length)
+    {
+        if (QuickCheck(text, form, out var prefix) is QuickCheckResult.Yes)
+        {
+            length = text.Length;
+            return null;
+        }
+
+        return Normalize(text, form, prefix, out length);
+    }
+
     /// <summary>Determines whether a text is in a normalization form.</summary>
     /// <param name="value">The text.</param>
     /// <param name="form">The normalization form.</param>

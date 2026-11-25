@@ -57,7 +57,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             if (_streams is { } existing)
                 return existing;
 
-            var script = s_streamsScript ??= LoadStreamsScript();
+            var script = s_streamsScript ??= LoadEmbeddedScript("Meziantou.Framework.WebPlatform.Scripting.WebIdl.Streams.js");
             var adapter = Adapter;
             var interfaces = CreateObject();
             foreach (var name in (ReadOnlySpan<string>)["AbortController", "AbortSignal", "TextEncoder", "TextDecoder"])
@@ -286,14 +286,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
     /// <summary>The kinds of the BufferSource type: all the buffer source types except SharedArrayBuffer.</summary>
     private const uint BufferSourceKinds = ((1u << ((int)JsBufferKind.Float64Array + 1)) - 1) & ~(1u << (int)JsBufferKind.SharedArrayBuffer);
-
-    private static string LoadStreamsScript()
-    {
-        using var stream = typeof(WebIdlRealm<TAdapter, TValue>).Assembly.GetManifestResourceStream("Meziantou.Framework.WebPlatform.Scripting.WebIdl.Streams.js")
-            ?? throw new InvalidOperationException("The Streams.js resource is missing");
-        using var reader = new StreamReader(stream);
-        return reader.ReadToEnd();
-    }
 
     /// <summary>
     /// Defines the streaming HTML insertion methods proposed by https://github.com/whatwg/html/pull/12758 (e.g.

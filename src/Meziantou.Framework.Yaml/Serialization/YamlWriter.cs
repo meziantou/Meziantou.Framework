@@ -448,9 +448,6 @@ public sealed class YamlWriter : YamlReaderWriterBase
             throw new InvalidOperationException("Property names can only be written inside a mapping.");
         }
 
-        // The style is selected while the tag of the key, if any, is still pending
-        style = GetKeyStyle(name, style);
-
         ref var frame = ref _frames[_depth - 1];
         if (!frame.ExpectingKey)
         {
@@ -464,6 +461,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
                 Write(", ");
             }
 
+            // The style is selected while the tag of the key, if any, is still pending
+            style = GetKeyStyle(name, style);
             if (RequiresExplicitKey(name, style))
             {
                 Write("? ");
@@ -490,6 +489,9 @@ public sealed class YamlWriter : YamlReaderWriterBase
             WriteIndent(frame.Indent);
         }
 
+        // The style is selected once the line break and the indentation are written, so a key at the first column,
+        // where "---" and "..." are document markers, is quoted. The tag of the key, if any, is still pending.
+        style = GetKeyStyle(name, style);
         var explicitKey = RequiresExplicitKey(name, style);
         if (explicitKey)
         {

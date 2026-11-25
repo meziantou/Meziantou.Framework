@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!-- S/MIME: the signatures and the encryption of CMS -->
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.15" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup>

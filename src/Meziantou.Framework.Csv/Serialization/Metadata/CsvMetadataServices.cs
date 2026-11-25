@@ -26,7 +26,7 @@ public static class CsvMetadataServices
 
         // Stable sort: the members keep their declaration order when they have the same order
         var ordered = properties.Select((property, index) => (property, index)).OrderBy(item => item.property.Order).ThenBy(item => item.index).Select(item => item.property).ToArray();
-        return new CsvTypeInfo<T>(options, values, ordered);
+        return new CsvTypeInfo<T>(options, values, ordered, properties);
     }
 
     /// <summary>Creates the metadata of a column.</summary>

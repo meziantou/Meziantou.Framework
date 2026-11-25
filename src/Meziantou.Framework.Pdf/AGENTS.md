@@ -92,7 +92,7 @@ the XML documentation and `readme.md` consistent in the same change.
 - **Readers repair.** Real files are damaged: the lexer accepts what readers accept (signs and points in numbers,
   unknown escapes, invalid hexadecimal digits), a wrong cross-reference entry falls back to a scan of the file
   (`PdfRecoveryScanner`), a missing or broken cross-reference rebuilds everything (`PdfFileReader.Repair`,
-  `PdfDocument.IsRepaired`), a stream whose `/Length` is wrong ends at `endstream`, a damaged Flate stream gives the data
+  `PdfDocument.IsRepaired`), a stream whose `/Length` is wrong ends at `endstream` (or at the `endobj` of its object when it comes first, so that the bytes an update appends do not change it), a damaged Flate stream gives the data
   before the damage. A reference to an object that does not exist is the null object (7.3.10).
 - **Bounded work.** Everything a file can make expand is bounded: the decoded length of a stream
   (`MaxDecodedStreamLength`, checked as the output grows), the nesting of objects (`MaxNestingDepth`), the page tree and

@@ -67,6 +67,60 @@ public class CsvSerializerSourceGenerationTests
     }
 
     [Fact]
+    public void MembersReader()
+    {
+        // The generated members reader sets the members when the columns are in their declaration order, and the setters otherwise: the records, the
+        // missing values and the errors are the ones of reflection, in UTF-16 and UTF-8
+        Assert.NotNull(TestCsvContext.Default.Person.MembersReader);
+        Assert.NotNull(TestCsvContext.Default.Person.Utf8MembersReader);
+        Assert.NotNull(TestCsvContext.Default.MembersModel.MembersReader);
+        Assert.NotNull(TestCsvContext.Default.StructModel.MembersReader);
+        Assert.Null(TestCsvContext.Default.ParameterOnlyModel.MembersReader);
+
+        string[] people =
+        [
+            "Name,Age,BirthDate\nAlice,30,1990-01-02\nBob,,",
+            "BirthDate,Age,Name\n1990-01-02,30,Alice",
+            "Name\nAlice",
+            "Name,Extra,Age\nAlice,x,30",
+            "Name,Age,BirthDate\nAlice\nBob,3",
+            "Name,Age\nAlice,x",
+            "Age,Name\nx,Alice",
+            "Name,Age,BirthDate\nAlice,30,1990-13-45",
+            "BirthDate,Age\n1990-13-45,x",
+        ];
+        foreach (var text in people)
+        {
+            AssertSameDeserialization(text, TestCsvContext.Default.Person);
+        }
+
+        AssertSameDeserialization("Value\n1\n-1", TestCsvContext.Default.ValidatingSetterModel);
+        AssertSameDeserialization("Init,Required,Private,PrivateSetter,Field,ReadOnly\n1,2,3,4,5,6", TestCsvContext.Default.MembersModel);
+        AssertSameDeserialization("X,Y\n1,2", TestCsvContext.Default.StructModel);
+        AssertSameDeserialization("Id,Name,Price\n1,\"a,b\",2.5", TestCsvContext.Default.Product);
+    }
+
+    // The generated metadata, with its members reader, gives the records or the error of the reflection-based metadata
+    private static void AssertSameDeserialization<T>(string text, CsvTypeInfo<T> typeInfo)
+    {
+        var reflectionOptions = new CsvSerializerOptions(typeInfo.Options) { TypeInfoResolver = null };
+        Assert.Equal(Describe(() => CsvSerializer.Deserialize<T>(text, reflectionOptions)), Describe(() => CsvSerializer.Deserialize(text, typeInfo)));
+        Assert.Equal(Describe(() => CsvSerializer.Deserialize<T>(Encoding.UTF8.GetBytes(text), reflectionOptions)), Describe(() => CsvSerializer.Deserialize(Encoding.UTF8.GetBytes(text), typeInfo)));
+
+        string Describe(Func<List<T>> deserialize)
+        {
+            try
+            {
+                return CsvSerializer.Serialize(deserialize(), reflectionOptions);
+            }
+            catch (CsvException ex)
+            {
+                return ex.GetType().Name + ": " + ex.Message + " " + ex.LineNumber + " " + ex.ColumnIndex + " " + ex.InnerException?.GetType().Name;
+            }
+        }
+    }
+
+    [Fact]
     public void DeserializationErrorHandler()
     {
         // The generated metadata goes through the same binder as reflection
@@ -365,6 +419,7 @@ public partial class AppCsvContext : CsvSerializerContext
 [CsvSerializable(typeof(DefaultValuesModel))]
 [CsvSerializable(typeof(ParameterOnlyModel))]
 [CsvSerializable(typeof(SelectedConstructorModel))]
+[CsvSerializable(typeof(ValidatingSetterModel))]
 internal sealed partial class TestCsvContext : CsvSerializerContext
 {
 }

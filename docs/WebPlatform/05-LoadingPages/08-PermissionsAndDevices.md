@@ -1,6 +1,6 @@
 ---
 title: Permissions and devices
-description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screens, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
+description: Answer the permission prompts, and decide what the clipboard, sharing, vibration, geolocation, camera and microphone, encrypted media, notifications, badging, battery, wake lock, keyboard lock, keyboard layout, media session, screens, screen orientation, virtual keyboard, viewport segments, compute pressure, idle detection, device posture, gamepads, USB devices, Bluetooth devices, serial ports, HID devices, NFC, Web Authentication, network information, device memory, CPU performance, Global Privacy Control, sensor and protocol handler APIs do in your pages.
 ---
 
 Some web APIs depend on the device or on the user: a browser asks the user for a permission, shows a share sheet, reads
@@ -36,6 +36,8 @@ the device in a test, or to connect the API to your application.
 | [Usb](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Usb) | `navigator.usb` (WebUSB), in the pages and the workers | No USB device is connected |
 | [Bluetooth](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Bluetooth) | `navigator.bluetooth` (Web Bluetooth) | There is no Bluetooth adapter |
 | [Screens](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Screens) | `window.screen`, `window.getScreenDetails()` and the fullscreen requests on a screen (Window Management) | The device has one screen, the size of the viewport |
+| [Serial](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Serial) | `navigator.serial` (Web Serial), in the pages and the dedicated workers | There is no serial port |
+| [Hid](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Hid) | `navigator.hid` (WebHID), in the pages and the workers | No HID device is connected |
 | [WebAuthentication](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.WebAuthentication) | `navigator.credentials.create()`, `navigator.credentials.get()` and `PublicKeyCredential` (passkeys and security keys) | There is no authenticator: the ceremonies fail with a `NotAllowedError` |
 | [KeyboardMap](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.KeyboardMap) | `navigator.keyboard.getLayoutMap()` | A US QWERTY keyboard |
 | [MediaSession](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.MediaSession) | `navigator.mediaSession` | The media session is shown nowhere |
@@ -1054,6 +1056,173 @@ var options = new BrowsingContextOptions
 - Scanning for advertisements is not supported: `watchAdvertisements()` fails with a `NotSupportedError`, and
   `BluetoothAdvertisingEvent` and `requestLEScan()` do not exist. `navigator.permissions.query()` does not support the
   `bluetooth` permission, and `referringDevice` is always null. A prerendered page gets the devices once it is shown.
+
+## Serial ports
+
+`navigator.serial` (Web Serial) uses the serial ports of a [SerialProvider](cref:Meziantou.Framework.WebPlatform.Dom.SerialProvider),
+in the pages and their dedicated workers. Implement each port with a
+[SerialHostPort](cref:Meziantou.Framework.WebPlatform.Dom.SerialHostPort): its USB or Bluetooth identifiers, and the
+[SerialConnection](cref:Meziantou.Framework.WebPlatform.Dom.SerialConnection) that `port.open()` opens. The library
+validates the parameters and runs the `readable` (a readable byte stream) and `writable` streams of the page, so a
+connection only reads and writes bytes:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_SerialHostPort;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A port of the application (an Arduino Uno): the device sends back the bytes it receives
+private sealed class LoopbackSerialPort() : SerialHostPort(usbVendorId: 0x2341, usbProductId: 0x0043)
+{
+    public override Task<SerialConnection> OpenAsync(SerialConnectionOptions options, CancellationToken cancellationToken) => Task.FromResult<SerialConnection>(new Connection());
+
+    // The library validates the parameters and runs the streams of the page: the connection only moves the bytes
+    private sealed class Connection : SerialConnection
+    {
+        private readonly Queue<byte> _received = new();
+        private TaskCompletionSource? _dataAvailable;
+
+        public override async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        {
+            while (_received.Count == 0)
+            {
+                _dataAvailable = new TaskCompletionSource();
+                await _dataAvailable.Task.WaitAsync(cancellationToken);
+            }
+
+            var count = 0;
+            while (count < buffer.Length && _received.TryDequeue(out var value))
+            {
+                buffer.Span[count++] = value;
+            }
+
+            return count;
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            foreach (var value in data.Span)
+            {
+                _received.Enqueue(value);
+            }
+
+            _dataAvailable?.TrySetResult();
+            return Task.CompletedTask;
+        }
+
+        public override Task<SerialInputSignals> GetSignalsAsync(CancellationToken cancellationToken)
+            => Task.FromResult(new SerialInputSignals { DataCarrierDetect = true, ClearToSend = true, RingIndicator = false, DataSetReady = true });
+
+        public override Task CloseAsync() => Task.CompletedTask;
+    }
+}
+```
+<!-- endref -->
+
+A page can use a port once its origin is allowed to: call
+[Allow](cref:Meziantou.Framework.WebPlatform.Dom.SerialProvider.Allow), or let the user choose a port for
+`navigator.serial.requestPort()` by overriding
+[RequestPort](cref:Meziantou.Framework.WebPlatform.Dom.SerialProvider.RequestPort):
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_SerialPortChooser;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The port chooser of requestPort(): the user picks the first port that matches the filters of the page
+private sealed class FirstSerialPortChooser : SerialProvider
+{
+    public override Task<SerialHostPort?> RequestPort(SerialPortRequest request) => Task.FromResult(request.Ports.Count > 0 ? request.Ports[0] : null);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Serial;format=md-fenced-code-block;dedent=true -->
+```csharp
+var serial = new FirstSerialPortChooser();
+serial.Connect(new LoopbackSerialPort());
+var options = new BrowsingContextOptions
+{
+    Serial = new WebSerialOptions { Provider = serial },
+};
+```
+<!-- endref -->
+
+- `requestPort()` needs a click of the user, and offers the available ports that match the filters of the page. The
+  Bluetooth ports are offered when they use the Serial Port Profile or a custom service class of
+  `allowedBluetoothServiceClassIds` (the other standard service classes are blocked). `getPorts()` and `requestPort()`
+  fail with a `SecurityError` when the `serial` permissions policy does not allow the frame.
+- A read completes when [ReadAsync](cref:Meziantou.Framework.WebPlatform.Dom.SerialConnection.ReadAsync) returns bytes. A
+  [SerialException](cref:Meziantou.Framework.WebPlatform.Dom.SerialException) chooses the error of the stream
+  (`BreakError`, `BufferOverrunError`, `FramingError`, `ParityError`, `UnknownError`): the next `readable` is a new
+  stream, except after a disconnection (`NetworkError`, then null).
+- `close()` cancels the readable stream and aborts the writable stream: it fails with a `TypeError` while a stream is
+  locked (the port stays open, as in Chromium). `Connect` and `Disconnect` fire the `connect` and `disconnect` events of
+  the ports, which bubble to `navigator.serial`; a disconnection errors the streams of an open port. Unloading a page or
+  terminating a worker closes its ports.
+
+## HID devices
+
+`navigator.hid` (WebHID) uses the HID interfaces of a [HidProvider](cref:Meziantou.Framework.WebPlatform.Dom.HidProvider),
+in the pages and their workers. Implement each one with a [HidHostDevice](cref:Meziantou.Framework.WebPlatform.Dom.HidHostDevice):
+its identifiers, its report descriptor, which the library parses into `device.collections`, and the
+[HidDeviceSession](cref:Meziantou.Framework.WebPlatform.Dom.HidDeviceSession) that `device.open()` opens:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_HidHostDevice;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A vendor-defined device of the application: it sends back the output reports as input reports, and stores its feature report
+private sealed class EchoHidDevice() : HidHostDevice(0x1234, 0x5678, "Echo Device", EchoReportDescriptor)
+{
+    // Usage page 0xFF00, application collection: the input and output report 1 (8 bytes), the feature report 2 (4 bytes)
+    private static readonly byte[] EchoReportDescriptor =
+    [
+        0x06, 0x00, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x08,
+        0x09, 0x02, 0x81, 0x02, 0x09, 0x03, 0x91, 0x02, 0x85, 0x02, 0x95, 0x04, 0x09, 0x04, 0xB1, 0x02, 0xC0,
+    ];
+
+    public override Task<HidDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<HidDeviceSession>(new Session());
+
+    // The library parses the collections and checks the report IDs: the session only exchanges the reports
+    private sealed class Session : HidDeviceSession
+    {
+        private byte[] _feature = [1, 2, 3, 4];
+
+        public override Task SendReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            OnInputReport(reportId, data);
+            return Task.CompletedTask;
+        }
+
+        public override Task SendFeatureReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+        {
+            _feature = data.ToArray();
+            return Task.CompletedTask;
+        }
+
+        public override Task<ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, CancellationToken cancellationToken) => Task.FromResult<ReadOnlyMemory<byte>>(_feature);
+
+        public override Task CloseAsync() => Task.CompletedTask;
+    }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/HostDeviceApisTests.cs;region=WebPlatform_Hid;format=md-fenced-code-block;dedent=true -->
+```csharp
+var hid = new FirstHidDeviceChooser();
+hid.Connect(new EchoHidDevice());
+var options = new BrowsingContextOptions
+{
+    Hid = new HidOptions { Provider = hid },
+};
+```
+<!-- endref -->
+
+- `requestDevice()` needs a click of the user, and offers the connected devices that match the filters (their
+  identifiers, and the usage of a top-level collection) and none of the exclusion filters. Override
+  [RequestDevice](cref:Meziantou.Framework.WebPlatform.Dom.HidProvider.RequestDevice) to choose one; when the user cancels,
+  the page gets no device. `getDevices()` and `requestDevice()` fail with a `SecurityError` when the `hid` permissions
+  policy does not allow the frame.
+- [OnInputReport](cref:Meziantou.Framework.WebPlatform.Dom.HidDeviceSession.OnInputReport) fires the `inputreport` event
+  of the page. The report IDs are checked (0 when the descriptor has no Report ID item), and the reports of the
+  [HID blocklist](https://github.com/whatwg/hid/blob/main/blocklist.txt) (FIDO keys, mice, keyboards, system controls)
+  are blocked: the page gets a `NotAllowedError`, and no input report.
+- `close()` and `forget()` reject the pending reports with an `AbortError`; a disconnection closes the device. As in
+  Chromium, the logical and physical limits of the report items are signed.
 
 ## NFC
 

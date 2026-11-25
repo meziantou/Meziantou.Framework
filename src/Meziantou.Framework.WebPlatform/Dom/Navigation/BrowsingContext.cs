@@ -3806,6 +3806,10 @@ public sealed partial class BrowsingContext : IDisposable
             // The sessions of the USB devices of the window end
             window.CloseUsbDevices();
 
+            // The serial ports and the HID devices of the window are closed
+            window.CloseSerialPorts();
+            window.CloseHidDevices();
+
             // The Bluetooth devices of the window are disconnected
             window.CloseBluetoothDevices();
         }

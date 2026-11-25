@@ -317,7 +317,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`performance-timeline`](performance-timeline.md) | 32 | 44 | 0 | 73% |
 | [`periodic-background-sync`](periodic-background-sync.md) | 0 | 2 | 0 | 0% |
 | [`permissions`](permissions.md) | 15 | 15 | 0 | 100% |
-| [`permissions-policy`](permissions-policy.md) | 75 | 94 | 0 | 80% |
+| [`permissions-policy`](permissions-policy.md) | 77 | 94 | 0 | 82% |
 | [`permissions-request`](permissions-request.md) | 0 | 1 | 0 | 0% |
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 0 | 0% |
 | [`picture-in-picture`](picture-in-picture.md) | 18 | 18 | 0 | 100% |
@@ -348,7 +348,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`secure-contexts`](secure-contexts.md) | 11 | 11 | 0 | 100% |
 | [`secure-payment-confirmation`](secure-payment-confirmation.md) | 15 | 20 | 0 | 75% |
 | [`selection`](selection.md) | 93 | 98 | 0 | 95% |
-| [`serial`](serial.md) | 0 | 8 | 0 | 0% |
+| [`serial`](serial.md) | 8 | 8 | 0 | 100% |
 | [`server-timing`](server-timing.md) | 9 | 9 | 0 | 100% |
 | [`service-workers`](service-workers.md) | 258 | 284 | 4 | 92% |
 | [`shadow-dom`](shadow-dom.md) | 230 | 238 | 0 | 97% |
@@ -392,7 +392,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`WebCryptoAPI`](WebCryptoAPI.md) | 138 | 138 | 0 | 100% |
 | [`webdriver`](webdriver.md) | 0 | 1 | 0 | 0% |
 | [`webgl`](webgl.md) | 0 | 24 | 0 | 0% |
-| [`webhid`](webhid.md) | 1 | 5 | 0 | 20% |
+| [`webhid`](webhid.md) | 5 | 5 | 0 | 100% |
 | [`webidl`](webidl.md) | 43 | 46 | 0 | 93% |
 | [`webmcp`](webmcp.md) | 42 | 80 | 26 | 78% |
 | [`webmessaging`](webmessaging.md) | 135 | 135 | 0 | 100% |

@@ -18,8 +18,10 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
         DefineMembers = DefineMembers,
     };
 
+    private static TValue Get_hid(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Hid); }
     private static TValue Get_mediaCapabilities(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.MediaCapabilities); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Permissions); }
+    private static TValue Get_serial(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Serial); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
     private static TValue Get_usb(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.Wrap(o.Usb); }
     private static TValue Get_globalPrivacyControl(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.WorkerNavigator>(t, Binding); return r.FromBoolean(o.GlobalPrivacyControl); }
@@ -51,8 +53,10 @@ internal static class Binding_WorkerNavigator<TAdapter, TValue> where TAdapter :
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
+        if (r.IsSecureContext && r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.DedicatedWorker | global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.ServiceWorker)) r.DefineAttribute(instanceTarget, "hid", Get_hid, null);
         r.DefineAttribute(instanceTarget, "mediaCapabilities", Get_mediaCapabilities, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
+        if (r.IsSecureContext && r.IsExposed(global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.DedicatedWorker)) r.DefineAttribute(instanceTarget, "serial", Get_serial, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "usb", Get_usb, null);
         r.DefineAttribute(instanceTarget, "globalPrivacyControl", Get_globalPrivacyControl, null);

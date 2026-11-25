@@ -192,6 +192,8 @@ internal sealed class WorkerAgent
             WebLocks.OnEnvironmentDiscarded(global);
             global.ReleaseFileSystemResources();
             global.CloseUsbDevices();
+            global.CloseSerialPorts();
+            global.CloseHidDevices();
             ServiceWorkerRegistry.OnEnvironmentDiscarded(global.EnvironmentDocument);
             InsidePort?.Disentangle();
             try

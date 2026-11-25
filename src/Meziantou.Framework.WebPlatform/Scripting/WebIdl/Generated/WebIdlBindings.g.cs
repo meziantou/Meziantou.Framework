@@ -294,6 +294,10 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["GlyphRun"] = Binding_GlyphRun<TAdapter, TValue>.Binding,
             ["GravitySensor"] = Binding_GravitySensor<TAdapter, TValue>.Binding,
             ["Gyroscope"] = Binding_Gyroscope<TAdapter, TValue>.Binding,
+            ["HID"] = Binding_HID<TAdapter, TValue>.Binding,
+            ["HIDConnectionEvent"] = Binding_HIDConnectionEvent<TAdapter, TValue>.Binding,
+            ["HIDDevice"] = Binding_HIDDevice<TAdapter, TValue>.Binding,
+            ["HIDInputReportEvent"] = Binding_HIDInputReportEvent<TAdapter, TValue>.Binding,
             ["HTMLAllCollection"] = Binding_HTMLAllCollection<TAdapter, TValue>.Binding,
             ["HTMLAnchorElement"] = Binding_HTMLAnchorElement<TAdapter, TValue>.Binding,
             ["HTMLAreaElement"] = Binding_HTMLAreaElement<TAdapter, TValue>.Binding,
@@ -667,6 +671,8 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["Selection"] = Binding_Selection<TAdapter, TValue>.Binding,
             ["Sensor"] = Binding_Sensor<TAdapter, TValue>.Binding,
             ["SensorErrorEvent"] = Binding_SensorErrorEvent<TAdapter, TValue>.Binding,
+            ["Serial"] = Binding_Serial<TAdapter, TValue>.Binding,
+            ["SerialPort"] = Binding_SerialPort<TAdapter, TValue>.Binding,
             ["ServiceWorker"] = Binding_ServiceWorker<TAdapter, TValue>.Binding,
             ["ServiceWorkerContainer"] = Binding_ServiceWorkerContainer<TAdapter, TValue>.Binding,
             ["ServiceWorkerGlobalScope"] = Binding_ServiceWorkerGlobalScope<TAdapter, TValue>.Binding,
@@ -995,6 +1001,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.HashChangeEventInit dictionaryDom_HashChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HashChangeEventInit(r, dictionaryDom_HashChangeEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidConnectionEventInit dictionaryDom_HidConnectionEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidConnectionEventInit(r, dictionaryDom_HidConnectionEventInit);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidInputReportEventInit dictionaryDom_HidInputReportEventInit:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidInputReportEventInit(r, dictionaryDom_HidInputReportEventInit);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbVersionChangeEventInit dictionaryDom_IdbVersionChangeEventInit:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbVersionChangeEventInit(r, dictionaryDom_IdbVersionChangeEventInit);
@@ -1542,6 +1554,21 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.GetRootNodeOptions dictionaryDom_GetRootNodeOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_GetRootNodeOptions(r, dictionaryDom_GetRootNodeOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidCollectionInfo dictionaryDom_HidCollectionInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidCollectionInfo(r, dictionaryDom_HidCollectionInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter dictionaryDom_HidDeviceFilter:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidDeviceFilter(r, dictionaryDom_HidDeviceFilter);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidDeviceRequestOptions dictionaryDom_HidDeviceRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidDeviceRequestOptions(r, dictionaryDom_HidDeviceRequestOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidReportInfo dictionaryDom_HidReportInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidReportInfo(r, dictionaryDom_HidReportInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidReportItem dictionaryDom_HidReportItem:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidReportItem(r, dictionaryDom_HidReportItem);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbDatabaseInfo dictionaryDom_IdbDatabaseInfo:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbDatabaseInfo(r, dictionaryDom_IdbDatabaseInfo);
                 return true;
@@ -1901,6 +1928,24 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SensorOptions dictionaryDom_SensorOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SensorOptions(r, dictionaryDom_SensorOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SerialInputSignals dictionaryDom_SerialInputSignals:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialInputSignals(r, dictionaryDom_SerialInputSignals);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SerialOptions dictionaryDom_SerialOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialOptions(r, dictionaryDom_SerialOptions);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals dictionaryDom_SerialOutputSignals:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialOutputSignals(r, dictionaryDom_SerialOutputSignals);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter dictionaryDom_SerialPortFilter:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialPortFilter(r, dictionaryDom_SerialPortFilter);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SerialPortInfo dictionaryDom_SerialPortInfo:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialPortInfo(r, dictionaryDom_SerialPortInfo);
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.SerialPortRequestOptions dictionaryDom_SerialPortRequestOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialPortRequestOptions(r, dictionaryDom_SerialPortRequestOptions);
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions dictionaryDom_SetHtmlOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SetHtmlOptions(r, dictionaryDom_SetHtmlOptions);
@@ -2340,6 +2385,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.FillLightMode enumDom_FillLightMode:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FillLightMode(enumDom_FillLightMode));
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.FlowControlType enumDom_FlowControlType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FlowControlType(enumDom_FlowControlType));
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.FrameType enumDom_FrameType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FrameType(enumDom_FrameType));
                 return true;
@@ -2366,6 +2414,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType enumDom_HdrMetadataType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_HdrMetadataType(enumDom_HdrMetadataType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem enumDom_HidUnitSystem:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_HidUnitSystem(enumDom_HidUnitSystem));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.IdbCursorDirection enumDom_IdbCursorDirection:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_IdbCursorDirection(enumDom_IdbCursorDirection));
@@ -2483,6 +2534,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.OrientationType enumDom_OrientationType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_OrientationType(enumDom_OrientationType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.ParityType enumDom_ParityType:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ParityType(enumDom_ParityType));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.PaymentComplete enumDom_PaymentComplete:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_PaymentComplete(enumDom_PaymentComplete));
@@ -2880,6 +2934,12 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.SecurePaymentConfirmationAvailability> taskSystem_Threading_Tasks_Task_Dom_SecurePaymentConfirmationAvailability_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_SecurePaymentConfirmationAvailability_, static (r, v) => r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_SecurePaymentConfirmationAvailability(v)));
                 return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.SerialInputSignals> taskSystem_Threading_Tasks_Task_Dom_SerialInputSignals_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_SerialInputSignals_, static (r, v) => (v is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialInputSignals(r, dictionaryValue) : r.Adapter.Null));
+                return true;
+            case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.SerialPort> taskSystem_Threading_Tasks_Task_Dom_SerialPort_:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_SerialPort_, static (r, v) => r.Wrap(v));
+                return true;
             case global::System.Threading.Tasks.Task<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration> taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_Dom_ServiceWorkerRegistration_, static (r, v) => r.Wrap(v));
                 return true;
@@ -2976,6 +3036,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.CookieStoreGetOptions>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieStoreGetOptions__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_CookieStoreGetOptions__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_CookieStoreGetOptions(r, dictionaryValue) : r.Adapter.Null)));
                 return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.HidDevice>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_HidDevice__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_HidDevice__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.IdbDatabaseInfo>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdbDatabaseInfo__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_IdbDatabaseInfo__, static (r, v) => r.FromSequence(v, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_IdbDatabaseInfo(r, dictionaryValue) : r.Adapter.Null)));
                 return true;
@@ -2987,6 +3050,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.Notification>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Notification__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_Notification__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
+                return true;
+            case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.SerialPort>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_SerialPort__:
+                result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_SerialPort__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));
                 return true;
             case global::System.Threading.Tasks.Task<global::System.Collections.Generic.IReadOnlyList<global::Meziantou.Framework.WebPlatform.Dom.ServiceWorkerRegistration>> taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ServiceWorkerRegistration__:
                 result = r.ToPromise(taskSystem_Threading_Tasks_Task_System_Collections_Generic_IReadOnlyList_Dom_ServiceWorkerRegistration__, static (r, v) => r.FromSequence(v, static (r, e) => r.Wrap(e)));

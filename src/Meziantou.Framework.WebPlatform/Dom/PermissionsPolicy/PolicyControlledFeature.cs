@@ -139,6 +139,12 @@ internal sealed partial class PolicyControlledFeature
 
     public static PolicyControlledFeature WebShare { get; } = new("web-share", isAllowedForAllByDefault: false);
 
+    /// <summary>https://serial.spec.whatwg.org/#permissions-policy</summary>
+    public static PolicyControlledFeature Serial { get; } = new("serial", isAllowedForAllByDefault: false);
+
+    /// <summary>https://hid.spec.whatwg.org/#permissions-policy</summary>
+    public static PolicyControlledFeature Hid { get; } = new("hid", isAllowedForAllByDefault: false);
+
     /// <summary>https://w3c.github.io/window-management/#api-permission-policy-integration</summary>
     public static PolicyControlledFeature WindowManagement { get; } = new("window-management", isAllowedForAllByDefault: false);
 
@@ -176,6 +182,7 @@ internal sealed partial class PolicyControlledFeature
         Gamepad,
         Geolocation,
         Gyroscope,
+        Hid,
         IdentityCredentialsGet,
         IdleDetection,
         KeyboardMap,
@@ -192,7 +199,7 @@ internal sealed partial class PolicyControlledFeature
         PublicKeyCredentialsCreate,
         PublicKeyCredentialsGet,
         ScreenWakeLock,
-        new("serial", isAllowedForAllByDefault: false),
+        Serial,
         SpeakerSelection,
         StorageAccess,
         SyncXhr,

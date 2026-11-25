@@ -3958,6 +3958,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.GamepadOptions? Gamepads { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GeolocationProvider? Geolocation { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.GlobalPrivacyControlOptions? GlobalPrivacyControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.HidOptions? Hid { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.HstsOptions? Hsts { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.HttpsUpgradeOptions? HttpsUpgrades { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.IdleDetectionOptions? IdleDetection { get => throw null; init { } }
@@ -3982,10 +3983,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.PointerLockOptions, bool>? RequestPointerLock { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext>? SameDocumentNavigated { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ScreenOrientationOptions? ScreenOrientation { get => throw null; init { } }
-        public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ScreenOptions? Screens { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Scripting.ScriptEngine? ScriptEngine { get => throw null; init { } }
         public bool ScriptingEnabled { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.DeviceSensorsOptions? Sensors { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.WebSerialOptions? Serial { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerBackend? ServiceWorkers { get => throw null; init { } }
         public System.Func<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.ShareRequest, System.Threading.Tasks.ValueTask<bool>>? Share { get => throw null; init { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.CallbackContext, Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>? ShowFilePicker { get => throw null; init { } }
@@ -5367,8 +5369,6 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Folded = 1,
     }
 
-    public sealed class DeviceSensor
-    {
     public sealed class DeviceScreen
     {
         public int AvailHeight { get => throw null; set { } }
@@ -5387,6 +5387,8 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public DeviceScreen(int left, int top, int width, int height) { }
     }
 
+    public sealed class DeviceSensor
+    {
         public bool CanProvideReadings { get => throw null; }
         public bool IsRemoved { get => throw null; }
         public double MaximumSamplingFrequency { get => throw null; }
@@ -7133,14 +7135,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         Flash = 2,
     }
 
-    public sealed class FocusEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
-    {
     public enum FlowControlType
     {
         None = 0,
         Hardware = 1,
     }
 
+    public sealed class FocusEvent : Meziantou.Framework.WebPlatform.Dom.UIEvent
+    {
         public Meziantou.Framework.WebPlatform.Dom.EventTarget? RelatedTarget { get => throw null; }
         public FocusEvent(string type, Meziantou.Framework.WebPlatform.Dom.FocusEventInit? eventInitDict = null) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.UIEventInit)) { }
     }
@@ -7278,9 +7280,9 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         public Meziantou.Framework.WebPlatform.Dom.FullscreenKeyboardLock KeyboardLock { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.FullscreenNavigationUI NavigationUI { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ScreenDetailed? Screen { get => throw null; init { } }
     }
 
-        public Meziantou.Framework.WebPlatform.Dom.ScreenDetailed? Screen { get => throw null; init { } }
     public readonly struct FullscreenViewportSize : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.FullscreenViewportSize>
     {
         public double Height { get => throw null; init { } }
@@ -7609,6 +7611,179 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public System.Collections.Generic.IReadOnlyList<string> GetSetCookie() => throw null;
         public bool Has(string name) => throw null;
         public void Set(string name, string value) { }
+    }
+
+    public sealed class Hid : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnect { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDisconnect { get => throw null; set { } }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidDevice>> GetDevices() => throw null;
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidDevice>> RequestDevice(Meziantou.Framework.WebPlatform.Dom.HidDeviceRequestOptions options) => throw null;
+    }
+
+    public sealed class HidCollectionInfo
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidCollectionInfo>? Children { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidReportInfo>? FeatureReports { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidReportInfo>? InputReports { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidReportInfo>? OutputReports { get => throw null; init { } }
+        public byte? Type { get => throw null; init { } }
+        public ushort? Usage { get => throw null; init { } }
+        public ushort? UsagePage { get => throw null; init { } }
+    }
+
+    public sealed class HidConnectionEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public Meziantou.Framework.WebPlatform.Dom.HidDevice Device { get => throw null; }
+        public HidConnectionEvent(string type, Meziantou.Framework.WebPlatform.Dom.HidConnectionEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class HidConnectionEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required Meziantou.Framework.WebPlatform.Dom.HidDevice Device { get => throw null; init { } }
+    }
+
+    public sealed class HidDevice : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidCollectionInfo> Collections { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.HidHostDevice HostDevice { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnInputReport { get => throw null; set { } }
+        public bool Opened { get => throw null; }
+        public ushort ProductId { get => throw null; }
+        public string ProductName { get => throw null; }
+        public ushort VendorId { get => throw null; }
+        public System.Threading.Tasks.Task Close() => throw null;
+        public System.Threading.Tasks.Task Forget() => throw null;
+        public System.Threading.Tasks.Task Open() => throw null;
+        public System.Threading.Tasks.Task<object> ReceiveFeatureReport(byte reportId) => throw null;
+        public System.Threading.Tasks.Task SendFeatureReport(byte reportId, System.ReadOnlyMemory<byte> data) => throw null;
+        public System.Threading.Tasks.Task SendReport(byte reportId, System.ReadOnlyMemory<byte> data) => throw null;
+    }
+
+    public sealed class HidDeviceFilter
+    {
+        public ushort? ProductId { get => throw null; init { } }
+        public ushort? Usage { get => throw null; init { } }
+        public ushort? UsagePage { get => throw null; init { } }
+        public ushort? VendorId { get => throw null; init { } }
+        public bool Matches(Meziantou.Framework.WebPlatform.Dom.HidHostDevice device) => throw null;
+    }
+
+    public sealed class HidDeviceRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidHostDevice> Devices { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter> ExclusionFilters { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter> Filters { get => throw null; }
+    }
+
+    public sealed class HidDeviceRequestOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter>? ExclusionFilters { get => throw null; init { } }
+        public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter> Filters { get => throw null; init { } }
+    }
+
+    public abstract class HidDeviceSession
+    {
+        public abstract System.Threading.Tasks.Task CloseAsync();
+        protected void OnInputReport(byte reportId, System.ReadOnlyMemory<byte> data) { }
+        public abstract System.Threading.Tasks.Task<System.ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task SendFeatureReportAsync(byte reportId, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.Task SendReportAsync(byte reportId, System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public abstract class HidHostDevice
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidCollectionInfo> Collections { get => throw null; }
+        public ushort ProductId { get => throw null; }
+        public string ProductName { get => throw null; }
+        public System.ReadOnlyMemory<byte> ReportDescriptor { get => throw null; }
+        public bool UsesReportIds { get => throw null; }
+        public ushort VendorId { get => throw null; }
+        protected HidHostDevice(ushort vendorId, ushort productId, string productName, System.ReadOnlyMemory<byte> reportDescriptor) { }
+        protected virtual string? GetString(uint index) => throw null;
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.HidDeviceSession> OpenAsync(System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class HidInputReportEvent : Meziantou.Framework.WebPlatform.Dom.Event
+    {
+        public System.ReadOnlyMemory<byte> Data { get => throw null; }
+        public object DataView { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.HidDevice Device { get => throw null; }
+        public byte ReportId { get => throw null; }
+        public HidInputReportEvent(string type, Meziantou.Framework.WebPlatform.Dom.HidInputReportEventInit eventInitDict) : base(default(string), default(Meziantou.Framework.WebPlatform.Dom.EventInit)) { }
+    }
+
+    public sealed class HidInputReportEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
+    {
+        public required System.ReadOnlyMemory<byte> Data { get => throw null; init { } }
+        public required Meziantou.Framework.WebPlatform.Dom.HidDevice Device { get => throw null; init { } }
+        public required byte ReportId { get => throw null; init { } }
+    }
+
+    public sealed class HidOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.HidProvider? Provider { get => throw null; init { } }
+    }
+
+    public class HidProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidHostDevice> Devices { get => throw null; }
+        public void Allow(Meziantou.Framework.WebPlatform.Dom.HidHostDevice device, string origin) { }
+        public void Connect(Meziantou.Framework.WebPlatform.Dom.HidHostDevice device) { }
+        public bool Disconnect(Meziantou.Framework.WebPlatform.Dom.HidHostDevice device) => throw null;
+        public virtual bool IsAllowed(Meziantou.Framework.WebPlatform.Dom.HidHostDevice device, string origin) => throw null;
+        public virtual System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.HidHostDevice?> RequestDevice(Meziantou.Framework.WebPlatform.Dom.HidDeviceRequest request) => throw null;
+        public void Revoke(Meziantou.Framework.WebPlatform.Dom.HidHostDevice device, string origin) { }
+    }
+
+    public sealed class HidReportInfo
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.HidReportItem>? Items { get => throw null; init { } }
+        public byte? ReportId { get => throw null; init { } }
+    }
+
+    public sealed class HidReportItem
+    {
+        public bool? HasNull { get => throw null; init { } }
+        public bool? HasPreferredState { get => throw null; init { } }
+        public bool? IsAbsolute { get => throw null; init { } }
+        public bool? IsArray { get => throw null; init { } }
+        public bool? IsBufferedBytes { get => throw null; init { } }
+        public bool? IsConstant { get => throw null; init { } }
+        public bool? IsLinear { get => throw null; init { } }
+        public bool? IsRange { get => throw null; init { } }
+        public bool? IsVolatile { get => throw null; init { } }
+        public int? LogicalMaximum { get => throw null; init { } }
+        public int? LogicalMinimum { get => throw null; init { } }
+        public int? PhysicalMaximum { get => throw null; init { } }
+        public int? PhysicalMinimum { get => throw null; init { } }
+        public ushort? ReportCount { get => throw null; init { } }
+        public ushort? ReportSize { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string>? Strings { get => throw null; init { } }
+        public sbyte? UnitExponent { get => throw null; init { } }
+        public sbyte? UnitFactorCurrentExponent { get => throw null; init { } }
+        public sbyte? UnitFactorLengthExponent { get => throw null; init { } }
+        public sbyte? UnitFactorLuminousIntensityExponent { get => throw null; init { } }
+        public sbyte? UnitFactorMassExponent { get => throw null; init { } }
+        public sbyte? UnitFactorTemperatureExponent { get => throw null; init { } }
+        public sbyte? UnitFactorTimeExponent { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.HidUnitSystem? UnitSystem { get => throw null; init { } }
+        public uint? UsageMaximum { get => throw null; init { } }
+        public uint? UsageMinimum { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<uint>? Usages { get => throw null; init { } }
+        public bool? Wrap { get => throw null; init { } }
+    }
+
+    public enum HidUnitSystem
+    {
+        None = 0,
+        SiLinear = 1,
+        SiRotation = 2,
+        EnglishLinear = 3,
+        EnglishRotation = 4,
+        VendorDefined = 5,
+        Reserved = 6,
     }
 
     public sealed class History
@@ -11391,6 +11566,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public Meziantou.Framework.WebPlatform.Dom.Geolocation Geolocation { get => throw null; }
         public bool GlobalPrivacyControl { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Hid Hid { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Ink Ink { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Keyboard Keyboard { get => throw null; }
         public string Language { get => throw null; }
@@ -11411,6 +11587,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Product { get => throw null; }
         public string ProductSub { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.Scheduling Scheduling { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Serial Serial { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
@@ -11935,6 +12112,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void RegisterPaint(string name, Meziantou.Framework.WebPlatform.Dom.WorkletClassConstructor paintCtor) { }
     }
 
+    public enum ParityType
+    {
+        None = 0,
+        Even = 1,
+        Odd = 2,
+    }
+
     public sealed class ParseHtmlUnsafeOptions
     {
         public Meziantou.Framework.WebPlatform.Dom.SanitizerOrSanitizerConfigOrSanitizerPresets? Sanitizer { get => throw null; init { } }
@@ -12112,13 +12296,6 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string UserHint { get => throw null; set { } }
         public System.Threading.Tasks.Task EnableDelegations(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.PaymentDelegation> delegations) => throw null;
     }
-    public enum ParityType
-    {
-        None = 0,
-        Even = 1,
-        Odd = 2,
-    }
-
 
     public sealed class PaymentMethodChangeEvent : Meziantou.Framework.WebPlatform.Dom.PaymentRequestUpdateEvent
     {
@@ -13738,15 +13915,43 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public int AvailWidth { get => throw null; }
         public uint ColorDepth { get => throw null; }
         public int Height { get => throw null; }
+        public bool IsExtended { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Dom.ScreenOrientation Orientation { get => throw null; }
         public uint PixelDepth { get => throw null; }
         public int Width { get => throw null; }
+    }
+
+    public sealed class ScreenDetailed : Meziantou.Framework.WebPlatform.Dom.Screen
+    {
+        public int AvailLeft { get => throw null; }
+        public int AvailTop { get => throw null; }
+        public float DevicePixelRatio { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.DeviceScreen DeviceScreen { get => throw null; }
+        public bool IsInternal { get => throw null; }
+        public bool IsPrimary { get => throw null; }
+        public string Label { get => throw null; }
+        public int Left { get => throw null; }
+        public int Top { get => throw null; }
+    }
+
+    public sealed class ScreenDetails : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ScreenDetailed? CurrentScreen { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCurrentScreenChange { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnScreensChange { get => throw null; set { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ScreenDetailed> Screens { get => throw null; }
     }
 
     public enum ScreenIdleState
     {
         Locked = 0,
         Unlocked = 1,
+    }
+
+    public sealed class ScreenOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.ScreenProvider? Provider { get => throw null; init { } }
     }
 
     public sealed class ScreenOrientation : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -13777,6 +13982,13 @@ namespace Meziantou.Framework.WebPlatform.Dom
         protected void OnOrientationChanged() { }
         public void SetOrientationOverride(Meziantou.Framework.WebPlatform.Dom.OrientationType naturalOrientation, Meziantou.Framework.WebPlatform.Dom.OrientationType type) { }
         protected virtual bool TryLock(Meziantou.Framework.WebPlatform.Dom.OrientationLockType? orientation) => throw null;
+    }
+
+    public sealed class ScreenProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DeviceScreen> Screens { get => throw null; }
+        public void AddScreen(Meziantou.Framework.WebPlatform.Dom.DeviceScreen screen) { }
+        public bool RemoveScreen(Meziantou.Framework.WebPlatform.Dom.DeviceScreen screen) => throw null;
     }
 
     public enum ScriptInvokerType
@@ -13915,45 +14127,17 @@ namespace Meziantou.Framework.WebPlatform.Dom
     {
         Enforce = 0,
         Report = 1,
-        public bool IsExtended { get => throw null; }
-        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnChange { get => throw null; set { } }
     }
 
     public sealed class SecurityPolicyViolationEventInit : Meziantou.Framework.WebPlatform.Dom.EventInit
     {
         public string BlockedUri { get => throw null; init { } }
-    public sealed class ScreenDetailed : Meziantou.Framework.WebPlatform.Dom.Screen
-    {
-        public int AvailLeft { get => throw null; }
-        public int AvailTop { get => throw null; }
-        public float DevicePixelRatio { get => throw null; }
-        public Meziantou.Framework.WebPlatform.Dom.DeviceScreen DeviceScreen { get => throw null; }
-        public bool IsInternal { get => throw null; }
-        public bool IsPrimary { get => throw null; }
-        public string Label { get => throw null; }
-        public int Left { get => throw null; }
-        public int Top { get => throw null; }
-    }
-
-    public sealed class ScreenDetails : Meziantou.Framework.WebPlatform.Dom.EventTarget
-    {
-        public Meziantou.Framework.WebPlatform.Dom.ScreenDetailed? CurrentScreen { get => throw null; }
-        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnCurrentScreenChange { get => throw null; set { } }
-        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnScreensChange { get => throw null; set { } }
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.ScreenDetailed> Screens { get => throw null; }
-    }
-
         public uint ColumnNumber { get => throw null; init { } }
         public Meziantou.Framework.WebPlatform.Dom.SecurityPolicyViolationEventDisposition Disposition { get => throw null; init { } }
         public string DocumentUri { get => throw null; init { } }
         public string EffectiveDirective { get => throw null; init { } }
         public uint LineNumber { get => throw null; init { } }
         public string OriginalPolicy { get => throw null; init { } }
-    public sealed class ScreenOptions
-    {
-        public Meziantou.Framework.WebPlatform.Dom.ScreenProvider? Provider { get => throw null; init { } }
-    }
-
         public string Referrer { get => throw null; init { } }
         public string Sample { get => throw null; init { } }
         public string SourceFile { get => throw null; init { } }
@@ -13984,13 +14168,6 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Modify(string? alter = null, string? direction = null, string? granularity = null) { }
         public void RemoveAllRanges() { }
         public void RemoveRange(Meziantou.Framework.WebPlatform.Dom.Range range) { }
-    public sealed class ScreenProvider
-    {
-        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.DeviceScreen> Screens { get => throw null; }
-        public void AddScreen(Meziantou.Framework.WebPlatform.Dom.DeviceScreen screen) { }
-        public bool RemoveScreen(Meziantou.Framework.WebPlatform.Dom.DeviceScreen screen) => throw null;
-    }
-
         public void SelectAllChildren(Meziantou.Framework.WebPlatform.Dom.Node node) { }
         public void SetBaseAndExtent(Meziantou.Framework.WebPlatform.Dom.Node anchorNode, uint anchorOffset, Meziantou.Framework.WebPlatform.Dom.Node focusNode, uint focusOffset) { }
         public void SetPosition(Meziantou.Framework.WebPlatform.Dom.Node? node, uint offset = 0U) { }
@@ -14029,6 +14206,152 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public class SensorOptions
     {
         public double? Frequency { get => throw null; init { } }
+    }
+
+    public sealed class Serial : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnect { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDisconnect { get => throw null; set { } }
+        public System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SerialPort>> GetPorts() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.SerialPort> RequestPort(Meziantou.Framework.WebPlatform.Dom.SerialPortRequestOptions? options = null) => throw null;
+    }
+
+    public abstract class SerialConnection
+    {
+        public abstract System.Threading.Tasks.Task CloseAsync();
+        public virtual System.Threading.Tasks.Task DiscardReceiveBuffersAsync() => throw null;
+        public virtual System.Threading.Tasks.Task DiscardTransmitBuffersAsync() => throw null;
+        public virtual System.Threading.Tasks.Task FlushAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.SerialInputSignals> GetSignalsAsync(System.Threading.CancellationToken cancellationToken) => throw null;
+        public abstract System.Threading.Tasks.Task<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken);
+        public virtual System.Threading.Tasks.Task SetSignalsAsync(Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals signals, System.Threading.CancellationToken cancellationToken) => throw null;
+        public abstract System.Threading.Tasks.Task WriteAsync(System.ReadOnlyMemory<byte> data, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class SerialConnectionOptions : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions>
+    {
+        public uint BaudRate { get => throw null; init { } }
+        public uint BufferSize { get => throw null; init { } }
+        public byte DataBits { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.FlowControlType FlowControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ParityType Parity { get => throw null; init { } }
+        public byte StopBits { get => throw null; init { } }
+        public SerialConnectionOptions(uint BaudRate, byte DataBits, byte StopBits, Meziantou.Framework.WebPlatform.Dom.ParityType Parity, uint BufferSize, Meziantou.Framework.WebPlatform.Dom.FlowControlType FlowControl) { }
+        public void Deconstruct(out uint BaudRate, out byte DataBits, out byte StopBits, out Meziantou.Framework.WebPlatform.Dom.ParityType Parity, out uint BufferSize, out Meziantou.Framework.WebPlatform.Dom.FlowControlType FlowControl) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions? left, Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions? left, Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions? right) => throw null;
+    }
+
+    public enum SerialError
+    {
+        Unknown = 0,
+        Disconnected = 1,
+        BufferOverrun = 2,
+        Break = 3,
+        Framing = 4,
+        Parity = 5,
+    }
+
+    public sealed class SerialException : System.Exception
+    {
+        public Meziantou.Framework.WebPlatform.Dom.SerialError Error { get => throw null; }
+        public SerialException(string? message) { }
+        public SerialException(Meziantou.Framework.WebPlatform.Dom.SerialError error, string? message = null) { }
+        public SerialException(string? message, System.Exception? innerException) { }
+    }
+
+    public abstract class SerialHostPort
+    {
+        public string? BluetoothServiceClassId { get => throw null; }
+        public ushort? UsbProductId { get => throw null; }
+        public ushort? UsbVendorId { get => throw null; }
+        protected SerialHostPort(ushort? usbVendorId = null, ushort? usbProductId = null, string? bluetoothServiceClassId = null) { }
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.SerialConnection> OpenAsync(Meziantou.Framework.WebPlatform.Dom.SerialConnectionOptions options, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class SerialInputSignals
+    {
+        public required bool ClearToSend { get => throw null; init { } }
+        public required bool DataCarrierDetect { get => throw null; init { } }
+        public required bool DataSetReady { get => throw null; init { } }
+        public required bool RingIndicator { get => throw null; init { } }
+    }
+
+    public sealed class SerialOptions
+    {
+        public required uint BaudRate { get => throw null; init { } }
+        public uint BufferSize { get => throw null; init { } }
+        public byte DataBits { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.FlowControlType FlowControl { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.Dom.ParityType Parity { get => throw null; init { } }
+        public byte StopBits { get => throw null; init { } }
+    }
+
+    public sealed class SerialOutputSignals
+    {
+        public bool? Break { get => throw null; init { } }
+        public bool? DataTerminalReady { get => throw null; init { } }
+        public bool? RequestToSend { get => throw null; init { } }
+    }
+
+    public sealed class SerialPort : Meziantou.Framework.WebPlatform.Dom.EventTarget
+    {
+        public bool Connected { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.SerialHostPort HostPort { get => throw null; }
+        public bool IsOpen { get => throw null; }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnConnect { get => throw null; set { } }
+        public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnDisconnect { get => throw null; set { } }
+        public object? Readable { get => throw null; }
+        public object? Writable { get => throw null; }
+        public System.Threading.Tasks.Task Close() => throw null;
+        public System.Threading.Tasks.Task Forget() => throw null;
+        public Meziantou.Framework.WebPlatform.Dom.SerialPortInfo GetInfo() => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.SerialInputSignals> GetSignals() => throw null;
+        public System.Threading.Tasks.Task Open(Meziantou.Framework.WebPlatform.Dom.SerialOptions options) => throw null;
+        public System.Threading.Tasks.Task SetSignals(Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals? signals = null) => throw null;
+    }
+
+    public sealed class SerialPortFilter
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName? BluetoothServiceClassId { get => throw null; init { } }
+        public ushort? UsbProductId { get => throw null; init { } }
+        public ushort? UsbVendorId { get => throw null; init { } }
+        public bool Matches(Meziantou.Framework.WebPlatform.Dom.SerialHostPort port) => throw null;
+    }
+
+    public sealed class SerialPortInfo
+    {
+        public Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName? BluetoothServiceClassId { get => throw null; init { } }
+        public ushort? UsbProductId { get => throw null; init { } }
+        public ushort? UsbVendorId { get => throw null; init { } }
+    }
+
+    public sealed class SerialPortRequest
+    {
+        public Meziantou.Framework.WebPlatform.Dom.CallbackContext Context { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SerialPortFilter> Filters { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SerialHostPort> Ports { get => throw null; }
+    }
+
+    public sealed class SerialPortRequestOptions
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName>? AllowedBluetoothServiceClassIds { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SerialPortFilter>? Filters { get => throw null; init { } }
+    }
+
+    public class SerialProvider
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.SerialHostPort> Ports { get => throw null; }
+        public void Allow(Meziantou.Framework.WebPlatform.Dom.SerialHostPort port, string origin) { }
+        public void Connect(Meziantou.Framework.WebPlatform.Dom.SerialHostPort port) { }
+        public bool Disconnect(Meziantou.Framework.WebPlatform.Dom.SerialHostPort port) => throw null;
+        public virtual bool IsAllowed(Meziantou.Framework.WebPlatform.Dom.SerialHostPort port, string origin) => throw null;
+        public virtual System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.SerialHostPort?> RequestPort(Meziantou.Framework.WebPlatform.Dom.SerialPortRequest request) => throw null;
+        public void Revoke(Meziantou.Framework.WebPlatform.Dom.SerialHostPort port, string origin) { }
     }
 
     public sealed class ServiceWorker : Meziantou.Framework.WebPlatform.Dom.EventTarget
@@ -17411,6 +17734,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? left, Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? right) => throw null;
     }
 
+    public sealed class WebSerialOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.SerialProvider? Provider { get => throw null; init { } }
+    }
+
     public sealed class WebSocket : Meziantou.Framework.WebPlatform.Dom.EventTarget
     {
         public const ushort Closed = 3;
@@ -17691,8 +18019,11 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void Focus() { }
         public Meziantou.Framework.WebPlatform.Css.Om.CssStyleProperties GetComputedStyle(Meziantou.Framework.WebPlatform.Dom.Element elt, string? pseudoElt = null) => throw null;
         public object? GetNamedItem(string name) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.ScreenDetails> GetScreenDetails() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.Selection? GetSelection() => throw null;
         public Meziantou.Framework.WebPlatform.Css.Om.MediaQueryList MatchMedia(string query) => throw null;
+        public System.Threading.Tasks.Task Maximize() => throw null;
+        public System.Threading.Tasks.Task Minimize() => throw null;
         public void MoveBy(int x, int y) { }
         public void MoveTo(int x, int y) { }
         public Meziantou.Framework.WebPlatform.Dom.Window? Open(string url = "", string target = "_blank", string features = "") => throw null;
@@ -17706,12 +18037,14 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void RequestResize() { }
         public void ResizeBy(int x, int y) { }
         public void ResizeTo(int width, int height) { }
+        public System.Threading.Tasks.Task Restore() => throw null;
         public System.Threading.Tasks.Task Scroll(Meziantou.Framework.WebPlatform.Dom.ScrollToOptions? options = null) => throw null;
         public System.Threading.Tasks.Task Scroll(double x, double y) => throw null;
         public System.Threading.Tasks.Task ScrollBy(Meziantou.Framework.WebPlatform.Dom.ScrollToOptions? options = null) => throw null;
         public System.Threading.Tasks.Task ScrollBy(double x, double y) => throw null;
         public System.Threading.Tasks.Task ScrollTo(Meziantou.Framework.WebPlatform.Dom.ScrollToOptions? options = null) => throw null;
         public System.Threading.Tasks.Task ScrollTo(double x, double y) => throw null;
+        public System.Threading.Tasks.Task SetResizable(bool resizable) => throw null;
         public void Stop() { }
     }
 
@@ -17793,6 +18126,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public double DeviceMemory { get => throw null; }
         public bool GlobalPrivacyControl { get => throw null; }
         public ulong HardwareConcurrency { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Hid Hid { get => throw null; }
         public string Language { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<string> Languages { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.LockManager Locks { get => throw null; }
@@ -17802,6 +18136,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Platform { get => throw null; }
         public string Product { get => throw null; }
         public string ProductSub { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Dom.Serial Serial { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.ServiceWorkerContainer ServiceWorker { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageManager Storage { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.StorageBucketManager StorageBuckets { get => throw null; }
@@ -18019,11 +18354,8 @@ namespace Meziantou.Framework.WebPlatform.Dom.FileApi
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public Meziantou.Framework.WebPlatform.Dom.FileApi.File? Item(uint index) => throw null;
         Meziantou.Framework.WebPlatform.Dom.FileApi.File System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Dom.FileApi.File>.get_Item(int index) => throw null;
-        public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.ScreenDetails> GetScreenDetails() => throw null;
     }
 
-        public System.Threading.Tasks.Task Maximize() => throw null;
-        public System.Threading.Tasks.Task Minimize() => throw null;
     public sealed class FilePropertyBag : Meziantou.Framework.WebPlatform.Dom.FileApi.BlobPropertyBag
     {
         public long? LastModified { get => throw null; init { } }
@@ -18037,14 +18369,12 @@ namespace Meziantou.Framework.WebPlatform.Dom.FileApi
         public Meziantou.Framework.WebPlatform.Dom.DomException? Error { get => throw null; }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnAbort { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnError { get => throw null; set { } }
-        public System.Threading.Tasks.Task Restore() => throw null;
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLoad { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLoadEnd { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnLoadStart { get => throw null; set { } }
         public System.Action<Meziantou.Framework.WebPlatform.Dom.Event>? OnProgress { get => throw null; set { } }
         public ushort ReadyState { get => throw null; }
         public Meziantou.Framework.WebPlatform.Dom.FileApi.FileReaderResult? Result { get => throw null; }
-        public System.Threading.Tasks.Task SetResizable(bool resizable) => throw null;
         public void Abort() { }
         public void ReadAsArrayBuffer(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob blob) { }
         public void ReadAsBinaryString(Meziantou.Framework.WebPlatform.Dom.FileApi.Blob blob) { }

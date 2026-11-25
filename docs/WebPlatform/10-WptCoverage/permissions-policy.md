@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of permissions-policy, and w
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 75 | 94 | 0 | 80% |
+| [Stable](#stable-tests) | 77 | 94 | 0 | 82% |
 | [Tentative](#tentative-tests) | 14 | 23 | 0 | 61% |
 | [Reftests](#reftests) | 0 | 1 | 0 | 0% |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **89** | **118** | **0** | **75%** |
+| **All** | **91** | **118** | **0** | **77%** |
 
 ## Failure reasons
 
@@ -21,7 +21,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 - **BUG**: 1
 - **TEST BUG**: 11
-- **NOT IMPLEMENTED**: 16
+- **NOT IMPLEMENTED**: 14
 - **TEST RUNNER**: 1
 
 ## Stable tests
@@ -112,8 +112,8 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`reporting/report-to-multiple-endpoints.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-multiple-endpoints.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/report-to-single-endpoint.https.sub.html`](https://wpt.fyi/results/permissions-policy/reporting/report-to-single-endpoint.https.sub.html) | Pass | 1 / 1 |  |  |
 | [`reporting/screen-wake-lock-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/screen-wake-lock-reporting.https.html) | Pass | 1 / 1 |  |  |
-| [`reporting/serial-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-report-only.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
-| [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the Web Serial API (`navigator.serial`) |
+| [`reporting/serial-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-report-only.https.html) | Pass | 2 / 2 |  |  |
+| [`reporting/serial-reporting.https.html`](https://wpt.fyi/results/permissions-policy/reporting/serial-reporting.https.html) | Pass | 2 / 2 |  |  |
 | [`reporting/sync-xhr-report-only.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-report-only.html) | Pass | 1 / 1 |  |  |
 | [`reporting/sync-xhr-reporting.html`](https://wpt.fyi/results/permissions-policy/reporting/sync-xhr-reporting.html) | Pass | 1 / 1 |  |  |
 | [`reporting/usb-report-only.https.html`](https://wpt.fyi/results/permissions-policy/reporting/usb-report-only.https.html) | Pass | 1 / 1 |  |  |

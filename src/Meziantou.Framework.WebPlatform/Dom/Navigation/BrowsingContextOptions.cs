@@ -746,6 +746,22 @@ public sealed partial record BrowsingContextOptions
     public ScreenOptions? Screens { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the Web Serial API (https://serial.spec.whatwg.org/, <c>navigator.serial</c> in the
+    /// windows and the dedicated workers): <see cref="WebSerialOptions.Provider"/> lists the serial ports, stores the ports each
+    /// origin is allowed to use, and plays the role of the port chooser of <c>requestPort()</c>. The default is null: there is
+    /// no serial port.
+    /// </summary>
+    public WebSerialOptions? Serial { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of WebHID (https://hid.spec.whatwg.org/, <c>navigator.hid</c> in the windows, the dedicated
+    /// workers and the service workers): <see cref="HidOptions.Provider"/> lists the HID devices, stores the devices each origin
+    /// is allowed to use, and plays the role of the device chooser of <c>requestDevice()</c>. The default is null: no HID device
+    /// is connected.
+    /// </summary>
+    public HidOptions? Hid { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

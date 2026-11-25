@@ -3743,6 +3743,24 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   with an `InvalidStateError` (no installed web application, as in Chromium). Not implemented: the `display-state` and
   `resizable` media features, and the waiver of the transient activation of `window.open()` after a fullscreen request
   on a screen (the popups do not need an activation).
+- **Web Serial** ([Web Serial API](https://serial.spec.whatwg.org/)): `navigator.serial` (`getPorts()`, `requestPort()` in the
+  windows), `SerialPort` (`open()`, `readable`, `writable`, `setSignals()`, `getSignals()`, `close()`, `forget()`, the
+  `connect` and `disconnect` events, which bubble to `navigator.serial`) in the windows and the dedicated workers, on the
+  `SerialHostPort` objects of `Serial.Provider`. The options are validated (as in Chromium, a buffer of at most 16 MiB);
+  `readable` is a readable byte stream whose pull reads the connection, `writable` writes the `BufferSource` chunks; the
+  errors of the port error the readable stream (`BreakError`, `BufferOverrunError`, `FramingError`, `ParityError`,
+  `UnknownError`; a disconnection is a fatal `NetworkError`). `close()` cancels and aborts the streams and fails when one
+  is locked (the port stays open, as in Chromium). The Bluetooth ports follow the Serial Port Profile and
+  `allowedBluetoothServiceClassIds` (the service classes of the base UUID are blocked). The permission storage is the
+  provider.
+- **WebHID** ([WebHID](https://hid.spec.whatwg.org/)): `navigator.hid` (`getDevices()`, `requestDevice()` in the windows,
+  the `connect` and `disconnect` events), `HIDDevice` (`open()`, `close()`, `forget()`, `sendReport()`,
+  `sendFeatureReport()`, `receiveFeatureReport()`, the `inputreport` event), `HIDConnectionEvent` and
+  `HIDInputReportEvent`, in the windows and the workers (a service worker has no document: its requests fail), on the
+  `HidHostDevice` objects of `Hid.Provider`. The report descriptor is parsed into the collections (the algorithm of the
+  specification; the logical and physical limits are signed as in Chromium; at most 32 levels of collections and 256
+  strings per item); the report IDs are checked, the reports of the HID blocklist are blocked (`NotAllowedError`, no
+  input report), and `close()` and `forget()` reject the pending reports with an `AbortError`.
 - **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
   steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
   `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the

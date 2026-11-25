@@ -143,6 +143,10 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.GyroscopeSensorOptions Defaults_Dom_GyroscopeSensorOptions = new();
 
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter Defaults_Dom_HidDeviceFilter = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.HidDeviceRequestOptions Defaults_Dom_HidDeviceRequestOptions = new() { Filters = default! };
+
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions Defaults_Dom_IdbGetAllOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.IdentityCredentialErrorInit Defaults_Dom_IdentityCredentialErrorInit = new();
@@ -298,6 +302,12 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.ScrollToOptions Defaults_Dom_ScrollToOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SensorOptions Defaults_Dom_SensorOptions = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals Defaults_Dom_SerialOutputSignals = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter Defaults_Dom_SerialPortFilter = new();
+
+    private static readonly global::Meziantou.Framework.WebPlatform.Dom.SerialPortRequestOptions Defaults_Dom_SerialPortRequestOptions = new();
 
     private static readonly global::Meziantou.Framework.WebPlatform.Dom.SetHtmlUnsafeOptions Defaults_Dom_SetHtmlUnsafeOptions = new();
 
@@ -501,6 +511,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_FillMode_Values = new[] { "none", "forwards", "backwards", "both", "auto" };
 
+    internal static readonly string[] Enum_FlowControlType_Values = new[] { "none", "hardware" };
+
     internal static readonly string[] Enum_FullscreenKeyboardLock_Values = new[] { "browser", "none" };
 
     internal static readonly string[] Enum_FullscreenNavigationUI_Values = new[] { "auto", "show", "hide" };
@@ -594,6 +606,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static readonly string[] Enum_OverSampleType_Values = new[] { "none", "2x", "4x" };
 
     internal static readonly string[] Enum_PanningModelType_Values = new[] { "equalpower", "HRTF" };
+
+    internal static readonly string[] Enum_ParityType_Values = new[] { "none", "even", "odd" };
 
     internal static readonly string[] Enum_PaymentComplete_Values = new[] { "fail", "success", "unknown" };
 
@@ -2347,6 +2361,101 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "composed", r.FromBoolean(value.Composed));
         r.SetMember(result, "newURL", r.FromString(value.NewUrl));
         r.SetMember(result, "oldURL", r.FromString(value.OldUrl));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidCollectionInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidCollectionInfo value)
+    {
+        var result = r.CreateObject();
+        if (value.Children is not null) r.SetMember(result, "children", r.FromSequence(value.Children, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidCollectionInfo(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.FeatureReports is not null) r.SetMember(result, "featureReports", r.FromSequence(value.FeatureReports, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidReportInfo(r, dictionaryValue2) : r.Adapter.Null)));
+        if (value.InputReports is not null) r.SetMember(result, "inputReports", r.FromSequence(value.InputReports, static (r, e) => (e is { } dictionaryValue3 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidReportInfo(r, dictionaryValue3) : r.Adapter.Null)));
+        if (value.OutputReports is not null) r.SetMember(result, "outputReports", r.FromSequence(value.OutputReports, static (r, e) => (e is { } dictionaryValue4 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidReportInfo(r, dictionaryValue4) : r.Adapter.Null)));
+        if (value.Type is not null) r.SetMember(result, "type", (value.Type.HasValue ? r.FromNumber((double)value.Type.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Usage is not null) r.SetMember(result, "usage", (value.Usage.HasValue ? r.FromNumber((double)value.Usage.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UsagePage is not null) r.SetMember(result, "usagePage", (value.UsagePage.HasValue ? r.FromNumber((double)value.UsagePage.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidConnectionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidConnectionEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "device", r.Wrap(value.Device));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidDeviceFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter value)
+    {
+        var result = r.CreateObject();
+        if (value.ProductId is not null) r.SetMember(result, "productId", (value.ProductId.HasValue ? r.FromNumber((double)value.ProductId.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Usage is not null) r.SetMember(result, "usage", (value.Usage.HasValue ? r.FromNumber((double)value.Usage.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UsagePage is not null) r.SetMember(result, "usagePage", (value.UsagePage.HasValue ? r.FromNumber((double)value.UsagePage.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.VendorId is not null) r.SetMember(result, "vendorId", (value.VendorId.HasValue ? r.FromNumber((double)value.VendorId.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidDeviceRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidDeviceRequestOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.ExclusionFilters is not null) r.SetMember(result, "exclusionFilters", r.FromSequence(value.ExclusionFilters, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidDeviceFilter(r, dictionaryValue) : r.Adapter.Null)));
+        r.SetMember(result, "filters", r.FromSequence(value.Filters, static (r, e) => (e is { } dictionaryValue2 ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidDeviceFilter(r, dictionaryValue2) : r.Adapter.Null)));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidInputReportEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidInputReportEventInit value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "bubbles", r.FromBoolean(value.Bubbles));
+        r.SetMember(result, "cancelable", r.FromBoolean(value.Cancelable));
+        r.SetMember(result, "composed", r.FromBoolean(value.Composed));
+        r.SetMember(result, "data", r.FromBuffer(global::Meziantou.Framework.WebPlatform.Scripting.JsBufferKind.DataView, value.Data));
+        r.SetMember(result, "device", r.Wrap(value.Device));
+        r.SetMember(result, "reportId", r.FromNumber((double)value.ReportId));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidReportInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidReportInfo value)
+    {
+        var result = r.CreateObject();
+        if (value.Items is not null) r.SetMember(result, "items", r.FromSequence(value.Items, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_HidReportItem(r, dictionaryValue) : r.Adapter.Null)));
+        if (value.ReportId is not null) r.SetMember(result, "reportId", (value.ReportId.HasValue ? r.FromNumber((double)value.ReportId.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_HidReportItem(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.HidReportItem value)
+    {
+        var result = r.CreateObject();
+        if (value.HasNull is not null) r.SetMember(result, "hasNull", r.FromBoolean(value.HasNull));
+        if (value.HasPreferredState is not null) r.SetMember(result, "hasPreferredState", r.FromBoolean(value.HasPreferredState));
+        if (value.IsAbsolute is not null) r.SetMember(result, "isAbsolute", r.FromBoolean(value.IsAbsolute));
+        if (value.IsArray is not null) r.SetMember(result, "isArray", r.FromBoolean(value.IsArray));
+        if (value.IsBufferedBytes is not null) r.SetMember(result, "isBufferedBytes", r.FromBoolean(value.IsBufferedBytes));
+        if (value.IsConstant is not null) r.SetMember(result, "isConstant", r.FromBoolean(value.IsConstant));
+        if (value.IsLinear is not null) r.SetMember(result, "isLinear", r.FromBoolean(value.IsLinear));
+        if (value.IsRange is not null) r.SetMember(result, "isRange", r.FromBoolean(value.IsRange));
+        if (value.IsVolatile is not null) r.SetMember(result, "isVolatile", r.FromBoolean(value.IsVolatile));
+        if (value.LogicalMaximum is not null) r.SetMember(result, "logicalMaximum", (value.LogicalMaximum.HasValue ? r.FromNumber((double)value.LogicalMaximum.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.LogicalMinimum is not null) r.SetMember(result, "logicalMinimum", (value.LogicalMinimum.HasValue ? r.FromNumber((double)value.LogicalMinimum.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.PhysicalMaximum is not null) r.SetMember(result, "physicalMaximum", (value.PhysicalMaximum.HasValue ? r.FromNumber((double)value.PhysicalMaximum.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.PhysicalMinimum is not null) r.SetMember(result, "physicalMinimum", (value.PhysicalMinimum.HasValue ? r.FromNumber((double)value.PhysicalMinimum.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ReportCount is not null) r.SetMember(result, "reportCount", (value.ReportCount.HasValue ? r.FromNumber((double)value.ReportCount.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.ReportSize is not null) r.SetMember(result, "reportSize", (value.ReportSize.HasValue ? r.FromNumber((double)value.ReportSize.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Strings is not null) r.SetMember(result, "strings", r.FromSequence(value.Strings, static (r, e) => r.FromString(e)));
+        if (value.UnitExponent is not null) r.SetMember(result, "unitExponent", (value.UnitExponent.HasValue ? r.FromNumber((double)value.UnitExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitFactorCurrentExponent is not null) r.SetMember(result, "unitFactorCurrentExponent", (value.UnitFactorCurrentExponent.HasValue ? r.FromNumber((double)value.UnitFactorCurrentExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitFactorLengthExponent is not null) r.SetMember(result, "unitFactorLengthExponent", (value.UnitFactorLengthExponent.HasValue ? r.FromNumber((double)value.UnitFactorLengthExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitFactorLuminousIntensityExponent is not null) r.SetMember(result, "unitFactorLuminousIntensityExponent", (value.UnitFactorLuminousIntensityExponent.HasValue ? r.FromNumber((double)value.UnitFactorLuminousIntensityExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitFactorMassExponent is not null) r.SetMember(result, "unitFactorMassExponent", (value.UnitFactorMassExponent.HasValue ? r.FromNumber((double)value.UnitFactorMassExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitFactorTemperatureExponent is not null) r.SetMember(result, "unitFactorTemperatureExponent", (value.UnitFactorTemperatureExponent.HasValue ? r.FromNumber((double)value.UnitFactorTemperatureExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitFactorTimeExponent is not null) r.SetMember(result, "unitFactorTimeExponent", (value.UnitFactorTimeExponent.HasValue ? r.FromNumber((double)value.UnitFactorTimeExponent.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UnitSystem is not null) r.SetMember(result, "unitSystem", (value.UnitSystem.HasValue ? r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_HidUnitSystem(value.UnitSystem.GetValueOrDefault())) : r.Adapter.Null));
+        if (value.UsageMaximum is not null) r.SetMember(result, "usageMaximum", (value.UsageMaximum.HasValue ? r.FromNumber((double)value.UsageMaximum.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UsageMinimum is not null) r.SetMember(result, "usageMinimum", (value.UsageMinimum.HasValue ? r.FromNumber((double)value.UsageMinimum.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.Usages is not null) r.SetMember(result, "usages", r.FromSequence(value.Usages, static (r, e) => r.FromNumber((double)e)));
+        if (value.Wrap is not null) r.SetMember(result, "wrap", r.FromBoolean(value.Wrap));
         return result;
     }
 
@@ -4305,6 +4414,63 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_SerialInputSignals(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SerialInputSignals value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "clearToSend", r.FromBoolean(value.ClearToSend));
+        r.SetMember(result, "dataCarrierDetect", r.FromBoolean(value.DataCarrierDetect));
+        r.SetMember(result, "dataSetReady", r.FromBoolean(value.DataSetReady));
+        r.SetMember(result, "ringIndicator", r.FromBoolean(value.RingIndicator));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SerialOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SerialOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "baudRate", r.FromNumber((double)value.BaudRate));
+        r.SetMember(result, "bufferSize", r.FromNumber((double)value.BufferSize));
+        r.SetMember(result, "dataBits", r.FromNumber((double)value.DataBits));
+        r.SetMember(result, "flowControl", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_FlowControlType(value.FlowControl)));
+        r.SetMember(result, "parity", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_ParityType(value.Parity)));
+        r.SetMember(result, "stopBits", r.FromNumber((double)value.StopBits));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SerialOutputSignals(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals value)
+    {
+        var result = r.CreateObject();
+        if (value.Break is not null) r.SetMember(result, "break", r.FromBoolean(value.Break));
+        if (value.DataTerminalReady is not null) r.SetMember(result, "dataTerminalReady", r.FromBoolean(value.DataTerminalReady));
+        if (value.RequestToSend is not null) r.SetMember(result, "requestToSend", r.FromBoolean(value.RequestToSend));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SerialPortFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter value)
+    {
+        var result = r.CreateObject();
+        if (value.BluetoothServiceClassId is not null) r.SetMember(result, "bluetoothServiceClassId", r.ToJs((object?)value.BluetoothServiceClassId));
+        if (value.UsbProductId is not null) r.SetMember(result, "usbProductId", (value.UsbProductId.HasValue ? r.FromNumber((double)value.UsbProductId.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UsbVendorId is not null) r.SetMember(result, "usbVendorId", (value.UsbVendorId.HasValue ? r.FromNumber((double)value.UsbVendorId.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SerialPortInfo(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SerialPortInfo value)
+    {
+        var result = r.CreateObject();
+        if (value.BluetoothServiceClassId is not null) r.SetMember(result, "bluetoothServiceClassId", r.ToJs((object?)value.BluetoothServiceClassId));
+        if (value.UsbProductId is not null) r.SetMember(result, "usbProductId", (value.UsbProductId.HasValue ? r.FromNumber((double)value.UsbProductId.GetValueOrDefault()) : r.Adapter.Null));
+        if (value.UsbVendorId is not null) r.SetMember(result, "usbVendorId", (value.UsbVendorId.HasValue ? r.FromNumber((double)value.UsbVendorId.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
+    internal static TValue FromDictionary_Dom_SerialPortRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SerialPortRequestOptions value)
+    {
+        var result = r.CreateObject();
+        if (value.AllowedBluetoothServiceClassIds is not null) r.SetMember(result, "allowedBluetoothServiceClassIds", r.FromSequence(value.AllowedBluetoothServiceClassIds, static (r, e) => r.ToJs((object?)e)));
+        if (value.Filters is not null) r.SetMember(result, "filters", r.FromSequence(value.Filters, static (r, e) => (e is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_SerialPortFilter(r, dictionaryValue) : r.Adapter.Null)));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_SetHtmlOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions value)
     {
         var result = r.CreateObject();
@@ -6096,6 +6262,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => value.ToString(),
     };
 
+    internal static string FromEnum_Dom_FlowControlType(global::Meziantou.Framework.WebPlatform.Dom.FlowControlType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.FlowControlType.None => "none",
+        global::Meziantou.Framework.WebPlatform.Dom.FlowControlType.Hardware => "hardware",
+        _ => value.ToString(),
+    };
+
     internal static string FromEnum_Dom_FrameType(global::Meziantou.Framework.WebPlatform.Dom.FrameType value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.FrameType.Auxiliary => "auxiliary",
@@ -6161,6 +6334,18 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2086 => "smpteSt2086",
         global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2094Part10 => "smpteSt2094-10",
         global::Meziantou.Framework.WebPlatform.Dom.HdrMetadataType.SmpteSt2094Part40 => "smpteSt2094-40",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_HidUnitSystem(global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.None => "none",
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.SiLinear => "si-linear",
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.SiRotation => "si-rotation",
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.EnglishLinear => "english-linear",
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.EnglishRotation => "english-rotation",
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.VendorDefined => "vendor-defined",
+        global::Meziantou.Framework.WebPlatform.Dom.HidUnitSystem.Reserved => "reserved",
         _ => value.ToString(),
     };
 
@@ -6491,6 +6676,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         global::Meziantou.Framework.WebPlatform.Dom.OrientationType.PortraitSecondary => "portrait-secondary",
         global::Meziantou.Framework.WebPlatform.Dom.OrientationType.LandscapePrimary => "landscape-primary",
         global::Meziantou.Framework.WebPlatform.Dom.OrientationType.LandscapeSecondary => "landscape-secondary",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_ParityType(global::Meziantou.Framework.WebPlatform.Dom.ParityType value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.ParityType.None => "none",
+        global::Meziantou.Framework.WebPlatform.Dom.ParityType.Even => "even",
+        global::Meziantou.Framework.WebPlatform.Dom.ParityType.Odd => "odd",
         _ => value.ToString(),
     };
 
@@ -10154,6 +10347,96 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.HidConnectionEventInit ToDictionary_Dom_HidConnectionEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "HIDConnectionEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "device");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("HIDConnectionEventInit", "device");
+        var m3 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.HidDevice>(m3_value, "HIDDevice");
+        return new global::Meziantou.Framework.WebPlatform.Dom.HidConnectionEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Device = m3,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter ToDictionary_Dom_HidDeviceFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "HIDDeviceFilter");
+        var m0_value = r.GetDictionaryMember(value, "productId");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (ushort?)r.ToUnsignedShort(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m1_value = r.GetDictionaryMember(value, "usage");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (ushort?)r.ToUnsignedShort(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m2_value = r.GetDictionaryMember(value, "usagePage");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (ushort?)r.ToUnsignedShort(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m3_value = r.GetDictionaryMember(value, "vendorId");
+        var m3_present = !r.Adapter.IsUndefined(m3_value);
+        var m3 = m3_present ? (ushort?)r.ToUnsignedShort(m3_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter
+        {
+            ProductId = m0_present ? m0 : Defaults_Dom_HidDeviceFilter.ProductId,
+            Usage = m1_present ? m1 : Defaults_Dom_HidDeviceFilter.Usage,
+            UsagePage = m2_present ? m2 : Defaults_Dom_HidDeviceFilter.UsagePage,
+            VendorId = m3_present ? m3 : Defaults_Dom_HidDeviceFilter.VendorId,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.HidDeviceRequestOptions ToDictionary_Dom_HidDeviceRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "HIDDeviceRequestOptions");
+        var m0_value = r.GetDictionaryMember(value, "exclusionFilters");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_HidDeviceFilter(r, e)) : default;
+        var m1_value = r.GetDictionaryMember(value, "filters");
+        if (r.Adapter.IsUndefined(m1_value)) throw r.MissingRequiredDictionaryMember("HIDDeviceRequestOptions", "filters");
+        var m1 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.HidDeviceFilter>(m1_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_HidDeviceFilter(r, e));
+        return new global::Meziantou.Framework.WebPlatform.Dom.HidDeviceRequestOptions
+        {
+            ExclusionFilters = m0_present ? m0 : Defaults_Dom_HidDeviceRequestOptions.ExclusionFilters,
+            Filters = m1,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.HidInputReportEventInit ToDictionary_Dom_HidInputReportEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "HIDInputReportEventInit");
+        var m0_value = r.GetDictionaryMember(value, "bubbles");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (bool)false : r.ToBoolean(m0_value);
+        var m1_value = r.GetDictionaryMember(value, "cancelable");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (bool)false : r.ToBoolean(m1_value);
+        var m2_value = r.GetDictionaryMember(value, "composed");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (bool)false : r.ToBoolean(m2_value);
+        var m3_value = r.GetDictionaryMember(value, "data");
+        if (r.Adapter.IsUndefined(m3_value)) throw r.MissingRequiredDictionaryMember("HIDInputReportEventInit", "data");
+        var m3 = r.ToBufferSource(m3_value, 4u, false, "DataView");
+        var m4_value = r.GetDictionaryMember(value, "device");
+        if (r.Adapter.IsUndefined(m4_value)) throw r.MissingRequiredDictionaryMember("HIDInputReportEventInit", "device");
+        var m4 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.HidDevice>(m4_value, "HIDDevice");
+        var m5_value = r.GetDictionaryMember(value, "reportId");
+        if (r.Adapter.IsUndefined(m5_value)) throw r.MissingRequiredDictionaryMember("HIDInputReportEventInit", "reportId");
+        var m5 = r.ToOctet(m5_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None);
+        return new global::Meziantou.Framework.WebPlatform.Dom.HidInputReportEventInit
+        {
+            Bubbles = m0,
+            Cancelable = m1,
+            Composed = m2,
+            Data = m3.Bytes,
+            Device = m4,
+            ReportId = m5,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.IdbGetAllOptions ToDictionary_Dom_IdbGetAllOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "IDBGetAllOptions");
@@ -13811,6 +14094,89 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SerialOptions ToDictionary_Dom_SerialOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "SerialOptions");
+        var m0_value = r.GetDictionaryMember(value, "baudRate");
+        if (r.Adapter.IsUndefined(m0_value)) throw r.MissingRequiredDictionaryMember("SerialOptions", "baudRate");
+        var m0 = r.ToUnsignedLong(m0_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var m1_value = r.GetDictionaryMember(value, "bufferSize");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (uint)(uint)(255d) : r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var m2_value = r.GetDictionaryMember(value, "dataBits");
+        var m2 = r.Adapter.IsUndefined(m2_value) ? (byte)(byte)(8d) : r.ToOctet(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        var m3_value = r.GetDictionaryMember(value, "flowControl");
+        var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"none" : r.ToEnumerationValue(m3_value, "FlowControlType", WebIdlHelpers<TAdapter, TValue>.Enum_FlowControlType_Values);
+        var m4_value = r.GetDictionaryMember(value, "parity");
+        var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"none" : r.ToEnumerationValue(m4_value, "ParityType", WebIdlHelpers<TAdapter, TValue>.Enum_ParityType_Values);
+        var m5_value = r.GetDictionaryMember(value, "stopBits");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (byte)(byte)(1d) : r.ToOctet(m5_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.EnforceRange);
+        return new global::Meziantou.Framework.WebPlatform.Dom.SerialOptions
+        {
+            BaudRate = m0,
+            BufferSize = m1,
+            DataBits = m2,
+            FlowControl = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_FlowControlType(m3),
+            Parity = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_ParityType(m4),
+            StopBits = m5,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals ToDictionary_Dom_SerialOutputSignals(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "SerialOutputSignals");
+        var m0_value = r.GetDictionaryMember(value, "break");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (bool?)r.ToBoolean(m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "dataTerminalReady");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (bool?)r.ToBoolean(m1_value) : default;
+        var m2_value = r.GetDictionaryMember(value, "requestToSend");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (bool?)r.ToBoolean(m2_value) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.SerialOutputSignals
+        {
+            Break = m0_present ? m0 : Defaults_Dom_SerialOutputSignals.Break,
+            DataTerminalReady = m1_present ? m1 : Defaults_Dom_SerialOutputSignals.DataTerminalReady,
+            RequestToSend = m2_present ? m2 : Defaults_Dom_SerialOutputSignals.RequestToSend,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter ToDictionary_Dom_SerialPortFilter(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "SerialPortFilter");
+        var m0_value = r.GetDictionaryMember(value, "bluetoothServiceClassId");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (object?)WebIdlHelpers<TAdapter, TValue>.ToUnion_4de306de(r, m0_value) : default;
+        var m1_value = r.GetDictionaryMember(value, "usbProductId");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (ushort?)r.ToUnsignedShort(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        var m2_value = r.GetDictionaryMember(value, "usbVendorId");
+        var m2_present = !r.Adapter.IsUndefined(m2_value);
+        var m2 = m2_present ? (ushort?)r.ToUnsignedShort(m2_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.None) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter
+        {
+            BluetoothServiceClassId = m0_present ? (m0 is null ? (global::Meziantou.Framework.WebPlatform.Dom.BluetoothUuidName?)null : WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_BluetoothUuidName(r, m0)) : Defaults_Dom_SerialPortFilter.BluetoothServiceClassId,
+            UsbProductId = m1_present ? m1 : Defaults_Dom_SerialPortFilter.UsbProductId,
+            UsbVendorId = m2_present ? m2 : Defaults_Dom_SerialPortFilter.UsbVendorId,
+        };
+    }
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.SerialPortRequestOptions ToDictionary_Dom_SerialPortRequestOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "SerialPortRequestOptions");
+        var m0_value = r.GetDictionaryMember(value, "allowedBluetoothServiceClassIds");
+        var m0_present = !r.Adapter.IsUndefined(m0_value);
+        var m0 = m0_present ? (global::System.Collections.Generic.List<object?>?)r.ToSequence<object?>(m0_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToUnion_4de306de(r, e)) : default;
+        var m1_value = r.GetDictionaryMember(value, "filters");
+        var m1_present = !r.Adapter.IsUndefined(m1_value);
+        var m1 = m1_present ? (global::System.Collections.Generic.List<global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter>?)r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.SerialPortFilter>(m1_value, static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_SerialPortFilter(r, e)) : default;
+        return new global::Meziantou.Framework.WebPlatform.Dom.SerialPortRequestOptions
+        {
+            AllowedBluetoothServiceClassIds = m0_present ? global::System.Linq.Enumerable.ToList(global::System.Linq.Enumerable.Select(m0!, e => WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_BluetoothUuidName(r, e))) : Defaults_Dom_SerialPortRequestOptions.AllowedBluetoothServiceClassIds,
+            Filters = m1_present ? m1 : Defaults_Dom_SerialPortRequestOptions.Filters,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.SetHtmlOptions ToDictionary_Dom_SetHtmlOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "SetHTMLOptions");
@@ -16759,6 +17125,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.FlowControlType ToEnum_Dom_FlowControlType(string value) => value switch
+    {
+        "none" => global::Meziantou.Framework.WebPlatform.Dom.FlowControlType.None,
+        "hardware" => global::Meziantou.Framework.WebPlatform.Dom.FlowControlType.Hardware,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.FullscreenKeyboardLock ToEnum_Dom_FullscreenKeyboardLock(string value) => value switch
     {
         "browser" => global::Meziantou.Framework.WebPlatform.Dom.FullscreenKeyboardLock.Browser,
@@ -17037,6 +17410,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     {
         "device" => global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Device,
         "screen" => global::Meziantou.Framework.WebPlatform.Dom.OrientationSensorLocalCoordinateSystem.Screen,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.ParityType ToEnum_Dom_ParityType(string value) => value switch
+    {
+        "none" => global::Meziantou.Framework.WebPlatform.Dom.ParityType.None,
+        "even" => global::Meziantou.Framework.WebPlatform.Dom.ParityType.Even,
+        "odd" => global::Meziantou.Framework.WebPlatform.Dom.ParityType.Odd,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

@@ -24,7 +24,8 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/), the early detection of
 /// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/), the device
 /// orientation and motion events (https://w3c.github.io/deviceorientation/), WebUSB (https://usb.spec.whatwg.org/), Web
-/// Bluetooth (https://bluetooth.spec.whatwg.org/) and Window Management (https://w3c.github.io/window-management/).
+/// Bluetooth (https://bluetooth.spec.whatwg.org/), Window Management (https://w3c.github.io/window-management/), Web Serial
+/// (https://serial.spec.whatwg.org/) and WebHID (https://hid.spec.whatwg.org/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -69,6 +70,8 @@ public sealed class HostDeviceApisTests : IDisposable
             Usb = options.Usb,
             Bluetooth = options.Bluetooth,
             Screens = options.Screens,
+            Serial = options.Serial,
+            Hid = options.Hid,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -2063,6 +2066,285 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("InvalidStateError,InvalidStateError,InvalidStateError,InvalidStateError", await RunAsync(document, """
             Promise.allSettled([maximize(), minimize(), restore(), setResizable(false)]).then(r => document.title = r.map(x => x.reason.name).join())
             """));
+    }
+
+    // Web Serial
+
+    #region WebPlatform_SerialHostPort
+    // A port of the application (an Arduino Uno): the device sends back the bytes it receives
+    private sealed class LoopbackSerialPort() : SerialHostPort(usbVendorId: 0x2341, usbProductId: 0x0043)
+    {
+        public override Task<SerialConnection> OpenAsync(SerialConnectionOptions options, CancellationToken cancellationToken) => Task.FromResult<SerialConnection>(new Connection());
+
+        // The library validates the parameters and runs the streams of the page: the connection only moves the bytes
+        private sealed class Connection : SerialConnection
+        {
+            private readonly Queue<byte> _received = new();
+            private TaskCompletionSource? _dataAvailable;
+
+            public override async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                while (_received.Count == 0)
+                {
+                    _dataAvailable = new TaskCompletionSource();
+                    await _dataAvailable.Task.WaitAsync(cancellationToken);
+                }
+
+                var count = 0;
+                while (count < buffer.Length && _received.TryDequeue(out var value))
+                {
+                    buffer.Span[count++] = value;
+                }
+
+                return count;
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                foreach (var value in data.Span)
+                {
+                    _received.Enqueue(value);
+                }
+
+                _dataAvailable?.TrySetResult();
+                return Task.CompletedTask;
+            }
+
+            public override Task<SerialInputSignals> GetSignalsAsync(CancellationToken cancellationToken)
+                => Task.FromResult(new SerialInputSignals { DataCarrierDetect = true, ClearToSend = true, RingIndicator = false, DataSetReady = true });
+
+            public override Task CloseAsync() => Task.CompletedTask;
+        }
+    }
+    #endregion
+
+    #region WebPlatform_SerialPortChooser
+    // The port chooser of requestPort(): the user picks the first port that matches the filters of the page
+    private sealed class FirstSerialPortChooser : SerialProvider
+    {
+        public override Task<SerialHostPort?> RequestPort(SerialPortRequest request) => Task.FromResult(request.Ports.Count > 0 ? request.Ports[0] : null);
+    }
+    #endregion
+
+    [Fact]
+    public async Task Serial_RequestPort_OpensAndExchangesBytes()
+    {
+        #region WebPlatform_Serial
+        var serial = new FirstSerialPortChooser();
+        serial.Connect(new LoopbackSerialPort());
+        var options = new BrowsingContextOptions
+        {
+            Serial = new WebSerialOptions { Provider = serial },
+        };
+        #endregion
+
+        var document = Load("<script>window.request = filters => navigator.serial.requestPort({ filters }).then(p => { window.port = p; document.title = p.getInfo().usbVendorId; }, e => document.title = e.name);</script>", options);
+        Assert.Equal("SecurityError", await RunAsync(document, "request([{ usbVendorId: 0x2341 }])"));
+
+        Activate(document);
+        Assert.Equal("TypeError", await RunAsync(document, "request([{ usbProductId: 0x0043 }])"));
+        Assert.Equal("NotFoundError", await RunAsync(document, "request([{ usbVendorId: 0x1234 }])"));
+        Assert.Equal("9025", await RunAsync(document, "request([{ usbVendorId: 0x2341, usbProductId: 0x0043 }])"));
+
+        Assert.Equal("TypeError,null,1|2|3,true,TypeError,InvalidStateError,1", await RunAsync(document, """
+            (async () => {
+              const results = [];
+              await port.open({ baudRate: 9600, dataBits: 6 }).catch(e => results.push(e.name));
+              results.push(String(port.readable));
+              await port.open({ baudRate: 9600 });
+              const writer = port.writable.getWriter();
+              await writer.write(new Uint8Array([1, 2, 3]));
+              writer.releaseLock();
+              const reader = port.readable.getReader();
+              const { value } = await reader.read();
+              results.push(value.join('|'), (await port.getSignals()).clearToSend);
+              await port.close().catch(e => results.push(e.name));
+              reader.releaseLock();
+              await port.close();
+              await port.close().catch(e => results.push(e.name));
+              results.push((await navigator.serial.getPorts()).length);
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Serial_Disconnect_ErrorsTheReadableStream()
+    {
+        var serial = new SerialProvider();
+        var port = new LoopbackSerialPort();
+        serial.Connect(port);
+        serial.Allow(port, "https://example.com");
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Serial = new WebSerialOptions { Provider = serial } });
+        await RunAsync(document, """
+            (async () => {
+              const [port] = await navigator.serial.getPorts();
+              window.port = port;
+              navigator.serial.ondisconnect = e => log.push('disconnect ' + e.target.connected);
+              await port.open({ baudRate: 115200 });
+              port.readable.getReader().read().catch(e => log.push(e.name));
+            })()
+            """);
+
+        Assert.True(serial.Disconnect(port));
+        Assert.Equal("disconnect false|NetworkError|null", await RunAsync(document, "setTimeout(() => document.title = [...log, String(port.readable)].join('|'), 0)"));
+    }
+
+    [Fact]
+    public void Serial_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false,true", Run(Load("<script>document.title = ['serial' in navigator, typeof SerialPort === 'undefined'].join();</script>", url: "http://example.com/")));
+    }
+
+    // WebHID
+
+    #region WebPlatform_HidHostDevice
+    // A vendor-defined device of the application: it sends back the output reports as input reports, and stores its feature report
+    private sealed class EchoHidDevice() : HidHostDevice(0x1234, 0x5678, "Echo Device", EchoReportDescriptor)
+    {
+        // Usage page 0xFF00, application collection: the input and output report 1 (8 bytes), the feature report 2 (4 bytes)
+        private static readonly byte[] EchoReportDescriptor =
+        [
+            0x06, 0x00, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x08,
+            0x09, 0x02, 0x81, 0x02, 0x09, 0x03, 0x91, 0x02, 0x85, 0x02, 0x95, 0x04, 0x09, 0x04, 0xB1, 0x02, 0xC0,
+        ];
+
+        public override Task<HidDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<HidDeviceSession>(new Session());
+
+        // The library parses the collections and checks the report IDs: the session only exchanges the reports
+        private sealed class Session : HidDeviceSession
+        {
+            private byte[] _feature = [1, 2, 3, 4];
+
+            public override Task SendReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                OnInputReport(reportId, data);
+                return Task.CompletedTask;
+            }
+
+            public override Task SendFeatureReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                _feature = data.ToArray();
+                return Task.CompletedTask;
+            }
+
+            public override Task<ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, CancellationToken cancellationToken) => Task.FromResult<ReadOnlyMemory<byte>>(_feature);
+
+            public override Task CloseAsync() => Task.CompletedTask;
+        }
+    }
+    #endregion
+
+    private sealed class FirstHidDeviceChooser : HidProvider
+    {
+        public override Task<HidHostDevice?> RequestDevice(HidDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+    }
+
+    [Fact]
+    public async Task Hid_RequestDevice_ParsesTheCollectionsAndExchangesReports()
+    {
+        #region WebPlatform_Hid
+        var hid = new FirstHidDeviceChooser();
+        hid.Connect(new EchoHidDevice());
+        var options = new BrowsingContextOptions
+        {
+            Hid = new HidOptions { Provider = hid },
+        };
+        #endregion
+
+        var document = Load("<script>window.log = [];</script>", options);
+        Activate(document);
+        Assert.Equal("0,1", await RunAsync(document, """
+            Promise.all([
+              navigator.hid.requestDevice({ filters: [{ usagePage: 0x0001 }] }),
+              navigator.hid.requestDevice({ filters: [{ vendorId: 0x1234, usagePage: 0xFF00, usage: 1 }] }),
+            ]).then(([none, devices]) => { window.device = devices[0]; document.title = [none.length, devices.length].join(); })
+            """));
+
+        Assert.Equal("Echo Device,65280,1,1,1,8,8,4278190082,255,2,4", await RunAsync(document, """
+            const c = device.collections[0];
+            const item = c.inputReports[0].items[0];
+            document.title = [device.productName, c.usagePage, c.usage, c.type, c.inputReports[0].reportId, item.reportSize, item.reportCount,
+              item.usages[0], item.logicalMaximum, c.featureReports[0].reportId, c.featureReports[0].items[0].reportCount].join();
+            """));
+
+        Assert.Equal("InvalidStateError,TypeError,1:7|8,5|6", await RunAsync(document, """
+            (async () => {
+              const results = [];
+              await device.sendReport(1, new Uint8Array([7, 8])).catch(e => results.push(e.name));
+              await device.open();
+              await device.sendReport(0, new Uint8Array([7, 8])).catch(e => results.push(e.name));
+              device.oninputreport = e => log.push(e.reportId + ':' + new Uint8Array(e.data.buffer).join('|'));
+              await device.sendReport(1, new Uint8Array([7, 8]));
+              await new Promise(resolve => setTimeout(resolve, 0));
+              await device.sendFeatureReport(2, new Uint8Array([5, 6]));
+              const feature = await device.receiveFeatureReport(2);
+              results.push(...log, new Uint8Array(feature.buffer).join('|'));
+              await device.close();
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Hid_BlockedReports_AreRejectedWithNotAllowedError()
+    {
+        // A keyboard (usage page 1, usage 6): its reports are blocked, so that a page cannot log the keys
+        var hid = new HidProvider();
+        var keyboard = new EchoHidDeviceWithDescriptor([0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x75, 0x08, 0x95, 0x01, 0x91, 0x02, 0xC0]);
+        hid.Connect(keyboard);
+        hid.Allow(keyboard, "https://example.com");
+        var document = Load("<script></script>", new BrowsingContextOptions { Hid = new HidOptions { Provider = hid } });
+
+        Assert.Equal("NotAllowedError", await RunAsync(document, """
+            navigator.hid.getDevices().then(async ([device]) => {
+              await device.open();
+              await device.sendReport(0, new Uint8Array([1])).catch(e => document.title = e.name);
+            })
+            """));
+    }
+
+    private sealed class EchoHidDeviceWithDescriptor(byte[] descriptor) : HidHostDevice(0x1111, 0x2222, "Device", descriptor)
+    {
+        public override Task<HidDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<HidDeviceSession>(new NullSession());
+
+        private sealed class NullSession : HidDeviceSession
+        {
+            public override Task SendReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task SendFeatureReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task<ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, CancellationToken cancellationToken) => Task.FromResult(ReadOnlyMemory<byte>.Empty);
+
+            public override Task CloseAsync() => Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public void Hid_ReportDescriptor_IsParsed()
+    {
+        // A mouse: a Pointer physical collection nested in the Mouse application collection, 3 buttons, 5 bits of padding, X and Y
+        var mouse = new EchoHidDeviceWithDescriptor(
+        [
+            0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x09, 0x01, 0xA1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x03, 0x15, 0x00, 0x25, 0x01,
+            0x95, 0x03, 0x75, 0x01, 0x81, 0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x03, 0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81,
+            0x25, 0x7F, 0x75, 0x08, 0x95, 0x02, 0x81, 0x06, 0xC0, 0xC0,
+        ]);
+
+        var collection = Assert.Single(mouse.Collections);
+        Assert.Equal((ushort)1, collection.UsagePage);
+        Assert.Equal((ushort)2, collection.Usage);
+        var pointer = Assert.Single(collection.Children!);
+        Assert.Equal((byte)0, pointer.Type);
+        Assert.False(mouse.UsesReportIds);
+        var items = Assert.Single(collection.InputReports!).Items!;
+        Assert.Equal(3, items.Count);
+        Assert.True(items[0].IsRange);
+        Assert.Equal(0x00090001u, items[0].UsageMinimum);
+        Assert.True(items[1].IsConstant);
+        Assert.Equal([0x00010030u, 0x00010031u], items[2].Usages);
+        Assert.Equal(-127, items[2].LogicalMinimum);
+        Assert.False(items[2].IsAbsolute);
     }
 
     // CPU Performance

@@ -451,13 +451,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             TValue created;
             if (stream is PlatformReadableStream readable)
             {
-                SetMember(hooks, "pull", adapter.CreateFunction("pull", 0, (_, _) => Invoke(readable.Pull)));
+                SetMember(hooks, "pull", adapter.CreateFunction("pull", 0, (_, _) => InvokeAsync(readable.Pull)));
                 SetMember(hooks, "cancel", adapter.CreateFunction("cancel", 1, (_, args) =>
                 {
                     var reason = args.Length > 0 ? ToAny(args[0]) : null;
-                    return Invoke(() => readable.Cancel(reason));
+                    return InvokeAsync(() => readable.Cancel(reason));
                 }));
-                created = adapter.Call(adapter.Get(GetStreams(), Key("createPlatformReadableStream")), adapter.Undefined, [hooks, adapter.FromNumber(0)]);
+                created = adapter.Call(adapter.Get(GetStreams(), Key("createPlatformReadableStream")), adapter.Undefined, [hooks, adapter.FromNumber(0), adapter.FromBoolean(readable.IsBytes)]);
             }
             else
             {
@@ -465,13 +465,13 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
                 SetMember(hooks, "write", adapter.CreateFunction("write", 1, (_, args) =>
                 {
                     var chunk = ToPlatformChunk(args.Length > 0 ? args[0] : adapter.Undefined);
-                    return Invoke(() => writable.Write(chunk));
+                    return InvokeAsync(() => writable.Write(chunk));
                 }));
-                SetMember(hooks, "close", adapter.CreateFunction("close", 0, (_, _) => Invoke(writable.CloseAlgorithm)));
+                SetMember(hooks, "close", adapter.CreateFunction("close", 0, (_, _) => InvokeAsync(writable.CloseAlgorithm)));
                 SetMember(hooks, "abort", adapter.CreateFunction("abort", 1, (_, args) =>
                 {
                     var reason = args.Length > 0 ? ToAny(args[0]) : null;
-                    return Invoke(() => writable.Abort(reason));
+                    return InvokeAsync(() => writable.Abort(reason));
                 }));
                 created = adapter.Call(adapter.Get(GetStreams(), Key("createPlatformWritableStream")), adapter.Undefined, [hooks, adapter.FromNumber(1)]);
             }
@@ -491,18 +491,21 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             return result;
         });
 
-        // The exceptions of the library are the errors of the scripts
-        TValue Invoke(Action action)
+        // An algorithm that may complete asynchronously: its task is a promise of the scripts (the exceptions of the library
+        // are the errors of the scripts)
+        TValue InvokeAsync(Func<Task> action)
         {
+            Task task;
             try
             {
-                action();
-                return Adapter.Undefined;
+                task = action();
             }
             catch (Exception ex) when (!Adapter.TryGetThrownValue(ex, out TValue? _))
             {
                 throw ToJsException(ex);
             }
+
+            return task.IsCompletedSuccessfully ? Adapter.Undefined : ToPromise(task);
         }
 
         // A chunk written to a platform stream: the platform object, or the value of another type
@@ -517,6 +520,23 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         public void Close() => Call("close", () => realm.Adapter.Undefined);
 
         public void Error(Exception error) => Call("error", () => realm.ToJsError(error));
+
+        // controller.cancel() of a readable stream, controller.abort() of a writable stream (createPlatformReadableStream
+        // and createPlatformWritableStream of Streams.js)
+        public Task CancelOrAbort(object? reason)
+        {
+            var adapter = realm.Adapter;
+            return adapter.RunInRealm(realm.EngineRealm, () =>
+            {
+                var function = adapter.Get(controller, realm.Key("cancel"));
+                if (adapter.IsUndefined(function))
+                {
+                    function = adapter.Get(controller, realm.Key("abort"));
+                }
+
+                return realm.ToTask(adapter.Call(function, adapter.Undefined, [reason is null ? adapter.Undefined : realm.ToJs(reason)]));
+            });
+        }
 
         private void Call(string name, Func<TValue> argument)
         {

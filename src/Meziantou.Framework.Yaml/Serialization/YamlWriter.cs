@@ -1866,6 +1866,10 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return false;
     }
 
+    // Letters, digits, space, and punctuation that is neither an indicator nor a line break: no rule of IsPlainSafe
+    // applies to them, wherever they appear in the scalar and whatever the context.
+    private static readonly SearchValues<char> PlainSafeCharacters = SearchValues.Create("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 -_./+=~;$()<^\\");
+
     private bool IsPlainSafe(ReadOnlySpan<char> value, bool isKey)
     {
         // Keep it conservative: if in doubt, quote.
@@ -1887,8 +1891,16 @@ public sealed class YamlWriter : YamlReaderWriterBase
 
         var isFlow = IsFlow;
 
+        // The characters of PlainSafeCharacters pass every check of the loop wherever they appear, so the loop starts
+        // at the first other character.
+        var firstCharacterToCheck = value.IndexOfAnyExcept(PlainSafeCharacters);
+        if (firstCharacterToCheck < 0)
+        {
+            firstCharacterToCheck = value.Length;
+        }
+
         // Disallow YAML special characters and common ambiguities.
-        for (var i = 0; i < value.Length; i++)
+        for (var i = firstCharacterToCheck; i < value.Length; i++)
         {
             var c = value[i];
             if (c == '\t' || IsLineBreak(c))

@@ -102,6 +102,8 @@ public class Parser<TBuffer> : IParser where TBuffer : ILookAheadBuffer
         _scanner = new Scanner<TBuffer>(buffer);
     }
 
+    internal Scanner<TBuffer> Scanner => _scanner;
+
     /// <summary>Gets the current event.</summary>
     public Event? Current { get; private set; }
 

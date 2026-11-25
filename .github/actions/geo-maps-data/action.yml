@@ -9,7 +9,7 @@ runs:
   using: composite
   steps:
     # The files are named by their SHA-256, so an older cache only misses the files whose pins changed
-    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+    - uses: actions/cache@v6.1.0
       with:
         path: ${{ runner.temp }}/geo-maps-sources
         key: geo-maps-sources-${{ hashFiles('tools/Meziantou.Framework.Geo.Maps.Tool/data-versions.json') }}

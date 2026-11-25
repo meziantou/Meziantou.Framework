@@ -3,13 +3,18 @@ namespace Meziantou.Framework.VectorGraphics;
 /// <summary>The geometry of a <see cref="ScenePath"/>: a list of commands, as in SVG.</summary>
 public sealed class PathData
 {
+    private readonly PathCommand[] _commands;
+
     internal PathData(PathCommand[] commands)
     {
-        Commands = commands;
+        _commands = commands;
     }
 
     /// <summary>Gets the commands of the path.</summary>
-    public IReadOnlyList<PathCommand> Commands { get; }
+    public IReadOnlyList<PathCommand> Commands => _commands;
+
+    // The commands, without the enumerator of the interface
+    internal ReadOnlySpan<PathCommand> CommandSpan => _commands;
 
     /// <summary>Gets a value that indicates whether the path has no commands.</summary>
     public bool IsEmpty => Commands.Count is 0;

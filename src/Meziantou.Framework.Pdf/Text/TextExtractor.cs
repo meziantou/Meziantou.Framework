@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Pdf.Text;
 /// Extracts the text of a page: runs the text operators of its content (ISO 32000-2, 9.4) and of its form XObjects,
 /// places each glyph with the text and graphics matrices, then joins the glyphs into lines in the order of the content.
 /// </summary>
-internal sealed partial class TextExtractor
+internal sealed partial class TextExtractor : IDisposable
 {
     private const int MaxFormDepth = 16;
 
@@ -25,10 +25,10 @@ internal sealed partial class TextExtractor
     // counted each time
     private const long MaxTextLength = 32_000_000;
 
-    private readonly List<TextGlyph> _glyphs = [];
+    private readonly PooledList<TextGlyph> _glyphs = new();
 
     // The boxes of the glyphs, when the positions are extracted
-    private readonly List<PdfRectangle>? _bounds;
+    private readonly PooledList<PdfRectangle>? _bounds;
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
     private long _operations;
     private long _textLength;
@@ -45,12 +45,25 @@ internal sealed partial class TextExtractor
     private readonly bool _layoutOrder;
     private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
 
+    // The decoders of the fonts the page uses. The objects of the document do not change while a page is read, so the
+    // cache of the document, which checks that a font has not changed since it was decoded, is asked once for each font
+    private readonly Dictionary<PdfDictionary, PdfFontDecoder> _fonts = new(ReferenceEqualityComparer.Instance);
+
+    // The items of the line being built, reused from a line to the next
+    private readonly List<(int Index, string Text)> _lineItems = [];
+
     private TextExtractor(TextDecoderCache decoders, PdfTextExtractionOptions options, bool withBounds)
     {
         _decoders = decoders;
         _expandLigatures = options.ExpandLigatures;
         _layoutOrder = options.ReadingOrder is PdfTextReadingOrder.Layout;
-        _bounds = withBounds || _layoutOrder ? [] : null;
+        _bounds = withBounds || _layoutOrder ? new() : null;
+    }
+
+    public void Dispose()
+    {
+        _glyphs.Dispose();
+        _bounds?.Dispose();
     }
 
     public static string Extract(PdfPage page, PdfTextExtractionOptions options)
@@ -58,14 +71,14 @@ internal sealed partial class TextExtractor
         if (options.ReadingOrder is PdfTextReadingOrder.Layout)
             return ExtractLayout(page, options).Text;
 
-        var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: false);
+        using var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: false);
         extractor.RunPage(page);
         return extractor.BuildText(layout: false).Text;
     }
 
     public static PdfTextLayout ExtractLayout(PdfPage page, PdfTextExtractionOptions options)
     {
-        var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: true);
+        using var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: true);
         extractor.RunPage(page);
         var (text, lines) = extractor.BuildText(layout: true);
         if (extractor._layoutOrder)
@@ -77,9 +90,18 @@ internal sealed partial class TextExtractor
     /// <summary>Counts the glyphs of a page whose font gives no text, such as the codes of a font without encoding information.</summary>
     public static int CountGlyphsWithoutText(PdfPage page)
     {
-        var extractor = new TextExtractor(page.Document.TextDecoders, PdfTextExtractionOptions.Default, withBounds: false);
+        using var extractor = new TextExtractor(page.Document.TextDecoders, PdfTextExtractionOptions.Default, withBounds: false);
         extractor.RunPage(page);
-        return extractor._glyphs.Count(glyph => glyph.Text is null);
+        var count = 0;
+        foreach (var glyph in extractor._glyphs.AsSpan())
+        {
+            if (glyph.Text is null)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private void RunPage(PdfPage page)
@@ -299,11 +321,10 @@ internal sealed partial class TextExtractor
         if (_glyphs.Count > _actualTextStart)
         {
             var first = _glyphs[_actualTextStart];
-            var last = _glyphs[^1];
-            var count = _glyphs.Count - _actualTextStart;
-            var bounds = _bounds is null ? default : Union(CollectionsMarshal.AsSpan(_bounds).Slice(_actualTextStart, count));
-            _glyphs.RemoveRange(_actualTextStart, count);
-            _bounds?.RemoveRange(_actualTextStart, count);
+            var last = _glyphs[_glyphs.Count - 1];
+            var bounds = _bounds is null ? default : Union(_bounds.AsSpan()[_actualTextStart..]);
+            _glyphs.RemoveFrom(_actualTextStart);
+            _bounds?.RemoveFrom(_actualTextStart);
             AddGlyph(first with { Text = text, EndX = last.EndX, EndY = last.EndY }, bounds);
             return;
         }
@@ -358,7 +379,13 @@ internal sealed partial class TextExtractor
         if (resources?.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(name) is not { } font)
             return null;
 
-        return _decoders.Get(font);
+        if (!_fonts.TryGetValue(font, out var decoder))
+        {
+            decoder = _decoders.Get(font);
+            _fonts.Add(font, decoder);
+        }
+
+        return decoder;
     }
 
     /// <summary>
@@ -592,7 +619,17 @@ internal sealed partial class TextExtractor
         // The glyphs in the order of the text, and the spaces between them (-1)
         var items = rightToLeft && !line.Exists(index => _glyphs[index].Font?.IsVertical ?? false) ? OrderRightToLeftLine(line) : AddSpaces(line);
         var lineStart = builder.Length;
-        var lineGlyphs = lines is null ? null : new List<PdfTextGlyph>();
+        if (lines is null)
+        {
+            foreach (var (_, text) in items)
+            {
+                builder.Append(text);
+            }
+
+            return;
+        }
+
+        var lineGlyphs = new List<PdfTextGlyph>();
         var words = new List<PdfTextWord>();
         var wordGlyphs = new List<PdfTextGlyph>();
 
@@ -608,9 +645,6 @@ internal sealed partial class TextExtractor
         foreach (var (index, text) in items)
         {
             builder.Append(text);
-            if (lineGlyphs is null)
-                continue;
-
             if (index < 0)
             {
                 EndWord();
@@ -630,17 +664,15 @@ internal sealed partial class TextExtractor
             }
         }
 
-        if (lines is not null)
-        {
-            EndWord();
-            lines.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs!]));
-        }
+        EndWord();
+        lines.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs]));
     }
 
     /// <summary>Keeps the glyphs of a line in the order of the content, with a space where the gap after a glyph is wider than a fraction of the font size.</summary>
     private List<(int Index, string Text)> AddSpaces(List<int> line)
     {
-        var result = new List<(int Index, string Text)>(line.Count);
+        var result = _lineItems;
+        result.Clear();
         for (var i = 0; i < line.Count; i++)
         {
             var glyph = _glyphs[line[i]];

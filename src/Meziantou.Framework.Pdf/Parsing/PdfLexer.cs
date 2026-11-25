@@ -360,6 +360,23 @@ internal sealed class PdfLexer
     /// </remarks>
     public static bool TryParseNumber(ReadOnlySpan<byte> text, out bool isInteger, out long integer, out double real)
     {
+        var i = 0;
+        var negative = false;
+        while (i < text.Length && text[i] is (byte)'+' or (byte)'-')
+        {
+            negative |= text[i] == '-';
+            i++;
+        }
+
+        if (TryParseShortNumber(text[i..], negative, out isInteger, out integer, out real))
+            return true;
+
+        return TryParseAnyNumber(text, out isInteger, out integer, out real);
+    }
+
+    /// <summary>The general parser of <see cref="TryParseNumber"/>: any token, whatever its length.</summary>
+    internal static bool TryParseAnyNumber(ReadOnlySpan<byte> text, out bool isInteger, out long integer, out double real)
+    {
         isInteger = true;
         integer = 0;
         real = 0;
@@ -480,6 +497,63 @@ internal sealed class PdfLexer
 
         return true;
     }
+
+    /// <summary>
+    /// Parses the numbers of most files without the general parser: digits with at most one point, and at most 15 digits.
+    /// The digits then make an integer below 2^53, and the value of a real is that integer divided by a power of ten of
+    /// at most 10^15: both are exact doubles, so the quotient is the correctly rounded value, as <see cref="double.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)"/> gives.
+    /// <paramref name="digits"/> is the token after its signs; <see langword="false"/> leaves the token to the general parser.
+    /// </summary>
+    private static bool TryParseShortNumber(ReadOnlySpan<byte> digits, bool negative, out bool isInteger, out long integer, out double real)
+    {
+        const int MaxDigits = 15;
+
+        isInteger = true;
+        integer = 0;
+        real = 0;
+        if (digits.IsEmpty || digits.Length > MaxDigits + 1)
+            return false;
+
+        var mantissa = 0L;
+        var digitCount = 0;
+        var pointIndex = -1;
+        for (var i = 0; i < digits.Length; i++)
+        {
+            var digit = (uint)(digits[i] - '0');
+            if (digit <= 9)
+            {
+                mantissa = (mantissa * 10) + digit;
+                digitCount++;
+            }
+            else if (digits[i] == '.' && pointIndex < 0)
+            {
+                pointIndex = i;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        if (digitCount is 0 or > MaxDigits)
+            return false;
+
+        if (pointIndex < 0)
+        {
+            integer = negative ? -mantissa : mantissa;
+            return true;
+        }
+
+        isInteger = false;
+        var decimals = digits.Length - 1 - pointIndex;
+        var value = (double)mantissa / PowersOfTen[decimals];
+
+        // The sign of zero is that of the general parser: kept with decimal digits ("-0.0"), not without ("-0.")
+        real = negative && (mantissa != 0 || decimals > 0) ? -value : value;
+        return true;
+    }
+
+    private static ReadOnlySpan<double> PowersOfTen => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
 
     /// <summary>Finds the next occurrence of a keyword delimited by non-regular characters.</summary>
     public int IndexOfKeyword(ReadOnlySpan<byte> keyword, int start)

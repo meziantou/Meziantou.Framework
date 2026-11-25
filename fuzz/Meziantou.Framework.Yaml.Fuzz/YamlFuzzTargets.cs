@@ -467,7 +467,7 @@ public static class YamlFuzzTargets
             while (parser.MoveNext())
             {
                 var current = parser.Current!;
-                events.Add($"{current} [{current.Start.Index}..{current.End.Index}]");
+                events.Add($"{current} [{FormatMark(current.Start)}..{FormatMark(current.End)}]");
             }
         }
         catch (YamlException ex)
@@ -478,6 +478,8 @@ public static class YamlFuzzTargets
 
         return new ParserResult(string.Join('\n', events), Error: null);
     }
+
+    private static string FormatMark(Mark mark) => string.Create(CultureInfo.InvariantCulture, $"{mark.Index}:{mark.Line}:{mark.Column}");
 
     private static IEnumerable<FuzzSeed> GetSeeds()
     {

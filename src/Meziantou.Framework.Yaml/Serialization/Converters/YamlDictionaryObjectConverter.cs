@@ -47,8 +47,8 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
         var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var dict = new Dictionary<string, object?>(comparer);
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
+        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
         if (reader.ReferenceReader is not null && anchor is not null)
         {
             reader.ReferenceReader.Register(anchor, dict);
@@ -88,6 +88,9 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             var value = reader.GetConverter(typeof(object)).Read(reader, typeof(object));
             dict[key] = value;
         }
+
+        reader.ReturnKeySet(seenKeys);
+        reader.ReturnKeySet(explicitKeys);
 
         reader.Read();
         return dict;
@@ -203,10 +206,9 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
         }
 
         var options = reader.Options;
-        var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
+        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
         {
             reader.ReferenceReader.Register(reader.Anchor, dictionary);
@@ -247,6 +249,9 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             var value = reader.GetConverter(typeof(object)).Read(reader, typeof(object));
             dictionary[key] = value;
         }
+
+        reader.ReturnKeySet(seenKeys);
+        reader.ReturnKeySet(explicitKeys);
 
         reader.Read();
         return dictionary;

@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Pdf.Text;
 /// Extracts the text of a page: runs the text operators of its content (ISO 32000-2, 9.4) and of its form XObjects,
 /// places each glyph with the text and graphics matrices, then joins the glyphs into lines in the order of the content.
 /// </summary>
-internal sealed partial class TextExtractor
+internal sealed partial class TextExtractor : IDisposable
 {
     private const int MaxFormDepth = 16;
 
@@ -25,10 +25,10 @@ internal sealed partial class TextExtractor
     // counted each time
     private const long MaxTextLength = 32_000_000;
 
-    private readonly List<TextGlyph> _glyphs = [];
+    private readonly PooledList<TextGlyph> _glyphs = new();
 
     // The boxes of the glyphs, when the positions are extracted
-    private readonly List<PdfRectangle>? _bounds;
+    private readonly PooledList<PdfRectangle>? _bounds;
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
     private long _operations;
     private long _textLength;
@@ -45,12 +45,25 @@ internal sealed partial class TextExtractor
     private readonly bool _layoutOrder;
     private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
 
+    // The decoders of the fonts the page uses. The objects of the document do not change while a page is read, so the
+    // cache of the document, which checks that a font has not changed since it was decoded, is asked once for each font
+    private readonly Dictionary<PdfDictionary, PdfFontDecoder> _fonts = new(ReferenceEqualityComparer.Instance);
+
+    // The items of the line being built, reused from a line to the next
+    private readonly List<(int Index, string Text)> _lineItems = [];
+
     private TextExtractor(TextDecoderCache decoders, PdfTextExtractionOptions options, bool withBounds)
     {
         _decoders = decoders;
         _expandLigatures = options.ExpandLigatures;
         _layoutOrder = options.ReadingOrder is PdfTextReadingOrder.Layout;
-        _bounds = withBounds || _layoutOrder ? [] : null;
+        _bounds = withBounds || _layoutOrder ? new() : null;
+    }
+
+    public void Dispose()
+    {
+        _glyphs.Dispose();
+        _bounds?.Dispose();
     }
 
     public static string Extract(PdfPage page, PdfTextExtractionOptions options)
@@ -58,14 +71,14 @@ internal sealed partial class TextExtractor
         if (options.ReadingOrder is PdfTextReadingOrder.Layout)
             return ExtractLayout(page, options).Text;
 
-        var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: false);
+        using var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: false);
         extractor.RunPage(page);
         return extractor.BuildText(layout: false).Text;
     }
 
     public static PdfTextLayout ExtractLayout(PdfPage page, PdfTextExtractionOptions options)
     {
-        var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: true);
+        using var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: true);
         extractor.RunPage(page);
         var (text, lines) = extractor.BuildText(layout: true);
         if (extractor._layoutOrder)
@@ -77,9 +90,18 @@ internal sealed partial class TextExtractor
     /// <summary>Counts the glyphs of a page whose font gives no text, such as the codes of a font without encoding information.</summary>
     public static int CountGlyphsWithoutText(PdfPage page)
     {
-        var extractor = new TextExtractor(page.Document.TextDecoders, PdfTextExtractionOptions.Default, withBounds: false);
+        using var extractor = new TextExtractor(page.Document.TextDecoders, PdfTextExtractionOptions.Default, withBounds: false);
         extractor.RunPage(page);
-        return extractor._glyphs.Count(glyph => glyph.Text is null);
+        var count = 0;
+        foreach (var glyph in extractor._glyphs.AsSpan())
+        {
+            if (glyph.Text is null)
+            {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     private void RunPage(PdfPage page)
@@ -137,13 +159,12 @@ internal sealed partial class TextExtractor
     {
         Charge((content.Length / 4) + 1);
         var reader = new ContentStreamReader(content);
-        var operands = new List<PdfObject>();
         var stack = new Stack<TextGraphicsState>();
 
         // The marked-content sequences of this content, and the one that has the replacement text
         var markedContentDepth = 0;
         var actualTextDepth = -1;
-        while (reader.TryRead(operands, out var name))
+        while (reader.TryRead(out var name))
         {
             Charge(1);
             if (depth == 0)
@@ -151,6 +172,7 @@ internal sealed partial class TextExtractor
                 _operationIndex++;
             }
 
+            var operands = reader.Operands;
             switch (name)
             {
                 case "q":
@@ -163,73 +185,73 @@ internal sealed partial class TextExtractor
                     }
 
                     break;
-                case "cm" when operands.Count >= 6:
+                case "cm" when operands.Length >= 6:
                     state.Ctm = ReadMatrix(operands) * state.Ctm;
                     break;
                 case "BT":
                     state.TextMatrix = PdfMatrix.Identity;
                     state.LineMatrix = PdfMatrix.Identity;
                     break;
-                case "Tc" when operands.Count >= 1:
+                case "Tc" when operands.Length >= 1:
                     state.CharacterSpacing = Number(operands, 0);
                     break;
-                case "Tw" when operands.Count >= 1:
+                case "Tw" when operands.Length >= 1:
                     state.WordSpacing = Number(operands, 0);
                     break;
-                case "Tz" when operands.Count >= 1:
+                case "Tz" when operands.Length >= 1:
                     state.HorizontalScaling = Number(operands, 0) / 100;
                     break;
-                case "TL" when operands.Count >= 1:
+                case "TL" when operands.Length >= 1:
                     state.Leading = Number(operands, 0);
                     break;
-                case "Ts" when operands.Count >= 1:
+                case "Ts" when operands.Length >= 1:
                     state.Rise = Number(operands, 0);
                     break;
-                case "Tf" when operands.Count >= 2:
+                case "Tf" when operands.Length >= 2:
                     state.FontSize = Number(operands, 1);
-                    state.Font = operands[0] is PdfName fontName ? GetDecoder(resources, fontName) : null;
+                    state.Font = reader.TryGetName(operands[0], out var fontName) ? GetDecoder(resources, fontName) : null;
                     break;
-                case "Td" when operands.Count >= 2:
+                case "Td" when operands.Length >= 2:
                     MoveText(ref state, Number(operands, 0), Number(operands, 1));
                     break;
-                case "TD" when operands.Count >= 2:
+                case "TD" when operands.Length >= 2:
                     state.Leading = -Number(operands, 1);
                     MoveText(ref state, Number(operands, 0), Number(operands, 1));
                     break;
-                case "Tm" when operands.Count >= 6:
+                case "Tm" when operands.Length >= 6:
                     state.TextMatrix = ReadMatrix(operands);
                     state.LineMatrix = state.TextMatrix;
                     break;
                 case "T*":
                     MoveText(ref state, 0, -state.Leading);
                     break;
-                case "Tj" when operands.Count >= 1 && operands[^1] is PdfString text:
-                    ShowText(ref state, text.Span);
+                case "Tj" when operands.Length >= 1 && reader.TryGetString(operands[^1], out var text):
+                    ShowText(ref state, text);
                     break;
-                case "'" when operands.Count >= 1 && operands[^1] is PdfString text:
+                case "'" when operands.Length >= 1 && reader.TryGetString(operands[^1], out var text):
                     MoveText(ref state, 0, -state.Leading);
-                    ShowText(ref state, text.Span);
+                    ShowText(ref state, text);
                     break;
-                case "\"" when operands.Count >= 3 && operands[^1] is PdfString text:
+                case "\"" when operands.Length >= 3 && reader.TryGetString(operands[^1], out var text):
                     state.WordSpacing = Number(operands, 0);
                     state.CharacterSpacing = Number(operands, 1);
                     MoveText(ref state, 0, -state.Leading);
-                    ShowText(ref state, text.Span);
+                    ShowText(ref state, text);
                     break;
-                case "TJ" when operands.Count >= 1 && operands[^1] is PdfArray array:
-                    foreach (var item in array)
+                case "TJ" when operands.Length >= 1 && reader.TryGetArray(operands[^1], out var array):
+                    for (var i = 0; i < array.Count; i++)
                     {
                         Charge(1);
-                        switch (item)
+                        var item = array[i];
+                        if (reader.TryGetString(item, out var segment))
                         {
-                            case PdfString segment:
-                                ShowText(ref state, segment.Span);
-                                break;
-                            case PdfNumber adjustment:
-                                // A number moves the next glyph by thousandths of the font size, against the writing direction (9.4.3)
-                                var offset = -adjustment.DoubleValue / 1000 * state.FontSize;
-                                Advance(ref state, (state.Font?.IsVertical ?? false) ? 0 : offset * state.HorizontalScaling, (state.Font?.IsVertical ?? false) ? offset : 0);
-                                break;
+                            ShowText(ref state, segment);
+                        }
+                        else if (item.TryGetNumber(out var adjustment))
+                        {
+                            // A number moves the next glyph by thousandths of the font size, against the writing direction (9.4.3)
+                            var offset = -adjustment / 1000 * state.FontSize;
+                            Advance(ref state, (state.Font?.IsVertical ?? false) ? 0 : offset * state.HorizontalScaling, (state.Font?.IsVertical ?? false) ? offset : 0);
                         }
                     }
 
@@ -239,7 +261,7 @@ internal sealed partial class TextExtractor
                     break;
                 case "BDC":
                     markedContentDepth++;
-                    if (_actualText is null && GetActualText(resources, operands) is { } actualText)
+                    if (_actualText is null && GetActualText(resources, reader, operands) is { } actualText)
                     {
                         _actualText = actualText;
                         _actualTextStart = _glyphs.Count;
@@ -256,7 +278,7 @@ internal sealed partial class TextExtractor
 
                     markedContentDepth--;
                     break;
-                case "Do" when operands.Count >= 1 && operands[^1] is PdfName xobjectName && depth < MaxFormDepth:
+                case "Do" when operands.Length >= 1 && reader.TryGetName(operands[^1], out var xobjectName) && depth < MaxFormDepth:
                     RunForm(resources, xobjectName, state, depth);
                     break;
             }
@@ -270,14 +292,21 @@ internal sealed partial class TextExtractor
     }
 
     /// <summary>Gets the replacement text of the property list of a <c>BDC</c> operator: inline, or a resource (14.6.2).</summary>
-    private string? GetActualText(PdfDictionary? resources, List<PdfObject> operands)
+    private string? GetActualText(PdfDictionary? resources, ContentStreamReader reader, ReadOnlySpan<ContentOperand> operands)
     {
-        var properties = operands.Count >= 2 ? operands[^1] switch
+        PdfDictionary? properties = null;
+        if (operands.Length >= 2)
         {
-            PdfDictionary dictionary => dictionary,
-            PdfName name => resources?.Get<PdfDictionary>(PdfNames.Properties)?.Get<PdfDictionary>(name),
-            _ => null,
-        } : null;
+            if (operands[^1].Object is PdfDictionary dictionary)
+            {
+                properties = dictionary;
+            }
+            else if (reader.TryGetName(operands[^1], out var name))
+            {
+                properties = resources?.Get<PdfDictionary>(PdfNames.Properties)?.Get<PdfDictionary>(name);
+            }
+        }
+
         if (properties?.GetResolved(PdfNames.ActualText) is not PdfString text)
             return null;
 
@@ -299,11 +328,10 @@ internal sealed partial class TextExtractor
         if (_glyphs.Count > _actualTextStart)
         {
             var first = _glyphs[_actualTextStart];
-            var last = _glyphs[^1];
-            var count = _glyphs.Count - _actualTextStart;
-            var bounds = _bounds is null ? default : Union(CollectionsMarshal.AsSpan(_bounds).Slice(_actualTextStart, count));
-            _glyphs.RemoveRange(_actualTextStart, count);
-            _bounds?.RemoveRange(_actualTextStart, count);
+            var last = _glyphs[_glyphs.Count - 1];
+            var bounds = _bounds is null ? default : Union(_bounds.AsSpan()[_actualTextStart..]);
+            _glyphs.RemoveFrom(_actualTextStart);
+            _bounds?.RemoveFrom(_actualTextStart);
             AddGlyph(first with { Text = text, EndX = last.EndX, EndY = last.EndY }, bounds);
             return;
         }
@@ -358,7 +386,13 @@ internal sealed partial class TextExtractor
         if (resources?.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(name) is not { } font)
             return null;
 
-        return _decoders.Get(font);
+        if (!_fonts.TryGetValue(font, out var decoder))
+        {
+            decoder = _decoders.Get(font);
+            _fonts.Add(font, decoder);
+        }
+
+        return decoder;
     }
 
     /// <summary>
@@ -515,13 +549,13 @@ internal sealed partial class TextExtractor
         state.TextMatrix = state.LineMatrix;
     }
 
-    private static PdfMatrix ReadMatrix(List<PdfObject> operands)
+    private static PdfMatrix ReadMatrix(ReadOnlySpan<ContentOperand> operands)
     {
-        var start = operands.Count - 6;
+        var start = operands.Length - 6;
         return new PdfMatrix(Number(operands, start), Number(operands, start + 1), Number(operands, start + 2), Number(operands, start + 3), Number(operands, start + 4), Number(operands, start + 5));
     }
 
-    private static double Number(List<PdfObject> operands, int index) => index >= 0 && index < operands.Count && operands[index] is PdfNumber number ? number.DoubleValue : 0;
+    private static double Number(ReadOnlySpan<ContentOperand> operands, int index) => index >= 0 && index < operands.Length && operands[index].TryGetNumber(out var value) ? value : 0;
 
     /// <summary>
     /// Joins the glyphs: a new line when a glyph leaves the baseline, goes back or changes direction, a space when a gap
@@ -592,7 +626,17 @@ internal sealed partial class TextExtractor
         // The glyphs in the order of the text, and the spaces between them (-1)
         var items = rightToLeft && !line.Exists(index => _glyphs[index].Font?.IsVertical ?? false) ? OrderRightToLeftLine(line) : AddSpaces(line);
         var lineStart = builder.Length;
-        var lineGlyphs = lines is null ? null : new List<PdfTextGlyph>();
+        if (lines is null)
+        {
+            foreach (var (_, text) in items)
+            {
+                builder.Append(text);
+            }
+
+            return;
+        }
+
+        var lineGlyphs = new List<PdfTextGlyph>();
         var words = new List<PdfTextWord>();
         var wordGlyphs = new List<PdfTextGlyph>();
 
@@ -608,9 +652,6 @@ internal sealed partial class TextExtractor
         foreach (var (index, text) in items)
         {
             builder.Append(text);
-            if (lineGlyphs is null)
-                continue;
-
             if (index < 0)
             {
                 EndWord();
@@ -630,17 +671,15 @@ internal sealed partial class TextExtractor
             }
         }
 
-        if (lines is not null)
-        {
-            EndWord();
-            lines.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs!]));
-        }
+        EndWord();
+        lines.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs]));
     }
 
     /// <summary>Keeps the glyphs of a line in the order of the content, with a space where the gap after a glyph is wider than a fraction of the font size.</summary>
     private List<(int Index, string Text)> AddSpaces(List<int> line)
     {
-        var result = new List<(int Index, string Text)>(line.Count);
+        var result = _lineItems;
+        result.Clear();
         for (var i = 0; i < line.Count; i++)
         {
             var glyph = _glyphs[line[i]];

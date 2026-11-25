@@ -610,7 +610,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
                         sizes = new FragmentainerSizes(rowSizes, columnsPerRow);
                     }
 
-                    ColumnBreaker.FindBreaks(flow, start, end, sizes, breaks, out _, out var lastExtent, map, fragmentainers.Count);
+                    ColumnBreaker.FindBreaks(flow, start, end, sizes, breaks, out _, out var lastExtent, map, fragmentainers.Count, set > 0 ? flow.Spanners[set - 1].Sequence : 0);
                     var count = breaks.Count + 1;
                     var rows = wraps ? (count + columnCount - 1) / columnCount : 1;
                     var firstRowOffset = rowStart + rowUsed;
@@ -718,7 +718,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
                         }
                     }
 
-                    ColumnBreaker.FindBreaks(flow, segmentStart, segmentEnd, new FragmentainerSizes([columnHeight], int.MaxValue), breaks, out _, out var lastExtent, map, fragmentainers.Count);
+                    ColumnBreaker.FindBreaks(flow, segmentStart, segmentEnd, new FragmentainerSizes([columnHeight], int.MaxValue), breaks, out _, out var lastExtent, map, fragmentainers.Count, row == 0 && set > 0 ? flow.Spanners[set - 1].Sequence : 0);
                     var columns = breaks.Count + 1;
                     if (double.IsPositiveInfinity(columnHeight))
                     {

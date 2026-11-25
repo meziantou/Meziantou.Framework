@@ -389,6 +389,10 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         {
             EvaluateStopsScalar(y, x, parameters, colors);
         }
+        else if (Vector512.IsHardwareAccelerated)
+        {
+            EvaluateStopsVector<DoubleLanes512, Vector512<double>>(y, x, parameters, colors);
+        }
         else if (Vector256.IsHardwareAccelerated)
         {
             EvaluateStopsVector<DoubleLanes256, Vector256<double>>(y, x, parameters, colors);
@@ -461,18 +465,30 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                 {
                     var from = stops.Slice(index * ValuesPerStop, ValuesPerStop);
                     var t = TLanes.Load(parameters[i..]);
-                    var start = TLanes.Create(from[0]);
-                    if (TLanes.All(TLanes.And(TLanes.GreaterThanOrEqual(t, start), TLanes.LessThan(t, TLanes.Create(stops[(index + 1) * ValuesPerStop])))))
+                    var isAfterStart = TLanes.GreaterThanOrEqual(t, TLanes.Create(from[0]));
+                    var isBeforeNext = TLanes.LessThan(t, TLanes.Create(stops[(index + 1) * ValuesPerStop]));
+                    var offset = dither ? TLanes.Load(thresholds[((x + i) & 7)..]) : rounding;
+                    if (TLanes.All(TLanes.And(isAfterStart, isBeforeNext)))
                     {
-                        var u = TLanes.Divide(TLanes.Subtract(t, start), TLanes.Create(from[OffsetStep]));
-                        var alpha = TLanes.Add(TLanes.Create(from[1]), TLanes.Multiply(u, TLanes.Create(from[AlphaStep])));
-                        var offset = dither ? TLanes.Load(thresholds[((x + i) & 7)..]) : rounding;
-                        var roundedAlpha = RoundLanes<TLanes, TVector>(alpha, offset, zero, max);
-                        var c0 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep]))), alpha), offset, zero, max);
-                        var c1 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied + 1]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep + 1]))), alpha), offset, zero, max);
-                        var c2 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied + 2]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep + 2]))), alpha), offset, zero, max);
+                        EvaluateSegment(from, t, offset, zero, max, out var c0, out var c1, out var c2, out var roundedAlpha);
 
                         // A pixel whose alpha rounds to zero has no color
+                        TLanes.StoreSamples(c0, c1, c2, roundedAlpha, TLanes.Equal(roundedAlpha, zero), colors.Slice(i * 4, count * 4));
+                        i += count;
+                        continue;
+                    }
+
+                    // The lanes are on both sides of the next stop, before the one after it: each lane takes the colors of
+                    // its own segment, computed as the scalar code computes them (the last stop whose offset is not
+                    // greater than the parameter is the first of the segment)
+                    if (index + 1 < last && TLanes.All(TLanes.And(isAfterStart, TLanes.LessThan(t, TLanes.Create(stops[(index + 2) * ValuesPerStop])))))
+                    {
+                        EvaluateSegment(from, t, offset, zero, max, out var c0, out var c1, out var c2, out var roundedAlpha);
+                        EvaluateSegment(stops.Slice((index + 1) * ValuesPerStop, ValuesPerStop), t, offset, zero, max, out var next0, out var next1, out var next2, out var nextAlpha);
+                        c0 = TLanes.Select(isBeforeNext, c0, next0);
+                        c1 = TLanes.Select(isBeforeNext, c1, next1);
+                        c2 = TLanes.Select(isBeforeNext, c2, next2);
+                        roundedAlpha = TLanes.Select(isBeforeNext, roundedAlpha, nextAlpha);
                         TLanes.StoreSamples(c0, c1, c2, roundedAlpha, TLanes.Equal(roundedAlpha, zero), colors.Slice(i * 4, count * 4));
                         i += count;
                         continue;
@@ -482,6 +498,18 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 
             EvaluateStop(stops, t0, x + i, y, colors.Slice(i * 4, 4), ref index);
             i++;
+        }
+
+        // The rounded samples of the parameters of the lanes between the stop of 'from' and the next one
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void EvaluateSegment(ReadOnlySpan<double> from, TVector t, TVector offset, TVector zero, TVector max, out TVector c0, out TVector c1, out TVector c2, out TVector roundedAlpha)
+        {
+            var u = TLanes.Divide(TLanes.Subtract(t, TLanes.Create(from[0])), TLanes.Create(from[OffsetStep]));
+            var alpha = TLanes.Add(TLanes.Create(from[1]), TLanes.Multiply(u, TLanes.Create(from[AlphaStep])));
+            roundedAlpha = RoundLanes<TLanes, TVector>(alpha, offset, zero, max);
+            c0 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep]))), alpha), offset, zero, max);
+            c1 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied + 1]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep + 1]))), alpha), offset, zero, max);
+            c2 = RoundLanes<TLanes, TVector>(TLanes.Divide(TLanes.Add(TLanes.Create(from[Premultiplied + 2]), TLanes.Multiply(u, TLanes.Create(from[PremultipliedStep + 2]))), alpha), offset, zero, max);
         }
     }
 
@@ -916,6 +944,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         var zero = TLanes.Create(0);
         var one = TLanes.Create(1);
         var two = TLanes.Create(2);
+        var half = TLanes.Create(0.5);
         var notANumber = TLanes.Create(double.NaN);
         var mode = _spreadMode;
         for (; i + count <= parameters.Length; i += count)
@@ -928,7 +957,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                     break;
 
                 case GradientSpreadMode.Reflect:
-                    t = TLanes.Subtract(t, TLanes.Multiply(two, TLanes.Floor(TLanes.Divide(t, two))));
+                    // Halving is exact: the product by one half is the quotient by two, without the latency of a division
+                    t = TLanes.Subtract(t, TLanes.Multiply(two, TLanes.Floor(TLanes.Multiply(t, half))));
                     t = TLanes.Select(TLanes.GreaterThan(t, one), TLanes.Subtract(two, t), t);
                     break;
 

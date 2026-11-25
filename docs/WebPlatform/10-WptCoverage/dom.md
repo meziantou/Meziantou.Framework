@@ -9,11 +9,11 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 676 | 692 | 6 | 99% |
+| [Stable](#stable-tests) | 677 | 692 | 6 | 99% |
 | [Tentative](#tentative-tests) | 32 | 55 | 0 | 58% |
 | [Reftests](#reftests) | 5 | 5 | 0 | 100% |
 | [Crash tests](#crash-tests) | 48 | 49 | 0 | 98% |
-| **All** | **761** | **801** | **6** | **96%** |
+| **All** | **762** | **801** | **6** | **96%** |
 
 ## Failure reasons
 
@@ -22,8 +22,6 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 - **BUG**: 1
 - **TEST BUG**: 10
 - **NOT IMPLEMENTED**: 21
-- **REQUIRES**: 1
-  - `hardware`: 1
 - **OUT OF SCOPE**: 1
 - **PERFORMANCE**: 6
 
@@ -94,7 +92,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`events/Event-subclasses-constructors.html`](https://wpt.fyi/results/dom/events/Event-subclasses-constructors.html) | Pass | 49 / 49 |  |  |
 | [`events/Event-timestamp-cross-realm-getter.html`](https://wpt.fyi/results/dom/events/Event-timestamp-cross-realm-getter.html) | Pass | 1 / 1 |  |  |
 | [`events/Event-timestamp-high-resolution.html`](https://wpt.fyi/results/dom/events/Event-timestamp-high-resolution.html) | Pass | 4 / 4 |  |  |
-| [`events/Event-timestamp-high-resolution.https.html`](https://wpt.fyi/results/dom/events/Event-timestamp-high-resolution.https.html) | Fail | 0 / 1 | REQUIRES(hardware) | `GamepadEvent`, an event of the Gamepad API (`gamepad/*`), whose `gamepad` attribute is a `Gamepad` object: exposing the event without the API of the game controllers would break the feature detection |
+| [`events/Event-timestamp-high-resolution.https.html`](https://wpt.fyi/results/dom/events/Event-timestamp-high-resolution.https.html) | Pass | 1 / 1 |  |  |
 | [`events/Event-timestamp-safe-resolution.html`](https://wpt.fyi/results/dom/events/Event-timestamp-safe-resolution.html) | Pass | 1 / 1 |  |  |
 | [`events/Event-type-empty.html`](https://wpt.fyi/results/dom/events/Event-type-empty.html) | Pass | 2 / 2 |  |  |
 | [`events/Event-type.html`](https://wpt.fyi/results/dom/events/Event-type.html) | Pass | 3 / 3 |  |  |

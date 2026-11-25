@@ -1,3 +1,7 @@
+using System.IO.Hashing;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Compression.Internals.BZip2;
 
 /// <summary>The constants of the bzip2 format, and its CRC-32 (the polynomial 0x04C11DB7, most significant bit first).</summary>
@@ -17,7 +21,8 @@ internal static class BZip2Constants
     public const ulong BlockMagic = 0x314159265359;
     public const ulong EndOfStreamMagic = 0x177245385090;
 
-    private static readonly uint[] CrcTable = CreateCrcTable();
+    /// <summary>Gets the parameters of the CRC-32 of bzip2 (CRC-32/BZIP2), which <see cref="Crc32"/> computes with vector instructions.</summary>
+    public static Crc32ParameterSet CrcParameters { get; } = Crc32ParameterSet.Create(0x04C11DB7, uint.MaxValue, uint.MaxValue, reflectValues: false);
 
     /// <summary>
     /// Gets the table of the randomized blocks of bzip2 0.9.0, which the decoders still read: the distances between the bytes
@@ -59,42 +64,28 @@ internal static class BZip2Constants
         203, 50, 668, 108, 645, 990, 626, 197, 510, 357, 358, 850, 858, 364, 936, 638,
     ];
 
-    public static uint UpdateCrc(uint crc, ReadOnlySpan<byte> data)
+    /// <summary>Moves the byte at <paramref name="position"/> to the front of <paramref name="list"/>, after shifting the bytes before it by one.</summary>
+    /// <returns>The byte that was at <paramref name="position"/>.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static byte MoveToFront(Span<byte> list, int position)
     {
-        var table = CrcTable;
-        foreach (var value in data)
+        var value = list[position];
+
+        // The source and the destination overlap, so CopyTo would call the native memmove, which is slow for these short
+        // copies: copy 16 bytes at a time from the end, each block being read before the bytes it covers are overwritten
+        var i = position;
+        while (i >= Vector128<byte>.Count)
         {
-            crc = (crc << 8) ^ table[(byte)(crc >> 24) ^ value];
+            Vector128.Create(list.Slice(i - Vector128<byte>.Count, Vector128<byte>.Count)).CopyTo(list[(i - Vector128<byte>.Count + 1)..]);
+            i -= Vector128<byte>.Count;
         }
 
-        return crc;
-    }
-
-    public static uint UpdateCrc(uint crc, byte value, int count)
-    {
-        var table = CrcTable;
-        for (var i = 0; i < count; i++)
+        for (; i > 0; i--)
         {
-            crc = (crc << 8) ^ table[(byte)(crc >> 24) ^ value];
+            list[i] = list[i - 1];
         }
 
-        return crc;
-    }
-
-    private static uint[] CreateCrcTable()
-    {
-        var table = new uint[256];
-        for (uint i = 0; i < 256; i++)
-        {
-            var value = i << 24;
-            for (var bit = 0; bit < 8; bit++)
-            {
-                value = (value & 0x80000000) is not 0 ? (value << 1) ^ 0x04C11DB7 : value << 1;
-            }
-
-            table[i] = value;
-        }
-
-        return table;
+        list[0] = value;
+        return value;
     }
 }

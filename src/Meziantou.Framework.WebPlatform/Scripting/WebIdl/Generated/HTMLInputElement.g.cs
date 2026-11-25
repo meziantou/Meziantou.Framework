@@ -108,6 +108,8 @@ internal static class Binding_HTMLInputElement<TAdapter, TValue> where TAdapter 
     private static TValue Get_webkitdirectory(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromBoolean(o.Webkitdirectory); }
     private static void Set_webkitdirectory(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToBoolean(v); o.Webkitdirectory = x; }
     private static TValue Get_webkitEntries(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromFrozenArray(o.WebkitEntries, static (r, e) => r.Wrap(e)); }
+    private static TValue Get_capture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.Capture); }
+    private static void Set_capture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToDomString(v); o.Capture = x; }
     private static TValue Get_align(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.Align); }
     private static void Set_align(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); var x = r.ToDomString(v); o.Align = x; }
     private static TValue Get_useMap(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlInputElement>(t, Binding); return r.FromString(o.UseMap); }
@@ -243,6 +245,7 @@ internal static class Binding_HTMLInputElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "selectionDirection", Get_selectionDirection, Set_selectionDirection);
         r.DefineAttribute(instanceTarget, "webkitdirectory", Get_webkitdirectory, Set_webkitdirectory);
         r.DefineAttribute(instanceTarget, "webkitEntries", Get_webkitEntries, null);
+        r.DefineAttribute(instanceTarget, "capture", Get_capture, Set_capture);
         r.DefineAttribute(instanceTarget, "align", Get_align, Set_align);
         r.DefineAttribute(instanceTarget, "useMap", Get_useMap, Set_useMap);
         r.DefineAttribute(instanceTarget, "hspace", Get_hspace, Set_hspace);

@@ -1049,12 +1049,7 @@
     "total": 13
   },
   "webaudio/the-audio-api/the-mediaelementaudiosourcenode-interface/setSinkId-with-MediaElementAudioSourceNode.https.html": {
-    "total": 3,
-    "failures": {
-      "setSinkId fails with NotFoundError on made up deviceid": "FAIL",
-      "setSinkId on default audio output should always work": "FAIL",
-      "setSinkId() with output device ID exposed by selectAudioOutput() should resolve": "FAIL"
-    }
+    "total": 3
   },
   "webaudio/the-audio-api/the-mediastreamaudiodestinationnode-interface/closed-audiocontext-construction.html": {
     "total": 1

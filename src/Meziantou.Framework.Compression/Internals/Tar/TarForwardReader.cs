@@ -91,7 +91,8 @@ internal sealed class TarForwardReader : ArchiveReader
         if (entry.DataStream is not { } data)
             return TarEntryAdapter.EmptyStream();
 
-        return new NonClosingStream(data);
+        // The content stream of TarReader ends with the archive stream, without an error, when the archive is truncated
+        return new ChecksumVerifyingStream(new NonClosingStream(data), entry.Length, expectedCrc: null, encrypted: false);
     }
 
     protected override void Dispose(bool disposing)

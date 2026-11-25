@@ -38,7 +38,8 @@ public static partial class ImagingFuzzTargets
         {
             if (identified.Info is not { Format: ImageFormat.Psd } info)
             {
-                FuzzAssert.True(image is null, "A load succeeds where a full scan fails: " + identified.Exception?.Message);
+                // A mutated input can be a valid image of another format (a TGA header has no signature)
+                FuzzAssert.True(image is null || image.Metadata.SourceFormat != ImageFormat.Psd, "A load succeeds where a full scan fails: " + identified.Exception?.Message);
                 return;
             }
 

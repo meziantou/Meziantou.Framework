@@ -157,6 +157,10 @@ internal static class CanvasDrawables
             current = current.Parent;
         }
 
+        // A fixed positioned drawable element is laid out in the viewport, out of the fragment of the contents box: the contents box
+        // is its nearest ancestor box that is one (its position in the layout does not matter, the canvas transform places it)
+        current ??= GetCanvasContentsBox(box)?.FirstFragment;
+
         if (current is not BoxFragment { Box.Parent.Element: HtmlCanvasElement canvas } contentsFragment)
             return false;
 
@@ -274,6 +278,21 @@ internal static class CanvasDrawables
 
             return part;
         }
+    }
+
+    /// <summary>Returns the contents box of the canvas whose contents contain a box, or null.</summary>
+    private static ContainerBox? GetCanvasContentsBox(ContainerBox box)
+    {
+        for (var current = box.Parent; current is not null; current = current.Parent)
+        {
+            if (current.Kind == ContainerBoxKind.Replaced)
+                return null;
+
+            if (current.IsFormControlContents)
+                return current.Parent is { Kind: ContainerBoxKind.Replaced, Element: HtmlCanvasElement } ? current : null;
+        }
+
+        return null;
     }
 
     /// <summary>Returns the union of the border boxes of the fragments of a box, in the coordinates of the root of the fragment tree.</summary>

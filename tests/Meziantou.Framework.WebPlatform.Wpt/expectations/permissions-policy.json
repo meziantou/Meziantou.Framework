@@ -1,33 +1,18 @@
 {
   "permissions-policy/bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "bluetooth-allowed-by-permissions-policy-attribute-redirect-on-load": "FAIL"
-    }
+    "total": 3
   },
   "permissions-policy/bluetooth-allowed-by-permissions-policy-attribute.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "bluetooth-allowed-by-permissions-policy-attribute": "FAIL"
-    }
+    "total": 3
   },
   "permissions-policy/bluetooth-allowed-by-permissions-policy.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "bluetooth-allowed-by-permissions-policy": "FAIL"
-    }
+    "total": 5
   },
   "permissions-policy/bluetooth-default-permissions-policy.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "bluetooth-default-permissions-policy": "FAIL"
-    }
+    "total": 5
   },
   "permissions-policy/bluetooth-disabled-by-permissions-policy.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "bluetooth-disabled-by-permissions-policy": "FAIL"
-    }
+    "total": 5
   },
   "permissions-policy/experimental-features/focus-without-user-activation-click-handler.tentative.html": {
     "total": 2,
@@ -335,15 +320,15 @@
     "total": 1
   },
   "permissions-policy/reporting/bluetooth-report-only.https.html": {
-    "total": 1,
+    "total": 5,
     "failures": {
-      "bluetooth-report-only": "FAIL"
+      "requestLEScan in bluetooth report only mode": "FAIL"
     }
   },
   "permissions-policy/reporting/bluetooth-reporting.https.html": {
-    "total": 1,
+    "total": 5,
     "failures": {
-      "bluetooth-reporting": "FAIL"
+      "requestLEScan in bluetooth reporting mode": "FAIL"
     }
   },
   "permissions-policy/reporting/camera-potential-report-only.https.html": {
@@ -392,11 +377,7 @@
     "total": 1
   },
   "permissions-policy/reporting/midi-report-only.https.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "MIDI report only mode": "TIMEOUT"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/midi-reporting.https.html": {
     "total": 1,
@@ -435,18 +416,10 @@
     "total": 1
   },
   "permissions-policy/reporting/serial-report-only.https.html": {
-    "total": 2,
-    "failures": {
-      "getPorts in serial report only mode": "FAIL",
-      "requestPort in serial report only mode": "FAIL"
-    }
+    "total": 2
   },
   "permissions-policy/reporting/serial-reporting.https.html": {
-    "total": 2,
-    "failures": {
-      "getPorts in serial reporting mode": "FAIL",
-      "requestPort in serial reporting mode": "FAIL"
-    }
+    "total": 2
   },
   "permissions-policy/reporting/sync-xhr-report-only.html": {
     "total": 1
@@ -455,17 +428,10 @@
     "total": 1
   },
   "permissions-policy/reporting/usb-report-only.https.html": {
-    "total": 1,
-    "failures": {
-      "USB report only mode": "FAIL"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/usb-reporting.https.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "USB Report Format": "NOTRUN"
-    }
+    "total": 1
   },
   "permissions-policy/reporting/xr-report-only.https.html": {
     "total": 1,

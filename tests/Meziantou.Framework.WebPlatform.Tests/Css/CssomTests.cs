@@ -526,6 +526,17 @@ public sealed class CssomTests
         Assert.Equal(expected, element.Style.CssText);
     }
 
+    [Theory]
+    [InlineData("z-index: 123450000000000000000000001")] // A large integer is not written with an exponent: it would not be an <integer>
+    [InlineData("link-parameters: param(--a: ++1 -+1 .+1 +-.5)")] // A delimiter followed by a signed number written without its sign
+    public void Serialization_IsParsedAsTheSameValue(string style)
+    {
+        var element = CreateElement(style);
+        var serialized = element.Style.CssText;
+        Assert.NotEqual("", serialized);
+        Assert.Equal(serialized, CreateElement(serialized).Style.CssText);
+    }
+
     [Fact]
     public void Hue_MathFunctionWithPercentage_IsInvalid()
     {

@@ -75,6 +75,9 @@ internal sealed partial class WptTestRunner
     [SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "The generated code of LibraryImport is unsafe code, which the memory-safety rules of the project reject; the function has no marshalling")]
     private static safe extern uint TimeBeginPeriod(uint period);
 
+    /// <summary>The WebUSB Testing API of the runner (Runner/webusb-test.js), defined in the realms of the WebUSB tests.</summary>
+    private static readonly Lazy<string> WebUsbTestScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "webusb-test.js")));
+
     /// <summary>The testdriver vendor implementation of the runner (Runner/testdriver-vendor.js).</summary>
     private static readonly Lazy<string> TestDriverVendorScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "testdriver-vendor.js")));
 
@@ -141,6 +144,15 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The posture of the device, overridden by test_driver.set_device_posture().</summary>
     private readonly DevicePostureProvider _devicePosture = new();
+
+    /// <summary>The fake USB devices of the WebUSB Testing API (navigator.usb.test).</summary>
+    private readonly WptUsbProvider _usb = new();
+
+    /// <summary>The contacts of the Contact Picker tests, set by WebContactsTest.setSelectedContacts().</summary>
+    private readonly WptContactsProvider _contacts = new();
+
+    /// <summary>The simulated Bluetooth adapter of the bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth).</summary>
+    private readonly WptBluetoothProvider _bluetooth = new();
 
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
@@ -254,6 +266,11 @@ internal sealed partial class WptTestRunner
                 _permissionStore.SetState(name, PermissionState.Granted);
             }
 
+            // The midi permission is granted by default: the tests that do not set it expect the access (the report-only mode of
+            // the permissions policy, the prerendering restrictions), as Chromium gives it without asking for the messages
+            // that are not system exclusive messages
+            _permissionStore.SetState("midi", PermissionState.Granted);
+
             // The test page is loaded in a top-level browsing context. The documents of its iframes and the scripts are the files of the test suite.
             browsingContext = new BrowsingContext(new BrowsingContextOptions
             {
@@ -301,6 +318,21 @@ internal sealed partial class WptTestRunner
                 // The virtual pressure sources and the posture override of the test driver
                 ComputePressure = new ComputePressureOptions { Provider = _pressureSources },
                 DevicePosture = new DevicePostureOptions { Provider = _devicePosture },
+
+                // The fake devices of the WebUSB Testing API (navigator.usb.test of Runner/webusb-test.js)
+                Usb = new UsbOptions { Provider = _usb },
+
+                // The simulated Bluetooth adapter of test_driver.bidi.bluetooth
+                Bluetooth = new BluetoothOptions { Provider = _bluetooth },
+
+                // Two screens side by side for the tests of the Window Management API (the other tests have one screen, the
+                // size of the viewport)
+                Screens = _test.RelativePath.StartsWith("window-management/", StringComparison.Ordinal) ? new ScreenOptions { Provider = CreateWindowManagementScreens() } : null,
+
+                // A MIDI output that loops back to a MIDI input for the Web MIDI tests, and the contacts of the WebContactsTest
+                // class for the Contact Picker tests
+                Midi = _test.RelativePath.StartsWith("webmidi/", StringComparison.Ordinal) ? new WebMidiOptions { Provider = WptMidi.CreateProvider() } : null,
+                Contacts = _test.RelativePath.StartsWith("contacts/", StringComparison.Ordinal) ? new ContactsOptions { Provider = _contacts } : null,
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
@@ -457,6 +489,15 @@ internal sealed partial class WptTestRunner
     }
 
     private static readonly ViewportOptions DefaultViewport = new() { SmoothUserScrolling = true };
+
+    /// <summary>The screens of the Window Management tests: a primary internal screen with a taskbar, and an external screen on its right.</summary>
+    private static ScreenProvider CreateWindowManagementScreens()
+    {
+        var provider = new ScreenProvider();
+        provider.AddScreen(new DeviceScreen(0, 0, 1920, 1080) { AvailHeight = 1040, IsPrimary = true, IsInternal = true, Label = "Built-in display" });
+        provider.AddScreen(new DeviceScreen(1920, 0, 1280, 1024) { DevicePixelRatio = 2, Label = "External display" });
+        return provider;
+    }
 
     /// <summary>
     /// The HTTPS upgrades of the tests of the https-upgrades directory (https://github.com/whatwg/fetch/pull/1655), as
@@ -1827,6 +1868,26 @@ internal sealed partial class WptTestRunner
             DefineTestUtils(realm);
         }
 
+        // The WebUSB Testing API, in the windows and the workers of the WebUSB tests (the polyfill of Chromium needs MojoJS)
+        if (_test.RelativePath.StartsWith("webusb/", StringComparison.Ordinal))
+        {
+            _usb.DefineTestApi(realm, WebUsbTestScript.Value);
+        }
+
+        // The WebContactsTest class of the Contact Picker tests (the mock of Chromium needs MojoJS)
+        if (_test.RelativePath.StartsWith("contacts/", StringComparison.Ordinal) && realm.Window is not null)
+        {
+            _contacts.DefineTestApi(realm);
+        }
+
+        // The legacy Web Bluetooth Testing API of Chromium (navigator.bluetooth.test, on MojoJS), which bluetooth_test() of
+        // /bluetooth/resources/bluetooth-test.js requires: the permissions policy tests only check, after the test, that the
+        // fake responses were consumed (there is none, they do not simulate devices)
+        if (_test.RelativePath.StartsWith("permissions-policy/", StringComparison.Ordinal) && _test.RelativePath.Contains("bluetooth", StringComparison.Ordinal))
+        {
+            realm.EvaluateBuiltIn("if (self.navigator && navigator.bluetooth) Object.defineProperty(navigator.bluetooth, 'test', { value: { allResponsesConsumed: () => Promise.resolve(true) }, writable: true, enumerable: false, configurable: true });");
+        }
+
         // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
         if (realm.Window is null)
             return;
@@ -1848,6 +1909,9 @@ internal sealed partial class WptTestRunner
 
             return adapter.Undefined;
         });
+        // The bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth): __wpt_bluetooth and __wpt_bluetooth_dispatcher
+        _bluetooth.DefineTestApi(realm, QueueTask);
+
         Define("__wpt_bidi_log_dispatcher", 1, (_, args) =>
         {
             // The function of testdriver-vendor.js that emits the WebDriver BiDi log.entryAdded events of the realm

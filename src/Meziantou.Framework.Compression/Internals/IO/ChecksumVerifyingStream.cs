@@ -61,7 +61,11 @@ internal sealed class ChecksumVerifyingStream : ReadOnlyStreamBase
             return 0;
         }
 
-        _crc.Append(buffer[..read]);
+        if (_expectedCrc is not null)
+        {
+            _crc.Append(buffer[..read]);
+        }
+
         _length += read;
         if (_expectedLength >= 0 && _length == _expectedLength)
         {

@@ -1,29 +1,13 @@
 {
   "webusb/getDevices/reject_opaque_origin.https.html": {
-    "total": 1,
-    "failures": {
-      "Calls to USB APIs from an origin with opaque top origin get blocked.": "FAIL"
-    }
+    "total": 1
   },
   "webusb/getDevices/sandboxed_iframe.https.window.js": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "GetDevices from a sandboxed iframe is valid.": "TIMEOUT"
-    }
+    "total": 1
   },
   "webusb/idlharness.https.any.js": {
     "total": 279,
     "failures": {
-      "Navigator interface: attribute usb": "FAIL",
-      "Navigator interface: navigator must inherit property \"usb\" with the proper type": "FAIL",
-      "Stringification of navigator.usb": "FAIL",
-      "Stringification of new USBInTransferResult(\"ok\")": "FAIL",
-      "Stringification of new USBIsochronousInTransferPacket(\"ok\")": "FAIL",
-      "Stringification of new USBIsochronousInTransferResult([])": "FAIL",
-      "Stringification of new USBIsochronousOutTransferPacket(\"ok\")": "FAIL",
-      "Stringification of new USBIsochronousOutTransferResult([])": "FAIL",
-      "Stringification of new USBOutTransferResult(\"ok\")": "FAIL",
       "Stringification of usbAlternateInterface": "FAIL",
       "Stringification of usbConfiguration": "FAIL",
       "Stringification of usbConnectionEvent": "FAIL",
@@ -31,34 +15,6 @@
       "Stringification of usbEndpoint": "FAIL",
       "Stringification of usbInterface": "FAIL",
       "USB device setup": "FAIL",
-      "USB interface object length": "FAIL",
-      "USB interface object name": "FAIL",
-      "USB interface: attribute onconnect": "FAIL",
-      "USB interface: attribute ondisconnect": "FAIL",
-      "USB interface: calling requestDevice(USBDeviceRequestOptions) on navigator.usb with too few arguments must throw TypeError": "FAIL",
-      "USB interface: existence and properties of interface object": "FAIL",
-      "USB interface: existence and properties of interface prototype object": "FAIL",
-      "USB interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USB interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USB interface: navigator.usb must inherit property \"getDevices()\" with the proper type": "FAIL",
-      "USB interface: navigator.usb must inherit property \"onconnect\" with the proper type": "FAIL",
-      "USB interface: navigator.usb must inherit property \"ondisconnect\" with the proper type": "FAIL",
-      "USB interface: navigator.usb must inherit property \"requestDevice(USBDeviceRequestOptions)\" with the proper type": "FAIL",
-      "USB interface: operation getDevices()": "FAIL",
-      "USB interface: operation requestDevice(USBDeviceRequestOptions)": "FAIL",
-      "USB must be primary interface of navigator.usb": "FAIL",
-      "USBAlternateInterface interface object length": "FAIL",
-      "USBAlternateInterface interface object name": "FAIL",
-      "USBAlternateInterface interface: attribute alternateSetting": "FAIL",
-      "USBAlternateInterface interface: attribute endpoints": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceClass": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceName": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceProtocol": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceSubclass": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface object": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface prototype object": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"alternateSetting\" with the proper type": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"endpoints\" with the proper type": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"interfaceClass\" with the proper type": "FAIL",
@@ -66,47 +22,12 @@
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"interfaceProtocol\" with the proper type": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"interfaceSubclass\" with the proper type": "FAIL",
       "USBAlternateInterface must be primary interface of usbAlternateInterface": "FAIL",
-      "USBConfiguration interface object length": "FAIL",
-      "USBConfiguration interface object name": "FAIL",
-      "USBConfiguration interface: attribute configurationName": "FAIL",
-      "USBConfiguration interface: attribute configurationValue": "FAIL",
-      "USBConfiguration interface: attribute interfaces": "FAIL",
-      "USBConfiguration interface: existence and properties of interface object": "FAIL",
-      "USBConfiguration interface: existence and properties of interface prototype object": "FAIL",
-      "USBConfiguration interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBConfiguration interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBConfiguration interface: usbConfiguration must inherit property \"configurationName\" with the proper type": "FAIL",
       "USBConfiguration interface: usbConfiguration must inherit property \"configurationValue\" with the proper type": "FAIL",
       "USBConfiguration interface: usbConfiguration must inherit property \"interfaces\" with the proper type": "FAIL",
       "USBConfiguration must be primary interface of usbConfiguration": "FAIL",
-      "USBConnectionEvent interface object length": "FAIL",
-      "USBConnectionEvent interface object name": "FAIL",
-      "USBConnectionEvent interface: attribute device": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface object": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface prototype object": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBConnectionEvent interface: usbConnectionEvent must inherit property \"device\" with the proper type": "FAIL",
       "USBConnectionEvent must be primary interface of usbConnectionEvent": "FAIL",
-      "USBDevice interface object length": "FAIL",
-      "USBDevice interface object name": "FAIL",
-      "USBDevice interface: attribute configuration": "FAIL",
-      "USBDevice interface: attribute configurations": "FAIL",
-      "USBDevice interface: attribute deviceClass": "FAIL",
-      "USBDevice interface: attribute deviceProtocol": "FAIL",
-      "USBDevice interface: attribute deviceSubclass": "FAIL",
-      "USBDevice interface: attribute deviceVersionMajor": "FAIL",
-      "USBDevice interface: attribute deviceVersionMinor": "FAIL",
-      "USBDevice interface: attribute deviceVersionSubminor": "FAIL",
-      "USBDevice interface: attribute manufacturerName": "FAIL",
-      "USBDevice interface: attribute opened": "FAIL",
-      "USBDevice interface: attribute productId": "FAIL",
-      "USBDevice interface: attribute productName": "FAIL",
-      "USBDevice interface: attribute serialNumber": "FAIL",
-      "USBDevice interface: attribute usbVersionMajor": "FAIL",
-      "USBDevice interface: attribute usbVersionMinor": "FAIL",
-      "USBDevice interface: attribute usbVersionSubminor": "FAIL",
-      "USBDevice interface: attribute vendorId": "FAIL",
       "USBDevice interface: calling claimInterface(octet) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling clearHalt(USBDirection, octet) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling controlTransferIn(USBControlTransferParameters, unsigned short) on usbDevice with too few arguments must throw TypeError": "FAIL",
@@ -118,25 +39,6 @@
       "USBDevice interface: calling selectConfiguration(octet) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling transferIn(octet, unsigned long) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling transferOut(octet, BufferSource) on usbDevice with too few arguments must throw TypeError": "FAIL",
-      "USBDevice interface: existence and properties of interface object": "FAIL",
-      "USBDevice interface: existence and properties of interface prototype object": "FAIL",
-      "USBDevice interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBDevice interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBDevice interface: operation claimInterface(octet)": "FAIL",
-      "USBDevice interface: operation clearHalt(USBDirection, octet)": "FAIL",
-      "USBDevice interface: operation close()": "FAIL",
-      "USBDevice interface: operation controlTransferIn(USBControlTransferParameters, unsigned short)": "FAIL",
-      "USBDevice interface: operation controlTransferOut(USBControlTransferParameters, optional BufferSource)": "FAIL",
-      "USBDevice interface: operation forget()": "FAIL",
-      "USBDevice interface: operation isochronousTransferIn(octet, sequence<unsigned long>)": "FAIL",
-      "USBDevice interface: operation isochronousTransferOut(octet, BufferSource, sequence<unsigned long>)": "FAIL",
-      "USBDevice interface: operation open()": "FAIL",
-      "USBDevice interface: operation releaseInterface(octet)": "FAIL",
-      "USBDevice interface: operation reset()": "FAIL",
-      "USBDevice interface: operation selectAlternateInterface(octet, octet)": "FAIL",
-      "USBDevice interface: operation selectConfiguration(octet)": "FAIL",
-      "USBDevice interface: operation transferIn(octet, unsigned long)": "FAIL",
-      "USBDevice interface: operation transferOut(octet, BufferSource)": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"claimInterface(octet)\" with the proper type": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"clearHalt(USBDirection, octet)\" with the proper type": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"close()\" with the proper type": "FAIL",
@@ -170,100 +72,16 @@
       "USBDevice interface: usbDevice must inherit property \"usbVersionSubminor\" with the proper type": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"vendorId\" with the proper type": "FAIL",
       "USBDevice must be primary interface of usbDevice": "FAIL",
-      "USBEndpoint interface object length": "FAIL",
-      "USBEndpoint interface object name": "FAIL",
-      "USBEndpoint interface: attribute direction": "FAIL",
-      "USBEndpoint interface: attribute endpointNumber": "FAIL",
-      "USBEndpoint interface: attribute packetSize": "FAIL",
-      "USBEndpoint interface: attribute type": "FAIL",
-      "USBEndpoint interface: existence and properties of interface object": "FAIL",
-      "USBEndpoint interface: existence and properties of interface prototype object": "FAIL",
-      "USBEndpoint interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBEndpoint interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"direction\" with the proper type": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"endpointNumber\" with the proper type": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"packetSize\" with the proper type": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"type\" with the proper type": "FAIL",
       "USBEndpoint must be primary interface of usbEndpoint": "FAIL",
-      "USBInTransferResult interface object length": "FAIL",
-      "USBInTransferResult interface object name": "FAIL",
-      "USBInTransferResult interface: attribute data": "FAIL",
-      "USBInTransferResult interface: attribute status": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBInTransferResult interface: new USBInTransferResult(\"ok\") must inherit property \"data\" with the proper type": "FAIL",
-      "USBInTransferResult interface: new USBInTransferResult(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBInTransferResult must be primary interface of new USBInTransferResult(\"ok\")": "FAIL",
-      "USBInterface interface object length": "FAIL",
-      "USBInterface interface object name": "FAIL",
-      "USBInterface interface: attribute alternate": "FAIL",
-      "USBInterface interface: attribute alternates": "FAIL",
-      "USBInterface interface: attribute claimed": "FAIL",
-      "USBInterface interface: attribute interfaceNumber": "FAIL",
-      "USBInterface interface: existence and properties of interface object": "FAIL",
-      "USBInterface interface: existence and properties of interface prototype object": "FAIL",
-      "USBInterface interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBInterface interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"alternate\" with the proper type": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"alternates\" with the proper type": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"claimed\" with the proper type": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"interfaceNumber\" with the proper type": "FAIL",
       "USBInterface must be primary interface of usbInterface": "FAIL",
-      "USBIsochronousInTransferPacket interface object length": "FAIL",
-      "USBIsochronousInTransferPacket interface object name": "FAIL",
-      "USBIsochronousInTransferPacket interface: attribute data": "FAIL",
-      "USBIsochronousInTransferPacket interface: attribute status": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousInTransferPacket interface: new USBIsochronousInTransferPacket(\"ok\") must inherit property \"data\" with the proper type": "FAIL",
-      "USBIsochronousInTransferPacket interface: new USBIsochronousInTransferPacket(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBIsochronousInTransferPacket must be primary interface of new USBIsochronousInTransferPacket(\"ok\")": "FAIL",
-      "USBIsochronousInTransferResult interface object length": "FAIL",
-      "USBIsochronousInTransferResult interface object name": "FAIL",
-      "USBIsochronousInTransferResult interface: attribute data": "FAIL",
-      "USBIsochronousInTransferResult interface: attribute packets": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousInTransferResult interface: new USBIsochronousInTransferResult([]) must inherit property \"data\" with the proper type": "FAIL",
-      "USBIsochronousInTransferResult interface: new USBIsochronousInTransferResult([]) must inherit property \"packets\" with the proper type": "FAIL",
-      "USBIsochronousInTransferResult must be primary interface of new USBIsochronousInTransferResult([])": "FAIL",
-      "USBIsochronousOutTransferPacket interface object length": "FAIL",
-      "USBIsochronousOutTransferPacket interface object name": "FAIL",
-      "USBIsochronousOutTransferPacket interface: attribute bytesWritten": "FAIL",
-      "USBIsochronousOutTransferPacket interface: attribute status": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousOutTransferPacket interface: new USBIsochronousOutTransferPacket(\"ok\") must inherit property \"bytesWritten\" with the proper type": "FAIL",
-      "USBIsochronousOutTransferPacket interface: new USBIsochronousOutTransferPacket(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBIsochronousOutTransferPacket must be primary interface of new USBIsochronousOutTransferPacket(\"ok\")": "FAIL",
-      "USBIsochronousOutTransferResult interface object length": "FAIL",
-      "USBIsochronousOutTransferResult interface object name": "FAIL",
-      "USBIsochronousOutTransferResult interface: attribute packets": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousOutTransferResult interface: new USBIsochronousOutTransferResult([]) must inherit property \"packets\" with the proper type": "FAIL",
-      "USBIsochronousOutTransferResult must be primary interface of new USBIsochronousOutTransferResult([])": "FAIL",
-      "USBOutTransferResult interface object length": "FAIL",
-      "USBOutTransferResult interface object name": "FAIL",
-      "USBOutTransferResult interface: attribute bytesWritten": "FAIL",
-      "USBOutTransferResult interface: attribute status": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBOutTransferResult interface: new USBOutTransferResult(\"ok\") must inherit property \"bytesWritten\" with the proper type": "FAIL",
-      "USBOutTransferResult interface: new USBOutTransferResult(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBOutTransferResult must be primary interface of new USBOutTransferResult(\"ok\")": "FAIL",
       "USBPermissionResult interface object length": "FAIL",
       "USBPermissionResult interface object name": "FAIL",
       "USBPermissionResult interface: attribute devices": "FAIL",
@@ -276,13 +94,6 @@
   "webusb/idlharness.https.any.js#dedicatedworker": {
     "total": 278,
     "failures": {
-      "Stringification of navigator.usb": "FAIL",
-      "Stringification of new USBInTransferResult(\"ok\")": "FAIL",
-      "Stringification of new USBIsochronousInTransferPacket(\"ok\")": "FAIL",
-      "Stringification of new USBIsochronousInTransferResult([])": "FAIL",
-      "Stringification of new USBIsochronousOutTransferPacket(\"ok\")": "FAIL",
-      "Stringification of new USBIsochronousOutTransferResult([])": "FAIL",
-      "Stringification of new USBOutTransferResult(\"ok\")": "FAIL",
       "Stringification of usbAlternateInterface": "FAIL",
       "Stringification of usbConfiguration": "FAIL",
       "Stringification of usbConnectionEvent": "FAIL",
@@ -290,33 +101,6 @@
       "Stringification of usbEndpoint": "FAIL",
       "Stringification of usbInterface": "FAIL",
       "USB device setup": "FAIL",
-      "USB interface object length": "FAIL",
-      "USB interface object name": "FAIL",
-      "USB interface: attribute onconnect": "FAIL",
-      "USB interface: attribute ondisconnect": "FAIL",
-      "USB interface: existence and properties of interface object": "FAIL",
-      "USB interface: existence and properties of interface prototype object": "FAIL",
-      "USB interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USB interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USB interface: member requestDevice": "FAIL",
-      "USB interface: navigator.usb must inherit property \"getDevices()\" with the proper type": "FAIL",
-      "USB interface: navigator.usb must inherit property \"onconnect\" with the proper type": "FAIL",
-      "USB interface: navigator.usb must inherit property \"ondisconnect\" with the proper type": "FAIL",
-      "USB interface: navigator.usb must not have property \"requestDevice\"": "FAIL",
-      "USB interface: operation getDevices()": "FAIL",
-      "USB must be primary interface of navigator.usb": "FAIL",
-      "USBAlternateInterface interface object length": "FAIL",
-      "USBAlternateInterface interface object name": "FAIL",
-      "USBAlternateInterface interface: attribute alternateSetting": "FAIL",
-      "USBAlternateInterface interface: attribute endpoints": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceClass": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceName": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceProtocol": "FAIL",
-      "USBAlternateInterface interface: attribute interfaceSubclass": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface object": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface prototype object": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBAlternateInterface interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"alternateSetting\" with the proper type": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"endpoints\" with the proper type": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"interfaceClass\" with the proper type": "FAIL",
@@ -324,47 +108,12 @@
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"interfaceProtocol\" with the proper type": "FAIL",
       "USBAlternateInterface interface: usbAlternateInterface must inherit property \"interfaceSubclass\" with the proper type": "FAIL",
       "USBAlternateInterface must be primary interface of usbAlternateInterface": "FAIL",
-      "USBConfiguration interface object length": "FAIL",
-      "USBConfiguration interface object name": "FAIL",
-      "USBConfiguration interface: attribute configurationName": "FAIL",
-      "USBConfiguration interface: attribute configurationValue": "FAIL",
-      "USBConfiguration interface: attribute interfaces": "FAIL",
-      "USBConfiguration interface: existence and properties of interface object": "FAIL",
-      "USBConfiguration interface: existence and properties of interface prototype object": "FAIL",
-      "USBConfiguration interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBConfiguration interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBConfiguration interface: usbConfiguration must inherit property \"configurationName\" with the proper type": "FAIL",
       "USBConfiguration interface: usbConfiguration must inherit property \"configurationValue\" with the proper type": "FAIL",
       "USBConfiguration interface: usbConfiguration must inherit property \"interfaces\" with the proper type": "FAIL",
       "USBConfiguration must be primary interface of usbConfiguration": "FAIL",
-      "USBConnectionEvent interface object length": "FAIL",
-      "USBConnectionEvent interface object name": "FAIL",
-      "USBConnectionEvent interface: attribute device": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface object": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface prototype object": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBConnectionEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBConnectionEvent interface: usbConnectionEvent must inherit property \"device\" with the proper type": "FAIL",
       "USBConnectionEvent must be primary interface of usbConnectionEvent": "FAIL",
-      "USBDevice interface object length": "FAIL",
-      "USBDevice interface object name": "FAIL",
-      "USBDevice interface: attribute configuration": "FAIL",
-      "USBDevice interface: attribute configurations": "FAIL",
-      "USBDevice interface: attribute deviceClass": "FAIL",
-      "USBDevice interface: attribute deviceProtocol": "FAIL",
-      "USBDevice interface: attribute deviceSubclass": "FAIL",
-      "USBDevice interface: attribute deviceVersionMajor": "FAIL",
-      "USBDevice interface: attribute deviceVersionMinor": "FAIL",
-      "USBDevice interface: attribute deviceVersionSubminor": "FAIL",
-      "USBDevice interface: attribute manufacturerName": "FAIL",
-      "USBDevice interface: attribute opened": "FAIL",
-      "USBDevice interface: attribute productId": "FAIL",
-      "USBDevice interface: attribute productName": "FAIL",
-      "USBDevice interface: attribute serialNumber": "FAIL",
-      "USBDevice interface: attribute usbVersionMajor": "FAIL",
-      "USBDevice interface: attribute usbVersionMinor": "FAIL",
-      "USBDevice interface: attribute usbVersionSubminor": "FAIL",
-      "USBDevice interface: attribute vendorId": "FAIL",
       "USBDevice interface: calling claimInterface(octet) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling clearHalt(USBDirection, octet) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling controlTransferIn(USBControlTransferParameters, unsigned short) on usbDevice with too few arguments must throw TypeError": "FAIL",
@@ -376,25 +125,6 @@
       "USBDevice interface: calling selectConfiguration(octet) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling transferIn(octet, unsigned long) on usbDevice with too few arguments must throw TypeError": "FAIL",
       "USBDevice interface: calling transferOut(octet, BufferSource) on usbDevice with too few arguments must throw TypeError": "FAIL",
-      "USBDevice interface: existence and properties of interface object": "FAIL",
-      "USBDevice interface: existence and properties of interface prototype object": "FAIL",
-      "USBDevice interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBDevice interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBDevice interface: operation claimInterface(octet)": "FAIL",
-      "USBDevice interface: operation clearHalt(USBDirection, octet)": "FAIL",
-      "USBDevice interface: operation close()": "FAIL",
-      "USBDevice interface: operation controlTransferIn(USBControlTransferParameters, unsigned short)": "FAIL",
-      "USBDevice interface: operation controlTransferOut(USBControlTransferParameters, optional BufferSource)": "FAIL",
-      "USBDevice interface: operation forget()": "FAIL",
-      "USBDevice interface: operation isochronousTransferIn(octet, sequence<unsigned long>)": "FAIL",
-      "USBDevice interface: operation isochronousTransferOut(octet, BufferSource, sequence<unsigned long>)": "FAIL",
-      "USBDevice interface: operation open()": "FAIL",
-      "USBDevice interface: operation releaseInterface(octet)": "FAIL",
-      "USBDevice interface: operation reset()": "FAIL",
-      "USBDevice interface: operation selectAlternateInterface(octet, octet)": "FAIL",
-      "USBDevice interface: operation selectConfiguration(octet)": "FAIL",
-      "USBDevice interface: operation transferIn(octet, unsigned long)": "FAIL",
-      "USBDevice interface: operation transferOut(octet, BufferSource)": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"claimInterface(octet)\" with the proper type": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"clearHalt(USBDirection, octet)\" with the proper type": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"close()\" with the proper type": "FAIL",
@@ -428,109 +158,23 @@
       "USBDevice interface: usbDevice must inherit property \"usbVersionSubminor\" with the proper type": "FAIL",
       "USBDevice interface: usbDevice must inherit property \"vendorId\" with the proper type": "FAIL",
       "USBDevice must be primary interface of usbDevice": "FAIL",
-      "USBEndpoint interface object length": "FAIL",
-      "USBEndpoint interface object name": "FAIL",
-      "USBEndpoint interface: attribute direction": "FAIL",
-      "USBEndpoint interface: attribute endpointNumber": "FAIL",
-      "USBEndpoint interface: attribute packetSize": "FAIL",
-      "USBEndpoint interface: attribute type": "FAIL",
-      "USBEndpoint interface: existence and properties of interface object": "FAIL",
-      "USBEndpoint interface: existence and properties of interface prototype object": "FAIL",
-      "USBEndpoint interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBEndpoint interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"direction\" with the proper type": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"endpointNumber\" with the proper type": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"packetSize\" with the proper type": "FAIL",
       "USBEndpoint interface: usbEndpoint must inherit property \"type\" with the proper type": "FAIL",
       "USBEndpoint must be primary interface of usbEndpoint": "FAIL",
-      "USBInTransferResult interface object length": "FAIL",
-      "USBInTransferResult interface object name": "FAIL",
-      "USBInTransferResult interface: attribute data": "FAIL",
-      "USBInTransferResult interface: attribute status": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBInTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBInTransferResult interface: new USBInTransferResult(\"ok\") must inherit property \"data\" with the proper type": "FAIL",
-      "USBInTransferResult interface: new USBInTransferResult(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBInTransferResult must be primary interface of new USBInTransferResult(\"ok\")": "FAIL",
-      "USBInterface interface object length": "FAIL",
-      "USBInterface interface object name": "FAIL",
-      "USBInterface interface: attribute alternate": "FAIL",
-      "USBInterface interface: attribute alternates": "FAIL",
-      "USBInterface interface: attribute claimed": "FAIL",
-      "USBInterface interface: attribute interfaceNumber": "FAIL",
-      "USBInterface interface: existence and properties of interface object": "FAIL",
-      "USBInterface interface: existence and properties of interface prototype object": "FAIL",
-      "USBInterface interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBInterface interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"alternate\" with the proper type": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"alternates\" with the proper type": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"claimed\" with the proper type": "FAIL",
       "USBInterface interface: usbInterface must inherit property \"interfaceNumber\" with the proper type": "FAIL",
       "USBInterface must be primary interface of usbInterface": "FAIL",
-      "USBIsochronousInTransferPacket interface object length": "FAIL",
-      "USBIsochronousInTransferPacket interface object name": "FAIL",
-      "USBIsochronousInTransferPacket interface: attribute data": "FAIL",
-      "USBIsochronousInTransferPacket interface: attribute status": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousInTransferPacket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousInTransferPacket interface: new USBIsochronousInTransferPacket(\"ok\") must inherit property \"data\" with the proper type": "FAIL",
-      "USBIsochronousInTransferPacket interface: new USBIsochronousInTransferPacket(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBIsochronousInTransferPacket must be primary interface of new USBIsochronousInTransferPacket(\"ok\")": "FAIL",
-      "USBIsochronousInTransferResult interface object length": "FAIL",
-      "USBIsochronousInTransferResult interface object name": "FAIL",
-      "USBIsochronousInTransferResult interface: attribute data": "FAIL",
-      "USBIsochronousInTransferResult interface: attribute packets": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousInTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousInTransferResult interface: new USBIsochronousInTransferResult([]) must inherit property \"data\" with the proper type": "FAIL",
-      "USBIsochronousInTransferResult interface: new USBIsochronousInTransferResult([]) must inherit property \"packets\" with the proper type": "FAIL",
-      "USBIsochronousInTransferResult must be primary interface of new USBIsochronousInTransferResult([])": "FAIL",
-      "USBIsochronousOutTransferPacket interface object length": "FAIL",
-      "USBIsochronousOutTransferPacket interface object name": "FAIL",
-      "USBIsochronousOutTransferPacket interface: attribute bytesWritten": "FAIL",
-      "USBIsochronousOutTransferPacket interface: attribute status": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousOutTransferPacket interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousOutTransferPacket interface: new USBIsochronousOutTransferPacket(\"ok\") must inherit property \"bytesWritten\" with the proper type": "FAIL",
-      "USBIsochronousOutTransferPacket interface: new USBIsochronousOutTransferPacket(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBIsochronousOutTransferPacket must be primary interface of new USBIsochronousOutTransferPacket(\"ok\")": "FAIL",
-      "USBIsochronousOutTransferResult interface object length": "FAIL",
-      "USBIsochronousOutTransferResult interface object name": "FAIL",
-      "USBIsochronousOutTransferResult interface: attribute packets": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBIsochronousOutTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBIsochronousOutTransferResult interface: new USBIsochronousOutTransferResult([]) must inherit property \"packets\" with the proper type": "FAIL",
-      "USBIsochronousOutTransferResult must be primary interface of new USBIsochronousOutTransferResult([])": "FAIL",
-      "USBOutTransferResult interface object length": "FAIL",
-      "USBOutTransferResult interface object name": "FAIL",
-      "USBOutTransferResult interface: attribute bytesWritten": "FAIL",
-      "USBOutTransferResult interface: attribute status": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface object": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface prototype object": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBOutTransferResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "USBOutTransferResult interface: new USBOutTransferResult(\"ok\") must inherit property \"bytesWritten\" with the proper type": "FAIL",
-      "USBOutTransferResult interface: new USBOutTransferResult(\"ok\") must inherit property \"status\" with the proper type": "FAIL",
-      "USBOutTransferResult must be primary interface of new USBOutTransferResult(\"ok\")": "FAIL",
       "USBPermissionResult interface object length": "FAIL",
       "USBPermissionResult interface object name": "FAIL",
       "USBPermissionResult interface: attribute devices": "FAIL",
       "USBPermissionResult interface: existence and properties of interface object": "FAIL",
       "USBPermissionResult interface: existence and properties of interface prototype object": "FAIL",
       "USBPermissionResult interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "USBPermissionResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WorkerNavigator interface: attribute usb": "FAIL",
-      "WorkerNavigator interface: navigator must inherit property \"usb\" with the proper type": "FAIL"
+      "USBPermissionResult interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
     }
   },
   "webusb/insecure-context.any.js": {
@@ -540,489 +184,135 @@
     "total": 14
   },
   "webusb/protected-interface-classes.https.any.js": {
-    "total": 7,
-    "failures": {
-      "Protected HID interface cannot be claimed": "FAIL",
-      "Protected audio interface cannot be claimed": "FAIL",
-      "Protected audio/video interface cannot be claimed": "FAIL",
-      "Protected mass storage interface cannot be claimed": "FAIL",
-      "Protected smart card interface cannot be claimed": "FAIL",
-      "Protected video interface cannot be claimed": "FAIL",
-      "Protected wireless controller interface cannot be claimed": "FAIL"
-    }
+    "total": 7
   },
   "webusb/protected-interface-classes.https.any.js#dedicatedworker": {
-    "total": 7,
-    "failures": {
-      "Protected HID interface cannot be claimed": "FAIL",
-      "Protected audio interface cannot be claimed": "FAIL",
-      "Protected audio/video interface cannot be claimed": "FAIL",
-      "Protected mass storage interface cannot be claimed": "FAIL",
-      "Protected smart card interface cannot be claimed": "FAIL",
-      "Protected video interface cannot be claimed": "FAIL",
-      "Protected wireless controller interface cannot be claimed": "FAIL"
-    }
+    "total": 7
   },
   "webusb/requestDevice/reject_opaque_origin.https.html": {
-    "total": 1,
-    "failures": {
-      "Calls to USB APIs from an origin with opaque top origin get blocked.": "FAIL"
-    }
+    "total": 1
   },
   "webusb/requestDevice/sandboxed_iframe.https.window.js": {
-    "total": 1,
-    "failures": {
-      "RequestDevice from a sandboxed iframe is valid.": "FAIL"
-    }
+    "total": 1
   },
   "webusb/usb-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 4,
-    "failures": {
-      "Permissions-Policy allow=\"usb\" allows same-origin relocation.": "FAIL",
-      "Permissions-Policy allow=\"usb\" allows workers in same-origin relocation.": "TIMEOUT",
-      "Permissions-Policy allow=\"usb\" disallows workers in cross-origin relocation.": "TIMEOUT"
-    }
+    "total": 4
   },
   "webusb/usb-allowed-by-permissions-policy-attribute.https.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 5,
-    "failures": {
-      "Inherited header permissions policy allows dedicated workers.": "FAIL",
-      "Permissions policy \"usb\" can be enabled in a worker in cross-origin iframe using allow=\"usb\" attribute": "TIMEOUT",
-      "Permissions policy \"usb\" can be enabled in a worker in same-origin iframe using allow=\"usb\" attribute": "TIMEOUT",
-      "Permissions policy \"usb\" can be enabled in cross-origin iframe using allow=\"usb\" attribute": "FAIL",
-      "Permissions policy \"usb\" can be enabled in same-origin iframe using allow=\"usb\" attribute": "FAIL"
-    }
+    "total": 5
   },
   "webusb/usb-allowed-by-permissions-policy.https.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 6,
-    "failures": {
-      "Inherited header permissions policy allows dedicated workers.": "FAIL",
-      "Permissions-Policy header usb=* allows cross-origin iframes.": "FAIL",
-      "Permissions-Policy header usb=* allows same-origin iframes.": "FAIL",
-      "Permissions-Policy header usb=* allows the top-level document.": "FAIL",
-      "Permissions-Policy header usb=* allows workers in cross-origin iframes.": "TIMEOUT",
-      "Permissions-Policy header usb=* allows workers in same-origin iframes.": "TIMEOUT"
-    }
+    "total": 6
   },
   "webusb/usb-default-permissions-policy.https.sub.html": {
-    "total": 3,
-    "failures": {
-      "Default \"usb\" permissions policy [\"self\"] allows same-origin iframes.": "FAIL",
-      "Default \"usb\" permissions policy [\"self\"] allows the top-level document.": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usb-disabled-by-permissions-policy.https.sub.html": {
-    "harness": "TIMEOUT",
-    "total": 7,
-    "failures": {
-      "Inherited Permissions-Policy header usb=() disallows dedicated workers.": "FAIL",
-      "Permissions-Policy header usb=() disallows getDevices in the top-level document.": "FAIL",
-      "Permissions-Policy header usb=() disallows requestDevice in the top-level document.": "FAIL",
-      "Permissions-Policy header usb=() disallows workers in cross-origin iframes.": "TIMEOUT",
-      "Permissions-Policy header usb=() disallows workers in same-origin iframes.": "TIMEOUT"
-    }
+    "total": 7
   },
   "webusb/usb-garbage-collection.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Run garbage collection when the device reference is out of scope": "FAIL"
-    }
+    "total": 1
   },
   "webusb/usb-supported-by-permissions-policy.html": {
     "total": 1
   },
   "webusb/usb.https.any.js": {
-    "total": 4,
-    "failures": {
-      "getDevices returns devices that are connected": "FAIL",
-      "getDevices returns the same objects for each USB device": "FAIL",
-      "onconnect event is trigged by adding a device": "FAIL",
-      "ondisconnect event is triggered by removing a device": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usb.https.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "getDevices returns devices that are connected": "FAIL",
-      "getDevices returns the same objects for each USB device": "FAIL",
-      "onconnect event is trigged by adding a device": "FAIL",
-      "ondisconnect event is triggered by removing a device": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usb.https.window.js": {
-    "total": 7,
-    "failures": {
-      "filters are sent correctly": "FAIL",
-      "getDevices returns the same object as requestDevice": "FAIL",
-      "multiple requestDevice calls are allowed per user activation": "FAIL",
-      "requestDevice rejects on invalid filters": "FAIL",
-      "requestDevice rejects when called without a user gesture": "FAIL",
-      "requestDevice rejects when no device is chosen": "FAIL",
-      "requestDevice returns the device chosen by the user": "FAIL"
-    }
+    "total": 7
   },
   "webusb/usb.serviceworker.https.html": {
-    "total": 2
+    "total": 2,
+    "failures": {
+      "Service workers should not have access to the WebUSB API.": "FAIL"
+    }
   },
   "webusb/usbAlternateInterface.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBAlternateInterface.": "FAIL",
-      "Constructing a USBAlternateInterface with an invalid alternate setting throws a range error.": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbAlternateInterface.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBAlternateInterface.": "FAIL",
-      "Constructing a USBAlternateInterface with an invalid alternate setting throws a range error.": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbConfiguration.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBConfiguration.": "FAIL",
-      "Constructing a USBConfiguration with an invalid configuration value throws a range error.": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbConfiguration.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBConfiguration.": "FAIL",
-      "Constructing a USBConfiguration with an invalid configuration value throws a range error.": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbConnectionEvent.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBConnectionEvent with a device": "FAIL",
-      "Cannot construct a USBConnectionEvent without a device": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbConnectionEvent.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBConnectionEvent with a device": "FAIL",
-      "Cannot construct a USBConnectionEvent without a device": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbDevice-iframe.https.html": {
-    "total": 3,
-    "failures": {
-      "Connect event is not fired in iframe with usb disallowed.": "FAIL",
-      "detaching iframe disconnects device.": "FAIL",
-      "navigating iframe disconnects device.": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usbDevice-same-objecct.https.any.js": {
-    "total": 1,
-    "failures": {
-      "[SameObject] test for instances within USBDevice.": "FAIL"
-    }
+    "total": 1
   },
   "webusb/usbDevice-same-objecct.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "[SameObject] test for instances within USBDevice.": "FAIL"
-    }
+    "total": 1
   },
   "webusb/usbDevice-worker.https.html": {
-    "total": 1,
-    "failures": {
-      "terminating worker disconnects device.": "FAIL"
-    }
+    "total": 1
   },
   "webusb/usbDevice.https.any.js": {
-    "total": 75,
-    "failures": {
-      "a device can be opened and closed": "FAIL",
-      "a device configuration value can be set again": "FAIL",
-      "a non-existent interface cannot be claimed or released": "FAIL",
-      "an interface can be claimed multiple times": "FAIL",
-      "an interface can be released multiple times": "FAIL",
-      "can clear a halt condition": "FAIL",
-      "can issue IN bulk transfer": "FAIL",
-      "can issue IN interrupt transfer": "FAIL",
-      "can issue IN isochronous transfer": "FAIL",
-      "can issue OUT bulk transfer": "FAIL",
-      "can issue OUT isochronous transfer": "FAIL",
-      "can issue all types of IN control transfers": "FAIL",
-      "can issue all types of OUT control transfers": "FAIL",
-      "can reset the device": "FAIL",
-      "can select an alternate interface": "FAIL",
-      "can select an alternate interface on a setting with non-sequential alternative setting value": "FAIL",
-      "can select an alternate interface on a setting with non-sequential interface number": "FAIL",
-      "cannot select a non-existent alternate interface": "FAIL",
-      "claimInterface ignores invalid endpoint numbers": "FAIL",
-      "claimInterface rejects when called on a disconnected device": "FAIL",
-      "clearHalt rejects when called on a disconnected device": "FAIL",
-      "close rejects when called on a disconnected device": "FAIL",
-      "control transfers resolve non-fatal transfer statuses": "FAIL",
-      "control transfers to a non-existant interface reject": "FAIL",
-      "control transfers with a invalid recipient type reject": "FAIL",
-      "control transfers with a invalid request type reject": "FAIL",
-      "controlTransferIn rejects on transfer failures": "FAIL",
-      "controlTransferIn rejects when called on a disconnected device": "FAIL",
-      "controlTransferOut can safely be called with a detached buffer": "FAIL",
-      "controlTransferOut rejects when called on a disconnected device": "FAIL",
-      "controlTransferOut rejects when packet lengths exceed maximum size": "FAIL",
-      "device configuration can be set and queried": "FAIL",
-      "device configuration is initialized from the active configuration": "FAIL",
-      "device operations reject if an device state change is in progress": "FAIL",
-      "device operations reject if an interface state change is in progress": "FAIL",
-      "device state operations reject on device failure": "FAIL",
-      "device-scope IN control transfers don't require configuration": "FAIL",
-      "device-scope OUT control transfers don't require configuration": "FAIL",
-      "disconnect rejects open requests in progress": "FAIL",
-      "disconnection closes the device": "FAIL",
-      "interface and endpoint operations reject on device failure": "FAIL",
-      "interface-scope IN control transfers require claiming the interface": "FAIL",
-      "interface-scope IN control transfers require configuration": "FAIL",
-      "interface-scope OUT control transfers an interface claim": "FAIL",
-      "interface-scope OUT control transfers require configuration": "FAIL",
-      "interfaces are released on close": "FAIL",
-      "interfaces can be claimed and released": "FAIL",
-      "interfaces can be claimed and released in parallel": "FAIL",
-      "isochronousTransferIn rejects when called on a disconnected device": "FAIL",
-      "isochronousTransferIn rejects when packet lengths exceed maximum size": "FAIL",
-      "isochronousTransferIn rejects when packet lengths overflow": "FAIL",
-      "isochronousTransferOut rejects when buffer size exceeds packet lengths": "FAIL",
-      "isochronousTransferOut rejects when called on a disconnected device": "FAIL",
-      "isochronousTransferOut rejects when called with a detached buffer": "FAIL",
-      "isochronousTransferOut rejects when packet lengths exceed buffer size": "FAIL",
-      "isochronousTransferOut rejects when packet lengths exceed maximum size": "FAIL",
-      "isochronousTransferOut rejects when packet lengths overflow": "FAIL",
-      "methods requiring it reject when the device is not open": "FAIL",
-      "methods requiring it reject when the device is unconfigured": "FAIL",
-      "open and close can be called multiple times": "FAIL",
-      "open and close cannot be called again while open or close are in progress": "FAIL",
-      "open rejects when called on a disconnected device": "FAIL",
-      "releaseInterface rejects when called on a disconnected device": "FAIL",
-      "requests to interfaces and endpoint require an interface claim": "FAIL",
-      "resetDevice rejects when called on a disconnected device": "FAIL",
-      "selectAlternateInterface rejects when called on a disconnected device": "FAIL",
-      "selectConfiguration rejects on invalid configurations": "FAIL",
-      "selectConfiguration rejects when called on a disconnected device": "FAIL",
-      "transfer methods reject on transfer failures": "FAIL",
-      "transferIn rejects if called on a disconnected device": "FAIL",
-      "transferIn rejects when packet lengths exceed maximum size": "FAIL",
-      "transferOut can safely be called with a detached buffer": "FAIL",
-      "transferOut rejects if called on a disconnected device": "FAIL",
-      "transferOut rejects when packet lengths exceed maximum size": "FAIL",
-      "transfers to unavailable endpoints are rejected": "FAIL"
-    }
+    "total": 75
   },
   "webusb/usbDevice.https.any.js#dedicatedworker": {
-    "total": 75,
-    "failures": {
-      "a device can be opened and closed": "FAIL",
-      "a device configuration value can be set again": "FAIL",
-      "a non-existent interface cannot be claimed or released": "FAIL",
-      "an interface can be claimed multiple times": "FAIL",
-      "an interface can be released multiple times": "FAIL",
-      "can clear a halt condition": "FAIL",
-      "can issue IN bulk transfer": "FAIL",
-      "can issue IN interrupt transfer": "FAIL",
-      "can issue IN isochronous transfer": "FAIL",
-      "can issue OUT bulk transfer": "FAIL",
-      "can issue OUT isochronous transfer": "FAIL",
-      "can issue all types of IN control transfers": "FAIL",
-      "can issue all types of OUT control transfers": "FAIL",
-      "can reset the device": "FAIL",
-      "can select an alternate interface": "FAIL",
-      "can select an alternate interface on a setting with non-sequential alternative setting value": "FAIL",
-      "can select an alternate interface on a setting with non-sequential interface number": "FAIL",
-      "cannot select a non-existent alternate interface": "FAIL",
-      "claimInterface ignores invalid endpoint numbers": "FAIL",
-      "claimInterface rejects when called on a disconnected device": "FAIL",
-      "clearHalt rejects when called on a disconnected device": "FAIL",
-      "close rejects when called on a disconnected device": "FAIL",
-      "control transfers resolve non-fatal transfer statuses": "FAIL",
-      "control transfers to a non-existant interface reject": "FAIL",
-      "control transfers with a invalid recipient type reject": "FAIL",
-      "control transfers with a invalid request type reject": "FAIL",
-      "controlTransferIn rejects on transfer failures": "FAIL",
-      "controlTransferIn rejects when called on a disconnected device": "FAIL",
-      "controlTransferOut can safely be called with a detached buffer": "FAIL",
-      "controlTransferOut rejects when called on a disconnected device": "FAIL",
-      "controlTransferOut rejects when packet lengths exceed maximum size": "FAIL",
-      "device configuration can be set and queried": "FAIL",
-      "device configuration is initialized from the active configuration": "FAIL",
-      "device operations reject if an device state change is in progress": "FAIL",
-      "device operations reject if an interface state change is in progress": "FAIL",
-      "device state operations reject on device failure": "FAIL",
-      "device-scope IN control transfers don't require configuration": "FAIL",
-      "device-scope OUT control transfers don't require configuration": "FAIL",
-      "disconnect rejects open requests in progress": "FAIL",
-      "disconnection closes the device": "FAIL",
-      "interface and endpoint operations reject on device failure": "FAIL",
-      "interface-scope IN control transfers require claiming the interface": "FAIL",
-      "interface-scope IN control transfers require configuration": "FAIL",
-      "interface-scope OUT control transfers an interface claim": "FAIL",
-      "interface-scope OUT control transfers require configuration": "FAIL",
-      "interfaces are released on close": "FAIL",
-      "interfaces can be claimed and released": "FAIL",
-      "interfaces can be claimed and released in parallel": "FAIL",
-      "isochronousTransferIn rejects when called on a disconnected device": "FAIL",
-      "isochronousTransferIn rejects when packet lengths exceed maximum size": "FAIL",
-      "isochronousTransferIn rejects when packet lengths overflow": "FAIL",
-      "isochronousTransferOut rejects when buffer size exceeds packet lengths": "FAIL",
-      "isochronousTransferOut rejects when called on a disconnected device": "FAIL",
-      "isochronousTransferOut rejects when called with a detached buffer": "FAIL",
-      "isochronousTransferOut rejects when packet lengths exceed buffer size": "FAIL",
-      "isochronousTransferOut rejects when packet lengths exceed maximum size": "FAIL",
-      "isochronousTransferOut rejects when packet lengths overflow": "FAIL",
-      "methods requiring it reject when the device is not open": "FAIL",
-      "methods requiring it reject when the device is unconfigured": "FAIL",
-      "open and close can be called multiple times": "FAIL",
-      "open and close cannot be called again while open or close are in progress": "FAIL",
-      "open rejects when called on a disconnected device": "FAIL",
-      "releaseInterface rejects when called on a disconnected device": "FAIL",
-      "requests to interfaces and endpoint require an interface claim": "FAIL",
-      "resetDevice rejects when called on a disconnected device": "FAIL",
-      "selectAlternateInterface rejects when called on a disconnected device": "FAIL",
-      "selectConfiguration rejects on invalid configurations": "FAIL",
-      "selectConfiguration rejects when called on a disconnected device": "FAIL",
-      "transfer methods reject on transfer failures": "FAIL",
-      "transferIn rejects if called on a disconnected device": "FAIL",
-      "transferIn rejects when packet lengths exceed maximum size": "FAIL",
-      "transferOut can safely be called with a detached buffer": "FAIL",
-      "transferOut rejects if called on a disconnected device": "FAIL",
-      "transferOut rejects when packet lengths exceed maximum size": "FAIL",
-      "transfers to unavailable endpoints are rejected": "FAIL"
-    }
+    "total": 75
   },
   "webusb/usbEndpoint.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBEndpoint.": "FAIL",
-      "Constructing a USBEndpoint with an invalid endpoint number  throws a range error.": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbEndpoint.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBEndpoint.": "FAIL",
-      "Constructing a USBEndpoint with an invalid endpoint number  throws a range error.": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbInTransferResult.https.any.js": {
-    "total": 4,
-    "failures": {
-      "Can construct a USBInTransferResult": "FAIL",
-      "Can construct a USBInTransferResult without a DataView": "FAIL",
-      "Cannot construct USBInTransferResult with an invalid status": "FAIL",
-      "Cannot construct USBInTransferResult without a status": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usbInTransferResult.https.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Can construct a USBInTransferResult": "FAIL",
-      "Can construct a USBInTransferResult without a DataView": "FAIL",
-      "Cannot construct USBInTransferResult with an invalid status": "FAIL",
-      "Cannot construct USBInTransferResult without a status": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usbInterface.https.any.js": {
-    "total": 4,
-    "failures": {
-      "Can construct a USBInterface.": "FAIL",
-      "Constructing a USBInterface with an invalid interface number throws a range error.": "FAIL",
-      "The alternate attribute of USBInterface returns the active alternate interface.": "FAIL",
-      "The alternate attribute of USBInterface returns the one with bAlternateSetting 0 if the interface has not been claimed.": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usbInterface.https.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Can construct a USBInterface.": "FAIL",
-      "Constructing a USBInterface with an invalid interface number throws a range error.": "FAIL",
-      "The alternate attribute of USBInterface returns the active alternate interface.": "FAIL",
-      "The alternate attribute of USBInterface returns the one with bAlternateSetting 0 if the interface has not been claimed.": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usbIsochronousInTransferPacket.https.any.js": {
-    "total": 4,
-    "failures": {
-      "Can construct a USBIsochronousInTransferPacket": "FAIL",
-      "Can construct a USBIsochronousInTransferPacket without a DataView": "FAIL",
-      "Cannot construct USBIsochronousInTransferPacket with an invalid status": "FAIL",
-      "Cannot construct USBIsochronousInTransferPacket without a status": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usbIsochronousInTransferPacket.https.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "Can construct a USBIsochronousInTransferPacket": "FAIL",
-      "Can construct a USBIsochronousInTransferPacket without a DataView": "FAIL",
-      "Cannot construct USBIsochronousInTransferPacket with an invalid status": "FAIL",
-      "Cannot construct USBIsochronousInTransferPacket without a status": "FAIL"
-    }
+    "total": 4
   },
   "webusb/usbIsochronousInTransferResult.https.any.js": {
-    "total": 3,
-    "failures": {
-      "Can construct a USBIsochronousInTransferResult": "FAIL",
-      "Can construct a USBIsochronousInTransferResult without a DataView": "FAIL",
-      "Cannot construct a USBIsochronousInTransferResult without packets": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usbIsochronousInTransferResult.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Can construct a USBIsochronousInTransferResult": "FAIL",
-      "Can construct a USBIsochronousInTransferResult without a DataView": "FAIL",
-      "Cannot construct a USBIsochronousInTransferResult without packets": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usbIsochronousOutTransferPacket.https.any.js": {
-    "total": 3,
-    "failures": {
-      "Can construct USBIsochronousOutTransferPacket": "FAIL",
-      "Cannot construct USBIsochronousOutTransferPacket with an invalid status": "FAIL",
-      "Cannot construct USBIsochronousOutTransferPacket without a status": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usbIsochronousOutTransferPacket.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Can construct USBIsochronousOutTransferPacket": "FAIL",
-      "Cannot construct USBIsochronousOutTransferPacket with an invalid status": "FAIL",
-      "Cannot construct USBIsochronousOutTransferPacket without a status": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usbIsochronousOutTransferResult.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBIsochronousOutTransferResult": "FAIL",
-      "Cannot construct a USBIsochronousOutTransferResult without packets": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbIsochronousOutTransferResult.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Can construct a USBIsochronousOutTransferResult": "FAIL",
-      "Cannot construct a USBIsochronousOutTransferResult without packets": "FAIL"
-    }
+    "total": 2
   },
   "webusb/usbOutTransferResult.https.any.js": {
-    "total": 3,
-    "failures": {
-      "Can construct USBOutTransferResult": "FAIL",
-      "Cannot construct USBOutTransferResult with an invalid status": "FAIL",
-      "Cannot construct USBOutTransferResult without a status": "FAIL"
-    }
+    "total": 3
   },
   "webusb/usbOutTransferResult.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "Can construct USBOutTransferResult": "FAIL",
-      "Cannot construct USBOutTransferResult with an invalid status": "FAIL",
-      "Cannot construct USBOutTransferResult without a status": "FAIL"
-    }
+    "total": 3
   }
 }

@@ -1029,12 +1029,14 @@ public static class FontsFuzzTargets
         using var scratch = new GlyphScratch(allocator);
         GlyphOutcome[] forward;
         GlyphHinting hinting;
+        double hintedSize;
         using (var first = CreateHinter(face, size, mode, scratch, allocator, out _))
         {
             if (first is null)
                 return;
 
             hinting = first.Hinting;
+            hintedSize = first.Size;
             FuzzAssert.True(mode == GlyphHinting.Full ? hinting is GlyphHinting.Full or GlyphHinting.Light : hinting == mode, $"The hinter hints with {hinting} when {mode} is asked for");
             forward = [.. glyphs.Select(glyph => Decode(first, glyph, scratch))];
 
@@ -1050,7 +1052,8 @@ public static class FontsFuzzTargets
             if (forward[i].Error is not null)
                 continue;
 
-            var unhinted = DecodeUnhinted(face, glyphs[i], scratch);
+            // (the hinter draws the bitmap of one bit per pixel the font has for the size, as the outline at this size)
+            var unhinted = DecodeUnhinted(face, glyphs[i], hintedSize, scratch);
             if (unhinted.Error is null)
             {
                 FuzzAssert.Equal(unhinted.Contours, forward[i].Contours, $"The hinted outline of the glyph {glyphs[i]} does not have the contours of the outline");
@@ -1109,13 +1112,13 @@ public static class FontsFuzzTargets
         }
     }
 
-    private static GlyphOutcome DecodeUnhinted(FontFace face, int glyph, GlyphScratch scratch)
+    private static GlyphOutcome DecodeUnhinted(FontFace face, int glyph, double size, GlyphScratch scratch)
     {
         var sink = new RecordingSink();
         var budget = new GlyphBudget(Limits);
         try
         {
-            face.DecodeOutline(glyph, sink, scratch, ref budget);
+            face.DecodeOutline(glyph, size, sink, scratch, ref budget);
             return new GlyphOutcome(Error: null, Advance: 0, [.. sink.Values], sink.Contours);
         }
         catch (FontException ex)

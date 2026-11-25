@@ -254,8 +254,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(reader.PropertyNameComparer);
+        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
         var mappingStart = reader.Start;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
@@ -321,6 +321,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             ReadAndApplyMemberValue(reader, instance!, contract, member, key, keyStart, keyEnd);
         }
 
+        reader.ReturnKeySet(seenKeys);
+        reader.ReturnKeySet(explicitKeys);
+
         if (requiredSeen is not null)
         {
             List<string>? missing = null;
@@ -384,8 +387,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(reader.PropertyNameComparer);
+        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
         var mappingStart = reader.Start;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
@@ -451,6 +454,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             ReadAndApplyMemberValue(reader, instance, contract, member, key, keyStart, keyEnd);
         }
 
+        reader.ReturnKeySet(seenKeys);
+        reader.ReturnKeySet(explicitKeys);
+
         if (requiredSeen is not null)
         {
             List<string>? missing = null;
@@ -496,11 +502,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         var mappingAnchor = reader.Anchor;
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(reader.PropertyNameComparer) : null;
+        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
 
         HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins
             ? null
-            : new HashSet<string>(reader.PropertyNameComparer);
+            : reader.RentKeySet();
 
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
@@ -608,6 +614,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             SkipOrThrowUnmappedMember(reader, contract, key);
         }
+
+        reader.ReturnKeySet(seenKeys);
+        reader.ReturnKeySet(explicitKeys);
 
         // Ensure all constructor parameters are satisfied before constructing the instance.
         for (var i = 0; i < constructor.ParameterCount; i++)

@@ -243,10 +243,7 @@
     "total": 4
   },
   "dom/events/Event-timestamp-high-resolution.https.html": {
-    "total": 1,
-    "failures": {
-      "Constructed GamepadEvent timestamp should be high resolution and have the same time origin as performance.now()": "FAIL"
-    }
+    "total": 1
   },
   "dom/events/Event-timestamp-safe-resolution.html": {
     "total": 1

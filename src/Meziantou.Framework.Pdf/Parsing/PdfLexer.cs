@@ -1,5 +1,5 @@
-using System.Buffers;
 using System.Globalization;
+using System.Numerics;
 
 namespace Meziantou.Framework.Pdf.Parsing;
 
@@ -221,17 +221,87 @@ internal sealed class PdfLexer
     /// <summary>Decodes a literal string token (7.3.4.2).</summary>
     public byte[] DecodeLiteralString(PdfToken token)
     {
+        var raw = GetLiteralStringBody(token);
+
+        // Most strings have no escape and no end of line to normalize: their bytes are the string
+        if (!NeedsLiteralStringDecoding(raw))
+            return raw.ToArray();
+
+        var buffer = raw.Length <= 256 ? stackalloc byte[256] : new byte[raw.Length];
+        return buffer[..DecodeLiteralString(raw, buffer)].ToArray();
+    }
+
+    /// <summary>
+    /// Decodes a literal string token (7.3.4.2) without allocating: the bytes are those of the data when the string has
+    /// no escape and no end of line to normalize, otherwise they are decoded to <paramref name="buffer"/>, which grows as needed.
+    /// </summary>
+    /// <returns>The bytes of the string, valid until the buffer is used again.</returns>
+    public ReadOnlySpan<byte> DecodeLiteralString(PdfToken token, ref byte[]? buffer)
+    {
+        var raw = GetLiteralStringBody(token);
+        if (!NeedsLiteralStringDecoding(raw))
+            return raw;
+
+        var destination = GetBuffer(ref buffer, raw.Length);
+        return destination[..DecodeLiteralString(raw, destination)];
+    }
+
+    /// <summary>Decodes a hexadecimal string token (7.3.4.3): whitespace and invalid characters are ignored, a missing last digit is 0.</summary>
+    public byte[] DecodeHexString(PdfToken token)
+    {
+        var raw = GetHexStringBody(token);
+        var result = new byte[(raw.Length + 1) / 2];
+        var length = DecodeHexString(raw, result);
+        return length == result.Length ? result : result.AsSpan(0, length).ToArray();
+    }
+
+    /// <summary>Decodes a hexadecimal string token (7.3.4.3) to <paramref name="buffer"/>, which grows as needed.</summary>
+    /// <returns>The bytes of the string, valid until the buffer is used again.</returns>
+    public ReadOnlySpan<byte> DecodeHexString(PdfToken token, ref byte[]? buffer)
+    {
+        var raw = GetHexStringBody(token);
+        var destination = GetBuffer(ref buffer, (raw.Length + 1) / 2);
+        return destination[..DecodeHexString(raw, destination)];
+    }
+
+    private ReadOnlySpan<byte> GetLiteralStringBody(PdfToken token)
+    {
         var raw = Span[(token.Start + 1)..token.End];
         if (raw.Length > 0 && raw[^1] == ')')
         {
             raw = raw[..^1];
         }
 
-        // Most strings have no escape and no end of line to normalize: their bytes are the string
-        if (raw.IndexOfAny((byte)'\\', (byte)'\r') < 0)
-            return raw.ToArray();
+        return raw;
+    }
 
-        var output = new ArrayBufferWriter<byte>(Math.Max(1, raw.Length));
+    private ReadOnlySpan<byte> GetHexStringBody(PdfToken token)
+    {
+        var raw = Span[(token.Start + 1)..token.End];
+        if (raw.Length > 0 && raw[^1] == '>')
+        {
+            raw = raw[..^1];
+        }
+
+        return raw;
+    }
+
+    private static Span<byte> GetBuffer(ref byte[]? buffer, int length)
+    {
+        if (buffer is null || buffer.Length < length)
+        {
+            buffer = new byte[Math.Max(length, (int)Math.Min(Array.MaxLength, BitOperations.RoundUpToPowerOf2((uint)Math.Max(length, 256))))];
+        }
+
+        return buffer;
+    }
+
+    private static bool NeedsLiteralStringDecoding(ReadOnlySpan<byte> raw) => raw.IndexOfAny((byte)'\\', (byte)'\r') >= 0;
+
+    /// <summary>Decodes the bytes between the parentheses of a literal string to a buffer as long as them at least: each byte gives one byte at most.</summary>
+    private static int DecodeLiteralString(ReadOnlySpan<byte> raw, Span<byte> destination)
+    {
+        var length = 0;
         for (var i = 0; i < raw.Length; i++)
         {
             var c = raw[i];
@@ -245,11 +315,11 @@ internal sealed class PdfLexer
                     c = raw[i];
                     switch (c)
                     {
-                        case (byte)'n': Write(output, (byte)'\n'); break;
-                        case (byte)'r': Write(output, (byte)'\r'); break;
-                        case (byte)'t': Write(output, (byte)'\t'); break;
-                        case (byte)'b': Write(output, (byte)'\b'); break;
-                        case (byte)'f': Write(output, (byte)'\f'); break;
+                        case (byte)'n': destination[length++] = (byte)'\n'; break;
+                        case (byte)'r': destination[length++] = (byte)'\r'; break;
+                        case (byte)'t': destination[length++] = (byte)'\t'; break;
+                        case (byte)'b': destination[length++] = (byte)'\b'; break;
+                        case (byte)'f': destination[length++] = (byte)'\f'; break;
                         case (byte)'\r':
                             // A backslash at the end of a line continues the string on the next line
                             if (i + 1 < raw.Length && raw[i + 1] == '\n')
@@ -268,18 +338,18 @@ internal sealed class PdfLexer
                                 value = (value * 8) + (raw[i] - '0');
                             }
 
-                            Write(output, (byte)value);
+                            destination[length++] = (byte)value;
                             break;
                         default:
                             // An unknown escape is the character itself
-                            Write(output, c);
+                            destination[length++] = c;
                             break;
                     }
 
                     break;
                 case (byte)'\r':
                     // An end of line in a string is a line feed, whatever it is in the file
-                    Write(output, (byte)'\n');
+                    destination[length++] = (byte)'\n';
                     if (i + 1 < raw.Length && raw[i + 1] == '\n')
                     {
                         i++;
@@ -287,24 +357,17 @@ internal sealed class PdfLexer
 
                     break;
                 default:
-                    Write(output, c);
+                    destination[length++] = c;
                     break;
             }
         }
 
-        return output.WrittenSpan.ToArray();
+        return length;
     }
 
-    /// <summary>Decodes a hexadecimal string token (7.3.4.3): whitespace and invalid characters are ignored, a missing last digit is 0.</summary>
-    public byte[] DecodeHexString(PdfToken token)
+    /// <summary>Decodes the digits of a hexadecimal string to a buffer of half their length (rounded up) at least.</summary>
+    private static int DecodeHexString(ReadOnlySpan<byte> raw, Span<byte> destination)
     {
-        var raw = Span[(token.Start + 1)..token.End];
-        if (raw.Length > 0 && raw[^1] == '>')
-        {
-            raw = raw[..^1];
-        }
-
-        var result = new byte[(raw.Length + 1) / 2];
         var length = 0;
         var high = -1;
         foreach (var c in raw)
@@ -318,17 +381,17 @@ internal sealed class PdfLexer
             }
             else
             {
-                result[length++] = (byte)((high << 4) | digit);
+                destination[length++] = (byte)((high << 4) | digit);
                 high = -1;
             }
         }
 
         if (high >= 0)
         {
-            result[length++] = (byte)(high << 4);
+            destination[length++] = (byte)(high << 4);
         }
 
-        return result.AsSpan(0, length).ToArray();
+        return length;
     }
 
     public static bool TryHexValue(byte c, out int value)
@@ -359,6 +422,23 @@ internal sealed class PdfLexer
     /// characters, far below the precision of a <see cref="double"/>, are ignored.
     /// </remarks>
     public static bool TryParseNumber(ReadOnlySpan<byte> text, out bool isInteger, out long integer, out double real)
+    {
+        var i = 0;
+        var negative = false;
+        while (i < text.Length && text[i] is (byte)'+' or (byte)'-')
+        {
+            negative |= text[i] == '-';
+            i++;
+        }
+
+        if (TryParseShortNumber(text[i..], negative, out isInteger, out integer, out real))
+            return true;
+
+        return TryParseAnyNumber(text, out isInteger, out integer, out real);
+    }
+
+    /// <summary>The general parser of <see cref="TryParseNumber"/>: any token, whatever its length.</summary>
+    internal static bool TryParseAnyNumber(ReadOnlySpan<byte> text, out bool isInteger, out long integer, out double real)
     {
         isInteger = true;
         integer = 0;
@@ -481,6 +561,63 @@ internal sealed class PdfLexer
         return true;
     }
 
+    /// <summary>
+    /// Parses the numbers of most files without the general parser: digits with at most one point, and at most 15 digits.
+    /// The digits then make an integer below 2^53, and the value of a real is that integer divided by a power of ten of
+    /// at most 10^15: both are exact doubles, so the quotient is the correctly rounded value, as <see cref="double.Parse(ReadOnlySpan{byte}, NumberStyles, IFormatProvider?)"/> gives.
+    /// <paramref name="digits"/> is the token after its signs; <see langword="false"/> leaves the token to the general parser.
+    /// </summary>
+    private static bool TryParseShortNumber(ReadOnlySpan<byte> digits, bool negative, out bool isInteger, out long integer, out double real)
+    {
+        const int MaxDigits = 15;
+
+        isInteger = true;
+        integer = 0;
+        real = 0;
+        if (digits.IsEmpty || digits.Length > MaxDigits + 1)
+            return false;
+
+        var mantissa = 0L;
+        var digitCount = 0;
+        var pointIndex = -1;
+        for (var i = 0; i < digits.Length; i++)
+        {
+            var digit = (uint)(digits[i] - '0');
+            if (digit <= 9)
+            {
+                mantissa = (mantissa * 10) + digit;
+                digitCount++;
+            }
+            else if (digits[i] == '.' && pointIndex < 0)
+            {
+                pointIndex = i;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        if (digitCount is 0 or > MaxDigits)
+            return false;
+
+        if (pointIndex < 0)
+        {
+            integer = negative ? -mantissa : mantissa;
+            return true;
+        }
+
+        isInteger = false;
+        var decimals = digits.Length - 1 - pointIndex;
+        var value = (double)mantissa / PowersOfTen[decimals];
+
+        // The sign of zero is that of the general parser: kept with decimal digits ("-0.0"), not without ("-0.")
+        real = negative && (mantissa != 0 || decimals > 0) ? -value : value;
+        return true;
+    }
+
+    private static ReadOnlySpan<double> PowersOfTen => [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15];
+
     /// <summary>Finds the next occurrence of a keyword delimited by non-regular characters.</summary>
     public int IndexOfKeyword(ReadOnlySpan<byte> keyword, int start)
     {
@@ -501,12 +638,6 @@ internal sealed class PdfLexer
         }
 
         return -1;
-    }
-
-    private static void Write(ArrayBufferWriter<byte> output, byte value)
-    {
-        output.GetSpan(1)[0] = value;
-        output.Advance(1);
     }
 
     private void SkipLiteralString()

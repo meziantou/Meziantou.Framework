@@ -18,10 +18,14 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         DefineMembers = DefineMembers,
     };
 
+    private static TValue Get_bluetooth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Bluetooth); }
     private static TValue Get_clipboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Clipboard); }
+    private static TValue Get_contacts(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Contacts); }
+    private static TValue Get_cpuPerformance(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.CpuPerformance); }
     private static TValue Get_credentials(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Credentials); }
     private static TValue Get_devicePosture(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.DevicePosture); }
     private static TValue Get_geolocation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Geolocation); }
+    private static TValue Get_hid(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Hid); }
     private static TValue Get_userActivation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.UserActivation); }
     private static TValue Get_ink(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Ink); }
     private static TValue Get_scheduling(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Scheduling); }
@@ -32,8 +36,11 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     private static TValue Get_mediaSession(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.MediaSession); }
     private static TValue Get_permissions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Permissions); }
     private static TValue Get_maxTouchPoints(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromNumber((double)o.MaxTouchPoints); }
+    private static TValue Get_presentation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Presentation); }
     private static TValue Get_wakeLock(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.WakeLock); }
+    private static TValue Get_serial(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Serial); }
     private static TValue Get_serviceWorker(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.ServiceWorker); }
+    private static TValue Get_usb(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.Usb); }
     private static TValue Get_virtualKeyboard(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.Wrap(o.VirtualKeyboard); }
     private static TValue Get_globalPrivacyControl(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromBoolean(o.GlobalPrivacyControl); }
     private static TValue Get_appCodeName(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding); return r.FromString(o.AppCodeName); }
@@ -80,6 +87,11 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var a1 = r.ToSequence<global::Meziantou.Framework.WebPlatform.Dom.MediaKeySystemConfiguration>(a[1], static (r, e) => WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MediaKeySystemConfiguration(r, e));
         var result = o.RequestMediaKeySystemAccess(a0, a1); return r.ToPromise(result, static (r, value) => r.Wrap(value));
     }
+    private static TValue Op_getGamepads(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var result = o.GetGamepads(); return r.FromSequence(result, static (r, e) => r.Wrap(e));
+    }
     private static TValue Op_vibrate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
@@ -100,6 +112,12 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
         var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.ShareData)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_ShareData(r, a[0]);
         var result = o.CanShare(a0); return r.FromBoolean(result);
+    }
+    private static TValue Op_requestMIDIAccess(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Navigator>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.MidiOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MidiOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_MidiOptions(r, a[0]);
+        var result = o.RequestMidiAccess(a0); return r.ToPromise(result, static (r, value) => r.Wrap(value));
     }
     private static TValue Op_setAppBadge(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -140,10 +158,14 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "bluetooth", Get_bluetooth, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "clipboard", Get_clipboard, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "contacts", Get_contacts, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "cpuPerformance", Get_cpuPerformance, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "credentials", Get_credentials, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "devicePosture", Get_devicePosture, null);
         r.DefineAttribute(instanceTarget, "geolocation", Get_geolocation, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "hid", Get_hid, null);
         r.DefineAttribute(instanceTarget, "userActivation", Get_userActivation, null);
         r.DefineAttribute(instanceTarget, "ink", Get_ink, null);
         r.DefineAttribute(instanceTarget, "scheduling", Get_scheduling, null);
@@ -154,8 +176,11 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         r.DefineAttribute(instanceTarget, "mediaSession", Get_mediaSession, null);
         r.DefineAttribute(instanceTarget, "permissions", Get_permissions, null);
         r.DefineAttribute(instanceTarget, "maxTouchPoints", Get_maxTouchPoints, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "presentation", Get_presentation, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "wakeLock", Get_wakeLock, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serial", Get_serial, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "serviceWorker", Get_serviceWorker, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "usb", Get_usb, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "virtualKeyboard", Get_virtualKeyboard, null);
         r.DefineAttribute(instanceTarget, "globalPrivacyControl", Get_globalPrivacyControl, null);
         r.DefineAttribute(instanceTarget, "appCodeName", Get_appCodeName, null);
@@ -184,9 +209,11 @@ internal static class Binding_Navigator<TAdapter, TValue> where TAdapter : struc
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "getBattery", 0, Op_getBattery, returnsPromise: true);
         r.DefineOperation(instanceTarget, "sendBeacon", 1, Op_sendBeacon);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "requestMediaKeySystemAccess", 2, Op_requestMediaKeySystemAccess, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "getGamepads", 0, Op_getGamepads);
         r.DefineOperation(instanceTarget, "vibrate", 1, Op_vibrate);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "share", 0, Op_share, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "canShare", 0, Op_canShare);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "requestMIDIAccess", 0, Op_requestMIDIAccess, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setAppBadge", 0, Op_setAppBadge, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "clearAppBadge", 0, Op_clearAppBadge, returnsPromise: true);
         r.DefineOperation(instanceTarget, "taintEnabled", 0, Op_taintEnabled);

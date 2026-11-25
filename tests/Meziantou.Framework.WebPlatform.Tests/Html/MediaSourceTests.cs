@@ -709,6 +709,11 @@ public sealed class MediaSourceTests : IDisposable
         Assert.Null(ClearKey.ParseResponse("""{"keys":[{"kty":"RSA","kid":"AQI","k":"AAAAAAAAAAAAAAAAAAAAAA"}]}"""u8));
         Assert.Equal([[1, 2]], ClearKey.ParseResponse("""{"kids":["AQI"]}"""u8)!.ReleasedKeyIds);
         Assert.Null(ClearKey.ParseResponse("[]"u8));
+
+        // The JSON is UTF-8 decoded: an invalid sequence in a string is replaced, a byte order mark is removed
+        Assert.Null(ClearKey.ExtractKeyIds("keyids", [.. "{\"kids\":[\"A"u8, 0xF0, .. "\"]}"u8]));
+        Assert.Null(ClearKey.ParseResponse([.. "{\"type\":\""u8, 0xA3, .. "\",\"keys\":[]}"u8]));
+        Assert.Equal([[1, 2]], ClearKey.ParseResponse([0xEF, 0xBB, 0xBF, .. "{\"kids\":[\"AQI\"],\"x\":\""u8, 0xFF, .. "\"}"u8])!.ReleasedKeyIds);
     }
 
     private sealed class BackendWithoutMediaSource : MediaBackend

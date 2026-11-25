@@ -160,6 +160,20 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void AnEmptyBoxIsNotValid()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 0 200] >>")
+            .Add(4, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 50] /CropBox [10 10 10 40] >>");
+        var pages = PdfDocument.Open(file.ToArray()).Pages;
+
+        Assert.Equal(new PdfSize(612, 792), pages[0].DisplaySize);
+        Assert.Equal(new PdfSize(100, 50), pages[1].DisplaySize);
+    }
+
+    [Fact]
     public void ResourcesSharedByPagesAreCopiedBeforeTheyChange()
     {
         // The pages share an indirect resource dictionary, and the second one an indirect font category with the first

@@ -43,7 +43,7 @@ public sealed class WebTransportSession : IAsyncDisposable
         _connectStream = connectStream;
         _connectReader = connectReader;
         _ownsConnection = ownsConnection;
-        _datagrams = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(datagramQueueCapacity) { FullMode = BoundedChannelFullMode.DropOldest, SingleWriter = true });
+        _datagrams = Channel.CreateBounded<ReadOnlyMemory<byte>>(new BoundedChannelOptions(Math.Max(datagramQueueCapacity, 1)) { FullMode = BoundedChannelFullMode.DropOldest, SingleWriter = true });
         _ = _closed.Task.Exception;
     }
 
@@ -461,36 +461,38 @@ public sealed class WebTransportSession : IAsyncDisposable
                 var (type, length) = header.Value;
                 if (type == Http3FrameType.Data)
                 {
+                    // The capsules are parsed after each chunk: a capsule larger than MaxCapsuleSize is rejected once its
+                    // header is read, so the buffer stays bounded whatever the length of the DATA frame
                     var remaining = length;
                     while (remaining > 0)
                     {
                         var read = await _connectReader.ReadPayloadChunkAsync(chunk.AsMemory(0, (int)Math.Min(chunk.Length, remaining)), CancellationToken.None).ConfigureAwait(false);
                         remaining -= read;
                         capsuleBuffer.AddRange(chunk.AsSpan(0, read));
-                    }
 
-                    var consumed = Capsule.ReadCapsules(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(capsuleBuffer), capsules, MaxCapsuleSize);
-                    capsuleBuffer.RemoveRange(0, consumed);
-                    foreach (var capsule in capsules)
-                    {
-                        switch (capsule.Type)
+                        var consumed = Capsule.ReadCapsules(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(capsuleBuffer), capsules, MaxCapsuleSize);
+                        capsuleBuffer.RemoveRange(0, consumed);
+                        foreach (var capsule in capsules)
                         {
-                            case Capsule.CloseWebTransportSession:
-                                var (errorCode, reason) = Capsule.DecodeClose(capsule.Value.Span);
-                                closeInfo ??= new WebTransportCloseInfo(errorCode, reason);
-                                break;
+                            switch (capsule.Type)
+                            {
+                                case Capsule.CloseWebTransportSession:
+                                    var (errorCode, reason) = Capsule.DecodeClose(capsule.Value.Span);
+                                    closeInfo ??= new WebTransportCloseInfo(errorCode, reason);
+                                    break;
 
-                            case Capsule.DrainWebTransportSession:
-                                OnDrain();
-                                break;
+                                case Capsule.DrainWebTransportSession:
+                                    OnDrain();
+                                    break;
 
-                            case Capsule.Datagram:
-                                OnDatagram(capsule.Value);
-                                break;
+                                case Capsule.Datagram:
+                                    OnDatagram(capsule.Value);
+                                    break;
+                            }
                         }
-                    }
 
-                    capsules.Clear();
+                        capsules.Clear();
+                    }
                 }
                 else if (type == Http3FrameType.Headers)
                 {

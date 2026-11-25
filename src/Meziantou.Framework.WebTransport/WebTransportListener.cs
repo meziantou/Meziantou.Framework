@@ -190,8 +190,10 @@ public sealed class WebTransportListener : IAsyncDisposable
 
         try
         {
+            // A request that does not open a session (malformed, or not WebTransport): the streams that reference it are rejected
             if (!valid || method is null)
             {
+                connection.CloseSessionId(stream.Id);
                 stream.Abort(MsQuicAbortDirection.Both, Http3ErrorCode.MessageError);
                 await stream.DisposeAsync().ConfigureAwait(false);
                 return;
@@ -200,6 +202,7 @@ public sealed class WebTransportListener : IAsyncDisposable
             if (method != "CONNECT" || protocol != "webtransport" || scheme != "https" || string.IsNullOrEmpty(authority) || string.IsNullOrEmpty(path))
             {
                 // The listener only serves WebTransport
+                connection.CloseSessionId(stream.Id);
                 var status = method == "CONNECT" && protocol is not null && protocol != "webtransport" ? "501" : method == "CONNECT" && protocol == "webtransport" ? "400" : "501";
                 await Http3Connection.WriteHeadersAsync(stream, [new(":status", status)], completeWrites: true, _disposeCancellation.Token).ConfigureAwait(false);
                 stream.Abort(MsQuicAbortDirection.Read, Http3ErrorCode.NoError);

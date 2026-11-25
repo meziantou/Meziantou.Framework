@@ -17,6 +17,9 @@ internal sealed class Http3Connection : IAsyncDisposable
     private readonly Lock _lock = new();
     private readonly Dictionary<long, WebTransportSession> _sessions = [];
     private readonly Dictionary<long, List<(MsQuicStream Stream, int HeaderLength)>> _bufferedStreams = [];
+
+    // The sessions that ended and the CONNECT requests that did not become sessions: their streams are rejected
+    private readonly HashSet<long> _closedSessionIds = [];
     private readonly Action<Http3Connection, MsQuicStream, Http3FrameReader, List<QPackField>>? _onRequest;
     private int _bufferedStreamCount;
     private int _hasPeerControlStream;
@@ -83,6 +86,8 @@ internal sealed class Http3Connection : IAsyncDisposable
                 _sessions.Remove(session.SessionId);
             }
         }
+
+        CloseSessionId(session.SessionId);
     }
 
     public bool HasSessions
@@ -282,6 +287,7 @@ internal sealed class Http3Connection : IAsyncDisposable
             catch (Http3ProtocolException ex) when (ex.ErrorCode is Http3ErrorCode.RequestIncomplete or Http3ErrorCode.MessageError)
             {
                 stream.Abort(MsQuicAbortDirection.Both, ex.ErrorCode);
+                CloseSessionId(stream.Id);
                 return;
             }
 
@@ -325,6 +331,12 @@ internal sealed class Http3Connection : IAsyncDisposable
         {
             if (!_sessions.TryGetValue(sessionId, out session))
             {
+                if (_closedSessionIds.Contains(sessionId))
+                {
+                    stream.Abort(MsQuicAbortDirection.Both, Http3ErrorCode.WebTransportSessionGone);
+                    return false;
+                }
+
                 if (_bufferedStreamCount >= MaxBufferedStreams)
                 {
                     stream.Abort(MsQuicAbortDirection.Both, Http3ErrorCode.WebTransportBufferedStreamRejected);
@@ -347,12 +359,14 @@ internal sealed class Http3Connection : IAsyncDisposable
         return true;
     }
 
-    // Streams buffered for a session that will not exist: its CONNECT request was rejected
-    public void RejectBufferedStreams(long sessionId)
+    // The session identifier has no session anymore (the session ended), or will never have one (its CONNECT request was
+    // rejected or malformed): the streams buffered for it, and the ones that arrive later, are reset with WT_SESSION_GONE
+    public void CloseSessionId(long sessionId)
     {
         List<(MsQuicStream Stream, int HeaderLength)>? buffered;
         lock (_lock)
         {
+            _closedSessionIds.Add(sessionId);
             if (_bufferedStreams.Remove(sessionId, out buffered))
             {
                 _bufferedStreamCount -= buffered.Count;
@@ -363,7 +377,7 @@ internal sealed class Http3Connection : IAsyncDisposable
         {
             foreach (var (stream, _) in buffered)
             {
-                stream.Abort(MsQuicAbortDirection.Both, Http3ErrorCode.WebTransportBufferedStreamRejected);
+                stream.Abort(MsQuicAbortDirection.Both, Http3ErrorCode.WebTransportSessionGone);
                 _ = stream.DisposeAsync().AsTask();
             }
         }

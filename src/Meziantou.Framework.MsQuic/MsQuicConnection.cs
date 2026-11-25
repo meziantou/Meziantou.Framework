@@ -142,7 +142,15 @@ public sealed class MsQuicConnection : IAsyncDisposable
                 }
                 else
                 {
-                    addresses = await Dns.GetHostAddressesAsync(dnsEndPoint.Host, dnsEndPoint.AddressFamily, cancellationToken).ConfigureAwait(false);
+                    try
+                    {
+                        addresses = await Dns.GetHostAddressesAsync(dnsEndPoint.Host, dnsEndPoint.AddressFamily, cancellationToken).ConfigureAwait(false);
+                    }
+                    catch (SocketException ex)
+                    {
+                        throw new MsQuicException(MsQuicError.HostUnreachable, applicationErrorCode: null, transportErrorCode: null, $"The host name '{dnsEndPoint.Host}' could not be resolved: {ex.Message}", ex);
+                    }
+
                     if (addresses.Length == 0)
                         throw new MsQuicException(MsQuicError.HostUnreachable, applicationErrorCode: null, transportErrorCode: null, $"The host name '{dnsEndPoint.Host}' has no address.");
                 }
@@ -220,11 +228,25 @@ public sealed class MsQuicConnection : IAsyncDisposable
         await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    // The configuration is shared by the connections of a listener, which disposes it: the reference keeps it open during
+    // the call (MsQuic references it once the call returns), and a disposed configuration throws ObjectDisposedException
     private void SetConfiguration(MsQuicSafeHandle configuration)
     {
-        unsafe
+        var addedReference = false;
+        try
         {
-            MsQuicApi.ThrowIfFailure(_api.Table->ConnectionSetConfiguration(_handle.DangerousGetHandle(), configuration.DangerousGetHandle()), "ConnectionSetConfiguration");
+            configuration.DangerousAddRef(ref addedReference);
+            unsafe
+            {
+                MsQuicApi.ThrowIfFailure(_api.Table->ConnectionSetConfiguration(_handle.DangerousGetHandle(), configuration.DangerousGetHandle()), "ConnectionSetConfiguration");
+            }
+        }
+        finally
+        {
+            if (addedReference)
+            {
+                configuration.DangerousRelease();
+            }
         }
     }
 

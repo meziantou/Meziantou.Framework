@@ -112,7 +112,14 @@ internal sealed class WebTransportHostStream
 
     public void AbortWrite(uint errorCode) => _stream.AbortWrite(errorCode);
 
-    public void SetSendOrder(long sendOrder) => _stream.SetSendOrder(sendOrder);
+    // The page can set the send order of a stream whose session ended: the setter never throws
+    public void SetSendOrder(long sendOrder)
+    {
+        if (Volatile.Read(ref _released) == 0)
+        {
+            _stream.SetSendOrder(sendOrder);
+        }
+    }
 
     /// <summary>The session ended: the stream is released.</summary>
     public void Release()

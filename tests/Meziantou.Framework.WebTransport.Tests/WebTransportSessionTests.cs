@@ -103,6 +103,18 @@ public sealed class WebTransportSessionTests
     }
 
     [Fact]
+    public async Task Connect_HostNameNotResolved()
+    {
+        global::Xunit.Assert.SkipUnless(MsQuicLibrary.IsSupported, "MsQuic is not available: " + MsQuicLibrary.NotSupportedReason);
+
+        // .invalid never resolves (RFC 6761): the DNS failure is a connection failure, not a SocketException
+        var exception = await Assert.ThrowsAsync<WebTransportException>(async () => await WebTransportSession.ConnectAsync(new Uri("https://does-not-exist.invalid/")));
+        Assert.Equal(WebTransportError.ConnectionFailed, exception.Error);
+        var quicException = Assert.IsType<MsQuicException>(exception.InnerException);
+        Assert.Equal(MsQuicError.HostUnreachable, quicException.Error);
+    }
+
+    [Fact]
     public async Task Streams_InBothDirections()
     {
         await using var server = await LoopbackWebTransport.StartAsync();

@@ -130,6 +130,10 @@ public sealed class WebTransportTests : IDisposable
                   wt.close({ closeCode: 7, reason: 'bye' });
                   const info = await wt.closed;
                   log.push('closed:' + info.closeCode + ':' + info.reason);
+
+                  // The send order of a stream whose session ended can still be set
+                  bidi.writable.sendOrder = 9.2e18;
+                  log.push('sendOrder:' + bidi.writable.sendOrder);
                 } catch (e) {
                   log.push('error:' + e.name + ':' + e.message);
                 }
@@ -140,7 +144,7 @@ public sealed class WebTransportTests : IDisposable
             """);
 
         await WaitForTitleAsync(document);
-        Assert.Equal("initial:pending:true|ready:supports-unreliable:chat:yes:false|echo:hello|datagram:1,2,3:true|uni:true:from server|stats:true:true:0|closed:7:bye", document.Title);
+        Assert.Equal("initial:pending:true|ready:supports-unreliable:chat:yes:false|echo:hello|datagram:1,2,3:true|uni:true:from server|stats:true:true:0|closed:7:bye|sendOrder:9200000000000000000", document.Title);
 
         var (request, closeInfo) = await serverTask;
         Assert.Equal("/echo?x=1", request.Path);

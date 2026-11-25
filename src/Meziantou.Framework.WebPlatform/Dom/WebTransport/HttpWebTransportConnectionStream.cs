@@ -55,8 +55,19 @@ internal sealed class HttpWebTransportConnectionStream(WebTransportStream stream
 
     public override void AbortWrite(uint errorCode) => stream.Abort(MsQuicAbortDirection.Write, errorCode);
 
-    // The send order (a 64-bit integer, 0 by default) is mapped to the priority of MsQuic (0 to 65535, 32767 by default)
-    public override void SetSendOrder(long sendOrder) => stream.Priority = (int)Math.Clamp(sendOrder + 0x7FFF, 0, 0xFFFF);
+    // The send order (a 64-bit integer, 0 by default) is mapped to the priority of MsQuic (0 to 65535, 32767 by default).
+    // It is clamped before the offset is added, which would overflow for the largest values. The priority of a stream that
+    // is closed does not matter: the error of MsQuic is ignored.
+    public override void SetSendOrder(long sendOrder)
+    {
+        try
+        {
+            stream.Priority = (int)Math.Clamp(sendOrder, -0x7FFF, 0x8000) + 0x7FFF;
+        }
+        catch (Exception ex) when (ex is ObjectDisposedException or MsQuicException)
+        {
+        }
+    }
 
     public override ValueTask DisposeAsync() => stream.DisposeAsync();
 }

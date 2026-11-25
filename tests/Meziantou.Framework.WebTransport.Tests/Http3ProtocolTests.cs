@@ -109,6 +109,8 @@ public sealed class Http3ProtocolTests
     [InlineData("000040")] // Literal field line with dynamic name reference
     [InlineData("0000ff3f")] // Static index out of range (63 + 63 = 126)
     [InlineData("0000510b2f696e64")] // Truncated value
+    [InlineData("0000ffffffffffffffffff7f")] // Static index whose 9th continuation byte overflows a 64-bit integer
+    [InlineData("000027ffffffffffffffff7f")] // Literal name length whose 9th continuation byte overflows a 64-bit integer
     public void QPack_Invalid(string hex)
     {
         Assert.Throws<Http3ProtocolException>(() => QPackDecoder.Decode(Convert.FromHexString(hex), 1024));

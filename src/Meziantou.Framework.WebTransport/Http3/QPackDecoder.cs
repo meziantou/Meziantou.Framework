@@ -112,9 +112,12 @@ internal static class QPackDecoder
             if (shift > 56)
                 throw new Http3ProtocolException(Http3ErrorCode.QPackDecompressionFailed, "Integer overflow.");
 
-            value += (long)(b & 0x7F) << shift;
-            if (value > VariableLengthInteger.MaxValue)
+            // The addition is checked before it is done: at shift 56, it would overflow a long
+            var increment = (long)(b & 0x7F) << shift;
+            if (increment > VariableLengthInteger.MaxValue - value)
                 throw new Http3ProtocolException(Http3ErrorCode.QPackDecompressionFailed, "Integer overflow.");
+
+            value += increment;
 
             shift += 7;
             if ((b & 0x80) == 0)

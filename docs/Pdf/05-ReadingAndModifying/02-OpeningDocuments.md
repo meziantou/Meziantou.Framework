@@ -102,7 +102,8 @@ var text = document.Pages[0].ExtractText();
   cross-reference sections; the first page of a linearized file comes with the first requests
   ([Linearize](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Linearize) writes such files).
 - [PrefetchPageAsync](cref:Meziantou.Framework.Pdf.PdfDocument.PrefetchPageAsync) downloads what a page needs: its content, fonts, images and annotations. Without it, an
-  object read for the first time is downloaded synchronously, which the browser does not support.
+  object read for the first time is downloaded synchronously, which the browser does not support. An object that
+  cannot be read is skipped: reading the page reports the error only if the page needs it.
 - A server that does not support range requests sends the whole file, which is read from memory.
 - A damaged file is repaired by scanning it, which downloads it whole: set
   [AllowFullDownload](cref:Meziantou.Framework.Pdf.PdfReadOptions.AllowFullDownload) to `false` to refuse such files instead.

@@ -109,7 +109,8 @@ table of a paragraph that starts with `+`, its rows are written as they are in t
 it.
 
 The formatter checks that the formatted text renders as the same HTML. When it does not, which can happen with rare
-combinations of the extensions, such as a lazy line before a table in a list item, it returns the text as it is.
+combinations of the extensions, such as a lazy line before a table in a list item, it returns the text as it is. The
+check includes the content of the footnotes that are not referred to, which the HTML does not show.
 
 The `MarkdownConverter.Normalize` method of `Meziantou.Framework.Markdown` 1.x has other options: the formatter has no
 option for the blank lines, and does not change the autolinks into links.

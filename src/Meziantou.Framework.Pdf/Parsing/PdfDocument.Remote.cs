@@ -58,7 +58,8 @@ public sealed partial class PdfDocument
     /// <summary>
     /// Downloads what a page of a document opened over HTTP needs and that is not downloaded yet: its objects, the data of
     /// its content streams, of its resources (fonts, images, forms) and of its annotations. The page is then read without
-    /// network requests. The method does nothing for a document that was not opened over HTTP.
+    /// network requests. The method does nothing for a document that was not opened over HTTP. An object that cannot be
+    /// read is skipped: reading the page reports the error if the page needs the object.
     /// </summary>
     /// <param name="pageIndex">The zero-based index of the page.</param>
     /// <param name="cancellationToken">The token to cancel the downloads.</param>
@@ -101,12 +102,21 @@ public sealed partial class PdfDocument
             }
         }
 
+        // An object that cannot be read (damaged, nested too deeply, ...) is skipped: its bytes are downloaded, and reading
+        // the page reports the error only if the page needs the object (fuzz regression: an object the text does not use)
         while (pending.Count > 0 && visited.Count < MaxPrefetchedObjects)
         {
             var value = pending.Pop();
             if (value is PdfReference reference)
             {
-                value = reference.Resolve();
+                try
+                {
+                    value = reference.Resolve();
+                }
+                catch (PdfException)
+                {
+                    continue;
+                }
             }
 
             if (!visited.Add(value))
@@ -115,7 +125,14 @@ public sealed partial class PdfDocument
             switch (value)
             {
                 case PdfStream stream:
-                    _ = stream.EncodedData;
+                    try
+                    {
+                        _ = stream.EncodedData;
+                    }
+                    catch (PdfException)
+                    {
+                    }
+
                     PushEntries(stream.Dictionary);
                     break;
                 case PdfDictionary dictionary when ReferenceEquals(dictionary, page.Dictionary) || !(dictionary.IsType(PdfNames.Page) || dictionary.IsType(PdfNames.Pages)):

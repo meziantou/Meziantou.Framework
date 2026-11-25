@@ -157,11 +157,12 @@ internal sealed class DngOpcodeList
             if (values == DngSampleValues.StoredFloats)
                 continue;
 
-            // The values are clipped to the logical range of the list after each opcode, and stored integers stay integers
+            // The values are clipped to the logical range of the list after each opcode, and stored integers stay integers. A
+            // value the opcode cannot compute (its parameters overflow, as a polynomial whose huge terms cancel out) is 0
             var samples = image.Samples;
             for (var i = 0; i < samples.Length; i++)
             {
-                var value = Math.Clamp(samples[i], 0f, 1f);
+                var value = float.IsNaN(samples[i]) ? 0f : Math.Clamp(samples[i], 0f, 1f);
                 samples[i] = values == DngSampleValues.StoredIntegers ? (float)(Math.Round(value * 65535.0, MidpointRounding.AwayFromZero) / 65535.0) : value;
             }
         }

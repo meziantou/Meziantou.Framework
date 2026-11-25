@@ -35,7 +35,11 @@ public sealed class PdfString : PdfObject, IEquatable<PdfString>
     /// <returns>The string.</returns>
     public static PdfString FromBytes(ReadOnlySpan<byte> bytes, bool hexadecimal = false) => new(bytes.ToArray(), hexadecimal);
 
-    /// <summary>Creates a text string (ISO 32000-2, 7.9.2.2): PDFDocEncoding when every character has a code in it, otherwise UTF-16BE with a byte order mark.</summary>
+    /// <summary>
+    /// Creates a text string (ISO 32000-2, 7.9.2.2): PDFDocEncoding when every character has a code in it, otherwise UTF-16BE
+    /// with a byte order mark. A text whose PDFDocEncoding would start with the bytes of a byte order mark, such as "þÿ", is
+    /// in UTF-16BE too, so that it is not read back in another encoding.
+    /// </summary>
     /// <param name="text">The text.</param>
     /// <returns>The string.</returns>
     public static PdfString FromText(string text)

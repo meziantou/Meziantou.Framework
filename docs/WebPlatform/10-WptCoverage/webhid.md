@@ -9,25 +9,18 @@ description: "The results of the web-platform-tests of webhid, and why the tests
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 1 | 5 | 0 | 20% |
+| [Stable](#stable-tests) | 5 | 5 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **1** | **5** | **0** | **20%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 4
-  - `hardware`: 4
+| **All** | **5** | **5** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`hid-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/webhid/hid-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Timeout | 1 / 4 | REQUIRES(hardware) | WebHID |
-| [`hid-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/webhid/hid-allowed-by-permissions-policy-attribute.https.sub.html) | Timeout | 0 / 5 | REQUIRES(hardware) | WebHID |
-| [`hid-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/webhid/hid-allowed-by-permissions-policy.https.sub.html) | Timeout | 0 / 6 | REQUIRES(hardware) | WebHID |
-| [`idlharness.https.any.js`](https://wpt.fyi/results/webhid/idlharness.https.any.js) | Fail | 40 / 145 | REQUIRES(hardware) | WebHID |
+| [`hid-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html`](https://wpt.fyi/results/webhid/hid-allowed-by-permissions-policy-attribute-redirect-on-load.https.sub.html) | Pass | 4 / 4 |  |  |
+| [`hid-allowed-by-permissions-policy-attribute.https.sub.html`](https://wpt.fyi/results/webhid/hid-allowed-by-permissions-policy-attribute.https.sub.html) | Pass | 5 / 5 |  |  |
+| [`hid-allowed-by-permissions-policy.https.sub.html`](https://wpt.fyi/results/webhid/hid-allowed-by-permissions-policy.https.sub.html) | Pass | 6 / 6 |  |  |
+| [`idlharness.https.any.js`](https://wpt.fyi/results/webhid/idlharness.https.any.js) | Pass | 145 / 145 |  |  |
 | [`unload-iframe.https.window.js`](https://wpt.fyi/results/webhid/unload-iframe.https.window.js) | Pass | 2 / 2 |  |  |

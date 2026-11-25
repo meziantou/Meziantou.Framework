@@ -64,6 +64,9 @@ internal sealed class TarRandomAccessArchive : Archive
             throw new InvalidDataException("The tar archive is truncated.");
 
         var offset = stream.Position - 1;
+        if (data.Length > stream.Length - offset)
+            throw new InvalidDataException("The tar archive is truncated.");
+
         data.Position = 0;
         stream.Position = position;
         return offset;

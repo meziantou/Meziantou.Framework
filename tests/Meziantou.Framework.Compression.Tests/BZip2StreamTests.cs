@@ -310,6 +310,40 @@ public sealed class BZip2StreamTests
         Assert.Equal(data, Decompress(output.ToArray()));
     }
 
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(255)]
+    [InlineData(4096)]
+    public void Compress_Chunks_SameOutputAsOneWrite(int chunkSize)
+    {
+        // Text and runs that cross the chunks and the blocks: the blocks and their CRC do not depend on the writes
+        using var input = new MemoryStream();
+        var text = CreateText(400_000, 11);
+        for (var i = 0; input.Length < 250_000; i++)
+        {
+            input.Write(text, i * 100, 100);
+            for (var j = 0; j < (i * 37) % 600; j++)
+            {
+                input.WriteByte((byte)(i % 3));
+            }
+        }
+
+        var data = input.ToArray();
+        var expected = Compress(data, blockSize: 1);
+        using var output = new MemoryStream();
+        using (var stream = new BZip2Stream(output, new BZip2CompressionOptions { BlockSize = 1 }, leaveOpen: true))
+        {
+            for (var offset = 0; offset < data.Length; offset += chunkSize)
+            {
+                stream.Write(data.AsSpan(offset, Math.Min(chunkSize, data.Length - offset)));
+            }
+        }
+
+        Assert.Equal(expected, output.ToArray());
+        Assert.Equal(data, Decompress(expected));
+    }
+
     [Fact]
     public void RoundTrip_RandomizedBlocks()
     {
@@ -370,6 +404,33 @@ public sealed class BZip2StreamTests
 
         new BZip2Stream(output, CompressionMode.Compress).Dispose();
         Assert.False(output.CanWrite);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(256)]
+    public void SuffixArray_SameOrderAsAComparisonSort(int alphabetSize)
+    {
+        // Small alphabets give long repeated substrings and several levels of recursion
+        var random = new PseudoRandom(alphabetSize);
+        foreach (var length in Enumerable.Range(1, 150).Concat([1000, 5000]))
+        {
+            var text = new ushort[length + 1];
+            for (var i = 0; i < length; i++)
+            {
+                text[i] = (ushort)(1 + random.Next(alphabetSize));
+            }
+
+            var sa = new int[length + 1];
+            SuffixArray.Sort(new SuffixArray.UInt16Text(text), sa, length + 1, 257);
+
+            // The sentinel (0) ends the text, so that no suffix is a prefix of another one
+            var expected = Enumerable.Range(0, length + 1).Order(Comparer<int>.Create((a, b) => text.AsSpan(a).SequenceCompareTo(text.AsSpan(b)))).ToArray();
+            Assert.Equal(expected, sa);
+        }
     }
 
     [Fact]

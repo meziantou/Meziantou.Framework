@@ -256,6 +256,42 @@ public sealed class ArchiveFileTests
     }
 
     [Fact]
+    public void EmptyZip64Archive()
+    {
+        // The archive is its zip64 end of central directory records
+        using var zip = new MemoryStream();
+        using (new ZipArchive(zip, ZipArchiveMode.Create, leaveOpen: true, readerOptions: null, new ZipCompressionOptions { Zip64 = Zip64Mode.Always }))
+        {
+        }
+
+        Assert.Equal(ArchiveFormat.Zip, ArchiveFile.DetectFormat(new MemoryStream(zip.ToArray())).Format);
+        using var reader = ArchiveReader.Create(new MemoryStream(zip.ToArray()));
+        Assert.Equal(ArchiveFormat.Zip, reader.Format);
+        Assert.False(reader.MoveToNextEntry());
+    }
+
+    [Fact]
+    public void Tar_TruncatedContent_Throws()
+    {
+        using var tar = new MemoryStream();
+        using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+        {
+            writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.RegularFile, "data.bin") { DataStream = new MemoryStream(new byte[2000]) });
+        }
+
+        // The archive ends in the middle of the content of the entry
+        var data = tar.ToArray();
+        var truncated = data.AsSpan(0, data.Length - 1024 - 1024).ToArray();
+
+        Assert.Throws<InvalidDataException>(() => ArchiveFile.Open(new MemoryStream(truncated)));
+
+        using var reader = ArchiveReader.Create(new MemoryStream(truncated));
+        Assert.True(reader.MoveToNextEntry());
+        using var content = reader.OpenEntryStream();
+        Assert.Throws<InvalidDataException>(() => content.CopyTo(Stream.Null));
+    }
+
+    [Fact]
     public void Open_LeaveOpen()
     {
         using var stream = File.OpenRead(GetPath("Archive/sample.tar.bz2"));

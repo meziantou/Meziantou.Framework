@@ -45,12 +45,6 @@
     "total": 5
   },
   "screen-capture/tentative/getdisplaymedia-captured-surface-resolution.https.html": {
-    "total": 6,
-    "failures": {
-      "applyConstraints() should not change the capabilities resolution and screenPixelRatio of captured surface type monitor": "FAIL",
-      "applyConstraints() should not change the capabilities resolution and screenPixelRatio of captured surface type window": "FAIL",
-      "getDisplayMedia() and screenPixelRatio for captured surface type monitor": "FAIL",
-      "getDisplayMedia() and screenPixelRatio for captured surface type window": "FAIL"
-    }
+    "total": 6
   }
 }

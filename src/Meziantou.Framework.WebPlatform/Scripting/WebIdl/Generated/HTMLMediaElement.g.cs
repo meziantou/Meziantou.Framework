@@ -63,6 +63,7 @@ internal static class Binding_HTMLMediaElement<TAdapter, TValue> where TAdapter 
     private static TValue Get_audioTracks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding); return r.Wrap(o.AudioTracks); }
     private static TValue Get_videoTracks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding); return r.Wrap(o.VideoTracks); }
     private static TValue Get_textTracks(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding); return r.Wrap(o.TextTracks); }
+    private static TValue Get_sinkId(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding); return r.FromString(o.SinkId); }
     private static TValue Get_mediaKeys(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding); return r.Wrap(o.MediaKeys); }
     private static TValue Get_onencrypted(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "encrypted");
     private static void Set_onencrypted(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "encrypted", v, isOnBeforeUnloadEventHandler: false);
@@ -110,6 +111,13 @@ internal static class Binding_HTMLMediaElement<TAdapter, TValue> where TAdapter 
         var a1 = r.IsMissing(a, 1) ? (string)"" : r.ToDomString(a[1]);
         var a2 = r.IsMissing(a, 2) ? (string)"" : r.ToDomString(a[2]);
         var result = o.AddTextTrack(WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_TextTrackKind(a0), a1, a2); return r.Wrap(result);
+    }
+    private static TValue Op_setSinkId(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.HtmlMediaElement>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("setSinkId", 1, a.Length);
+        var a0 = r.ToDomString(a[0]);
+        var result = o.SetSinkId(a0); return r.ToPromise(result);
     }
     private static TValue Op_setMediaKeys(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -163,6 +171,7 @@ internal static class Binding_HTMLMediaElement<TAdapter, TValue> where TAdapter 
         r.DefineAttribute(instanceTarget, "audioTracks", Get_audioTracks, null);
         r.DefineAttribute(instanceTarget, "videoTracks", Get_videoTracks, null);
         r.DefineAttribute(instanceTarget, "textTracks", Get_textTracks, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "sinkId", Get_sinkId, null);
         if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "mediaKeys", Get_mediaKeys, null);
         r.DefineAttribute(instanceTarget, "onencrypted", Get_onencrypted, Set_onencrypted);
         r.DefineAttribute(instanceTarget, "onwaitingforkey", Get_onwaitingforkey, Set_onwaitingforkey);
@@ -173,6 +182,7 @@ internal static class Binding_HTMLMediaElement<TAdapter, TValue> where TAdapter 
         r.DefineOperation(instanceTarget, "play", 0, Op_play, returnsPromise: true);
         r.DefineOperation(instanceTarget, "pause", 0, Op_pause);
         r.DefineOperation(instanceTarget, "addTextTrack", 1, Op_addTextTrack);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setSinkId", 1, Op_setSinkId, returnsPromise: true);
         if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setMediaKeys", 1, Op_setMediaKeys, returnsPromise: true);
         r.DefineOperation(instanceTarget, "captureStream", 0, Op_captureStream);
     }

@@ -386,6 +386,7 @@ internal sealed partial class IdlModel
         AddFontFaceDescriptorsSizeAdjust(model);
         AddUIEventPseudoTarget(model);
         AddContainerQueryListChangeEvent(model);
+        MakeScreenAnEventTarget(model);
         AddPaintWorkletExtensions(model);
         AddMediaSourceHandleToMediaProvider(model);
         AddRequestStorageAccessTypes(model);
@@ -1534,6 +1535,29 @@ internal sealed partial class IdlModel
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// The Window Management API makes Screen derive from EventTarget (https://w3c.github.io/window-management/#api-extensions-to-screen,
+    /// "Make Screen derive from EventTarget in CSSOM View"), for its <c>change</c> event: the partial interface of webref
+    /// cannot express it (<c>partial interface Screen /* : EventTarget */</c>).
+    /// </summary>
+    private static void MakeScreenAnEventTarget(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("Screen", out var screen) || screen.Inheritance is not null)
+            return;
+
+        model.Definitions["Screen"] = new IdlDefinition
+        {
+            Name = screen.Name,
+            Kind = screen.Kind,
+            Inheritance = "EventTarget",
+            ExtAttrs = screen.ExtAttrs,
+            Members = screen.Members,
+            Source = screen.Source,
+            Href = screen.Href,
+            SpecUrl = screen.SpecUrl,
+        };
     }
 
     /// <summary>

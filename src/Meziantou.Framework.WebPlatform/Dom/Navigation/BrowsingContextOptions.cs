@@ -714,6 +714,77 @@ public sealed partial record BrowsingContextOptions
     public DevicePostureOptions? DevicePosture { get; init; }
 
     /// <summary>
+    /// Gets or sets the host hooks of the Gamepad API (https://w3c.github.io/gamepad/, <c>navigator.getGamepads()</c> and the
+    /// <c>gamepadconnected</c> and <c>gamepaddisconnected</c> events): <see cref="GamepadOptions.Provider"/> lists the
+    /// connected gamepads and their inputs, and plays their haptic effects. The default is null: no gamepad is connected.
+    /// </summary>
+    public GamepadOptions? Gamepads { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of WebUSB (https://usb.spec.whatwg.org/, <c>navigator.usb</c> in the windows and the
+    /// workers): <see cref="UsbOptions.Provider"/> lists the connected USB devices, stores the devices each origin is allowed
+    /// to use, and plays the role of the device chooser of <c>requestDevice()</c>. The default is null: no USB device is
+    /// connected.
+    /// </summary>
+    public UsbOptions? Usb { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of Web Bluetooth (https://bluetooth.spec.whatwg.org/, <c>navigator.bluetooth</c>):
+    /// <see cref="BluetoothOptions.Provider"/> is the Bluetooth adapter and its nearby devices, stores the devices each origin
+    /// is allowed to use, and plays the role of the device chooser of <c>requestDevice()</c>. The default is null: the machine
+    /// has no Bluetooth adapter.
+    /// </summary>
+    public BluetoothOptions? Bluetooth { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Window Management API (https://w3c.github.io/window-management/, <c>window.screen</c>,
+    /// <c>window.getScreenDetails()</c> and the fullscreen requests on a screen): <see cref="ScreenOptions.Provider"/> lists
+    /// the screens of the device and their arrangement. The <c>window-management</c> permission is checked with
+    /// <see cref="Permissions"/> and <see cref="RequestPermission"/>. The default is null: the device has one screen, the
+    /// size of the viewport.
+    /// </summary>
+    public ScreenOptions? Screens { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Web Serial API (https://serial.spec.whatwg.org/, <c>navigator.serial</c> in the
+    /// windows and the dedicated workers): <see cref="WebSerialOptions.Provider"/> lists the serial ports, stores the ports each
+    /// origin is allowed to use, and plays the role of the port chooser of <c>requestPort()</c>. The default is null: there is
+    /// no serial port.
+    /// </summary>
+    public WebSerialOptions? Serial { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of WebHID (https://hid.spec.whatwg.org/, <c>navigator.hid</c> in the windows, the dedicated
+    /// workers and the service workers): <see cref="HidOptions.Provider"/> lists the HID devices, stores the devices each origin
+    /// is allowed to use, and plays the role of the device chooser of <c>requestDevice()</c>. The default is null: no HID device
+    /// is connected.
+    /// </summary>
+    public HidOptions? Hid { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Web MIDI API (https://webaudio.github.io/web-midi-api/, <c>navigator.requestMIDIAccess()</c>):
+    /// <see cref="WebMidiOptions.Provider"/> lists the MIDI input and output ports, and receives and sends their messages. The
+    /// <c>midi</c> permission is checked with <see cref="Permissions"/> and <see cref="RequestPermission"/>. The default is
+    /// null: there is no MIDI port.
+    /// </summary>
+    public WebMidiOptions? Midi { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Presentation API (https://w3c.github.io/presentation-api/, <c>navigator.presentation</c>
+    /// and <c>PresentationRequest</c>): <see cref="PresentationOptions.Provider"/> lists the presentation displays and plays the
+    /// role of the display chooser of <c>start()</c>, and <see cref="PresentationOptions.Receiver"/> makes the top-level
+    /// browsing contexts receiving browsing contexts. The default is null: there is no presentation display.
+    /// </summary>
+    public PresentationOptions? Presentation { get; init; }
+
+    /// <summary>
+    /// Gets or sets the host hooks of the Contact Picker API (https://w3c.github.io/contact-picker/, <c>navigator.contacts</c>):
+    /// <see cref="ContactsOptions.Provider"/> is the contacts source of the user and plays the role of the contact picker. The
+    /// default is null: no contact property is supported.
+    /// </summary>
+    public ContactsOptions? Contacts { get; init; }
+
+    /// <summary>
     /// Gets or sets the host hooks of the Web Authentication API (https://w3c.github.io/webauthn/, <c>navigator.credentials</c>
     /// and <c>PublicKeyCredential</c>): <see cref="WebAuthenticationOptions.Authenticators"/> are the virtual authenticators
     /// available to the documents. The default is null: no authenticator is available.

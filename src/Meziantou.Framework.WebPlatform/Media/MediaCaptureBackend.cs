@@ -52,6 +52,16 @@ public abstract class MediaCaptureBackend
     public virtual DisplayCaptureSelection? SelectDisplaySurface(DisplayCaptureRequest request) => null;
 
     /// <summary>
+    /// Chooses the audio output device for <c>navigator.mediaDevices.selectAudioOutput()</c>
+    /// (https://w3c.github.io/mediacapture-output/#dom-mediadevices-selectaudiooutput): a browser asks the user to pick one of
+    /// the <see cref="MediaDeviceKind.AudioOutput"/> devices of <see cref="GetDevices"/>. Returns one of
+    /// <see cref="AudioOutputRequest.Devices"/>, or null when the user cancels the request, which is rejected with a
+    /// <c>NotAllowedError</c>. The default implementation returns null.
+    /// </summary>
+    /// <param name="request">The request of the document.</param>
+    public virtual MediaCaptureDevice? SelectAudioOutput(AudioOutputRequest request) => null;
+
+    /// <summary>
     /// Notifies the documents that the list of devices changed (a device was plugged in or removed, or the default device
     /// changed): the documents that can see the change get a <c>devicechange</c> event. Can be called from any thread.
     /// </summary>
@@ -169,6 +179,22 @@ public sealed class DisplayCaptureRequest
 
     /// <summary>Gets whether the audio of the surface is requested.</summary>
     public bool Audio { get; }
+}
+
+/// <summary>A request of <c>selectAudioOutput()</c>, given to <see cref="MediaCaptureBackend.SelectAudioOutput"/>.</summary>
+public sealed class AudioOutputRequest
+{
+    internal AudioOutputRequest(CallbackContext context, IReadOnlyList<MediaCaptureDevice> devices)
+    {
+        Context = context;
+        Devices = devices;
+    }
+
+    /// <summary>Gets the context of the window that requests the device.</summary>
+    public CallbackContext Context { get; }
+
+    /// <summary>Gets the audio output devices to choose from (the <see cref="MediaDeviceKind.AudioOutput"/> devices of <see cref="MediaCaptureBackend.GetDevices"/>).</summary>
+    public IReadOnlyList<MediaCaptureDevice> Devices { get; }
 }
 
 /// <summary>The display surface chosen for <c>getDisplayMedia()</c> (see <see cref="MediaCaptureBackend.SelectDisplaySurface"/>).</summary>

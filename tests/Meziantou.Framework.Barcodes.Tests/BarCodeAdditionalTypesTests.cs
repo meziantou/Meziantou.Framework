@@ -760,6 +760,19 @@ public class BarCodeAdditionalTypesTests
     }
 
     [Theory]
+    [InlineData(2, "140345>1")] // A row is also read as Codabar
+    [InlineData(4, "140345>16789ABCDEFGH0J00>1728394")] // Rows read the wrong way pass the check character
+    public void CreateGs1DataBarExpandedStacked_IsDecoded(int segmentsPerRow, string value)
+    {
+        var barcode = Barcode.CreateGs1DataBarExpandedStacked(segmentsPerRow, new Gs1Element("932", value));
+
+        var result = BarcodeDecoder.Decode(barcode);
+
+        Assert.Equal(BarcodeType.Gs1DataBarExpandedStacked, result.Type);
+        Assert.Equal("(93)2" + value, result.Text);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("095011015300")] // 12 digits
     [InlineData("09501101530004")] // invalid check digit

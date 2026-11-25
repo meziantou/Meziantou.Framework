@@ -145,6 +145,10 @@ internal sealed partial class BindingModel
             }
         }
 
+        // The attributes are conditional: the project references the build of the library that emits them (WebPlatformIdlMetadata=true)
+        if (Interfaces.Count == 0)
+            throw new InvalidOperationException($"'{assembly.Location}' has no [IdlInterface] attribute: reference the build of Meziantou.Framework.WebPlatform with WebPlatformIdlMetadata=true.");
+
         foreach (var model in Interfaces.Values)
         {
             if (model.Definition.Inheritance is { } parentName)

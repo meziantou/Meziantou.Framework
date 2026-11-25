@@ -1,39 +1,14 @@
 {
   "captured-mouse-events/capture-controller-oncapturedmousechange.https.html": {
-    "total": 2,
-    "failures": {
-      "dispatching a CapturedMouseEvent on CaptureController should trigger oncapturedmousechange": "FAIL",
-      "oncapturedmousechange is initially unset": "FAIL"
-    }
+    "total": 2
   },
   "captured-mouse-events/captured-mouse-event-constructor-inherited.html": {
-    "total": 2,
-    "failures": {
-      "EventInit options are passed to the Event's constructor": "FAIL",
-      "type argument is passed to the Event's constructor": "FAIL"
-    }
+    "total": 2
   },
   "captured-mouse-events/captured-mouse-event-constructor.html": {
-    "total": 4,
-    "failures": {
-      "Invalid surfaceX/surfaceY options cause a RangeError to be thrown": "FAIL",
-      "Valid surfaceX/surfaceY options are used as initial values": "FAIL",
-      "surfaceX/surfaceY default to -1": "FAIL",
-      "type argument is mandatory": "FAIL"
-    }
+    "total": 4
   },
   "captured-mouse-events/idlharness.https.window.js": {
-    "total": 18,
-    "failures": {
-      "CaptureController interface: attribute oncapturedmousechange": "FAIL",
-      "CapturedMouseEvent interface object length": "FAIL",
-      "CapturedMouseEvent interface object name": "FAIL",
-      "CapturedMouseEvent interface: attribute surfaceX": "FAIL",
-      "CapturedMouseEvent interface: attribute surfaceY": "FAIL",
-      "CapturedMouseEvent interface: existence and properties of interface object": "FAIL",
-      "CapturedMouseEvent interface: existence and properties of interface prototype object": "FAIL",
-      "CapturedMouseEvent interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "CapturedMouseEvent interface: existence and properties of interface prototype object's @@unscopables property": "FAIL"
-    }
+    "total": 18
   }
 }

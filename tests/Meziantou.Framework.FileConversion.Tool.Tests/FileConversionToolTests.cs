@@ -1452,6 +1452,13 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         }
     }
 
+    [Fact]
+    public void EpubPackage_ParseXml_InvalidVersion_IsNotValid()
+    {
+        // The XML reader reads the declaration, XmlDocument rejects its version
+        Assert.Throws<InvalidDataException>(() => Epub.EpubPackage.ParseXml("<?xml version=\"1.0x\"?><a/>"u8.ToArray(), "a.xml"));
+    }
+
     [Theory]
     [InlineData("OEBPS/content.opf", "text/ch1.xhtml", "OEBPS/text/ch1.xhtml")]
     [InlineData("OEBPS/text/ch1.xhtml", "../images/a%20b.png#frag", "OEBPS/images/a b.png")]
@@ -1560,6 +1567,31 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, exitCode);
         Assert.Contains("The symbolic link 'link' is skipped", console.Error);
         Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A" }, ReadArchive(temp.GetFullPath("data.7z")));
+    }
+
+    [Fact]
+    public async Task Archive_SkipsTheLinksATarArchiveCannotStore()
+    {
+        // The target of a link in a zip archive is its content: a tar archive cannot store one with a null character
+        await using var temp = TemporaryDirectory.Create();
+        using var zip = new MemoryStream();
+        using (var archive = new Compression.ZipArchive(zip, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            using (var stream = archive.CreateEntry("a.txt").Open())
+            {
+                stream.Write("A"u8);
+            }
+
+            archive.CreateSymbolicLinkEntry("link", "a\0b");
+        }
+
+        var input = await WriteFileAsync(temp, "data.zip", zip.ToArray());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "tar");
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("The symbolic link 'link' is skipped", console.Error);
+        Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A" }, ReadArchive(temp.GetFullPath("data.tar")));
     }
 
     [Fact]

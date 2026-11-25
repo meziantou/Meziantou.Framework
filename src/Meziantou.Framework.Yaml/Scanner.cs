@@ -1,5 +1,6 @@
 #nullable disable
 
+using System.Buffers;
 using System.Diagnostics;
 using Meziantou.Framework.Yaml.Tokens;
 
@@ -118,6 +119,9 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     /// <summary>Gets the current token.</summary>
     public Token Current { get; private set; }
 
+    /// <summary>Gets or sets the list that receives each token when it becomes the current token.</summary>
+    internal List<Token> ConsumedTokens { get; set; }
+
     /// <summary>Moves to the next token.</summary>
     /// <returns></returns>
     public bool MoveNext()
@@ -139,6 +143,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         if (_tokens.Count > 0)
         {
             Current = _tokens.Dequeue();
+            ConsumedTokens?.Add(Current);
             _tokenAvailable = false;
             return true;
         }
@@ -281,9 +286,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         _documentPrefixAllowed = false;
 
+        var current = _analyzer.Peek(0);
+
         // Is it a directive?
 
-        if (_column == 0 && _analyzer.Check('%'))
+        if (_column == 0 && current == '%')
         {
             FetchDirective();
             return;
@@ -293,7 +300,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         bool isDocumentStart =
             _column == 0 &&
-            _analyzer.Check('-', 0) &&
+            current == '-' &&
             _analyzer.Check('-', 1) &&
             _analyzer.Check('-', 2) &&
             _analyzer.IsBlankOrBreakOrZero(3);
@@ -308,7 +315,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         bool isDocumentEnd =
             _column == 0 &&
-            _analyzer.Check('.', 0) &&
+            current == '.' &&
             _analyzer.Check('.', 1) &&
             _analyzer.Check('.', 2) &&
             _analyzer.IsBlankOrBreakOrZero(3);
@@ -326,7 +333,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the flow sequence start indicator?
 
-        if (_analyzer.Check('['))
+        if (current == '[')
         {
             FetchFlowCollectionStart(true);
             return;
@@ -334,7 +341,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the flow mapping start indicator?
 
-        if (_analyzer.Check('{'))
+        if (current == '{')
         {
             FetchFlowCollectionStart(false);
             return;
@@ -342,7 +349,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the flow sequence end indicator?
 
-        if (_analyzer.Check(']'))
+        if (current == ']')
         {
             FetchFlowCollectionEnd(true);
             return;
@@ -350,7 +357,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the flow mapping end indicator?
 
-        if (_analyzer.Check('}'))
+        if (current == '}')
         {
             FetchFlowCollectionEnd(false);
             return;
@@ -358,7 +365,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the flow entry indicator?
 
-        if (_analyzer.Check(','))
+        if (current == ',')
         {
             FetchFlowEntry();
             return;
@@ -366,7 +373,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the block entry indicator?
 
-        if (_analyzer.Check('-') && _analyzer.IsBlankOrBreakOrZero(1))
+        if (current == '-' && _analyzer.IsBlankOrBreakOrZero(1))
         {
             FetchBlockEntry();
             return;
@@ -374,7 +381,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the key indicator?
 
-        if (_analyzer.Check('?') && _analyzer.IsBlankOrBreakOrZero(1))
+        if (current == '?' && _analyzer.IsBlankOrBreakOrZero(1))
         {
             FetchKey();
             return;
@@ -382,7 +389,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it the value indicator?
 
-        if (_analyzer.Check(':') && (_analyzer.IsBlankOrBreakOrZero(1) || (_flowLevel > 0 && (_analyzer.Check(",[]{}", 1) || adjacentValueAllowed))))
+        if (current == ':' && (_analyzer.IsBlankOrBreakOrZero(1) || (_flowLevel > 0 && (_analyzer.Check(",[]{}", 1) || adjacentValueAllowed))))
         {
             FetchValue();
             return;
@@ -390,7 +397,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it an alias?
 
-        if (_analyzer.Check('*'))
+        if (current == '*')
         {
             FetchAnchor(true);
             return;
@@ -398,7 +405,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it an anchor?
 
-        if (_analyzer.Check('&'))
+        if (current == '&')
         {
             FetchAnchor(false);
             return;
@@ -406,7 +413,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it a tag?
 
-        if (_analyzer.Check('!'))
+        if (current == '!')
         {
             FetchTag();
             return;
@@ -414,7 +421,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it a literal scalar?
 
-        if (_analyzer.Check('|') && _flowLevel == 0)
+        if (current == '|' && _flowLevel == 0)
         {
             FetchBlockScalar(true);
             return;
@@ -422,7 +429,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it a folded scalar?
 
-        if (_analyzer.Check('>') && _flowLevel == 0)
+        if (current == '>' && _flowLevel == 0)
         {
             FetchBlockScalar(false);
             return;
@@ -430,7 +437,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it a single-quoted scalar?
 
-        if (_analyzer.Check('\''))
+        if (current == '\'')
         {
             FetchFlowScalar(true);
             return;
@@ -438,7 +445,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         // Is it a double-quoted scalar?
 
-        if (_analyzer.Check('"'))
+        if (current == '"')
         {
             FetchFlowScalar(false);
             return;
@@ -463,11 +470,11 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         // The last rule is more restrictive than the specification requires.
 
 
-        bool isInvalidPlainScalarCharacter = _analyzer.IsBlankOrBreakOrZero() || _analyzer.Check("-?:,[]{}#&*!|>'\"%@`");
+        bool isInvalidPlainScalarCharacter = current is ' ' or '\t' or '\r' or '\n' or '\0' or '-' or '?' or ':' or ',' or '[' or ']' or '{' or '}' or '#' or '&' or '*' or '!' or '|' or '>' or '\'' or '"' or '%' or '@' or '`';
 
         bool isPlainScalar =
             !isInvalidPlainScalarCharacter ||
-            (_analyzer.Check("-?:") && !_analyzer.IsBlankOrBreakOrZero(1) && (_flowLevel == 0 || !_analyzer.Check(",[]{}", 1)));
+            (current is '-' or '?' or ':' && !_analyzer.IsBlankOrBreakOrZero(1) && (_flowLevel == 0 || !_analyzer.Check(",[]{}", 1)));
 
         if (isPlainScalar)
         {
@@ -540,6 +547,61 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         _analyzer.Skip(1);
     }
 
+    /// <summary>
+    /// Appends the characters of <paramref name="runCharacters"/> that follow the current position to
+    /// <paramref name="destination"/> and consumes them, which is what calling <see cref="ReadCurrentCharacter"/> for
+    /// each of them does.
+    /// </summary>
+    /// <returns><see langword="false"/> if the current character is not in <paramref name="runCharacters"/>, or the input is not a string.</returns>
+    /// <remarks>The run characters are printable ASCII characters other than space, so <see cref="Skip()"/> would accept each of them and only update the position.</remarks>
+    private bool TryAppendCharacterRun(SearchValues<char> runCharacters, StringBuilder destination)
+    {
+        if (_analyzer is not StringLookAheadBuffer buffer)
+            return false;
+
+        var remaining = buffer.Remaining;
+        var length = remaining.IndexOfAnyExcept(runCharacters);
+        if (length < 0)
+        {
+            length = remaining.Length;
+        }
+
+        if (length == 0)
+            return false;
+
+        destination.Append(remaining[..length]);
+        _previousCharacter = remaining[length - 1];
+        _characterIndex += length;
+        _index += length;
+        _column += length;
+        _nonBlankOnLine = true;
+        buffer.Skip(length);
+        return true;
+    }
+
+    /// <summary>Consumes the spaces that follow the current position, which is what calling <see cref="Skip()"/> for each of them does.</summary>
+    private void SkipSpaceRun()
+    {
+        if (_analyzer is not StringLookAheadBuffer buffer)
+            return;
+
+        var remaining = buffer.Remaining;
+        var length = remaining.IndexOfAnyExcept(' ');
+        if (length < 0)
+        {
+            length = remaining.Length;
+        }
+
+        if (length == 0)
+            return;
+
+        _previousCharacter = ' ';
+        _characterIndex += length;
+        _index += length;
+        _column += length;
+        buffer.Skip(length);
+    }
+
     private void SkipLine()
     {
         _firstTabColumn = -1;
@@ -591,6 +653,7 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
             //  after '-', '?', or ':' (complex value).
 
 
+            SkipSpaceRun();
             while (CheckWhiteSpace())
             {
                 Skip();
@@ -1829,7 +1892,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                 {
                     // It is a non-escaped non-blank character.
 
-                    _scanScalarValue.Append(ReadCurrentCharacter());
+                    if (!TryAppendCharacterRun(isSingleQuoted ? CharacterAnalyzer.SingleQuotedScalarRunCharacters : CharacterAnalyzer.DoubleQuotedScalarRunCharacters, _scanScalarValue))
+                    {
+                        _scanScalarValue.Append(ReadCurrentCharacter());
+                    }
                 }
             }
 
@@ -2030,7 +2096,10 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
                 if (_analyzer.Check('\uFEFF'))
                     throw new SyntaxErrorException(start, CurrentPosition, "A content byte order mark must be quoted.");
 
-                _scanScalarValue.Append(ReadCurrentCharacter());
+                if (!TryAppendCharacterRun(_flowLevel > 0 ? CharacterAnalyzer.FlowPlainScalarRunCharacters : CharacterAnalyzer.BlockPlainScalarRunCharacters, _scanScalarValue))
+                {
+                    _scanScalarValue.Append(ReadCurrentCharacter());
+                }
 
                 end = CurrentPosition;
             }
@@ -2473,12 +2542,13 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
 
         if (_simpleKeyAllowed)
         {
-            var key = new SimpleKey(true, isRequired, _tokensParsed + _tokens.Count, CurrentPosition, _characterIndex);
+            var tokenNumber = _tokensParsed + _tokens.Count;
+            var mark = CurrentPosition;
 
             RemoveSimpleKey();
 
-            _simpleKeys.Pop();
-            _simpleKeys.Push(key);
+            // The scanner keeps no reference to the key it replaces, so the instance on the top of the stack is reused.
+            _simpleKeys.Peek().Set(true, isRequired, tokenNumber, mark, _characterIndex);
         }
     }
 }

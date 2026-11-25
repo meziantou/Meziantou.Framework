@@ -46,6 +46,7 @@ public class TextBenchmarks : IDisposable
     private VectorPath _curve = null!;
     private PositionedGlyph[] _glyphs = null!;
     private Image<Rgba32> _image = null!;
+    private readonly GlyphCache _glyphMasks = new(8 << 20);
 
     [GlobalSetup]
     public void Setup()
@@ -124,6 +125,14 @@ public class TextBenchmarks : IDisposable
     public int FillLatin()
     {
         _image.Draw(_latinLayout, static (canvas, layout) => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(16, 16)));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Latin paragraph, 16 px on 512x768 Rgba32: fill from cached glyph masks")]
+    public int FillLatinFromMasks()
+    {
+        _image.Draw(this, static (canvas, benchmarks) => canvas.GlyphMasks(benchmarks._glyphMasks, benchmarks._latinLayout, static (canvas, layout) => canvas.FillText(new Rgba32(0, 0, 0), layout, new PointD(16, 16))));
         return _image.Width;
     }
 

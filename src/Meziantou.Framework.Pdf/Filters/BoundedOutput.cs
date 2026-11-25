@@ -6,16 +6,17 @@ namespace Meziantou.Framework.Pdf.Filters;
 /// <summary>The output of a filter: a growable buffer that refuses to grow beyond the limit of the decoded data.</summary>
 /// <remarks>
 /// The data is written to chunks that are not copied as they are added: <see cref="ToArray"/> copies them once into the
-/// result (or returns the first chunk when it holds exactly the data), so the peak memory stays close to twice the
-/// decoded length, and the chunks never hold more than the limit. The chunks after the first one are rented from the
-/// shared pool and returned by <see cref="ToArray"/>, after which the output is not used.
+/// result, so the peak memory stays close to twice the decoded length, and the chunks never hold more than the limit.
+/// The chunks are rented from the shared pool and returned by <see cref="ToArray"/>, after which the output is not used:
+/// the result is the only array a filter allocates.
 /// </remarks>
 internal sealed class BoundedOutput
 {
     private const int MinChunkLength = 1 << 16;
     private const int MaxChunkLength = 1 << 20;
 
-    private readonly byte[] _first;
+    private byte[] _first;
+    private readonly int _firstLength;
     private List<(byte[] Array, int Length)>? _rented;
     private byte[] _chunk;
     private int _capacity;
@@ -26,9 +27,10 @@ internal sealed class BoundedOutput
     {
         Limit = limit;
         var maximum = (int)Math.Clamp(limit, 1, MaxChunkLength);
-        _first = new byte[Math.Clamp(initialCapacity, Math.Min(16, maximum), maximum)];
+        _firstLength = Math.Clamp(initialCapacity, Math.Min(16, maximum), maximum);
+        _first = ArrayPool<byte>.Shared.Rent(_firstLength);
         _chunk = _first;
-        _capacity = _first.Length;
+        _capacity = _firstLength;
     }
 
     public long Limit { get; }
@@ -95,12 +97,19 @@ internal sealed class BoundedOutput
 
     public byte[] ToArray()
     {
+        var first = _first;
+        _first = [];
         if (_rented is null)
-            return _position == _first.Length ? _first : _first.AsSpan(0, _position).ToArray();
+        {
+            var data = first.AsSpan(0, _position).ToArray();
+            ArrayPool<byte>.Shared.Return(first);
+            return data;
+        }
 
         var result = new byte[Length];
-        _first.CopyTo(result, 0);
-        var offset = _first.Length;
+        first.AsSpan(0, _firstLength).CopyTo(result);
+        ArrayPool<byte>.Shared.Return(first);
+        var offset = _firstLength;
         foreach (var (array, length) in _rented)
         {
             var used = array == _chunk ? _position : length;

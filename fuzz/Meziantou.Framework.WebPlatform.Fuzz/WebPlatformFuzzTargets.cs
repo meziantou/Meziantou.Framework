@@ -142,6 +142,13 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-hsts-preload", data => HstsPreloadTarget(FuzzText.Decode(data))) { Seeds = GetHstsPreloadSeeds, Dictionary = HstsPreloadTokens },
         new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
         new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
+        new("webplatform-ndef-message", NdefMessageTarget) { Seeds = GetNdefMessageSeeds, Dictionary = NdefMessageTokens },
+        new("webplatform-webusb", WebUsb) { Seeds = GetWebUsbSeeds },
+        new("webplatform-bluetooth-uuid", data => BluetoothUuidTarget(FuzzText.Decode(data))) { Seeds = GetBluetoothUuidSeeds, Dictionary = BluetoothUuidTokens },
+        new("webplatform-bluetooth-request-device", BluetoothRequestDeviceTarget) { Seeds = GetBluetoothRequestDeviceSeeds, Dictionary = BluetoothRequestDeviceTokens },
+        new("webplatform-screen-details", ScreenDetailsTarget) { Seeds = GetScreenDetailsSeeds },
+        new("webplatform-hid-report-descriptor", HidReportDescriptorTarget) { Seeds = GetHidReportDescriptorSeeds },
+        new("webplatform-midi-messages", MidiMessagesTarget) { Seeds = GetMidiMessagesSeeds },
     ];
 
     /// <summary>

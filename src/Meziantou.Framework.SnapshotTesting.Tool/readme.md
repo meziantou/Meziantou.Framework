@@ -48,7 +48,7 @@ Usage:
 Options:
   --interactive      Prompt for each snapshot to approve or reject
   --folder <folder>  Folder to process. Uses current directory when not set.
-  --recurse          Allow recursive search for __snapshots__ folders
+  --recurse          Allow recursive search for __snapshots__ folders [default: true]
   -?, -h, --help     Show help and usage information
 ```
 <!-- help -->

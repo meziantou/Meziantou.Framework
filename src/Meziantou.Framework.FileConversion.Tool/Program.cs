@@ -124,7 +124,7 @@ internal static class Program
         var pdfPasswordOption = AddFormatOption(new Option<string?>("--pdf-password") { Description = "The password of the encrypted PDF inputs" }, format => format.Kind is FileFormatKind.Pdf);
         var pdfRenderAnnotationsOption = AddFormatOption(new Option<bool>("--pdf-render-annotations")
         {
-            Description = "Render the annotations of the PDF pages (form fields, stamps, comments) in the images. Use '--pdf-render-annotations false' to leave them out. Default: true",
+            Description = "Render the annotations of the PDF pages (form fields, stamps, comments) in the images. Use '--pdf-render-annotations false' to leave them out",
             DefaultValueFactory = _ => defaults.PdfRenderAnnotations,
         }, format => format.Kind is FileFormatKind.Pdf);
 
@@ -286,7 +286,7 @@ internal static class Program
         var sevenZipMethodOption = AddFormatOption(new Option<SevenZipCompressionMethod?>("--7z-compression-method") { Description = "The compression method of a 7z output. Default: Lzma2" }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
         var sevenZipSolidOption = AddFormatOption(new Option<bool>("--7z-solid")
         {
-            Description = "Compress the files of a 7z output together, which makes it smaller. Use '--7z-solid false' to compress each file on its own. Default: true",
+            Description = "Compress the files of a 7z output together, which makes it smaller. Use '--7z-solid false' to compress each file on its own",
             DefaultValueFactory = _ => defaults.SevenZipSolid,
         }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
         var sevenZipPasswordOption = AddFormatOption(new Option<string?>("--7z-password") { Description = "Encrypt the content of a 7z output with this password (AES-256)" }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);

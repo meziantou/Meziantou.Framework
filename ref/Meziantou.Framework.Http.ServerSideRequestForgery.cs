@@ -2,6 +2,7 @@
 // Target Frameworks: net10.0, net11.0
 // Assembly References:
 //   Microsoft.Extensions.Logging.Abstractions (net10.0)
+//   System.Diagnostics.DiagnosticSource (net10.0)
 #nullable enable
 
 namespace Meziantou.Framework.Http.ServerSideRequestForgery

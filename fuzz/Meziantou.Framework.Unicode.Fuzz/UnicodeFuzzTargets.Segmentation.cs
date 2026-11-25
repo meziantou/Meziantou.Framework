@@ -92,7 +92,11 @@ public static partial class UnicodeFuzzTargets
         }
     }
 
-    /// <summary>Enumerates the line breaks and checks that they are increasing, after the start, never inside a surrogate pair, and that the last one is the end of the text and is mandatory.</summary>
+    /// <summary>
+    /// Enumerates the line breaks and checks that they are increasing, after the start, never inside a surrogate pair, that
+    /// the last one is the end of the text and is mandatory, and that the shortcuts for the words give the breaks of the
+    /// rules applied to each unit.
+    /// </summary>
     private static List<UnicodeLineBreak> GetLineBreaks(string text, LineBreakDictionary? dictionary, UnicodeLineBreakStrictness strictness, UnicodeWordBreakBehavior wordBreak)
     {
         var result = new List<UnicodeLineBreak>();
@@ -114,6 +118,16 @@ public static partial class UnicodeFuzzTargets
         {
             FuzzAssert.True(result.Count > 0 && result[^1].Index == text.Length && result[^1].IsMandatory, $"The last line break is not a mandatory break at the end of the text, with {strictness} and {wordBreak}");
         }
+
+        var count = 0;
+        var rules = new UnicodeLineBreakEnumerator(text, strictness, wordBreak, dictionary, useShortcuts: false);
+        while (rules.MoveNext())
+        {
+            FuzzAssert.True(count < result.Count && result[count] == rules.Current, $"The line break {rules.Current.Index} (mandatory: {rules.Current.IsMandatory}) of the rules differs from the one of the shortcuts ({(count < result.Count ? $"{result[count].Index}, mandatory: {result[count].IsMandatory}" : "none")}), with {strictness} and {wordBreak}");
+            count++;
+        }
+
+        FuzzAssert.Equal(result.Count, count, $"The shortcuts give more line breaks than the rules, with {strictness} and {wordBreak}");
 
         return result;
     }
@@ -175,6 +189,7 @@ public static partial class UnicodeFuzzTargets
         ("lone-surrogates", "a\uD800b\uDC00c\uDBFF\U000103FF"),
         ("controls", "\u0000\u0001\u000B\u000C\u0085\u2028\u2029\r\r\n\n\u00AD\u200B\u2060\uFEFF\uFFFC"),
         ("numbers", "$1,234.56 -7% 1/2 \u0661\u0662\u0663 \u06F1.\u06F2 12:30"),
+        ("latin-prose", "\"Hello,\" she said (it's 3.14, 1,024 or 12.5%: $9.99) e-mail 2024-05-17 www.example.com/help?id=7.\nL\u2019\u00E9t\u00E9 \u00AB\u00A0Quelle journ\u00E9e\u00A0!\u00A0\u00BB s\u2019est-ce \u0153uf na\u0308ive \u05D0-a a-\u05D0"),
         ("tags", "\U0001F3F4\U000E0067\U000E0062\U000E0065\U000E006E\U000E0067\U000E007F"),
     ];
 }

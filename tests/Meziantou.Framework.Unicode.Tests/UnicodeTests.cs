@@ -2425,6 +2425,151 @@ public sealed class UnicodeTests
         Assert.Throws<ArgumentOutOfRangeException>("wordBreak", () => { _ = Unicode.EnumerateLineBreaks("a", wordBreak: (UnicodeWordBreakBehavior)3); });
     }
 
+    [Fact]
+    public void EnumerateLineBreaks_ShortcutKindsMatchTheProperties()
+    {
+        // The shortcut for the words reads these characters without looking them up: the rules read their class, and
+        // whether they are final quotation marks.
+        for (var c = 0; c <= char.MaxValue; c++)
+        {
+            var kind = UnicodeLineBreakEnumerator.GetShortcutKind((char)c);
+            if (kind is 0)
+                continue;
+
+            var actual = UnicodeProperties.GetLineBreakClass(c);
+            var category = CharUnicodeInfo.GetUnicodeCategory(c);
+            Assert.True(UnicodeProperties.GetEastAsianWidth(c) is not (UnicodeEastAsianWidth.Fullwidth or UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Halfwidth), $"U+{c:X4} is wide");
+            Assert.True(category is not UnicodeCategory.InitialQuotePunctuation, $"U+{c:X4} is an initial quotation mark");
+            Assert.True(category is not UnicodeCategory.FinalQuotePunctuation || c is '\u2019' or '\u00BB', $"U+{c:X4} is a final quotation mark");
+            if ((kind & (UnicodeLineBreakEnumerator.WordCharacter | UnicodeLineBreakEnumerator.InnerMark | UnicodeLineBreakEnumerator.OpeningMark | UnicodeLineBreakEnumerator.NumericAffix)) != 0)
+            {
+                var expected = UnicodeLineBreakEnumerator.GetShortcutClass((char)c);
+                Assert.True(actual == expected || (expected is UnicodeLineBreakClass.Alphabetic && actual is UnicodeLineBreakClass.Ambiguous), $"U+{c:X4} is {actual}");
+            }
+
+            if (kind is UnicodeLineBreakEnumerator.WordCharacter)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.Alphabetic or UnicodeLineBreakClass.Ambiguous or UnicodeLineBreakClass.Numeric, $"U+{c:X4} is {actual}");
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.InnerMark) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.Quotation or UnicodeLineBreakClass.Hyphen or UnicodeLineBreakClass.InfixNumeric, $"U+{c:X4} is {actual}");
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.ClosingMark) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.InfixNumeric or UnicodeLineBreakClass.Exclamation or UnicodeLineBreakClass.CloseParenthesis or UnicodeLineBreakClass.ClosePunctuation
+                    or UnicodeLineBreakClass.BreakSymbols or UnicodeLineBreakClass.Quotation or UnicodeLineBreakClass.Glue, $"U+{c:X4} is {actual}");
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.OpeningMark) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.OpenPunctuation or UnicodeLineBreakClass.Quotation or UnicodeLineBreakClass.Hyphen or UnicodeLineBreakClass.PrefixNumeric or UnicodeLineBreakClass.PostfixNumeric, $"U+{c:X4} is {actual}");
+            }
+
+            if (kind is UnicodeLineBreakEnumerator.Space)
+            {
+                Assert.Equal(UnicodeLineBreakClass.Space, actual);
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.NumericAffix) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.PrefixNumeric or UnicodeLineBreakClass.PostfixNumeric, $"U+{c:X4} is {actual}");
+            }
+        }
+    }
+
+    [Fact]
+    public void EnumerateLineBreaks_MatchesTheRulesForEveryShortText()
+    {
+        // The shortcuts give the breaks of the rules applied to each unit: every ASCII text of up to 3 characters, and
+        // every text of up to 4 (6) characters of the alphabet that has a character of each kind the shortcuts read.
+        Span<char> buffer = stackalloc char[6];
+        for (var length = 1; length <= 3; length++)
+        {
+            var text = buffer[..length];
+            var count = 1 << (7 * length);
+            for (var value = 0; value < count; value++)
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    text[i] = (char)((value >> (7 * i)) & 0x7F);
+                }
+
+                AssertLineBreaksMatchTheRules(text, UnicodeWordBreakBehavior.Normal);
+            }
+        }
+
+        CheckEveryText(buffer[..4], "a7# ,.:;!?)]}/-([{\"'%$+|\n\r\t\u0001\u00E9\u00D7\u0301\u200D\u00A0\u00AB\u00BB\u2019\u0E01\u3001\u05D0");
+        CheckEveryText(buffer[..6], "a1 .)(-'%\u00E9\u0301\u05D0");
+
+        static void CheckEveryText(Span<char> text, string alphabet)
+        {
+            var count = (int)Math.Pow(alphabet.Length, text.Length);
+            for (var value = 0; value < count; value++)
+            {
+                var remainder = value;
+                for (var i = 0; i < text.Length; i++)
+                {
+                    text[i] = alphabet[remainder % alphabet.Length];
+                    remainder /= alphabet.Length;
+                }
+
+                AssertLineBreaksMatchTheRules(text, UnicodeWordBreakBehavior.Normal);
+                AssertLineBreaksMatchTheRules(text, UnicodeWordBreakBehavior.KeepAll);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void EnumerateLineBreaks_MatchesTheRulesForRandomTexts()
+    {
+        string[] pieces =
+        [
+            "a", "Z", "7", "word", "123", " ", "  ", ",", ".", ":", ";", "!", "?", ")", "]", "}", "/", "(", "-", "\"", "'", "%", "$", "#",
+            "\r", "\n", "\r\n", "\t", "\u0001", "\u00E9", "\u00C0", "\u017F", "\u0153", "\u00D7", "\u0301", "\u200D", "\u200B", "\u00A0",
+            "\u2019", "\u00AB", "\u00BB", "e-mail", "2024-05-17", "3.14", "1,024", "12.5%", "$9.99", "www.example.com/help?id=7", "\\", "n\u2019est-ce", "don't", "\u00A0!\u00A0\u00BB ", "\u00AB\u00A0", "\u05D0", "\u0660", "\u30AB", "\u3041", "\u4E2D", "\u3001", "\u25CC", "\uAC00", "\U0001F1EB",
+            "\U0001F600", "\U0001F3FD", ThaiPhasa, ThaiThai, "\u0E01", "\u0E34",
+        ];
+        var dictionary = LineBreakDictionary.Parse(ThaiPhasa + "\n" + ThaiThai);
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 16);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            foreach (var wordBreak in new[] { UnicodeWordBreakBehavior.Normal, UnicodeWordBreakBehavior.BreakAll, UnicodeWordBreakBehavior.KeepAll })
+            {
+                AssertLineBreaksMatchTheRules(text, wordBreak);
+                AssertLineBreaksMatchTheRules(text, wordBreak, UnicodeLineBreakStrictness.Normal, dictionary);
+            }
+        }
+    }
+
+    private static void AssertLineBreaksMatchTheRules(ReadOnlySpan<char> text, UnicodeWordBreakBehavior wordBreak, UnicodeLineBreakStrictness strictness = UnicodeLineBreakStrictness.Strict, LineBreakDictionary? dictionary = null)
+    {
+        var expected = new UnicodeLineBreakEnumerator(text, strictness, wordBreak, dictionary, useShortcuts: false);
+        var actual = new UnicodeLineBreakEnumerator(text, strictness, wordBreak, dictionary);
+        while (true)
+        {
+            var hasExpected = expected.MoveNext();
+            if (hasExpected != actual.MoveNext() || (hasExpected && expected.Current != actual.Current))
+            {
+                Assert.Fail($"Text: {string.Join(' ', text.ToArray().Select(c => ((int)c).ToString("X4", CultureInfo.InvariantCulture)))} ({wordBreak}, {strictness}), break {expected.Current.Index}");
+            }
+
+            if (!hasExpected)
+                break;
+        }
+    }
+
     // Thai: phasa (language), thai, sawatdi (hello), khrap (a polite particle), chan (I), kin (to eat), khao (rice),
     // ta (eye), tak (to dry), klom (round), lom (wind), nam (water), di (good).
     private const string ThaiPhasa = "\u0E20\u0E32\u0E29\u0E32";

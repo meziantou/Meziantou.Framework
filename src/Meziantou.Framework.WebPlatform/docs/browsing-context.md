@@ -1501,6 +1501,31 @@ message, is an asynchronous operation of its event loop (`DomEventLoop.HasPendin
 document are closed with the `1001` code (going away) when the document is unloaded, and the WebSockets of a worker when
 the worker ends. The `WebSocketStream` proposal is not implemented, and neither are the WebSockets over HTTP/2.
 
+## WebTransport
+
+When a script engine is configured, the scripts of the secure contexts can open WebTransport sessions
+(https://w3c.github.io/webtransport/), in the windows and in the workers. The interfaces (`WebTransport`, its datagram
+and stream interfaces, `WebTransportSendGroup` and `WebTransportWriter`) are implemented in JavaScript in `Streams.js`,
+since the streams are `ReadableStream` and `WritableStream` objects; `WebTransportError` is the .NET class
+`WebTransportError`. The URL is an `https:` URL without fragment, parsed without base URL. The `connect-src` directive and
+the mixed content checks apply, then the session is established by `DocumentLoader.ConnectWebTransportAsync`, which gets a
+`WebTransportConnectionRequest` (the URL, the `origin` header followed by the headers of the `headers` option, lowercase
+and without the forbidden request headers, the protocols, the SHA-256 certificate hashes, the congestion control and the
+anticipated numbers of incoming streams) and returns a `WebTransportConnection`, or null when the session cannot be
+established (`ready` and `closed` are then rejected with a `WebTransportError` whose source is `session`). The default
+implementation returns null. The [HTTP loader](#http-loader) establishes the sessions over HTTP/3 with
+`Meziantou.Framework.WebTransport` (MsQuic), each with its own connection.
+
+The events of the session are delivered by tasks of the event loop of the global object. Opening a stream, writing,
+sending a datagram, closing the session and reading the statistics are asynchronous operations of the event loop
+(`DomEventLoop.HasPendingOperations`); waiting for the server (a read, an incoming stream, a datagram) is not. The
+protocol the server picks is ignored when the page did not offer it, and `responseHeaders` hides `wt-protocol` and the
+forbidden response headers. The sessions of a document end abruptly when the document is unloaded (as in Chromium, they
+do not prevent the back/forward cache: their `closed` promises are rejected with a `WebTransportError` whose source is
+`session`), and the sessions of a worker are closed when the worker ends. The keying material cannot be exported
+(`exportKeyingMaterial()` rejects with a `NotSupportedError`): MsQuic does not expose the TLS exporter. `atomicWrite()` writes the chunk as a whole, as `write()` does, and the send order is a priority of the
+stream (with the HTTP loader, the priority of MsQuic).
+
 ## Server-sent events
 
 When a script engine is configured, the scripts can receive the events of a server with `EventSource`
@@ -4308,6 +4333,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | Property | What is hidden when false |
 | --- | --- |
 | `WebSocketEnabled` | `WebSocket` |
+| `WebTransportEnabled` | `WebTransport` and its interfaces, `WebTransportError` |
 | `EventSourceEnabled` | `EventSource` |
 | `BeaconEnabled` | `navigator.sendBeacon()` |
 | `FetchLaterEnabled` | `fetchLater()`, `FetchLaterResult` (also hidden when `FetchEnabled` is false) |

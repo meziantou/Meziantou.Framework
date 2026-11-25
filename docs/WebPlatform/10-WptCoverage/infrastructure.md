@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of infrastructure, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 55 | 106 | 0 | 52% |
+| [Stable](#stable-tests) | 56 | 106 | 0 | 53% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 37 | 61 | 0 | 61% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **96** | **171** | **0** | **56%** |
+| **All** | **97** | **171** | **0** | **57%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **NOT IMPLEMENTED**: 2
+- **NOT IMPLEMENTED**: 1
 - **TEST RUNNER**: 44
 - **OUT OF SCOPE**: 29
 
@@ -55,7 +55,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`server/subdomain-flag.www.sub.window.js`](https://wpt.fyi/results/infrastructure/server/subdomain-flag.www.sub.window.js) | Fail | 0 / 1 | TEST RUNNER | the `.www.` flag of the file names (the test is loaded from the `www` subdomain) is not emulated |
 | [`server/test-pac.sub.html`](https://wpt.fyi/results/infrastructure/server/test-pac.sub.html) | Fail | 0 / 2 | TEST RUNNER | the proxy auto-configuration file set by the metadata of wptrunner (`pac`) is not emulated |
 | [`server/title.any.js`](https://wpt.fyi/results/infrastructure/server/title.any.js) | Pass | 3 / 3 |  |  |
-| [`server/webtransport-h3.https.sub.any.js`](https://wpt.fyi/results/infrastructure/server/webtransport-h3.https.sub.any.js) | Fail | 0 / 3 | NOT IMPLEMENTED | WebTransport |
+| [`server/webtransport-h3.https.sub.any.js`](https://wpt.fyi/results/infrastructure/server/webtransport-h3.https.sub.any.js) | Pass | 3 / 3 |  |  |
 | [`server/wpt-server-http.sub.html`](https://wpt.fyi/results/infrastructure/server/wpt-server-http.sub.html) | Fail | 25 / 29 | TEST RUNNER | the `{{browser_host}}` substitution of the `.sub.` files is not emulated (the requests to the host without a subdomain fail) |
 | [`server/wpt-server-websocket.sub.html`](https://wpt.fyi/results/infrastructure/server/wpt-server-websocket.sub.html) | Fail | 10 / 12 | TEST RUNNER | the `{{browser_host}}` substitution of the `.sub.` files is not emulated (the requests to the host without a subdomain fail) |
 | [`server/wpt-server-wpt-flags.sub.html`](https://wpt.fyi/results/infrastructure/server/wpt-server-wpt-flags.sub.html) | Pass | 3 / 3 |  |  |

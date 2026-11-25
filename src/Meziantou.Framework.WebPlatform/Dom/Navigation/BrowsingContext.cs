@@ -3719,6 +3719,7 @@ public sealed partial class BrowsingContext : IDisposable
             WebLocks.OnEnvironmentDiscarded(oldWindow);
             oldWindow.ReleaseFileSystemResources();
             WebSocket.MakeDisappear(oldWindow);
+            WebTransportHostSession.MakeDisappear(oldWindow);
             EventSource.ForciblyClose(oldWindow);
             IdbFactory.CloseConnections(oldWindow);
         }
@@ -3845,6 +3846,7 @@ public sealed partial class BrowsingContext : IDisposable
         {
             BroadcastChannel.RemoveChannels(documentWindow);
             WebSocket.MakeDisappear(documentWindow);
+            WebTransportHostSession.MakeDisappear(documentWindow);
             EventSource.ForciblyClose(documentWindow);
             IdbFactory.CloseConnections(documentWindow);
         }

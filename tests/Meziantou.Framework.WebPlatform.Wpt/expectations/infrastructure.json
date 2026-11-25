@@ -396,22 +396,13 @@
     "total": 1
   },
   "infrastructure/server/webtransport-h3.https.sub.any.js": {
-    "total": 1,
-    "failures": {
-      "WebTransport server should be running and should handle a bidirectional stream": "FAIL"
-    }
+    "total": 1
   },
   "infrastructure/server/webtransport-h3.https.sub.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "WebTransport server should be running and should handle a bidirectional stream": "FAIL"
-    }
+    "total": 1
   },
   "infrastructure/server/webtransport-h3.https.sub.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "WebTransport server should be running and should handle a bidirectional stream": "FAIL"
-    }
+    "total": 1
   },
   "infrastructure/server/wpt-server-http.sub.html": {
     "total": 29,

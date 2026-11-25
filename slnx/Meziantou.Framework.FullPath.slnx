@@ -56,6 +56,7 @@
     <Project Path="../fuzz/Meziantou.Framework.WasmEngine.Fuzz/Meziantou.Framework.WasmEngine.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.WebTransport.Fuzz/Meziantou.Framework.WebTransport.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
@@ -116,6 +117,7 @@
     <Project Path="../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="../src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="../src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
+    <Project Path="../src/Meziantou.Framework.MsQuic/Meziantou.Framework.MsQuic.csproj" />
     <Project Path="../src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="../src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf.JavaScript/Meziantou.Framework.Pdf.JavaScript.csproj" />
@@ -148,6 +150,7 @@
     <Project Path="../src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.Wasm/Meziantou.Framework.WebPlatform.Wasm.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebTransport/Meziantou.Framework.WebTransport.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />

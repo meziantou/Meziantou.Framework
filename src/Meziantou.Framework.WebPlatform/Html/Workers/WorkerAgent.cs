@@ -187,6 +187,7 @@ internal sealed class WorkerAgent
 
             // The connections of the WebSockets of the worker are closed (with the going away status code)
             WebSocket.MakeDisappear(global);
+            WebTransportHostSession.MakeDisappear(global);
             EventSource.ForciblyClose(global);
             IdbFactory.CloseConnections(global);
             WebLocks.OnEnvironmentDiscarded(global);

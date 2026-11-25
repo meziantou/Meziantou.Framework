@@ -125,23 +125,15 @@
   "content-security-policy/connect-src/connect-src-webtransport-allowed.sub.https.html": {
     "total": 3,
     "failures": {
-      "CSP connect-src url vs WebTransport. Expecting connect-src": "FAIL",
-      "CSP connect-src url vs WebTransport. Expecting undefined": "FAIL",
       "CSP connect-src url vs serverCertificateHashes. Expecting connect-src": "FAIL"
     }
   },
   "content-security-policy/connect-src/connect-src-webtransport-blocked.sub.https.html": {
-    "total": 2,
-    "failures": {
-      "CSP connect-src self vs WebTransport. Expecting connect-src": "FAIL",
-      "CSP connect-src self vs serverCertificateHashes. Expecting connect-src": "FAIL"
-    }
+    "total": 2
   },
   "content-security-policy/connect-src/connect-src-webtransport-hashes.sub.https.html": {
     "total": 3,
     "failures": {
-      "CSP connect-src url webtransport-hashes vs WebTransport. Expecting connect-src": "FAIL",
-      "CSP connect-src url webtransport-hashes vs WebTransport. Expecting undefined": "FAIL",
       "CSP connect-src url webtransport-hashes vs serverCertificateHashes. Expecting undefined": "FAIL"
     }
   },

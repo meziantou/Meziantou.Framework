@@ -734,6 +734,7 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             ["WebSocket"] = Binding_WebSocket<TAdapter, TValue>.Binding,
             ["WebSocketError"] = Binding_WebSocketError<TAdapter, TValue>.Binding,
             ["WebSocketStream"] = Binding_WebSocketStream<TAdapter, TValue>.Binding,
+            ["WebTransportError"] = Binding_WebTransportError<TAdapter, TValue>.Binding,
             ["WheelEvent"] = Binding_WheelEvent<TAdapter, TValue>.Binding,
             ["Window"] = Binding_Window<TAdapter, TValue>.Binding,
             ["WindowClient"] = Binding_WindowClient<TAdapter, TValue>.Binding,
@@ -1929,6 +1930,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
             case global::Meziantou.Framework.WebPlatform.Dom.WebSocketStreamOptions dictionaryDom_WebSocketStreamOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebSocketStreamOptions(r, dictionaryDom_WebSocketStreamOptions);
                 return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorOptions dictionaryDom_WebTransportErrorOptions:
+                result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WebTransportErrorOptions(r, dictionaryDom_WebTransportErrorOptions);
+                return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WorkerOptions dictionaryDom_WorkerOptions:
                 result = WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_WorkerOptions(r, dictionaryDom_WorkerOptions);
                 return true;
@@ -2501,6 +2505,9 @@ internal static partial class WebIdlBindings<TAdapter, TValue> where TAdapter : 
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WakeLockType enumDom_WakeLockType:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WakeLockType(enumDom_WakeLockType));
+                return true;
+            case global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource enumDom_WebTransportErrorSource:
+                result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WebTransportErrorSource(enumDom_WebTransportErrorSource));
                 return true;
             case global::Meziantou.Framework.WebPlatform.Dom.WindowAudioPreference enumDom_WindowAudioPreference:
                 result = r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WindowAudioPreference(enumDom_WindowAudioPreference));

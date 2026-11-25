@@ -1070,6 +1070,7 @@
   const isReadableStreamLocked = (stream) => stream.reader !== undefined;
 
   function readableStreamCancel(stream, reason) {
+    if (stream.webTransportReceive !== undefined && stream.state === 'readable') stream.webTransportReceive.bytesReadAtCancel = webTransportBytesRead(stream);
     stream.disturbed = true;
     if (stream.state === 'closed') return promiseResolvedWith(undefined);
     if (stream.state === 'errored') return promiseRejectedWith(stream.storedError);
@@ -4001,6 +4002,1189 @@
     AbortController: AbortController_,
   };
 
+  // ------------------------------------------------------------------------------------------------------------------
+  // WebTransport (https://w3c.github.io/webtransport/)
+  // ------------------------------------------------------------------------------------------------------------------
+
+  // The network side is the library (hooks.webTransport): it establishes the session through the DocumentLoader, and
+  // calls the callbacks given to its functions from a task of the event loop of the global object. The handles of the
+  // sessions and of the streams are opaque objects of the library.
+  const wtHooks = hooks.webTransport;
+  const MathFloor = Math.floor;
+  const NumberIsNaN = Number.isNaN;
+  const ArrayIsArray = Array.isArray;
+  const DateNow = Date.now;
+
+  // The defaults of the user agent for the queues of datagrams (https://w3c.github.io/webtransport/#datagram-duplex-stream-create)
+  const defaultIncomingDatagramsHighWaterMark = 1024;
+  const defaultOutgoingDatagramsHighWaterMark = 1024;
+
+  const isWebTransportError = (value) => isObject(value) && wtHooks.isWebTransportError(value);
+
+  // The application error code of a WebTransportError given to abort() or cancel(): its streamErrorCode, or 0
+  const streamErrorCodeOf = (reason) => isWebTransportError(reason) ? (wtHooks.streamErrorCodeOf(reason) ?? 0) : 0;
+
+  // [EnforceRange] unsigned short? (https://webidl.spec.whatwg.org/#es-unsigned-short)
+  function convertEnforceRangeUnsignedShort(value, context) {
+    let x = +value;
+    if (x !== x || x === Infinity || x === -Infinity) throw new TypeError_(`${context} is not a finite number`);
+    x = MathTrunc(x);
+    if (x < 0 || x > 65535) throw new TypeError_(`${context} is outside the range of an unsigned short`);
+    return x === 0 ? 0 : x;
+  }
+
+  // long long (https://webidl.spec.whatwg.org/#es-long-long), limited to the safe integers
+  function convertLongLong(value) {
+    let x = +value;
+    if (x !== x || x === Infinity || x === -Infinity) return 0;
+    x = MathTrunc(x);
+    return x === 0 ? 0 : x;
+  }
+
+  // unsigned long (https://webidl.spec.whatwg.org/#es-unsigned-long)
+  function convertUnsignedLong(value) {
+    let x = +value;
+    if (x !== x || x === Infinity || x === -Infinity) return 0;
+    x = MathTrunc(x) % 4294967296;
+    if (x < 0) x += 4294967296;
+    return x === 0 ? 0 : x;
+  }
+
+  function convertEnum(value, values, context) {
+    const string = `${value}`;
+    for (const allowed of values) {
+      if (allowed === string) return string;
+    }
+
+    throw new TypeError_(`'${string}' is not a valid value of ${context}`);
+  }
+
+  // A copy of the bytes of a BufferSource (the chunks of the send streams and of the datagrams)
+  function copyBufferSourceBytes(value, context) {
+    if (!isObject(value) || !isBufferSource(value)) throw new TypeError_(`${context} is not a BufferSource`);
+    return copyWebSocketMessageBytes(value);
+  }
+
+  // Runs a step of a promise-returning operation: an exception rejects the promise
+  function rejectedOperation(error) {
+    return promiseRejectedWith(error);
+  }
+
+  const invalidStateError = (message) => wtHooks.domException(message, 'InvalidStateError');
+  const sessionError = (message) => wtHooks.webTransportError(message, 'session', null);
+
+  function thisWebTransport(object) {
+    return thisRecord(object, 'WebTransport');
+  }
+
+  // WebTransportSendGroup (https://w3c.github.io/webtransport/#sendgroup)
+  class WebTransportSendGroup {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    getStats() {
+      return promiseOperation(() => {
+        const group = thisRecord(this, 'WebTransportSendGroup');
+        const stats = ObjectCreate(Object.prototype);
+        let bytesWritten = 0;
+        let bytesSent = 0;
+        let bytesAcknowledged = 0;
+        for (const stream of group.streams) {
+          bytesWritten += stream.webTransportSend.bytesWritten;
+          bytesSent += stream.webTransportSend.bytesSent;
+          bytesAcknowledged += stream.webTransportSend.bytesAcknowledged;
+        }
+
+        stats.bytesWritten = bytesWritten;
+        stats.bytesSent = bytesSent;
+        stats.bytesAcknowledged = bytesAcknowledged;
+        return promiseResolvedWith(stats);
+      });
+    }
+  }
+
+  defineInterface(WebTransportSendGroup, 'WebTransportSendGroup', { constructor: 0 });
+
+  function convertSendGroup(transport, value, context) {
+    if (value === undefined || value === null) return null;
+    const group = getRecord(value, 'WebTransportSendGroup');
+    if (group === undefined) throw new TypeError_(`${context} is not a WebTransportSendGroup`);
+    return group;
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebTransportSendStream (https://w3c.github.io/webtransport/#send-stream)
+  // ---------------------------------------------------------------------------
+
+  function thisSendStream(object) {
+    const stream = getRecord(object, 'WritableStream');
+    if (stream === undefined || stream.webTransportSend === undefined) throw new TypeError_("Illegal invocation: 'this' does not implement interface WebTransportSendStream");
+    return stream;
+  }
+
+  class WebTransportSendStream extends WritableStream {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    get sendGroup() {
+      const group = thisSendStream(this).webTransportSend.sendGroup;
+      return group === null ? null : group;
+    }
+
+    set sendGroup(value) {
+      const stream = thisSendStream(this);
+      const send = stream.webTransportSend;
+      const group = convertSendGroup(send.transport, value, "The value of 'sendGroup'");
+      if (group !== null && group.transport !== send.transport) throw invalidStateError('The send group belongs to another WebTransport');
+      if (send.sendGroup !== null) getRecord(send.sendGroup, 'WebTransportSendGroup').streams.delete(stream);
+      send.sendGroup = group === null ? null : group.object;
+      if (group !== null) group.streams.add(stream);
+    }
+
+    get sendOrder() { return thisSendStream(this).webTransportSend.sendOrder; }
+
+    set sendOrder(value) {
+      const send = thisSendStream(this).webTransportSend;
+      send.sendOrder = convertLongLong(value);
+      if (send.handle !== null) send.handle.setSendOrder(send.sendOrder);
+    }
+
+    getStats() {
+      return promiseOperation(() => {
+        const send = thisSendStream(this).webTransportSend;
+        const stats = ObjectCreate(Object.prototype);
+        stats.bytesWritten = send.bytesWritten;
+        stats.bytesSent = send.bytesSent;
+        stats.bytesAcknowledged = send.bytesAcknowledged;
+        return promiseResolvedWith(stats);
+      });
+    }
+
+    getWriter() {
+      const stream = thisSendStream(this);
+      const writer = createRecord(ObjectCreate(WebTransportWriter.prototype), 'WritableStreamDefaultWriter', realm);
+      setUpWritableStreamDefaultWriter(writer, stream);
+      return writer.object;
+    }
+  }
+
+  defineInterface(WebTransportSendStream, 'WebTransportSendStream', { constructor: 0 });
+
+  // WebTransportWriter (https://w3c.github.io/webtransport/#web-transport-writer-interface): atomicWrite() writes a
+  // chunk that is sent entirely or not at all; commit() makes the pending atomic writes visible. The library sends each
+  // chunk as a whole, so an atomic write is a write.
+  class WebTransportWriter extends WritableStreamDefaultWriter {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    atomicWrite(chunk = undefined) {
+      return promiseOperation(() => {
+        const writer = thisRecord(this, 'WritableStreamDefaultWriter');
+        if (writer.stream === undefined) return promiseRejectedWith(new TypeError_('The writer is released'));
+        return writableStreamDefaultWriterWrite(writer, chunk);
+      });
+    }
+
+    commit() {
+      thisRecord(this, 'WritableStreamDefaultWriter');
+    }
+  }
+
+  defineInterface(WebTransportWriter, 'WebTransportWriter', { constructor: 0 });
+
+  // https://w3c.github.io/webtransport/#webtransportsendstream-create
+  function createWebTransportSendStream(transport, handle, sendGroup, sendOrder) {
+    const stream = createRecord(ObjectCreate(WebTransportSendStream.prototype), 'WritableStream', realm);
+    initializeWritableStream(stream);
+    const send = ObjectCreate(null);
+    send.transport = transport;
+    send.handle = handle;
+    send.sendGroup = sendGroup === null ? null : sendGroup.object;
+    send.sendOrder = sendOrder;
+    send.bytesWritten = 0;
+    send.bytesSent = 0;
+    send.bytesAcknowledged = 0;
+    send.pendingOperation = null;
+    send.abortReason = undefined;
+    send.closed = false;
+    stream.webTransportSend = send;
+    if (sendGroup !== null) sendGroup.streams.add(stream);
+    handle.setSendOrder(sendOrder);
+
+    // https://w3c.github.io/webtransport/#webtransportsendstream-write
+    const writeAlgorithm = (chunk) => {
+      let bytes;
+      try {
+        bytes = copyBufferSourceBytes(chunk, 'The chunk');
+      } catch (e) {
+        return promiseRejectedWith(e);
+      }
+
+      const deferred = newPromise();
+      send.pendingOperation = deferred;
+      send.bytesWritten += bytes.length;
+      handle.write(bytes, (error) => {
+        if (send.pendingOperation === deferred) send.pendingOperation = null;
+        if (error === null) {
+          send.bytesSent += bytes.length;
+          send.bytesAcknowledged += bytes.length;
+          resolvePromise(deferred, undefined);
+        } else {
+          rejectPromise(deferred, send.abortReason !== undefined ? send.abortReason : error);
+        }
+      });
+      return deferred.promise;
+    };
+
+    // https://w3c.github.io/webtransport/#webtransportsendstream-close: sends the end of the stream (FIN)
+    const closeAlgorithm = () => {
+      const deferred = newPromise();
+      send.pendingOperation = deferred;
+      handle.finish((error) => {
+        if (send.pendingOperation === deferred) send.pendingOperation = null;
+        removeSendStream(transport, stream);
+        if (error === null) {
+          resolvePromise(deferred, undefined);
+        } else {
+          rejectPromise(deferred, send.abortReason !== undefined ? send.abortReason : error);
+        }
+      });
+      return deferred.promise;
+    };
+
+    // https://w3c.github.io/webtransport/#webtransportsendstream-abort: sends RESET_STREAM with the code of the reason
+    const abortAlgorithm = (reason) => {
+      const pending = send.pendingOperation;
+      send.pendingOperation = null;
+      if (pending !== null) rejectPromise(pending, reason);
+      removeSendStream(transport, stream);
+      handle.abortWrite(streamErrorCodeOf(reason));
+      return promiseResolvedWith(undefined);
+    };
+
+    const controller = createObject(realm, 'WritableStreamDefaultController');
+    setUpWritableStreamDefaultController(stream, controller, () => undefined, writeAlgorithm, closeAlgorithm, abortAlgorithm, 1, () => 1);
+    transport.sendStreams.add(stream);
+
+    // abort() while a write or the close is in flight: the abort algorithm only runs once it completes, so the stream is
+    // reset at once (the controller's signal is aborted synchronously), which fails the operation in flight
+    addAbortAlgorithm(apply(abortControllerSignal, controller.abortController, []), () => {
+      const reason = apply(abortSignalReason, apply(abortControllerSignal, controller.abortController, []), []);
+      send.abortReason = reason;
+      if (send.pendingOperation === null) return;
+      handle.abortWrite(streamErrorCodeOf(reason));
+    });
+
+    // STOP_SENDING from the server (https://w3c.github.io/webtransport/#send-stream-receive-stop-sending): the stream is
+    // errored with a WebTransportError with the code of the server
+    handle.onStopSending((code) => {
+      if (!transport.sendStreams.has(stream)) return;
+      removeSendStream(transport, stream);
+      const error = wtHooks.webTransportError('The server stopped reading the stream', 'stream', code);
+      const pending = send.pendingOperation;
+      send.pendingOperation = null;
+      if (pending !== null) rejectPromise(pending, error);
+      writableStreamDefaultControllerErrorIfNeeded(stream.controller, error);
+    });
+    return stream;
+  }
+
+  function removeSendStream(transport, stream) {
+    transport.sendStreams.delete(stream);
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebTransportReceiveStream (https://w3c.github.io/webtransport/#receive-stream)
+  // ---------------------------------------------------------------------------
+
+  function thisReceiveStream(object) {
+    const stream = getRecord(object, 'ReadableStream');
+    if (stream === undefined || stream.webTransportReceive === undefined) throw new TypeError_("Illegal invocation: 'this' does not implement interface WebTransportReceiveStream");
+    return stream;
+  }
+
+  class WebTransportReceiveStream extends ReadableStream {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    getStats() {
+      return promiseOperation(() => {
+        const receive = thisReceiveStream(this).webTransportReceive;
+        const stats = ObjectCreate(Object.prototype);
+        stats.bytesReceived = receive.bytesReceived;
+        stats.bytesRead = webTransportBytesRead(thisReceiveStream(this));
+        return promiseResolvedWith(stats);
+      });
+    }
+  }
+
+  defineInterface(WebTransportReceiveStream, 'WebTransportReceiveStream', { constructor: 0 });
+
+  // https://w3c.github.io/webtransport/#webtransportreceivestream-create: a readable byte stream. One chunk is read ahead
+  // from the library, so a RESET_STREAM of the server errors the stream even when the page does not read it
+  function createWebTransportReceiveStream(transport, handle) {
+    const stream = createRecord(ObjectCreate(WebTransportReceiveStream.prototype), 'ReadableStream', realm);
+    initializeReadableStream(stream);
+    const receive = ObjectCreate(null);
+    receive.transport = transport;
+    receive.handle = handle;
+    receive.bytesReceived = 0;
+    receive.buffer = new List();
+    receive.bufferedBytes = 0;
+    receive.endOfStream = false;
+    receive.reading = false;
+    receive.pullPending = false;
+    stream.webTransportReceive = receive;
+
+    const readAhead = () => {
+      if (receive.reading || receive.endOfStream || receive.buffer.size > 0 || stream.state !== 'readable') return;
+      receive.reading = true;
+      handle.read((chunk, error) => {
+        receive.reading = false;
+        if (stream.state !== 'readable') return;
+        if (error !== null) {
+          // RESET_STREAM from the server (https://w3c.github.io/webtransport/#receive-stream-receive-reset-stream): the
+          // data that was not read is discarded
+          transport.receiveStreams.delete(stream);
+          receive.buffer = new List();
+          receive.bufferedBytes = 0;
+          errorReadableStream(stream, error);
+          return;
+        }
+
+        if (chunk === null) {
+          receive.endOfStream = true;
+        } else {
+          receive.bytesReceived += chunk.length;
+          receive.bufferedBytes += chunk.length;
+          receive.buffer.append(chunk);
+        }
+
+        deliver();
+      });
+    };
+
+    const deliver = () => {
+      if (!receive.pullPending || stream.state !== 'readable' || stream.controller.closeRequested) return;
+      const controller = stream.controller;
+      try {
+        if (receive.buffer.size > 0) {
+          receive.pullPending = false;
+          const chunk = receive.buffer.shift();
+          receive.bufferedBytes -= chunk.length;
+          readableByteStreamControllerEnqueue(controller, chunk);
+        } else if (receive.endOfStream) {
+          receive.pullPending = false;
+          transport.receiveStreams.delete(stream);
+          closeByteStream(stream);
+        }
+      } catch (e) {
+        errorReadableStream(stream, e);
+      }
+
+      readAhead();
+    };
+
+    const pullAlgorithm = () => {
+      receive.pullPending = true;
+      deliver();
+      return promiseResolvedWith(undefined);
+    };
+
+    // https://w3c.github.io/webtransport/#webtransportreceivestream-cancel: sends STOP_SENDING with the code of the reason
+    const cancelAlgorithm = (reason) => {
+      transport.receiveStreams.delete(stream);
+      receive.buffer = new List();
+      receive.bufferedBytes = 0;
+      handle.abortRead(streamErrorCodeOf(reason));
+      return promiseResolvedWith(undefined);
+    };
+
+    const controller = createObject(realm, 'ReadableByteStreamController');
+    setUpReadableByteStreamController(stream, controller, () => undefined, pullAlgorithm, cancelAlgorithm, 0, undefined);
+    transport.receiveStreams.add(stream);
+    readAhead();
+    return stream;
+  }
+
+  // The bytes read by the page: the bytes received, without the ones read ahead or queued in the stream
+  function webTransportBytesRead(stream) {
+    const receive = stream.webTransportReceive;
+    if (receive.bytesReadAtCancel !== undefined) return receive.bytesReadAtCancel;
+    const queued = stream.controller === undefined ? 0 : stream.controller.queueTotalSize ?? 0;
+    return MathMax(0, receive.bytesReceived - receive.bufferedBytes - queued);
+  }
+
+  // Closes a readable byte stream, and answers its pending BYOB read with 0 bytes
+  function closeByteStream(stream) {
+    const controller = stream.controller;
+    if (controller.closeRequested || stream.state !== 'readable') return;
+    readableByteStreamControllerClose(controller);
+    const byobRequest = readableByteStreamControllerGetBYOBRequest(controller);
+    if (byobRequest !== null) readableByteStreamControllerRespond(controller, 0);
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebTransportBidirectionalStream (https://w3c.github.io/webtransport/#bidirectional-stream)
+  // ---------------------------------------------------------------------------
+
+  class WebTransportBidirectionalStream {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    get readable() { return thisRecord(this, 'WebTransportBidirectionalStream').readable.object; }
+
+    get writable() { return thisRecord(this, 'WebTransportBidirectionalStream').writable.object; }
+  }
+
+  defineInterface(WebTransportBidirectionalStream, 'WebTransportBidirectionalStream', { constructor: 0 });
+
+  function createWebTransportBidirectionalStream(transport, handle, sendGroup, sendOrder) {
+    const stream = createRecord(ObjectCreate(WebTransportBidirectionalStream.prototype), 'WebTransportBidirectionalStream', realm);
+    stream.readable = createWebTransportReceiveStream(transport, handle);
+    stream.writable = createWebTransportSendStream(transport, handle, sendGroup, sendOrder);
+    return stream;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Datagrams (https://w3c.github.io/webtransport/#duplex-stream)
+  // ---------------------------------------------------------------------------
+
+  function thisDatagramsWritable(object) {
+    const stream = getRecord(object, 'WritableStream');
+    if (stream === undefined || stream.webTransportDatagrams === undefined) throw new TypeError_("Illegal invocation: 'this' does not implement interface WebTransportDatagramsWritable");
+    return stream;
+  }
+
+  class WebTransportDatagramsWritable extends WritableStream {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    get sendGroup() { return thisDatagramsWritable(this).webTransportDatagrams.sendGroup; }
+
+    set sendGroup(value) {
+      const writable = thisDatagramsWritable(this).webTransportDatagrams;
+      const group = convertSendGroup(writable.transport, value, "The value of 'sendGroup'");
+      if (group !== null && group.transport !== writable.transport) throw invalidStateError('The send group belongs to another WebTransport');
+      writable.sendGroup = group === null ? null : group.object;
+    }
+
+    get sendOrder() { return thisDatagramsWritable(this).webTransportDatagrams.sendOrder; }
+
+    set sendOrder(value) { thisDatagramsWritable(this).webTransportDatagrams.sendOrder = convertLongLong(value); }
+  }
+
+  defineInterface(WebTransportDatagramsWritable, 'WebTransportDatagramsWritable', { constructor: 0 });
+
+  class WebTransportDatagramDuplexStream {
+    constructor() {
+      throw new TypeError_('Illegal constructor');
+    }
+
+    createWritable(options = undefined) {
+      const duplex = thisRecord(this, 'WebTransportDatagramDuplexStream');
+      const transport = duplex.transport;
+      convertDictionary(options, "Failed to execute 'createWritable' on 'WebTransportDatagramDuplexStream': The options");
+      const sendGroupValue = getMember(options, 'sendGroup');
+      const sendOrderValue = getMember(options, 'sendOrder');
+      const sendGroup = convertSendGroup(transport, sendGroupValue, "The 'sendGroup' member of WebTransportSendOptions");
+      const sendOrder = sendOrderValue === undefined ? 0 : convertLongLong(sendOrderValue);
+      if (sendGroup !== null && sendGroup.transport !== transport) throw new TypeError_('The send group belongs to another WebTransport');
+      if (transport.state === 'closed' || transport.state === 'failed') throw invalidStateError('The WebTransport is closed');
+      return createDatagramsWritable(transport, sendGroup, sendOrder).object;
+    }
+
+    get readable() { return thisRecord(this, 'WebTransportDatagramDuplexStream').readable.object; }
+
+    get maxDatagramSize() {
+      const transport = thisRecord(this, 'WebTransportDatagramDuplexStream').transport;
+      return transport.session === null ? 1024 : transport.session.maxDatagramSize();
+    }
+
+    get incomingMaxAge() {
+      const age = thisRecord(this, 'WebTransportDatagramDuplexStream').incomingMaxAge;
+      return age === 0 ? null : age;
+    }
+
+    set incomingMaxAge(value) { thisRecord(this, 'WebTransportDatagramDuplexStream').incomingMaxAge = convertMaxAge(value); }
+
+    get outgoingMaxAge() {
+      const age = thisRecord(this, 'WebTransportDatagramDuplexStream').outgoingMaxAge;
+      return age === 0 ? null : age;
+    }
+
+    set outgoingMaxAge(value) { thisRecord(this, 'WebTransportDatagramDuplexStream').outgoingMaxAge = convertMaxAge(value); }
+
+    get incomingMaxBufferedDatagrams() { return thisRecord(this, 'WebTransportDatagramDuplexStream').incomingHighWaterMark; }
+
+    set incomingMaxBufferedDatagrams(value) {
+      const duplex = thisRecord(this, 'WebTransportDatagramDuplexStream');
+      duplex.incomingHighWaterMark = MathMax(1, convertUnsignedLong(value));
+      trimIncomingDatagrams(duplex);
+    }
+
+    get outgoingMaxBufferedDatagrams() { return thisRecord(this, 'WebTransportDatagramDuplexStream').outgoingHighWaterMark; }
+
+    set outgoingMaxBufferedDatagrams(value) {
+      thisRecord(this, 'WebTransportDatagramDuplexStream').outgoingHighWaterMark = MathMax(1, convertUnsignedLong(value));
+    }
+  }
+
+  defineInterface(WebTransportDatagramDuplexStream, 'WebTransportDatagramDuplexStream', { createWritable: 0 });
+
+  const MathMax = Math.max;
+
+  // unrestricted double?: null or 0 is no maximum age, a negative value or NaN is a RangeError
+  function convertMaxAge(value) {
+    if (value === null || value === undefined) return 0;
+    const x = +value;
+    if (NumberIsNaN(x) || x < 0) throw new RangeError_('The maximum age must be a positive number');
+    return x;
+  }
+
+  // https://w3c.github.io/webtransport/#datagram-duplex-stream-create
+  function createDatagramDuplexStream(transport, readableType) {
+    const duplex = createRecord(ObjectCreate(WebTransportDatagramDuplexStream.prototype), 'WebTransportDatagramDuplexStream', realm);
+    duplex.transport = transport;
+    duplex.incomingQueue = new List();
+    duplex.incomingHighWaterMark = defaultIncomingDatagramsHighWaterMark;
+    duplex.outgoingHighWaterMark = defaultOutgoingDatagramsHighWaterMark;
+    duplex.incomingMaxAge = 0;
+    duplex.outgoingMaxAge = 0;
+    duplex.outgoingQueue = new List();
+    duplex.sending = false;
+    duplex.pullPending = false;
+    duplex.droppedIncoming = 0;
+    duplex.expiredIncoming = 0;
+    duplex.expiredOutgoing = 0;
+    duplex.lostOutgoing = 0;
+    duplex.writables = [];
+
+    // https://w3c.github.io/webtransport/#datagrams-pull: a datagram is delivered when the queue of the readable asks for one
+    const pullAlgorithm = () => {
+      duplex.pullPending = true;
+      deliverIncomingDatagram(duplex);
+      return promiseResolvedWith(undefined);
+    };
+    const cancelAlgorithm = () => promiseResolvedWith(undefined);
+    if (readableType === 'bytes') {
+      duplex.readable = createReadableByteStream(realm, () => undefined, pullAlgorithm, cancelAlgorithm);
+    } else {
+      duplex.readable = createReadableStream(realm, () => undefined, pullAlgorithm, cancelAlgorithm, 0);
+    }
+
+    return duplex;
+  }
+
+  // A datagram received from the server (https://w3c.github.io/webtransport/#receive-a-datagram)
+  function receiveDatagram(duplex, bytes) {
+    const datagram = ObjectCreate(null);
+    datagram.bytes = bytes;
+    datagram.timestamp = DateNow();
+    duplex.incomingQueue.append(datagram);
+    trimIncomingDatagrams(duplex);
+    deliverIncomingDatagram(duplex);
+  }
+
+  // The oldest datagrams are dropped beyond incomingMaxBufferedDatagrams
+  function trimIncomingDatagrams(duplex) {
+    while (duplex.incomingQueue.size > duplex.incomingHighWaterMark) {
+      duplex.incomingQueue.shift();
+      duplex.droppedIncoming++;
+    }
+  }
+
+  function deliverIncomingDatagram(duplex) {
+    if (!duplex.pullPending) return;
+    const stream = duplex.readable;
+    if (stream.state !== 'readable') return;
+    while (duplex.incomingQueue.size > 0) {
+      const datagram = duplex.incomingQueue.shift();
+      if (duplex.incomingMaxAge > 0 && DateNow() - datagram.timestamp > duplex.incomingMaxAge) {
+        duplex.expiredIncoming++;
+        continue;
+      }
+
+      duplex.pullPending = false;
+      try {
+        if (stream.controller.kind === 'ReadableByteStreamController') {
+          // A datagram is not split: a BYOB view smaller than the datagram is an error (https://w3c.github.io/webtransport/#datagrams-pull)
+          const byobRequest = readableByteStreamControllerGetBYOBRequest(stream.controller);
+          if (byobRequest !== null && getViewByteLength(byobRequest.view) < datagram.bytes.length) {
+            errorReadableStream(stream, new RangeError_('The buffer is smaller than the datagram'));
+            return;
+          }
+
+          readableByteStreamControllerEnqueue(stream.controller, datagram.bytes);
+        } else {
+          readableStreamDefaultControllerEnqueue(stream.controller, datagram.bytes);
+        }
+      } catch (e) {
+        errorReadableStream(stream, e);
+      }
+
+      return;
+    }
+  }
+
+  // https://w3c.github.io/webtransport/#datagrams-createwritable
+  function createDatagramsWritable(transport, sendGroup, sendOrder) {
+    const duplex = transport.datagrams;
+    const stream = createRecord(ObjectCreate(WebTransportDatagramsWritable.prototype), 'WritableStream', realm);
+    initializeWritableStream(stream);
+    const writable = ObjectCreate(null);
+    writable.transport = transport;
+    writable.sendGroup = sendGroup === null ? null : sendGroup.object;
+    writable.sendOrder = sendOrder;
+    stream.webTransportDatagrams = writable;
+
+    // https://w3c.github.io/webtransport/#datagrams-write: a datagram larger than maxDatagramSize is dropped; the promise
+    // is resolved once the datagram is sent, or at once while the queue is below outgoingMaxBufferedDatagrams
+    const writeAlgorithm = (chunk) => {
+      let bytes;
+      try {
+        bytes = copyBufferSourceBytes(chunk, 'The datagram');
+      } catch (e) {
+        return promiseRejectedWith(e);
+      }
+
+      if (transport.session !== null && bytes.length > transport.session.maxDatagramSize()) return promiseResolvedWith(undefined);
+      const deferred = newPromise();
+      const datagram = ObjectCreate(null);
+      datagram.bytes = bytes;
+      datagram.timestamp = DateNow();
+      datagram.promise = deferred;
+      duplex.outgoingQueue.append(datagram);
+      if (duplex.outgoingQueue.size < duplex.outgoingHighWaterMark) resolvePromise(deferred, undefined);
+      sendOutgoingDatagrams(transport);
+      return deferred.promise;
+    };
+    const closeAlgorithm = () => promiseResolvedWith(undefined);
+    const abortAlgorithm = () => promiseResolvedWith(undefined);
+    const controller = createObject(realm, 'WritableStreamDefaultController');
+    setUpWritableStreamDefaultController(stream, controller, () => undefined, writeAlgorithm, closeAlgorithm, abortAlgorithm, 1, () => 1);
+    duplex.writables[duplex.writables.length] = stream;
+    return stream;
+  }
+
+  // Sends the queued datagrams one at a time once the session is established (https://w3c.github.io/webtransport/#datagrams-send)
+  function sendOutgoingDatagrams(transport) {
+    const duplex = transport.datagrams;
+    if (duplex.sending || transport.state !== 'connected' && transport.state !== 'draining') return;
+    while (duplex.outgoingQueue.size > 0) {
+      const datagram = duplex.outgoingQueue.peek();
+      if (duplex.outgoingMaxAge > 0 && DateNow() - datagram.timestamp > duplex.outgoingMaxAge) {
+        duplex.outgoingQueue.shift();
+        duplex.expiredOutgoing++;
+        resolvePromise(datagram.promise, undefined);
+        continue;
+      }
+
+      // The datagram stays in the queue (it counts for outgoingMaxBufferedDatagrams) until it is sent
+      duplex.sending = true;
+      transport.session.sendDatagram(datagram.bytes, (sent) => {
+        duplex.sending = false;
+        if (duplex.outgoingQueue.size > 0 && duplex.outgoingQueue.peek() === datagram) duplex.outgoingQueue.shift();
+        if (!sent) duplex.lostOutgoing++;
+        resolvePromise(datagram.promise, undefined);
+        sendOutgoingDatagrams(transport);
+      });
+      return;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // WebTransport (https://w3c.github.io/webtransport/#web-transport)
+  // ---------------------------------------------------------------------------
+
+  const congestionControlValues = ['default', 'throughput', 'low-latency'];
+
+  // https://w3c.github.io/webtransport/#dom-webtransportoptions-protocols: a non-empty sf-string of printable ASCII, at
+  // most 512 bytes
+  function isValidProtocol(protocol) {
+    if (protocol.length === 0 || protocol.length > 512) return false;
+    for (let i = 0; i < protocol.length; i++) {
+      const c = apply(StringPrototypeCharCodeAt, protocol, [i]);
+      if (c < 0x20 || c > 0x7e) return false;
+    }
+
+    return true;
+  }
+
+  const StringPrototypeCharCodeAt = String.prototype.charCodeAt;
+
+  function convertStringSequence(value, context) {
+    if (value === undefined) return [];
+    if (!isObject(value)) throw new TypeError_(`${context} is not iterable`);
+    const iteratorMethod = value[SymbolIterator];
+    if (typeof iteratorMethod !== 'function') throw new TypeError_(`${context} is not iterable`);
+    const result = [];
+    for (const item of { [SymbolIterator]: () => apply(iteratorMethod, value, []) }) {
+      result[result.length] = `${item}`;
+    }
+
+    return result;
+  }
+
+  function convertHashSequence(value, context) {
+    if (value === undefined) return [];
+    if (!isObject(value)) throw new TypeError_(`${context} is not iterable`);
+    const iteratorMethod = value[SymbolIterator];
+    if (typeof iteratorMethod !== 'function') throw new TypeError_(`${context} is not iterable`);
+    const result = [];
+    for (const item of { [SymbolIterator]: () => apply(iteratorMethod, value, []) }) {
+      convertDictionary(item, 'A WebTransportHash');
+      const algorithmValue = getMember(item, 'algorithm');
+      if (algorithmValue === undefined) throw new TypeError_("The 'algorithm' member of WebTransportHash is required");
+      const algorithm = `${algorithmValue}`;
+      const hashValue = getMember(item, 'value');
+      if (hashValue === undefined) throw new TypeError_("The 'value' member of WebTransportHash is required");
+      if (!isObject(hashValue) || !isBufferSource(hashValue)) throw new TypeError_("The 'value' member of WebTransportHash is not a BufferSource");
+      const hash = ObjectCreate(null);
+      hash.algorithm = algorithm;
+      hash.value = copyWebSocketMessageBytes(hashValue);
+      result[result.length] = hash;
+    }
+
+    return result;
+  }
+
+  class WebTransport {
+    constructor(url, options = undefined) {
+      if (arguments.length < 1) throw new TypeError_("Failed to construct 'WebTransport': 1 argument required, but only 0 present");
+
+      // The arguments are converted first (USVString, then the WebTransportOptions dictionary in the lexicographical
+      // order of its members)
+      const urlString = wtHooks.toUsvString(url);
+      convertDictionary(options, "Failed to construct 'WebTransport': The options");
+      const allowPooling = !!getMember(options, 'allowPooling');
+      const anticipatedBidiValue = getMember(options, 'anticipatedConcurrentIncomingBidirectionalStreams');
+      const anticipatedBidi = anticipatedBidiValue === undefined || anticipatedBidiValue === null ? null : convertEnforceRangeUnsignedShort(anticipatedBidiValue, "The 'anticipatedConcurrentIncomingBidirectionalStreams' member of WebTransportOptions");
+      const anticipatedUniValue = getMember(options, 'anticipatedConcurrentIncomingUnidirectionalStreams');
+      const anticipatedUni = anticipatedUniValue === undefined || anticipatedUniValue === null ? null : convertEnforceRangeUnsignedShort(anticipatedUniValue, "The 'anticipatedConcurrentIncomingUnidirectionalStreams' member of WebTransportOptions");
+      const congestionControlValue = getMember(options, 'congestionControl');
+      const congestionControl = congestionControlValue === undefined ? 'default' : convertEnum(congestionControlValue, congestionControlValues, 'WebTransportCongestionControl');
+      const datagramsReadableTypeValue = getMember(options, 'datagramsReadableType');
+      const datagramsReadableType = datagramsReadableTypeValue === undefined ? undefined : convertEnum(datagramsReadableTypeValue, ['bytes'], 'ReadableStreamType');
+      const headersValue = getMember(options, 'headers');
+      const headers = wtHooks.normalizeHeaders(headersValue);
+      const protocols = convertStringSequence(getMember(options, 'protocols'), "The 'protocols' member of WebTransportOptions");
+      const requireUnreliable = !!getMember(options, 'requireUnreliable');
+      const serverCertificateHashes = convertHashSequence(getMember(options, 'serverCertificateHashes'), "The 'serverCertificateHashes' member of WebTransportOptions");
+
+      // Steps 1 to 5: the URL is an https: URL without fragment, parsed with the API base URL
+      const parsed = wtHooks.parseUrl(urlString);
+      if (parsed === null) throw wtHooks.domException(`'${urlString}' is not a valid URL`, 'SyntaxError');
+      if (parsed.scheme !== 'https') throw wtHooks.domException(`The URL scheme must be 'https', not '${parsed.scheme}'`, 'SyntaxError');
+      if (parsed.hasFragment) throw wtHooks.domException('The URL must not have a fragment', 'SyntaxError');
+
+      // Steps 6 to 9: the certificate hashes require a dedicated connection
+      if (allowPooling && serverCertificateHashes.length > 0) throw wtHooks.domException('serverCertificateHashes cannot be used with allowPooling', 'NotSupportedError');
+
+      // Step 14: the protocols are distinct valid sf-strings
+      for (let i = 0; i < protocols.length; i++) {
+        if (!isValidProtocol(protocols[i])) throw wtHooks.domException(`'${protocols[i]}' is not a valid protocol`, 'SyntaxError');
+        for (let j = 0; j < i; j++) {
+          if (protocols[j] === protocols[i]) throw wtHooks.domException(`The protocol '${protocols[i]}' is listed twice`, 'SyntaxError');
+        }
+      }
+
+      const transport = createRecord(this, 'WebTransport');
+      transport.state = 'connecting';
+      transport.session = null;
+      transport.sendStreams = new Set_();
+      transport.receiveStreams = new Set_();
+      transport.ready = newPromise();
+      transport.closed = newPromise();
+      transport.draining = newPromise();
+      transport.reliability = 'pending';
+      transport.congestionControl = congestionControl;
+      transport.anticipatedUni = anticipatedUni;
+      transport.anticipatedBidi = anticipatedBidi;
+      transport.protocols = protocols;
+      transport.protocol = '';
+      transport.responseHeaders = null;
+      transport.pendingStreamCreations = new Set_();
+      transport.datagrams = createDatagramDuplexStream(transport, datagramsReadableType);
+      transport.incomingBidirectional = createIncomingStreams(transport);
+      transport.incomingUnidirectional = createIncomingStreams(transport);
+      transport.incomingBidirectionalStreams = transport.incomingBidirectional.readable;
+      transport.incomingUnidirectionalStreams = transport.incomingUnidirectional.readable;
+
+      // https://w3c.github.io/webtransport/#initialize-webtransport-over-http: the library establishes the session in
+      // parallel (after the content security policies and the mixed content checks), and calls the events from tasks
+      const request = ObjectCreate(null);
+      request.url = parsed.href;
+      request.headers = headers;
+      request.protocols = protocols;
+      request.serverCertificateHashes = serverCertificateHashes;
+      request.congestionControl = congestionControl;
+      request.allowPooling = allowPooling;
+      request.requireUnreliable = requireUnreliable;
+      request.anticipatedUni = anticipatedUni;
+      request.anticipatedBidi = anticipatedBidi;
+      transport.connection = wtHooks.connect(request, createSessionEvents(transport));
+    }
+
+    getStats() {
+      return promiseOperation(() => {
+        const transport = thisWebTransport(this);
+        if (transport.state === 'failed') return promiseRejectedWith(invalidStateError('The WebTransport failed'));
+        const deferred = newPromise();
+        const datagrams = transport.datagrams;
+        const complete = (connectionStats) => {
+          const stats = connectionStats === null ? ObjectCreate(Object.prototype) : connectionStats;
+          const datagramStats = ObjectCreate(Object.prototype);
+          datagramStats.droppedIncoming = datagrams.droppedIncoming;
+          datagramStats.expiredIncoming = datagrams.expiredIncoming;
+          datagramStats.expiredOutgoing = datagrams.expiredOutgoing;
+          datagramStats.lostOutgoing = datagrams.lostOutgoing;
+          stats.datagrams = datagramStats;
+          if (stats.estimatedSendRate === undefined) stats.estimatedSendRate = null;
+          if (stats.atSendCapacity === undefined) stats.atSendCapacity = false;
+          resolvePromise(deferred, stats);
+        };
+
+        // While connecting, the statistics wait for the session; a session that fails rejects them
+        const gather = () => {
+          if (transport.state === 'failed') {
+            rejectPromise(deferred, invalidStateError('The WebTransport failed'));
+          } else if (transport.session === null || transport.state === 'closed') {
+            wtHooks.queueTask(() => complete(null));
+          } else {
+            transport.session.getStats(complete);
+          }
+        };
+
+        if (transport.state === 'connecting') {
+          uponPromise(transport.ready.promise, gather, gather);
+        } else {
+          gather();
+        }
+
+        return deferred.promise;
+      });
+    }
+
+    // https://w3c.github.io/webtransport/#dom-webtransport-exportkeyingmaterial: MsQuic does not expose the TLS exporter
+    exportKeyingMaterial(label, context, outputLength) {
+      return promiseOperation(() => {
+        thisWebTransport(this);
+        if (arguments.length < 3) throw new TypeError_("Failed to execute 'exportKeyingMaterial' on 'WebTransport': 3 arguments required");
+        return promiseRejectedWith(wtHooks.domException('Exporting keying material is not supported', 'NotSupportedError'));
+      });
+    }
+
+    get ready() {
+      return promiseOperation(() => thisWebTransport(this).ready.promise);
+    }
+
+    get reliability() { return thisWebTransport(this).reliability; }
+
+    get congestionControl() { return thisWebTransport(this).congestionControl; }
+
+    get anticipatedConcurrentIncomingUnidirectionalStreams() { return thisWebTransport(this).anticipatedUni; }
+
+    set anticipatedConcurrentIncomingUnidirectionalStreams(value) {
+      const transport = thisWebTransport(this);
+      transport.anticipatedUni = value === null ? null : convertEnforceRangeUnsignedShort(value, 'The value');
+    }
+
+    get anticipatedConcurrentIncomingBidirectionalStreams() { return thisWebTransport(this).anticipatedBidi; }
+
+    set anticipatedConcurrentIncomingBidirectionalStreams(value) {
+      const transport = thisWebTransport(this);
+      transport.anticipatedBidi = value === null ? null : convertEnforceRangeUnsignedShort(value, 'The value');
+    }
+
+    get responseHeaders() { return thisWebTransport(this).responseHeaders; }
+
+    get protocol() { return thisWebTransport(this).protocol; }
+
+    get closed() {
+      return promiseOperation(() => thisWebTransport(this).closed.promise);
+    }
+
+    get draining() {
+      return promiseOperation(() => thisWebTransport(this).draining.promise);
+    }
+
+    // https://w3c.github.io/webtransport/#dom-webtransport-close
+    close(closeInfo = undefined) {
+      const transport = thisWebTransport(this);
+      convertDictionary(closeInfo, "Failed to execute 'close' on 'WebTransport': The closeInfo");
+      const closeCodeValue = getMember(closeInfo, 'closeCode');
+      const closeCode = closeCodeValue === undefined ? 0 : convertUnsignedLong(closeCodeValue);
+      const reasonValue = getMember(closeInfo, 'reason');
+      const reasonString = reasonValue === undefined ? '' : wtHooks.toUsvString(reasonValue);
+      if (transport.state === 'closed' || transport.state === 'failed') return;
+      if (transport.state === 'connecting') {
+        const error = wtHooks.webTransportError('The WebTransport was closed before the connection was established', 'session', null);
+        transport.connection.abort();
+        cleanupWebTransport(transport, error, undefined);
+        return;
+      }
+
+      // The reason is truncated to 1024 bytes in UTF-8, at a code point boundary
+      const reason = wtHooks.truncateReason(reasonString);
+      transport.connection.close(closeCode, reason);
+      // Step 9: the closed promise gives the reason of the page, not the truncated one
+      const info = ObjectCreate(Object.prototype);
+      info.closeCode = closeCode;
+      info.reason = reasonString;
+      cleanupWebTransport(transport, wtHooks.domException('The WebTransport is closed', 'AbortError'), info);
+    }
+
+    get datagrams() { return thisWebTransport(this).datagrams.object; }
+
+    createBidirectionalStream(options = undefined) {
+      return createStream(this, options, true, 'createBidirectionalStream');
+    }
+
+    get incomingBidirectionalStreams() { return thisWebTransport(this).incomingBidirectionalStreams.object; }
+
+    createUnidirectionalStream(options = undefined) {
+      return createStream(this, options, false, 'createUnidirectionalStream');
+    }
+
+    get incomingUnidirectionalStreams() { return thisWebTransport(this).incomingUnidirectionalStreams.object; }
+
+    createSendGroup() {
+      const transport = thisWebTransport(this);
+      if (transport.state === 'closed' || transport.state === 'failed') throw invalidStateError('The WebTransport is closed');
+      const group = createRecord(ObjectCreate(WebTransportSendGroup.prototype), 'WebTransportSendGroup', realm);
+      group.transport = transport;
+      group.streams = new Set_();
+      return group.object;
+    }
+
+    // HTTP/2 is not supported: a session always supports datagrams
+    static get supportsReliableOnly() { return false; }
+  }
+
+  defineInterface(WebTransport, 'WebTransport', { constructor: 1, exportKeyingMaterial: 3 });
+
+  const Set_ = Set;
+
+  // https://w3c.github.io/webtransport/#dom-webtransport-createbidirectionalstream and createUnidirectionalStream
+  function createStream(object, options, bidirectional, name) {
+    return promiseOperation(() => {
+      const transport = thisWebTransport(object);
+      convertDictionary(options, `Failed to execute '${name}' on 'WebTransport': The options`);
+      const sendGroup = convertSendGroup(transport, getMember(options, 'sendGroup'), "The 'sendGroup' member of WebTransportSendStreamOptions");
+      const sendOrderValue = getMember(options, 'sendOrder');
+      const sendOrder = sendOrderValue === undefined ? 0 : convertLongLong(sendOrderValue);
+      const waitUntilAvailable = !!getMember(options, 'waitUntilAvailable');
+      if (transport.state === 'closed' || transport.state === 'failed') return promiseRejectedWith(invalidStateError('The WebTransport is closed'));
+      if (sendGroup !== null && sendGroup.transport !== transport) return promiseRejectedWith(invalidStateError('The send group belongs to another WebTransport'));
+
+      const deferred = newPromise();
+      const open = () => {
+        if (transport.state !== 'connected' && transport.state !== 'draining') {
+          rejectPromise(deferred, invalidStateError('The WebTransport is closed'));
+          return;
+        }
+
+        transport.pendingStreamCreations.add(deferred);
+        transport.session.openStream(bidirectional, waitUntilAvailable, (handle, errorName) => {
+          transport.pendingStreamCreations.delete(deferred);
+          if (handle === null) {
+            rejectPromise(deferred, errorName === 'quota' ? wtHooks.domException('The server does not allow more streams', 'QuotaExceededError') : invalidStateError('The WebTransport is closed'));
+            return;
+          }
+
+          if (transport.state === 'closed' || transport.state === 'failed') {
+            handle.abortWrite(0);
+            rejectPromise(deferred, invalidStateError('The WebTransport is closed'));
+            return;
+          }
+
+          const stream = bidirectional ? createWebTransportBidirectionalStream(transport, handle, sendGroup, sendOrder) : createWebTransportSendStream(transport, handle, sendGroup, sendOrder);
+          resolvePromise(deferred, stream.object);
+        });
+      };
+
+      // A stream is created once the session is established
+      if (transport.state === 'connecting') {
+        uponPromise(transport.ready.promise, open, () => rejectPromise(deferred, invalidStateError('The WebTransport is closed')));
+      } else {
+        open();
+      }
+
+      return deferred.promise;
+    });
+  }
+
+  // The events of the session, called by the library from tasks of the event loop
+  function createSessionEvents(transport) {
+    const events = ObjectCreate(null);
+
+    // https://w3c.github.io/webtransport/#initialize-webtransport-over-http, step 12: the session is established
+    events.ready = (session, protocol, responseHeaders) => {
+      if (transport.state !== 'connecting') return;
+      transport.session = session;
+      transport.state = 'connected';
+      transport.reliability = 'supports-unreliable';
+
+      // The protocol of the server is ignored when the client did not offer it
+      let offered = false;
+      for (const candidate of transport.protocols) {
+        if (candidate === protocol) offered = true;
+      }
+
+      transport.protocol = offered ? protocol : '';
+      transport.responseHeaders = responseHeaders;
+      resolvePromise(transport.ready, undefined);
+      sendOutgoingDatagrams(transport);
+    };
+
+    // The session could not be established, or ended abruptly
+    events.failed = (message) => {
+      if (transport.state === 'closed' || transport.state === 'failed') return;
+      cleanupWebTransport(transport, sessionError(message), undefined);
+    };
+
+    // https://w3c.github.io/webtransport/#session-termination: the server closed the session cleanly
+    events.closed = (closeCode, reason) => {
+      if (transport.state === 'closed' || transport.state === 'failed') return;
+      const info = ObjectCreate(Object.prototype);
+      info.closeCode = closeCode;
+      info.reason = reason;
+      cleanupWebTransport(transport, wtHooks.webTransportError('The session is closed', 'session', null), info);
+    };
+
+    // https://w3c.github.io/webtransport/#session-draining
+    events.draining = () => {
+      if (transport.state === 'connected') transport.state = 'draining';
+      resolvePromise(transport.draining, undefined);
+    };
+
+    // A stream opened by the server (https://w3c.github.io/webtransport/#receive-a-stream)
+    events.incomingStream = (handle, bidirectional) => {
+      if (transport.state !== 'connected' && transport.state !== 'draining') {
+        handle.abortRead(0);
+        return;
+      }
+
+      const incoming = bidirectional ? transport.incomingBidirectional : transport.incomingUnidirectional;
+      if (incoming.readable.state !== 'readable') {
+        handle.abortRead(0);
+        return;
+      }
+
+      const item = ObjectCreate(null);
+      item.handle = handle;
+      item.bidirectional = bidirectional;
+      incoming.queue.append(item);
+      deliverIncomingStream(transport, incoming);
+    };
+
+    events.datagram = (bytes) => {
+      if (transport.state === 'connected' || transport.state === 'draining') receiveDatagram(transport.datagrams, bytes);
+    };
+
+    return events;
+  }
+
+  // The streams opened by the server wait in a queue until the page pulls them
+  // (https://w3c.github.io/webtransport/#pullbidirectionalstream): the stream objects are created when they are given
+  function createIncomingStreams(transport) {
+    const incoming = ObjectCreate(null);
+    incoming.queue = new List();
+    incoming.pullPending = false;
+    incoming.readable = createReadableStream(realm, () => undefined, () => {
+      incoming.pullPending = true;
+      deliverIncomingStream(transport, incoming);
+      return promiseResolvedWith(undefined);
+    }, () => {
+      while (incoming.queue.size > 0) incoming.queue.shift().handle.abortRead(0);
+      return promiseResolvedWith(undefined);
+    }, 0);
+    return incoming;
+  }
+
+  function deliverIncomingStream(transport, incoming) {
+    if (!incoming.pullPending || incoming.queue.size === 0) return;
+    if (transport.state !== 'connected' && transport.state !== 'draining') return;
+    const readable = incoming.readable;
+    if (readable.state !== 'readable' || !readableStreamDefaultControllerCanCloseOrEnqueue(readable.controller)) return;
+    incoming.pullPending = false;
+    const item = incoming.queue.shift();
+    const stream = item.bidirectional ? createWebTransportBidirectionalStream(transport, item.handle, null, 0) : createWebTransportReceiveStream(transport, item.handle);
+    readableStreamDefaultControllerEnqueue(readable.controller, stream.object);
+  }
+
+  // https://w3c.github.io/webtransport/#webtransport-cleanup
+  function cleanupWebTransport(transport, error, closeInfo) {
+    for (const incoming of [transport.incomingBidirectional, transport.incomingUnidirectional]) {
+      while (incoming.queue.size > 0) incoming.queue.shift().handle.abortRead(0);
+    }
+
+    const sendStreams = [...transport.sendStreams];
+    const receiveStreams = [...transport.receiveStreams];
+    transport.sendStreams.clear();
+    transport.receiveStreams.clear();
+    transport.state = closeInfo === undefined ? 'failed' : 'closed';
+    for (const stream of sendStreams) {
+      const send = stream.webTransportSend;
+      const pending = send.pendingOperation;
+      send.pendingOperation = null;
+      if (pending !== null) rejectPromise(pending, error);
+      if (stream.state === 'writable') writableStreamDefaultControllerErrorIfNeeded(stream.controller, error);
+    }
+
+    for (const stream of receiveStreams) {
+      errorReadableStream(stream, error);
+    }
+
+    for (const deferred of transport.pendingStreamCreations) {
+      rejectPromise(deferred, invalidStateError('The WebTransport is closed'));
+    }
+
+    transport.pendingStreamCreations.clear();
+    const datagrams = transport.datagrams;
+    while (datagrams.outgoingQueue.size > 0) {
+      resolvePromise(datagrams.outgoingQueue.shift().promise, undefined);
+    }
+
+    for (const writable of datagrams.writables) {
+      if (writable.state === 'writable') writableStreamDefaultControllerErrorIfNeeded(writable.controller, error);
+    }
+
+    const incomingStreams = [transport.incomingBidirectional.readable, transport.incomingUnidirectional.readable, datagrams.readable];
+    if (closeInfo !== undefined) {
+      resolvePromise(transport.closed, closeInfo);
+      if (transport.ready.state === 'pending') {
+        rejectPromise(transport.ready, error);
+        setPromiseIsHandledToTrue(transport.ready.promise);
+      }
+
+      for (const stream of incomingStreams) {
+        if (stream.state !== 'readable') continue;
+        if (stream.controller.kind === 'ReadableByteStreamController') {
+          closeByteStream(stream);
+        } else if (readableStreamDefaultControllerCanCloseOrEnqueue(stream.controller)) {
+          readableStreamDefaultControllerClose(stream.controller);
+        }
+      }
+    } else {
+      rejectPromise(transport.closed, error);
+      setPromiseIsHandledToTrue(transport.closed.promise);
+      rejectPromise(transport.ready, error);
+      setPromiseIsHandledToTrue(transport.ready.promise);
+      for (const stream of incomingStreams) {
+        errorReadableStream(stream, error);
+      }
+    }
+  }
+
+
   return {
     ReadableStream,
     ReadableStreamDefaultReader,
@@ -4027,6 +5211,14 @@
     FileSystemWritableFileStream,
     createFileSystemWritableFileStream,
     createWebSocketStreams,
+    WebTransport,
+    WebTransportDatagramDuplexStream,
+    WebTransportDatagramsWritable,
+    WebTransportSendStream,
+    WebTransportReceiveStream,
+    WebTransportBidirectionalStream,
+    WebTransportSendGroup,
+    WebTransportWriter,
     fetchSupport,
     transferSupport,
   };

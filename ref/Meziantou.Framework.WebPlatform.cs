@@ -3,8 +3,10 @@
 // Assembly References:
 //   Meziantou.Framework.Fonts
 //   Meziantou.Framework.Hashing
+//   Meziantou.Framework.MsQuic
 //   Meziantou.Framework.Unicode
 //   Meziantou.Framework.Unicode.Dictionaries
+//   Meziantou.Framework.WebTransport
 //   System.IO.Hashing
 #nullable enable
 
@@ -5538,6 +5540,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
     public abstract class DocumentLoader
     {
         public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DocumentResource?> ConnectWebSocketAsync(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
+        public virtual System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.WebTransportConnection?> ConnectWebTransportAsync(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionRequest request, System.Threading.CancellationToken cancellationToken) => throw null;
         public static Meziantou.Framework.WebPlatform.Dom.DocumentLoader Create(System.Net.Http.HttpClient? httpClient = null) => throw null;
         public abstract System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.DocumentResource?> LoadAsync(Meziantou.Framework.WebPlatform.Dom.DocumentRequest request, System.Threading.CancellationToken cancellationToken);
     }
@@ -16448,6 +16451,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public bool WebShareEnabled { get => throw null; init { } }
         public bool WebSocketEnabled { get => throw null; init { } }
         public bool WebStorageEnabled { get => throw null; init { } }
+        public bool WebTransportEnabled { get => throw null; init { } }
         public bool XmlHttpRequestEnabled { get => throw null; init { } }
         public bool Equals(Meziantou.Framework.WebPlatform.Dom.WebPlatformFeatures? other) => throw null;
         public override bool Equals(object? obj) => throw null;
@@ -16527,6 +16531,115 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public abstract System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> LoadItems(string origin);
         public abstract void RemoveItem(string origin, string key);
         public abstract void SetItem(string origin, string key, string value);
+    }
+
+    public abstract class WebTransportConnection : System.IAsyncDisposable
+    {
+        public abstract System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo> Closed { get; }
+        public abstract System.Threading.Tasks.Task Draining { get; }
+        public virtual (int Bidirectional, int Unidirectional) IncomingStreamLimits { get => throw null; }
+        public abstract int MaxDatagramSize { get; }
+        public abstract string Protocol { get; }
+        public abstract System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> ResponseHeaders { get; }
+        public abstract System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStream> AcceptStreamAsync(System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask CloseAsync(uint closeCode, string reason);
+        public abstract System.Threading.Tasks.ValueTask DisposeAsync();
+        public abstract System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics> GetStatisticsAsync(System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStream> OpenStreamAsync(bool bidirectional, bool waitUntilAvailable, System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask<System.ReadOnlyMemory<byte>> ReceiveDatagramAsync(System.Threading.CancellationToken cancellationToken);
+        public abstract System.Threading.Tasks.ValueTask SendDatagramAsync(System.ReadOnlyMemory<byte> datagram, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class WebTransportConnectionCloseInfo : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo>
+    {
+        public uint CloseCode { get => throw null; init { } }
+        public string Reason { get => throw null; init { } }
+        public WebTransportConnectionCloseInfo(uint CloseCode, string Reason) { }
+        public void Deconstruct(out uint CloseCode, out string Reason) => throw null;
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo? left, Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo? left, Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionCloseInfo? right) => throw null;
+    }
+
+    public sealed class WebTransportConnectionRequest
+    {
+        public bool AllowPooling { get => throw null; init { } }
+        public int? AnticipatedConcurrentIncomingBidirectionalStreams { get => throw null; init { } }
+        public int? AnticipatedConcurrentIncomingUnidirectionalStreams { get => throw null; init { } }
+        public string CongestionControl { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<System.Collections.Generic.KeyValuePair<string, string>> Headers { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<string> Protocols { get => throw null; init { } }
+        public bool RequireUnreliable { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<System.ReadOnlyMemory<byte>> ServerCertificateHashes { get => throw null; init { } }
+        public required string Url { get => throw null; init { } }
+    }
+
+    public sealed class WebTransportConnectionStatistics : System.IEquatable<Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics>
+    {
+        public long BytesAcknowledged { get => throw null; init { } }
+        public long BytesLost { get => throw null; init { } }
+        public long BytesReceived { get => throw null; init { } }
+        public long BytesSent { get => throw null; init { } }
+        public long BytesSentOverhead { get => throw null; init { } }
+        public long? EstimatedSendRate { get => throw null; init { } }
+        public System.TimeSpan MinRtt { get => throw null; init { } }
+        public long PacketsLost { get => throw null; init { } }
+        public long PacketsReceived { get => throw null; init { } }
+        public long PacketsSent { get => throw null; init { } }
+        public System.TimeSpan RttVariation { get => throw null; init { } }
+        public System.TimeSpan SmoothedRtt { get => throw null; init { } }
+        public bool Equals(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics? other) => throw null;
+        public override bool Equals(object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics? left, Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics? right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics? left, Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionStatistics? right) => throw null;
+    }
+
+    public abstract class WebTransportConnectionStream : System.IAsyncDisposable
+    {
+        public abstract bool CanRead { get; }
+        public abstract bool CanWrite { get; }
+        public abstract bool IsBidirectional { get; }
+        public abstract System.Threading.Tasks.Task WritesClosed { get; }
+        public abstract void AbortRead(uint errorCode);
+        public abstract void AbortWrite(uint errorCode);
+        public abstract System.Threading.Tasks.ValueTask DisposeAsync();
+        public abstract System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken);
+        public virtual void SetSendOrder(long sendOrder) { }
+        public abstract System.Threading.Tasks.ValueTask WriteAsync(System.ReadOnlyMemory<byte> buffer, bool endOfStream, System.Threading.CancellationToken cancellationToken);
+    }
+
+    public sealed class WebTransportError : Meziantou.Framework.WebPlatform.Dom.DomException
+    {
+        public Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource ErrorSource { get => throw null; }
+        public uint? StreamErrorCode { get => throw null; }
+        public WebTransportError(string? message) { }
+        public WebTransportError(string message, Meziantou.Framework.WebPlatform.Dom.WebTransportErrorOptions? options) { }
+        public WebTransportError(string? message, System.Exception? innerException) { }
+    }
+
+    public sealed class WebTransportErrorOptions
+    {
+        public Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource Source { get => throw null; init { } }
+        public uint? StreamErrorCode { get => throw null; init { } }
+    }
+
+    public enum WebTransportErrorSource
+    {
+        Stream = 0,
+        Session = 1,
+    }
+
+    public sealed class WebTransportStreamAbortedException : System.IO.IOException
+    {
+        public uint? ErrorCode { get => throw null; }
+        public WebTransportStreamAbortedException(string message) { }
+        public WebTransportStreamAbortedException(string message, System.Exception? innerException) { }
+        public WebTransportStreamAbortedException(uint? errorCode, System.Exception? innerException = null) { }
     }
 
     public sealed class WheelEvent : Meziantou.Framework.WebPlatform.Dom.MouseEvent

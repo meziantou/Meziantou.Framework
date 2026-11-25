@@ -1,6 +1,8 @@
 using System.Net;
 using System.Net.Http;
+using Meziantou.Framework.MsQuic;
 using Meziantou.Framework.WebPlatform.Urls;
+using Meziantou.Framework.WebTransport;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
@@ -309,4 +311,53 @@ internal sealed class HttpDocumentLoader(HttpClient httpClient) : DocumentLoader
         RequestDestination.Xslt => "text/xml,application/xml,application/xhtml+xml,text/xsl,*/*;q=0.1",
         _ => "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     };
+
+    /// <summary>
+    /// Establishes a WebTransport session over HTTP/3 with <c>Meziantou.Framework.WebTransport</c> (MsQuic): each session
+    /// has its own QUIC connection (<see cref="WebTransportConnectionRequest.AllowPooling"/> is ignored). Returns null when
+    /// MsQuic is not available, when the connection fails, or when the server rejects the session.
+    /// </summary>
+    public override async ValueTask<WebTransportConnection?> ConnectWebTransportAsync(WebTransportConnectionRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        if (!MsQuicLibrary.IsSupported)
+            return null;
+
+        var options = new WebTransportClientOptions
+        {
+            // "low-latency" prefers BBR, "throughput" CUBIC (https://w3c.github.io/webtransport/#dom-webtransportoptions-congestioncontrol)
+            CongestionControlAlgorithm = request.CongestionControl switch
+            {
+                "low-latency" => MsQuicCongestionControlAlgorithm.Bbr,
+                "throughput" => MsQuicCongestionControlAlgorithm.Cubic,
+                _ => MsQuicCongestionControlAlgorithm.Default,
+            },
+            MaxIncomingStreams = Math.Max(100, Math.Max(request.AnticipatedConcurrentIncomingBidirectionalStreams ?? 0, request.AnticipatedConcurrentIncomingUnidirectionalStreams ?? 0)),
+        };
+
+        foreach (var header in request.Headers)
+        {
+            options.Headers.Add(header);
+        }
+
+        foreach (var protocol in request.Protocols)
+        {
+            options.Protocols.Add(protocol);
+        }
+
+        foreach (var hash in request.ServerCertificateHashes)
+        {
+            options.ServerCertificateHashes.Add(hash.ToArray());
+        }
+
+        try
+        {
+            var session = await WebTransportSession.ConnectAsync(new Uri(request.Url), options, cancellationToken).ConfigureAwait(false);
+            return new HttpWebTransportConnection(session);
+        }
+        catch (Exception ex) when (ex is WebTransportException or PlatformNotSupportedException or ArgumentException)
+        {
+            return null;
+        }
+    }
 }

@@ -155,6 +155,9 @@ internal sealed partial class WptTestRunner
     /// <summary>The WebSocket server of wptserve (its connections are in-memory pipes).</summary>
     private readonly WptWebSocketServer _webSocketServer;
 
+    /// <summary>The WebTransport server of wptserve (its sessions are in memory).</summary>
+    private readonly WptWebTransportServer _webTransportServer;
+
     /// <summary>Gets the stash of the WPT server.</summary>
     internal WptStash Stash => _stash;
     // Each read of the clock advances it by 100 µs (the resolution of performance.now()): time passes while a script runs
@@ -198,6 +201,7 @@ internal sealed partial class WptTestRunner
             BlockThirdPartyCookies = BlocksThirdPartyCookies(test.Id),
         };
         _webSocketServer = new WptWebSocketServer(this);
+        _webTransportServer = new WptWebTransportServer(QueueTask, _stash, Log);
     }
 
     /// <summary>Gets the cookie store of the browser (the cookies of the test driver).</summary>
@@ -546,6 +550,9 @@ internal sealed partial class WptTestRunner
 
             return runner._webSocketServer.ConnectAsync(request, cancellationToken);
         }
+
+        /// <summary>The WebTransport sessions are established by the emulated WebTransport server of wptserve (see <see cref="WptWebTransportServer"/>).</summary>
+        public override ValueTask<WebTransportConnection?> ConnectWebTransportAsync(WebTransportConnectionRequest request, CancellationToken cancellationToken) => runner._webTransportServer.ConnectAsync(request, cancellationToken);
 
         /// <summary>Loads the resource of <paramref name="url"/>: the URL of the request, or the location of a redirect.</summary>
         private ValueTask<DocumentResource?> Load(string url, DocumentRequest request, int redirectCount = 0)
@@ -2692,11 +2699,12 @@ internal sealed partial class WptTestRunner
                     continue;
             }
 
-            // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
-            // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch of a
-            // payment method manifest)
-            if (_webSocketServer.IsBusy || eventLoop.HasPendingUserAgentWork)
+            // The handlers of the WebSocket and WebTransport servers run on the thread pool: the clock is not advanced while a
+            // connection is busy (a handler is about to respond, or the library is processing a message) or a callback of a
+            // WebTransport handler is queued or running. The task queue is checked afterwards: a connection that becomes idle
+            // has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch
+            // of a payment method manifest)
+            if (_webSocketServer.IsBusy || _webTransportServer.IsBusy || eventLoop.HasPendingUserAgentWork)
             {
                 workerWait.SpinOnce();
                 continue;

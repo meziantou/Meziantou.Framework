@@ -389,6 +389,10 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         {
             EvaluateStopsScalar(y, x, parameters, colors);
         }
+        else if (Vector512.IsHardwareAccelerated)
+        {
+            EvaluateStopsVector<DoubleLanes512, Vector512<double>>(y, x, parameters, colors);
+        }
         else if (Vector256.IsHardwareAccelerated)
         {
             EvaluateStopsVector<DoubleLanes256, Vector256<double>>(y, x, parameters, colors);
@@ -916,6 +920,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         var zero = TLanes.Create(0);
         var one = TLanes.Create(1);
         var two = TLanes.Create(2);
+        var half = TLanes.Create(0.5);
         var notANumber = TLanes.Create(double.NaN);
         var mode = _spreadMode;
         for (; i + count <= parameters.Length; i += count)
@@ -928,7 +933,8 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
                     break;
 
                 case GradientSpreadMode.Reflect:
-                    t = TLanes.Subtract(t, TLanes.Multiply(two, TLanes.Floor(TLanes.Divide(t, two))));
+                    // Halving is exact: the product by one half is the quotient by two, without the latency of a division
+                    t = TLanes.Subtract(t, TLanes.Multiply(two, TLanes.Floor(TLanes.Multiply(t, half))));
                     t = TLanes.Select(TLanes.GreaterThan(t, one), TLanes.Subtract(two, t), t);
                     break;
 

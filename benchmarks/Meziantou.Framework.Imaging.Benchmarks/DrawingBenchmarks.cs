@@ -46,6 +46,10 @@ public class DrawingBenchmarks : IDisposable
     private PointD[] _dots = null!;
     private ImageBrush _repeatBrush = null!;
     private ImageBrush _reflectBrush = null!;
+    private PointD[] _polyline = null!;
+    private PointD[] _star = null!;
+    private Pen _thinPen = null!;
+    private Pen _widePen = null!;
 
     [GlobalSetup]
     public void Setup()
@@ -89,6 +93,25 @@ public class DrawingBenchmarks : IDisposable
         }
 
         _dots = [.. dots];
+
+        // A wave across the canvas, one point per pixel: the samples of a chart
+        _polyline = new PointD[1000];
+        for (var i = 0; i < _polyline.Length; i++)
+        {
+            _polyline[i] = new PointD(12 + i, 384 + (300 * Math.Sin(i * 0.031)) + (40 * Math.Sin(i * 0.37)));
+        }
+
+        // A star of 100 spikes around the center of the canvas
+        _star = new PointD[200];
+        for (var i = 0; i < _star.Length; i++)
+        {
+            var radius = (i & 1) == 0 ? 360 : 150;
+            var angle = i * Math.PI / 100;
+            _star[i] = new PointD(512 + (radius * Math.Cos(angle)), 384 + (radius * Math.Sin(angle)));
+        }
+
+        _thinPen = new Pen(new SolidBrush(new Rgba32(30, 30, 160)), 2.5);
+        _widePen = new Pen(new SolidBrush(new Rgba32(160, 30, 30)), 12);
     }
 
     [GlobalCleanup]
@@ -162,6 +185,30 @@ public class DrawingBenchmarks : IDisposable
                 }
             }
         });
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Polyline of 1,000 points across the canvas, 2.5 pixels wide: stroke")]
+    public int StrokePolyline()
+    {
+        _image.Draw(this, static (canvas, benchmarks) => canvas.StrokePolyline(benchmarks._thinPen, benchmarks._polyline));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Star of 200 points covering most of the canvas: fill")]
+    public int FillStar()
+    {
+        _image.Draw(_star, static (canvas, star) => canvas.FillPolygon(new SolidBrush(new Rgba32(200, 120, 30)), star));
+        return _image.Width;
+    }
+
+    [Benchmark]
+    [Workload("Ellipse covering most of the canvas, 12 pixels wide: stroke")]
+    public int StrokeEllipse()
+    {
+        _image.Draw(_widePen, static (canvas, pen) => canvas.StrokeEllipse(pen, new PointD(512, 384), 480, 350));
         return _image.Width;
     }
 

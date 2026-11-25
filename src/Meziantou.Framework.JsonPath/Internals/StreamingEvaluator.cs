@@ -297,10 +297,9 @@ internal sealed class StreamingEvaluator
             if (matchCount > Array.MaxLength - Matches.Count)
                 throw new JsonPathEvaluationException("The query selects too many values.");
 
-            var normalizedPath = new NormalizedPath(path);
             for (var i = 0; i < matchCount; i++)
             {
-                Matches.Add(new JsonPathMatch(node, normalizedPath));
+                Matches.Add(new JsonPathMatch(node, path));
             }
         }
 

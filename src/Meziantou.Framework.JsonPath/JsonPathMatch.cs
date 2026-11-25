@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Json;
 /// <summary>Represents a single node matched by a JSONPath evaluation.</summary>
 public readonly struct JsonPathMatch
 {
-    private readonly NormalizedPath _path;
+    private readonly PathNode? _path;
 
-    internal JsonPathMatch(JsonNode? value, NormalizedPath path)
+    internal JsonPathMatch(JsonNode? value, PathNode? path)
     {
         Value = value;
         _path = path;
@@ -23,7 +23,7 @@ public readonly struct JsonPathMatch
     /// Gets the normalized path of the matched node (e.g. <c>$['store']['book'][0]</c>).
     /// </summary>
     /// <remarks>The path is rendered on first access and cached, so evaluations that never read it do not pay for it.</remarks>
-    public string Path => _path.Value;
+    public string Path => PathNode.GetNormalizedPath(_path);
 
-    internal PathNode? PathNode => _path.Node;
+    internal PathNode? PathNode => _path;
 }

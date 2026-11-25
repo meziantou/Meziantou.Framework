@@ -6,9 +6,12 @@ internal sealed class AbsoluteFilterQuery : FilterQuery
     public AbsoluteFilterQuery(Segment[] segments)
     {
         Segments = segments;
+        SingularQuery = SingularQuery.FromSegments(isRelative: false, segments);
     }
 
     public override FilterQueryKind Kind => FilterQueryKind.Absolute;
 
     public override Segment[] Segments { get; }
+
+    public override SingularQuery? SingularQuery { get; }
 }

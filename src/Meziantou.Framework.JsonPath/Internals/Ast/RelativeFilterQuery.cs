@@ -6,9 +6,12 @@ internal sealed class RelativeFilterQuery : FilterQuery
     public RelativeFilterQuery(Segment[] segments)
     {
         Segments = segments;
+        SingularQuery = SingularQuery.FromSegments(isRelative: true, segments);
     }
 
     public override FilterQueryKind Kind => FilterQueryKind.Relative;
 
     public override Segment[] Segments { get; }
+
+    public override SingularQuery? SingularQuery { get; }
 }

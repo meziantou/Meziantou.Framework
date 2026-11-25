@@ -500,6 +500,10 @@ namespace Meziantou.Framework.Csv.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
         public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static byte[] SerializeToUtf8Bytes<T>(System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static byte[] SerializeToUtf8Bytes<T>(System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
     }
 
     public abstract class CsvSerializerContext : Meziantou.Framework.Csv.Serialization.ICsvTypeInfoResolver

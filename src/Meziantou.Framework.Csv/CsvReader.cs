@@ -90,6 +90,7 @@ public sealed class CsvReader : IDisposable, IAsyncDisposable
     /// <param name="encoding">The encoding of the file, or <see langword="null"/> for UTF-8. A byte order mark at the start of the file overrides it.</param>
     /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvReaderOptions.Default"/>.</param>
     /// <returns>The new reader. Dispose it to close the file.</returns>
+    /// <remarks>To read a UTF-8 file without decoding it to UTF-16, use <see cref="Utf8CsvReader.CreateFromFile(string, CsvReaderOptions?)"/>.</remarks>
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reader owns the stream, and the method disposes it when it throws")]
     public static CsvReader CreateFromFile(string path, Encoding? encoding = null, CsvReaderOptions? options = null)
     {

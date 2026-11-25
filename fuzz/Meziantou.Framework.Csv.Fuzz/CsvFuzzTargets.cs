@@ -690,7 +690,8 @@ public static partial class CsvFuzzTargets
 
     /// <summary>
     /// <c>records</c>: the records are separated by <c>FF</c>; each gives the values of the members of <see cref="FuzzRecord"/>. The serializer writes
-    /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8.
+    /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8. The UTF-8
+    /// bytes returned by <see cref="CsvSerializer.SerializeToUtf8Bytes{T}(IEnumerable{T}, CsvTypeInfo{T})"/> are the bytes written to a stream.
     /// </summary>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The fuzz targets compare the reflection-based serializer with the generated one.")]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The fuzz targets compare the reflection-based serializer with the generated one.")]
@@ -715,6 +716,12 @@ public static partial class CsvFuzzTargets
         using var stream = new MemoryStream();
         CsvSerializer.Serialize(stream, records, typeInfo);
         FuzzAssert.Equal(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text)), Encoding.UTF8.GetString(stream.ToArray()), "The UTF-8 data is not the UTF-16 text");
+
+        // Without a target, the bytes are kept in chunks, of growing sizes with a small buffer, before the array is created
+        var utf8 = stream.ToArray();
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records, typeInfo)), "The UTF-8 bytes are not the data written to a stream");
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records)), "The generated metadata and the reflection write different UTF-8 bytes");
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records, SmallBufferSerializerOptions)), "The UTF-8 bytes written in chunks are not the bytes written in one buffer");
         stream.Position = 0;
         var utf8Expected = string.Join('\n', records.Select(record => Describe(record, utf8: true)));
         FuzzAssert.Equal(utf8Expected, string.Join('\n', CsvSerializer.Deserialize(stream, typeInfo).Select(record => Describe(record, utf8: true))), "The records read back from UTF-8 are not the records written");

@@ -32,6 +32,9 @@ Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"\n", output
 - The writer does not own the output it does not create: pass `leaveOpen: true` to keep a `TextWriter` or a `Stream`
   open when the writer is disposed.
 
+To write UTF-8 data to a file, a `Stream` or an `IBufferWriter<byte>`, prefer [Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter): it formats values directly to
+UTF-8 bytes. See [UTF-8 data](#utf-8-data).
+
 ## Quoting
 
 A value is quoted when it contains the separator, the quote character, a line terminator or a character of

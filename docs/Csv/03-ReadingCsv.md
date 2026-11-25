@@ -28,6 +28,9 @@ Assert.Equal(["Alice is 30 years old", "Bob is 25 years old"], lines);
 [ReadAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadAsync) reads the next record asynchronously, for readers over files and network streams. It only waits when the
 buffer of the reader has no complete record left. The reader can also be enumerated with `foreach`.
 
+To read UTF-8 data from a file, a `Stream` or bytes, prefer [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader): it has the same options and members, and it
+does not decode the values you do not read. See [UTF-8 data](#utf-8-data).
+
 ## Values are valid until the next record
 
 [Current](cref:Meziantou.Framework.Csv.CsvReader.Current) is a [CsvRecord](cref:Meziantou.Framework.Csv.CsvRecord), and each value is a [CsvField](cref:Meziantou.Framework.Csv.CsvField). Both are `ref struct` views of the buffer of the

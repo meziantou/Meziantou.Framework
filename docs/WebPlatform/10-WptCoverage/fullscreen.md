@@ -10,17 +10,16 @@ description: "The results of the web-platform-tests of fullscreen, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 82 | 87 | 0 | 94% |
-| [Tentative](#tentative-tests) | 2 | 3 | 0 | 67% |
+| [Tentative](#tentative-tests) | 3 | 3 | 0 | 100% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
 | [Crash tests](#crash-tests) | 5 | 5 | 0 | 100% |
-| **All** | **95** | **101** | **0** | **94%** |
+| **All** | **96** | **101** | **0** | **95%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 5
-- **NOT IMPLEMENTED**: 1
 
 ## Stable tests
 
@@ -118,7 +117,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`api/element-request-fullscreen-options.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-options.tentative.https.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the tentative `screen` option of `requestFullscreen()` (Window Management); `set_permission()` of the test driver only supports the clipboard permissions |
+| [`api/element-request-fullscreen-options.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-options.tentative.https.html) | Pass | 1 / 1 |  |  |
 | [`api/element-request-fullscreen-without-user-activation.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/element-request-fullscreen-without-user-activation.tentative.https.html) | Pass | 2 / 2 |  |  |
 | [`api/permission.tentative.https.html`](https://wpt.fyi/results/fullscreen/api/permission.tentative.https.html) | Pass | 3 / 3 |  |  |
 

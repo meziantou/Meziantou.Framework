@@ -220,6 +220,25 @@ public sealed partial class Navigator
     [IdlMember("hardwareConcurrency", "https://html.spec.whatwg.org/multipage/workers.html#dom-navigator-hardwareconcurrency")]
     public ulong HardwareConcurrency => (ulong)Environment.ProcessorCount;
 
+    /// <summary>
+    /// Gets the performance tier of the CPU (https://wicg.github.io/cpu-performance/#computing-performance-tier-value), computed
+    /// from the number of processors of the machine (<see cref="HardwareConcurrency"/>): 1 for a single processor, 2 for 2 to
+    /// 4, 3 for 5 to 10, and 4 for more. The library does not adjust the tier for the model of the CPU.
+    /// </summary>
+    /// <seealso href="https://wicg.github.io/cpu-performance/#dom-navigator-cpuperformance"/>
+    [IdlMember("cpuPerformance", "https://wicg.github.io/cpu-performance/#dom-navigator-cpuperformance")]
+    public ushort CpuPerformance => GetCpuPerformanceTier(Environment.ProcessorCount);
+
+    /// <summary>https://wicg.github.io/cpu-performance/#computing-performance-tier-value</summary>
+    internal static ushort GetCpuPerformanceTier(int cores) => cores switch
+    {
+        <= 0 => 0,
+        1 => 1,
+        <= 4 => 2,
+        <= 10 => 3,
+        _ => 4,
+    };
+
     /// <summary>Gets the clipboard of the window (https://w3c.github.io/clipboard-apis/#dom-navigator-clipboard).</summary>
     /// <seealso href="https://w3c.github.io/clipboard-apis/#dom-navigator-clipboard"/>
     [IdlMember("clipboard", "https://w3c.github.io/clipboard-apis/#dom-navigator-clipboard")]

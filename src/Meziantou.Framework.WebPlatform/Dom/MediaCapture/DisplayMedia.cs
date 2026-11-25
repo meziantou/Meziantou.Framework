@@ -176,7 +176,7 @@ public sealed class DisplayMediaStreamOptions
 /// </summary>
 /// <seealso href="https://w3c.github.io/mediacapture-screen-share/#dom-capturecontroller"/>
 [IdlInterface("CaptureController", "https://w3c.github.io/mediacapture-screen-share/#dom-capturecontroller")]
-public sealed class CaptureController : EventTarget
+public sealed partial class CaptureController : EventTarget
 {
     /// <summary>Creates a controller.</summary>
     /// <seealso href="https://w3c.github.io/mediacapture-screen-share/#dom-capturecontroller-constructor"/>

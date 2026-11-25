@@ -390,14 +390,15 @@ public sealed class AudioContext : BaseAudioContext
 
     /// <summary>
     /// Validates a sink identifier (https://webaudio.github.io/web-audio-api/#sink-identifier-validation): the empty string (the
-    /// default device) and the sinks without device are valid; there is no other device. Returns the error, or null.
+    /// default device), the sinks without device, and the audio output devices that <c>navigator.mediaDevices.enumerateDevices()</c>
+    /// lists are valid. Returns the error, or null.
     /// </summary>
     private DomException? ValidateSinkId(StringOrAudioSinkOptions sinkId)
     {
         if (Window is { } window && !PermissionsPolicyAlgorithms.IsAllowedToUse(window.Document, PolicyControlledFeature.SpeakerSelection))
             return new DomException("The 'speaker-selection' feature is not allowed in the document", "NotAllowedError");
 
-        if (sinkId.DeviceId is { Length: > 0 } deviceId)
+        if (sinkId.DeviceId is { Length: > 0 } deviceId && Window?.Navigator.MediaDevices.IsExposedAudioOutput(deviceId) != true)
             return new DomException($"The audio output device '{deviceId}' does not exist", "NotFoundError");
 
         return null;

@@ -6,8 +6,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 /// <summary>
 /// The capture devices of the tests (<see cref="BrowsingContextOptions.MediaCapture"/>), as the fake devices of the browsers
 /// (e.g. <c>--use-fake-device-for-media-stream</c> in Chromium): a camera that draws a deterministic pattern, a microphone
-/// that plays a tone, and a screen, a window and a tab for <c>getDisplayMedia()</c>. The media only depend on the virtual
-/// clock of the test.
+/// that plays a tone, its speakers (the audio output of the same group), and a screen, a window and a tab for
+/// <c>getDisplayMedia()</c>. The media only depend on the virtual clock of the test.
 /// </summary>
 internal sealed class WptMediaCaptureBackend : MediaCaptureBackend
 {
@@ -79,6 +79,15 @@ internal sealed class WptMediaCaptureBackend : MediaCaptureBackend
         VideoModes = [new MediaCaptureVideoMode(640, 480, 30), new MediaCaptureVideoMode(1280, 720, 30), new MediaCaptureVideoMode(1920, 1080, 30)],
     };
 
+    // The audio output of the microphone (a headset): the outputs of a captured microphone are exposed with it
+    private static readonly MediaCaptureDevice Speaker = new()
+    {
+        Id = "fake-speaker",
+        Kind = MediaDeviceKind.AudioOutput,
+        Label = "Fake Default Audio Output",
+        GroupId = "fake-audio-device",
+    };
+
     private static readonly MediaCaptureDevice DisplayAudio = new()
     {
         Id = "fake-display-audio",
@@ -97,7 +106,10 @@ internal sealed class WptMediaCaptureBackend : MediaCaptureBackend
         },
     };
 
-    public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Microphone, Camera];
+    public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [Microphone, Camera, Speaker];
+
+    // The "user" picks the only audio output
+    public override MediaCaptureDevice? SelectAudioOutput(AudioOutputRequest request) => request.Devices[0];
 
     public override MediaCaptureSource StartCapture(MediaCaptureRequest request)
         => request.Device.Kind == MediaDeviceKind.AudioInput ? new ToneSource(request) : new PatternSource(request);

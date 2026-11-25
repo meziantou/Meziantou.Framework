@@ -141,10 +141,7 @@
     "total": 2
   },
   "fullscreen/api/element-request-fullscreen-options.tentative.https.html": {
-    "total": 1,
-    "failures": {
-      "fullscreenOptions.screen getter is invoked on requestFullscreen": "FAIL"
-    }
+    "total": 1
   },
   "fullscreen/api/element-request-fullscreen-same-element.html": {
     "total": 1

@@ -22,8 +22,11 @@ namespace Meziantou.Framework.WebPlatform.Tests.JavaScript;
 /// Pressure (https://w3c.github.io/compute-pressure/), Idle Detection (https://wicg.github.io/idle-detection/), Device
 /// Posture (https://w3c.github.io/device-posture/), Network Information (https://wicg.github.io/netinfo/), Device Memory
 /// (https://www.w3.org/TR/device-memory/), Global Privacy Control (https://w3c.github.io/gpc/), the early detection of
-/// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/) and the device
-/// orientation and motion events (https://w3c.github.io/deviceorientation/).
+/// input events (https://wicg.github.io/is-input-pending/), the sensors (https://w3c.github.io/sensors/), the device
+/// orientation and motion events (https://w3c.github.io/deviceorientation/), WebUSB (https://usb.spec.whatwg.org/), Web
+/// Bluetooth (https://bluetooth.spec.whatwg.org/), Window Management (https://w3c.github.io/window-management/), Web Serial
+/// (https://serial.spec.whatwg.org/), WebHID (https://hid.spec.whatwg.org/), Web MIDI (https://webaudio.github.io/web-midi-api/),
+/// Presentation (https://w3c.github.io/presentation-api/) and Contact Picker (https://w3c.github.io/contact-picker/).
 /// </summary>
 public sealed class HostDeviceApisTests : IDisposable
 {
@@ -64,6 +67,15 @@ public sealed class HostDeviceApisTests : IDisposable
             ComputePressure = options.ComputePressure,
             IdleDetection = options.IdleDetection,
             DevicePosture = options.DevicePosture,
+            Gamepads = options.Gamepads,
+            Usb = options.Usb,
+            Bluetooth = options.Bluetooth,
+            Screens = options.Screens,
+            Serial = options.Serial,
+            Hid = options.Hid,
+            Midi = options.Midi,
+            Presentation = options.Presentation,
+            Contacts = options.Contacts,
             WebAuthentication = options.WebAuthentication,
             UserAgentUI = options.UserAgentUI,
             Sensors = options.Sensors,
@@ -107,6 +119,21 @@ public sealed class HostDeviceApisTests : IDisposable
 
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
         await _contexts.EventLoop.RunUntilIdleAsync(timeout.Token);
+        Assert.Empty(_errors);
+        return document.Title;
+    }
+
+    /// <summary>Runs a script in <paramref name="document"/>, then the event loops of both documents until they are idle.</summary>
+    private async Task<string> RunBothAsync(Document document, Document other, string script)
+    {
+        TestScriptEngines.Evaluate(_engine, document.DefaultView!, script);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        for (var i = 0; i < 3; i++)
+        {
+            await document.BrowsingContext!.EventLoop.RunUntilIdleAsync(timeout.Token);
+            await other.BrowsingContext!.EventLoop.RunUntilIdleAsync(timeout.Token);
+        }
+
         Assert.Empty(_errors);
         return document.Title;
     }
@@ -1412,6 +1439,1417 @@ public sealed class HostDeviceApisTests : IDisposable
         document.BrowsingContext.IsVisible = true;
         Run(document);
         Assert.Equal("folded", Run(document, "document.title = log.join('|')"));
+    }
+
+    // Gamepad
+
+    private const string GamepadScript = """
+        <script>
+        window.log = [];
+        window.addEventListener('gamepadconnected', e => log.push('connected ' + e.gamepad.index + ' ' + e.gamepad.id));
+        window.addEventListener('gamepaddisconnected', e => log.push('disconnected ' + e.gamepad.index + ' ' + e.gamepad.connected));
+        window.state = () => document.title = navigator.getGamepads().map(g => g && [g.mapping, g.buttons[0].pressed, g.buttons[0].value, g.axes[0], g.connected].join()).join(';');
+        </script>
+        """;
+
+    [Fact]
+    public void Gamepad_IsExposedAfterAGestureOfTheUser()
+    {
+        #region WebPlatform_Gamepads
+        var gamepads = new GamepadProvider();
+        var options = new BrowsingContextOptions
+        {
+            Gamepads = new GamepadOptions { Provider = gamepads },
+        };
+
+        // A standard gamepad (17 buttons, 4 axes): the pages see it once the user presses a button or moves an axis
+        var controller = new GamepadDevice("Test controller (Vendor: 045e Product: 02ea)", buttonCount: 17, axisCount: 4) { Mapping = GamepadMappingType.Standard };
+        gamepads.Connect(controller);
+        controller.SetButton(0, 1);
+        #endregion
+
+        controller.SetButton(0, 0);
+        var document = Load(GamepadScript, options);
+
+        // The inputs and the connections are applied by tasks
+        string State()
+        {
+            Run(document);
+            return Run(document, "state()");
+        }
+
+        // Connected, but not exposed before a gesture
+        Assert.Equal("", State());
+        controller.SetAxis(0, 0.25);
+        Assert.Equal("", State());
+
+        controller.SetButton(0, 1);
+        Assert.Equal("standard,true,1,0.25,true", State());
+        Assert.Equal("connected 0 Test controller (Vendor: 045e Product: 02ea)", Run(document, "document.title = log.join('|')"));
+
+        // A gamepad connected after the gesture is exposed at once, at the next index
+        var second = new GamepadDevice("Second", buttonCount: 1, axisCount: 1);
+        gamepads.Connect(second);
+        Assert.Equal("standard,true,1,0.25,true;,false,0,0,true", State());
+
+        Assert.True(gamepads.Disconnect(controller));
+        Assert.Equal(";,false,0,0,true", State());
+        Assert.Equal("connected 0 Test controller (Vendor: 045e Product: 02ea)|connected 1 Second|disconnected 0 false", Run(document, "document.title = log.join('|')"));
+        Assert.False(gamepads.Disconnect(controller));
+    }
+
+    [Fact]
+    public void Gamepad_GetGamepadsReturnsSnapshots()
+    {
+        var gamepads = new GamepadProvider();
+        var controller = new GamepadDevice("Test", buttonCount: 1, axisCount: 1);
+        gamepads.Connect(controller);
+        var document = Load(GamepadScript, new BrowsingContextOptions { Gamepads = new GamepadOptions { Provider = gamepads } });
+        controller.SetAxis(0, -1);
+        Run(document);
+
+        Assert.Equal("false,true,true", Run(document, """
+            const a = navigator.getGamepads()[0];
+            const b = navigator.getGamepads()[0];
+            document.title = [a === b, a.vibrationActuator === b.vibrationActuator, a.axes[0] === -1].join();
+            """));
+    }
+
+    [Fact]
+    public void Gamepad_WithoutProvider_HasNoGamepad()
+    {
+        Assert.Equal("0,function", Run(Load("<script>document.title = [navigator.getGamepads().length, typeof GamepadEvent].join();</script>")));
+        Assert.Equal("true,x", Run(Load("<script>const e = new GamepadEvent('x'); document.title = [e.gamepad === null, e.type].join();</script>")));
+    }
+
+    // A provider whose effects complete when the test completes them
+    private sealed class ManualHapticsProvider : GamepadProvider
+    {
+        public List<(GamepadHapticEffectRequest Request, TaskCompletionSource Completion)> Effects { get; } = [];
+
+        public override Task PlayEffect(GamepadHapticEffectRequest request)
+        {
+            var completion = new TaskCompletionSource();
+            Effects.Add((request, completion));
+            return completion.Task;
+        }
+    }
+
+    [Fact]
+    public void Gamepad_HapticEffects()
+    {
+        var gamepads = new ManualHapticsProvider();
+        var controller = new GamepadDevice("Test", buttonCount: 1, axisCount: 0) { HapticEffects = [GamepadHapticEffectType.DualRumble] };
+        gamepads.Connect(controller);
+        var document = Load("""
+            <script>
+            window.log = [];
+            window.play = p => navigator.getGamepads()[0].vibrationActuator.playEffect('dual-rumble', p).then(r => log.push(r), e => log.push(e.name));
+            </script>
+            """, new BrowsingContextOptions { Gamepads = new GamepadOptions { Provider = gamepads } });
+        Run(document, "navigator.getGamepads()");
+        controller.SetButton(0, 1);
+        Run(document);
+
+        Run(document, "play({ duration: 10000, startDelay: 100, strongMagnitude: 1 })");
+        var (request, completion) = Assert.Single(gamepads.Effects);
+        Assert.Equal(4900UL, request.Parameters.Duration);
+        Assert.Equal(100UL, request.Parameters.StartDelay);
+        Assert.Same(controller, request.Device);
+
+        // Another effect preempts the first one, whose request is canceled
+        Run(document, "play({ duration: 100 })");
+        Assert.True(request.CancellationToken.IsCancellationRequested);
+        gamepads.Effects[1].Completion.SetResult();
+        Run(document);
+
+        Run(document, "play({ duration: 100 }); navigator.getGamepads()[0].vibrationActuator.reset().then(r => log.push('reset ' + r))");
+        Run(document, "play({ strongMagnitude: 2 }); navigator.getGamepads()[0].vibrationActuator.playEffect('trigger-rumble').catch(e => log.push(e.name))");
+        Assert.Equal("preempted,complete,reset complete,preempted,TypeError,NotSupportedError", Run(document, "document.title = log.join()"));
+        completion.SetResult();
+    }
+
+    [Fact]
+    public void Gamepad_HiddenDocument_IgnoresTheGesturesAndStopsTheEffects()
+    {
+        var gamepads = new ManualHapticsProvider();
+        var controller = new GamepadDevice("Test", buttonCount: 1, axisCount: 0) { HapticEffects = [GamepadHapticEffectType.DualRumble] };
+        gamepads.Connect(controller);
+        var document = Load(GamepadScript, new BrowsingContextOptions { Gamepads = new GamepadOptions { Provider = gamepads } });
+
+        document.BrowsingContext!.IsVisible = false;
+        controller.SetButton(0, 1);
+        Run(document);
+        controller.SetButton(0, 0);
+        Assert.Equal("", Run(document, "state()"));
+
+        document.BrowsingContext.IsVisible = true;
+        controller.SetButton(0, 1);
+        Run(document);
+        Run(document, "navigator.getGamepads()[0].vibrationActuator.playEffect('dual-rumble', { duration: 100 }).then(r => log.push(r))");
+        document.BrowsingContext.IsVisible = false;
+        Run(document);
+        Assert.True(Assert.Single(gamepads.Effects).Request.CancellationToken.IsCancellationRequested);
+        Assert.Equal("connected 0 Test|preempted", Run(document, "document.title = log.join('|')"));
+    }
+
+    // WebUSB
+
+    #region WebPlatform_UsbHostDevice
+    // A device of the application: one configuration with a vendor-specific interface, whose bulk OUT endpoint 1 stores
+    // the data that its bulk IN endpoint 1 returns
+    private sealed class LoopbackUsbDevice() : UsbHostDevice(new UsbDeviceDescriptor
+    {
+        VendorId = 0x1234,
+        ProductId = 0x0001,
+        ProductName = "Loopback",
+        Configurations =
+        [
+            new UsbConfigurationDescriptor
+            {
+                ConfigurationValue = 1,
+                Interfaces =
+                [
+                    new UsbInterfaceDescriptor
+                    {
+                        InterfaceNumber = 0,
+                        Alternates =
+                        [
+                            new UsbAlternateInterfaceDescriptor
+                            {
+                                InterfaceClass = 0xFF,
+                                Endpoints =
+                                [
+                                    new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.In, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                                    new UsbEndpointDescriptor { EndpointNumber = 1, Direction = UsbDirection.Out, Type = UsbEndpointType.Bulk, PacketSize = 64 },
+                                ],
+                            },
+                        ],
+                    },
+                ],
+            },
+        ],
+    })
+    {
+        public override Task<UsbDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<UsbDeviceSession>(new Session());
+
+        // The library validates the operations of the page (the opened device, the configuration, the claimed interfaces...)
+        private sealed class Session : UsbDeviceSession
+        {
+            private byte[] _buffer = [];
+
+            public override Task CloseAsync() => Task.CompletedTask;
+
+            public override Task SelectConfigurationAsync(byte configurationValue, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ClaimInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ReleaseInterfaceAsync(byte interfaceNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task SelectAlternateInterfaceAsync(byte interfaceNumber, byte alternateSetting, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ResetAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task ClearHaltAsync(UsbDirection direction, byte endpointNumber, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            // The device stalls the control requests
+            public override Task<UsbInTransfer> ControlTransferInAsync(UsbControlTransferSetup setup, ushort length, CancellationToken cancellationToken)
+                => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Stall, ReadOnlyMemory<byte>.Empty));
+
+            public override Task<UsbOutTransfer> ControlTransferOutAsync(UsbControlTransferSetup setup, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+                => Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Stall, 0));
+
+            public override Task<UsbInTransfer> TransferInAsync(byte endpointNumber, uint length, CancellationToken cancellationToken)
+                => Task.FromResult(new UsbInTransfer(UsbTransferStatus.Ok, _buffer.AsMemory(0, (int)Math.Min(length, (uint)_buffer.Length))));
+
+            public override Task<UsbOutTransfer> TransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                _buffer = data.ToArray();
+                return Task.FromResult(new UsbOutTransfer(UsbTransferStatus.Ok, (uint)data.Length));
+            }
+
+            public override Task<IReadOnlyList<UsbInTransfer>> IsochronousTransferInAsync(byte endpointNumber, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+                => throw new UsbException("The device has no isochronous endpoint");
+
+            public override Task<IReadOnlyList<UsbOutTransfer>> IsochronousTransferOutAsync(byte endpointNumber, ReadOnlyMemory<byte> data, IReadOnlyList<uint> packetLengths, CancellationToken cancellationToken)
+                => throw new UsbException("The device has no isochronous endpoint");
+        }
+    }
+    #endregion
+
+    #region WebPlatform_UsbDeviceChooser
+    // The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+    private sealed class FirstDeviceChooser : UsbProvider
+    {
+        public override Task<UsbHostDevice?> RequestDevice(UsbDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+    }
+    #endregion
+
+    private const string UsbScript = """
+        window.log = [];
+        window.request = filters => navigator.usb.requestDevice({ filters }).then(d => { window.device = d; document.title = d.productName; }, e => document.title = e.name);
+        window.count = () => navigator.usb.getDevices().then(d => document.title = d.length);
+        """;
+
+    [Fact]
+    public async Task Usb_RequestDevice_AllowsTheOriginToUseTheDevice()
+    {
+        #region WebPlatform_Usb
+        var usb = new FirstDeviceChooser();
+        usb.Connect(new LoopbackUsbDevice());
+        var options = new BrowsingContextOptions
+        {
+            Usb = new UsbOptions { Provider = usb },
+        };
+        #endregion
+
+        var document = Load("<script>" + UsbScript + "</script>", options);
+        Assert.Equal("0", await RunAsync(document, "count()"));
+        Assert.Equal("SecurityError", await RunAsync(document, "request([])"));
+
+        Activate(document);
+        Assert.Equal("TypeError", await RunAsync(document, "request([{ productId: 1 }])"));
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "request([{ vendorId: 0x9999 }])"));
+        Activate(document);
+        Assert.Equal("Loopback", await RunAsync(document, "request([{ vendorId: 0x1234, classCode: 0xFF }])"));
+        Assert.Equal("1", await RunAsync(document, "count()"));
+        Assert.True(usb.IsAllowed(usb.Devices[0], "https://example.com"));
+
+        Assert.Equal("0", await RunAsync(document, "device.forget().then(() => count())"));
+    }
+
+    [Fact]
+    public async Task Usb_Transfers()
+    {
+        var usb = new UsbProvider();
+        var device = new LoopbackUsbDevice();
+        usb.Connect(device);
+        usb.Allow(device, "https://example.com");
+        var document = Load("<script>" + UsbScript + "</script>", new BrowsingContextOptions { Usb = new UsbOptions { Provider = usb } });
+
+        Assert.Equal("InvalidStateError,3,1,4,4,stall,false", await RunAsync(document, """
+            (async () => {
+              const [device] = await navigator.usb.getDevices();
+              const results = [];
+              await device.claimInterface(0).catch(e => results.push(e.name));
+              await device.open();
+              await device.selectConfiguration(1);
+              await device.claimInterface(0);
+              const out = await device.transferOut(1, new Uint8Array([3, 1, 4, 1]));
+              const input = await device.transferIn(1, 3);
+              results.push(new Uint8Array(input.data.buffer).join(), out.bytesWritten);
+              results.push((await device.controlTransferIn({ requestType: 'vendor', recipient: 'device', request: 1, value: 0, index: 0 }, 8)).status);
+              await device.close();
+              results.push(device.opened);
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Usb_ConnectAndDisconnectEvents()
+    {
+        var usb = new UsbProvider();
+        var document = Load("""
+            <script>
+            window.log = [];
+            navigator.usb.onconnect = e => log.push('connect ' + e.device.productName);
+            navigator.usb.ondisconnect = e => { log.push('disconnect ' + e.device.opened); e.device.open().catch(error => { log.push(error.name); document.title = log.join('|'); }); };
+            navigator.usb.addEventListener('connect', e => e.device.open());
+            </script>
+            """, new BrowsingContextOptions { Usb = new UsbOptions { Provider = usb } });
+
+        // The origin is not allowed to use the first device: there is no event
+        usb.Connect(new LoopbackUsbDevice());
+        await RunAsync(document);
+        var device = new LoopbackUsbDevice();
+        usb.Allow(device, "https://example.com");
+        usb.Connect(device);
+        await RunAsync(document);
+        Assert.True(usb.Disconnect(device));
+
+        Assert.Equal("connect Loopback|disconnect false|NotFoundError", await RunAsync(document));
+    }
+
+    [Fact]
+    public void Usb_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false,true", Run(Load("<script>document.title = ['usb' in navigator, typeof USBDevice === 'undefined'].join();</script>", url: "http://example.com/")));
+    }
+
+    // Web Bluetooth
+
+    #region WebPlatform_BluetoothHostDevice
+    // A heart rate monitor of the application: its Heart Rate service has a Heart Rate Measurement characteristic, which
+    // notifies the measurements, and a Body Sensor Location characteristic, which the page can read and write
+    private static BluetoothHostDevice CreateHeartRateMonitor()
+    {
+        var device = new BluetoothHostDevice("00:11:22:33:44:55", "Heart Rate Monitor")
+        {
+            ServiceUuids = [BluetoothUuid.GetService("heart_rate")],
+        };
+        var service = device.AddService(new BluetoothHostService(BluetoothUuid.GetService("heart_rate")));
+        service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("heart_rate_measurement"), BluetoothCharacteristicPropertyFlags.Notify));
+        service.AddCharacteristic(new BluetoothHostCharacteristic(BluetoothUuid.GetCharacteristic("body_sensor_location"), BluetoothCharacteristicPropertyFlags.Read | BluetoothCharacteristicPropertyFlags.Write)
+        {
+            Value = new byte[] { 1 },
+        });
+        return device;
+    }
+    #endregion
+
+    #region WebPlatform_BluetoothDeviceChooser
+    // The device chooser of requestDevice(): the user picks the first device that matches the filters of the page
+    private sealed class FirstBluetoothDeviceChooser : BluetoothProvider
+    {
+        public override Task<BluetoothHostDevice?> RequestDevice(BluetoothDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+    }
+    #endregion
+
+    private const string BluetoothScript = """
+        window.log = [];
+        window.request = options => navigator.bluetooth.requestDevice(options).then(d => { window.device = d; document.title = d.name; }, e => document.title = e.name);
+        window.count = () => navigator.bluetooth.getDevices().then(d => document.title = d.length);
+        """;
+
+    [Fact]
+    public async Task Bluetooth_RequestDevice_ConnectsAndReadsTheCharacteristics()
+    {
+        #region WebPlatform_Bluetooth
+        var bluetooth = new FirstBluetoothDeviceChooser();
+        bluetooth.AddDevice(CreateHeartRateMonitor());
+        var options = new BrowsingContextOptions
+        {
+            Bluetooth = new BluetoothOptions { Provider = bluetooth },
+        };
+        #endregion
+
+        var document = Load("<script>" + BluetoothScript + "</script>", options);
+        Assert.Equal("true", await RunAsync(document, "navigator.bluetooth.getAvailability().then(a => document.title = a)"));
+        Assert.Equal("0", await RunAsync(document, "count()"));
+        Assert.Equal("SecurityError", await RunAsync(document, "request({ filters: [{ services: ['heart_rate'] }] })"));
+
+        Activate(document);
+        Assert.Equal("TypeError", await RunAsync(document, "request({})"));
+        Assert.Equal("TypeError", await RunAsync(document, "request({ filters: [{ services: ['unknown_service'] }] })"));
+        Assert.Equal("NotFoundError", await RunAsync(document, "request({ filters: [{ services: ['glucose'] }] })"));
+        Assert.Equal("Heart Rate Monitor", await RunAsync(document, "request({ filters: [{ namePrefix: 'Heart' }], optionalServices: [0x180d] })"));
+        Assert.Equal("1", await RunAsync(document, "count()"));
+        Assert.Single(bluetooth.GetAllowedDevices("https://example.com"));
+
+        Assert.Equal("true,0000180d-0000-1000-8000-00805f9b34fb,1,2", await RunAsync(document, """
+            (async () => {
+              const server = await device.gatt.connect();
+              const service = await server.getPrimaryService('heart_rate');
+              const location = await service.getCharacteristic('body_sensor_location');
+              const value = await location.readValue();
+              await location.writeValueWithResponse(new Uint8Array([2]));
+              const measurement = await service.getCharacteristic('heart_rate_measurement');
+              measurement.oncharacteristicvaluechanged = e => log.push(e.target.value.getUint8(1));
+              navigator.bluetooth.addEventListener('characteristicvaluechanged', e => { log.push(e.target.value.getUint8(1)); document.title += '|' + log.join('|'); });
+              await measurement.startNotifications();
+              document.title = [server.connected, service.uuid, value.getUint8(0), location.value.getUint8(0)].join();
+            })()
+            """));
+
+        var characteristics = bluetooth.Devices[0].Services[0].Characteristics;
+        Assert.Equal(new byte[] { 2 }, characteristics[1].Value.ToArray());
+        characteristics[0].NotifyValueChanged(new byte[] { 0, 72 });
+        Assert.Equal("true,0000180d-0000-1000-8000-00805f9b34fb,1,2|72|72", await RunAsync(document));
+
+        Assert.Equal("0", await RunAsync(document, "device.forget().then(() => count())"));
+    }
+
+    [Fact]
+    public async Task Bluetooth_Disconnection_InvalidatesTheAttributes()
+    {
+        var bluetooth = new BluetoothProvider();
+        var device = CreateHeartRateMonitor();
+        bluetooth.AddDevice(device);
+        bluetooth.Allow(device, "https://example.com", [BluetoothUuid.GetService("heart_rate")]);
+        var document = Load("<script>" + BluetoothScript + "</script>", new BrowsingContextOptions { Bluetooth = new BluetoothOptions { Provider = bluetooth } });
+
+        await RunAsync(document, """
+            (async () => {
+              const [device] = await navigator.bluetooth.getDevices();
+              window.device = device;
+              device.ongattserverdisconnected = e => log.push('disconnected ' + e.bubbles);
+              await device.gatt.connect();
+              window.service = await device.gatt.getPrimaryService(0x180d);
+              document.title = device.gatt.connected;
+            })()
+            """);
+        Assert.True(device.IsConnected);
+
+        // The connection is lost: the page gets the event, and the service of the connection is invalid after a reconnection
+        device.Disconnect();
+        Assert.Equal("disconnected true|NetworkError|InvalidStateError|SecurityError", await RunAsync(document, """
+            (async () => {
+              await new Promise(resolve => setTimeout(resolve, 0));
+              await service.getCharacteristics().catch(e => log.push(e.name));
+              await device.gatt.connect();
+              await service.getCharacteristics().catch(e => log.push(e.name));
+              await device.gatt.getPrimaryService('generic_access').catch(e => log.push(e.name));
+              document.title = log.join('|');
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Bluetooth_Blocklist()
+    {
+        var bluetooth = new FirstBluetoothDeviceChooser();
+        var device = new BluetoothHostDevice("00:00:00:00:00:01", "Keyboard") { ServiceUuids = [BluetoothUuid.GetService("human_interface_device"), BluetoothUuid.GetService("battery_service")] };
+        device.AddService(new BluetoothHostService(BluetoothUuid.GetService("human_interface_device")));
+        device.AddService(new BluetoothHostService(BluetoothUuid.GetService("battery_service")));
+        bluetooth.AddDevice(device);
+        var document = Load("<script>" + BluetoothScript + "</script>", new BrowsingContextOptions { Bluetooth = new BluetoothOptions { Provider = bluetooth } });
+
+        Activate(document);
+        Assert.Equal("SecurityError", await RunAsync(document, "request({ filters: [{ services: ['human_interface_device'] }] })"));
+        Assert.Equal("Keyboard", await RunAsync(document, "request({ acceptAllDevices: true, optionalServices: ['human_interface_device', 'battery_service'] })"));
+
+        // The blocklisted service was removed from the optional services: the origin cannot use it
+        Assert.Equal("SecurityError,0000180f-0000-1000-8000-00805f9b34fb", await RunAsync(document, """
+            (async () => {
+              await device.gatt.connect();
+              const results = [];
+              await device.gatt.getPrimaryService('human_interface_device').catch(e => results.push(e.name));
+              results.push((await device.gatt.getPrimaryServices()).map(s => s.uuid).join());
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Bluetooth_AvailabilityChanged()
+    {
+        var bluetooth = new BluetoothProvider();
+        var document = Load("""
+            <script>
+            navigator.bluetooth.onavailabilitychanged = e => document.title = e.value;
+            </script>
+            """, new BrowsingContextOptions { Bluetooth = new BluetoothOptions { Provider = bluetooth } });
+
+        bluetooth.AdapterState = BluetoothAdapterState.PoweredOff;
+        Assert.Equal("", await RunAsync(document));
+        bluetooth.AdapterState = BluetoothAdapterState.Absent;
+        Assert.Equal("false", await RunAsync(document));
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "navigator.bluetooth.requestDevice({ acceptAllDevices: true }).catch(e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public void BluetoothUuid_ResolvesTheNamesAndTheAliases()
+    {
+        Assert.Equal("0000180d-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetService("heart_rate"));
+        Assert.Equal("0000180d-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetService(0x180Du));
+        Assert.Equal("00002a37-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetCharacteristic("heart_rate_measurement"));
+        Assert.Equal("00002902-0000-1000-8000-00805f9b34fb", BluetoothUuid.GetDescriptor("gatt.client_characteristic_configuration"));
+        Assert.Equal("deadbeef-0000-1000-8000-00805f9b34fb", BluetoothUuid.CanonicalUuid(0xDEADBEEF));
+
+        Assert.Throws<TypeErrorException>(() => BluetoothUuid.GetService("heart_rate_measurement"));
+        Assert.Throws<TypeErrorException>(() => BluetoothUuid.GetService("0000180D-0000-1000-8000-00805F9B34FB"));
+        Assert.False(BluetoothUuid.IsValidUuid("0000180d"));
+    }
+
+    [Fact]
+    public void Bluetooth_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false,true", Run(Load("<script>document.title = ['bluetooth' in navigator, typeof BluetoothDevice === 'undefined'].join();</script>", url: "http://example.com/")));
+    }
+
+    // Window Management
+
+    private static PermissionStore GrantWindowManagement()
+    {
+        var permissions = new PermissionStore();
+        permissions.SetState("window-management", PermissionState.Granted);
+        return permissions;
+    }
+
+    [Fact]
+    public async Task WindowManagement_GetScreenDetails_ListsTheScreensOfTheProvider()
+    {
+        #region WebPlatform_Screens
+        // A laptop with an external monitor on its left: the coordinates are relative to the top left corner of the laptop screen
+        var screens = new ScreenProvider();
+        screens.AddScreen(new DeviceScreen(0, 0, 1440, 900) { AvailHeight = 875, IsPrimary = true, IsInternal = true, DevicePixelRatio = 2, Label = "Built-in Retina Display" });
+        screens.AddScreen(new DeviceScreen(-2560, 0, 2560, 1440) { Label = "External Monitor" });
+        var options = new BrowsingContextOptions
+        {
+            Screens = new ScreenOptions { Provider = screens },
+        };
+        #endregion
+
+        options = new BrowsingContextOptions { Screens = options.Screens, Permissions = GrantWindowManagement() };
+        var document = Load("<script>window.log = [];</script>", options);
+        Assert.Equal("true,1440,875|External Monitor,-2560,false|Built-in Retina Display,0,true|Built-in Retina Display,true", await RunAsync(document, """
+            (async () => {
+              const details = await getScreenDetails();
+              log.push([screen.isExtended, screen.width, screen.availHeight].join());
+              for (const s of details.screens) log.push([s.label, s.left, s.isPrimary].join());
+              log.push([details.currentScreen.label, details.currentScreen === details.screens[1] && details === await getScreenDetails()].join());
+              document.title = log.join('|');
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task WindowManagement_WithoutProvider_HasTheScreenOfTheViewport()
+    {
+        var document = Load("<script></script>", new BrowsingContextOptions { Permissions = GrantWindowManagement() });
+
+        Assert.Equal("false,1,true,0,true", await RunAsync(document, """
+            getScreenDetails().then(d => document.title = [
+              screen.isExtended, d.screens.length, d.screens[0].width === screen.width && d.screens[0].height === screen.height,
+              d.currentScreen.left, d.currentScreen.isPrimary].join())
+            """));
+    }
+
+    [Fact]
+    public async Task WindowManagement_PermissionDenied_IsRejectedWithNotAllowedError()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("NotAllowedError", await RunAsync(document, "getScreenDetails().catch(e => document.title = e.name)"));
+    }
+
+    [Fact]
+    public async Task WindowManagement_FullscreenOnAScreen_MovesTheWindow()
+    {
+        var screens = new ScreenProvider();
+        screens.AddScreen(new DeviceScreen(0, 0, 1920, 1080) { IsPrimary = true, Label = "A" });
+        screens.AddScreen(new DeviceScreen(1920, 0, 1280, 1024) { Label = "B" });
+        var document = Load("""
+            <script>
+            window.log = [];
+            getScreenDetails().then(d => {
+              window.details = d;
+              d.oncurrentscreenchange = () => log.push('current ' + d.currentScreen.label);
+            });
+            </script>
+            """, new BrowsingContextOptions { Screens = new ScreenOptions { Provider = screens }, Permissions = GrantWindowManagement() });
+        await RunAsync(document);
+
+        Activate(document);
+        Assert.Equal("1920,0,1280x1024", await RunAsync(document, """
+            document.documentElement.requestFullscreen({ screen: details.screens[1] })
+              .then(() => document.title = [screenX, screenY, outerWidth + 'x' + outerHeight].join())
+            """));
+        Assert.Equal("current B|current A|0,A", await RunAsync(document, """
+            document.exitFullscreen()
+              .then(() => new Promise(resolve => setTimeout(resolve, 0)))
+              .then(() => document.title = [...log, [screenX, details.currentScreen.label].join()].join('|'))
+            """));
+    }
+
+    [Fact]
+    public async Task WindowManagement_ScreenChanges_FireTheEvents()
+    {
+        var screens = new ScreenProvider();
+        var laptop = new DeviceScreen(0, 0, 1920, 1080) { IsPrimary = true, Label = "Laptop" };
+        screens.AddScreen(laptop);
+        var document = Load("""
+            <script>
+            window.log = [];
+            screen.onchange = () => log.push('screen change ' + screen.width);
+            getScreenDetails().then(d => {
+              d.onscreenschange = () => log.push('screens ' + d.screens.length);
+              d.oncurrentscreenchange = () => log.push('current ' + d.currentScreen.label);
+              d.screens[0].onchange = e => log.push('change ' + e.target.label);
+            });
+            </script>
+            """, new BrowsingContextOptions { Screens = new ScreenOptions { Provider = screens }, Permissions = GrantWindowManagement() });
+        await RunAsync(document);
+
+        laptop.Label = "Built-in display";
+        await RunAsync(document);
+        var monitor = new DeviceScreen(1920, 0, 2560, 1440) { Label = "Monitor" };
+        screens.AddScreen(monitor);
+        await RunAsync(document);
+        laptop.Width = 1600;
+        await RunAsync(document);
+        Assert.True(screens.RemoveScreen(monitor));
+        await RunAsync(document);
+
+        Assert.Equal("change Built-in display|current Built-in display|screens 2|change Built-in display|current Built-in display|screen change 1600|screens 1", await RunAsync(document, "document.title = log.join('|')"));
+    }
+
+    [Fact]
+    public async Task WindowManagement_DisplayStateChanges_AreRejectedOutsideOfAnInstalledWebApp()
+    {
+        var document = Load("<script></script>");
+
+        Assert.Equal("InvalidStateError,InvalidStateError,InvalidStateError,InvalidStateError", await RunAsync(document, """
+            Promise.allSettled([maximize(), minimize(), restore(), setResizable(false)]).then(r => document.title = r.map(x => x.reason.name).join())
+            """));
+    }
+
+    // Web Serial
+
+    #region WebPlatform_SerialHostPort
+    // A port of the application (an Arduino Uno): the device sends back the bytes it receives
+    private sealed class LoopbackSerialPort() : SerialHostPort(usbVendorId: 0x2341, usbProductId: 0x0043)
+    {
+        public override Task<SerialConnection> OpenAsync(SerialConnectionOptions options, CancellationToken cancellationToken) => Task.FromResult<SerialConnection>(new Connection());
+
+        // The library validates the parameters and runs the streams of the page: the connection only moves the bytes
+        private sealed class Connection : SerialConnection
+        {
+            private readonly Queue<byte> _received = new();
+            private TaskCompletionSource? _dataAvailable;
+
+            public override async Task<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+            {
+                while (_received.Count == 0)
+                {
+                    _dataAvailable = new TaskCompletionSource();
+                    await _dataAvailable.Task.WaitAsync(cancellationToken);
+                }
+
+                var count = 0;
+                while (count < buffer.Length && _received.TryDequeue(out var value))
+                {
+                    buffer.Span[count++] = value;
+                }
+
+                return count;
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                foreach (var value in data.Span)
+                {
+                    _received.Enqueue(value);
+                }
+
+                _dataAvailable?.TrySetResult();
+                return Task.CompletedTask;
+            }
+
+            public override Task<SerialInputSignals> GetSignalsAsync(CancellationToken cancellationToken)
+                => Task.FromResult(new SerialInputSignals { DataCarrierDetect = true, ClearToSend = true, RingIndicator = false, DataSetReady = true });
+
+            public override Task CloseAsync() => Task.CompletedTask;
+        }
+    }
+    #endregion
+
+    #region WebPlatform_SerialPortChooser
+    // The port chooser of requestPort(): the user picks the first port that matches the filters of the page
+    private sealed class FirstSerialPortChooser : SerialProvider
+    {
+        public override Task<SerialHostPort?> RequestPort(SerialPortRequest request) => Task.FromResult(request.Ports.Count > 0 ? request.Ports[0] : null);
+    }
+    #endregion
+
+    [Fact]
+    public async Task Serial_RequestPort_OpensAndExchangesBytes()
+    {
+        #region WebPlatform_Serial
+        var serial = new FirstSerialPortChooser();
+        serial.Connect(new LoopbackSerialPort());
+        var options = new BrowsingContextOptions
+        {
+            Serial = new WebSerialOptions { Provider = serial },
+        };
+        #endregion
+
+        var document = Load("<script>window.request = filters => navigator.serial.requestPort({ filters }).then(p => { window.port = p; document.title = p.getInfo().usbVendorId; }, e => document.title = e.name);</script>", options);
+        Assert.Equal("SecurityError", await RunAsync(document, "request([{ usbVendorId: 0x2341 }])"));
+
+        Activate(document);
+        Assert.Equal("TypeError", await RunAsync(document, "request([{ usbProductId: 0x0043 }])"));
+        Assert.Equal("NotFoundError", await RunAsync(document, "request([{ usbVendorId: 0x1234 }])"));
+        Assert.Equal("9025", await RunAsync(document, "request([{ usbVendorId: 0x2341, usbProductId: 0x0043 }])"));
+
+        Assert.Equal("TypeError,null,1|2|3,true,TypeError,InvalidStateError,1", await RunAsync(document, """
+            (async () => {
+              const results = [];
+              await port.open({ baudRate: 9600, dataBits: 6 }).catch(e => results.push(e.name));
+              results.push(String(port.readable));
+              await port.open({ baudRate: 9600 });
+              const writer = port.writable.getWriter();
+              await writer.write(new Uint8Array([1, 2, 3]));
+              writer.releaseLock();
+              const reader = port.readable.getReader();
+              const { value } = await reader.read();
+              results.push(value.join('|'), (await port.getSignals()).clearToSend);
+              await port.close().catch(e => results.push(e.name));
+              reader.releaseLock();
+              await port.close();
+              await port.close().catch(e => results.push(e.name));
+              results.push((await navigator.serial.getPorts()).length);
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Serial_Disconnect_ErrorsTheReadableStream()
+    {
+        var serial = new SerialProvider();
+        var port = new LoopbackSerialPort();
+        serial.Connect(port);
+        serial.Allow(port, "https://example.com");
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Serial = new WebSerialOptions { Provider = serial } });
+        await RunAsync(document, """
+            (async () => {
+              const [port] = await navigator.serial.getPorts();
+              window.port = port;
+              navigator.serial.ondisconnect = e => log.push('disconnect ' + e.target.connected);
+              await port.open({ baudRate: 115200 });
+              port.readable.getReader().read().catch(e => log.push(e.name));
+            })()
+            """);
+
+        Assert.True(serial.Disconnect(port));
+        Assert.Equal("disconnect false|NetworkError|null", await RunAsync(document, "setTimeout(() => document.title = [...log, String(port.readable)].join('|'), 0)"));
+    }
+
+    [Fact]
+    public void Serial_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false,true", Run(Load("<script>document.title = ['serial' in navigator, typeof SerialPort === 'undefined'].join();</script>", url: "http://example.com/")));
+    }
+
+    // WebHID
+
+    #region WebPlatform_HidHostDevice
+    // A vendor-defined device of the application: it sends back the output reports as input reports, and stores its feature report
+    private sealed class EchoHidDevice() : HidHostDevice(0x1234, 0x5678, "Echo Device", EchoReportDescriptor)
+    {
+        // Usage page 0xFF00, application collection: the input and output report 1 (8 bytes), the feature report 2 (4 bytes)
+        private static readonly byte[] EchoReportDescriptor =
+        [
+            0x06, 0x00, 0xFF, 0x09, 0x01, 0xA1, 0x01, 0x85, 0x01, 0x15, 0x00, 0x26, 0xFF, 0x00, 0x75, 0x08, 0x95, 0x08,
+            0x09, 0x02, 0x81, 0x02, 0x09, 0x03, 0x91, 0x02, 0x85, 0x02, 0x95, 0x04, 0x09, 0x04, 0xB1, 0x02, 0xC0,
+        ];
+
+        public override Task<HidDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<HidDeviceSession>(new Session());
+
+        // The library parses the collections and checks the report IDs: the session only exchanges the reports
+        private sealed class Session : HidDeviceSession
+        {
+            private byte[] _feature = [1, 2, 3, 4];
+
+            public override Task SendReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                OnInputReport(reportId, data);
+                return Task.CompletedTask;
+            }
+
+            public override Task SendFeatureReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken)
+            {
+                _feature = data.ToArray();
+                return Task.CompletedTask;
+            }
+
+            public override Task<ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, CancellationToken cancellationToken) => Task.FromResult<ReadOnlyMemory<byte>>(_feature);
+
+            public override Task CloseAsync() => Task.CompletedTask;
+        }
+    }
+    #endregion
+
+    private sealed class FirstHidDeviceChooser : HidProvider
+    {
+        public override Task<HidHostDevice?> RequestDevice(HidDeviceRequest request) => Task.FromResult(request.Devices.Count > 0 ? request.Devices[0] : null);
+    }
+
+    [Fact]
+    public async Task Hid_RequestDevice_ParsesTheCollectionsAndExchangesReports()
+    {
+        #region WebPlatform_Hid
+        var hid = new FirstHidDeviceChooser();
+        hid.Connect(new EchoHidDevice());
+        var options = new BrowsingContextOptions
+        {
+            Hid = new HidOptions { Provider = hid },
+        };
+        #endregion
+
+        var document = Load("<script>window.log = [];</script>", options);
+        Activate(document);
+        Assert.Equal("0,1", await RunAsync(document, """
+            Promise.all([
+              navigator.hid.requestDevice({ filters: [{ usagePage: 0x0001 }] }),
+              navigator.hid.requestDevice({ filters: [{ vendorId: 0x1234, usagePage: 0xFF00, usage: 1 }] }),
+            ]).then(([none, devices]) => { window.device = devices[0]; document.title = [none.length, devices.length].join(); })
+            """));
+
+        Assert.Equal("Echo Device,65280,1,1,1,8,8,4278190082,255,2,4", await RunAsync(document, """
+            const c = device.collections[0];
+            const item = c.inputReports[0].items[0];
+            document.title = [device.productName, c.usagePage, c.usage, c.type, c.inputReports[0].reportId, item.reportSize, item.reportCount,
+              item.usages[0], item.logicalMaximum, c.featureReports[0].reportId, c.featureReports[0].items[0].reportCount].join();
+            """));
+
+        Assert.Equal("InvalidStateError,TypeError,1:7|8,5|6", await RunAsync(document, """
+            (async () => {
+              const results = [];
+              await device.sendReport(1, new Uint8Array([7, 8])).catch(e => results.push(e.name));
+              await device.open();
+              await device.sendReport(0, new Uint8Array([7, 8])).catch(e => results.push(e.name));
+              device.oninputreport = e => log.push(e.reportId + ':' + new Uint8Array(e.data.buffer).join('|'));
+              await device.sendReport(1, new Uint8Array([7, 8]));
+              await new Promise(resolve => setTimeout(resolve, 0));
+              await device.sendFeatureReport(2, new Uint8Array([5, 6]));
+              const feature = await device.receiveFeatureReport(2);
+              results.push(...log, new Uint8Array(feature.buffer).join('|'));
+              await device.close();
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Hid_BlockedReports_AreRejectedWithNotAllowedError()
+    {
+        // A keyboard (usage page 1, usage 6): its reports are blocked, so that a page cannot log the keys
+        var hid = new HidProvider();
+        var keyboard = new EchoHidDeviceWithDescriptor([0x05, 0x01, 0x09, 0x06, 0xA1, 0x01, 0x75, 0x08, 0x95, 0x01, 0x91, 0x02, 0xC0]);
+        hid.Connect(keyboard);
+        hid.Allow(keyboard, "https://example.com");
+        var document = Load("<script></script>", new BrowsingContextOptions { Hid = new HidOptions { Provider = hid } });
+
+        Assert.Equal("NotAllowedError", await RunAsync(document, """
+            navigator.hid.getDevices().then(async ([device]) => {
+              await device.open();
+              await device.sendReport(0, new Uint8Array([1])).catch(e => document.title = e.name);
+            })
+            """));
+    }
+
+    private sealed class EchoHidDeviceWithDescriptor(byte[] descriptor) : HidHostDevice(0x1111, 0x2222, "Device", descriptor)
+    {
+        public override Task<HidDeviceSession> OpenAsync(CancellationToken cancellationToken) => Task.FromResult<HidDeviceSession>(new NullSession());
+
+        private sealed class NullSession : HidDeviceSession
+        {
+            public override Task SendReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task SendFeatureReportAsync(byte reportId, ReadOnlyMemory<byte> data, CancellationToken cancellationToken) => Task.CompletedTask;
+
+            public override Task<ReadOnlyMemory<byte>> ReceiveFeatureReportAsync(byte reportId, CancellationToken cancellationToken) => Task.FromResult(ReadOnlyMemory<byte>.Empty);
+
+            public override Task CloseAsync() => Task.CompletedTask;
+        }
+    }
+
+    [Fact]
+    public void Hid_ReportDescriptor_IsParsed()
+    {
+        // A mouse: a Pointer physical collection nested in the Mouse application collection, 3 buttons, 5 bits of padding, X and Y
+        var mouse = new EchoHidDeviceWithDescriptor(
+        [
+            0x05, 0x01, 0x09, 0x02, 0xA1, 0x01, 0x09, 0x01, 0xA1, 0x00, 0x05, 0x09, 0x19, 0x01, 0x29, 0x03, 0x15, 0x00, 0x25, 0x01,
+            0x95, 0x03, 0x75, 0x01, 0x81, 0x02, 0x95, 0x01, 0x75, 0x05, 0x81, 0x03, 0x05, 0x01, 0x09, 0x30, 0x09, 0x31, 0x15, 0x81,
+            0x25, 0x7F, 0x75, 0x08, 0x95, 0x02, 0x81, 0x06, 0xC0, 0xC0,
+        ]);
+
+        var collection = Assert.Single(mouse.Collections);
+        Assert.Equal((ushort)1, collection.UsagePage);
+        Assert.Equal((ushort)2, collection.Usage);
+        var pointer = Assert.Single(collection.Children!);
+        Assert.Equal((byte)0, pointer.Type);
+        Assert.False(mouse.UsesReportIds);
+        var items = Assert.Single(collection.InputReports!).Items!;
+        Assert.Equal(3, items.Count);
+        Assert.True(items[0].IsRange);
+        Assert.Equal(0x00090001u, items[0].UsageMinimum);
+        Assert.True(items[1].IsConstant);
+        Assert.Equal([0x00010030u, 0x00010031u], items[2].Usages);
+        Assert.Equal(-127, items[2].LogicalMinimum);
+        Assert.False(items[2].IsAbsolute);
+    }
+
+    // Web MIDI
+
+    #region WebPlatform_MidiHostOutput
+    // A synthesizer of the application: it plays the messages that the page sends
+    private sealed class Synthesizer() : MidiHostOutput("synth-1")
+    {
+        public List<byte[]> Messages { get; } = [];
+
+        public override void Send(ReadOnlyMemory<byte> data, TimeSpan delay) => Messages.Add(data.ToArray());
+    }
+    #endregion
+
+    private static PermissionStore GrantMidi()
+    {
+        var permissions = new PermissionStore();
+        permissions.SetState("midi", PermissionState.Granted);
+        return permissions;
+    }
+
+    [Fact]
+    public async Task Midi_RequestAccess_ReceivesAndSendsMessages()
+    {
+        #region WebPlatform_Midi
+        // A keyboard (the application gives it the bytes of the device) and a synthesizer
+        var keyboard = new MidiHostInput("keyboard-1") { Name = "Keyboard", Manufacturer = "Contoso" };
+        var synthesizer = new Synthesizer { Name = "Synthesizer" };
+        var midi = new MidiProvider();
+        midi.Connect(keyboard);
+        midi.Connect(synthesizer);
+        var options = new BrowsingContextOptions
+        {
+            Midi = new WebMidiOptions { Provider = midi },
+        };
+        #endregion
+
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Midi = options.Midi, Permissions = GrantMidi() });
+        Assert.Equal("1,1,Keyboard,Contoso,input,connected,open", await RunAsync(document, """
+            (async () => {
+              window.access = await navigator.requestMIDIAccess();
+              const input = access.inputs.get('keyboard-1');
+              input.onmidimessage = e => log.push(Array.from(e.data).join(' '));
+              await new Promise(resolve => input.onstatechange = resolve);
+              document.title = [access.inputs.size, access.outputs.size, input.name, input.manufacturer, input.type, input.state, input.connection].join();
+            })()
+            """));
+
+        // A note on and a note off with the running status, a system exclusive message split in two, and a clock inside it
+        keyboard.Receive([0x90, 0x3C, 0x7F, 0x3C, 0x00]);
+        keyboard.Receive([0xF0, 0x7E, 0xF8]);
+        keyboard.Receive([0x01, 0xF7]);
+        Assert.Equal("144 60 127|144 60 0|248", await RunAsync(document, "setTimeout(() => document.title = log.join('|'), 0)"));
+
+        Assert.Equal("TypeError,TypeError,NotAllowedError,closed", await RunAsync(document, """
+            (async () => {
+              const output = access.outputs.get('synth-1');
+              const results = [];
+              for (const data of [[0x3C, 0x7F], [0x90, 0x3C], [0xF0, 0x01, 0xF7]]) {
+                try { output.send(data); } catch (e) { results.push(e.name); }
+              }
+
+              results.push(output.connection);
+              output.send([0x90, 0x3C, 0x7F, 0xFE, 0x80, 0x3C, 0x00]);
+              document.title = results.join();
+            })()
+            """));
+        Assert.Equal("144 60 127 254 128 60 0", string.Join(' ', synthesizer.Messages.Single()));
+    }
+
+    [Fact]
+    public async Task Midi_Disconnect_MakesTheOpenPortPending()
+    {
+        var synthesizer = new Synthesizer();
+        var midi = new MidiProvider();
+        midi.Connect(synthesizer);
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Midi = new WebMidiOptions { Provider = midi }, Permissions = GrantMidi() });
+        await RunAsync(document, """
+            (async () => {
+              window.access = await navigator.requestMIDIAccess({ sysex: true });
+              window.output = access.outputs.get('synth-1');
+              await output.open();
+              access.onstatechange = e => log.push(e.port.id + ' ' + e.port.state + ' ' + e.port.connection);
+            })()
+            """);
+
+        Assert.True(midi.Disconnect(synthesizer));
+        Assert.Equal("synth-1 disconnected pending|0|InvalidStateError", await RunAsync(document, """
+            setTimeout(() => {
+              try { output.send([0xF0, 0x01, 0xF7]); } catch (e) { log.push(access.outputs.size, e.name); }
+              document.title = log.join('|');
+            }, 0)
+            """));
+
+        Run(document, """
+            log.length = 0;
+            access.addEventListener('statechange', () => {
+              output.send([0xF0, 0x01, 0xF7]);
+              document.title = [...log, access.outputs.size, access.sysexEnabled].join('|');
+            });
+            """);
+        midi.Connect(synthesizer);
+        Assert.Equal("synth-1 connected open|1|true", await RunAsync(document));
+        Assert.Equal("240 1 247", string.Join(' ', synthesizer.Messages.Single()));
+    }
+
+    [Fact]
+    public async Task Midi_RequestAccess_RequiresThePermission()
+    {
+        var document = Load("", new BrowsingContextOptions { Midi = new WebMidiOptions { Provider = new MidiProvider() } });
+        Assert.Equal("NotAllowedError", await RunAsync(document, "navigator.requestMIDIAccess().then(() => document.title = 'granted', e => document.title = e.name)"));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x90, 0x3C, 0x7F }, true, false)]
+    [InlineData(new byte[] { 0x90, 0xF8, 0x3C, 0x7F, 0xC0, 0x01, 0xF6 }, true, false)]
+    [InlineData(new byte[] { 0xF0, 0x01, 0xFE, 0x02, 0xF7, 0xF2, 0x00, 0x00 }, true, true)]
+    [InlineData(new byte[] { }, false, false)]
+    [InlineData(new byte[] { 0x3C }, false, false)]
+    [InlineData(new byte[] { 0x90, 0x3C }, false, false)]
+    [InlineData(new byte[] { 0x90, 0x3C, 0x80, 0x3C, 0x00 }, false, false)]
+    [InlineData(new byte[] { 0xF0, 0x01, 0x90, 0xF7 }, false, true)]
+    [InlineData(new byte[] { 0xF0, 0x01 }, false, true)]
+    [InlineData(new byte[] { 0xF7 }, false, false)]
+    [InlineData(new byte[] { 0xF4 }, false, false)]
+    public void Midi_Validate_ChecksTheMessages(byte[] data, bool isValid, bool containsSysEx)
+    {
+        Assert.Equal(isValid, MidiMessages.Validate(data, out var sysEx) is null);
+        Assert.Equal(containsSysEx, sysEx);
+    }
+
+    // Presentation API
+
+    #region WebPlatform_PresentationDisplay
+    // A second screen of the application: a presentation runs in a receiving browsing context that the application creates
+    // with PresentationOptions.Receiver, and each controller gets a channel connected in memory to it
+    private sealed class SecondScreen() : PresentationDisplay("Second screen")
+    {
+        public PresentationReceivingContext? Receiver { get; private set; }
+
+        public override Task<PresentationSession> StartAsync(PresentationStartRequest request, CancellationToken cancellationToken)
+        {
+            Receiver = new PresentationReceivingContext(request.Url, request.Id);
+            return Task.FromResult<PresentationSession>(new Session(Receiver));
+        }
+
+        private sealed class Session(PresentationReceivingContext receiver) : PresentationSession(receiver.Url, receiver.Id)
+        {
+            public override Task<PresentationChannel> ConnectAsync(CancellationToken cancellationToken)
+            {
+                var (controller, receiving) = PresentationChannel.CreatePair();
+                receiver.Connect(receiving);
+                return Task.FromResult(controller);
+            }
+        }
+    }
+
+    // The display chooser of start(): the user picks the first display
+    private sealed class FirstDisplayChooser : PresentationProvider
+    {
+        public override Task<PresentationDisplay?> RequestDisplay(PresentationDisplayRequest request) => Task.FromResult<PresentationDisplay?>(request.Displays[0]);
+    }
+    #endregion
+
+    [Fact]
+    public async Task Presentation_Start_ConnectsTheControllerAndTheReceiver()
+    {
+        #region WebPlatform_Presentation
+        var screen = new SecondScreen();
+        var presentation = new FirstDisplayChooser();
+        presentation.AddDisplay(screen);
+        var options = new BrowsingContextOptions
+        {
+            Presentation = new PresentationOptions { Provider = presentation },
+        };
+        #endregion
+
+        var controller = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Presentation = options.Presentation });
+        Assert.Equal("InvalidAccessError", await RunAsync(controller, "new PresentationRequest('slides.html').start().catch(e => document.title = e.name)"));
+
+        Activate(controller);
+        Assert.Equal("connecting,https://example.com/slides.html,32|connectionavailable|connect", await RunAsync(controller, """
+            (async () => {
+              const request = new PresentationRequest(['unsupported://example.com', 'slides.html']);
+              request.onconnectionavailable = e => log.push(e.type);
+              window.connection = await request.start();
+              log.push([connection.state, connection.url, connection.id.length].join());
+              connection.onconnect = e => { log.push(e.type); document.title = log.join('|'); };
+            })()
+            """));
+
+        #region WebPlatform_PresentationReceiver
+        // Once the page started the presentation, the application loads its URL in a receiving browsing context
+        var receiverOptions = new BrowsingContextOptions
+        {
+            Presentation = new PresentationOptions { Receiver = screen.Receiver },
+        };
+        #endregion
+
+        var receiver = Load("""
+            <script>
+              navigator.presentation.receiver.connectionList.then(list => {
+                const [connection] = list.connections;
+                connection.onmessage = e => connection.send('echo ' + e.data);
+                document.title = [list.connections.length, connection.state, connection.url].join();
+              });
+            </script>
+            """, receiverOptions, url: "https://example.com/slides.html");
+        Assert.Equal("1,connected,https://example.com/slides.html", await RunAsync(receiver));
+
+        // The two browsing contexts have their own event loop: both run until the messages are delivered
+        Assert.Equal("echo hello", await RunBothAsync(controller, receiver, "connection.addEventListener('message', e => document.title = e.data, { once: true }); connection.send('hello');"));
+        Assert.Equal("terminated", await RunBothAsync(controller, receiver, "connection.addEventListener('terminate', () => document.title = connection.state); connection.terminate();"));
+    }
+
+    [Fact]
+    public async Task Presentation_RequestAndAvailability_Errors()
+    {
+        var presentation = new PresentationProvider();
+        var document = Load("<script>window.log = [];</script>", new BrowsingContextOptions { Presentation = new PresentationOptions { Provider = presentation } });
+        Assert.Equal("NotSupportedError,SyntaxError,NotSupportedError,SecurityError", Run(document, """
+            for (const urls of [[], ['https://@'], ['unsupported://example.com'], ['http://example.org/']]) {
+              try { new PresentationRequest(urls); } catch (e) { log.push(e.name); }
+            }
+
+            document.title = log.join();
+            """));
+
+        Activate(document);
+        Assert.Equal("NotFoundError,NotFoundError,false", await RunAsync(document, """
+            (async () => {
+              window.request = new PresentationRequest('slides.html');
+              const results = [];
+              await request.start().catch(e => results.push(e.name));
+              await request.reconnect('0123456789abcdef').catch(e => results.push(e.name));
+              window.availability = await request.getAvailability();
+              results.push(availability.value, (await request.getAvailability()) === availability);
+              availability.onchange = () => log.push('change ' + availability.value);
+              document.title = results.slice(0, 3).join();
+            })()
+            """));
+
+        presentation.AddDisplay(new SecondScreen());
+        Activate(document);
+        Assert.Equal("change true|NotAllowedError", await RunAsync(document, """
+            log.length = 0;
+            setTimeout(() => request.start().catch(e => { log.push(e.name); document.title = log.join('|'); }), 0)
+            """));
+    }
+
+    // Contact Picker API
+
+    #region WebPlatform_ContactsProvider
+    // The address book of the user: the user selects all the contacts that the page can get
+    private sealed class AddressBook : ContactsProvider
+    {
+        public override Task<IReadOnlyList<UserContact>> SelectAsync(ContactPickerRequest request)
+        {
+            IReadOnlyList<UserContact> contacts =
+            [
+                new UserContact { Names = ["Ada Lovelace"], Emails = ["ada@example.com"], Numbers = ["+44 20 7946 0000"] },
+                new UserContact { Names = ["Alan Turing"], Addresses = [new ContactAddress { City = "Wilmslow", Country = "gb", AddressLine = ["43 Adlington Road"] }] },
+            ];
+            return Task.FromResult(request.Multiple ? contacts : [contacts[0]]);
+        }
+    }
+    #endregion
+
+    [Fact]
+    public async Task Contacts_Select_ReturnsTheRequestedProperties()
+    {
+        #region WebPlatform_Contacts
+        var options = new BrowsingContextOptions
+        {
+            Contacts = new ContactsOptions { Provider = new AddressBook() },
+        };
+        #endregion
+
+        var document = Load("<script>window.log = [];</script>", options);
+        Assert.Equal("address,email,icon,name,tel|SecurityError", await RunAsync(document, """
+            (async () => {
+              log.push((await navigator.contacts.getProperties()).join());
+              await navigator.contacts.select(['name']).catch(e => log.push(e.name));
+              document.title = log.join('|');
+            })()
+            """));
+
+        Activate(document);
+        Assert.Equal("""2|["Ada Lovelace"],["ada@example.com"],undefined|["Alan Turing"],[],Wilmslow,GB""", await RunAsync(document, """
+            (async () => {
+              const contacts = await navigator.contacts.select(['name', 'email', 'address'], { multiple: true });
+              document.title = [
+                contacts.length,
+                [JSON.stringify(contacts[0].name), JSON.stringify(contacts[0].email), String(contacts[0].tel)].join(),
+                [JSON.stringify(contacts[1].name), JSON.stringify(contacts[1].email), contacts[1].address[0].city, contacts[1].address[0].country].join(),
+              ].join('|');
+            })()
+            """));
+
+        Activate(document);
+        Assert.Equal("TypeError,InvalidStateError", await RunAsync(document, """
+            (async () => {
+              const results = [];
+              await navigator.contacts.select([]).catch(e => results.push(e.name));
+              const frame = document.createElement('iframe');
+              document.body.append(frame);
+              await frame.contentWindow.navigator.contacts.select(['name']).catch(e => results.push(e.name));
+              document.title = results.join();
+            })()
+            """));
+    }
+
+    [Fact]
+    public async Task Contacts_WithoutProvider_SupportsNoProperty()
+    {
+        var document = Load("");
+        Activate(document);
+        Assert.Equal("0,TypeError", await RunAsync(document, """
+            (async () => {
+              const properties = await navigator.contacts.getProperties();
+              const error = await navigator.contacts.select(['name']).catch(e => e.name);
+              document.title = [properties.length, error].join();
+            })()
+            """));
+    }
+
+    // CPU Performance
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 1)]
+    [InlineData(2, 2)]
+    [InlineData(4, 2)]
+    [InlineData(5, 3)]
+    [InlineData(10, 3)]
+    [InlineData(11, 4)]
+    [InlineData(128, 4)]
+    public void CpuPerformance_TierOfTheProcessorCount(int cores, int tier)
+    {
+        Assert.Equal((ushort)tier, Navigator.GetCpuPerformanceTier(cores));
+    }
+
+    [Fact]
+    public void CpuPerformance_IsOnlyExposedToTheSecureContexts()
+    {
+        var expected = Navigator.GetCpuPerformanceTier(Environment.ProcessorCount).ToString(CultureInfo.InvariantCulture);
+        Assert.Equal(expected, Run(Load("<script>document.title = navigator.cpuPerformance;</script>")));
+        Assert.Equal("false", Run(Load("<script>document.title = 'cpuPerformance' in navigator;</script>", url: "http://example.com/")));
+    }
+
+    // HTML Media Capture
+
+    [Fact]
+    public void InputCapture_ReflectsTheKnownValues()
+    {
+        var document = Load("""
+            <input type=file accept="image/*" id=a capture=ENVIRONMENT>
+            <input type=file accept="image/*" id=b capture=front>
+            <input type=file accept="image/*" id=c>
+            <script>
+            c.capture = 'user';
+            document.title = [a.capture, b.capture, c.capture, c.getAttribute('capture')].join();
+            </script>
+            """);
+
+        Assert.Equal("environment,,user,user", Run(document));
+    }
+
+    // Captured Mouse Events
+
+    [Fact]
+    public void CapturedMouseEvent_IsDispatchedToTheEventHandlerOfTheController()
+    {
+        var document = Load("""
+            <script>
+            const controller = new CaptureController();
+            controller.oncapturedmousechange = e => document.title = [e.surfaceX, e.surfaceY, new CapturedMouseEvent('x').surfaceX].join();
+            controller.dispatchEvent(new CapturedMouseEvent('capturedmousechange', { surfaceX: 5, surfaceY: 7 }));
+            </script>
+            """);
+
+        Assert.Equal("5,7,-1", Run(document));
+    }
+
+    [Fact]
+    public void CapturedMouseEvent_NegativeCoordinates_ThrowRangeError()
+    {
+        Assert.Throws<RangeErrorException>(() => new CapturedMouseEvent("capturedmousechange", new CapturedMouseEventInit { SurfaceX = -1, SurfaceY = 5 }));
+        Assert.Throws<RangeErrorException>(() => new CapturedMouseEvent("capturedmousechange", new CapturedMouseEventInit { SurfaceX = -2, SurfaceY = -2 }));
+        Assert.Equal(-1, new CapturedMouseEvent("capturedmousechange", new CapturedMouseEventInit { SurfaceX = -1, SurfaceY = -1 }).SurfaceY);
+    }
+
+    // Web NFC
+
+    [Fact]
+    public void NdefMessage_CreatedFromDotNet()
+    {
+        #region WebPlatform_NdefMessage
+        var message = new NdefMessage(new NdefMessageInit
+        {
+            Records =
+            [
+                new NdefRecordInit { RecordType = "text", Data = "Hello", Lang = "en-US" },
+                new NdefRecordInit { RecordType = "url", Data = "https://example.com/products/42" },
+
+                // An external type record whose payload is another NDEF message
+                new NdefRecordInit
+                {
+                    RecordType = "example.com:product",
+                    Data = new NdefMessageInit
+                    {
+                        Records = [new NdefRecordInit { RecordType = "mime", MediaType = "application/json", Data = """{"id":42}"""u8.ToArray() }],
+                    },
+                },
+            ],
+        });
+
+        Assert.Equal("Hello", Encoding.UTF8.GetString(message.Records[0].Data!.Value.Span));
+        Assert.Equal("utf-8", message.Records[0].Encoding);
+        Assert.Equal("application/json", message.Records[2].ToRecords()![0].MediaType);
+        #endregion
+
+        Assert.Equal("en-US", message.Records[0].Lang);
+        Assert.Equal("https://example.com/products/42", Encoding.UTF8.GetString(message.Records[1].Data!.Value.Span));
+        Assert.Null(message.Records[2].Data);
+        Assert.Null(new NdefRecord(new NdefRecordInit { RecordType = "example.com:product", Data = new byte[] { 1, 2 } }).ToRecords());
+        Assert.Equal("NotSupportedError", Assert.Throws<DomException>(() => message.Records[0].ToRecords()).Name);
+    }
+
+    [Fact]
+    public void NdefRecord_InvalidRecords_Throw()
+    {
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "Text", Data = "Hello" }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "text", Data = "Hello", Encoding = "utf-16" }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "mime", Data = "Hello" }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = ":local", Data = new byte[] { 1 } }));
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit { RecordType = "example.com:a/b", Data = new byte[] { 1 } }));
+        Assert.Equal("SyntaxError", Assert.Throws<DomException>(() => new NdefRecord(new NdefRecordInit { RecordType = "url", Data = "not a URL" })).Name);
+
+        // A smart poster has exactly one url record
+        Assert.Throws<TypeErrorException>(() => new NdefRecord(new NdefRecordInit
+        {
+            RecordType = "smart-poster",
+            Data = new NdefMessageInit { Records = [new NdefRecordInit { RecordType = "text", Data = "Title" }] },
+        }));
+
+        // The messages cannot be nested more than 32 times
+        var init = new NdefMessageInit { Records = [new NdefRecordInit { RecordType = "empty" }] };
+        for (var i = 0; i < 32; i++)
+        {
+            init = new NdefMessageInit { Records = [new NdefRecordInit { RecordType = "example.com:nested", Data = init }] };
+        }
+
+        Assert.Throws<TypeErrorException>(() => new NdefMessage(init));
+        Assert.Single(new NdefMessage((NdefMessageInit)init.Records[0].Data!).Records);
+    }
+
+    [Fact]
+    public void NdefRecord_TextRecordFromScript_UsesTheLanguageOfTheDocument()
+    {
+        var document = Load("""
+            <html lang=fr>
+            <script>
+            const record = new NDEFRecord({ recordType: 'text', data: new TextEncoder().encode('Bonjour') });
+            document.title = [record.lang, record.encoding, new TextDecoder().decode(record.data), record.data instanceof DataView].join();
+            </script>
+            """);
+
+        Assert.Equal("fr,utf-8,Bonjour,true", Run(document));
+    }
+
+    [Fact]
+    public void NdefReader_WithoutAdapter_IsRejectedWithNotSupportedError()
+    {
+        const string Script = "<script>new NDEFReader().scan().then(() => document.title = 'started', e => document.title = e.name);</script>";
+
+        Assert.Equal("NotAllowedError", Run(Load(Script)));
+        Assert.Equal("NotSupportedError", Run(Load(Script, new BrowsingContextOptions { Permissions = GrantedPermissions("nfc") })));
+    }
+
+    [Fact]
+    public void NdefReader_AbortedSignal_IsRejectedWithTheReason()
+    {
+        var document = Load("<script>new NDEFReader().write('text', { signal: AbortSignal.abort('stop') }).then(() => document.title = 'written', e => document.title = e);</script>", new BrowsingContextOptions { Permissions = GrantedPermissions("nfc") });
+
+        Assert.Equal("stop", Run(document));
     }
 
     // Web Authentication
@@ -4210,6 +5648,99 @@ public sealed class HostDeviceApisTests : IDisposable
         Assert.Equal("videoinput,,0,true", await RunAsync(document, "list()"));
         await RunAsync(document, "go({ video: true })");
         Assert.Equal("videoinput,Test camera,64,true", await RunAsync(document, "list()"));
+    }
+
+    // Audio Output Devices API
+
+    #region WebPlatform_AudioOutputBackend
+    // The speakers and the headphones of the machine: the user picks the headphones in the prompt of selectAudioOutput()
+    private sealed class Speakers : MediaCaptureBackend
+    {
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() =>
+        [
+            new MediaCaptureDevice { Id = "speakers", Kind = MediaDeviceKind.AudioOutput, Label = "Speakers" },
+            new MediaCaptureDevice { Id = "headphones", Kind = MediaDeviceKind.AudioOutput, Label = "Headphones" },
+        ];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => throw new NotSupportedException();
+
+        public override MediaCaptureDevice? SelectAudioOutput(AudioOutputRequest request)
+            => request.Devices.FirstOrDefault(device => device.Label == "Headphones");
+    }
+    #endregion
+
+    private const string AudioOutputScript = """
+        window.select = () => navigator.mediaDevices.selectAudioOutput().then(d => { window.device = d; document.title = d.kind + ',' + d.label; }, e => document.title = e.name);
+        window.list = () => navigator.mediaDevices.enumerateDevices().then(d => document.title = d.filter(x => x.kind === 'audiooutput').map(x => x.label + ',' + (x.deviceId === window.device?.deviceId)).join(';'));
+        """;
+
+    [Fact]
+    public async Task SelectAudioOutput_ExposesTheDeviceChosenByTheUser()
+    {
+        var document = Load("<script>" + AudioOutputScript + "</script>", new BrowsingContextOptions { MediaCapture = new Speakers() });
+
+        Assert.Equal("", await RunAsync(document, "list()"));
+        Activate(document);
+        Assert.Equal("audiooutput,Headphones", await RunAsync(document, "select()"));
+        Assert.Equal("Headphones,true", await RunAsync(document, "list()"));
+    }
+
+    [Fact]
+    public async Task SelectAudioOutput_Errors()
+    {
+        const string Script = "<script>window.select = () => navigator.mediaDevices.selectAudioOutput().then(d => document.title = d.label, e => document.title = e.name);</script>";
+
+        var document = Load(Script, new BrowsingContextOptions { MediaCapture = new Speakers() });
+        Assert.Equal("InvalidStateError", await RunAsync(document, "select()"));
+
+        // Without audio output device
+        document = Load(Script);
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "select()"));
+
+        document = Load(Script, new BrowsingContextOptions { MediaCapture = new SolidColorCamera() });
+        Activate(document);
+        Assert.Equal("NotFoundError", await RunAsync(document, "select()"));
+
+        // The user cancels the prompt (the default of MediaCaptureBackend.SelectAudioOutput), or denied the permission
+        document = Load(Script, new BrowsingContextOptions { MediaCapture = new SpeakersWithoutPrompt() });
+        Activate(document);
+        Assert.Equal("NotAllowedError", await RunAsync(document, "select()"));
+
+        var denied = new PermissionStore();
+        denied.SetState("speaker-selection", PermissionState.Denied);
+        document = Load(Script, new BrowsingContextOptions { MediaCapture = new Speakers(), Permissions = denied });
+        Activate(document);
+        Assert.Equal("NotAllowedError", await RunAsync(document, "select()"));
+    }
+
+    // Speakers whose prompt is always canceled
+    private sealed class SpeakersWithoutPrompt : MediaCaptureBackend
+    {
+        public override IReadOnlyList<MediaCaptureDevice> GetDevices() => [new MediaCaptureDevice { Id = "speakers", Kind = MediaDeviceKind.AudioOutput, Label = "Speakers" }];
+
+        public override MediaCaptureSource StartCapture(MediaCaptureRequest request) => throw new NotSupportedException();
+    }
+
+    [Fact]
+    public async Task SetSinkId_ChangesTheDeviceOfTheMediaElement()
+    {
+        var document = Load("<audio id=a></audio><script>" + AudioOutputScript + "</script>", new BrowsingContextOptions { MediaCapture = new Speakers() });
+        Activate(document);
+        await RunAsync(document, "select()");
+
+        Assert.Equal("true,true", await RunAsync(document, "const p = a.setSinkId(device.deviceId); const before = a.sinkId === ''; p.then(() => document.title = [before, a.sinkId === device.deviceId].join())"));
+        Assert.Equal("NotFoundError,true", await RunAsync(document, "a.setSinkId('unknown').catch(e => document.title = [e.name, a.sinkId === device.deviceId].join())"));
+        Assert.Equal("default", await RunAsync(document, "a.setSinkId('').then(() => document.title = a.sinkId || 'default')"));
+
+        // The device of an AudioContext
+        Assert.Equal("true", await RunAsync(document, "const context = new AudioContext(); context.setSinkId(device.deviceId).then(() => document.title = context.sinkId === device.deviceId)"));
+    }
+
+    [Fact]
+    public void SetSinkId_IsOnlyExposedToTheSecureContexts()
+    {
+        Assert.Equal("false", Run(Load("<script>document.title = 'setSinkId' in document.createElement('audio');</script>", url: "http://example.com/")));
     }
 
     [Fact]

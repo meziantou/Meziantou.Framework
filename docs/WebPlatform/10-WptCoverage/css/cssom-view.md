@@ -9,17 +9,17 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 221 | 234 | 0 | 94% |
+| [Stable](#stable-tests) | 220 | 234 | 0 | 94% |
 | [Tentative](#tentative-tests) | 4 | 5 | 0 | 80% |
 | [Reftests](#reftests) | 11 | 11 | 0 | 100% |
 | [Crash tests](#crash-tests) | 4 | 4 | 0 | 100% |
-| **All** | **240** | **254** | **0** | **94%** |
+| **All** | **239** | **254** | **0** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **TEST BUG**: 8
+- **TEST BUG**: 9
 - **NOT IMPLEMENTED**: 6
 
 ## Stable tests
@@ -128,7 +128,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`getClientRects-zoom.html`](https://wpt.fyi/results/css/cssom-view/getClientRects-zoom.html) | Pass | 5 / 5 |  |  |
 | [`historical.html`](https://wpt.fyi/results/css/cssom-view/historical.html) | Pass | 2 / 2 |  |  |
 | [`htmlelement-offset-width-001.html`](https://wpt.fyi/results/css/cssom-view/htmlelement-offset-width-001.html) | Pass | 1 / 1 |  |  |
-| [`idlharness.html`](https://wpt.fyi/results/css/cssom-view/idlharness.html) | Pass | 417 / 417 |  |  |
+| [`idlharness.html`](https://wpt.fyi/results/css/cssom-view/idlharness.html) | Fail | 415 / 417 | TEST BUG | 2 of 417 subtests: the IDL of CSSOM View does not make `Screen` derive from `EventTarget`, which the Window Management API requires for its `change` event (as in Chromium) |
 | [`image-x-y-zoom.html`](https://wpt.fyi/results/css/cssom-view/image-x-y-zoom.html) | Pass | 2 / 2 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/cssom-view/inheritance.html) | Pass | 2 / 2 |  |  |
 | [`interrupt-hidden-smooth-scroll.html`](https://wpt.fyi/results/css/cssom-view/interrupt-hidden-smooth-scroll.html) | Pass | 2 / 2 |  |  |

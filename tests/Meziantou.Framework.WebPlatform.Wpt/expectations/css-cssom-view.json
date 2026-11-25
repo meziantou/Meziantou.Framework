@@ -384,7 +384,11 @@
     "total": 1
   },
   "css/cssom-view/idlharness.html": {
-    "total": 417
+    "total": 417,
+    "failures": {
+      "Screen interface: existence and properties of interface object": "FAIL",
+      "Screen interface: existence and properties of interface prototype object": "FAIL"
+    }
   },
   "css/cssom-view/image-x-y-zoom.html": {
     "total": 2

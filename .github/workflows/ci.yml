@@ -9,8 +9,6 @@ on:
         type: boolean
         default: false
         required: false
-  # No branch filter: '*' does not match a '/', so it skipped the pull requests whose base is a
-  # branch such as feature/x (stacked pull requests)
   pull_request:
   # Pull requests and manual runs only test the projects that set GlobalizationSensitive in invariant
   # globalization mode. This run tests all of them in that mode, so a failure means the analyzer that

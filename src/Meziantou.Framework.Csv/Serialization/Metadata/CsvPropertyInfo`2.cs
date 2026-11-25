@@ -74,7 +74,7 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
 
     public override void ReadInto(CsvArgumentSlot slot, ReadOnlySpan<byte> utf8Value, bool isAscii) => ((CsvArgumentSlot<TValue>)slot).Value = Read(utf8Value, isAscii);
 
-    private TValue Read(ReadOnlySpan<char> value)
+    internal TValue Read(ReadOnlySpan<char> value)
     {
         if (value.IsEmpty && default(TValue) is null && !_converter.HandleNull)
             return default!;
@@ -82,7 +82,7 @@ internal sealed class CsvPropertyInfo<TDeclaring, TValue> : CsvPropertyInfo<TDec
         return _converter.Read(value, _context);
     }
 
-    private TValue Read(ReadOnlySpan<byte> utf8Value, bool isAscii)
+    internal TValue Read(ReadOnlySpan<byte> utf8Value, bool isAscii)
     {
         if (utf8Value.IsEmpty && default(TValue) is null && !_converter.HandleNull)
             return default!;

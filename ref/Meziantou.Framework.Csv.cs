@@ -595,6 +595,13 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata
         public TValue GetValue<TValue>(int index) => throw null;
     }
 
+    public ref struct CsvMemberValues<T>
+    {
+        public bool TryRead<TValue>(int memberIndex, out TValue value) => throw null;
+    }
+
+    public delegate void CsvMembersReader<T>(ref T obj, ref Meziantou.Framework.Csv.Serialization.Metadata.CsvMemberValues<T> values);
+
     public static class CsvMetadataServices
     {
         public static Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> CreateObjectInfo<T>(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options, Meziantou.Framework.Csv.Serialization.Metadata.CsvObjectInfoValues<T> values) => throw null;
@@ -609,9 +616,11 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata
     public sealed class CsvObjectInfoValues<T>
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvParameterInfoValues>? ConstructorParameters { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.Metadata.CsvMembersReader<T>? MembersReader { get => throw null; init { } }
         public System.Func<T>? ObjectCreator { get => throw null; init { } }
         public System.Func<Meziantou.Framework.Csv.Serialization.Metadata.CsvConstructorArguments, T>? ObjectWithParameterizedConstructorCreator { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertyInfo> Properties { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.Metadata.Utf8CsvMembersReader<T>? Utf8MembersReader { get => throw null; init { } }
     }
 
     public sealed class CsvParameterInfoValues
@@ -674,4 +683,11 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "The constructor of the resolver requires unreferenced code.")]
         public Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo? GetTypeInfo(System.Type type, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options) => throw null;
     }
+
+    public ref struct Utf8CsvMemberValues<T>
+    {
+        public bool TryRead<TValue>(int memberIndex, out TValue value) => throw null;
+    }
+
+    public delegate void Utf8CsvMembersReader<T>(ref T obj, ref Meziantou.Framework.Csv.Serialization.Metadata.Utf8CsvMemberValues<T> values);
 }

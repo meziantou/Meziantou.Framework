@@ -511,15 +511,22 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
             body.Append("        var properties = new ").Append(Metadata).AppendLine(".CsvPropertyInfo[]");
             body.AppendLine("        {");
 
+            var readerStatements = new StringBuilder();
             var columnNames = new HashSet<string>(StringComparer.Ordinal);
             for (var i = 0; i < members.Count; i++)
             {
                 var parameterIndex = Array.IndexOf(parameterMembers, i);
-                var property = EmitProperty(namedType, typeFqn, members[i], parameterIndex, location);
+                var property = EmitProperty(namedType, typeFqn, members[i], parameterIndex, location, out var setterBody);
                 if (property is null)
                     return null;
 
                 body.Append(property);
+                if (setterBody is not null)
+                {
+                    // Each statement is in its own block, so that each value is named "value", as in the setter
+                    readerStatements.Append("        { if (values.TryRead<").Append(Fqn(members[i].Type)).Append(">(").Append(Literal(i)).Append(", out var value)) ").Append(setterBody).AppendLine("; }");
+                }
+
                 CheckDuplicateColumnName(typeName, members[i], columnNames, location);
             }
 
@@ -530,7 +537,7 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
 
                 var parameter = parameters[i];
                 var member = new MemberData(parameter.Name, parameter.Type, Symbol: null, Include: false);
-                var property = EmitProperty(namedType, typeFqn, member, i, location);
+                var property = EmitProperty(namedType, typeFqn, member, i, location, out _);
                 if (property is null)
                     return null;
 
@@ -600,8 +607,29 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
             }
 
             body.AppendLine("            Properties = properties,");
+            if (readerStatements.Length > 0)
+            {
+                body.Append("            MembersReader = ").Append(methodName).AppendLine("_Read,");
+                body.Append("            Utf8MembersReader = ").Append(methodName).AppendLine("_ReadUtf8,");
+            }
+
             body.AppendLine("        });");
             body.AppendLine("    }");
+
+            // The members readers convert and set the members without a virtual call: see CsvObjectInfoValues<T>.MembersReader. The same statements read
+            // UTF-16 and UTF-8 values.
+            if (readerStatements.Length > 0)
+            {
+                foreach (var (suffix, values) in new[] { ("_Read", "CsvMemberValues"), ("_ReadUtf8", "Utf8CsvMemberValues") })
+                {
+                    body.AppendLine();
+                    body.Append("    private static void ").Append(methodName).Append(suffix).Append("(ref ").Append(typeFqn).Append(" obj, ref ").Append(Metadata).Append('.').Append(values).Append('<').Append(typeFqn).AppendLine("> values)");
+                    body.AppendLine("    {");
+                    body.Append(readerStatements);
+                    body.AppendLine("    }");
+                }
+            }
+
             return body.ToString();
         }
 
@@ -778,8 +806,10 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
             }
         }
 
-        private string? EmitProperty(INamedTypeSymbol declaringType, string declaringFqn, MemberData member, int parameterIndex, Location? location)
+        // setterBody: the statement that sets the member to "value" in "obj", the body of the setter, or null when the member has no setter
+        private string? EmitProperty(INamedTypeSymbol declaringType, string declaringFqn, MemberData member, int parameterIndex, Location? location, out string? setterBody)
         {
+            setterBody = null;
             var valueFqn = Fqn(member.Type);
             var memberDisplayName = declaringType.ToDisplayString() + "." + member.Name;
             if (!_compilation.IsSymbolAccessibleWithin(member.Type, _context))
@@ -816,7 +846,7 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
                     {
                         if (!setMethod.IsInitOnly && _compilation.IsSymbolAccessibleWithin(setMethod, _context))
                         {
-                            setter = "(ref " + declaringFqn + " obj, " + valueFqn + " value) => obj." + EscapeIdentifier(property.Name) + " = value";
+                            setterBody = "obj." + EscapeIdentifier(property.Name) + " = value";
                         }
                         else if (!TryCreateMethodAccessor(property.ContainingType, setMethod.Name, "void", [valueFqn], out var accessorName, location, memberDisplayName))
                         {
@@ -824,7 +854,7 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
                         }
                         else
                         {
-                            setter = "(ref " + declaringFqn + " obj, " + valueFqn + " value) => " + accessorName + "(" + refPrefix + "obj, value)";
+                            setterBody = accessorName + "(" + refPrefix + "obj, value)";
                         }
                     }
 
@@ -841,10 +871,15 @@ public sealed class CsvSerializerContextGenerator : IIncrementalGenerator
                     getter = "obj => " + fieldExpression;
                     if (parameterIndex < 0 && !field.IsReadOnly)
                     {
-                        setter = "(ref " + declaringFqn + " obj, " + valueFqn + " value) => " + fieldExpression + " = value";
+                        setterBody = fieldExpression + " = value";
                     }
 
                     break;
+            }
+
+            if (setterBody is not null)
+            {
+                setter = "(ref " + declaringFqn + " obj, " + valueFqn + " value) => " + setterBody;
             }
 
             isRequired |= member.Symbol is not null && HasAttribute(member.Symbol, "CsvRequiredAttribute");

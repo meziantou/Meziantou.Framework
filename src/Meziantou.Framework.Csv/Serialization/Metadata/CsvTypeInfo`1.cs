@@ -8,10 +8,13 @@ public sealed class CsvTypeInfo<T> : CsvTypeInfo
     private readonly CsvParameterInfoValues[] _parameters;
     private readonly CsvPropertyInfo<T>?[] _parameterProperties;
 
-    internal CsvTypeInfo(CsvSerializerOptions options, CsvObjectInfoValues<T> values, CsvPropertyInfo<T>[] properties)
+    internal CsvTypeInfo(CsvSerializerOptions options, CsvObjectInfoValues<T> values, CsvPropertyInfo<T>[] properties, CsvPropertyInfo<T>[] declaredProperties)
         : base(typeof(T), options, properties)
     {
         TypedProperties = properties;
+        DeclaredProperties = declaredProperties;
+        MembersReader = values.MembersReader;
+        Utf8MembersReader = values.Utf8MembersReader;
         ObjectCreator = values.ObjectCreator;
         ParameterizedCreator = values.ObjectWithParameterizedConstructorCreator;
 
@@ -78,6 +81,13 @@ public sealed class CsvTypeInfo<T> : CsvTypeInfo
     }
 
     internal CsvPropertyInfo<T>[] TypedProperties { get; }
+
+    // The members in the order of CsvObjectInfoValues<T>.Properties, whose indexes the members readers use
+    internal CsvPropertyInfo<T>[] DeclaredProperties { get; }
+
+    internal CsvMembersReader<T>? MembersReader { get; }
+
+    internal Utf8CsvMembersReader<T>? Utf8MembersReader { get; }
 
     // The member of each column, null for a column that no member uses
     internal CsvPropertyInfo<T>?[] Layout { get; }

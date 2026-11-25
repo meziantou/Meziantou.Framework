@@ -20,6 +20,10 @@ internal sealed class CsvRecordBinder<T>
     private readonly int[] _setColumns;
     private readonly CsvPropertyInfo<T>[] _setProperties;
 
+    // The column of each member of CsvTypeInfo<T>.DeclaredProperties, -1 for a member without a column, when the members reader of the generated metadata
+    // sets the members: see CsvObjectInfoValues<T>.MembersReader. Null when the members are set with their setters.
+    private readonly int[]? _memberColumns;
+
     private CsvRecordBinder(CsvTypeInfo<T> typeInfo, CsvPropertyInfo<T>?[] columns, int[] requiredColumns, bool throwOnUnmappedColumn)
     {
         _typeInfo = typeInfo;
@@ -45,6 +49,38 @@ internal sealed class CsvRecordBinder<T>
 
         _setColumns = [.. setColumns];
         _setProperties = [.. setProperties];
+        _memberColumns = GetMemberColumns(typeInfo, columns, _errorHandler);
+    }
+
+    // The members reader sets the members in their declaration order, and throws on the first error: it is used when the columns of the members it sets
+    // are in this order, so that the members are set in the order of the columns, and when there is no error handler, which can skip a record or
+    // ignore an error
+    private static int[]? GetMemberColumns(CsvTypeInfo<T> typeInfo, CsvPropertyInfo<T>?[] columns, CsvDeserializationErrorHandler? errorHandler)
+    {
+        if (errorHandler is not null || (typeInfo.MembersReader is null && typeInfo.Utf8MembersReader is null))
+            return null;
+
+        var members = typeInfo.DeclaredProperties;
+        var memberColumns = new int[members.Length];
+        memberColumns.AsSpan().Fill(-1);
+        var previous = -1;
+        for (var column = 0; column < columns.Length; column++)
+        {
+            if (columns[column] is not { } property)
+                continue;
+
+            var member = Array.IndexOf(members, property);
+            memberColumns[member] = column;
+            if (property.CanSet)
+            {
+                if (member < previous)
+                    return null;
+
+                previous = member;
+            }
+        }
+
+        return memberColumns;
     }
 
     public static CsvRecordBinder<T> Create<TChar>(CsvTypeInfo<T> typeInfo, CsvParser<TChar> parser)
@@ -213,6 +249,72 @@ internal sealed class CsvRecordBinder<T>
             ((ICsvOnDeserializing)obj!).OnDeserializing();
         }
 
+        if (typeof(TMode) == typeof(WithoutErrorHandler) && _memberColumns is not null && (typeof(TChar) == typeof(char) ? _typeInfo.MembersReader is not null : _typeInfo.Utf8MembersReader is not null))
+        {
+            ReadMembers(parser, ref obj);
+        }
+        else if (!SetMembers<TChar, TMode>(parser, ref obj, columnCount, row))
+        {
+            goto Skip;
+        }
+
+        if (_typeInfo.HasOnDeserialized)
+        {
+            ((ICsvOnDeserialized)obj!).OnDeserialized();
+        }
+
+        result = obj;
+        return true;
+
+    Skip:
+        result = default;
+        return false;
+    }
+
+    // The members reader of the generated metadata converts and sets each member, which keeps its value when the record has no value for it. A conversion
+    // error, or an exception of a setter, is wrapped with the position of the value, as without a handler.
+    private void ReadMembers<TChar>(CsvParser<TChar> parser, ref T obj)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        if (typeof(TChar) == typeof(char))
+        {
+            var values = new CsvMemberValues<T>((CsvParser<char>)(object)parser, _memberColumns!, _typeInfo.DeclaredProperties);
+            try
+            {
+                _typeInfo.MembersReader!(ref obj, ref values);
+            }
+            catch (Exception ex) when (values.Member >= 0 && IsConversionException(ex))
+            {
+                throw CreateMemberException(parser, values.Member, ex);
+            }
+        }
+        else
+        {
+            var values = new Utf8CsvMemberValues<T>((CsvParser<byte>)(object)parser, _memberColumns!, _typeInfo.DeclaredProperties);
+            try
+            {
+                _typeInfo.Utf8MembersReader!(ref obj, ref values);
+            }
+            catch (Exception ex) when (values.Member >= 0 && IsConversionException(ex))
+            {
+                throw CreateMemberException(parser, values.Member, ex);
+            }
+        }
+    }
+
+    private CsvException CreateMemberException<TChar>(CsvParser<TChar> parser, int member, Exception exception)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        var column = _memberColumns![member];
+        parser.GetField(column, out var value, out _, out _);
+        return CreateConversionException(parser, column, _typeInfo.DeclaredProperties[member], parser.GetString(value), exception);
+    }
+
+    // Returns false when the error handler skips the record
+    private bool SetMembers<TChar, TMode>(CsvParser<TChar> parser, ref T obj, int columnCount, ReadOnlySpan<TChar> row)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+        where TMode : struct
+    {
         // The ends of the columns are read once for the record, instead of checking the index of each value
         var columnEnds = parser.RowColumnEnds;
         var setColumns = _setColumns;
@@ -247,21 +349,11 @@ internal sealed class CsvRecordBinder<T>
 
                 // The member keeps its value when the error is ignored
                 if (!ReportConversionError(parser, column, property, value, ex))
-                    goto Skip;
+                    return false;
             }
         }
 
-        if (_typeInfo.HasOnDeserialized)
-        {
-            ((ICsvOnDeserialized)obj!).OnDeserialized();
-        }
-
-        result = obj;
         return true;
-
-    Skip:
-        result = default;
-        return false;
     }
 
     /// <summary>Calls the error handler, or throws when there is none.</summary>

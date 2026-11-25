@@ -62,7 +62,8 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 
 - **Reuse the options or the context.** They cache the metadata of the types; creating new options for each call
   discovers the types again.
-- **Use a generated context.** It skips the discovery of the types with reflection, and works with Native AOT.
+- **Use a generated context.** It skips the discovery of the types with reflection, works with Native AOT, and sets the
+  members of each record without virtual calls (see [Source generation](07-SourceGeneration.md)).
 - **Constructors and records are fast too.** The values of constructor parameters are stored in typed slots, reused for
   every record, so they are not boxed.
 - **Keep the default formats.** Dates and times in the ISO 8601 round-trip format (`O`), which the serializer writes,

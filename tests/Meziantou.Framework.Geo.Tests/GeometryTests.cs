@@ -68,6 +68,78 @@ public sealed class GeometryTests
     }
 
     [Fact]
+    public void Contains_LatitudesOfTheRings()
+    {
+        // The positions at the lowest and the highest latitudes of the rings, and just inside them: a ring is skipped
+        // when the position is not between its lowest and highest latitudes
+        var polygon = new GeoPolygon(
+        [
+            [new(0, 0), new(10, 0), new(10, 10), new(0, 10), new(0, 0)],
+            [new(4, 4), new(6, 4), new(6, 6), new(4, 6), new(4, 4)],
+        ]);
+
+        foreach (var latitude in (double[])[-1, 0, 1e-12, 4, 5, 6, 10 - 1e-12, 10, 11])
+        {
+            foreach (var longitude in (double[])[-1, 0, 2, 4, 5, 6, 8, 10, 11])
+            {
+                var position = new GeoPosition(longitude, latitude);
+                Assert.Equal(ContainsReference(polygon, position), polygon.Contains(position));
+            }
+        }
+
+        // A NaN never skips a ring
+        Assert.False(polygon.Contains(new GeoPosition(5, double.NaN)));
+        var withNaN = new GeoPolygon([[new(0, double.NaN), new(10, 0), new(10, 10), new(0, 10)]]);
+        foreach (var position in (GeoPosition[])[new(5, 5), new(9, 1), new(1, 9), new(5, -1), new(5, 11)])
+        {
+            Assert.Equal(ContainsReference(withNaN, position), withNaN.Contains(position));
+        }
+
+        Assert.True(withNaN.Contains(new GeoPosition(9, 5)));
+        Assert.False(new GeoPolygon([]).Contains(new GeoPosition(0, 0)));
+        Assert.False(new GeoPolygon([[]]).Contains(new GeoPosition(0, 0)));
+    }
+
+    [Fact]
+    public void Contains_Countries()
+    {
+        // Every vertex of the countries is tested, with positions around it, against the test without the shortcuts
+        var path = Path.Combine(AppContext.BaseDirectory, "TestData", "countries-110m.geojson");
+        var polygons = GeoJson.Parse(File.ReadAllText(path)).Select(country => country.Geometry!).SelectMany(geometry => geometry.GetSimpleGeometries()).OfType<GeoPolygon>().ToArray();
+        var positions = polygons.SelectMany(polygon => polygon.GetPositions()).Where((_, index) => index % 7 == 0).SelectMany(position => (GeoPosition[])[position, position with { Longitude = position.Longitude + 0.01 }, position with { Latitude = position.Latitude - 0.01 }]).ToArray();
+        foreach (var polygon in polygons)
+        {
+            var multiPolygon = new GeoMultiPolygon([polygon]);
+            foreach (var position in positions)
+            {
+                var expected = ContainsReference(polygon, position);
+                Assert.Equal(expected, polygon.Contains(position));
+                Assert.Equal(expected, multiPolygon.Contains(position));
+            }
+        }
+    }
+
+    // The even-odd rule over every edge of every ring, as GeoPolygon.Contains computes it, without skipping a ring
+    private static bool ContainsReference(GeoPolygon polygon, GeoPosition position)
+    {
+        var inside = false;
+        foreach (var ring in polygon.Rings)
+        {
+            for (int i = 0, j = ring.Count - 1; i < ring.Count; j = i++)
+            {
+                var (a, b) = ring[i].Latitude <= ring[j].Latitude ? (ring[i], ring[j]) : (ring[j], ring[i]);
+                if ((a.Latitude > position.Latitude) != (b.Latitude > position.Latitude) &&
+                    position.Longitude < ((b.Longitude - a.Longitude) * (position.Latitude - a.Latitude) / (b.Latitude - a.Latitude)) + a.Longitude)
+                {
+                    inside = !inside;
+                }
+            }
+        }
+
+        return inside;
+    }
+
+    [Fact]
     public void Distance()
     {
         #region Geo_Distance

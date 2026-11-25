@@ -7,11 +7,14 @@ public sealed class GeoMultiPoint : GeoGeometry
     /// <param name="positions">The positions of the points.</param>
     public GeoMultiPoint(IEnumerable<GeoPosition> positions)
     {
-        Positions = ToArray(positions, nameof(positions));
+        PositionArray = ToArray(positions, nameof(positions));
     }
 
     /// <summary>Gets the positions of the points.</summary>
-    public IReadOnlyList<GeoPosition> Positions { get; }
+    public IReadOnlyList<GeoPosition> Positions => PositionArray;
+
+    /// <summary>Gets the array that <see cref="Positions"/> returns, so that the operations read it without interface calls.</summary>
+    internal GeoPosition[] PositionArray { get; }
 
     /// <inheritdoc />
     public override GeoGeometryType Type => GeoGeometryType.MultiPoint;

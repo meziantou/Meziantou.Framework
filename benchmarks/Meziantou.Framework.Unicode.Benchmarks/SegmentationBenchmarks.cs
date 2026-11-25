@@ -67,6 +67,30 @@ public class SegmentationBenchmarks
     }
 
     [Benchmark]
+    public int LineBreaksKeepAll()
+    {
+        var count = 0;
+        foreach (var _ in Unicode.EnumerateLineBreaks(_text, wordBreak: UnicodeWordBreakBehavior.KeepAll))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    [Benchmark]
+    public int LineBreaksBreakAll()
+    {
+        var count = 0;
+        foreach (var _ in Unicode.EnumerateLineBreaks(_text, wordBreak: UnicodeWordBreakBehavior.BreakAll))
+        {
+            count++;
+        }
+
+        return count;
+    }
+
+    [Benchmark]
     public int ScriptRuns()
     {
         var count = 0;

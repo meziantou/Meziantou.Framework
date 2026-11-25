@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework;
 
@@ -21,6 +22,10 @@ public static class UnicodeIdna
     // The longest label, in code points, that can be encoded within the 63 characters of a DNS label: Punycode writes
     // at least one character per code point, after the ACE prefix.
     private const int MaxEncodableLabelLength = 63 - 4;
+
+    // The length of the buffers on the stack. A domain name is at most 253 characters long in the DNS, and most are much
+    // shorter: a longer one rents its buffers.
+    private const int StackallocLength = 128;
 
     /// <summary>Converts a domain name to its ASCII form (ToASCII), with the default options.</summary>
     /// <param name="domainName">The domain name, such as <c>Bücher.example</c>.</param>
@@ -52,44 +57,54 @@ public static class UnicodeIdna
 
         // An ACE label is the Punycode encoding of its decoded form, which is unique: when it is too long for the DNS,
         // so is the label of the result, and it does not need to be decoded.
-        var labels = Process(domainName, options, maxAceLabelLength: options.VerifyDnsLength ? 63 : int.MaxValue, out var hasErrors);
-        if (hasErrors)
-            return false;
-
-        for (var i = 0; i < labels.Length; i++)
+        var labels = new CharBuffer(stackalloc char[StackallocLength]);
+        var output = new CharBuffer(stackalloc char[StackallocLength]);
+        try
         {
-            var label = labels[i];
-            if (!Ascii.IsValid(label))
-            {
-                // Encoding is quadratic in the length of the label: do not encode a label that cannot fit anyway.
-                if (options.VerifyDnsLength && GetCodePointCount(label) > MaxEncodableLabelLength)
-                    return false;
-
-                if (!TryEncodePunycode(label, out var encoded))
-                    return false;
-
-                labels[i] = AcePrefix + encoded;
-            }
-        }
-
-        if (options.VerifyDnsLength)
-        {
-            // A4_1 and A4_2: an empty label, including the root label after a trailing dot, is an error
-            var totalLength = labels.Length - 1;
-            foreach (var label in labels)
-            {
-                if (label.Length is < 1 or > 63)
-                    return false;
-
-                totalLength += label.Length;
-            }
-
-            if (totalLength > 253)
+            Process(domainName, options, maxAceLabelLength: options.VerifyDnsLength ? 63 : int.MaxValue, ref labels, out var hasErrors);
+            if (hasErrors)
                 return false;
-        }
 
-        result = string.Join('.', labels);
-        return true;
+            for (var position = 0; position >= 0;)
+            {
+                if (position > 0)
+                {
+                    output.Append('.');
+                }
+
+                var label = ReadLabel(labels.AsSpan(), ref position);
+                var start = output.Length;
+                if (Ascii.IsValid(label))
+                {
+                    output.Append(label);
+                }
+                else
+                {
+                    // Encoding is quadratic in the length of the label: do not encode a label that cannot fit anyway.
+                    if (options.VerifyDnsLength && GetCodePointCount(label) > MaxEncodableLabelLength)
+                        return false;
+
+                    output.Append(AcePrefix);
+                    if (!Punycode.TryEncode(label, ref output))
+                        return false;
+                }
+
+                // A4_1 and A4_2: an empty label, including the root label after a trailing dot, is an error
+                if (options.VerifyDnsLength && output.Length - start is < 1 or > 63)
+                    return false;
+            }
+
+            if (options.VerifyDnsLength && output.Length > 253)
+                return false;
+
+            result = output.AsSpan().ToString();
+            return true;
+        }
+        finally
+        {
+            labels.Dispose();
+            output.Dispose();
+        }
     }
 
     /// <summary>Converts a domain name to its Unicode form (ToUnicode), with the default options.</summary>
@@ -120,18 +135,24 @@ public static class UnicodeIdna
             return asciiResult;
         }
 
-        var labels = Process(domainName, options, maxAceLabelLength: int.MaxValue, out hasErrors);
-
-        // X4_2: an empty label is an error, except the root label after a trailing dot
-        for (var i = 0; i < labels.Length; i++)
+        var labels = new CharBuffer(stackalloc char[StackallocLength]);
+        try
         {
-            if (labels[i].Length == 0 && (i < labels.Length - 1 || labels.Length == 1))
+            Process(domainName, options, maxAceLabelLength: int.MaxValue, ref labels, out hasErrors);
+
+            // X4_2: an empty label is an error, except the root label after a trailing dot
+            var value = labels.AsSpan();
+            if (value.IsEmpty || value[0] == '.' || value.Contains("..", StringComparison.Ordinal))
             {
                 hasErrors = true;
             }
-        }
 
-        return string.Join('.', labels);
+            return value.ToString();
+        }
+        finally
+        {
+            labels.Dispose();
+        }
     }
 
     /// <summary>Encodes a label with Punycode (RFC 3492), without the <c>xn--</c> prefix.</summary>
@@ -141,8 +162,16 @@ public static class UnicodeIdna
     /// <seealso href="https://www.rfc-editor.org/rfc/rfc3492" />
     public static bool TryEncodePunycode(ReadOnlySpan<char> value, [NotNullWhen(true)] out string? result)
     {
-        result = Punycode.Encode(value);
-        return result is not null;
+        var output = new CharBuffer(stackalloc char[StackallocLength]);
+        try
+        {
+            result = Punycode.TryEncode(value, ref output) ? output.AsSpan().ToString() : null;
+            return result is not null;
+        }
+        finally
+        {
+            output.Dispose();
+        }
     }
 
     /// <summary>Decodes a label encoded with Punycode (RFC 3492), without the <c>xn--</c> prefix.</summary>
@@ -152,8 +181,16 @@ public static class UnicodeIdna
     /// <seealso href="https://www.rfc-editor.org/rfc/rfc3492" />
     public static bool TryDecodePunycode(ReadOnlySpan<char> value, [NotNullWhen(true)] out string? result)
     {
-        result = Punycode.Decode(value);
-        return result is not null;
+        var output = new CharBuffer(stackalloc char[StackallocLength]);
+        try
+        {
+            result = Punycode.TryDecode(value, ref output) ? output.AsSpan().ToString() : null;
+            return result is not null;
+        }
+        finally
+        {
+            output.Dispose();
+        }
     }
 
     /// <summary>Processes a domain name made of ASCII letters, digits, hyphens and dots only, which is the common case.</summary>
@@ -213,7 +250,7 @@ public static class UnicodeIdna
         return true;
     }
 
-    private static int GetCodePointCount(string value)
+    private static int GetCodePointCount(ReadOnlySpan<char> value)
     {
         var count = value.Length;
         for (var i = 0; i < value.Length - 1; i++)
@@ -232,109 +269,136 @@ public static class UnicodeIdna
     /// <param name="domainName">The domain name.</param>
     /// <param name="options">The options.</param>
     /// <param name="maxAceLabelLength">The length above which an ACE label is an error without being decoded.</param>
+    /// <param name="labels">Receives the labels, converted, separated by dots.</param>
     /// <param name="hasErrors">Whether an error was recorded.</param>
-    private static string[] Process(string domainName, UnicodeIdnaOptions options, int maxAceLabelLength, out bool hasErrors)
+    private static void Process(string domainName, UnicodeIdnaOptions options, int maxAceLabelLength, ref CharBuffer labels, out bool hasErrors)
     {
         hasErrors = false;
 
         // 1. Map
-        var mapped = new StringBuilder(domainName.Length);
-        Span<char> encodedRune = stackalloc char[2];
-        foreach (var rune in domainName.EnumerateRunes())
+        var mapped = new CharBuffer(stackalloc char[StackallocLength]);
+        char[]? normalizedBuffer = null;
+        try
         {
-            switch (GetStatus(rune.Value))
+            foreach (var rune in domainName.EnumerateRunes())
             {
-                case IdnaStatus.Ignored:
-                    break;
+                switch (GetStatus(rune.Value))
+                {
+                    case IdnaStatus.Ignored:
+                        break;
 
-                case IdnaStatus.Mapped:
-                    if (options.TransitionalProcessing && rune.Value == 0x1E9E)
-                    {
-                        mapped.Append("ss");
-                    }
-                    else
-                    {
-                        AppendMapping(mapped, rune.Value);
-                    }
+                    case IdnaStatus.Mapped:
+                        if (options.TransitionalProcessing && rune.Value == 0x1E9E)
+                        {
+                            mapped.Append("ss");
+                        }
+                        else
+                        {
+                            AppendMapping(ref mapped, rune.Value);
+                        }
 
-                    break;
+                        break;
 
-                case IdnaStatus.Deviation when options.TransitionalProcessing:
-                    AppendMapping(mapped, rune.Value);
-                    break;
+                    case IdnaStatus.Deviation when options.TransitionalProcessing:
+                        AppendMapping(ref mapped, rune.Value);
+                        break;
 
-                default:
-                    // There is no StringBuilder.Append(Rune) before .NET 11: appending the Rune would box it.
-                    mapped.Append(encodedRune[..rune.EncodeToUtf16(encodedRune)]);
-                    break;
+                    default:
+                        mapped.Append(rune);
+                        break;
+                }
             }
-        }
 
-        // 2. Normalize
-        var normalized = UnicodeNormalization.Normalize(mapped.ToString(), NormalizationForm.FormC);
+            // 2. Normalize
+            normalizedBuffer = UnicodeNormalization.NormalizeToRentedBuffer(mapped.AsSpan(), NormalizationForm.FormC, out var normalizedLength);
+            var normalized = normalizedBuffer is null ? mapped.AsSpan() : normalizedBuffer.AsSpan(0, normalizedLength);
 
-        // 3. Break
-        var labels = normalized.Split('.');
-
-        // 4. Convert/Validate
-        var validatedAsNontransitional = new bool[labels.Length];
-        for (var i = 0; i < labels.Length; i++)
-        {
-            var label = labels[i];
-            if (label.StartsWith(AcePrefix, StringComparison.Ordinal))
+            // 3. Break, and 4. Convert: the labels, decoded, are written to the result
+            for (var position = 0; position >= 0;)
             {
-                if (!Ascii.IsValid(label))
+                if (position > 0)
                 {
-                    hasErrors = true;
+                    labels.Append('.');
+                }
+
+                var label = ReadLabel(normalized, ref position);
+                if (!label.StartsWith(AcePrefix, StringComparison.Ordinal))
+                {
+                    labels.Append(label);
                     continue;
                 }
 
-                if (label.Length > maxAceLabelLength)
+                if (!Ascii.IsValid(label) || label.Length > maxAceLabelLength)
                 {
                     hasErrors = true;
+                    labels.Append(label);
                     continue;
                 }
 
-                var decoded = Punycode.Decode(label.AsSpan(AcePrefix.Length));
-                if (decoded is null)
+                var start = labels.Length;
+                if (!Punycode.TryDecode(label[AcePrefix.Length..], ref labels))
                 {
+                    labels.Truncate(start);
+                    labels.Append(label);
                     if (!options.IgnoreInvalidPunycode)
                     {
                         hasErrors = true;
                         continue;
                     }
                 }
-                else
-                {
-                    labels[i] = decoded;
-                }
 
                 // A label kept with IgnoreInvalidPunycode is ASCII, so it is an error too
-                if (labels[i].Length == 0 || Ascii.IsValid(labels[i]))
+                var decoded = labels.AsSpan()[start..];
+                if (decoded.IsEmpty || Ascii.IsValid(decoded))
                 {
                     hasErrors = true;
                 }
-
-                validatedAsNontransitional[i] = true;
             }
-        }
 
-        // The bidi rules apply to every label when the domain name is a Bidi domain name
-        var isBidiDomainName = options.CheckBidi && IsBidiDomainName(labels);
-        for (var i = 0; i < labels.Length; i++)
-        {
-            var transitional = options.TransitionalProcessing && !validatedAsNontransitional[i];
-            if (!IsValidLabel(labels[i], options, transitional, isBidiDomainName))
+            // 4. Validate. The bidi rules apply to every label when the domain name is a Bidi domain name. An ACE label
+            // is validated as nontransitional; when it is not decoded, an error is recorded already.
+            var isBidiDomainName = options.CheckBidi && IsBidiDomainName(labels.AsSpan());
+            var sourcePosition = 0;
+            for (var position = 0; position >= 0;)
             {
-                hasErrors = true;
+                var label = ReadLabel(labels.AsSpan(), ref position);
+                var transitional = options.TransitionalProcessing && !ReadLabel(normalized, ref sourcePosition).StartsWith(AcePrefix, StringComparison.Ordinal);
+                if (!IsValidLabel(label, options, transitional, isBidiDomainName))
+                {
+                    hasErrors = true;
+                }
             }
         }
+        finally
+        {
+            mapped.Dispose();
+            if (normalizedBuffer is not null)
+            {
+                ArrayPool<char>.Shared.Return(normalizedBuffer);
+            }
+        }
+    }
 
-        return labels;
+    /// <summary>Reads the label of a domain name that starts at a position, as <c>Split('.')</c> does.</summary>
+    /// <param name="domainName">The domain name.</param>
+    /// <param name="position">The start of the label; on return, the start of the next label, or -1 after the last one.</param>
+    /// <returns>The label.</returns>
+    private static ReadOnlySpan<char> ReadLabel(ReadOnlySpan<char> domainName, ref int position)
+    {
+        var rest = domainName[position..];
+        var length = rest.IndexOf('.');
+        if (length < 0)
+        {
+            position = -1;
+            return rest;
+        }
+
+        position += length + 1;
+        return rest[..length];
     }
 
     /// <summary>https://www.unicode.org/reports/tr46/#Validity_Criteria</summary>
-    private static bool IsValidLabel(string label, UnicodeIdnaOptions options, bool transitional, bool isBidiDomainName)
+    private static bool IsValidLabel(ReadOnlySpan<char> label, UnicodeIdnaOptions options, bool transitional, bool isBidiDomainName)
     {
         if (label.Length == 0)
             return true;
@@ -355,7 +419,7 @@ public static class UnicodeIdna
             return false;
         }
 
-        if (label.Contains('.', StringComparison.Ordinal))
+        if (label.Contains('.'))
             return false;
 
         if (UnicodeProperties.GetGeneralCategory(GetCodePointAt(label, 0)) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark)
@@ -446,22 +510,25 @@ public static class UnicodeIdna
     }
 
     /// <summary>RFC 5893 section 1.4: a Bidi domain name contains at least one character with Bidi_Class R, AL, or AN.</summary>
-    private static bool IsBidiDomainName(string[] labels)
+    /// <param name="labels">The labels, separated by dots: the class of a dot is CS, and a surrogate pair is never split by one.</param>
+    private static bool IsBidiDomainName(ReadOnlySpan<char> labels)
     {
-        foreach (var label in labels)
+        // No code point below U+0590 is R, AL or AN, and the rest of a surrogate pair is above.
+        var start = labels.IndexOfAnyInRange('\u0590', char.MaxValue);
+        if (start < 0)
+            return false;
+
+        foreach (var rune in labels[start..].EnumerateRunes())
         {
-            foreach (var rune in label.EnumerateRunes())
-            {
-                if (UnicodeProperties.GetBidiClass(rune.Value) is UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic or UnicodeBidirectionalCategory.ArabicNumber)
-                    return true;
-            }
+            if (UnicodeProperties.GetBidiClass(rune.Value) is UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic or UnicodeBidirectionalCategory.ArabicNumber)
+                return true;
         }
 
         return false;
     }
 
     /// <summary>The Bidi Rule: RFC 5893 section 2.</summary>
-    private static bool SatisfiesBidiRule(string label)
+    private static bool SatisfiesBidiRule(ReadOnlySpan<char> label)
     {
         var first = UnicodeProperties.GetBidiClass(GetCodePointAt(label, 0));
 
@@ -527,9 +594,66 @@ public static class UnicodeIdna
         return lastClass is UnicodeBidirectionalCategory.LeftToRight or UnicodeBidirectionalCategory.EuropeanNumber;
     }
 
-    private static IdnaStatus GetStatus(int codePoint) => (IdnaStatus)UnicodeIdnaTables.GetIdna(codePoint);
+    // The status of each ASCII character, and the character it maps to when it maps to a single ASCII character (an
+    // uppercase letter): most domain names are mostly ASCII. Both are read from the tables.
+    private static readonly IdnaStatus[] AsciiStatuses = CreateAsciiStatuses();
+    private static readonly char[] AsciiMappings = CreateAsciiMappings();
 
-    private static void AppendMapping(StringBuilder destination, int codePoint)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static IdnaStatus GetStatus(int codePoint)
+    {
+        var statuses = AsciiStatuses;
+        return (uint)codePoint < (uint)statuses.Length ? statuses[codePoint] : (IdnaStatus)UnicodeIdnaTables.GetIdna(codePoint);
+    }
+
+    private static IdnaStatus[] CreateAsciiStatuses()
+    {
+        var result = new IdnaStatus[128];
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = (IdnaStatus)UnicodeIdnaTables.GetIdna(i);
+        }
+
+        return result;
+    }
+
+    private static char[] CreateAsciiMappings()
+    {
+        var result = new char[128];
+        var mapping = new CharBuffer(stackalloc char[16]);
+        try
+        {
+            for (var i = 0; i < result.Length; i++)
+            {
+                mapping.Truncate(0);
+                AppendMappingFromTable(ref mapping, i);
+                if (mapping.Length == 1 && mapping.AsSpan()[0] < 0x80)
+                {
+                    result[i] = mapping.AsSpan()[0];
+                }
+            }
+        }
+        finally
+        {
+            mapping.Dispose();
+        }
+
+        return result;
+    }
+
+    private static void AppendMapping(ref CharBuffer destination, int codePoint)
+    {
+        var mappings = AsciiMappings;
+        if ((uint)codePoint < (uint)mappings.Length && mappings[codePoint] != 0)
+        {
+            destination.Append(mappings[codePoint]);
+            return;
+        }
+
+        AppendMappingFromTable(ref destination, codePoint);
+    }
+
+    private static void AppendMappingFromTable(ref CharBuffer destination, int codePoint)
     {
         // 6-byte entries: the code point, then the offset and the length of its mapping in the pool. A deviation code
         // point that is not listed maps to nothing.
@@ -541,10 +665,11 @@ public static class UnicodeIdna
         var start = records[offset + 3] | (records[offset + 4] << 8);
         var length = records[offset + 5];
         var pool = UnicodeIdnaTables.IdnaPool;
-        for (var i = 0; i < length; i++)
+        var span = destination.AppendSpan(length);
+        for (var i = 0; i < span.Length; i++)
         {
             var index = (start + i) * 2;
-            destination.Append((char)(pool[index] | (pool[index + 1] << 8)));
+            span[i] = (char)(pool[index] | (pool[index + 1] << 8));
         }
     }
 
@@ -569,24 +694,46 @@ public static class UnicodeIdna
         private const int InitialN = 128;
         private const char Delimiter = '-';
 
-        /// <summary>Decodes a Punycode string (without the "xn--" prefix). Returns null on failure.</summary>
+        // The length of the labels whose working buffers are on the stack: a label of the DNS is at most 63 characters long.
+        private const int StackallocLabelLength = 64;
+
+        /// <summary>Decodes a Punycode string (without the "xn--" prefix).</summary>
+        /// <returns><see langword="false"/> when the string is not valid Punycode; part of the output may be written then.</returns>
         /// <remarks>
         /// RFC 3492 inserts each decoded code point into the output, which is quadratic with a list. The insertions are
         /// recorded instead, then their final positions are computed in reverse order with a Fenwick tree of the free
         /// slots: the last insertion at position <c>i</c> takes the <c>i</c>-th slot, and so on.
         /// </remarks>
-        public static string? Decode(ReadOnlySpan<char> input)
+        public static bool TryDecode(scoped ReadOnlySpan<char> input, ref CharBuffer output)
+        {
+            // Every code point of the extended part takes at least one character. The buffer holds the values, the
+            // positions, the decoded code points and the Fenwick tree.
+            var bufferLength = (4 * input.Length) + 1;
+            int[]? rented = null;
+            Span<int> buffer = input.Length <= StackallocLabelLength ? stackalloc int[(4 * StackallocLabelLength) + 1] : (rented = ArrayPool<int>.Shared.Rent(bufferLength));
+            try
+            {
+                return TryDecode(input, ref output, buffer[..bufferLength]);
+            }
+            finally
+            {
+                if (rented is not null)
+                {
+                    ArrayPool<int>.Shared.Return(rented);
+                }
+            }
+        }
+
+        private static bool TryDecode(scoped ReadOnlySpan<char> input, ref CharBuffer output, scoped Span<int> buffer)
         {
             var basicLength = Math.Max(input.LastIndexOf(Delimiter), 0);
-
-            // Every code point of the extended part takes at least one character
-            var values = new int[input.Length];
-            var positions = new int[input.Length];
+            var values = buffer[..input.Length];
+            var positions = buffer.Slice(input.Length, input.Length);
             var count = 0;
             for (var j = 0; j < basicLength; j++)
             {
                 if (input[j] >= 0x80)
-                    return null;
+                    return false;
 
                 values[count] = input[j];
                 positions[count] = count;
@@ -603,14 +750,14 @@ public static class UnicodeIdna
                 for (var k = Base; ; k += Base)
                 {
                     if (index >= input.Length)
-                        return null;
+                        return false;
 
                     var digit = DecodeDigit(input[index++]);
                     if (digit >= Base)
-                        return null;
+                        return false;
 
                     if (digit > (int.MaxValue - i) / w)
-                        return null;
+                        return false;
 
                     i += digit * w;
                     var t = k <= bias ? TMin : k >= bias + TMax ? TMax : k - bias;
@@ -618,19 +765,19 @@ public static class UnicodeIdna
                         break;
 
                     if (w > int.MaxValue / (Base - t))
-                        return null;
+                        return false;
 
                     w *= Base - t;
                 }
 
                 bias = Adapt(i - oldI, count + 1, oldI == 0);
                 if (i / (count + 1) > int.MaxValue - n)
-                    return null;
+                    return false;
 
                 n += i / (count + 1);
                 i %= count + 1;
                 if (n > 0x10FFFF || n is >= 0xD800 and <= 0xDFFF)
-                    return null;
+                    return false;
 
                 values[count] = n;
                 positions[count] = i;
@@ -638,49 +785,77 @@ public static class UnicodeIdna
                 i++;
             }
 
-            var freeSlots = new FenwickTree(count, initialValue: 1);
-            var output = new int[count];
+            var freeSlots = new FenwickTree(buffer.Slice(2 * input.Length, count + 1), initialValue: 1);
+            var codePoints = buffer.Slice((3 * input.Length) + 1, count);
             var length = 0;
             for (var k = count - 1; k >= 0; k--)
             {
                 var slot = freeSlots.FindNth(positions[k] + 1);
                 freeSlots.Add(slot, -1);
-                output[slot] = values[k];
+                codePoints[slot] = values[k];
                 length += values[k] >= 0x10000 ? 2 : 1;
             }
 
-            return string.Create(length, output, static (destination, codePoints) =>
+            var destination = output.AppendSpan(length);
+            var offset = 0;
+            foreach (var codePoint in codePoints)
             {
-                var offset = 0;
-                foreach (var codePoint in codePoints)
-                {
-                    offset += new Rune(codePoint).EncodeToUtf16(destination[offset..]);
-                }
-            });
+                offset += new Rune(codePoint).EncodeToUtf16(destination[offset..]);
+            }
+
+            return true;
         }
 
-        /// <summary>Encodes a string to Punycode (without the "xn--" prefix). Returns null on overflow or on an unpaired surrogate.</summary>
+        /// <summary>Encodes a string to Punycode (without the "xn--" prefix).</summary>
+        /// <returns><see langword="false"/> on overflow or on an unpaired surrogate; part of the output may be written then.</returns>
         /// <remarks>
         /// RFC 3492 scans the whole input for each distinct code point, which is quadratic. The code points are sorted
         /// instead, and a Fenwick tree counts the code points already handled (the ones smaller than <c>n</c>) between two
         /// positions, which is what the scan adds to <c>delta</c>.
         /// </remarks>
-        public static string? Encode(ReadOnlySpan<char> input)
+        public static bool TryEncode(scoped ReadOnlySpan<char> input, ref CharBuffer output)
         {
-            var codePoints = new int[input.Length];
+            // The buffers hold the code points and the Fenwick tree, then the code points to encode.
+            int[]? rentedInts = null;
+            long[]? rentedLongs = null;
+            var isShort = input.Length <= StackallocLabelLength;
+            Span<int> ints = isShort ? stackalloc int[(2 * StackallocLabelLength) + 1] : (rentedInts = ArrayPool<int>.Shared.Rent((2 * input.Length) + 1));
+            Span<long> longs = isShort ? stackalloc long[StackallocLabelLength] : (rentedLongs = ArrayPool<long>.Shared.Rent(input.Length));
+            try
+            {
+                return TryEncode(input, ref output, ints, longs);
+            }
+            finally
+            {
+                if (rentedInts is not null)
+                {
+                    ArrayPool<int>.Shared.Return(rentedInts);
+                }
+
+                if (rentedLongs is not null)
+                {
+                    ArrayPool<long>.Shared.Return(rentedLongs);
+                }
+            }
+        }
+
+        private static bool TryEncode(scoped ReadOnlySpan<char> input, ref CharBuffer output, scoped Span<int> ints, scoped Span<long> longs)
+        {
+            var codePoints = ints[..input.Length];
             var count = 0;
             for (var index = 0; index < input.Length;)
             {
                 // An unpaired surrogate has no code point: encoding U+FFFD instead would make distinct inputs collide
                 if (Rune.DecodeFromUtf16(input[index..], out var rune, out var consumed) != OperationStatus.Done)
-                    return null;
+                    return false;
 
                 codePoints[count++] = rune.Value;
                 index += consumed;
             }
 
-            var output = new StringBuilder(input.Length + 8);
-            var handledPositions = new FenwickTree(count, initialValue: 0);
+            codePoints = codePoints[..count];
+            var handledPositions = new FenwickTree(ints.Slice(input.Length, count + 1), initialValue: 0);
+            var outputStart = output.Length;
             var nonBasicCount = 0;
             for (var position = 0; position < count; position++)
             {
@@ -696,7 +871,7 @@ public static class UnicodeIdna
                 }
             }
 
-            var basicLength = output.Length;
+            var basicLength = output.Length - outputStart;
             var handled = basicLength;
             if (basicLength > 0)
             {
@@ -704,7 +879,7 @@ public static class UnicodeIdna
             }
 
             // The code points to encode, in the order of the encoding: by value, then by position
-            var pending = new long[nonBasicCount];
+            var pending = longs[..nonBasicCount];
             nonBasicCount = 0;
             for (var position = 0; position < count; position++)
             {
@@ -714,7 +889,7 @@ public static class UnicodeIdna
                 }
             }
 
-            Array.Sort(pending);
+            pending.Sort();
 
             var n = InitialN;
             var delta = 0;
@@ -724,7 +899,7 @@ public static class UnicodeIdna
             {
                 var m = (int)(pending[next] >> 32);
                 if (m - n > (int.MaxValue - delta) / (handled + 1))
-                    return null;
+                    return false;
 
                 delta += (m - n) * (handled + 1);
                 n = m;
@@ -735,7 +910,7 @@ public static class UnicodeIdna
                 {
                     var position = (int)pending[next];
                     if (!TryAddDelta(ref delta, handledPositions.Sum(position) - handledPositions.Sum(cursor)))
-                        return null;
+                        return false;
 
                     var q = delta;
                     for (var k = Base; ; k += Base)
@@ -756,7 +931,7 @@ public static class UnicodeIdna
                 }
 
                 if (!TryAddDelta(ref delta, handledPositions.Sum(count) - handledPositions.Sum(cursor)))
-                    return null;
+                    return false;
 
                 for (var r = roundStart; r < next; r++)
                 {
@@ -767,7 +942,7 @@ public static class UnicodeIdna
                 n++;
             }
 
-            return output.ToString();
+            return true;
         }
 
         /// <summary>Adds the code points smaller than <c>n</c> that the scan of RFC 3492 counts one by one, and fails when <c>delta</c> reaches <see cref="int.MaxValue"/>.</summary>
@@ -805,15 +980,18 @@ public static class UnicodeIdna
         private static char EncodeDigit(int digit) => (char)(digit < 26 ? 'a' + digit : '0' + digit - 26);
 
         /// <summary>A Fenwick tree (binary indexed tree) of counts, indexed from 0.</summary>
-        private readonly struct FenwickTree
+        private readonly ref struct FenwickTree
         {
-            private readonly int[] _tree;
+            private readonly Span<int> _tree;
 
-            public FenwickTree(int length, int initialValue)
+            /// <summary>Initializes a tree of <c>tree.Length - 1</c> counts, in a buffer whose content is overwritten.</summary>
+            public FenwickTree(Span<int> tree, int initialValue)
             {
-                _tree = new int[length + 1];
+                _tree = tree;
+                tree.Clear();
                 if (initialValue != 0)
                 {
+                    var length = tree.Length - 1;
                     for (var i = 1; i <= length; i++)
                     {
                         _tree[i] += initialValue;
@@ -862,6 +1040,81 @@ public static class UnicodeIdna
 
                 return index;
             }
+        }
+    }
+
+    /// <summary>A text built in a buffer on the stack, which grows into buffers rented from <see cref="ArrayPool{T}.Shared"/>.</summary>
+    private ref struct CharBuffer
+    {
+        private char[]? _rented;
+        private Span<char> _buffer;
+        private int _length;
+
+        public CharBuffer(Span<char> initialBuffer)
+        {
+            _buffer = initialBuffer;
+        }
+
+        public readonly int Length => _length;
+
+        public readonly ReadOnlySpan<char> AsSpan() => _buffer[.._length];
+
+        public void Append(char value)
+        {
+            if ((uint)_length >= (uint)_buffer.Length)
+            {
+                Grow(1);
+            }
+
+            _buffer[_length++] = value;
+        }
+
+        public void Append(scoped ReadOnlySpan<char> value)
+        {
+            value.CopyTo(AppendSpan(value.Length));
+        }
+
+        public void Append(Rune value)
+        {
+            var destination = AppendSpan(value.Utf16SequenceLength);
+            value.EncodeToUtf16(destination);
+        }
+
+        /// <summary>Appends <paramref name="length"/> characters that the caller writes.</summary>
+        public Span<char> AppendSpan(int length)
+        {
+            if (length > _buffer.Length - _length)
+            {
+                Grow(length);
+            }
+
+            var result = _buffer.Slice(_length, length);
+            _length += length;
+            return result;
+        }
+
+        public void Truncate(int length) => _length = length;
+
+        public void Dispose()
+        {
+            if (_rented is not null)
+            {
+                ArrayPool<char>.Shared.Return(_rented);
+                _rented = null;
+            }
+        }
+
+        private void Grow(int additionalLength)
+        {
+            var array = ArrayPool<char>.Shared.Rent(Math.Max(_buffer.Length * 2, _length + additionalLength));
+            _buffer[.._length].CopyTo(array);
+            if (_rented is not null)
+            {
+                ArrayPool<char>.Shared.Return(_rented);
+            }
+
+            _rented = array;
+            _buffer = array;
         }
     }
 }

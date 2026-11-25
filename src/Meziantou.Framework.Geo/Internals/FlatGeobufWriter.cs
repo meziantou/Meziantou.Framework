@@ -10,14 +10,66 @@ internal static class FlatGeobufWriter
 {
     public static void Write(GeoFeatureCollection features, Stream stream, FlatGeobufWriterOptions options)
     {
+        foreach (var segment in WriteSegments(features, options))
+        {
+            stream.Write(segment);
+        }
+    }
+
+    /// <summary>Writes the data in an array of its length: no stream that grows and is copied at the end.</summary>
+    public static byte[] Write(GeoFeatureCollection features, FlatGeobufWriterOptions options)
+    {
+        var segments = WriteSegments(features, options);
+        var length = 0L;
+        foreach (var segment in segments)
+        {
+            length += segment.Length;
+        }
+
+        // Too large for an array: the stream reports it, as it always did
+        if (length > Array.MaxLength)
+        {
+            using var stream = new MemoryStream();
+            foreach (var segment in segments)
+            {
+                stream.Write(segment);
+            }
+
+            return stream.ToArray();
+        }
+
+        var result = new byte[length];
+        var offset = 0;
+        foreach (var segment in segments)
+        {
+            segment.CopyTo(result, offset);
+            offset += segment.Length;
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets the parts of the data, in order: the signature, the header, the optional index, then the features.</summary>
+    private static List<byte[]> WriteSegments(GeoFeatureCollection features, FlatGeobufWriterOptions options)
+    {
         var geometryTypes = features
             .Where(feature => feature.Geometry is { IsEmpty: false })
             .Select(feature => GetGeometryType(feature.Geometry!))
             .Distinct()
             .ToList();
         var headerType = geometryTypes.Count == 1 ? geometryTypes[0] : FlatGeobufFormat.GeometryUnknown;
-        var positions = features.Where(feature => feature.Geometry is not null).SelectMany(feature => feature.Geometry!.GetPositions());
-        var dimensions = new FlatGeobufDimensions(positions.Any(position => position.Altitude is not null), positions.Any(position => position.Measure is not null));
+        var (hasAltitude, hasMeasure) = (false, false);
+        foreach (var feature in features)
+        {
+            if (feature.Geometry is not null)
+            {
+                var (geometryHasAltitude, geometryHasMeasure) = GeoPositionSpans.GetDimensions(feature.Geometry);
+                hasAltitude |= geometryHasAltitude;
+                hasMeasure |= geometryHasMeasure;
+            }
+        }
+
+        var dimensions = new FlatGeobufDimensions(hasAltitude, hasMeasure);
 
         // The index requires the features in its order, along a Hilbert curve, and a box for each of them
         var boxes = features.Select(feature => feature.Geometry is { IsEmpty: false } geometry ? geometry.GetBounds() : null).ToArray();
@@ -88,17 +140,19 @@ internal static class FlatGeobufWriter
             header.AddString(FlatGeobufFormat.HeaderDescription, description);
         }
 
-        stream.Write([(byte)'f', (byte)'g', (byte)'b', FlatGeobufFormat.MajorVersion, (byte)'f', (byte)'g', (byte)'b', FlatGeobufFormat.PatchVersion]);
-        stream.Write(FlatBufferBuilder.BuildSizePrefixed(header));
+        var segments = new List<byte[]>(buffers.Length + 3)
+        {
+            new byte[] { (byte)'f', (byte)'g', (byte)'b', FlatGeobufFormat.MajorVersion, (byte)'f', (byte)'g', (byte)'b', FlatGeobufFormat.PatchVersion },
+            FlatBufferBuilder.BuildSizePrefixed(header),
+        };
+
         if (hasIndex)
         {
-            stream.Write(PackedRTree.Write([.. order.Select(i => boxes[i]!.Value)], offsets, options.IndexNodeSize));
+            segments.Add(PackedRTree.Write([.. order.Select(i => boxes[i]!.Value)], offsets, options.IndexNodeSize));
         }
 
-        foreach (var buffer in buffers)
-        {
-            stream.Write(buffer);
-        }
+        segments.AddRange(buffers);
+        return segments;
     }
 
     private static byte[] WriteFeature(GeoFeature feature, List<Column> columns, byte headerType, FlatGeobufDimensions dimensions)
@@ -163,7 +217,34 @@ internal static class FlatGeobufWriter
 
     private static void AddParts(FlatBufferTableBuilder table, IReadOnlyList<IReadOnlyList<GeoPosition>> parts, FlatGeobufDimensions dimensions)
     {
-        AddPositions(table, [.. parts.SelectMany(part => part)], dimensions);
+        // The positions of the parts, one after the other, copied in an array of their total length
+        var count = 0;
+        for (var i = 0; i < parts.Count; i++)
+        {
+            count += parts[i].Count;
+        }
+
+        var positions = new GeoPosition[count];
+        var offset = 0;
+        for (var i = 0; i < parts.Count; i++)
+        {
+            var part = parts[i];
+            if (part is GeoPosition[] array)
+            {
+                array.CopyTo(positions, offset);
+            }
+            else
+            {
+                for (var j = 0; j < part.Count; j++)
+                {
+                    positions[offset + j] = part[j];
+                }
+            }
+
+            offset += part.Count;
+        }
+
+        AddPositions(table, positions, dimensions);
 
         // One part needs no ends
         if (parts.Count > 1)

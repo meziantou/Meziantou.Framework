@@ -245,16 +245,16 @@ internal static class FlatGeobufReader
                 return new GeoMultiPoint(ReadPositions(table, dimensions));
 
             case FlatGeobufFormat.GeometryLineString:
-                return new GeoLineString(ReadPositions(table, dimensions));
+                return GeoLineString.FromOwnedArray(ReadPositions(table, dimensions));
 
             case FlatGeobufFormat.GeometryMultiLineString:
                 if (table.Has(FlatGeobufFormat.GeometryParts))
                     return new GeoMultiLineString(ReadParts(table, FlatGeobufFormat.GeometryLineString, dimensions, depth).Cast<GeoLineString>());
 
-                return new GeoMultiLineString(Split(table, dimensions).Select(part => new GeoLineString(part)));
+                return new GeoMultiLineString(Split(table, dimensions).Select(GeoLineString.FromOwnedArray));
 
             case FlatGeobufFormat.GeometryPolygon:
-                return new GeoPolygon(Split(table, dimensions));
+                return GeoPolygon.FromOwnedArrays(Split(table, dimensions));
 
             case FlatGeobufFormat.GeometryMultiPolygon:
                 return new GeoMultiPolygon(ReadParts(table, FlatGeobufFormat.GeometryPolygon, dimensions, depth).Cast<GeoPolygon>());
@@ -294,51 +294,82 @@ internal static class FlatGeobufReader
 
     private static GeoPosition[] ReadPositions(FlatBufferTable table, FlatGeobufDimensions dimensions)
     {
-        var xy = table.GetDoubleVector(FlatGeobufFormat.GeometryXY);
-        if ((xy.Length & 1) != 0)
-            throw new FormatException("The coordinates of a geometry of the FlatGeobuf data are not pairs.");
-
-        var count = xy.Length / 2;
-        var z = dimensions.HasZ ? table.GetDoubleVector(FlatGeobufFormat.GeometryZ) : [];
-        if (z.Length != 0 && z.Length != count)
-            throw new FormatException("A geometry of the FlatGeobuf data does not have an altitude for each position.");
-
-        var m = dimensions.HasM ? table.GetDoubleVector(FlatGeobufFormat.GeometryM) : [];
-        if (m.Length != 0 && m.Length != count)
-            throw new FormatException("A geometry of the FlatGeobuf data does not have a measure for each position.");
-
-        var positions = new GeoPosition[count];
-        for (var i = 0; i < count; i++)
-        {
-            positions[i] = new GeoPosition(xy[2 * i], xy[(2 * i) + 1], z.Length == 0 ? null : z[i])
-            {
-                Measure = m.Length == 0 || double.IsNaN(m[i]) ? null : m[i],
-            };
-        }
-
-        return positions;
+        var coordinates = new Coordinates(table, dimensions);
+        return coordinates.Read(0, coordinates.Count);
     }
 
     /// <summary>Splits the positions of a geometry at the ends of its parts: the lines of a multi-line or the rings of a polygon.</summary>
-    private static List<GeoPosition[]> Split(FlatBufferTable table, FlatGeobufDimensions dimensions)
+    private static GeoPosition[][] Split(FlatBufferTable table, FlatGeobufDimensions dimensions)
     {
-        var positions = ReadPositions(table, dimensions);
-        var ends = table.GetUInt32Vector(FlatGeobufFormat.GeometryEnds);
-        if (ends.Length == 0)
-            return positions.Length == 0 ? [] : [positions];
+        // The positions of each part are read from the buffer: no array of all the positions to cut
+        var coordinates = new Coordinates(table, dimensions);
+        var ends = table.GetVectorBytes(FlatGeobufFormat.GeometryEnds, 4, out var endCount);
+        if (endCount == 0)
+            return coordinates.Count == 0 ? [] : [coordinates.Read(0, coordinates.Count)];
 
-        var parts = new List<GeoPosition[]>(ends.Length);
+        var parts = new GeoPosition[endCount][];
         var start = 0;
-        foreach (var end in ends)
+        for (var i = 0; i < endCount; i++)
         {
-            if (end < start || end > positions.Length)
+            var end = BinaryPrimitives.ReadUInt32LittleEndian(ends[(4 * i)..]);
+            if (end < start || end > coordinates.Count)
                 throw new FormatException("The ends of the parts of a geometry of the FlatGeobuf data are not valid.");
 
-            parts.Add(positions[start..(int)end]);
+            parts[i] = coordinates.Read(start, (int)end);
             start = (int)end;
         }
 
         return parts;
+    }
+
+    /// <summary>The coordinates of a geometry, as little-endian doubles in the buffer, checked to have the same number of positions.</summary>
+    private readonly ref struct Coordinates
+    {
+        private readonly ReadOnlySpan<byte> _xy;
+        private readonly ReadOnlySpan<byte> _z;
+        private readonly ReadOnlySpan<byte> _m;
+
+        public Coordinates(FlatBufferTable table, FlatGeobufDimensions dimensions)
+        {
+            _xy = table.GetVectorBytes(FlatGeobufFormat.GeometryXY, 8, out var xyCount);
+            if ((xyCount & 1) != 0)
+                throw new FormatException("The coordinates of a geometry of the FlatGeobuf data are not pairs.");
+
+            Count = xyCount / 2;
+            var zCount = 0;
+            _z = dimensions.HasZ ? table.GetVectorBytes(FlatGeobufFormat.GeometryZ, 8, out zCount) : default;
+            if (zCount != 0 && zCount != Count)
+                throw new FormatException("A geometry of the FlatGeobuf data does not have an altitude for each position.");
+
+            var mCount = 0;
+            _m = dimensions.HasM ? table.GetVectorBytes(FlatGeobufFormat.GeometryM, 8, out mCount) : default;
+            if (mCount != 0 && mCount != Count)
+                throw new FormatException("A geometry of the FlatGeobuf data does not have a measure for each position.");
+        }
+
+        public int Count { get; }
+
+        public GeoPosition[] Read(int start, int end)
+        {
+            var positions = new GeoPosition[end - start];
+            for (var i = start; i < end; i++)
+            {
+                var x = BinaryPrimitives.ReadDoubleLittleEndian(_xy[(16 * i)..]);
+                var y = BinaryPrimitives.ReadDoubleLittleEndian(_xy[((16 * i) + 8)..]);
+                double? z = _z.IsEmpty ? null : BinaryPrimitives.ReadDoubleLittleEndian(_z[(8 * i)..]);
+                if (_m.IsEmpty)
+                {
+                    positions[i - start] = new GeoPosition(x, y, z);
+                }
+                else
+                {
+                    var m = BinaryPrimitives.ReadDoubleLittleEndian(_m[(8 * i)..]);
+                    positions[i - start] = new GeoPosition(x, y, z) { Measure = double.IsNaN(m) ? null : m };
+                }
+            }
+
+            return positions;
+        }
     }
 
     internal readonly record struct Column(string Name, byte Type);

@@ -21,7 +21,7 @@ public abstract class GeoGeometry
     public abstract GeoGeometryType Type { get; }
 
     /// <summary>Gets a value that indicates whether the geometry has no position.</summary>
-    public bool IsEmpty => !GetPositions().Any();
+    public bool IsEmpty => !GeoPositionSpans.HasPositions(this);
 
     /// <summary>
     /// Gets a position to label the geometry: the centroid of the exterior ring of its largest polygon (so the islands of a
@@ -52,7 +52,7 @@ public abstract class GeoGeometry
     /// <summary>Gets the smallest box that contains the geometry.</summary>
     /// <returns>The box, or <see langword="null"/> for an empty geometry.</returns>
     /// <remarks>The box contains the positions, as the edges are straight in degrees (<see cref="GeoEdgeType.Planar"/>): it does not cross the 180th meridian.</remarks>
-    public GeoBounds? GetBounds() => GeoBounds.FromPositions(GetPositions());
+    public GeoBounds? GetBounds() => GeoPositionSpans.GetBounds(this);
 
     /// <summary>Gets the smallest box that contains the geometry, whose edges are drawn as an edge type says.</summary>
     /// <param name="edgeType">How the edges are drawn.</param>

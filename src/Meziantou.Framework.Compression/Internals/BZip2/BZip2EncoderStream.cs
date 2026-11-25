@@ -1,3 +1,4 @@
+using System.IO.Hashing;
 using Meziantou.Framework.Compression.Internals.IO;
 
 namespace Meziantou.Framework.Compression.Internals.BZip2;
@@ -17,7 +18,7 @@ internal sealed class BZip2EncoderStream : WriteOnlyStreamBase
     private readonly BZip2BitWriter _writer = new();
     private readonly BZip2BlockCompressor _compressor = new();
     private int _blockLength;
-    private uint _blockCrc = uint.MaxValue;
+    private readonly Crc32 _blockCrc = new(BZip2Constants.CrcParameters);
     private uint _streamCrc;
     private int _runByte = -1;
     private int _runLength;
@@ -44,10 +45,14 @@ internal sealed class BZip2EncoderStream : WriteOnlyStreamBase
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
 
+        // A block holds consecutive bytes of the input, and the run in progress at the end of a call goes to the block in progress
+        // (a block ends only after a run is added): the CRC of the block is computed on the input, which is faster than per run
+        var hashed = 0;
         var runByte = _runByte;
         var runLength = _runLength;
-        foreach (var value in buffer)
+        for (var i = 0; i < buffer.Length; i++)
         {
+            var value = buffer[i];
             if (value == runByte && runLength < 255)
             {
                 runLength++;
@@ -59,6 +64,9 @@ internal sealed class BZip2EncoderStream : WriteOnlyStreamBase
                 AddRun((byte)runByte, runLength);
                 if (_blockLength >= _maxBlockLength)
                 {
+                    // The block ends with the run that ends before this byte
+                    _blockCrc.Append(buffer[hashed..i]);
+                    hashed = i;
                     CompressBlock();
                 }
             }
@@ -67,13 +75,13 @@ internal sealed class BZip2EncoderStream : WriteOnlyStreamBase
             runLength = 1;
         }
 
+        _blockCrc.Append(buffer[hashed..]);
         _runByte = runByte;
         _runLength = runLength;
     }
 
     private void AddRun(byte value, int length)
     {
-        _blockCrc = length is 1 ? BZip2Constants.UpdateCrc(_blockCrc, [value]) : BZip2Constants.UpdateCrc(_blockCrc, value, length);
         var block = _block;
         if (length < 4)
         {
@@ -93,7 +101,7 @@ internal sealed class BZip2EncoderStream : WriteOnlyStreamBase
         if (_blockLength is 0)
             return;
 
-        var crc = ~_blockCrc;
+        var crc = _blockCrc.GetCurrentHashAsUInt32();
         _streamCrc = ((_streamCrc << 1) | (_streamCrc >> 31)) ^ crc;
         if (_randomize)
         {
@@ -103,7 +111,7 @@ internal sealed class BZip2EncoderStream : WriteOnlyStreamBase
         _compressor.Compress(_block, _blockLength, crc, _randomize, _writer);
         _writer.WriteTo(_output);
         _blockLength = 0;
-        _blockCrc = uint.MaxValue;
+        _blockCrc.Reset();
     }
 
     private void Randomize()

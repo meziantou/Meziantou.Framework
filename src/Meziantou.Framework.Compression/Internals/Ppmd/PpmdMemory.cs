@@ -48,6 +48,22 @@ internal static class PpmdMemory
         }
     }
 
+    /// <summary>
+    /// Returns the <paramref name="count"/> states at <paramref name="offset"/>, after checking that all their bytes lie inside
+    /// <paramref name="memory"/>, so that the loops over the states of a context check the bounds once.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Span<PpmdState> States(byte[] memory, uint offset, int count)
+    {
+        if ((ulong)offset + ((ulong)(uint)count * (uint)Unsafe.SizeOf<PpmdState>()) > (uint)memory.Length)
+            ThrowCorrupted();
+
+        unsafe
+        {
+            return MemoryMarshal.CreateSpan(ref Unsafe.As<byte, PpmdState>(ref Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(memory), (nint)offset)), count);
+        }
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static void SwapStates(ref PpmdState s1, ref PpmdState s2) => (s1, s2) = (s2, s1);
 

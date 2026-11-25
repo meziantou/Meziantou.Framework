@@ -60,6 +60,7 @@ on:
           - scheduling
           - simple-query-language
           - syntax-highlighting
+          - tagged-values
           - tds-server
           - text-diff
           - toml
@@ -155,6 +156,7 @@ env:
       { "project": "Meziantou.Framework.Scheduling.Fuzz",          "component": "scheduling",            "day": 3 },
       { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 1 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },
+      { "project": "Meziantou.Framework.TaggedValues.Analyzer.Fuzz", "component": "tagged-values",       "day": 3 },
       { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
       { "project": "Meziantou.Framework.TextDiff.Fuzz",            "component": "text-diff",             "day": 0 },
       { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },

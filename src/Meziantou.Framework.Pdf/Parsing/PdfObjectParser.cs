@@ -490,7 +490,8 @@ internal sealed class PdfObjectParser
 
     private PdfName ParseName(PdfToken token) => NameCache is { } cache ? cache.Get(Lexer, token) : PdfName.FromBytes(Lexer.DecodeName(token));
 
-    private static bool IsStructureKeyword(ReadOnlySpan<byte> bytes)
+    /// <summary>Indicates whether a keyword ends an object: it ends a container that is not closed.</summary>
+    internal static bool IsStructureKeyword(ReadOnlySpan<byte> bytes)
     {
         return bytes.SequenceEqual("endobj"u8) || bytes.SequenceEqual("stream"u8) || bytes.SequenceEqual("endstream"u8) || bytes.SequenceEqual("obj"u8)
             || bytes.SequenceEqual("xref"u8) || bytes.SequenceEqual("trailer"u8) || bytes.SequenceEqual("startxref"u8);

@@ -159,13 +159,12 @@ internal sealed partial class TextExtractor : IDisposable
     {
         Charge((content.Length / 4) + 1);
         var reader = new ContentStreamReader(content);
-        var operands = new List<PdfObject>();
         var stack = new Stack<TextGraphicsState>();
 
         // The marked-content sequences of this content, and the one that has the replacement text
         var markedContentDepth = 0;
         var actualTextDepth = -1;
-        while (reader.TryRead(operands, out var name))
+        while (reader.TryRead(out var name))
         {
             Charge(1);
             if (depth == 0)
@@ -173,6 +172,7 @@ internal sealed partial class TextExtractor : IDisposable
                 _operationIndex++;
             }
 
+            var operands = reader.Operands;
             switch (name)
             {
                 case "q":
@@ -185,73 +185,73 @@ internal sealed partial class TextExtractor : IDisposable
                     }
 
                     break;
-                case "cm" when operands.Count >= 6:
+                case "cm" when operands.Length >= 6:
                     state.Ctm = ReadMatrix(operands) * state.Ctm;
                     break;
                 case "BT":
                     state.TextMatrix = PdfMatrix.Identity;
                     state.LineMatrix = PdfMatrix.Identity;
                     break;
-                case "Tc" when operands.Count >= 1:
+                case "Tc" when operands.Length >= 1:
                     state.CharacterSpacing = Number(operands, 0);
                     break;
-                case "Tw" when operands.Count >= 1:
+                case "Tw" when operands.Length >= 1:
                     state.WordSpacing = Number(operands, 0);
                     break;
-                case "Tz" when operands.Count >= 1:
+                case "Tz" when operands.Length >= 1:
                     state.HorizontalScaling = Number(operands, 0) / 100;
                     break;
-                case "TL" when operands.Count >= 1:
+                case "TL" when operands.Length >= 1:
                     state.Leading = Number(operands, 0);
                     break;
-                case "Ts" when operands.Count >= 1:
+                case "Ts" when operands.Length >= 1:
                     state.Rise = Number(operands, 0);
                     break;
-                case "Tf" when operands.Count >= 2:
+                case "Tf" when operands.Length >= 2:
                     state.FontSize = Number(operands, 1);
-                    state.Font = operands[0] is PdfName fontName ? GetDecoder(resources, fontName) : null;
+                    state.Font = reader.TryGetName(operands[0], out var fontName) ? GetDecoder(resources, fontName) : null;
                     break;
-                case "Td" when operands.Count >= 2:
+                case "Td" when operands.Length >= 2:
                     MoveText(ref state, Number(operands, 0), Number(operands, 1));
                     break;
-                case "TD" when operands.Count >= 2:
+                case "TD" when operands.Length >= 2:
                     state.Leading = -Number(operands, 1);
                     MoveText(ref state, Number(operands, 0), Number(operands, 1));
                     break;
-                case "Tm" when operands.Count >= 6:
+                case "Tm" when operands.Length >= 6:
                     state.TextMatrix = ReadMatrix(operands);
                     state.LineMatrix = state.TextMatrix;
                     break;
                 case "T*":
                     MoveText(ref state, 0, -state.Leading);
                     break;
-                case "Tj" when operands.Count >= 1 && operands[^1] is PdfString text:
-                    ShowText(ref state, text.Span);
+                case "Tj" when operands.Length >= 1 && reader.TryGetString(operands[^1], out var text):
+                    ShowText(ref state, text);
                     break;
-                case "'" when operands.Count >= 1 && operands[^1] is PdfString text:
+                case "'" when operands.Length >= 1 && reader.TryGetString(operands[^1], out var text):
                     MoveText(ref state, 0, -state.Leading);
-                    ShowText(ref state, text.Span);
+                    ShowText(ref state, text);
                     break;
-                case "\"" when operands.Count >= 3 && operands[^1] is PdfString text:
+                case "\"" when operands.Length >= 3 && reader.TryGetString(operands[^1], out var text):
                     state.WordSpacing = Number(operands, 0);
                     state.CharacterSpacing = Number(operands, 1);
                     MoveText(ref state, 0, -state.Leading);
-                    ShowText(ref state, text.Span);
+                    ShowText(ref state, text);
                     break;
-                case "TJ" when operands.Count >= 1 && operands[^1] is PdfArray array:
-                    foreach (var item in array)
+                case "TJ" when operands.Length >= 1 && reader.TryGetArray(operands[^1], out var array):
+                    for (var i = 0; i < array.Count; i++)
                     {
                         Charge(1);
-                        switch (item)
+                        var item = array[i];
+                        if (reader.TryGetString(item, out var segment))
                         {
-                            case PdfString segment:
-                                ShowText(ref state, segment.Span);
-                                break;
-                            case PdfNumber adjustment:
-                                // A number moves the next glyph by thousandths of the font size, against the writing direction (9.4.3)
-                                var offset = -adjustment.DoubleValue / 1000 * state.FontSize;
-                                Advance(ref state, (state.Font?.IsVertical ?? false) ? 0 : offset * state.HorizontalScaling, (state.Font?.IsVertical ?? false) ? offset : 0);
-                                break;
+                            ShowText(ref state, segment);
+                        }
+                        else if (item.TryGetNumber(out var adjustment))
+                        {
+                            // A number moves the next glyph by thousandths of the font size, against the writing direction (9.4.3)
+                            var offset = -adjustment / 1000 * state.FontSize;
+                            Advance(ref state, (state.Font?.IsVertical ?? false) ? 0 : offset * state.HorizontalScaling, (state.Font?.IsVertical ?? false) ? offset : 0);
                         }
                     }
 
@@ -261,7 +261,7 @@ internal sealed partial class TextExtractor : IDisposable
                     break;
                 case "BDC":
                     markedContentDepth++;
-                    if (_actualText is null && GetActualText(resources, operands) is { } actualText)
+                    if (_actualText is null && GetActualText(resources, reader, operands) is { } actualText)
                     {
                         _actualText = actualText;
                         _actualTextStart = _glyphs.Count;
@@ -278,7 +278,7 @@ internal sealed partial class TextExtractor : IDisposable
 
                     markedContentDepth--;
                     break;
-                case "Do" when operands.Count >= 1 && operands[^1] is PdfName xobjectName && depth < MaxFormDepth:
+                case "Do" when operands.Length >= 1 && reader.TryGetName(operands[^1], out var xobjectName) && depth < MaxFormDepth:
                     RunForm(resources, xobjectName, state, depth);
                     break;
             }
@@ -292,14 +292,21 @@ internal sealed partial class TextExtractor : IDisposable
     }
 
     /// <summary>Gets the replacement text of the property list of a <c>BDC</c> operator: inline, or a resource (14.6.2).</summary>
-    private string? GetActualText(PdfDictionary? resources, List<PdfObject> operands)
+    private string? GetActualText(PdfDictionary? resources, ContentStreamReader reader, ReadOnlySpan<ContentOperand> operands)
     {
-        var properties = operands.Count >= 2 ? operands[^1] switch
+        PdfDictionary? properties = null;
+        if (operands.Length >= 2)
         {
-            PdfDictionary dictionary => dictionary,
-            PdfName name => resources?.Get<PdfDictionary>(PdfNames.Properties)?.Get<PdfDictionary>(name),
-            _ => null,
-        } : null;
+            if (operands[^1].Object is PdfDictionary dictionary)
+            {
+                properties = dictionary;
+            }
+            else if (reader.TryGetName(operands[^1], out var name))
+            {
+                properties = resources?.Get<PdfDictionary>(PdfNames.Properties)?.Get<PdfDictionary>(name);
+            }
+        }
+
         if (properties?.GetResolved(PdfNames.ActualText) is not PdfString text)
             return null;
 
@@ -542,13 +549,13 @@ internal sealed partial class TextExtractor : IDisposable
         state.TextMatrix = state.LineMatrix;
     }
 
-    private static PdfMatrix ReadMatrix(List<PdfObject> operands)
+    private static PdfMatrix ReadMatrix(ReadOnlySpan<ContentOperand> operands)
     {
-        var start = operands.Count - 6;
+        var start = operands.Length - 6;
         return new PdfMatrix(Number(operands, start), Number(operands, start + 1), Number(operands, start + 2), Number(operands, start + 3), Number(operands, start + 4), Number(operands, start + 5));
     }
 
-    private static double Number(List<PdfObject> operands, int index) => index >= 0 && index < operands.Count && operands[index] is PdfNumber number ? number.DoubleValue : 0;
+    private static double Number(ReadOnlySpan<ContentOperand> operands, int index) => index >= 0 && index < operands.Length && operands[index].TryGetNumber(out var value) ? value : 0;
 
     /// <summary>
     /// Joins the glyphs: a new line when a glyph leaves the baseline, goes back or changes direction, a space when a gap

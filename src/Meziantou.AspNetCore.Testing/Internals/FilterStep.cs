@@ -12,10 +12,10 @@ internal sealed class FilterStep(LocatorFilterOptions options) : LocatorStep
         var result = new List<Element>();
         foreach (var element in elements)
         {
-            if (_hasText is not null && !_hasText.IsMatch(evaluator.GetText(element)))
+            if (_hasText is not null && !_hasText.IsMatch(evaluator, element))
                 continue;
 
-            if (_hasNotText is not null && _hasNotText.IsMatch(evaluator.GetText(element)))
+            if (_hasNotText is not null && _hasNotText.IsMatch(evaluator, element))
                 continue;
 
             if (options.Has is { } has && evaluator.Evaluate(has.Steps, new SearchScope([element], IncludeNodes: false)).Count == 0)

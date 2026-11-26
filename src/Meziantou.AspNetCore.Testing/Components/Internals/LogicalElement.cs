@@ -7,6 +7,8 @@ internal sealed class LogicalElement(Element element) : LogicalContainer
 {
     public Element Element { get; } = element;
 
+    public override int DomNodeCount => 1;
+
     public override void CollectDomNodes(List<Node> nodes) => nodes.Add(Element);
 
     public override Node? GetFirstDomNode() => Element;

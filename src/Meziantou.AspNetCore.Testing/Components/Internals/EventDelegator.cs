@@ -66,12 +66,12 @@ internal sealed class EventDelegator(Document document, EventDelegator.DispatchC
         var info = _elementInfos.GetOrCreateValue(element);
         if (value)
         {
-            info.PreventDefault.Add(eventName);
+            (info.PreventDefault ??= new(StringComparer.Ordinal)).Add(eventName);
             EnsureGlobalListener(eventName);
         }
         else
         {
-            info.PreventDefault.Remove(eventName);
+            info.PreventDefault?.Remove(eventName);
         }
     }
 
@@ -80,12 +80,12 @@ internal sealed class EventDelegator(Document document, EventDelegator.DispatchC
         var info = _elementInfos.GetOrCreateValue(element);
         if (value)
         {
-            info.StopPropagation.Add(eventName);
+            (info.StopPropagation ??= new(StringComparer.Ordinal)).Add(eventName);
             EnsureGlobalListener(eventName);
         }
         else
         {
-            info.StopPropagation.Remove(eventName);
+            info.StopPropagation?.Remove(eventName);
         }
     }
 
@@ -133,12 +133,12 @@ internal sealed class EventDelegator(Document document, EventDelegator.DispatchC
                     dispatch(handler.EventHandlerId, fieldInfo, domEvent, candidate);
                 }
 
-                if (info.StopPropagation.Contains(eventName))
+                if (info.StopPropagation?.Contains(eventName) == true)
                 {
                     stopPropagationWasRequested = true;
                 }
 
-                if (info.PreventDefault.Contains(eventName))
+                if (info.PreventDefault?.Contains(eventName) == true)
                 {
                     domEvent.PreventDefault();
                 }
@@ -173,8 +173,9 @@ internal sealed class EventDelegator(Document document, EventDelegator.DispatchC
     {
         public Dictionary<string, (ulong EventHandlerId, int ComponentId)> Handlers { get; } = new(StringComparer.Ordinal);
 
-        public HashSet<string> PreventDefault { get; } = new(StringComparer.Ordinal);
+        // Created on the first @on{event}:preventDefault or @on{event}:stopPropagation: most elements have only handlers
+        public HashSet<string>? PreventDefault { get; set; }
 
-        public HashSet<string> StopPropagation { get; } = new(StringComparer.Ordinal);
+        public HashSet<string>? StopPropagation { get; set; }
     }
 }

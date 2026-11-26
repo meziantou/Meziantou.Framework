@@ -49,6 +49,78 @@ internal sealed class SegmentedBitStorage
         return count;
     }
 
+    /// <summary>
+    /// Sets the bits at the double-hashing positions <c>Reduce(Hash1 + i * Hash2, BitCount)</c> for <c>i</c> in
+    /// <c>[0, hashCount)</c>.
+    /// </summary>
+    // The atomic operation is a barrier, so the JIT reloads every field after it and the CPU cannot load them ahead
+    // of it. Reading the fields once, and taking the words of a single-segment storage (every filter below 8 GiB)
+    // before the loop, leaves only the atomic operation in the loop.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void SetPositions(BloomFilterHash hash, int hashCount)
+    {
+        var bitCount = (ulong)BitCount;
+        var step = hash.Hash2;
+        var combined = hash.Hash1;
+        var segments = _segments;
+        if (segments.Length == 1)
+        {
+            ref var words = ref unsafe(MemoryMarshal.GetArrayDataReference(segments[0]));
+            for (var i = 0; i < hashCount; i++)
+            {
+                var bitIndex = BloomFilterHash.Reduce(combined, bitCount);
+                ValidateBitIndex(bitIndex);
+                Interlocked.Or(ref unsafe(Unsafe.Add(ref words, (nint)(bitIndex >> 6))), 1UL << (int)bitIndex);
+                combined += step;
+            }
+        }
+        else
+        {
+            for (var i = 0; i < hashCount; i++)
+            {
+                Set(BloomFilterHash.Reduce(combined, bitCount));
+                combined += step;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Returns whether every bit at the positions of <see cref="SetPositions"/> is set.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public bool ArePositionsSet(BloomFilterHash hash, int hashCount)
+    {
+        var bitCount = (ulong)BitCount;
+        var step = hash.Hash2;
+        var combined = hash.Hash1;
+        var segments = _segments;
+        if (segments.Length == 1)
+        {
+            ref var words = ref unsafe(MemoryMarshal.GetArrayDataReference(segments[0]));
+            for (var i = 0; i < hashCount; i++)
+            {
+                var bitIndex = BloomFilterHash.Reduce(combined, bitCount);
+                ValidateBitIndex(bitIndex);
+                if ((Volatile.Read(ref unsafe(Unsafe.Add(ref words, (nint)(bitIndex >> 6)))) & (1UL << (int)bitIndex)) == 0)
+                    return false;
+
+                combined += step;
+            }
+        }
+        else
+        {
+            for (var i = 0; i < hashCount; i++)
+            {
+                if (!IsSet(BloomFilterHash.Reduce(combined, bitCount)))
+                    return false;
+
+                combined += step;
+            }
+        }
+
+        return true;
+    }
+
     // The masked index is in range by construction, so the reference is taken without a bounds check:
     // replacing this with segment[(int)(wordIndex & SegmentMask)] measured ~5% slower on
     // LargeBloomFilterBenchmark.MayContain, and the JIT cannot elide the check because the last segment is

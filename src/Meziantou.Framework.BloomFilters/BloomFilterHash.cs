@@ -54,10 +54,13 @@ internal readonly struct BloomFilterHash
     }
 
     /// <summary>
-    /// Maps a 64-bit hash to <c>[0, range)</c> without a division.
+    /// Maps a 64-bit hash to <c>[0, range)</c> without a division: the high 64 bits of <c>hash * range</c>.
     /// </summary>
+    // Math.BigMul is a JIT intrinsic (umulh on Arm64, mul on x64). The UInt128 multiplication computes the same value,
+    // but the .NET 10 JIT does not always inline it, and a call in a loop makes the caller rematerialize its constants
+    // for every value.
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static long Reduce(ulong hash, ulong range) => (long)(((UInt128)hash * range) >> 64);
+    public static long Reduce(ulong hash, ulong range) => (long)Math.BigMul(hash, range, out _);
 
     /// <summary>
     /// The splitmix64 finalizer, which spreads every input bit over the whole output.

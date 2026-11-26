@@ -240,46 +240,51 @@ public abstract class MarkdownSyntaxNode : SyntaxNode
     {
         foreach (var child in children)
         {
-            if (child.AsNode() is MarkdownInlineSyntax inline)
-            {
-                inline.AppendPlainText(builder);
-                continue;
-            }
+            AppendPlainText(child, builder);
+        }
+    }
 
-            var token = child.AsToken();
-            switch ((SyntaxKind)token.RawKind)
-            {
-                case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken or SyntaxKind.ExtensionTextToken:
-                    builder.Append(GetTokenText(token));
-                    break;
-                case SyntaxKind.EscapedCharacterToken:
-                    builder.Append(GetTokenText(token).AsSpan(1));
-                    break;
-                case SyntaxKind.EntityToken:
-                    builder.Append(HtmlEntities.Decode(token.Text));
-                    break;
-                case SyntaxKind.EmojiToken:
-                    var mapping = FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.Options.EmojiMapping ?? MarkdownEmojiMapping.Default;
-                    builder.Append(mapping.TryGetEmoji(token.Text, out var emoji) ? emoji : token.Text);
-                    break;
-                case SyntaxKind.SmartyPantToken:
-                    builder.Append(((MarkdownSmartyPant)(int)token.Value!) switch
-                    {
-                        MarkdownSmartyPant.LeftQuote => '\u2018',
-                        MarkdownSmartyPant.RightQuote => '\u2019',
-                        MarkdownSmartyPant.LeftDoubleQuote => '\u201C',
-                        MarkdownSmartyPant.RightDoubleQuote => '\u201D',
-                        MarkdownSmartyPant.LeftAngleQuote => '\u00AB',
-                        MarkdownSmartyPant.RightAngleQuote => '\u00BB',
-                        MarkdownSmartyPant.Ellipsis => '\u2026',
-                        MarkdownSmartyPant.EnDash => '\u2013',
-                        _ => '\u2014',
-                    });
-                    break;
-                case SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken:
-                    builder.Append('\n');
-                    break;
-            }
+    internal void AppendPlainText(SyntaxNodeOrToken child, StringBuilder builder)
+    {
+        if (child.AsNode() is MarkdownInlineSyntax inline)
+        {
+            inline.AppendPlainText(builder);
+            return;
+        }
+
+        var token = child.AsToken();
+        switch ((SyntaxKind)token.RawKind)
+        {
+            case SyntaxKind.TextToken or SyntaxKind.OpenBracketToken or SyntaxKind.ExclamationOpenBracketToken or SyntaxKind.CloseBracketToken or SyntaxKind.ExtendedAutolinkToken or SyntaxKind.ExtensionTextToken:
+                builder.Append(GetTokenText(token));
+                break;
+            case SyntaxKind.EscapedCharacterToken:
+                builder.Append(GetTokenText(token).AsSpan(1));
+                break;
+            case SyntaxKind.EntityToken:
+                builder.Append(HtmlEntities.Decode(token.Text));
+                break;
+            case SyntaxKind.EmojiToken:
+                var mapping = FirstAncestorOrSelf<MarkdownDocumentSyntax>()?.Options.EmojiMapping ?? MarkdownEmojiMapping.Default;
+                builder.Append(mapping.TryGetEmoji(token.Text, out var emoji) ? emoji : token.Text);
+                break;
+            case SyntaxKind.SmartyPantToken:
+                builder.Append(((MarkdownSmartyPant)(int)token.Value!) switch
+                {
+                    MarkdownSmartyPant.LeftQuote => '\u2018',
+                    MarkdownSmartyPant.RightQuote => '\u2019',
+                    MarkdownSmartyPant.LeftDoubleQuote => '\u201C',
+                    MarkdownSmartyPant.RightDoubleQuote => '\u201D',
+                    MarkdownSmartyPant.LeftAngleQuote => '\u00AB',
+                    MarkdownSmartyPant.RightAngleQuote => '\u00BB',
+                    MarkdownSmartyPant.Ellipsis => '\u2026',
+                    MarkdownSmartyPant.EnDash => '\u2013',
+                    _ => '\u2014',
+                });
+                break;
+            case SyntaxKind.LineEndingToken or SyntaxKind.HardLineBreakToken:
+                builder.Append('\n');
+                break;
         }
     }
 }

@@ -64,14 +64,12 @@ internal sealed class GreenBuilder
         var builder = new GreenBuilder(text, elements, triviaSpans, syntaxExtensions);
         var document = builder._elements[0];
         var end = 1 + document.Value;
-        for (var index = 1; index < end;)
-        {
-            builder._children.Push(builder.BuildElement(ref index));
-        }
+        var index = 1;
+        var rareKinds = builder.BuildChildren(ref index, end);
 
         // The end of file token has the trivia after the last token
         builder._children.Push(new Green.SyntaxToken((int)SyntaxKind.EndOfFileToken, "", builder.CreateTrivia(builder.GetTriviaSplit(text.Length), text.Length), trailingTrivia: null, isMissing: false));
-        return new MarkdownNode(SyntaxKind.Document, builder._children.From(0));
+        return new MarkdownNode(SyntaxKind.Document, builder._children.From(0), rareKinds);
     }
 
     // Where the trivia between the previous token and a token that starts at nextStart is split: the trailing trivia of the
@@ -192,14 +190,30 @@ internal sealed class GreenBuilder
         var end = index + 1 + element.Value;
         var first = _children.Count;
         index++;
-        while (index < end)
-        {
-            _children.Push(BuildElement(ref index));
-        }
-
-        var node = new MarkdownNode(element.Kind, _children.From(first));
+        var rareKinds = BuildChildren(ref index, end);
+        var node = new MarkdownNode(element.Kind, _children.From(first), rareKinds);
         _children.Truncate(first);
         return node;
+    }
+
+    // Builds the elements up to end, which are pushed to the children. Returns the rare kinds of the nodes among them and below
+    // them: the elements tell which children are nodes, so that the children are not read again to find them.
+    private MarkdownRareKinds BuildChildren(ref int index, int end)
+    {
+        var rareKinds = MarkdownRareKinds.None;
+        while (index < end)
+        {
+            var isNode = !_elements[index].IsToken;
+            var child = BuildElement(ref index);
+            if (isNode)
+            {
+                rareKinds |= MarkdownNode.GetRareKindsOfNode((MarkdownNode)child);
+            }
+
+            _children.Push(child);
+        }
+
+        return rareKinds;
     }
 
     private static ref CachedToken GetCachedToken(SyntaxKind kind, ReadOnlySpan<char> text)

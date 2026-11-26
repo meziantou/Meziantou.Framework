@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <!-- SharpFuzz targets of Meziantou.AspNetCore.Authentication.HttpBasic. See fuzz/README.md. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The Authorization headers and credentials of the unit tests are the seeds -->
+    <EmbeddedResource Include="..\..\tests\Meziantou.AspNetCore.Authentication.HttpBasic.Tests\HttpBasicAuthenticationTests.cs" LogicalName="HttpBasicAuthenticationTests.cs" Link="Seeds\HttpBasicAuthenticationTests.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.AspNetCore.Authentication.HttpBasic\Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
+  </ItemGroup>
+</Project>

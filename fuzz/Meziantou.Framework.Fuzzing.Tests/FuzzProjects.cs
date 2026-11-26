@@ -7,6 +7,7 @@ internal static class FuzzProjects
 {
     public static IReadOnlyList<(string Project, IReadOnlyList<FuzzTarget> Targets)> All { get; } =
     [
+        ("Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz", global::Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz.HttpBasicFuzzTargets.All),
         ("Meziantou.AspNetCore.Testing.Fuzz", global::Meziantou.AspNetCore.Testing.Fuzz.AspNetCoreTestingFuzzTargets.All),
         ("Meziantou.Framework.AnsiFormatting.Fuzz", AnsiFormatting.Fuzz.AnsiFormattingFuzzTargets.All),
         ("Meziantou.Framework.Assertions.Fuzz", Assertions.Fuzz.AssertionsFuzzTargets.All),

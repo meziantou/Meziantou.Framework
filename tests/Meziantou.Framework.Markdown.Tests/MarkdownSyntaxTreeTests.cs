@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
 using Meziantou.Xunit;
 
@@ -1082,6 +1084,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a...b ...c d...\n", "<p>a...b ...c d&hellip;</p>\n")]
     [InlineData("a--b---c----d \\--- `--`\n", "<p>a&ndash;b&mdash;c&mdash;-d -&ndash; <code>--</code></p>\n")]
     [InlineData("*'a'* ![\"i\" <b>](u)\n", "<p><em>&lsquo;a&rsquo;</em> <img src=\"u\" alt=\"&ldquo;i&rdquo; &lt;b&gt;\" /></p>\n")]
+    [InlineData("![*\"i\"* and [<b>](v)](u)\n", "<p><img src=\"u\" alt=\"&ldquo;i&rdquo; and &lt;b&gt;\" /></p>\n")]
+    [InlineData("![a **'b'** c [d](e)](u)\n", "<p><img src=\"u\" alt=\"a &lsquo;b&rsquo; c d\" /></p>\n")]
+    [InlineData("![a ~~'b'~~ [\"c\" <i>](e)](u)\n", "<p><img src=\"u\" alt=\"a ~~&lsquo;b&rsquo;~~ &ldquo;c&rdquo; &lt;i&gt;\" /></p>\n")]
     [InlineData("l'ami 'x\n", "<p>l'ami 'x</p>\n")]
     public void RendersSmartyPants(string text, string expected)
     {
@@ -2122,6 +2127,48 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.Equal(text, formatted);
         Assert.InRange(calls, 0, 500, "The formatter parses the trigger characters of the text a few times each");
+    }
+
+    [Theory]
+    [InlineData("| a | b |\n|-|-|\n| `x \\| y` | z |\n", MarkdownExtensions.GitHubFlavored, "| a        | b   |\n| -------- | --- |\n| `x \\| y` | z   |\n")]
+    [InlineData("| a {.c} | b |\n|-|-|\n| x | y |\n", MarkdownExtensions.Advanced, "| a {.c} | b |\n|-|-|\n| x | y |\n")]
+    [InlineData("| a | b |\n|-|-|\n| [x\ny](u) | z |\n", MarkdownExtensions.Advanced, "| a | b |\n|-|-|\n| [x\ny](u) | z |\n")]
+    [InlineData("Title {#id}\n===\n", MarkdownExtensions.Advanced, "Title {#id}\n===\n")]
+    [InlineData("# Title {#id}\n", MarkdownExtensions.Advanced, "# Title {#id}\n")]
+    [InlineData("Title\n===\n", MarkdownExtensions.Advanced, "# Title\n")]
+    public void FormatterKeepsTheTablesAndHeadingsWithAttributesOrLineBreaks(string text, MarkdownExtensions extensions, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = extensions };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted, options)));
+    }
+
+    [Fact]
+    public void ParsesTheSameWithTheNodesThatThePreviousParsesOfTheThreadReuse()
+    {
+        // The inlines of a pipe table of Markdig are those of its whole paragraph: the hundreds of rows need more nodes than a
+        // parse makes for itself, and the next parses of the thread reuse them
+        var table = new StringBuilder("| a | b |\n|-|-|\n");
+        for (var i = 0; i < 300; i++)
+        {
+            table.Append(CultureInfo.InvariantCulture, $"| *x{i}* [l](u{i}) | `c` **y** |\n");
+        }
+
+        var text = table.ToString();
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
+        string? expected = null;
+        var thread = new Thread(() => expected = MarkdownConverter.ToHtml(text, options));
+        thread.Start();
+        thread.Join();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(text, options));
+        Assert.Equal("<p><em>a</em> b</p>\n", MarkdownConverter.ToHtml("*a* b\n", options));
+        Assert.Equal(expected, MarkdownConverter.ToHtml(text, options));
+        Assert.Equal(text, MarkdownSyntaxTree.ParseText(text, options).GetRoot().ToFullString());
     }
 
     [Fact]

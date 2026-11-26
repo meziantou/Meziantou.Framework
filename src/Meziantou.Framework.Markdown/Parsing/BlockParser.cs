@@ -145,6 +145,7 @@ internal sealed class BlockParser
         }
 
         parser.Convert(parser._document);
+        parser._inlineParser.ReleaseNodes();
         ArrayPool<Line>.Shared.Return(parser._lines);
         parser._lines = [];
         return parser._triviaSpans;
@@ -174,6 +175,7 @@ internal sealed class BlockParser
         }
         finally
         {
+            parser._inlineParser.ReleaseNodes();
             ArrayPool<Line>.Shared.Return(parser._lines);
             parser._lines = [];
         }
@@ -2458,9 +2460,21 @@ internal sealed class BlockParser
 
             // The pipes (0), the cells (1) and the generic attributes (2), in the order of the text
             elements.Clear();
-            elements.AddRange(row.Pipes.Select(pipe => (pipe, pipe + 1, 0)));
-            elements.AddRange(row.Cells.Select(cell => (cell.Start, cell.End, 1)));
-            elements.AddRange(row.Attributes.Select(attributes => (attributes.Start, attributes.End, 2)));
+            foreach (var pipe in row.Pipes)
+            {
+                elements.Add((pipe, pipe + 1, 0));
+            }
+
+            foreach (var cell in row.Cells)
+            {
+                elements.Add((cell.Start, cell.End, 1));
+            }
+
+            foreach (var attributes in row.Attributes)
+            {
+                elements.Add((attributes.Start, attributes.End, 2));
+            }
+
             elements.Sort();
             var position = row.Start;
             foreach (var (start, end, kind) in elements)

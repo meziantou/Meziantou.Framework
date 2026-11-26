@@ -18,6 +18,7 @@ on:
           - all
           - aspnetcore-testing
           - ansi-formatting
+          - assertions
           - atlassian-data-format
           - avatar
           - barcodes
@@ -60,6 +61,7 @@ on:
           - scheduling
           - simple-query-language
           - syntax-highlighting
+          - tagged-values
           - tds-server
           - text-diff
           - toml
@@ -113,6 +115,7 @@ env:
     [
       { "project": "Meziantou.AspNetCore.Testing.Fuzz",            "component": "aspnetcore-testing",    "day": 4 },
       { "project": "Meziantou.Framework.AnsiFormatting.Fuzz",       "component": "ansi-formatting",       "day": 0 },
+      { "project": "Meziantou.Framework.Assertions.Fuzz",          "component": "assertions",            "day": 1 },
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 2 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
@@ -155,6 +158,7 @@ env:
       { "project": "Meziantou.Framework.Scheduling.Fuzz",          "component": "scheduling",            "day": 3 },
       { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 1 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },
+      { "project": "Meziantou.Framework.TaggedValues.Analyzer.Fuzz", "component": "tagged-values",       "day": 3 },
       { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
       { "project": "Meziantou.Framework.TextDiff.Fuzz",            "component": "text-diff",             "day": 0 },
       { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },

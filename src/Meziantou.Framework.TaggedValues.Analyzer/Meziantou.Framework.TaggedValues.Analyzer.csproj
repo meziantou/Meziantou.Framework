@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.TaggedValues.Analyzer.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.TaggedValues.Analyzer.Fuzz" />
   </ItemGroup>
 
   <ItemGroup>

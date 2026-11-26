@@ -1,4 +1,6 @@
 using System.Buffers;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Bidi = Meziantou.Framework.UnicodeBidirectionalCategory;
 
 namespace Meziantou.Framework;
@@ -23,8 +25,10 @@ public static class UnicodeBidi
     /// <summary>The greatest depth of explicit embeddings, overrides and isolates (<c>max_depth</c>). The greatest level is one more.</summary>
     public const int MaxExplicitDepth = 125;
 
-    // The workspace holds, for each code unit: its current class, a link (see FindMatchingIsolates and
-    // FindBracketPairs), and a slot of the list of the positions of the isolating run sequence being resolved.
+    // The workspace holds 3 ints per code unit. The bytes of the first ones hold the current class of each code unit,
+    // its properties (see UnicodeTables.GetBidi), and the types of the isolating run sequence being resolved. The
+    // second ones hold a link per code unit (see FindMatchingIsolates and FindBracketPairs), and the third ones the
+    // positions of the characters of the sequence.
     private const int WorkspaceFactor = 3;
     private const int StackallocLimit = 64; // The workspace stays under 1 KB on the stack
 
@@ -33,6 +37,32 @@ public static class UnicodeBidi
 
     // The link of an isolate initiator that has no matching PDI.
     private const int UnmatchedInitiator = int.MinValue;
+
+    // The bits of the value of UnicodeTables.GetBidi.
+    private const int ClassBits = 0x1F;
+    private const int BracketTypeShift = 5;
+    private const int BracketTypeBits = 0x60;
+
+    // A mask of classes has the bit 1 << class of each class it contains, and HasBrackets when a character is a paired bracket.
+    private const int HasBrackets = BracketTypeBits << 18;
+    private const int ExplicitClasses = (1 << (int)Bidi.LeftToRightEmbedding) | (1 << (int)Bidi.LeftToRightOverride) | (1 << (int)Bidi.RightToLeftEmbedding)
+        | (1 << (int)Bidi.RightToLeftOverride) | (1 << (int)Bidi.PopDirectionalFormat) | IsolateClasses;
+
+    private const int IsolateClasses = (1 << (int)Bidi.LeftToRightIsolate) | (1 << (int)Bidi.RightToLeftIsolate) | (1 << (int)Bidi.FirstStrongIsolate)
+        | (1 << (int)Bidi.PopDirectionalIsolate);
+
+    private const int NeutralClasses = (1 << (int)Bidi.ParagraphSeparator) | (1 << (int)Bidi.SegmentSeparator) | (1 << (int)Bidi.WhiteSpace)
+        | (1 << (int)Bidi.OtherNeutral) | IsolateClasses;
+
+    private const int SeparatorClasses = (1 << (int)Bidi.EuropeanSeparator) | (1 << (int)Bidi.CommonSeparator);
+
+    // I1 and I2: two bits per class, the increment of the level of a character of that type at an even level and at an odd level.
+    private const ulong EvenLevelIncrements = (1UL << (2 * (int)Bidi.RightToLeft)) | (2UL << (2 * (int)Bidi.ArabicNumber)) | (2UL << (2 * (int)Bidi.EuropeanNumber));
+    private const ulong OddLevelIncrements = (1UL << (2 * (int)Bidi.LeftToRight)) | (1UL << (2 * (int)Bidi.ArabicNumber)) | (1UL << (2 * (int)Bidi.EuropeanNumber));
+
+    // The properties of U+0000 to U+07FF, which hold the scripts written from right to left that are the most used
+    // (Hebrew, Arabic, Syriac, Thaana, NKo), read faster than through the tables of all the code points.
+    private static readonly byte[] LowProperties = CreateLowProperties();
 
     /// <summary>Determines whether a text can have a level other than 0.</summary>
     /// <param name="text">The text.</param>
@@ -179,6 +209,17 @@ public static class UnicodeBidi
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is not a defined value.</exception>
     public static int ResolveLevels(ReadOnlySpan<char> paragraph, UnicodeBidiDirection direction, Span<byte> levels, Span<int> workspace)
     {
+        return ResolveLevels(paragraph, direction, levels, workspace, allowFastPath: true);
+    }
+
+    /// <summary>Resolves the embedding level of each UTF-16 code unit of a paragraph.</summary>
+    /// <param name="paragraph">The text of one paragraph.</param>
+    /// <param name="direction">The direction of the paragraph.</param>
+    /// <param name="levels">The buffer that receives one level per code unit of <paramref name="paragraph"/>.</param>
+    /// <param name="workspace">A buffer of at least <see cref="GetWorkspaceLength(int)"/> elements.</param>
+    /// <param name="allowFastPath"><see langword="false"/> to resolve a paragraph without explicit formatting characters with the general path, to compare the two in tests.</param>
+    internal static int ResolveLevels(ReadOnlySpan<char> paragraph, UnicodeBidiDirection direction, Span<byte> levels, Span<int> workspace, bool allowFastPath)
+    {
         if (direction is not (UnicodeBidiDirection.Auto or UnicodeBidiDirection.LeftToRight or UnicodeBidiDirection.RightToLeft))
             throw new ArgumentOutOfRangeException(nameof(direction), direction, "The value is not defined");
 
@@ -198,20 +239,110 @@ public static class UnicodeBidi
             return 0;
         }
 
-        var classes = workspace[..count];
-        for (var index = 0; index < count;)
+        // The properties of each code unit, and the sequence of the paragraph: the types and positions of the
+        // characters other than the boundary neutrals, which are removed (X9). When the paragraph has no explicit
+        // formatting character, this sequence is its only isolating run sequence.
+        var bytes = GetBytes(workspace[..count]);
+        var properties = bytes.Slice(count, count);
+        var sequenceTypes = bytes.Slice(count * 2, count);
+        var positions = workspace.Slice(count * 2, count);
+        var length = ReadParagraph(paragraph, properties, sequenceTypes, positions, out var classMask);
+        return ResolveLevelsCore(paragraph, direction, levels[..count], workspace, length, classMask, allowFastPath);
+    }
+
+    /// <summary>Reads the properties of the code units of a paragraph, and the types and positions of its characters that are not boundary neutrals.</summary>
+    /// <returns>The number of characters that are not boundary neutrals.</returns>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int ReadParagraph(ReadOnlySpan<char> paragraph, Span<byte> properties, Span<byte> sequenceTypes, Span<int> positions, out int classMask)
+    {
+        var mask = 0;
+        var length = 0;
+        var lowProperties = LowProperties;
+        for (var index = 0; index < paragraph.Length; index++)
         {
-            classes[index] = (int)UnicodeProperties.GetBidiClass(Unicode.DecodeAt(paragraph, index, out var length));
-            if (length == 2)
+            var c = paragraph[index];
+            int value;
+            var isPair = false;
+            if (c < lowProperties.Length)
+            {
+                value = lowProperties[c];
+            }
+            else if (!char.IsSurrogate(c))
+            {
+                value = UnicodeTables.GetBidi(c);
+            }
+            else if (char.IsHighSurrogate(c) && index + 1 < paragraph.Length && char.IsLowSurrogate(paragraph[index + 1]))
             {
                 // The second code unit of a pair behaves as a removed character: it takes the level of the first.
-                classes[index + 1] = (int)Bidi.BoundaryNeutral;
+                value = UnicodeTables.GetBidi(char.ConvertToUtf32(c, paragraph[index + 1]));
+                properties[index + 1] = (byte)Bidi.BoundaryNeutral;
+                mask |= 1 << (int)Bidi.BoundaryNeutral;
+                isPair = true;
+            }
+            else
+            {
+                value = UnicodeTables.GetBidi(c);
             }
 
-            index += length;
+            var bidiClass = value & ClassBits;
+            properties[index] = (byte)value;
+            mask |= (1 << bidiClass) | ((value & BracketTypeBits) << 18);
+
+            // length <= index, so the slots exist; a removed character is overwritten by the next one.
+            positions[length] = index;
+            sequenceTypes[length] = (byte)bidiClass;
+            length += bidiClass != (int)Bidi.BoundaryNeutral ? 1 : 0;
+            if (isPair)
+            {
+                index++;
+            }
         }
 
-        return ResolveLevelsCore(paragraph, direction, levels[..count], workspace);
+        classMask = mask;
+        return length;
+    }
+
+    /// <summary>Gets the bytes of the first part of the workspace, which holds the classes, the properties and the types of a sequence.</summary>
+    private static Span<byte> GetBytes(Span<int> workspace)
+    {
+        // Reading and writing the bytes of an int is always valid.
+        return unsafe(MemoryMarshal.AsBytes(workspace));
+    }
+
+    private static byte[] CreateLowProperties()
+    {
+        var result = new byte[0x800];
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = (byte)UnicodeTables.GetBidi(i);
+        }
+
+        return result;
+    }
+
+    /// <summary>Resolves the levels of a paragraph given by the classes of its characters, without resolving the paired brackets (rule N0).</summary>
+    internal static int ResolveLevelsFromClasses(ReadOnlySpan<Bidi> classes, UnicodeBidiDirection direction, Span<byte> levels, bool allowFastPath)
+    {
+        var count = classes.Length;
+        var workspace = new int[GetWorkspaceLength(count)];
+        var bytes = GetBytes(workspace.AsSpan(0, count));
+        var positions = workspace.AsSpan(count * 2, count);
+        var classMask = 0;
+        var length = 0;
+        for (var i = 0; i < count; i++)
+        {
+            var value = classes[i];
+            bytes[count + i] = (byte)value;
+            classMask |= 1 << (int)value;
+            if (value is not Bidi.BoundaryNeutral)
+            {
+                positions[length] = i;
+                bytes[(count * 2) + length] = (byte)value;
+                length++;
+            }
+        }
+
+        return ResolveLevelsCore(text: default, direction, levels[..count], workspace, length, classMask, allowFastPath);
     }
 
     /// <summary>Resets the levels of the trailing white space of a line (rule L1).</summary>
@@ -382,19 +513,45 @@ public static class UnicodeBidi
         return char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]);
     }
 
-    /// <summary>Resolves the levels from the classes stored in the first part of the workspace.</summary>
+    /// <summary>Resolves the levels from the properties and the sequence of the paragraph, stored in the workspace.</summary>
     /// <param name="text">The text, read for the paired brackets; empty when only the classes are known.</param>
     /// <param name="direction">The direction of the paragraph.</param>
-    /// <param name="levels">One level per class.</param>
-    /// <param name="workspace">The workspace, whose first <c>levels.Length</c> elements are the classes.</param>
-    internal static int ResolveLevelsCore(ReadOnlySpan<char> text, UnicodeBidiDirection direction, Span<byte> levels, Span<int> workspace)
+    /// <param name="levels">One level per code unit.</param>
+    /// <param name="workspace">
+    /// The workspace. The bytes of its first <c>levels.Length</c> elements hold the classes, then the properties of
+    /// each code unit, then the types of the characters that are not boundary neutrals. Its last <c>levels.Length</c>
+    /// elements hold the positions of these characters.
+    /// </param>
+    /// <param name="sequenceLength">The number of characters that are not boundary neutrals.</param>
+    /// <param name="classMask">The mask of the classes of the paragraph (see <see cref="HasBrackets"/>).</param>
+    /// <param name="allowFastPath"><see langword="false"/> to use the general path even when the paragraph has no explicit formatting characters.</param>
+    private static int ResolveLevelsCore(ReadOnlySpan<char> text, UnicodeBidiDirection direction, Span<byte> levels, Span<int> workspace, int sequenceLength, int classMask, bool allowFastPath)
     {
         var count = levels.Length;
-        var classes = workspace[..count];
+        var bytes = GetBytes(workspace[..count]);
+        var classes = bytes[..count];
+        var properties = bytes.Slice(count, count);
+        var sequenceTypes = bytes.Slice(count * 2, count);
         var links = workspace.Slice(count, count);
-        var sequence = workspace.Slice(count * 2, count);
+        var positions = workspace.Slice(count * 2, count);
 
-        FindMatchingIsolates(classes, links);
+        if (allowFastPath && (classMask & ExplicitClasses) == 0)
+            return ResolveImplicitParagraph(text, direction, properties, sequenceTypes[..sequenceLength], links, positions[..sequenceLength], levels, classMask);
+
+        for (var i = 0; i < classes.Length; i++)
+        {
+            classes[i] = (byte)(properties[i] & ClassBits);
+        }
+
+        if ((classMask & IsolateClasses) != 0)
+        {
+            FindMatchingIsolates(classes, links);
+        }
+        else
+        {
+            links.Fill(NoLink);
+        }
+
         var paragraphLevel = direction switch
         {
             UnicodeBidiDirection.LeftToRight => 0,
@@ -402,26 +559,85 @@ public static class UnicodeBidi
             _ => FindFirstStrongLevel(classes, links, 0, count),
         };
 
-        // The original classes are needed by N0 after the weak types are resolved; a character only has a class
-        // other than its original one where X6 overrides it, and the brackets and marks N0 looks at are not removed.
+        // The original classes are needed by N0 after the weak types are resolved: they are the properties, which
+        // the explicit rules do not change.
         ResolveExplicitLevels(classes, links, levels, paragraphLevel);
-        ResolveSequences(text, classes, links, sequence, levels, paragraphLevel);
+        ResolveSequences(text, classes, properties, sequenceTypes, links, positions, levels, paragraphLevel, classMask);
 
-        // The characters removed by X9 take the level of the character before them.
+        // I1 and I2, once every sequence is resolved: the types at the ends of a sequence are computed from the
+        // levels of the explicit rules, so the levels must not change before that. The characters removed by X9 take
+        // the level of the character before them.
         var previous = (byte)paragraphLevel;
         for (var i = 0; i < count; i++)
         {
-            if (classes[i] == (int)Bidi.BoundaryNeutral)
+            var value = classes[i];
+            if (value != (byte)Bidi.BoundaryNeutral)
             {
-                levels[i] = previous;
+                previous = (byte)(levels[i] + GetLevelIncrement(levels[i], (Bidi)value));
             }
-            else
-            {
-                previous = levels[i];
-            }
+
+            levels[i] = previous;
         }
 
         return paragraphLevel;
+    }
+
+    /// <summary>Resolves a paragraph that has no explicit formatting character.</summary>
+    /// <remarks>
+    /// Rules X1 to X9 give the paragraph level to every character and change no class, other than removing the
+    /// boundary neutrals, so the paragraph is one level run and one isolating run sequence, whose start and end types
+    /// are the direction of the paragraph.
+    /// </remarks>
+    private static int ResolveImplicitParagraph(ReadOnlySpan<char> text, UnicodeBidiDirection direction, ReadOnlySpan<byte> properties, Span<byte> sequenceTypes, Span<int> links, ReadOnlySpan<int> positions, Span<byte> levels, int classMask)
+    {
+        // Without isolate initiators, FindFirstStrongLevel does not read the links.
+        var paragraphLevel = direction switch
+        {
+            UnicodeBidiDirection.LeftToRight => 0,
+            UnicodeBidiDirection.RightToLeft => 1,
+            _ => FindFirstStrongLevel(sequenceTypes, links, 0, sequenceTypes.Length),
+        };
+
+        var type = paragraphLevel == 1 ? Bidi.RightToLeft : Bidi.LeftToRight;
+        ResolveSequence(text, sequenceTypes, properties, links, positions, paragraphLevel, type, type, classMask);
+
+        SetImplicitLevels(sequenceTypes, positions, levels, paragraphLevel);
+        return paragraphLevel;
+    }
+
+    /// <summary>I1 and I2 for a paragraph that has no explicit formatting character. The removed characters take the level of the character before them.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void SetImplicitLevels(ReadOnlySpan<byte> sequenceTypes, ReadOnlySpan<int> positions, Span<byte> levels, int paragraphLevel)
+    {
+        var increments = paragraphLevel == 0 ? EvenLevelIncrements : OddLevelIncrements;
+        if (sequenceTypes.Length == levels.Length)
+        {
+            // No character is removed: the position of each character is its index in the sequence.
+            for (var k = 0; k < sequenceTypes.Length; k++)
+            {
+                levels[k] = (byte)(paragraphLevel + (int)((increments >> (sequenceTypes[k] * 2)) & 3));
+            }
+
+            return;
+        }
+
+        var previous = (byte)paragraphLevel;
+        var next = 0;
+        for (var k = 0; k < positions.Length; k++)
+        {
+            var position = positions[k];
+            while (next < position)
+            {
+                levels[next] = previous;
+                next++;
+            }
+
+            previous = (byte)(paragraphLevel + (int)((increments >> (sequenceTypes[k] * 2)) & 3));
+            levels[position] = previous;
+            next = position + 1;
+        }
+
+        levels[next..].Fill(previous);
     }
 
     private static bool IsWhiteSpaceForLineEnd(Bidi value)
@@ -431,13 +647,13 @@ public static class UnicodeBidi
             or Bidi.PopDirectionalFormat;
     }
 
-    private static bool IsIsolateInitiator(int value)
+    private static bool IsIsolateInitiator(byte value)
     {
         return (Bidi)value is Bidi.LeftToRightIsolate or Bidi.RightToLeftIsolate or Bidi.FirstStrongIsolate;
     }
 
     /// <summary>BD9: links each isolate initiator to its matching PDI, and each matched PDI to its initiator.</summary>
-    private static void FindMatchingIsolates(ReadOnlySpan<int> classes, Span<int> links)
+    private static void FindMatchingIsolates(ReadOnlySpan<byte> classes, Span<int> links)
     {
         // While an initiator is open, its link is the index of the initiator that was open before it.
         var open = NoLink;
@@ -467,7 +683,7 @@ public static class UnicodeBidi
     }
 
     /// <summary>P2 and P3: the level of the first strong character of a range that is not inside an isolate.</summary>
-    private static int FindFirstStrongLevel(ReadOnlySpan<int> classes, ReadOnlySpan<int> links, int start, int end)
+    private static int FindFirstStrongLevel(ReadOnlySpan<byte> classes, ReadOnlySpan<int> links, int start, int end)
     {
         for (var i = start; i < end; i++)
         {
@@ -493,7 +709,7 @@ public static class UnicodeBidi
     }
 
     /// <summary>X1 to X9: the explicit embedding levels, the overrides, and the removal of the formatting characters.</summary>
-    private static void ResolveExplicitLevels(Span<int> classes, ReadOnlySpan<int> links, Span<byte> levels, int paragraphLevel)
+    private static void ResolveExplicitLevels(Span<byte> classes, ReadOnlySpan<int> links, Span<byte> levels, int paragraphLevel)
     {
         const byte OverrideLeftToRight = 1;
         const byte OverrideRightToLeft = 2;
@@ -537,7 +753,7 @@ public static class UnicodeBidi
                         }
 
                         // X9
-                        classes[i] = (int)Bidi.BoundaryNeutral;
+                        classes[i] = (byte)Bidi.BoundaryNeutral;
                         break;
                     }
 
@@ -607,7 +823,7 @@ public static class UnicodeBidi
                     }
 
                     // X9
-                    classes[i] = (int)Bidi.BoundaryNeutral;
+                    classes[i] = (byte)Bidi.BoundaryNeutral;
                     break;
 
                 case Bidi.ParagraphSeparator:
@@ -627,101 +843,101 @@ public static class UnicodeBidi
             }
         }
 
-        static void ApplyOverride(Span<int> classes, int index, byte status)
+        static void ApplyOverride(Span<byte> classes, int index, byte status)
         {
             if ((status & OverrideLeftToRight) != 0)
             {
-                classes[index] = (int)Bidi.LeftToRight;
+                classes[index] = (byte)Bidi.LeftToRight;
             }
             else if ((status & OverrideRightToLeft) != 0)
             {
-                classes[index] = (int)Bidi.RightToLeft;
+                classes[index] = (byte)Bidi.RightToLeft;
             }
         }
     }
 
-    /// <summary>X10: resolves each isolating run sequence (W1 to W7, N0 to N2, I1 and I2).</summary>
-    private static void ResolveSequences(ReadOnlySpan<char> text, Span<int> classes, Span<int> links, Span<int> sequence, Span<byte> levels, int paragraphLevel)
+    /// <summary>X10: resolves the types of each isolating run sequence (W1 to W7, N0 to N2).</summary>
+    private static void ResolveSequences(ReadOnlySpan<char> text, Span<byte> classes, ReadOnlySpan<byte> properties, Span<byte> sequenceTypes, Span<int> links, Span<int> positions, Span<byte> levels, int paragraphLevel, int classMask)
     {
         var count = classes.Length;
         for (var runStart = NextKept(classes, 0); runStart < count;)
         {
-            var level = levels[runStart];
-            var runEnd = FindRunEnd(classes, levels, runStart);
-
-            // A level run that starts with a PDI matched to an initiator continues the sequence of that initiator.
-            var isContinuation = links[runStart] >= 0 && links[runStart] < runStart;
-            if (!isContinuation)
+            // A level run that starts with a PDI matched to an initiator continues the sequence of that initiator,
+            // which is already resolved.
+            if (links[runStart] >= 0 && links[runStart] < runStart)
             {
-                // BD13: gather the positions of the sequence.
-                var length = 0;
-                var start = runStart;
-                var end = runEnd;
-                int last;
-                while (true)
-                {
-                    last = start;
-                    for (var i = start; i < end; i++)
-                    {
-                        if (classes[i] != (int)Bidi.BoundaryNeutral)
-                        {
-                            sequence[length++] = i;
-                            last = i;
-                        }
-                    }
+                runStart = NextKept(classes, FindRunEnd(classes, levels, runStart));
+                continue;
+            }
 
-                    // The run is followed by the one that starts with the PDI matching its last character.
-                    if (links[last] <= last)
-                        break;
+            // BD13: gather the positions and the types of the sequence.
+            var level = levels[runStart];
+            var length = 0;
+            var runEnd = GatherRun(classes, levels, runStart, positions, sequenceTypes, ref length);
+            var last = positions[length - 1];
+            while (links[last] > last)
+            {
+                // The run is followed by the one that starts with the PDI matching its last character.
+                GatherRun(classes, levels, links[last], positions, sequenceTypes, ref length);
+                last = positions[length - 1];
+            }
 
-                    start = links[last];
-                    end = FindRunEnd(classes, levels, start);
-                }
+            // The types at the two ends of the sequence come from the higher of the two levels on each side.
+            var before = PreviousKept(classes, runStart);
+            var after = NextKept(classes, last + 1);
+            var levelBefore = before < 0 ? paragraphLevel : levels[before];
+            var levelAfter = after >= count || links[last] == UnmatchedInitiator ? paragraphLevel : levels[after];
+            var startType = (Math.Max(level, levelBefore) & 1) != 0 ? Bidi.RightToLeft : Bidi.LeftToRight;
+            var endType = (Math.Max(level, levelAfter) & 1) != 0 ? Bidi.RightToLeft : Bidi.LeftToRight;
 
-                // The types at the two ends of the sequence come from the higher of the two levels on each side.
-                var before = PreviousKept(classes, runStart);
-                var after = NextKept(classes, last + 1);
-                var levelBefore = before < 0 ? paragraphLevel : levels[before];
-                var levelAfter = after >= count || links[last] == UnmatchedInitiator ? paragraphLevel : levels[after];
-                var startType = (Math.Max(level, levelBefore) & 1) != 0 ? Bidi.RightToLeft : Bidi.LeftToRight;
-                var endType = (Math.Max(level, levelAfter) & 1) != 0 ? Bidi.RightToLeft : Bidi.LeftToRight;
-
-                ResolveSequence(text, classes, links, sequence[..length], level, startType, endType);
+            ResolveSequence(text, sequenceTypes[..length], properties, links, positions[..length], level, startType, endType, classMask);
+            for (var k = 0; k < length; k++)
+            {
+                classes[positions[k]] = sequenceTypes[k];
             }
 
             runStart = NextKept(classes, runEnd);
         }
+    }
 
-        // I1 and I2, once every sequence is resolved: the types at the ends of a sequence are computed from the
-        // levels of the explicit rules, so the levels must not change before that.
-        for (var i = 0; i < count; i++)
+    /// <summary>Appends the positions and the types of the characters of the level run that starts at a kept character to the sequence.</summary>
+    /// <returns>The end of the run: the removed characters do not end a run.</returns>
+    private static int GatherRun(ReadOnlySpan<byte> classes, ReadOnlySpan<byte> levels, int start, Span<int> positions, Span<byte> sequenceTypes, ref int length)
+    {
+        var level = levels[start];
+        var count = length;
+        positions[count] = start;
+        sequenceTypes[count] = classes[start];
+        count++;
+        var end = start + 1;
+        for (var i = end; i < classes.Length; i++)
         {
-            if (classes[i] != (int)Bidi.BoundaryNeutral)
-            {
-                levels[i] = (byte)(levels[i] + GetLevelIncrement(levels[i], (Bidi)classes[i]));
-            }
+            var value = classes[i];
+            if (value == (byte)Bidi.BoundaryNeutral)
+                continue;
+
+            if (levels[i] != level)
+                break;
+
+            positions[count] = i;
+            sequenceTypes[count] = value;
+            count++;
+            end = i + 1;
         }
+
+        length = count;
+        return end;
     }
 
     /// <summary>I1 and I2.</summary>
     private static int GetLevelIncrement(int level, Bidi value)
     {
-        if ((level & 1) == 0)
-        {
-            return value switch
-            {
-                Bidi.RightToLeft => 1,
-                Bidi.ArabicNumber or Bidi.EuropeanNumber => 2,
-                _ => 0,
-            };
-        }
-
-        return value is Bidi.LeftToRight or Bidi.EuropeanNumber or Bidi.ArabicNumber ? 1 : 0;
+        return (int)((((level & 1) == 0 ? EvenLevelIncrements : OddLevelIncrements) >> ((int)value * 2)) & 3);
     }
 
-    private static int NextKept(ReadOnlySpan<int> classes, int index)
+    private static int NextKept(ReadOnlySpan<byte> classes, int index)
     {
-        while (index < classes.Length && classes[index] == (int)Bidi.BoundaryNeutral)
+        while (index < classes.Length && classes[index] == (byte)Bidi.BoundaryNeutral)
         {
             index++;
         }
@@ -729,10 +945,10 @@ public static class UnicodeBidi
         return index;
     }
 
-    private static int PreviousKept(ReadOnlySpan<int> classes, int index)
+    private static int PreviousKept(ReadOnlySpan<byte> classes, int index)
     {
         index--;
-        while (index >= 0 && classes[index] == (int)Bidi.BoundaryNeutral)
+        while (index >= 0 && classes[index] == (byte)Bidi.BoundaryNeutral)
         {
             index--;
         }
@@ -741,13 +957,13 @@ public static class UnicodeBidi
     }
 
     /// <summary>Finds the end of the level run that starts at a kept character: the removed characters do not end a run.</summary>
-    private static int FindRunEnd(ReadOnlySpan<int> classes, ReadOnlySpan<byte> levels, int start)
+    private static int FindRunEnd(ReadOnlySpan<byte> classes, ReadOnlySpan<byte> levels, int start)
     {
         var level = levels[start];
         var end = start + 1;
         for (var i = end; i < classes.Length; i++)
         {
-            if (classes[i] == (int)Bidi.BoundaryNeutral)
+            if (classes[i] == (byte)Bidi.BoundaryNeutral)
                 continue;
 
             if (levels[i] != level)
@@ -759,142 +975,172 @@ public static class UnicodeBidi
         return end;
     }
 
-    private static void ResolveSequence(ReadOnlySpan<char> text, Span<int> classes, Span<int> links, ReadOnlySpan<int> sequence, int level, Bidi startType, Bidi endType)
+    /// <summary>Resolves the types of an isolating run sequence: W1 to W7, N0, N1 and N2.</summary>
+    /// <param name="text">The text, read for the paired brackets; empty when only the classes are known.</param>
+    /// <param name="types">The types of the characters of the sequence, modified in place.</param>
+    /// <param name="properties">The properties of the code units of the paragraph.</param>
+    /// <param name="links">The links of the code units of the paragraph.</param>
+    /// <param name="positions">The positions in the paragraph of the characters of the sequence.</param>
+    /// <param name="level">The embedding level of the sequence.</param>
+    /// <param name="startType">The type before the sequence (sos).</param>
+    /// <param name="endType">The type after the sequence (eos).</param>
+    /// <param name="classMask">A mask that contains every class of the sequence: the rules that cannot change anything are skipped.</param>
+    private static void ResolveSequence(ReadOnlySpan<char> text, Span<byte> types, ReadOnlySpan<byte> properties, Span<int> links, ReadOnlySpan<int> positions, int level, Bidi startType, Bidi endType, int classMask)
     {
-        // W1: a nonspacing mark takes the type of the character before it.
-        var previous = startType;
-        foreach (var index in sequence)
+        if ((classMask & ((1 << (int)Bidi.NonspacingMark) | (1 << (int)Bidi.RightToLeftArabic))) != 0)
         {
-            var value = (Bidi)classes[index];
+            ResolveNonspacingMarksAndArabicLetters(types, startType);
+        }
+
+        if ((classMask & (SeparatorClasses | (1 << (int)Bidi.EuropeanTerminator) | (1 << (int)Bidi.EuropeanNumber))) != 0)
+        {
+            ResolveNumbers(types, startType);
+        }
+
+        var embedding = (level & 1) != 0 ? Bidi.RightToLeft : Bidi.LeftToRight;
+        if (!text.IsEmpty && (classMask & HasBrackets) != 0)
+        {
+            ResolveBrackets(text, types, properties, links, positions, embedding, startType);
+        }
+
+        ResolveNeutralTypes(types, embedding, startType, endType);
+    }
+
+    /// <summary>N1 and N2: a sequence of neutrals takes the direction of the text on both sides when they agree, and the embedding direction otherwise.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ResolveNeutralTypes(Span<byte> types, Bidi embedding, Bidi startType, Bidi endType)
+    {
+        for (var k = 0; k < types.Length;)
+        {
+            if (!IsNeutral(types[k]))
+            {
+                k++;
+                continue;
+            }
+
+            var start = k;
+            do
+            {
+                k++;
+            }
+            while (k < types.Length && IsNeutral(types[k]));
+
+            var leading = start == 0 ? startType : GetStrongDirection((Bidi)types[start - 1]);
+            var trailing = k == types.Length ? endType : GetStrongDirection((Bidi)types[k]);
+            var resolved = (byte)(leading == trailing ? leading : embedding);
+            for (var j = start; j < k; j++)
+            {
+                types[j] = resolved;
+            }
+        }
+    }
+
+    /// <summary>W1 to W3: a nonspacing mark takes the type of the character before it; a European number after an Arabic letter is an Arabic number; then an Arabic letter is R.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ResolveNonspacingMarksAndArabicLetters(Span<byte> types, Bidi startType)
+    {
+        // W2 and W3 only depend on the types W1 gives to the characters before, so the three rules are one pass.
+        var previous = startType;
+        var lastStrong = startType;
+        for (var k = 0; k < types.Length; k++)
+        {
+            var value = (Bidi)types[k];
             if (value is Bidi.NonspacingMark)
             {
                 value = previous is Bidi.LeftToRightIsolate or Bidi.RightToLeftIsolate or Bidi.FirstStrongIsolate or Bidi.PopDirectionalIsolate
                     ? Bidi.OtherNeutral
                     : previous;
-                classes[index] = (int)value;
             }
 
             previous = value;
-        }
-
-        // W2 and W3: a European number after an Arabic letter is an Arabic number; then an Arabic letter is R.
-        var lastStrong = startType;
-        foreach (var index in sequence)
-        {
-            switch ((Bidi)classes[index])
+            switch (value)
             {
                 case Bidi.LeftToRight or Bidi.RightToLeft:
-                    lastStrong = (Bidi)classes[index];
+                    lastStrong = value;
                     break;
 
                 case Bidi.RightToLeftArabic:
                     lastStrong = Bidi.RightToLeftArabic;
-                    classes[index] = (int)Bidi.RightToLeft;
+                    value = Bidi.RightToLeft;
                     break;
 
                 case Bidi.EuropeanNumber when lastStrong is Bidi.RightToLeftArabic:
-                    classes[index] = (int)Bidi.ArabicNumber;
+                    value = Bidi.ArabicNumber;
                     break;
             }
-        }
 
-        // W4: a single separator between two numbers of the same type takes their type.
-        for (var k = 1; k < sequence.Length - 1; k++)
-        {
-            var value = (Bidi)classes[sequence[k]];
-            var left = (Bidi)classes[sequence[k - 1]];
-            var right = (Bidi)classes[sequence[k + 1]];
-            if (left != right)
-                continue;
-
-            if ((value is Bidi.EuropeanSeparator && left is Bidi.EuropeanNumber)
-                || (value is Bidi.CommonSeparator && left is Bidi.EuropeanNumber or Bidi.ArabicNumber))
-            {
-                classes[sequence[k]] = (int)left;
-            }
-        }
-
-        // W5: a sequence of European terminators next to a European number is part of the number.
-        for (var k = 0; k < sequence.Length;)
-        {
-            if ((Bidi)classes[sequence[k]] is not Bidi.EuropeanTerminator)
-            {
-                k++;
-                continue;
-            }
-
-            var start = k;
-            while (k < sequence.Length && (Bidi)classes[sequence[k]] is Bidi.EuropeanTerminator)
-            {
-                k++;
-            }
-
-            if ((start > 0 && (Bidi)classes[sequence[start - 1]] is Bidi.EuropeanNumber)
-                || (k < sequence.Length && (Bidi)classes[sequence[k]] is Bidi.EuropeanNumber))
-            {
-                for (var j = start; j < k; j++)
-                {
-                    classes[sequence[j]] = (int)Bidi.EuropeanNumber;
-                }
-            }
-        }
-
-        // W6 and W7: the other separators and terminators are neutral; a European number after L is L.
-        lastStrong = startType;
-        foreach (var index in sequence)
-        {
-            switch ((Bidi)classes[index])
-            {
-                case Bidi.EuropeanSeparator or Bidi.EuropeanTerminator or Bidi.CommonSeparator:
-                    classes[index] = (int)Bidi.OtherNeutral;
-                    break;
-
-                case Bidi.LeftToRight or Bidi.RightToLeft:
-                    lastStrong = (Bidi)classes[index];
-                    break;
-
-                case Bidi.EuropeanNumber when lastStrong is Bidi.LeftToRight:
-                    classes[index] = (int)Bidi.LeftToRight;
-                    break;
-            }
-        }
-
-        var embedding = (level & 1) != 0 ? Bidi.RightToLeft : Bidi.LeftToRight;
-        if (!text.IsEmpty)
-        {
-            ResolveBrackets(text, classes, links, sequence, embedding, startType);
-        }
-
-        // N1 and N2: a sequence of neutrals takes the direction of the text on both sides when they agree, and the
-        // embedding direction otherwise.
-        for (var k = 0; k < sequence.Length;)
-        {
-            if (!IsNeutral((Bidi)classes[sequence[k]]))
-            {
-                k++;
-                continue;
-            }
-
-            var start = k;
-            while (k < sequence.Length && IsNeutral((Bidi)classes[sequence[k]]))
-            {
-                k++;
-            }
-
-            var leading = start == 0 ? startType : GetStrongDirection((Bidi)classes[sequence[start - 1]]);
-            var trailing = k == sequence.Length ? endType : GetStrongDirection((Bidi)classes[sequence[k]]);
-            var resolved = leading == trailing ? leading : embedding;
-            for (var j = start; j < k; j++)
-            {
-                classes[sequence[j]] = (int)resolved;
-            }
+            types[k] = (byte)value;
         }
     }
 
-    private static bool IsNeutral(Bidi value)
+    /// <summary>
+    /// W4 to W7: a single separator between two numbers of the same type takes their type; a sequence of European
+    /// terminators next to a European number is part of the number; the other separators and terminators are
+    /// neutral; a European number after L is L.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ResolveNumbers(Span<byte> types, Bidi startType)
     {
-        return value is Bidi.ParagraphSeparator or Bidi.SegmentSeparator or Bidi.WhiteSpace or Bidi.OtherNeutral
-            or Bidi.LeftToRightIsolate or Bidi.RightToLeftIsolate or Bidi.FirstStrongIsolate or Bidi.PopDirectionalIsolate;
+        // The rules are applied in one pass. W4 reads the type of the character before, as changed by W4 (previous),
+        // and the type of the character after, which W4 has not changed yet. W5 reads the types W4 gives to the
+        // characters around a sequence of terminators: W4 does not change the one after, which follows a terminator.
+        // W7 reads the strong types, which W4 to W6 do not change.
+        var lastStrong = startType;
+        var previous = Bidi.OtherNeutral;
+        for (var k = 0; k < types.Length;)
+        {
+            var value = (Bidi)types[k];
+            if (value is Bidi.EuropeanTerminator)
+            {
+                var start = k;
+                do
+                {
+                    k++;
+                }
+                while (k < types.Length && (Bidi)types[k] is Bidi.EuropeanTerminator);
+
+                var isNumber = previous is Bidi.EuropeanNumber || (k < types.Length && (Bidi)types[k] is Bidi.EuropeanNumber);
+                var resolved = (byte)(!isNumber ? Bidi.OtherNeutral : lastStrong is Bidi.LeftToRight ? Bidi.LeftToRight : Bidi.EuropeanNumber);
+                for (var j = start; j < k; j++)
+                {
+                    types[j] = resolved;
+                }
+
+                previous = Bidi.EuropeanTerminator;
+                continue;
+            }
+
+            if (value is Bidi.EuropeanSeparator or Bidi.CommonSeparator
+                && k > 0 && k + 1 < types.Length && previous == (Bidi)types[k + 1]
+                && (previous is Bidi.EuropeanNumber || (value is Bidi.CommonSeparator && previous is Bidi.ArabicNumber)))
+            {
+                value = previous;
+            }
+
+            previous = value;
+            switch (value)
+            {
+                case Bidi.EuropeanSeparator or Bidi.CommonSeparator:
+                    value = Bidi.OtherNeutral;
+                    break;
+
+                case Bidi.LeftToRight or Bidi.RightToLeft:
+                    lastStrong = value;
+                    break;
+
+                case Bidi.EuropeanNumber when lastStrong is Bidi.LeftToRight:
+                    value = Bidi.LeftToRight;
+                    break;
+            }
+
+            types[k] = (byte)value;
+            k++;
+        }
+    }
+
+    private static bool IsNeutral(byte value)
+    {
+        return ((NeutralClasses >> value) & 1) != 0;
     }
 
     /// <summary>Gets the direction of a strong type, where the numbers count as R; another type has none.</summary>
@@ -908,27 +1154,37 @@ public static class UnicodeBidi
         };
     }
 
-    /// <summary>N0: gives a direction to the paired brackets of a sequence.</summary>
-    private static void ResolveBrackets(ReadOnlySpan<char> text, Span<int> classes, Span<int> links, ReadOnlySpan<int> sequence, Bidi embedding, Bidi startType)
+    private static UnicodeBidiPairedBracketType GetBracketType(byte properties)
     {
-        if (!FindBracketPairs(text, classes, links, sequence))
+        return (UnicodeBidiPairedBracketType)((properties & BracketTypeBits) >> BracketTypeShift);
+    }
+
+    /// <summary>N0: gives a direction to the paired brackets of a sequence.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ResolveBrackets(ReadOnlySpan<char> text, Span<byte> types, ReadOnlySpan<byte> properties, Span<int> links, ReadOnlySpan<int> positions, Bidi embedding, Bidi startType)
+    {
+        if (!FindBracketPairs(text, types, properties, links, positions))
             return;
 
-        // The pairs are visited in the order of their opening brackets.
-        for (var open = 0; open < sequence.Length; open++)
+        // The pairs are visited in the order of their opening brackets. FindBracketPairs initialized the link of
+        // every opening bracket whose type is ON, and N0 does not change the type of another opening bracket.
+        for (var open = 0; open < types.Length; open++)
         {
-            var link = links[sequence[open]];
-            if (link > -2 || link == UnmatchedInitiator)
+            if ((Bidi)types[open] is not Bidi.OtherNeutral || GetBracketType(properties[positions[open]]) is not UnicodeBidiPairedBracketType.Open)
+                continue;
+
+            var link = links[positions[open]];
+            if (link > -2)
                 continue;
 
             var close = -(link + 2);
-            links[sequence[open]] = NoLink;
+            links[positions[open]] = NoLink;
 
             var hasOpposite = false;
             var hasEmbedding = false;
             for (var k = open + 1; k < close; k++)
             {
-                var direction = GetStrongDirection((Bidi)classes[sequence[k]]);
+                var direction = GetStrongDirection((Bidi)types[k]);
                 if (direction == embedding)
                 {
                     hasEmbedding = true;
@@ -949,7 +1205,7 @@ public static class UnicodeBidi
                 var context = startType;
                 for (var k = open - 1; k >= 0; k--)
                 {
-                    var direction = GetStrongDirection((Bidi)classes[sequence[k]]);
+                    var direction = GetStrongDirection((Bidi)types[k]);
                     if (direction is not Bidi.OtherNeutral)
                     {
                         context = direction;
@@ -964,43 +1220,54 @@ public static class UnicodeBidi
                 continue;
             }
 
-            SetBracket(text, classes, sequence, open, resolved);
-            SetBracket(text, classes, sequence, close, resolved);
+            SetBracket(types, properties, positions, open, resolved);
+            SetBracket(types, properties, positions, close, resolved);
         }
     }
 
-    private static void SetBracket(ReadOnlySpan<char> text, Span<int> classes, ReadOnlySpan<int> sequence, int position, Bidi resolved)
+    private static void SetBracket(Span<byte> types, ReadOnlySpan<byte> properties, ReadOnlySpan<int> positions, int position, Bidi resolved)
     {
-        classes[sequence[position]] = (int)resolved;
+        types[position] = (byte)resolved;
 
         // The nonspacing marks that follow a bracket take its direction.
-        for (var k = position + 1; k < sequence.Length; k++)
+        for (var k = position + 1; k < types.Length; k++)
         {
-            var index = sequence[k];
-            if (UnicodeProperties.GetBidiClass(Unicode.DecodeAt(text, index, out _)) is not Bidi.NonspacingMark)
+            if ((Bidi)(properties[positions[k]] & ClassBits) is not Bidi.NonspacingMark)
                 break;
 
-            classes[index] = (int)resolved;
+            types[k] = (byte)resolved;
         }
     }
 
-    /// <summary>BD16: stores in the link of each opening bracket of a pair the position of its closing bracket, as -(position + 2).</summary>
+    /// <summary>BD16: stores in the link of each opening bracket of a pair the position in the sequence of its closing bracket, as -(position + 2).</summary>
     /// <returns><see langword="false"/> when the sequence has no pair.</returns>
-    private static bool FindBracketPairs(ReadOnlySpan<char> text, ReadOnlySpan<int> classes, Span<int> links, ReadOnlySpan<int> sequence)
+    /// <remarks>
+    /// The link of an opening bracket whose type is ON is set to <see cref="NoLink"/> when it is not paired, so the
+    /// links do not need to be initialized: the link of a character that is ON is not used otherwise.
+    /// </remarks>
+    private static bool FindBracketPairs(ReadOnlySpan<char> text, ReadOnlySpan<byte> types, ReadOnlySpan<byte> properties, Span<int> links, ReadOnlySpan<int> positions)
     {
         Span<int> stackBrackets = stackalloc int[MaxBracketDepth];
         Span<int> stackPositions = stackalloc int[MaxBracketDepth];
         var depth = 0;
         var hasPair = false;
-        for (var k = 0; k < sequence.Length; k++)
+        for (var k = 0; k < types.Length; k++)
         {
-            var index = sequence[k];
-            if ((Bidi)classes[index] is not Bidi.OtherNeutral)
+            if ((Bidi)types[k] is not Bidi.OtherNeutral)
                 continue;
 
+            var index = positions[k];
+            var type = GetBracketType(properties[index]);
+            if (type is UnicodeBidiPairedBracketType.None)
+                continue;
+
+            if (type is UnicodeBidiPairedBracketType.Open)
+            {
+                links[index] = NoLink;
+            }
+
             var codePoint = Unicode.DecodeAt(text, index, out _);
-            var type = UnicodeProperties.GetBidiPairedBracketType(codePoint);
-            if (type is UnicodeBidiPairedBracketType.None || !UnicodeProperties.TryGetBidiPairedBracket(codePoint, out var paired))
+            if (!UnicodeProperties.TryGetBidiPairedBracket(codePoint, out var paired))
                 continue;
 
             if (type is UnicodeBidiPairedBracketType.Open)
@@ -1008,11 +1275,11 @@ public static class UnicodeBidi
                 if (depth == MaxBracketDepth)
                 {
                     // No pair at all for this sequence.
-                    foreach (var position in sequence)
+                    for (var j = 0; j < types.Length; j++)
                     {
-                        if (links[position] < NoLink && links[position] != UnmatchedInitiator)
+                        if ((Bidi)types[j] is Bidi.OtherNeutral && GetBracketType(properties[positions[j]]) is UnicodeBidiPairedBracketType.Open)
                         {
-                            links[position] = NoLink;
+                            links[positions[j]] = NoLink;
                         }
                     }
 
@@ -1031,7 +1298,7 @@ public static class UnicodeBidi
                     if (stackBrackets[entry] != closing)
                         continue;
 
-                    links[sequence[stackPositions[entry]]] = -(k + 2);
+                    links[positions[stackPositions[entry]]] = -(k + 2);
                     depth = entry;
                     hasPair = true;
                     break;

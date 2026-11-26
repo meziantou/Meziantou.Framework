@@ -16,8 +16,20 @@ internal ref struct JsonPathLexer
 
     public int InputLength => _input.Length;
 
+    /// <summary>
+    /// Gets why the input is not a valid sequence of tokens, or <see langword="null"/> when no invalid token has been read.
+    /// </summary>
+    /// <remarks>
+    /// The lexer reports an invalid token with a <see cref="JsonPathTokenKind.Error"/> token rather than an exception, so
+    /// that <see cref="JsonPathParser.TryParse"/> does not pay for one. Every token after it is an error token too.
+    /// </remarks>
+    public string? Error { get; private set; }
+
     public JsonPathToken NextToken()
     {
+        if (Error is not null)
+            return new JsonPathToken(JsonPathTokenKind.Error, _position);
+
         var positionBeforeWhitespace = _position;
         SkipWhitespace();
 
@@ -99,7 +111,7 @@ internal ref struct JsonPathLexer
                     return new JsonPathToken(JsonPathTokenKind.Equal, pos);
                 }
 
-                throw new FormatException($"Unexpected character '=' at position {pos}. Did you mean '=='?");
+                return Fail($"Unexpected character '=' at position {pos}. Did you mean '=='?");
 
             case '<':
                 _position++;
@@ -129,7 +141,7 @@ internal ref struct JsonPathLexer
                     return new JsonPathToken(JsonPathTokenKind.And, pos);
                 }
 
-                throw new FormatException($"Unexpected character '&' at position {pos}. Did you mean '&&'?");
+                return Fail($"Unexpected character '&' at position {pos}. Did you mean '&&'?");
 
             case '|':
                 _position++;
@@ -139,7 +151,7 @@ internal ref struct JsonPathLexer
                     return new JsonPathToken(JsonPathTokenKind.Or, pos);
                 }
 
-                throw new FormatException($"Unexpected character '|' at position {pos}. Did you mean '||'?");
+                return Fail($"Unexpected character '|' at position {pos}. Did you mean '||'?");
 
             case '\'':
             case '"':
@@ -155,7 +167,7 @@ internal ref struct JsonPathLexer
                     return ReadIdentifierOrKeyword(pos, length);
                 }
 
-                throw new FormatException($"Unexpected character '{ch}' at position {pos}.");
+                return Fail($"Unexpected character '{ch}' at position {pos}.");
         }
     }
 
@@ -202,6 +214,12 @@ internal ref struct JsonPathLexer
         return idx >= _input.Length;
     }
 
+    private JsonPathToken Fail(string error)
+    {
+        Error ??= error;
+        return new JsonPathToken(JsonPathTokenKind.Error, _position);
+    }
+
     /// <summary>Saves the current lexer position for backtracking.</summary>
     public readonly int SavePosition() => _position;
 
@@ -213,7 +231,26 @@ internal ref struct JsonPathLexer
         var pos = _position;
         _position++; // skip opening quote
 
+        // Most strings have nothing to unescape or validate, so they are copied in one go
+        var start = _position;
+        while (_position < _input.Length)
+        {
+            var ch = _input[_position];
+            if (ch == quote)
+            {
+                var value = _input[start.._position].ToString();
+                _position++;
+                return new JsonPathToken(JsonPathTokenKind.StringLiteral, pos, value);
+            }
+
+            if (ch is '\\' or < '\x20' || char.IsSurrogate(ch))
+                break;
+
+            _position++;
+        }
+
         var sb = new StringBuilder();
+        sb.Append(_input[start.._position]);
         while (_position < _input.Length)
         {
             var ch = _input[_position];
@@ -228,7 +265,7 @@ internal ref struct JsonPathLexer
                 _position++;
                 if (_position >= _input.Length)
                 {
-                    throw new FormatException($"Unterminated escape sequence at position {_position - 1}.");
+                    return Fail($"Unterminated escape sequence at position {_position - 1}.");
                 }
 
                 var escaped = _input[_position];
@@ -258,7 +295,7 @@ internal ref struct JsonPathLexer
                     case '\'':
                         if (quote != '\'')
                         {
-                            throw new FormatException($"Invalid escape sequence '\\'' in double-quoted string at position {_position - 1}.");
+                            return Fail($"Invalid escape sequence '\\'' in double-quoted string at position {_position - 1}.");
                         }
 
                         sb.Append('\'');
@@ -266,30 +303,34 @@ internal ref struct JsonPathLexer
                     case '"':
                         if (quote != '"')
                         {
-                            throw new FormatException($"Invalid escape sequence '\\\"' in single-quoted string at position {_position - 1}.");
+                            return Fail($"Invalid escape sequence '\\\"' in single-quoted string at position {_position - 1}.");
                         }
 
                         sb.Append('"');
                         break;
                     case 'u':
-                        sb.Append(ReadUnicodeEscape());
+                        var text = ReadUnicodeEscape();
+                        if (text is null)
+                            return new JsonPathToken(JsonPathTokenKind.Error, _position);
+
+                        sb.Append(text);
                         continue; // ReadUnicodeEscape already advances _position
                     default:
-                        throw new FormatException($"Invalid escape sequence '\\{escaped}' at position {_position - 1}.");
+                        return Fail($"Invalid escape sequence '\\{escaped}' at position {_position - 1}.");
                 }
 
                 _position++;
             }
             else if (ch < '\x20')
             {
-                throw new FormatException($"Unescaped control character U+{(int)ch:X4} at position {_position}.");
+                return Fail($"Unescaped control character U+{(int)ch:X4} at position {_position}.");
             }
             else if (char.IsSurrogate(ch))
             {
                 // 'unescaped' skips the surrogate code points: only a whole pair stands for a scalar value.
                 if (!char.IsHighSurrogate(ch) || _position + 1 >= _input.Length || !char.IsLowSurrogate(_input[_position + 1]))
                 {
-                    throw new FormatException($"Unpaired surrogate U+{(int)ch:X4} at position {_position}.");
+                    return Fail($"Unpaired surrogate U+{(int)ch:X4} at position {_position}.");
                 }
 
                 sb.Append(ch).Append(_input[_position + 1]);
@@ -302,13 +343,17 @@ internal ref struct JsonPathLexer
             }
         }
 
-        throw new FormatException($"Unterminated string starting at position {pos}.");
+        return Fail($"Unterminated string starting at position {pos}.");
     }
 
-    private string ReadUnicodeEscape()
+    /// <summary>Reads a <c>\uXXXX</c> escape sequence, and the one of the low surrogate that follows a high surrogate.</summary>
+    /// <returns>The text of the escape sequence, or <see langword="null"/> when it is invalid. <see cref="Error"/> then says why.</returns>
+    private string? ReadUnicodeEscape()
     {
         _position++; // skip 'u'
         var codePoint = ReadHex4();
+        if (codePoint < 0)
+            return null;
 
         // Handle surrogate pairs
         if (codePoint is >= 0xD800 and <= 0xDBFF)
@@ -317,31 +362,40 @@ internal ref struct JsonPathLexer
             {
                 _position += 2; // skip \u
                 var low = ReadHex4();
+                if (low < 0)
+                    return null;
+
                 if (low is < 0xDC00 or > 0xDFFF)
                 {
-                    throw new FormatException($"Invalid low surrogate U+{low:X4} at position {_position - 4}.");
+                    Error ??= $"Invalid low surrogate U+{low:X4} at position {_position - 4}.";
+                    return null;
                 }
 
                 codePoint = 0x10000 + ((codePoint - 0xD800) * 0x400) + (low - 0xDC00);
             }
             else
             {
-                throw new FormatException($"High surrogate U+{codePoint:X4} not followed by low surrogate at position {_position}.");
+                Error ??= $"High surrogate U+{codePoint:X4} not followed by low surrogate at position {_position}.";
+                return null;
             }
         }
         else if (codePoint is >= 0xDC00 and <= 0xDFFF)
         {
-            throw new FormatException($"Unexpected low surrogate U+{codePoint:X4} at position {_position - 4}.");
+            Error ??= $"Unexpected low surrogate U+{codePoint:X4} at position {_position - 4}.";
+            return null;
         }
 
         return char.ConvertFromUtf32(codePoint);
     }
 
+    /// <summary>Reads 4 hexadecimal digits.</summary>
+    /// <returns>The value of the digits, or -1 when they are invalid. <see cref="Error"/> then says why.</returns>
     private int ReadHex4()
     {
         if (_position + 4 > _input.Length)
         {
-            throw new FormatException($"Incomplete Unicode escape at position {_position}.");
+            Error ??= $"Incomplete Unicode escape at position {_position}.";
+            return -1;
         }
 
         var hex = _input.Slice(_position, 4);
@@ -362,7 +416,8 @@ internal ref struct JsonPathLexer
 
             if (digit < 0)
             {
-                throw new FormatException($"Invalid hex digits '{hex}' at position {_position}.");
+                Error ??= $"Invalid hex digits '{hex}' at position {_position}.";
+                return -1;
             }
 
             value = (value << 4) | digit;
@@ -393,7 +448,7 @@ internal ref struct JsonPathLexer
         {
             if (_position >= _input.Length || _input[_position] is < '1' or > '9')
             {
-                throw new FormatException($"Invalid number at position {pos}.");
+                return Fail($"Invalid number at position {pos}.");
             }
 
             _position++;
@@ -411,7 +466,7 @@ internal ref struct JsonPathLexer
             _position++;
             if (_position >= _input.Length || _input[_position] is < '0' or > '9')
             {
-                throw new FormatException($"Invalid number: expected digit after '.' at position {_position}.");
+                return Fail($"Invalid number: expected digit after '.' at position {_position}.");
             }
 
             while (_position < _input.Length && _input[_position] is >= '0' and <= '9')
@@ -433,7 +488,7 @@ internal ref struct JsonPathLexer
 
             if (_position >= _input.Length || _input[_position] is < '0' or > '9')
             {
-                throw new FormatException($"Invalid number: expected digit in exponent at position {_position}.");
+                return Fail($"Invalid number: expected digit in exponent at position {_position}.");
             }
 
             while (_position < _input.Length && _input[_position] is >= '0' and <= '9')
@@ -461,7 +516,7 @@ internal ref struct JsonPathLexer
 
         if (!double.TryParse(numberSpan, NumberStyles.Float, CultureInfo.InvariantCulture, out var doubleValue))
         {
-            throw new FormatException($"Invalid number '{numberSpan}' at position {pos}.");
+            return Fail($"Invalid number '{numberSpan}' at position {pos}.");
         }
 
         return new JsonPathToken(JsonPathTokenKind.NumberLiteral, pos, doubleValue, isIntegerLiteral: false, numberSpan.ToString());

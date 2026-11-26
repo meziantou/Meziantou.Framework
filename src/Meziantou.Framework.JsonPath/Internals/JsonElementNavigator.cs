@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Text.Unicode;
 
 namespace Meziantou.Framework.Json.Internals;
 
@@ -120,6 +121,35 @@ internal sealed class JsonElementNavigator : JsonPathNavigator<JsonElement>
         }
 
         result = null;
+        return false;
+    }
+
+    internal override bool TryStringEquals(JsonElement value, ReadOnlySpan<byte> utf8, out bool equals)
+    {
+        return TryRawStringEquals(value, utf8, out equals);
+    }
+
+    /// <summary>Compares a string with UTF-8 text using the raw text of the string, which has no escape sequence to decode most of the time.</summary>
+    /// <returns>
+    /// <see langword="false"/> when the string has an escape sequence, or is not valid UTF-8 and differs from <paramref name="utf8"/>:
+    /// <see cref="JsonElement.GetString"/> throws for it, and the caller must too.
+    /// </returns>
+    internal static bool TryRawStringEquals(JsonElement value, ReadOnlySpan<byte> utf8, out bool equals)
+    {
+        if (value.ValueKind is JsonValueKind.String)
+        {
+            // The raw value is quoted
+            var raw = JsonMarshal.GetRawUtf8Value(value);
+            raw = raw[1..^1];
+            if (!raw.Contains((byte)'\\'))
+            {
+                equals = raw.SequenceEqual(utf8);
+                if (equals || Utf8.IsValid(raw))
+                    return true;
+            }
+        }
+
+        equals = false;
         return false;
     }
 

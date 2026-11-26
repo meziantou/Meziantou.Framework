@@ -232,19 +232,35 @@ internal sealed class TagInfo
 
     private static ImmutableArray<string> Normalize(IEnumerable<string> tags)
     {
-        var builder = ImmutableArray.CreateBuilder<string>();
+        // Most values have one tag or none: the builder is created by the first tag, and its array is reused when it is full
+        ImmutableArray<string>.Builder? builder = null;
         foreach (var tag in tags)
         {
             if (string.IsNullOrWhiteSpace(tag))
                 continue;
 
-            if (!builder.Contains(tag, StringComparer.OrdinalIgnoreCase))
+            builder ??= ImmutableArray.CreateBuilder<string>(initialCapacity: 1);
+            if (!Contains(builder, tag))
             {
                 builder.Add(tag);
             }
         }
 
+        if (builder is null)
+            return [];
+
         builder.Sort(StringComparer.OrdinalIgnoreCase);
-        return builder.ToImmutable();
+        return builder.Count == builder.Capacity ? builder.MoveToImmutable() : builder.ToImmutable();
+
+        static bool Contains(ImmutableArray<string>.Builder builder, string tag)
+        {
+            for (var i = 0; i < builder.Count; i++)
+            {
+                if (string.Equals(builder[i], tag, StringComparison.OrdinalIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
     }
 }

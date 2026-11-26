@@ -15,8 +15,10 @@
     <Project Path="benchmarks/Meziantou.Framework.JsonPath.Benchmarks/Meziantou.Framework.JsonPath.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Markdown.Benchmarks/Meziantou.Framework.Markdown.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Pdf.Benchmarks/Meziantou.Framework.Pdf.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.SimpleQueryLanguage.Benchmarks/Meziantou.Framework.SimpleQueryLanguage.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SyntaxHighlighting.Benchmarks/Meziantou.Framework.SyntaxHighlighting.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.TaggedValues.Benchmarks/Meziantou.Framework.TaggedValues.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.TextDiff.Benchmarks/Meziantou.Framework.TextDiff.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Unicode.Benchmarks/Meziantou.Framework.Unicode.Benchmarks.csproj" />
@@ -776,6 +778,7 @@
   <Folder Name="/fuzz/">
     <Project Path="fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.AnsiFormatting.Fuzz/Meziantou.Framework.AnsiFormatting.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.Assertions.Fuzz/Meziantou.Framework.Assertions.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
@@ -823,6 +826,7 @@
     <Project Path="fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.TextDiff.Fuzz/Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />

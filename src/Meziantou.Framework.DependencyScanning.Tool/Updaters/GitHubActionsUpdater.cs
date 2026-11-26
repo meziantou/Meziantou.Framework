@@ -1,7 +1,10 @@
+using System.ComponentModel;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using Meziantou.Framework.Yaml;
+using Meziantou.Framework.Yaml.Model;
 
 namespace Meziantou.Framework.DependencyScanning.Tool;
 
@@ -56,7 +59,118 @@ internal sealed class GitHubActionsUpdater : PackageUpdater
         return request;
     }
 
-    public override Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken) => Task.CompletedTask;
+    public override async Task UpdateLockFileAsync(FullPath rootDirectory, IEnumerable<Dependency> updatedDependencies, CancellationToken cancellationToken)
+    {
+        foreach (var update in GetLockFileUpdates(updatedDependencies))
+        {
+            try
+            {
+                // Only the workflows already in the lock file are passed: a full-directory run would also lock the
+                // workflows the repository has not onboarded, which the runner would then enforce.
+                // --no-narrow keeps the refs as the update wrote them, instead of rewriting "v5" to a full tag.
+                var result = await ProcessWrapper.Create("gh")
+                    .WithWorkingDirectory(update.RepositoryRoot)
+                    .WithArguments(["actions-lock", "--no-narrow", .. update.Workflows])
+                    .WithValidation(ProcessValidationMode.None)
+                    .ExecuteBufferedAsync(cancellationToken);
+
+                if (!result.ExitCode.IsSuccess)
+                {
+                    Console.Error.WriteLine($"Unable to update lock file '{update.LockFile}':\n{result.Output}");
+                }
+            }
+            catch (Win32Exception ex)
+            {
+                Console.Error.WriteLine($"Unable to run 'gh actions-lock' to update lock file '{update.LockFile}': {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>Finds the <c>.github/workflows/actions.lock</c> files of the repositories whose workflows or actions were updated.</summary>
+    internal static List<ActionsLockFileUpdate> GetLockFileUpdates(IEnumerable<Dependency> updatedDependencies)
+    {
+        var lockFiles = new HashSet<FullPath>();
+        foreach (var dependency in updatedDependencies)
+        {
+            if (dependency.Type is not DependencyType.GitHubActions || dependency.VersionLocation is null)
+                continue;
+
+            // A workflow is in the .github/workflows folder of the repository. A composite action can be anywhere in it.
+            var lockFile = TryFindLockFile(FullPath.FromPath(dependency.VersionLocation.FilePath).Parent);
+            if (!lockFile.IsEmpty)
+            {
+                lockFiles.Add(lockFile);
+            }
+        }
+
+        var result = new List<ActionsLockFileUpdate>();
+        foreach (var lockFile in lockFiles.OrderBy(path => path.Value, StringComparer.Ordinal))
+        {
+            var workflows = GetLockedWorkflows(lockFile);
+            if (workflows.Length > 0)
+            {
+                result.Add(new ActionsLockFileUpdate(lockFile, lockFile.Parent.Parent.Parent, workflows));
+            }
+        }
+
+        return result;
+    }
+
+    private static FullPath TryFindLockFile(FullPath currentDirectory)
+    {
+        while (!currentDirectory.IsEmpty)
+        {
+            var filePath = currentDirectory / ".github" / "workflows" / "actions.lock";
+            if (System.IO.File.Exists(filePath))
+                return filePath;
+
+            currentDirectory = currentDirectory.Parent;
+        }
+
+        return FullPath.Empty;
+    }
+
+    /// <summary>Reads the keys of the <c>workflows</c> section, which are the paths of the workflows the repository has onboarded.</summary>
+    private static string[] GetLockedWorkflows(FullPath lockFile)
+    {
+        YamlStream stream;
+        try
+        {
+            using var reader = System.IO.File.OpenText(lockFile);
+            stream = YamlStream.Load(reader);
+        }
+        catch (YamlException)
+        {
+            return [];
+        }
+
+        var workflows = new SortedSet<string>(StringComparer.Ordinal);
+        foreach (var document in stream)
+        {
+            if (document.Contents is not YamlMapping root || root["workflows"] is not YamlMapping workflowsSection)
+                continue;
+
+            foreach (var workflow in workflowsSection)
+            {
+                // The paths are passed to gh as arguments, so a value that is not a workflow path, such as an option, is ignored
+                if (workflow.Key is YamlValue { Value: { } path } && IsWorkflowPath(path))
+                {
+                    workflows.Add(path);
+                }
+            }
+        }
+
+        return [.. workflows];
+    }
+
+    private static bool IsWorkflowPath(string path)
+    {
+        const string Prefix = ".github/workflows/";
+        if (!path.StartsWith(Prefix, StringComparison.Ordinal) || path.Contains("..", StringComparison.Ordinal))
+            return false;
+
+        return path.EndsWith(".yml", StringComparison.Ordinal) || path.EndsWith(".yaml", StringComparison.Ordinal);
+    }
 
     private static bool TryParseRepository(string value, out string owner, out string repository)
     {

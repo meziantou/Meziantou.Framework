@@ -311,13 +311,16 @@ internal static class StrictTransportSecurity
         if (!global::Meziantou.Framework.Http.HstsPreloadList.IsSupported)
             return false;
 
+        // The host is encoded once, and each suffix is searched as a prefix of that encoding
         var preload = global::Meziantou.Framework.Http.HstsPreloadList.Shared;
+        var buffer = default(global::Meziantou.Framework.Http.HstsPreloadList.SuffixLookupBuffer);
+        var lookup = preload.CreateSuffixLookup(host, buffer);
         var suffix = host.AsSpan();
         var labelCount = suffix.Count('.') + 1;
         var isHost = true;
         while (true)
         {
-            if (labelCount <= preload.MaxLabelCount && preload.TryGetValue(suffix, labelCount, out var includeSubdomains) && (isHost || includeSubdomains))
+            if (labelCount <= preload.MaxLabelCount && lookup.TryGetValue(suffix.Length, labelCount, out var includeSubdomains) && (isHost || includeSubdomains))
                 return true;
 
             var dot = suffix.IndexOf('.');

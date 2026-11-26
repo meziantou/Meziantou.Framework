@@ -7,6 +7,17 @@
 
 namespace Meziantou.Framework.WebPlatform.JavaScript
 {
+    public sealed class JavaScriptScriptCache
+    {
+        public const long DefaultCapacity = 8388608L;
+        public long Capacity { get => throw null; }
+        public int Count { get => throw null; }
+        public static Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptCache Shared { get => throw null; }
+        public long Size { get => throw null; }
+        public JavaScriptScriptCache(long capacity) { }
+        public void Clear() { }
+    }
+
     public class JavaScriptScriptEngine : Meziantou.Framework.WebPlatform.Scripting.ScriptEngine, System.IDisposable
     {
         public Meziantou.Framework.JavaScriptEngine.JsEngine Engine { get => throw null; }
@@ -58,6 +69,7 @@ namespace Meziantou.Framework.WebPlatform.JavaScript
         public long? MemoryLimit { get => throw null; init { } }
         public int? RecursionLimit { get => throw null; init { } }
         public System.TimeSpan? RegexTimeout { get => throw null; init { } }
+        public Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptCache? ScriptCache { get => throw null; init { } }
         public System.TimeProvider? TimeProvider { get => throw null; init { } }
         public System.TimeSpan? Timeout { get => throw null; init { } }
     }

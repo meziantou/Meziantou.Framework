@@ -143,16 +143,20 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var isWindowOrWorker = IsExposed(ExposureSet.Window | ExposureSet.DedicatedWorker | ExposureSet.SharedWorker | ExposureSet.ServiceWorker);
 
+        // The Device Memory API has no IDL in webref: navigator.deviceMemory is defined by hand (WebIdlRealm.DeviceMemory.cs)
+        InitializeDeviceMemory(Features.DeviceMemoryEnabled && IsSecureContext && isWindowOrWorker);
+
         // The global object gets an interface object per exposed interface, and the members of its interface
         Adapter.ReserveProperties(Global, WebIdlBindings<TAdapter, TValue>.Interfaces.Count + 256);
 
         var isSecureContext = IsSecureContext;
-        foreach (var binding in WebIdlBindings<TAdapter, TValue>.Interfaces.Values)
+        var features = Features;
+        foreach (var (binding, isEnabled) in GetInterfaceFeatures())
         {
             // https://webidl.spec.whatwg.org/#dfn-exposed: an interface is exposed in the global objects of its exposure set,
             // and a [SecureContext] interface is only exposed in a secure context
-            // and the interfaces of the disabled features are not exposed
-            if (!IsExposed(binding.Exposure) || (!isSecureContext && binding.Flags.HasFlag(InterfaceBindingFlags.SecureContext)) || !IsInterfaceEnabled(binding.Name))
+            // and the interfaces of the disabled features are not exposed (see IsInterfaceEnabled)
+            if (!IsExposed(binding.Exposure) || (!isSecureContext && binding.Flags.HasFlag(InterfaceBindingFlags.SecureContext)) || (isEnabled is not null && !isEnabled(features)))
                 continue;
 
             DefineLazyGlobal(binding.Name, binding);
@@ -182,12 +186,6 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (Features.FileSystemEnabled && Features.StorageManagerEnabled && isSecureContext && isWindowOrWorker && IsInterfaceEnabled("WritableStream"))
         {
             DefineFileSystemGlobals();
-        }
-
-        // The Device Memory API has no IDL in webref: navigator.deviceMemory is defined by hand (WebIdlRealm.DeviceMemory.cs)
-        if (Features.DeviceMemoryEnabled && isSecureContext && isWindowOrWorker)
-        {
-            DefineDeviceMemory();
         }
 
         DefineConsoleGlobal();
@@ -553,6 +551,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         else if (binding.Name == "WebSocketStream")
         {
             DefineWebSocketStreamMembers(prototype);
+        }
+        else if (_deviceMemoryInterface is not null && binding.Name == _deviceMemoryInterface)
+        {
+            DefineDeviceMemory(prototype);
         }
 
         binding.InterfaceObjectPropertyCount = Math.Max(binding.InterfaceObjectPropertyCount, Adapter.GetPropertyCount(interfaceObject));

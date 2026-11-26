@@ -16,12 +16,15 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
     private Document? _cacheDocument;
     private int _cacheVersion = -1;
 
-    // The first element of each supported property name, for a version of the document (see GetNamedItems)
+    // The first element of each supported property name, for a version of the elements and of their id and name attributes
+    // (see GetNamedItems)
     private Dictionary<string, Element>? _namedItems;
     private Document? _namedItemsDocument;
     private int _namedItemsVersion = -1;
+    private int _namedItemsAttributeVersion = -1;
     private Document? _namedLookupDocument;
     private int _namedLookupVersion = -1;
+    private int _namedLookupAttributeVersion = -1;
     private int _namedLookupCount;
 
     private readonly Action<List<Element>>? _populate;
@@ -69,7 +72,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
             {
                 for (var node = _root.FirstChild; node is not null; node = node.NextSibling)
                 {
-                    if (node is Element element && _filter(element))
+                    if (node.AsElement is { } element && _filter(element))
                     {
                         result.Add(element);
                     }
@@ -79,7 +82,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
             {
                 for (var node = _root.FirstChild; node is not null; node = node.GetNextInTreeOrder(_root))
                 {
-                    if (node is Element element && _filter(element))
+                    if (node.AsElement is { } element && _filter(element))
                     {
                         result.Add(element);
                     }
@@ -186,21 +189,25 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
 
     /// <summary>
     /// Gets the first element of each supported property name (its id, or its name for an HTML element), or null for the
-    /// first lookups of a version of the document: a named property lookup scans the elements, and each property of the
-    /// collection that is not an index is one (e.g. its length, in a loop). The map is built by a later lookup of the same
-    /// version, so the code that changes the document between a few lookups (a named property read is two: whether the
-    /// name is supported, then the element) keeps scanning instead of building the map each time.
+    /// first lookups of a version of the elements and of their id and name attributes: a named property lookup scans the
+    /// elements, and each property of the collection that is not an index is one (e.g. its length, in a loop). The map is
+    /// built by a later lookup of the same version, so the code that changes the elements or their names between a few
+    /// lookups (a named property read is two: whether the name is supported, then the element) keeps scanning instead of
+    /// building the map each time. The other changes of the document (e.g. the other attributes) keep the map.
     /// </summary>
     private Dictionary<string, Element>? GetNamedItems()
     {
+        var elements = Elements;
         var document = _root.NodeDocument;
-        var version = document.DomVersion;
-        if (_namedItems is not null && _namedItemsVersion == version && ReferenceEquals(_namedItemsDocument, document))
+        var version = _cacheVersion;
+        var attributeVersion = document.IdOrNameAttributeVersion;
+        if (_namedItems is not null && _namedItemsVersion == version && _namedItemsAttributeVersion == attributeVersion && ReferenceEquals(_namedItemsDocument, document))
             return _namedItems;
 
-        if (_namedLookupVersion != version || !ReferenceEquals(_namedLookupDocument, document))
+        if (_namedLookupVersion != version || _namedLookupAttributeVersion != attributeVersion || !ReferenceEquals(_namedLookupDocument, document))
         {
             _namedLookupVersion = version;
+            _namedLookupAttributeVersion = attributeVersion;
             _namedLookupDocument = document;
             _namedLookupCount = 0;
         }
@@ -210,7 +217,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
 
         var namedItems = _namedItems ?? new Dictionary<string, Element>(StringComparer.Ordinal);
         namedItems.Clear();
-        foreach (var element in Elements)
+        foreach (var element in elements)
         {
             if (element.IdValue is { } id)
             {
@@ -226,6 +233,7 @@ public class HtmlCollection : IReadOnlyList<Element>, ISupportedPropertyNames
         _namedItems = namedItems;
         _namedItemsDocument = document;
         _namedItemsVersion = version;
+        _namedItemsAttributeVersion = attributeVersion;
         return namedItems;
     }
 

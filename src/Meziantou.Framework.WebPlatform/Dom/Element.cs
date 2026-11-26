@@ -90,7 +90,7 @@ public partial class Element : Node
     internal int ElementIndexStamp { get; set; }
 
     internal Element(Document document, string localName, string? @namespace, string? prefix)
-        : base(document)
+        : base(document, isElement: true)
     {
         LocalName = localName;
         NamespaceUri = @namespace;
@@ -731,6 +731,11 @@ public partial class Element : Node
         if (newValue is not null && @namespace is null && localName == "name" && IsHtmlNamespace && TagId is TagId.Embed or TagId.Form or TagId.Img or TagId.Object)
         {
             NodeDocument.HasNamedObjectElements = true;
+        }
+
+        if (@namespace is null && localName is "id" or "name")
+        {
+            NodeDocument.OnIdOrNameAttributeChanged();
         }
 
         if (@namespace is null && (localName == "name" || localName == "id") && DocumentNamedItemMap.IsCandidate(this))

@@ -1308,7 +1308,8 @@ internal sealed partial class HtmlTreeBuilder
             return;
 
         var (targetParent, referenceChild) = GetAdjustedInsertionLocation();
-        if (targetParent is Document || IsDisplaced(targetParent, referenceChild))
+        // (the type tests are skipped for the elements, the usual parent and previous sibling: see Node.IsElement)
+        if ((!targetParent.IsElement && targetParent is Document) || IsDisplaced(targetParent, referenceChild))
             return;
 
         if (_parsedScript is not null && ReferenceEquals(targetParent, _parsedScript))
@@ -1317,7 +1318,7 @@ internal sealed partial class HtmlTreeBuilder
         }
 
         var previousSibling = referenceChild is not null ? referenceChild.PreviousSibling : targetParent.LastChild;
-        if (previousSibling is Text text)
+        if (previousSibling is { IsElement: false } and Text text)
         {
             AppendCharacters(text, data);
 

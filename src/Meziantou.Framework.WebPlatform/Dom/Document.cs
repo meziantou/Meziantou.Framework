@@ -262,6 +262,14 @@ public partial class Document : Node
     /// </summary>
     internal int TreeVersion { get; private set; }
 
+    /// <summary>
+    /// Incremented when an <c>id</c> or a <c>name</c> attribute of an element of the document changes: with the elements of a
+    /// collection, it invalidates its named properties (see <see cref="HtmlCollection"/>), which only depend on these attributes.
+    /// </summary>
+    internal int IdOrNameAttributeVersion { get; private set; }
+
+    internal void OnIdOrNameAttributeChanged() => IdOrNameAttributeVersion++;
+
     /// <summary>Increments <see cref="TreeVersion"/> and <see cref="DomVersion"/>, when a node is inserted in or removed from a parent.</summary>
     internal void IncrementTreeVersion(Node parent, Node child, bool removed)
     {

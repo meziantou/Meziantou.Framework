@@ -1547,9 +1547,12 @@ internal sealed partial class StyleEngine
         if (element.Slottable?.AssignedSlot is { } slot)
             return slot;
 
+        // (the parent is usually an element: it is tested without a type test, see Node.IsElement)
+        if (element.ParentNode?.AsElement is { } parentElement)
+            return parentElement;
+
         return element.ParentNode switch
         {
-            Element parent => parent,
             ShadowRoot shadowRoot => shadowRoot.Host,
 
             // https://w3c.github.io/webvtt/#applying-css-properties: the root list of WebVTT node objects of a cue and the

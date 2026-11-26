@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Css.Selectors;
@@ -30,17 +31,19 @@ internal static class SelectorQuery
         if (checkIdAndClass && selectors is [{ Hints: { IsSimpleCompound: true } hints } single])
             return FindSimpleCompound(root, single.Compounds[0], hints, isHtmlDocument, result, seen);
 
+        // The filter is only used for the compound selectors on the left of descendant combinators: the compound selectors
+        // of a selector such as "li > a" are matched against the parents, which costs less than hashing the ancestors
         var useFilter = false;
         foreach (var complex in selectors)
         {
-            useFilter |= complex.Hints.AncestorHashes.Length > 0;
+            useFilter |= complex.Hints.HasDescendantAncestorHashes;
         }
 
         if (!useFilter)
         {
             for (var node = root.FirstChild; node is not null; node = node.GetNextInTreeOrder(root))
             {
-                if (node is T element && Matches(selectors, element, context, isHtmlDocument, checkIdAndClass, filter: null) && Add(element, result, seen))
+                if (As<T>(node) is { } element && Matches(selectors, element, context, isHtmlDocument, checkIdAndClass, filter: null) && Add(element, result, seen))
                     return element;
             }
 
@@ -63,9 +66,9 @@ internal static class SelectorQuery
         while (node is not null)
         {
             // (only the elements have children in a tree)
-            if (node is Element element)
+            if (node.AsElement is { } element)
             {
-                if (element is T candidate && Matches(selectors, candidate, context, isHtmlDocument, checkIdAndClass, filter) && Add(candidate, result, seen))
+                if (As<T>(element) is { } candidate && Matches(selectors, candidate, context, isHtmlDocument, checkIdAndClass, filter) && Add(candidate, result, seen))
                     return candidate;
 
                 if (element.FirstChild is { } firstChild)
@@ -101,11 +104,20 @@ internal static class SelectorQuery
     {
         for (var node = root.FirstChild; node is not null; node = node.GetNextInTreeOrder(root))
         {
-            if (node is T element && !hints.Rejects(element, isHtmlDocument, checkIdAndClass: true) && SelectorMatcher.MatchesSimpleCompound(compound, element, isHtmlDocument) && Add(element, result, seen))
+            if (As<T>(node) is { } element && !hints.Rejects(element, isHtmlDocument, checkIdAndClass: true) && SelectorMatcher.MatchesSimpleCompound(compound, element, isHtmlDocument) && Add(element, result, seen))
                 return element;
         }
 
         return null;
+    }
+
+    /// <summary>Returns the node as a <typeparamref name="T"/>, or null; without a type test for the elements when <typeparamref name="T"/> is <see cref="Element"/> (see <see cref="Node.IsElement"/>).</summary>
+    private static T? As<T>(Node node) where T : Element
+    {
+        if (typeof(T) == typeof(Element))
+            return node.IsElement ? unsafe(Unsafe.As<T>(node)) : null;
+
+        return node as T;
     }
 
     private static bool Matches(ImmutableArray<ComplexSelector> selectors, Element element, in SelectorContext context, bool isHtmlDocument, bool checkIdAndClass, SelectorAncestorFilter? filter)

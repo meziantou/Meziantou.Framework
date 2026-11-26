@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.IO.Hashing;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -79,6 +80,17 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
         hash *= Prime3;
         hash ^= hash >> 16;
         return hash;
+    }
+
+    /// <summary>
+    /// Returns the same hash as <see cref="Hash(ReadOnlySpan{byte})"/> of the 4 bytes of <paramref name="value"/> in
+    /// memory, without the call and the length checks of <see cref="XxHash32"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static BloomFilterHash HashInteger(uint value)
+    {
+        // XxHash32 reads the bytes as a little-endian integer
+        return BloomFilterHash.FromUInt32(HashUInt32(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value)));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

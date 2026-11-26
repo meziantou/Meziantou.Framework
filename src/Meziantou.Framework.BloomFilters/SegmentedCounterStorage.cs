@@ -30,16 +30,27 @@ internal sealed class SegmentedCounterStorage
             var currentSegmentLength = (int)Math.Min(CountersPerSegment, remainingCounters);
             _segments[segmentIndex] = new byte[currentSegmentLength];
         }
+
+        SingleSegment = segmentCount == 1 ? _segments[0] : null;
     }
 
     public long CounterCount { get; }
 
+    /// <summary>
+    /// The counters when the storage has a single segment (fewer than 2^30 counters), otherwise <see langword="null"/>.
+    /// </summary>
+    /// <remarks>
+    /// The atomic operations are barriers, so the JIT reloads every field after them and the CPU cannot load them ahead of
+    /// them. Reading this property once before a loop of operations, and passing it to
+    /// <see cref="GetCounterReference(byte[], long)"/>, leaves only the counter accesses in the loop.
+    /// </remarks>
+    public byte[]? SingleSegment { get; }
+
     public ReadOnlySpan<byte[]> Segments => _segments;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Increment(long counterIndex)
+    public static void Increment(ref byte counter)
     {
-        ref var counter = ref GetCounterReference(counterIndex);
         var currentValue = Volatile.Read(ref counter);
         while (currentValue < byte.MaxValue)
         {
@@ -52,9 +63,8 @@ internal sealed class SegmentedCounterStorage
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void Decrement(long counterIndex)
+    public static void Decrement(ref byte counter)
     {
-        ref var counter = ref GetCounterReference(counterIndex);
         var currentValue = Volatile.Read(ref counter);
         while (currentValue is > 0 and < byte.MaxValue)
         {
@@ -67,9 +77,25 @@ internal sealed class SegmentedCounterStorage
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int Get(long counterIndex)
+    public static int Get(ref byte counter)
     {
-        return Volatile.Read(ref GetCounterReference(counterIndex));
+        return Volatile.Read(ref counter);
+    }
+
+    /// <summary>
+    /// Returns the counter at <paramref name="counterIndex"/>, taken from <paramref name="singleSegment"/> when it is the
+    /// <see cref="SingleSegment"/> of this storage.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ref byte GetCounterReference(byte[]? singleSegment, long counterIndex)
+    {
+        if (singleSegment is not null)
+        {
+            ValidateCounterIndex(counterIndex);
+            return ref unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(singleSegment), (nint)counterIndex));
+        }
+
+        return ref GetCounterReference(counterIndex);
     }
 
     // The masked index is in range by construction, so the reference is taken without a bounds check.

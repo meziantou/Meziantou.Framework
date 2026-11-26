@@ -102,8 +102,8 @@ partial class BloomFilter<#= algorithm.Name #> : IBloomFilter
     }
 
 <# foreach (var type in types) { #>
-    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(Hash(<#= ToHashArgument(type) #>));
-    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(Hash(<#= ToHashArgument(type) #>));
+    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(<#= HashExpression(algorithm, type, "") #>);
+    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(<#= HashExpression(algorithm, type, "") #>);
 <# } #>
 <# foreach (var type in algorithm.BatchTypes) { #>
     public void AddRange(params System.ReadOnlySpan<<#= ToCsharpTypeName(type) #>> values) => AddRangeCore(new HashSink(this), values);
@@ -137,10 +137,10 @@ partial class CountingBloomFilter<#= algorithm.Name #> : ICountingBloomFilter
     }
 
 <# foreach (var type in types) { #>
-    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(Hash(<#= ToHashArgument(type) #>));
-    public void Remove(<#= ToCsharpTypeName(type) #> value) => RemoveHash(Hash(<#= ToHashArgument(type) #>));
-    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(Hash(<#= ToHashArgument(type) #>));
-    public int GetEstimatedCount(<#= ToCsharpTypeName(type) #> value) => GetEstimatedCountHash(Hash(<#= ToHashArgument(type) #>));
+    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(<#= HashExpression(algorithm, type, "BloomFilter" + algorithm.Name + ".") #>);
+    public void Remove(<#= ToCsharpTypeName(type) #> value) => RemoveHash(<#= HashExpression(algorithm, type, "BloomFilter" + algorithm.Name + ".") #>);
+    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(<#= HashExpression(algorithm, type, "BloomFilter" + algorithm.Name + ".") #>);
+    public int GetEstimatedCount(<#= ToCsharpTypeName(type) #> value) => GetEstimatedCountHash(<#= HashExpression(algorithm, type, "BloomFilter" + algorithm.Name + ".") #>);
 <# } #>
 <# foreach (var type in algorithm.BatchTypes) { #>
     public void AddRange(params System.ReadOnlySpan<<#= ToCsharpTypeName(type) #>> values) => AddRangeCore(values);
@@ -179,8 +179,8 @@ public sealed partial class BlockedBloomFilter<#= algorithm.Name #> : BlockedBlo
     private static BloomFilterHash Hash(System.ReadOnlySpan<byte> value) => BloomFilter<#= algorithm.Name #>.Hash(value);
 
 <# foreach (var type in types) { #>
-    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(Hash(value));
-    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(Hash(value));
+    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(<#= HashExpression(algorithm, type, "BloomFilter" + algorithm.Name + ".") #>);
+    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(<#= HashExpression(algorithm, type, "BloomFilter" + algorithm.Name + ".") #>);
 <# } #>
 <# foreach (var type in algorithm.BatchTypes) { #>
     public void AddRange(params System.ReadOnlySpan<<#= ToCsharpTypeName(type) #>> values) => BloomFilter<#= algorithm.Name #>.AddRangeCore(new HashSink(this), values);
@@ -194,6 +194,19 @@ record HashAlgorithm(string Name, Type[] BatchTypes);
 static string RawBytesTypeCondition(Type[] types)
 {
     return string.Join(" || ", types.Where(type => type.IsValueType && !type.IsGenericType).Select(type => "typeof(T) == typeof(" + ToCsharpTypeName(type) + ")"));
+}
+
+// The integers that AddRange hashes in batches are hashed by HashInteger, an inline version of the hash of their bytes,
+// instead of a call to System.IO.Hashing with a span of 4 or 8 bytes.
+static string HashExpression(HashAlgorithm algorithm, Type type, string qualifier)
+{
+    if (algorithm.BatchTypes.Contains(type))
+    {
+        var argument = type == typeof(int) ? "(uint)value" : type == typeof(long) ? "(ulong)value" : "value";
+        return qualifier + "HashInteger(" + argument + ")";
+    }
+
+    return "Hash(" + ToHashArgument(type) + ")";
 }
 
 static string ToHashArgument(Type type)

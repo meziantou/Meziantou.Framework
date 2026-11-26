@@ -79,32 +79,10 @@ public closed partial class BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected void AddHash(BloomFilterHash hash)
-    {
-        var bitCount = (ulong)Bits.BitCount;
-        var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            Bits.Set(BloomFilterHash.Reduce(combined, bitCount));
-            combined += hash.Hash2;
-        }
-    }
+    private protected void AddHash(BloomFilterHash hash) => Bits.SetPositions(hash, HashCount);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private protected bool MayContainHash(BloomFilterHash hash)
-    {
-        var bitCount = (ulong)Bits.BitCount;
-        var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
-        {
-            if (!Bits.IsSet(BloomFilterHash.Reduce(combined, bitCount)))
-                return false;
-
-            combined += hash.Hash2;
-        }
-
-        return true;
-    }
+    private protected bool MayContainHash(BloomFilterHash hash) => Bits.ArePositionsSet(hash, HashCount);
 
     // Lets the batch hashing of BloomFilterXXHash* add its hashes to this filter. A struct, so the generic method is
     // specialized for it and AddHash is inlined.

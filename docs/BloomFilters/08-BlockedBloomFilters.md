@@ -46,7 +46,7 @@ A value added to a blocked filter is not found in a classic filter, and the reve
   filter dominate.
 - **Keep [BloomFilter](cref:Meziantou.Framework.BloomFilters.BloomFilter)** when memory matters more than speed, for a
   very low false positive probability, or for small filters: when the filter fits in the cache, a blocked filter is
-  only slightly faster.
+  not much faster, if at all.
 
 ## The extra memory
 

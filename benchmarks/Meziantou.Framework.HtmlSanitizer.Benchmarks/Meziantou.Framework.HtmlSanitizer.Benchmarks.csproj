@@ -1,0 +1,22 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.HtmlSanitizer/Meziantou.Framework.HtmlSanitizer.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The readme of the repository, rendered to HTML: a large table, many links and paragraphs -->
+    <EmbeddedResource Include="../../README.md" LogicalName="Readme.md" Link="Documents/Readme.md" />
+  </ItemGroup>
+
+</Project>

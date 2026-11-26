@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Globalization;
 using System.Text;
 
 namespace Meziantou.Framework.VectorGraphics;
@@ -19,20 +18,31 @@ public static class SvgSceneRenderer
     /// <returns>The SVG document, without an XML declaration.</returns>
     public static string Render(Scene scene, SvgRenderOptions? options = null)
     {
-        using var writer = new StringWriter();
-        Render(scene, writer, options);
-        return writer.ToString();
+        ArgumentNullException.ThrowIfNull(scene);
+        using var output = new SvgOutput(initialCapacity: 16 * 1024);
+        new Writer(output, options ?? new SvgRenderOptions()).Write(scene);
+        return output.ToString();
     }
 
     /// <summary>Writes the SVG of a scene.</summary>
     /// <param name="scene">The scene.</param>
     /// <param name="writer">The destination.</param>
     /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <remarks>The document is written to the writer by blocks of a few thousand characters. The writer is not flushed.</remarks>
     public static void Render(Scene scene, TextWriter writer, SvgRenderOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(scene);
         ArgumentNullException.ThrowIfNull(writer);
-        new Writer(writer, options ?? new SvgRenderOptions()).Write(scene);
+        using var output = new SvgOutput(writer);
+        try
+        {
+            new Writer(output, options ?? new SvgRenderOptions()).Write(scene);
+        }
+        finally
+        {
+            // What was written before an exception is in the writer, as when the elements were written to it directly
+            output.Flush();
+        }
     }
 
     // The characters Escape replaces or removes, and the surrogates, which it checks: the other characters are copied
@@ -57,7 +67,7 @@ public static class SvgSceneRenderer
         return builder.ToString();
     }
 
-    private sealed class Writer(TextWriter output, SvgRenderOptions options)
+    private sealed class Writer(SvgOutput output, SvgRenderOptions options)
     {
         private readonly Dictionary<object, string> _ids = new(ReferenceEqualityComparer.Instance);
         private readonly Dictionary<SceneGroup, string> _clipPathIds = new(ReferenceEqualityComparer.Instance);
@@ -85,7 +95,6 @@ public static class SvgSceneRenderer
         private List<SceneElement> _roots = [];
         private readonly HashSet<SceneElement> _useTargets = new(ReferenceEqualityComparer.Instance);
         private readonly int _precision = options.Precision;
-        private readonly char[] _buffer = new char[SvgNumber.MaxFastLength];
         private Scene _scene = null!;
 
         // The identifier of the element being written, for the first tag it writes; the element whose effects are on
@@ -132,7 +141,7 @@ public static class SvgSceneRenderer
                 output.Write("</desc>\n");
             }
 
-            WriteDefinitions(scene.Root, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
+            WriteDefinitions(scene.Root, walk.Elements.Count, options.EmbedFonts && scene.Fonts is { } fonts ? GetFontFaceRules(scene, fonts) : null);
             if (_masks.Count > 0 || _patterns.Count > 0 || _markers.Count > 0 || _detached.Count > 0 || _clipPathDefinitions.Count > 0)
             {
                 // The content of a mask is in the coordinates of the parent of the masked element, on the whole plane
@@ -300,7 +309,7 @@ public static class SvgSceneRenderer
             }
         }
 
-        private void WriteDefinitions(SceneGroup root, string? fontFaceRules)
+        private void WriteDefinitions(SceneGroup root, int elementCount, string? fontFaceRules)
         {
             var definitions = new StringBuilder();
             if (!string.IsNullOrEmpty(fontFaceRules))
@@ -314,7 +323,8 @@ public static class SvgSceneRenderer
             var textPathCount = 0;
             var patternCount = 0;
             var markerCount = 0;
-            var visited = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
+            // Most of the elements are visited: the set does not grow
+            var visited = new HashSet<SceneElement>(elementCount, ReferenceEqualityComparer.Instance);
             var visitedClipPaths = new HashSet<SceneClipPath>(ReferenceEqualityComparer.Instance);
             var visitedClipContents = new HashSet<SceneElement>(ReferenceEqualityComparer.Instance);
             Visit(root);
@@ -1749,7 +1759,19 @@ public static class SvgSceneRenderer
 
                 if (shape.StrokeDashArray is { Count: > 0 } dashes)
                 {
-                    Attribute("stroke-dasharray", string.Join(' ', dashes.Select(Number)));
+                    // Numbers and spaces, which never need to be escaped
+                    StartAttribute("stroke-dasharray");
+                    for (var i = 0; i < dashes.Count; i++)
+                    {
+                        if (i > 0)
+                        {
+                            output.Write(' ');
+                        }
+
+                        WriteNumber(dashes[i], _precision);
+                    }
+
+                    output.Write('"');
                     if (shape.StrokeDashOffset != 0 && double.IsFinite(shape.StrokeDashOffset))
                     {
                         Attribute("stroke-dashoffset", shape.StrokeDashOffset);
@@ -2144,13 +2166,13 @@ public static class SvgSceneRenderer
         private void Paint(string name, SceneColor color)
         {
             StartAttribute(name);
-            var buffer = _buffer.AsSpan();
+            var buffer = output.GetSpan(8);
             buffer[0] = '#';
-            _ = color.R.TryFormat(buffer[1..], out _, "x2", CultureInfo.InvariantCulture);
-            _ = color.G.TryFormat(buffer[3..], out _, "x2", CultureInfo.InvariantCulture);
-            _ = color.B.TryFormat(buffer[5..], out _, "x2", CultureInfo.InvariantCulture);
+            WriteHexByte(buffer[1..], color.R);
+            WriteHexByte(buffer[3..], color.G);
+            WriteHexByte(buffer[5..], color.B);
             buffer[7] = '"';
-            output.Write(buffer[..8]);
+            output.Advance(8);
             if (!color.IsOpaque)
             {
                 output.Write(' ');
@@ -2159,6 +2181,14 @@ public static class SvgSceneRenderer
                 WriteNumber(color.Opacity, 3);
                 output.Write('"');
             }
+        }
+
+        // The two lowercase hexadecimal digits of a byte, as the "x2" format writes them, without its parsing
+        private static void WriteHexByte(Span<char> destination, byte value)
+        {
+            const string Digits = "0123456789abcdef";
+            destination[1] = Digits[value & 0xF];
+            destination[0] = Digits[value >> 4];
         }
 
         private static string? BlendModeName(SceneBlendMode mode) => mode switch
@@ -2362,14 +2392,19 @@ public static class SvgSceneRenderer
             output.Write('"');
         }
 
+        // The space, the name, the equal sign and the quote in a single copy
         private void StartAttribute(string name)
         {
-            output.Write(' ');
-            output.Write(name);
-            output.Write("=\"");
+            var length = name.Length + 3;
+            var buffer = output.GetSpan(length);
+            buffer[0] = ' ';
+            name.CopyTo(buffer[1..]);
+            buffer[length - 2] = '=';
+            buffer[length - 1] = '"';
+            output.Advance(length);
         }
 
-        private void WriteNumber(double value, int precision) => SvgNumber.Write(output, value, precision, _buffer);
+        private void WriteNumber(double value, int precision) => SvgNumber.Write(output, value, precision);
 
         private string Number(double value) => SvgNumber.Format(value, _precision);
 

@@ -7,6 +7,11 @@ internal sealed class FunctionArgument
     {
         Kind = kind;
         Value = value;
+        if (kind is FunctionArgumentKind.Literal)
+        {
+            IsScalar = ScalarValue.TryFromLiteral(value, out var scalar);
+            Scalar = scalar;
+        }
     }
 
     public FunctionArgumentKind Kind { get; }
@@ -21,6 +26,12 @@ internal sealed class FunctionArgument
     /// </list>
     /// </summary>
     public object? Value { get; }
+
+    /// <summary>Gets whether the argument is a literal, which <see cref="Scalar"/> holds.</summary>
+    public bool IsScalar { get; }
+
+    /// <summary>Gets the value of a literal argument, converted once rather than for each node a filter tests.</summary>
+    public ScalarValue Scalar { get; }
 
     public static FunctionArgument FromLiteral(object? value) => new(FunctionArgumentKind.Literal, value);
 

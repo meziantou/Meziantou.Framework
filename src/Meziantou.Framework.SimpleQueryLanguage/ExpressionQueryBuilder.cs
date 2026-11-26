@@ -109,36 +109,26 @@ public sealed class ExpressionQueryBuilder<T>
         if (!Enum.IsDefined(matchMode))
             throw new ArgumentOutOfRangeException(nameof(matchMode), matchMode, message: null);
 
+        // Looked up once rather than for each term of each query
+        var method = GetStringMethod(matchMode, comparisonType);
+
         Expression<Func<T, bool>> CreatePredicate(string value)
         {
             var box = new QueryValueStore<string>(value);
             var valueExpression = Expression.PropertyOrField(Expression.Constant(box), nameof(QueryValueStore<string>.Value));
 
             Expression body;
-            if (matchMode is StringMatchMode.Exact && comparisonType is null)
+            if (method is null)
             {
                 body = Expression.Equal(selector.Body, valueExpression);
             }
+            else if (comparisonType is null)
+            {
+                body = Expression.Call(selector.Body, method, valueExpression);
+            }
             else
             {
-                var methodName = matchMode switch
-                {
-                    StringMatchMode.Exact => nameof(string.Equals),
-                    StringMatchMode.StartsWith => nameof(string.StartsWith),
-                    StringMatchMode.EndsWith => nameof(string.EndsWith),
-                    _ => nameof(string.Contains),
-                };
-
-                if (comparisonType is null)
-                {
-                    var method = typeof(string).GetMethod(methodName, [typeof(string)])!;
-                    body = Expression.Call(selector.Body, method, valueExpression);
-                }
-                else
-                {
-                    var method = typeof(string).GetMethod(methodName, [typeof(string), typeof(StringComparison)])!;
-                    body = Expression.Call(selector.Body, method, valueExpression, Expression.Constant(comparisonType.Value));
-                }
+                body = Expression.Call(selector.Body, method, valueExpression, Expression.Constant(comparisonType.Value));
             }
 
             // The selected property is nullable, so guard the call. EF Core folds this into the generated SQL,
@@ -149,6 +139,25 @@ public sealed class ExpressionQueryBuilder<T>
         }
 
         AddHandlerCore(key, KeyValueOperator.EqualTo, CreatePredicate);
+    }
+
+    /// <summary>Gets the string method that matches a value, or <see langword="null"/> when the <c>==</c> operator compares them.</summary>
+    private static MethodInfo? GetStringMethod(StringMatchMode matchMode, StringComparison? comparisonType)
+    {
+        if (matchMode is StringMatchMode.Exact && comparisonType is null)
+            return null;
+
+        var methodName = matchMode switch
+        {
+            StringMatchMode.Exact => nameof(string.Equals),
+            StringMatchMode.StartsWith => nameof(string.StartsWith),
+            StringMatchMode.EndsWith => nameof(string.EndsWith),
+            _ => nameof(string.Contains),
+        };
+
+        return comparisonType is null
+            ? typeof(string).GetMethod(methodName, [typeof(string)])
+            : typeof(string).GetMethod(methodName, [typeof(string), typeof(StringComparison)]);
     }
 
     /// <summary>Registers a handler for a property with automatic comparison operators.</summary>

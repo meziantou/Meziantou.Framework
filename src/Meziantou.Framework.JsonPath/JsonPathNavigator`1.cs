@@ -93,6 +93,20 @@ public abstract class JsonPathNavigator<TValue>
         return true;
     }
 
+    /// <summary>Compares a string value with a string, without materializing the value when the navigator can.</summary>
+    /// <param name="value">A value whose kind is <see cref="JsonPathNodeKind.String"/>.</param>
+    /// <param name="utf8">The UTF-8 form of the string to compare with.</param>
+    /// <param name="equals">When this method returns <see langword="true"/>, whether the value equals the string.</param>
+    /// <returns>
+    /// <see langword="false"/> when the value cannot be compared this way. The caller then compares the string that
+    /// <see cref="TryGetString"/> returns. The default implementation returns <see langword="false"/>.
+    /// </returns>
+    internal virtual bool TryStringEquals(TValue? value, ReadOnlySpan<byte> utf8, out bool equals)
+    {
+        equals = false;
+        return false;
+    }
+
     /// <summary>Gets a boolean scalar value.</summary>
     /// <param name="value">The scalar value.</param>
     /// <param name="result">When this method returns, contains the boolean value.</param>

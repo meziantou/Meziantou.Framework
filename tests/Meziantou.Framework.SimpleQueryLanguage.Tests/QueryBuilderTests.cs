@@ -1,4 +1,5 @@
 using System.Numerics;
+using Meziantou.Framework.SimpleQueryLanguage.Binding;
 using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Meziantou.Framework.SimpleQueryLanguage.Syntax;
 using Microsoft.Extensions.Time.Testing;
@@ -1747,6 +1748,135 @@ public sealed class QueryBuilderTests
         Assert.Equal("other:1 (int32:1", exception.Query);
         Assert.Equal([QueryDiagnosticCode.UnknownKey, QueryDiagnosticCode.MissingCloseParenthesis], exception.Diagnostics.Select(diagnostic => diagnostic.Code));
         Assert.Equal("The query is not valid: [0,5): The key 'other' is unknown (and 1 more)", exception.Message);
+    }
+
+    [Theory]
+    [InlineData("a", "a")]
+    [InlineData("a b c", "a & b & c")]
+    [InlineData("a OR b OR c", "a | b | c")]
+    [InlineData("a b OR c d", "a & b | c & d")]
+    [InlineData("a OR (b OR c) OR d", "a | b | c | d")]
+    [InlineData("a (b c) d", "a & b & c & d")]
+    [InlineData("((a)) (b)", "a & b")]
+    [InlineData("-(a OR b) c", "-a & -b & c")]
+    [InlineData("-(a b)", "-a | -b")]
+    [InlineData("-(-(a b))", "a & b")]
+    [InlineData("- - a", "a")]
+    [InlineData("x OR -(a b) OR y", "x | -a | -b | y")]
+    [InlineData("key:value -key>=2 key<>3", "key=value & -key>=2 & key<>3")]
+    [InlineData("(a OR b) c", "a & c | b & c")]
+    [InlineData("a -(b c) d", "a & -b & d | a & -c & d")]
+    [InlineData("(a OR b) (c OR d)", "a & c | a & d | b & c | b & d")]
+    [InlineData("NOT (a OR b c)", "-a & -b | -a & -c")]
+    [InlineData("x OR (a OR b) c", "x | a & c | b & c")]
+    public void BoundQuery_DisjunctiveNormalForm(string query, string expected)
+    {
+        var disjunctions = BoundQuery.Create(QuerySyntax.Parse(query));
+
+        Assert.Equal(expected, string.Join(" | ", disjunctions.Select(conjunction => string.Join(" & ", conjunction.Select(term => term.ToString().Trim())))));
+    }
+
+    [Theory]
+    [InlineData("a b c", "a,c", false, "a,b")]
+    [InlineData("a b c", "a,b,c", true, "a,b,c")]
+    [InlineData("a OR b OR c", "b", true, "a,b")]
+    [InlineData("a OR b OR c", "", false, "a,b,c")]
+    [InlineData("a b OR c", "c", true, "a,c")]
+    [InlineData("(a OR b) c", "b,c", true, "a,b,c")]
+    public void Evaluate_StopsAtTheFirstDecisiveTerm(string query, string matchingTexts, bool expectedResult, string expectedCalls)
+    {
+        var calls = new List<string>();
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.SetTextFilterHandler((obj, value) =>
+        {
+            calls.Add(value);
+            return matchingTexts.Split(',').Contains(value, StringComparer.Ordinal);
+        });
+
+        Assert.Equal(expectedResult, queryBuilder.Build(query).Evaluate(new Sample()));
+        Assert.Equal(expectedCalls, string.Join(',', calls));
+    }
+
+    [Theory]
+    [InlineData("n:1 n:2 OR n:3", "1,2,3")]
+    [InlineData("n:1 OR n:2 OR n:3", "1,2,3")]
+    [InlineData("n:1 n:2 n:3", "1,2,3")]
+    [InlineData("(n:1 OR n:2) n:3", "1,3,2")]
+    public void Build_ParsesEachDistinctValueOnceInOrder(string query, string expectedParsedValues)
+    {
+        var parsedValues = new List<string>();
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddHandler<int>("n", (obj, value) => obj.Int32Value == value, (string value, out int result) =>
+        {
+            parsedValues.Add(value);
+            return int.TryParse(value, CultureInfo.InvariantCulture, out result);
+        });
+
+        queryBuilder.Build(query);
+
+        Assert.Equal(expectedParsedValues, string.Join(',', parsedValues));
+    }
+
+    [Theory]
+    [InlineData("\"abc\"", "abc", false)]
+    [InlineData("\"a b\"", "a b", false)]
+    [InlineData("\"a\"\"b\"", "a\"b", false)]
+    [InlineData("\"\"\"\"", "\"", false)]
+    [InlineData("\"\"", "", false)]
+    [InlineData("\"", "", true)]
+    [InlineData("\"abc", "abc", true)]
+    [InlineData("\"ab\"\"", "ab\"", true)]
+    public void Parse_QuotedText(string query, string expectedValue, bool expectedUnterminated)
+    {
+        var syntax = Assert.IsType<TextQuerySyntax>(QuerySyntax.Parse(query, out var diagnostics));
+
+        Assert.Equal(QuerySyntaxKind.QuotedTextToken, syntax.TextToken.Kind);
+        Assert.Equal(expectedValue, syntax.TextToken.Value);
+        Assert.Equal(new TextSpan(0, query.Length).ToString(), syntax.TextToken.Span.ToString());
+        Assert.Equal(expectedUnterminated, diagnostics.Any(diagnostic => diagnostic.Code is QueryDiagnosticCode.UnterminatedQuotedText));
+    }
+
+    [Theory]
+    [InlineData("key:value", "value")]
+    [InlineData("key:a:b", "a:b")]
+    [InlineData("key:or", "or")]
+    [InlineData("key:-a", "-a")]
+    [InlineData("key:a b", "a")]
+    [InlineData("key:\"a b\"", "a b")]
+    public void Parse_KeyValue_Value(string query, string expectedValue)
+    {
+        var syntax = QuerySyntax.Parse(query);
+        var keyValue = Assert.IsType<KeyValueQuerySyntax>(syntax is AndQuerySyntax andQuery ? andQuery.Left : syntax);
+
+        Assert.Equal(expectedValue, keyValue.ValueToken.Value);
+        Assert.Equal(expectedValue, keyValue.ValueToken.Kind is QuerySyntaxKind.QuotedTextToken ? expectedValue : keyValue.ValueToken.Text);
+    }
+
+    [Fact]
+    public void Range_IsInRange_Comparer()
+    {
+        RangeSyntax<int>? range = null;
+        var queryBuilder = new QueryBuilder<Sample>();
+        queryBuilder.AddRangeHandler<int>("n", (obj, value) =>
+        {
+            range = value;
+            return true;
+        });
+
+        queryBuilder.Build("n:2..5").Evaluate(new Sample());
+        Assert.NotNull(range);
+        Assert.True(range.IsInRange(2));
+        Assert.True(range.IsInRange(5));
+        Assert.False(range.IsInRange(6));
+        Assert.Equal(range.IsInRange(6), range.IsInRange(6, comparer: null));
+
+        // The comparer replaces the default one: reversed, only the values between 5 and 2 are in the range
+        var reversed = Comparer<int>.Create((x, y) => y.CompareTo(x));
+        Assert.False(range.IsInRange(3, reversed));
+        queryBuilder.Build("n>=2").Evaluate(new Sample());
+        Assert.True(range.IsInRange(3));
+        Assert.False(range.IsInRange(3, reversed));
+        Assert.True(range.IsInRange(1, reversed));
     }
 
     [Fact]

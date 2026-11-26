@@ -635,6 +635,23 @@ public sealed class AssertEqualUnorderedTests
     }
 
     [Fact]
+    public void SameOrder_Success()
+    {
+        AssertionsAssert.EqualUnordered(new[] { 1, 2, 3 }, new List<int> { 1, 2, 3 });
+        AssertionsAssert.EqualUnordered(ImmutableArray.Create("a", null), new[] { "a", null });
+        AssertionsAssert.EqualUnordered(new[] { 0.0, double.NaN }, new[] { -0.0, double.NaN });
+        AssertionsAssert.EqualUnordered(new[] { 1, 2, 3 }, new[] { 1, 3, 2 });
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.EqualUnordered(new[] { 1, 2, 3 }, new[] { 1, 2, 4 }));
+    }
+
+    [Fact]
+    public void DefaultImmutableArrays()
+    {
+        AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.EqualUnordered(default(ImmutableArray<int>), default(ImmutableArray<int>)));
+        AssertionsAssert.Throws<InvalidOperationException>(() => AssertionsAssert.EqualUnordered(default(ImmutableArray<int>), ImmutableArray<int>.Empty));
+    }
+
+    [Fact]
     public void DefaultImmutableArrayItems_Success()
     {
         List<ImmutableArray<int>> expected = [default, default];

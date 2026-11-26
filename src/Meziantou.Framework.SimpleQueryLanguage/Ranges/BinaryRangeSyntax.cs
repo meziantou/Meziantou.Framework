@@ -17,9 +17,8 @@ internal sealed class BinaryRangeSyntax<T> : RangeSyntax<T>
 
     public override bool IsInRange(T value, IComparer<T>? comparer)
     {
-        comparer ??= Comparer<T>.Default;
-        var c1 = comparer.Compare(LowerBound, value);
-        var c2 = comparer.Compare(value, UpperBound);
+        var c1 = Compare(LowerBound, value, comparer);
+        var c2 = Compare(value, UpperBound, comparer);
         return (LowerBoundIncluded ? c1 <= 0 : c1 < 0) && (UpperBoundIncluded ? c2 <= 0 : c2 < 0);
     }
 

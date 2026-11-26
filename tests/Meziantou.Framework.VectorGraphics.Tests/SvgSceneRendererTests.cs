@@ -1,4 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Text;
 
 namespace Meziantou.Framework.VectorGraphics.Tests;
 
@@ -42,6 +44,89 @@ public sealed class SvgSceneRendererTests
         Assert.Equal("M0,0 L1,1 C1,2 3,4 5,6 Q7,8 9,10 A5,5 30 1,0 11,12 Z", path.ToString());
         Assert.Equal(6, path.Commands.Count);
         Assert.Equal("M0,0 L1,0 L1,1 L0,1 Z", new PathBuilder().AddRectangle(0, 0, 1, 1).Build().ToString());
+    }
+
+    [Fact]
+    public void RenderToWriter()
+    {
+        // The writer receives the document by blocks: long values and many elements cross them
+        var scene = new Scene(100, 100, AfmTextMeasurer.Default.FontFamily) { Title = new string('t', 10_000) + "<&>", Description = "A & B" };
+        for (var i = 0; i < 500; i++)
+        {
+            scene.Root.Add(new SceneRectangle(i, i * 0.5, 3.25, 4) { Fill = new SceneColor((byte)i, 20, 200), Tooltip = i % 50 is 0 ? new string('x', 5000 + i) : "Bar " + i });
+        }
+
+        var expected = SvgSceneRenderer.Render(scene);
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        SvgSceneRenderer.Render(scene, writer);
+
+        Assert.Equal(expected, writer.ToString());
+        Assert.Contains("<title>" + new string('t', 10_000) + "&lt;&amp;&gt;</title>\n<desc>A &amp; B</desc>", expected, StringComparison.Ordinal);
+        Assert.Contains("<rect x=\"499\" y=\"249.5\" width=\"3.25\" height=\"4\" fill=\"#f314c8\"><title>Bar 499</title></rect>\n</svg>\n", expected, StringComparison.Ordinal);
+        Assert.Contains("<title>" + new string('x', 5450) + "</title>", expected, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void RenderToWriter_WritesWhatPrecedesAnException()
+    {
+        var scene = new Scene(100, 100, "sans-serif");
+        scene.Root.Add(new SceneRectangle(0, 0, 1, 1) { Id = "a" });
+        scene.Root.Add(new SceneRectangle(0, 0, 1, 1) { Id = "a" });
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+
+        Assert.Throws<InvalidOperationException>(() => SvgSceneRenderer.Render(scene, writer));
+        Assert.Equal(string.Empty, writer.ToString());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(7)]
+    [InlineData(100)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void SvgOutput_WritesEveryCharacter(int seed)
+    {
+        // Characters, short and long strings, and reserved spans, in a growing buffer and in a buffer flushed to a writer
+        var random = new Random(seed);
+        var expected = new StringBuilder();
+        using var growing = new SvgOutput(initialCapacity: 1);
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        using (var flushed = new SvgOutput(writer))
+        {
+            for (var i = 0; i < 2000; i++)
+            {
+                var value = new string((char)('a' + (i % 26)), random.Next(0, 3) switch
+                {
+                    0 => 1,
+                    1 => random.Next(0, 20),
+                    _ => random.Next(0, 10_000),
+                });
+                expected.Append(value);
+                switch (i % 3)
+                {
+                    case 0 when value.Length is 1:
+                        growing.Write(value[0]);
+                        flushed.Write(value[0]);
+                        break;
+
+                    case 1:
+                        value.CopyTo(growing.GetSpan(value.Length));
+                        growing.Advance(value.Length);
+                        value.CopyTo(flushed.GetSpan(value.Length));
+                        flushed.Advance(value.Length);
+                        break;
+
+                    default:
+                        growing.Write(value);
+                        flushed.Write(value.AsSpan());
+                        break;
+                }
+            }
+
+            flushed.Flush();
+        }
+
+        Assert.Equal(expected.ToString(), growing.ToString());
+        Assert.Equal(expected.ToString(), writer.ToString());
     }
 
     [Theory]
@@ -198,9 +283,11 @@ public sealed class SvgSceneRendererTests
         // The defaults, a miter limit that does not apply, and invalid values write nothing
         scene.Root.Add(new SceneLine(0, 20, 90, 20) { Stroke = SceneColor.Black, StrokeDashOffset = 3, MiterLimit = 10, LineJoin = SceneLineJoin.Round });
         scene.Root.Add(new SceneLine(0, 30, 90, 30) { Stroke = SceneColor.Black, StrokeDashArray = [4, 2], StrokeDashOffset = double.NaN, MiterLimit = 0.5 });
+        scene.Root.Add(new SceneLine(0, 40, 90, 40) { Stroke = new SceneColor(10, 240, 155), StrokeDashArray = [2.5, 1.125, 0.004, -3, 1e20] });
         var svg = SvgSceneRenderer.Render(scene);
 
         Assert.Contains("stroke-dasharray=\"4 2\" stroke-dashoffset=\"3\"", svg, StringComparison.Ordinal);
+        Assert.Contains("stroke=\"#0af09b\" stroke-dasharray=\"2.5 1.13 0 -3 100000000000000000000\"/>", svg, StringComparison.Ordinal);
         Assert.Contains("stroke-miterlimit=\"10\"", svg, StringComparison.Ordinal);
         Assert.Equal(1, svg.Split("stroke-dashoffset").Length - 1);
         Assert.Equal(1, svg.Split("stroke-miterlimit").Length - 1);

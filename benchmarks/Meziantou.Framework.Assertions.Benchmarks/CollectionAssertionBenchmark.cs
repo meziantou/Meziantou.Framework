@@ -12,6 +12,7 @@ public class CollectionAssertionBenchmark
 
     private int[] _expectedArray = null!;
     private int[] _actualArray = null!;
+    private int[] _reversedArray = null!;
     private List<int> _expectedList = null!;
     private List<int> _actualList = null!;
     private string[] _expectedStrings = null!;
@@ -26,6 +27,7 @@ public class CollectionAssertionBenchmark
     {
         _expectedArray = Enumerable.Range(0, Size).ToArray();
         _actualArray = Enumerable.Range(0, Size).ToArray();
+        _reversedArray = Enumerable.Range(0, Size).Reverse().ToArray();
         _expectedList = [.. _expectedArray];
         _actualList = [.. _actualArray];
         _expectedStrings = [.. _expectedArray.Select(value => value.ToString(CultureInfo.InvariantCulture))];
@@ -64,6 +66,9 @@ public class CollectionAssertionBenchmark
 
     [Benchmark]
     public void EqualUnordered() => Assert.EqualUnordered(_expectedArray, _actualArray);
+
+    [Benchmark]
+    public void EqualUnorderedReversed() => Assert.EqualUnordered(_expectedArray, _reversedArray);
 
     [Benchmark]
     public void ContainsLast() => Assert.Contains(Size - 1, (IEnumerable<int>)_actualArray);

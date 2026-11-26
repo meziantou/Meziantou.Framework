@@ -18,6 +18,7 @@ on:
           - all
           - aspnetcore-testing
           - ansi-formatting
+          - assertions
           - atlassian-data-format
           - avatar
           - barcodes
@@ -113,6 +114,7 @@ env:
     [
       { "project": "Meziantou.AspNetCore.Testing.Fuzz",            "component": "aspnetcore-testing",    "day": 4 },
       { "project": "Meziantou.Framework.AnsiFormatting.Fuzz",       "component": "ansi-formatting",       "day": 0 },
+      { "project": "Meziantou.Framework.Assertions.Fuzz",          "component": "assertions",            "day": 1 },
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 2 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },

@@ -34,6 +34,92 @@ public class ParserTests : ParserTestHelper
         AssertConformance(new Parser<LookAheadBuffer>(new LookAheadBuffer(reader, 12)), expectedEvents, invalid);
     }
 
+    [Theory]
+    [MemberData(nameof(ConformanceCases))]
+    public void YamlTestSuite_StreamReaderParser(string id, string yaml, string expectedEvents, bool invalid)
+    {
+        _ = id;
+
+        // A stream that returns a few bytes per read makes the parser refill its buffer at every position of the document
+        using var reader = CreateTrickleStreamReader(yaml);
+        AssertConformance(Parser.CreateParser(reader), expectedEvents, invalid);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StreamReaderParser_LongDocument_ReportsTheSameEventsAndPositionsAsTheStringParser(bool trickle)
+    {
+        var builder = new StringBuilder();
+        for (var i = 0; i < 400; i++)
+        {
+            builder.Append(CultureInfo.InvariantCulture, $"- name: item-{i}-{new string('x', i % 37)}\n");
+            builder.Append(CultureInfo.InvariantCulture, $"  {new string(' ', i % 5)}# comment {i}\n");
+            builder.Append(CultureInfo.InvariantCulture, $"  quoted: \"{new string('q', i % 23)} \\u263A é\"\n");
+            builder.Append(CultureInfo.InvariantCulture, $"  single: '{new string('s', i % 19)}''{i}'\n");
+            builder.Append(CultureInfo.InvariantCulture, $"  flow: [f{new string('f', i % 11)}, {{ k: v{i} }}]\n");
+            builder.Append(CultureInfo.InvariantCulture, $"  text: |\n    line {i} 😀\n    {new string('t', i % 29)}\n");
+        }
+
+        var yaml = builder.ToString();
+        using var reader = trickle ? CreateTrickleStreamReader(yaml) : new StreamReader(new MemoryStream(Encoding.UTF8.GetBytes(yaml)));
+
+        Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
+    }
+
+    private static StreamReader CreateTrickleStreamReader(string yaml)
+    {
+        // The byte order mark of the document, if any, is kept as a character, like the string parser sees it
+        var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+        return new StreamReader(new TrickleStream(encoding.GetBytes(yaml)), encoding, detectEncodingFromByteOrderMarks: false, bufferSize: 16);
+    }
+
+    private static string ReadEventsWithPositions(IParser parser)
+    {
+        var result = new StringBuilder();
+        while (parser.MoveNext())
+        {
+            var current = parser.Current!;
+            result.Append(CultureInfo.InvariantCulture, $"{current} {current.Start.Index}:{current.Start.Line}:{current.Start.Column}..{current.End.Index}:{current.End.Line}:{current.End.Column}\n");
+        }
+
+        return result.ToString();
+    }
+
+    /// <summary>A read-only stream that returns between 1 and 3 bytes per read.</summary>
+    private sealed class TrickleStream(byte[] data) : Stream
+    {
+        private int _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var length = Math.Min(Math.Min(buffer.Length, 1 + (_position % 3)), data.Length - _position);
+            data.AsSpan(_position, length).CopyTo(buffer);
+            _position += length;
+            return length;
+        }
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
     public static TheoryData<string> EmitterOutputCases() => YamlTestSuite.Ids(testCase => !testCase.Error && (testCase.Out is not null || testCase.Emit is not null));
 
     [Theory]

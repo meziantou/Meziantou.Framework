@@ -472,6 +472,10 @@ for the same object, and the conversions of the values, the types and the except
 - The bytes of a memory are a .NET array that its `ArrayBuffer` shares: the writes of the scripts are seen by WebAssembly,
   and the buffer is detached when the memory grows (by `grow()` or by `memory.grow`). The buffers cannot be transferred.
 - The modules are compiled on the thread of the agent, and the promises are settled by a task.
+- `WasmWebAssemblyRuntime` keeps the compiled modules of the engine by the content of their binary (`WasmModuleCache`,
+  bounded by `ModuleCacheCapacity`, least recently used first): the pages that share the runtime and compile the same
+  bytes get the same module of the engine, so its functions compiled to IL are shared too, and a new `AdapterModule`
+  (and `WebAssembly.Module` object) for each compilation. The binaries that are not valid are not kept.
 - A `WebAssembly.Module` is serializable within its agent cluster (`postMessage()` to a window, a dedicated worker or a worklet):
   the compiled module is shared.
 - The bytes of a shared memory are a growable shared data block of the script engine (`IJsAdapter.CreateGrowableSharedDataBlock`),

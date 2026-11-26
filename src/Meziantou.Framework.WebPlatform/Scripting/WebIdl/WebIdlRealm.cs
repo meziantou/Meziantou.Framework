@@ -1820,17 +1820,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>https://webidl.spec.whatwg.org/#js-frozen-array: a frozen array, the same object while the .NET object is the same.</summary>
-    [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "GetValue creates the value with the callback, not with the public parameterless constructor")]
     internal TValue FromFrozenArray<T>(IEnumerable<T>? values, Func<WebIdlRealm<TAdapter, TValue>, T, TValue> convert)
     {
         if (values is null)
             return Adapter.Null;
 
-        return Agent.FrozenArrays.GetValue(values, _ =>
-        {
-            var array = FromSequence(values, convert);
-            return Adapter.Call(EvaluateBuiltIn("Object.freeze"), Adapter.Undefined, [array]);
-        });
+        var arrays = Agent.FrozenArrays;
+        if (arrays.TryGetValue(values, out var reference) && reference.TryGetTarget(out var existing))
+            return existing;
+
+        var array = Freeze(FromSequence(values, convert));
+        arrays.AddOrUpdate(values, new WeakReference<TValue>(array));
+        return array;
     }
 
     /// <summary>Freezes an object (<c>Object.freeze</c>), e.g. an element of a frozen array that the specification freezes.</summary>

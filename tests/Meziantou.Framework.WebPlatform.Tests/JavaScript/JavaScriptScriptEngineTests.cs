@@ -630,6 +630,50 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void Bindings_FrozenArraysOfSharedValues_DoNotKeepTheEngineAlive()
+    {
+        var engine = LoadPageThatReadsSharedFrozenArrays();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(engine.TryGetTarget(out _));
+    }
+
+    // The values of the arrays outlive the page: the brands of ClientHintsOptions.Default and a static attribute
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference<JavaScriptScriptEngine> LoadPageThatReadsSharedFrozenArrays()
+    {
+        using var contexts = new BrowsingContextScope();
+        var engine = new JavaScriptScriptEngine();
+        var context = contexts.Create(new BrowsingContextOptions { ScriptEngine = engine });
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              const brands = navigator.userAgentData.brands;
+              const entryTypes = PerformanceObserver.supportedEntryTypes;
+              document.title = [brands === navigator.userAgentData.brands, Object.isFrozen(brands), entryTypes === PerformanceObserver.supportedEntryTypes].join();
+            </script>
+            """);
+        contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("true,true,true", document.Title);
+
+        engine.Dispose();
+        return new WeakReference<JavaScriptScriptEngine>(engine);
+    }
+
+    [Fact]
+    public void Bindings_FrozenArray_IsTheSameObjectAfterAGarbageCollectionWhileTheScriptHoldsIt()
+    {
+        var document = Load("<script>var brands = navigator.userAgentData.brands; var languages = navigator.languages;</script>");
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.True(_engine.Evaluate(document.DefaultView!, "brands === navigator.userAgentData.brands && languages === navigator.languages").AsBoolean());
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
     public void Document_NamedProperties()
     {
         var document = Load("""

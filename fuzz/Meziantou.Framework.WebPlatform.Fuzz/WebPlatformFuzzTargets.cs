@@ -91,6 +91,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-cookies", Cookies) { Seeds = () => GetSeeds("cookies") },
         new("webplatform-inflate", Inflate) { Seeds = GetInflateSeeds },
         new("webplatform-wasm", Wasm) { Seeds = () => GetSeeds("wasm") },
+        new("webplatform-wasm-module-cache", WasmModuleCacheTarget) { Seeds = GetWasmModuleCacheSeeds, Dictionary = WasmModuleCacheTokens },
         new("webplatform-encoding-sniff", EncodingSniff) { Seeds = GetEncodingSniffSeeds },
         new("webplatform-webvtt", WebVttFile) { Seeds = () => GetSeeds("webvtt").Select((seed, index) => seed with { Data = (byte[])[(byte)index, .. seed.Data.Span] }) },
         new("webplatform-audio", Audio) { Seeds = GetAudioSeeds },

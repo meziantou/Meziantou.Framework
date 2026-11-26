@@ -17,5 +17,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <!-- The module cache of the WebAssembly runtime -->
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Wasm\Meziantou.Framework.WebPlatform.Wasm.csproj" />
   </ItemGroup>
 </Project>

@@ -56,14 +56,14 @@ internal static class ArrayBuiltins
         new("toSpliced", 2, ToSpliced),
     ];
 
-    public static (JsFunction Constructor, JsFunction Values, JsFunction ToStringFunction) Initialize(Intrinsics intrinsics)
+    public static (JsFunction Constructor, JsFunction Values, JsFunction ToStringFunction, AccessorPair Species) Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = intrinsics.ArrayPrototype;
         var constructor = realm.CreateBuiltinFunction("Array", 1, Construct, isConstructor: true);
         constructor.DefineBuiltIn("prototype", prototype, PropertyFlags.None);
         realm.DefineMethods(constructor, ConstructorMethods);
-        realm.DefineAccessor(constructor, WellKnownSymbols.Species, (_, t, _, _) => t, setter: null);
+        var species = realm.DefineAccessor(constructor, WellKnownSymbols.Species, (_, t, _, _) => t, setter: null);
 
         prototype.DefineBuiltIn("constructor", constructor);
         realm.DefineMethods(prototype, PrototypeMethods);
@@ -85,7 +85,7 @@ internal static class ArrayBuiltins
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Array Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("Array", constructor);
-        return (constructor, values, toString);
+        return (constructor, values, toString, species);
     }
 
     private static JsObject CreateUnscopables()
@@ -175,6 +175,15 @@ internal static class ArrayBuiltins
                 return ThrowHelper.ThrowTypeError<JsValue>($"Array.from: {JsOperations.DescribeForError(mapperArgument)} is not a function");
         }
 
+        // Array.from(array) without mapper: a copy of the elements when no code can run (the constructor is %Array%, the
+        // iteration of the array is not observable and it has no hole)
+        if (mapper is null && ReferenceEquals(thisValue.Cell, function.Realm.Intrinsics.ArrayConstructor) && IteratorOperations.IsPackedArrayIteration(items, out var source))
+        {
+            var copy = new JsArray(function.Realm.Intrinsics.ArrayPrototype);
+            copy.PushDenseElements(source, (int)source.Length);
+            return copy;
+        }
+
         var usingIterator = JsOperations.GetMethod(items, new PropertyKey(WellKnownSymbols.Iterator));
         if (usingIterator is not null)
         {
@@ -262,7 +271,10 @@ internal static class ArrayBuiltins
     private static JsValue Concat(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var obj = JsOperations.ToObject(thisValue);
-        var array = ArrayOperations.ArraySpeciesCreate(obj, 0);
+
+        // A new array of the realm that no code can reach before it is returned: the elements of the arrays without hole are appended at once
+        var newArray = ArrayOperations.HasIntrinsicSpecies(obj, out _) ? ArrayOperations.ArrayCreate(0, obj.PrototypeSlot) : null;
+        var array = newArray ?? ArrayOperations.ArraySpeciesCreate(obj, 0);
         long n = 0;
         for (var i = -1; i < arguments.Length; i++)
         {
@@ -274,6 +286,13 @@ internal static class ArrayBuiltins
                 if (n + length > MaxSafeInteger)
                 {
                     ThrowTooLong();
+                }
+
+                if (newArray is not null && newArray.Length == n && source is JsArray sourceArray && length == sourceArray.Length && length <= int.MaxValue && sourceArray.IsDensePacked(length))
+                {
+                    newArray.PushDenseElements(sourceArray, (int)length);
+                    n += length;
+                    continue;
                 }
 
                 for (long k = 0; k < length; k++)
@@ -898,6 +917,9 @@ internal static class ArrayBuiltins
         var end = Arg(arguments, 1);
         var final = end.IsUndefined ? length : RelativeIndex(JsOperations.ToIntegerOrInfinity(end), length);
         var count = Math.Max(final - k, 0);
+        if (ArrayOperations.TryCopyDenseElements(obj, k, count) is { } copy)
+            return copy;
+
         var array = ArrayOperations.ArraySpeciesCreate(obj, count);
         var start = k;
         for (; k < final; k++)

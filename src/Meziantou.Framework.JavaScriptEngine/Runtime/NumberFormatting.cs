@@ -329,6 +329,50 @@ internal static class NumberFormatting
     }
 
     /// <summary>
+    /// <see cref="RoundScaled"/> in 128-bit integers, without allocation: for a value that is not an integer (a negative
+    /// binary exponent) and a scale between 0 and 19. The significand (53 bits) times 10^scale (64 bits) fits in 128 bits.
+    /// False when the value or the scale is outside these ranges.
+    /// </summary>
+    private static bool TryRoundScaled(double value, int scale, out UInt128 result)
+    {
+        Decompose(value, out var significand, out var binaryExponent);
+        if ((uint)scale >= (uint)PowersOfTen.Length || binaryExponent is >= 0 or < -127)
+        {
+            result = default;
+            return false;
+        }
+
+        // value \u00D7 10^scale = numerator / 2^shift
+        var numerator = (UInt128)significand * PowersOfTen[scale];
+        var shift = -binaryExponent;
+        result = numerator >> shift;
+        var remainder = numerator - (result << shift);
+
+        // remainder \u00D7 2 >= 2^shift: rounded up (the larger integer when two are as close)
+        if (remainder >= UInt128.One << (shift - 1))
+        {
+            result++;
+        }
+
+        return true;
+    }
+
+    // 10^0 to 10^19: the powers of ten that fit in 64 bits
+    private static readonly ulong[] PowersOfTen = CreatePowersOfTen();
+
+    private static ulong[] CreatePowersOfTen()
+    {
+        var powers = new ulong[20];
+        powers[0] = 1;
+        for (var i = 1; i < powers.Length; i++)
+        {
+            powers[i] = powers[i - 1] * 10;
+        }
+
+        return powers;
+    }
+
+    /// <summary>
     /// Rounds value \u00D7 10^scale to an integer, exactly: the integer closest to it, the larger one when two are as close
     /// (the rounding of toFixed, toExponential and toPrecision).
     /// </summary>
@@ -454,6 +498,10 @@ internal static class NumberFormatting
         else if (value < 9007199254740992 && value == Math.Floor(value))
         {
             digits = ((long)value).ToString(CultureInfo.InvariantCulture) + new string('0', fractionDigits);
+        }
+        else if (TryRoundScaled(value, fractionDigits, out var rounded))
+        {
+            digits = rounded.ToString(CultureInfo.InvariantCulture);
         }
         else
         {

@@ -48,6 +48,7 @@ internal sealed class Frame
         Script = null;
         IsConstruct = false;
         State = FrameState.Running;
+        RethrowLocation = null;
     }
 
     /// <summary>Gets the length of <see cref="Values"/> needed by a call.</summary>
@@ -118,6 +119,12 @@ internal sealed class Frame
 
     /// <summary>Gets or sets whether the frame resumes by throwing <see cref="ResumeValue"/> at its suspension point (await).</summary>
     public bool PendingThrow { get; set; }
+
+    /// <summary>
+    /// Gets or sets the location where the exception handled by a handler that rethrows it (<see cref="ExceptionHandler.Rethrows"/>)
+    /// was thrown: the throw of the handler reports it, not the position of its own instruction.
+    /// </summary>
+    public JsSourceLocation? RethrowLocation { get; set; }
 
     /// <summary>
     /// Gets or sets whether a yield of the generator gives its value instead of an iterator result object: the generator is

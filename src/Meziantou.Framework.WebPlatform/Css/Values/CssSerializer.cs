@@ -12,24 +12,41 @@ internal static partial class CssSerializer
     private static readonly ConcurrentDictionary<string, bool> ZeroIsLength = new(StringComparer.Ordinal);
 
     /// <summary>Returns whether an identifier is serialized as is: it has no character to escape (the common case).</summary>
-    private static bool IsSerializedAsIs(string value)
+    private static bool IsSerializedAsIs(string value, bool keepsNonAsciiCharacters)
     {
         if (value.Length == 0 || char.IsAsciiDigit(value[0]) || (value[0] == '-' && (value.Length == 1 || char.IsAsciiDigit(value[1]))))
             return false;
 
         foreach (var c in value)
         {
-            if (c < '\u0080' && !char.IsAsciiLetterOrDigit(c) && c is not ('-' or '_'))
+            if (c < '\u0080' ? !char.IsAsciiLetterOrDigit(c) && c is not ('-' or '_') : !keepsNonAsciiCharacters && !IsNonAsciiIdentifierCharacter(c))
                 return false;
         }
 
         return true;
     }
 
-    /// <summary>https://drafts.csswg.org/cssom/#serialize-an-identifier</summary>
-    public static string SerializeIdentifier(string value)
+    /// <summary>
+    /// Returns whether a character of at least U+0080 is read back as a part of an identifier: the non-ASCII ident code
+    /// points of CSS Syntax exclude some characters, such as U+00BA, which an escape gives (fuzz regression: the name of
+    /// <c>@container sid\ba r</c> was written unescaped, and read back as three tokens). The surrogates of a pair are a code
+    /// point of at least U+10000, which is one.
+    /// </summary>
+    private static bool IsNonAsciiIdentifierCharacter(char c) => char.IsSurrogate(c) || CssTokenizer.IsIdentCodePoint(c);
+
+    /// <summary>
+    /// https://drafts.csswg.org/cssom/#serialize-an-identifier, which keeps the characters of at least U+0080. Except for
+    /// <c>CSS.escape()</c> (<see cref="EscapeIdentifier"/>), the ones that are not ident code points of CSS
+    /// Syntax are escaped, so that the text is read back as the same identifier.
+    /// </summary>
+    public static string SerializeIdentifier(string value) => SerializeIdentifier(value, keepsNonAsciiCharacters: false);
+
+    /// <summary>The identifier as <c>CSS.escape()</c> writes it: https://drafts.csswg.org/cssom/#serialize-an-identifier, which keeps the characters of at least U+0080.</summary>
+    public static string EscapeIdentifier(string value) => SerializeIdentifier(value, keepsNonAsciiCharacters: true);
+
+    private static string SerializeIdentifier(string value, bool keepsNonAsciiCharacters)
     {
-        if (IsSerializedAsIs(value))
+        if (IsSerializedAsIs(value, keepsNonAsciiCharacters))
             return value;
 
         var builder = new StringBuilder(value.Length);
@@ -40,7 +57,7 @@ internal static partial class CssSerializer
             {
                 builder.Append('�');
             }
-            else if (c is (>= '\u0001' and <= '\u001F') or '\u007F' || (i == 0 && char.IsAsciiDigit(c)) || (i == 1 && char.IsAsciiDigit(c) && value[0] == '-'))
+            else if (c is (>= '\u0001' and <= '\u001F') or '\u007F' || (i == 0 && char.IsAsciiDigit(c)) || (i == 1 && char.IsAsciiDigit(c) && value[0] == '-') || (c >= '\u0080' && !keepsNonAsciiCharacters && !IsNonAsciiIdentifierCharacter(c)))
             {
                 builder.Append('\\').Append(((int)c).ToString("x", System.Globalization.CultureInfo.InvariantCulture)).Append(' ');
             }
@@ -790,6 +807,12 @@ internal static partial class CssSerializer
 
         if (Math.Abs(rounded) >= 1e21 || Math.Abs(rounded) < 1e-6)
             return Html.Microsyntaxes.ToBestFloatingPointRepresentation(value);
+
+        // A custom format has 15 significant digits, which rounds a large number to another one: 999999999999999918052 was
+        // written as 1000000000000000000000, which is then written 1e+21 (fuzz regression). The fixed-point format writes
+        // the exact digits of the number, which are read back as the same number
+        if (Math.Abs(rounded) >= 1e15)
+            return rounded.ToString("F6", System.Globalization.CultureInfo.InvariantCulture).TrimEnd('0').TrimEnd('.');
 
         return rounded.ToString("0.######", System.Globalization.CultureInfo.InvariantCulture);
     }

@@ -288,6 +288,25 @@ public sealed class JsEngineTests
         Assert.Equal("1", engine.ToPropertyKey(1).AsString());
     }
 
+    [Theory]
+    [InlineData("for (const k of [1]) { null.x; let y = 1; }", 24)]
+    [InlineData("for (const k of [1]) { for (const j of [2]) { null.x; let y = 1; } }", 47)]
+    [InlineData("for (const k of [1]) [ok] = 2;", 22)]
+    [InlineData("const [x = null.y, z = 1] = [];", 12)]
+    [InlineData("for (const k of [1]) { try { null.x; } catch (e) { throw e; } }", 52)]
+    public void ExceptionsRethrownByTheClosingOfAnIteratorKeepTheirLocation(string code, int column)
+    {
+        // The for-of loops and the destructurings close their iterator and rethrow the exception: it is located where it was
+        // thrown, not at the end of the loop body. A throw of the script is located at the throw.
+        foreach (var enableCompilation in new[] { false, true })
+        {
+            using var engine = new JsEngine(new JsEngineOptions { EnableCompilation = enableCompilation });
+            var realm = engine.CreateRealm();
+            var exception = Assert.Throws<JsException>(() => realm.Execute(code, "script.js"));
+            Assert.Equal(new JsSourceLocation("script.js", 1, column), exception.Location);
+        }
+    }
+
     [Fact]
     public void ExceptionsHaveTheirLocation()
     {

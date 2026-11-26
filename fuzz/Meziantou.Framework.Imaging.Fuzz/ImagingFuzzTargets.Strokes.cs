@@ -41,10 +41,10 @@ public static partial class ImagingFuzzTargets
     /// ellipse) and its points as pairs of signed bytes in half pixels around the center of the canvas.
     /// </summary>
     /// <remarks>
-    /// In perspective, the round and square caps of dashes can end anywhere on a curve, and the curve is cut for all the
-    /// pen reaches around it: their pens are at most 9.5 pixels wide, so that an input near a horizon stays fast (fuzz
-    /// regressions: round caps of pens of 24 pixels on the plane seen nearly edge-on took 10 to 35 seconds, whatever the
-    /// length of the dashes).
+    /// The round and square caps of dashes can end anywhere on a curve, and each one is a shape of the width of the pen: their
+    /// pens are at most 9.5 pixels wide, so that an input stays fast (fuzz regressions: in perspective, round caps of pens of
+    /// 24 pixels on the plane seen nearly edge-on took 10 to 35 seconds, whatever the length of the dashes; mirrored, dashes
+    /// of 0.125 pixels with round caps of a pen of 64 pixels took 2.4 seconds).
     /// </remarks>
     private static void StrokeTarget(ReadOnlySpan<byte> data)
     {
@@ -105,7 +105,7 @@ public static partial class ImagingFuzzTargets
 
         var path = builder.Build();
         var cap = (LineCap)((style / 3) % 3);
-        if (isInPerspective && dashes.Length != 0 && cap != LineCap.Butt)
+        if (dashes.Length != 0 && cap != LineCap.Butt)
         {
             penWidth = Math.Min(penWidth, 9.5);
         }

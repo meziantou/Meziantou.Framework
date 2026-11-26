@@ -292,6 +292,54 @@ public sealed class ArchiveFileTests
     }
 
     [Fact]
+    public void Tar_ExtendedAttributesLargerThanAllowed_Throws()
+    {
+        using var tar = new MemoryStream();
+        using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+        {
+            writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.RegularFile, "a.txt", new Dictionary<string, string>(StringComparer.Ordinal) { ["comment"] = "x" }) { DataStream = new MemoryStream("A"u8.ToArray()) });
+        }
+
+        // The size field of the extended attributes header is the largest value it can hold, and its checksum is updated
+        var data = tar.ToArray();
+        "77777777777\0"u8.CopyTo(data.AsSpan(124));
+        "        "u8.CopyTo(data.AsSpan(148));
+        var checksum = 0;
+        foreach (var value in data.AsSpan(0, 512))
+        {
+            checksum += value;
+        }
+
+        System.Text.Encoding.ASCII.GetBytes(Convert.ToString(checksum, 8).PadLeft(6, '0') + "\0 ").CopyTo(data, 148);
+
+        Assert.Throws<InvalidDataException>(() => ArchiveFile.Open(new MemoryStream(data)));
+        using var reader = ArchiveReader.Create(new MemoryStream(data));
+        Assert.Throws<InvalidDataException>(() => reader.MoveToNextEntry());
+    }
+
+    [Theory]
+    [InlineData("17948023876270295701")]
+    [InlineData("-17948023876270295701")]
+    public void Tar_TimeOutOfTheRangeOfADate_Throws(string time)
+    {
+        // A number of seconds larger than a 64-bit integer. The writer reads the times of the attributes and writes its own
+        // mtime: the time is written as another attribute, and the names of the two attributes are then changed
+        using var tar = new MemoryStream();
+        using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+        {
+            writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.RegularFile, "a.txt", new Dictionary<string, string>(StringComparer.Ordinal) { ["xtime"] = time }) { DataStream = new MemoryStream("A"u8.ToArray()) });
+        }
+
+        var data = tar.ToArray();
+        "z"u8.CopyTo(data.AsSpan(data.AsSpan().IndexOf(" mtime="u8) + 1));
+        "m"u8.CopyTo(data.AsSpan(data.AsSpan().IndexOf(" xtime="u8) + 1));
+
+        Assert.Throws<InvalidDataException>(() => ArchiveFile.Open(new MemoryStream(data)));
+        using var reader = ArchiveReader.Create(new MemoryStream(data));
+        Assert.Throws<InvalidDataException>(() => reader.MoveToNextEntry());
+    }
+
+    [Fact]
     public void Open_LeaveOpen()
     {
         using var stream = File.OpenRead(GetPath("Archive/sample.tar.bz2"));

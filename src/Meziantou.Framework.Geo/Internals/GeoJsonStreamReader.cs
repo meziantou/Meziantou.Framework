@@ -189,7 +189,7 @@ internal sealed class GeoJsonStreamReader : IDisposable
                     _mode = Mode.Whole;
                     break;
 
-                case Mode.Root when reader.TokenType is JsonTokenType.PropertyName && reader.ValueTextEquals("features"u8) && _type is null or "FeatureCollection":
+                case Mode.Root when reader.TokenType is JsonTokenType.PropertyName && NameEquals(ref reader, "features"u8) && _type is null or "FeatureCollection":
                     if (!reader.Read())
                         return Rewind(ref checkpoint);
 
@@ -204,7 +204,7 @@ internal sealed class GeoJsonStreamReader : IDisposable
 
                     break;
 
-                case Mode.Root or Mode.End when reader.TokenType is JsonTokenType.PropertyName && reader.ValueTextEquals("type"u8):
+                case Mode.Root or Mode.End when reader.TokenType is JsonTokenType.PropertyName && NameEquals(ref reader, "type"u8):
                     var value = reader;
                     if (!value.TrySkip())
                         return Rewind(ref checkpoint);
@@ -220,7 +220,7 @@ internal sealed class GeoJsonStreamReader : IDisposable
 
                 // The name of a collection is not returned, but GeoJson.Read decodes it: a name that is not a valid string makes
                 // a FeatureCollection invalid
-                case Mode.Root or Mode.End when reader.TokenType is JsonTokenType.PropertyName && reader.ValueTextEquals("name"u8):
+                case Mode.Root or Mode.End when reader.TokenType is JsonTokenType.PropertyName && NameEquals(ref reader, "name"u8):
                     var name = reader;
                     if (!name.TrySkip())
                         return Rewind(ref checkpoint);
@@ -267,6 +267,32 @@ internal sealed class GeoJsonStreamReader : IDisposable
 
                     break;
             }
+        }
+    }
+
+    /// <summary>Compares a property name with a member of GeoJSON: a name with an escaped unpaired surrogate is none of them.</summary>
+    private static bool NameEquals(ref Utf8JsonReader reader, ReadOnlySpan<byte> name)
+    {
+        try
+        {
+            return reader.ValueTextEquals(name);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Compares a property name with a member of GeoJSON: a name with an escaped unpaired surrogate is none of them.</summary>
+    internal static bool NameEquals(JsonProperty property, string name)
+    {
+        try
+        {
+            return property.NameEquals(name);
+        }
+        catch (InvalidOperationException)
+        {
+            return false;
         }
     }
 

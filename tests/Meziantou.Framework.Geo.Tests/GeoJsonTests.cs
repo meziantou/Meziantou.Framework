@@ -251,6 +251,21 @@ public sealed class GeoJsonTests
     }
 
     [Theory]
+    [InlineData("""{"type":"Feature","feature\ud815s":4,"geometry":{"type":"Point","coordinates":[1,2]}}""")]
+    [InlineData("""{"\ud815ype":1,"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]}}""")]
+    [InlineData("""{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":"Point","coordinates":[1,2]}}],"\ud815eatures":4}""")]
+    public async Task Read_MemberNameWithAnUnpairedSurrogate_IsAForeignMember(string json)
+    {
+        // A name that is not a valid string is none of the members of GeoJSON, whatever its length: both readers skip it
+        var bytes = Encoding.UTF8.GetBytes(json);
+        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(Assert.Single(GeoJson.Read(new MemoryStream(bytes))).Geometry).Position);
+
+        using var stream = new CountingStream(bytes, canSeek: false, maxReadLength: 3);
+        var feature = Assert.Single(await GeoJson.ReadFeaturesAsync(stream, TestContext.Current.CancellationToken).ToListAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(new GeoPosition(1, 2), Assert.IsType<GeoPoint>(feature.Geometry).Position);
+    }
+
+    [Theory]
     [InlineData("")]
     [InlineData("{")]
     [InlineData("[]")]

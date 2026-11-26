@@ -278,8 +278,11 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     {
         var number = entry.Reference.ObjectNumber;
 
-        // Without the scan, an object is parsed up to the end of the file, not up to the next object
-        var bounded = _scanner is not null;
+        // An object at the offset of its entry is parsed up to the next object in a repaired file, whose scan found the
+        // objects, and up to the end of the file otherwise. The scan that a wrong entry of another object starts later does
+        // not bound it: an object does not depend on the objects loaded before it (fuzz regression: an object read over
+        // HTTP after a prefetch was read as another object than in memory)
+        var bounded = IsRepaired;
         if (entry.ContainerNumber > 0)
         {
             var value = TryLoadCompressed(entry.ContainerNumber, entry.IndexInContainer, number);
@@ -288,10 +291,10 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         }
         else if (entry.Offset >= 0)
         {
-            var value = TryLoadAt(entry.Offset, number, entry.Reference.Generation);
+            var value = TryLoadAt(entry.Offset, number, entry.Reference.Generation, bounded);
             if (value is null && HeaderOffset > 0)
             {
-                value = TryLoadAt(entry.Offset + HeaderOffset, number, entry.Reference.Generation);
+                value = TryLoadAt(entry.Offset + HeaderOffset, number, entry.Reference.Generation, bounded);
                 if (value is not null)
                 {
                     Diagnostics.Report(PdfDiagnosticKind.WrongObjectOffset, "The offset of the object counts from the header of the file", entry.Offset + HeaderOffset, number);
@@ -310,10 +313,10 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         {
             if (found.Offset == entry.Offset)
             {
-                if (!bounded && TryLoadAt(found.Offset, number, entry.Reference.Generation) is { } value)
+                if (!bounded && TryLoadAt(found.Offset, number, entry.Reference.Generation, bounded: true) is { } value)
                     return value;
             }
-            else if (TryLoadAt(found.Offset, number, generation: null) is { } value)
+            else if (TryLoadAt(found.Offset, number, generation: null, bounded: true) is { } value)
             {
                 Diagnostics.Report(PdfDiagnosticKind.WrongObjectOffset, string.Create(System.Globalization.CultureInfo.InvariantCulture, $"The object is not at the offset of its cross-reference entry ({entry.Offset}): it was found by scanning the file"), found.Offset, number);
                 return value;
@@ -943,13 +946,13 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         return result;
     }
 
-    private PdfObject? TryLoadAt(long offset, int number, int? generation)
+    private PdfObject? TryLoadAt(long offset, int number, int? generation, bool bounded)
     {
         if (offset < 0 || offset >= _input.Length)
             return null;
 
-        // An object the scan found ends before the next object or trailer at the latest
-        var limit = _scanner is not null && _scanner.Offsets.TryGetValue(number, out var found) && found.Offset == offset ? _scanner.GetBoundary(offset) : _input.Length;
+        // An object the scan found ends before the next object or trailer at the latest, when it is bounded
+        var limit = bounded && _scanner is not null && _scanner.Offsets.TryGetValue(number, out var found) && found.Offset == offset ? _scanner.GetBoundary(offset) : _input.Length;
         try
         {
             var (value, foundNumber, foundGeneration, notes) = Parse(offset, limit, static parser =>

@@ -352,7 +352,8 @@ public static class FileConversionFuzzTargets
         {
             foreach (var entry in archive.Entries)
             {
-                if (!entry.IsDirectory && entry.LinkTarget is null && entry.HardLinkTarget is null && !duplicatedNames.Contains(entry.FullName.TrimEnd('/')))
+                // The copy skips the entries without a name (fuzz regression: a zip entry whose name is empty)
+                if (!entry.IsDirectory && entry.LinkTarget is null && entry.HardLinkTarget is null && entry.FullName.TrimEnd('/').Length > 0 && !duplicatedNames.Contains(entry.FullName.TrimEnd('/')))
                 {
                     files[entry.FullName] = ArchiveFiles.ReadEntry(entry, maxLength: 1024 * 1024);
                 }

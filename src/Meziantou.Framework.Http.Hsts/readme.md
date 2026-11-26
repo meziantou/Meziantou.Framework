@@ -120,7 +120,7 @@ The primary handler the factory creates belongs to that pipeline, so the take-ov
 
 ## Dropping the preload list
 
-The preload list holds about 95,000 host names. It is stored in a compact form that is searched where it lies in the assembly, without being decompressed or copied, and shared between every collection, so it costs roughly 120 KB of managed memory and a few milliseconds, paid once per process and only when something asks for it. `new HstsDomainPolicyCollection(includePreloadDomains: false)` skips it for one collection.
+The preload list holds about 95,000 host names. It is stored in a compact form that is searched where it lies in the assembly, without being decompressed or copied, and shared between every collection, so it costs roughly 130 KB of managed memory and a few milliseconds, paid once per process and only when something asks for it. `new HstsDomainPolicyCollection(includePreloadDomains: false)` skips it for one collection.
 
 An application that never wants it can turn it off process-wide with a feature switch, which also keeps `HstsDomainPolicyCollection.Default` from loading it:
 

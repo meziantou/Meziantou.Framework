@@ -18,7 +18,7 @@ public static class HttpFuzzTargets
 
     private static readonly string[] HstsTokens = ["max-age", "max-age=", "includeSubDomains", "preload", ";", "; ", "=", "\"", "\\", "0", "31536000", "99999999999999999999", " ", "\t", "MAX-AGE", "includesubdomains"];
 
-    private static readonly string[] PreloadTokens = [".", "..", "com", "org", "net", "dev", "app", "co.uk", "www.", "github", "google", "accounts.", "xn--", "-", "_", "0", "COM", "\u00E9"];
+    private static readonly string[] PreloadTokens = [".", "..", "com", "org", "net", "dev", "app", "co.uk", "www.", "github", "google", "accounts.", "xn--", "-", "_", "0", "COM", "\u00E9", "!", "amazonaws.com"];
 
     private static readonly string[] LinkTokens = ["<", ">", ";", ",", "=", "\"", "\\", " ", "\t", "\r\n", "rel", "rel=next", "rel=\"prev\"", "title*=UTF-8''", "anchor", "https://example.com/", "</a>; rel=next"];
 
@@ -562,6 +562,20 @@ public static class HttpFuzzTargets
             "zzzzzzzz.zzz",
             "0.0",
             "",
+
+            // MustUpgradeRequest encodes the host once and searches its suffixes as prefixes of that encoding: a
+            // character no name uses only rules out the suffixes that hold it, and a suffix that no name extends
+            // rules out the longer ones
+            "a!b.github.com",
+            "github.a!b",
+            "x.y.z.w.github.com",
+            "bbc.co.uk",
+            "news.bbc.co.uk",
+            "www.example.com",
+            "api.contoso.com",
+            "bucket.s3.amazonaws.com",
+            "10.0.0.1",
+            string.Concat(Enumerable.Repeat("a.", 120)) + "github.com",
         ];
         return hosts.Select((host, index) => FuzzSeed.FromText($"host-{index}", host));
     }

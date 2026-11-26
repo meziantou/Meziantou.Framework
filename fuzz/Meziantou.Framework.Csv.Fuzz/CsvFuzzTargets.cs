@@ -1016,6 +1016,19 @@ public static partial class CsvFuzzTargets
         {
             yield return FuzzSeed.FromText("floating-point-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
         }
+
+        // The bits of the values of the unit tests of the formatter: few decimals, the shortest number, and the limits of the fast path
+        double[] formatted =
+        [
+            0.1, 0.30000000000000004, -12.3, 1e-4, 9.9e-5, 999999999.9, 1e9, 123456789012345.6, 1234.5678901234567, 0.00010000000000000002,
+            0.0001220703125, 1099511627776.0, 999999999999999.875, 1e15, 4503599627370497.0, double.MaxValue, double.NaN,
+        ];
+        for (var i = 0; i < formatted.Length; i++)
+        {
+            var bits = new byte[8];
+            BinaryPrimitives.WriteInt64LittleEndian(bits, BitConverter.DoubleToInt64Bits(formatted[i]));
+            yield return new FuzzSeed("floating-point-bits-" + i.ToString(CultureInfo.InvariantCulture), bits);
+        }
     }
 
     /// <summary>

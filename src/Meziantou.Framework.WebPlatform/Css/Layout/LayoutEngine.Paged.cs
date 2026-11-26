@@ -1063,7 +1063,9 @@ internal sealed partial class LayoutEngine
     /// Returns whether content before a break of the strip continues in the page after it: a parallel flow that ends before the
     /// break in the strip (the cells of a table row, the items of a grid row or of a flex line) ends in the page or after it, its
     /// own breaks being before the break of the strip (e.g. its lines do not fill the pages). The content after the break does
-    /// not start that page: it is not laid out again in another inline size from there.
+    /// not start that page: it is not laid out again in another inline size from there. The parallel flows nested in the items
+    /// are checked too: the item of a nested grid may end after the item that contains it (e.g. a paragraph beside a block in
+    /// a grid item).
     /// </summary>
     private static bool ContinuesBeforeBreak(FragmentationFlow flow, double position, int index)
     {
@@ -1077,7 +1079,7 @@ internal sealed partial class LayoutEngine
 
             foreach (var item in group.Items)
             {
-                if (item.End <= position + BreakAnchorEpsilon && item.EndIndex >= index)
+                if (item.End <= position + BreakAnchorEpsilon && (item.EndIndex >= index || ContinuesBeforeBreak(item.Flow, position, index)))
                     return true;
             }
         }

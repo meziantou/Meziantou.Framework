@@ -324,6 +324,17 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         [("CSS", "parseCommaValueList")] = static features => features.CssParserApiEnabled,
     }.ToFrozenDictionary();
 
+    /// <summary>The interfaces that have members in <see cref="FeatureMembers"/>: the members of the other interfaces are not looked up.</summary>
+    private static readonly FrozenSet<string> FeatureMemberInterfaces = FeatureMembers.Keys.Select(static key => key.Interface).ToFrozenSet(StringComparer.Ordinal);
+
+    /// <summary>The interfaces of the bindings, with the feature that enables each one (null when it is always enabled), created once.</summary>
+    private static (InterfaceBinding<TAdapter, TValue> Binding, Func<WebPlatformFeatures, bool>? IsEnabled)[]? s_interfaceFeatures;
+
+    // The last interface passed to IsMemberEnabled, and whether it is in FeatureMemberInterfaces: the members of an interface
+    // are defined one after the other
+    private string? _memberFeaturesInterface;
+    private bool _memberFeaturesInterfaceHasFeatures;
+
     /// <summary>The features of the web platform exposed in the realm (see <see cref="BrowsingContextOptions.Features"/>).</summary>
     internal WebPlatformFeatures Features => GlobalScope.Options.EffectiveFeatures;
 
@@ -331,7 +342,22 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     internal bool IsInterfaceEnabled(string interfaceName)
         => !FeatureInterfaces.TryGetValue(interfaceName, out var isEnabled) || isEnabled(Features);
 
+    /// <summary>Returns the interfaces of the bindings, with the feature that enables each one (see <see cref="IsInterfaceEnabled"/>).</summary>
+    private static (InterfaceBinding<TAdapter, TValue> Binding, Func<WebPlatformFeatures, bool>? IsEnabled)[] GetInterfaceFeatures()
+        => s_interfaceFeatures ??= [.. WebIdlBindings<TAdapter, TValue>.Interfaces.Values.Select(static binding => (binding, FeatureInterfaces.GetValueOrDefault(binding.Name)))];
+
     /// <summary>Whether a member of an interface is defined in the realm, according to the disabled features.</summary>
     private bool IsMemberEnabled(string? interfaceName, string memberName)
-        => interfaceName is null || !FeatureMembers.TryGetValue((interfaceName, memberName), out var isEnabled) || isEnabled(Features);
+    {
+        if (interfaceName is null)
+            return true;
+
+        if (!ReferenceEquals(interfaceName, _memberFeaturesInterface))
+        {
+            _memberFeaturesInterface = interfaceName;
+            _memberFeaturesInterfaceHasFeatures = FeatureMemberInterfaces.Contains(interfaceName);
+        }
+
+        return !_memberFeaturesInterfaceHasFeatures || !FeatureMembers.TryGetValue((interfaceName, memberName), out var isEnabled) || isEnabled(Features);
+    }
 }

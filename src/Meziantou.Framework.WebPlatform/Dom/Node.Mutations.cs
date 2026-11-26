@@ -206,7 +206,7 @@ public abstract partial class Node
 
         // The nodes of a fragment, or null when a single node is inserted (the parser inserts nodes one by one: no list is allocated)
         List<Node>? nodes = null;
-        if (node is DocumentFragment fragment)
+        if (!node.IsElement && node is DocumentFragment fragment)
         {
             if (fragment._firstChild is null)
                 return;
@@ -293,7 +293,7 @@ public abstract partial class Node
         // Post-connection steps
         if (IsConnected)
         {
-            if (nodes is null && node._firstChild is null && node is not Element { AttachedShadowRoot: not null })
+            if (nodes is null && node._firstChild is null && node.AsElement is not { AttachedShadowRoot: not null })
             {
                 node.PostConnectionSteps();
             }
@@ -321,7 +321,7 @@ public abstract partial class Node
             {
                 foreach (var descendant in (nodes is null ? node : nodes[i]).WalkShadowIncludingInclusiveDescendants())
                 {
-                    if (descendant is not Element element)
+                    if (descendant.AsElement is not { } element)
                         continue;
 
                     if (length == staticNodeList.Length)
@@ -355,7 +355,7 @@ public abstract partial class Node
     private void RunInsertionStepsForSubtree()
     {
         // Fast path: the parser mostly inserts leaf nodes
-        if (_firstChild is null && this is not Element { AttachedShadowRoot: not null })
+        if (_firstChild is null && AsElement is not { AttachedShadowRoot: not null })
         {
             if (_isConnected)
             {
@@ -411,7 +411,7 @@ public abstract partial class Node
     /// </summary>
     private void ConnectedIdSteps()
     {
-        if (this is Element { IdValue: not null } && NodeDocument.HasFormAttributeElements)
+        if (AsElement is { IdValue: not null } && NodeDocument.HasFormAttributeElements)
         {
             NodeDocument.OnIdChangedForFormAttributeElements();
         }
@@ -424,7 +424,7 @@ public abstract partial class Node
     /// </summary>
     private void ConnectedCustomElementSteps()
     {
-        if (this is Element element)
+        if (AsElement is { } element)
         {
             // A custom element adopted into a document without registry has no registry, but its connectedCallback is still
             // invoked, as in browsers and the web-platform-tests (the insert algorithm only enqueues it when the element has
@@ -450,6 +450,27 @@ public abstract partial class Node
         else if (this is ShadowRoot { CustomElementRegistryStorage: { IsScoped: true } shadowRootRegistry })
         {
             shadowRootRegistry.AddScopedDocument(NodeDocument);
+        }
+    }
+
+    /// <summary>The stack of the descendants whose removing steps run (see <see cref="RemoveCore"/>).</summary>
+    [ThreadStatic]
+    private static List<Node>? s_removalStack;
+
+    /// <summary>
+    /// Pushes the children of a node in reverse order, then its shadow root, so that they are popped in shadow-including tree
+    /// order (as <see cref="ShadowIncludingInclusiveDescendants"/> does).
+    /// </summary>
+    private static void PushShadowIncludingChildren(List<Node> stack, Node node)
+    {
+        for (var child = node._lastChild; child is not null; child = child._previousSibling)
+        {
+            stack.Add(child);
+        }
+
+        if (node.AsElement is { AttachedShadowRoot: { } shadowRoot })
+        {
+            stack.Add(shadowRoot);
         }
     }
 
@@ -688,29 +709,30 @@ public abstract partial class Node
 
         // The child navigables are unloaded before the children are listed, as their event handlers may change the tree (see RemoveCore)
         BrowsingContext.UnloadRemovedChildNavigables(this, descendantsOnly: true);
-        var removedNodes = ChildNodesSnapshot();
-        List<Node> addedNodes = node switch
-        {
-            DocumentFragment fragment => fragment.ChildNodesSnapshot(),
-            null => [],
-            _ => [node],
-        };
+
+        // The lists are not created for a node without children (e.g. textContent set on a new element), and the list of the
+        // added node only when the mutation record is queued
+        var removedNodes = _firstChild is null ? null : ChildNodesSnapshot();
+        var addedNodes = node is not null && !node.IsElement && node is DocumentFragment fragment ? fragment.ChildNodesSnapshot() : null;
 
         var document = NodeDocument;
-        document.BeginReplaceAllRemoval();
-        try
+        if (removedNodes is not null)
         {
-            foreach (var child in removedNodes)
+            document.BeginReplaceAllRemoval();
+            try
             {
-                if (ReferenceEquals(child._parent, this))
+                foreach (var child in removedNodes)
                 {
-                    RemoveCore(child, suppressObservers: true);
+                    if (ReferenceEquals(child._parent, this))
+                    {
+                        RemoveCore(child, suppressObservers: true);
+                    }
                 }
             }
-        }
-        finally
-        {
-            document.EndReplaceAllRemoval();
+            finally
+            {
+                document.EndReplaceAllRemoval();
+            }
         }
 
         if (node is not null)
@@ -718,9 +740,10 @@ public abstract partial class Node
             Insert(node, child: null, suppressObservers: true);
         }
 
-        if (addedNodes.Count > 0 || removedNodes.Count > 0)
+        var addedCount = addedNodes?.Count ?? (node is null ? 0 : 1);
+        if ((addedCount > 0 || removedNodes is { Count: > 0 }) && (NodeDocument.HasMutationObservers || NodeDocument.EditingRecorder is not null))
         {
-            QueueTreeMutationRecord(this, addedNodes, removedNodes, null, null);
+            QueueTreeMutationRecord(this, addedNodes ?? (node is null ? [] : [node]), removedNodes ?? [], null, null);
         }
     }
 
@@ -810,18 +833,35 @@ public abstract partial class Node
             document.FocusedArea = null;
         }
 
-        if (node._firstChild is not null || node is Element { AttachedShadowRoot: not null })
+        if (node._firstChild is not null || node.AsElement is { AttachedShadowRoot: not null })
         {
-            foreach (var descendant in node.ShadowIncludingInclusiveDescendants())
+            // The shadow-including descendants, in the order of ShadowIncludingInclusiveDescendants (the children of a node are
+            // read after its removing steps ran), with a stack shared by the removals instead of an iterator and its stack: a
+            // removal that runs in the removing steps only uses the part of the stack above the nodes of this one
+            var stack = s_removalStack ??= [];
+            var stackBase = stack.Count;
+            try
             {
-                if (!ReferenceEquals(descendant, node))
+                PushShadowIncludingChildren(stack, node);
+                while (stack.Count > stackBase)
                 {
-                    if (isParentConnected && descendant is Element { IsCustom: true } customDescendant)
+                    var descendant = stack[^1];
+                    stack.RemoveAt(stack.Count - 1);
+                    if (isParentConnected && descendant.AsElement is { IsCustom: true } customDescendant)
                     {
                         CustomElementReactions.EnqueueCallbackReaction(customDescendant, CustomElementCallbackKind.Disconnected, []);
                     }
 
                     descendant.RemovingSteps(isSubtreeRoot: false, this);
+                    PushShadowIncludingChildren(stack, descendant);
+                }
+            }
+            finally
+            {
+                stack.RemoveRange(stackBase, stack.Count - stackBase);
+                if (stackBase == 0 && stack.Capacity > 1024)
+                {
+                    s_removalStack = null;
                 }
             }
         }

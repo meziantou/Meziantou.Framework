@@ -44,11 +44,19 @@ internal sealed class SelectorHints
     /// <summary>The hashes of the features the ancestors of the subject must have (see <see cref="SelectorAncestorFilter"/>).</summary>
     public uint[] AncestorHashes { get; private init; } = [];
 
+    /// <summary>
+    /// Whether some of <see cref="AncestorHashes"/> are features of a compound selector on the left of a descendant combinator.
+    /// When it is false, the compound selectors of the hashes match the parent, the grandparent... of the subject (e.g.
+    /// <c>li &gt; a</c>): matching them only follows the parents, which costs less than adding the features of the ancestors
+    /// to a filter (see <see cref="SelectorQuery"/>).
+    /// </summary>
+    public bool HasDescendantAncestorHashes { get; private init; }
+
     public static SelectorHints Create(ComplexSelector selector)
     {
         // (the cascade matches the selectors ending with a pseudo-element against their originating element: the ancestors are the same)
         if (selector.HasPseudoElement)
-            return new SelectorHints { NeverMatches = true, AncestorHashes = selector.RelativeCombinator is null ? GetAncestorHashes(selector) : [] };
+            return new SelectorHints { NeverMatches = true, AncestorHashes = selector.RelativeCombinator is null ? GetAncestorHashes(selector, out _) : [] };
 
         var subject = selector.Compounds[^1];
         string? localName = null, id = null, className = null;
@@ -75,6 +83,8 @@ internal sealed class SelectorHints
         }
 
         var lowercaseLocalName = localName is null ? null : Infra.InfraAscii.ToAsciiLowercase(localName);
+        var hasDescendantAncestorHashes = false;
+        var ancestorHashes = selector.RelativeCombinator is null ? GetAncestorHashes(selector, out hasDescendantAncestorHashes) : [];
         return new SelectorHints
         {
             SubjectLocalName = localName,
@@ -83,7 +93,8 @@ internal sealed class SelectorHints
             SubjectId = id,
             SubjectClass = className,
             IsSimpleCompound = isSimpleCompound,
-            AncestorHashes = selector.RelativeCombinator is null ? GetAncestorHashes(selector) : [],
+            AncestorHashes = ancestorHashes,
+            HasDescendantAncestorHashes = hasDescendantAncestorHashes,
         };
     }
 
@@ -122,17 +133,23 @@ internal sealed class SelectorHints
     /// of a sibling combinator match siblings of the subject or of its ancestors). The arguments of the pseudo-classes
     /// (:is(), :not()...) are ignored.
     /// </summary>
-    private static uint[] GetAncestorHashes(ComplexSelector selector)
+    private static uint[] GetAncestorHashes(ComplexSelector selector, out bool hasDescendantHashes)
     {
         Span<uint> hashes = stackalloc uint[MaxAncestorHashes];
         var count = 0;
+        hasDescendantHashes = false;
+
+        // Whether a descendant combinator is between the compound selector and the subject
+        var afterDescendant = false;
         for (var i = selector.Compounds.Length - 2; i >= 0 && count < MaxAncestorHashes; i--)
         {
+            afterDescendant |= selector.Combinators[i] == Combinator.Descendant;
             if (selector.Combinators[i] is not (Combinator.Descendant or Combinator.Child))
                 continue;
 
             // The most selective features first: the ID, the classes, then the local name
             var compound = selector.Compounds[i];
+            var countBefore = count;
             foreach (var simple in compound.Selectors)
             {
                 if (simple is IdSelector id && count < MaxAncestorHashes)
@@ -156,6 +173,8 @@ internal sealed class SelectorHints
                     hashes[count++] = SelectorAncestorFilter.HashLocalName(localName);
                 }
             }
+
+            hasDescendantHashes |= afterDescendant && count > countBefore;
         }
 
         return count == 0 ? [] : hashes[..count].ToArray();
@@ -198,7 +217,24 @@ internal sealed class SelectorAncestorFilter
     private Document? _document;
     private int _domVersion;
 
+    /// <summary>The hashes of the local names of the elements that have a <see cref="TagId"/>, by tag id: their local name is the name of the tag id.</summary>
+    private static readonly uint[] TagLocalNameHashes = CreateTagLocalNameHashes();
+
     public static uint HashLocalName(string localName) => Hash(localName, 0x9E3779B9);
+
+    private static uint HashLocalName(Element element) => element.TagId != TagId.Unknown ? TagLocalNameHashes[(int)element.TagId] : HashLocalName(element.LocalName);
+
+    private static uint[] CreateTagLocalNameHashes()
+    {
+        var names = TagNames.Names;
+        var hashes = new uint[names.Length];
+        for (var i = 0; i < names.Length; i++)
+        {
+            hashes[i] = HashLocalName(names[i]);
+        }
+
+        return hashes;
+    }
 
     public static uint HashId(string id) => Hash(id, 0x85EBCA6B);
 
@@ -224,7 +260,7 @@ internal sealed class SelectorAncestorFilter
     /// <summary>Returns the parent of an element for the filter: the shadow host is the parent of the elements of its shadow tree.</summary>
     public static Element? GetParent(Element element) => element.ParentNode switch
     {
-        Element parent => parent,
+        { IsElement: true } parent => parent.AsElement,
         ShadowRoot shadowRoot => shadowRoot.Host,
         _ => null,
     };
@@ -277,7 +313,7 @@ internal sealed class SelectorAncestorFilter
         {
             var element = _elements[i].Element;
             _elements[i] = (element, _hashes.Count);
-            Add(HashLocalName(element.LocalName));
+            Add(HashLocalName(element));
             if (element.IdValue is { Length: > 0 } id)
             {
                 Add(HashId(id));

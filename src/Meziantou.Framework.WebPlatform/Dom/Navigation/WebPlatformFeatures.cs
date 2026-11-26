@@ -19,6 +19,13 @@ public sealed record WebPlatformFeatures
     public bool WebSocketEnabled { get; init; } = true;
 
     /// <summary>
+    /// Gets or sets whether the <c>WebTransport</c> interface is exposed in the secure contexts
+    /// (https://w3c.github.io/webtransport/), with its streams and <c>WebTransportError</c>. The sessions are established by
+    /// <see cref="DocumentLoader.ConnectWebTransportAsync"/>. The default is true.
+    /// </summary>
+    public bool WebTransportEnabled { get; init; } = true;
+
+    /// <summary>
     /// Gets or sets whether the <c>EventSource</c> interface is exposed: the server-sent events
     /// (https://html.spec.whatwg.org/multipage/server-sent-events.html). The default is true.
     /// </summary>

@@ -115,6 +115,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-media-codec-string", data => MediaCodecStringTarget(FuzzText.Decode(data))) { Seeds = GetMediaCodecStringSeeds, Dictionary = MediaCodecStringTokens },
         new("webplatform-webm-writer", WebMWriterTarget) { Seeds = GetWebMWriterSeeds },
         new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
+        new("webplatform-connection-allowlist", data => ConnectionAllowlistHeader(FuzzText.Decode(data))) { Seeds = GetConnectionAllowlistSeeds, Dictionary = ConnectionAllowlistTokens },
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
         new("webplatform-http-cache-ranges", data => CacheRanges(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache-ranges"), Dictionary = HttpCacheRangeTokens },
         new("webplatform-image-metadata", ImageMetadataTarget) { Seeds = GetImageMetadataSeeds, Dictionary = ImageMetadataTokens },

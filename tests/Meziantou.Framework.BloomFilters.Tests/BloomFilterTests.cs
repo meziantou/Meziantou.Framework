@@ -927,6 +927,120 @@ public sealed class BloomFilterTests
         Assert.InRange(positionsOffLattice, 6_900, 7_000);
     }
 
+    // The integer overloads hash the bytes of the value in memory, like the ReadOnlySpan<byte> overload, whatever the
+    // code path: a filter saved by one version must find the same values after being loaded by another.
+    [Fact]
+    public void Add_Integer_SetsTheSameBitsAsItsBytes()
+    {
+        var intValues = Enumerable.Range(-500, 1003).Append(int.MinValue).Append(int.MaxValue).ToArray();
+        var longValues = intValues.Select(value => (long)value * 0x1_0000_0001L).Append(long.MinValue).Append(long.MaxValue).ToArray();
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var blockedSize = BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var countingSize = CountingBloomFilterSize.CreateOptimalSize(1000, 0.01);
+
+        var filters = new Func<IBloomFilter>[]
+        {
+            () => BloomFilter.CreateXXHash32(size),
+            () => BloomFilter.CreateXXHash64(size),
+            () => BloomFilter.CreateXXHash128(size),
+            () => BlockedBloomFilter.CreateXXHash32(blockedSize),
+            () => BlockedBloomFilter.CreateXXHash64(blockedSize),
+            () => BlockedBloomFilter.CreateXXHash128(blockedSize),
+        };
+
+        foreach (var create in filters)
+        {
+            AssertSameBits(create, filter => { foreach (var value in intValues) filter.Add(value); }, filter => { foreach (var value in intValues) filter.Add(BitConverter.GetBytes(value)); });
+            AssertSameBits(create, filter => { foreach (var value in intValues) filter.Add((uint)value); }, filter => { foreach (var value in intValues) filter.Add(BitConverter.GetBytes((uint)value)); });
+            AssertSameBits(create, filter => { foreach (var value in longValues) filter.Add(value); }, filter => { foreach (var value in longValues) filter.Add(BitConverter.GetBytes(value)); });
+            AssertSameBits(create, filter => { foreach (var value in longValues) filter.Add((ulong)value); }, filter => { foreach (var value in longValues) filter.Add(BitConverter.GetBytes((ulong)value)); });
+        }
+
+        var countingFilters = new Func<ICountingBloomFilter>[]
+        {
+            () => CountingBloomFilter.CreateXXHash32(countingSize),
+            () => CountingBloomFilter.CreateXXHash64(countingSize),
+            () => CountingBloomFilter.CreateXXHash128(countingSize),
+        };
+
+        foreach (var create in countingFilters)
+        {
+            var expected = create();
+            var actual = create();
+            foreach (var value in intValues)
+            {
+                expected.Add(BitConverter.GetBytes(value));
+                expected.Add(BitConverter.GetBytes((uint)value));
+                actual.Add(value);
+                actual.Add((uint)value);
+            }
+
+            foreach (var value in longValues)
+            {
+                expected.Add(BitConverter.GetBytes(value));
+                expected.Add(BitConverter.GetBytes((ulong)value));
+                actual.Add(value);
+                actual.Add((ulong)value);
+            }
+
+            foreach (var value in intValues.Where(value => value % 2 == 0))
+            {
+                expected.Remove(BitConverter.GetBytes(value));
+                expected.Remove(BitConverter.GetBytes((uint)value));
+                actual.Remove(value);
+                actual.Remove((uint)value);
+            }
+
+            foreach (var value in longValues.Where(value => value % 3 == 0))
+            {
+                expected.Remove(BitConverter.GetBytes(value));
+                expected.Remove(BitConverter.GetBytes((ulong)value));
+                actual.Remove(value);
+                actual.Remove((ulong)value);
+            }
+
+            Assert.Equal(Save(((CountingBloomFilter)expected).Save), Save(((CountingBloomFilter)actual).Save));
+            foreach (var value in longValues)
+            {
+                Assert.Equal(actual.GetEstimatedCount(BitConverter.GetBytes(value)), actual.GetEstimatedCount(value));
+                Assert.Equal(actual.GetEstimatedCount(BitConverter.GetBytes((ulong)value)), actual.GetEstimatedCount((ulong)value));
+                Assert.Equal(actual.MayContain(BitConverter.GetBytes(value)), actual.MayContain(value));
+                Assert.Equal(actual.MayContain(BitConverter.GetBytes((ulong)value)), actual.MayContain((ulong)value));
+            }
+
+            foreach (var value in intValues)
+            {
+                Assert.Equal(actual.GetEstimatedCount(BitConverter.GetBytes(value)), actual.GetEstimatedCount(value));
+                Assert.Equal(actual.GetEstimatedCount(BitConverter.GetBytes((uint)value)), actual.GetEstimatedCount((uint)value));
+                Assert.Equal(actual.MayContain(BitConverter.GetBytes(value)), actual.MayContain(value));
+                Assert.Equal(actual.MayContain(BitConverter.GetBytes((uint)value)), actual.MayContain((uint)value));
+            }
+        }
+
+        static void AssertSameBits(Func<IBloomFilter> create, Action<IBloomFilter> addValues, Action<IBloomFilter> addBytes)
+        {
+            var expected = create();
+            var actual = create();
+            addBytes(expected);
+            addValues(actual);
+            Assert.Equal(SaveFilter(expected), SaveFilter(actual));
+        }
+
+        static byte[] SaveFilter(IBloomFilter filter) => filter switch
+        {
+            BloomFilter bloomFilter => Save(bloomFilter.Save),
+            BlockedBloomFilter blockedFilter => Save(blockedFilter.Save),
+            _ => throw new ArgumentOutOfRangeException(nameof(filter)),
+        };
+
+        static byte[] Save(Action<Stream> save)
+        {
+            using var stream = new MemoryStream();
+            save(stream);
+            return stream.ToArray();
+        }
+    }
+
     [Fact]
     public void AddRange_SetsTheSameBitsAsAdd()
     {

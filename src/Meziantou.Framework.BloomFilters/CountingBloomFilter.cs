@@ -16,12 +16,17 @@ public closed partial class CountingBloomFilter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected void AddHash(BloomFilterHash hash)
     {
-        var counterCount = (ulong)Counters.CounterCount;
+        // The fields are read once: see SegmentedCounterStorage.SingleSegment
+        var counters = Counters;
+        var singleSegment = counters.SingleSegment;
+        var counterCount = (ulong)counters.CounterCount;
+        var hashCount = HashCount;
+        var step = hash.Hash2;
         var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
+        for (var i = 0; i < hashCount; i++)
         {
-            Counters.Increment(BloomFilterHash.Reduce(combined, counterCount));
-            combined += hash.Hash2;
+            SegmentedCounterStorage.Increment(ref counters.GetCounterReference(singleSegment, BloomFilterHash.Reduce(combined, counterCount)));
+            combined += step;
         }
     }
 
@@ -33,30 +38,38 @@ public closed partial class CountingBloomFilter
         if (!MayContainHash(hash))
             return;
 
-        var counterCount = (ulong)Counters.CounterCount;
+        var counters = Counters;
+        var singleSegment = counters.SingleSegment;
+        var counterCount = (ulong)counters.CounterCount;
+        var hashCount = HashCount;
+        var step = hash.Hash2;
         var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
+        for (var i = 0; i < hashCount; i++)
         {
-            Counters.Decrement(BloomFilterHash.Reduce(combined, counterCount));
-            combined += hash.Hash2;
+            SegmentedCounterStorage.Decrement(ref counters.GetCounterReference(singleSegment, BloomFilterHash.Reduce(combined, counterCount)));
+            combined += step;
         }
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected int GetEstimatedCountHash(BloomFilterHash hash)
     {
-        var counterCount = (ulong)Counters.CounterCount;
+        var counters = Counters;
+        var singleSegment = counters.SingleSegment;
+        var counterCount = (ulong)counters.CounterCount;
+        var hashCount = HashCount;
+        var step = hash.Hash2;
         var combined = hash.Hash1;
         var result = int.MaxValue;
-        for (var i = 0; i < HashCount; i++)
+        for (var i = 0; i < hashCount; i++)
         {
             // Counters are never negative, so once a counter is zero the minimum is zero
-            var counter = Counters.Get(BloomFilterHash.Reduce(combined, counterCount));
+            var counter = SegmentedCounterStorage.Get(ref counters.GetCounterReference(singleSegment, BloomFilterHash.Reduce(combined, counterCount)));
             if (counter == 0)
                 return 0;
 
             result = Math.Min(result, counter);
-            combined += hash.Hash2;
+            combined += step;
         }
 
         return result;
@@ -65,14 +78,18 @@ public closed partial class CountingBloomFilter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private protected bool MayContainHash(BloomFilterHash hash)
     {
-        var counterCount = (ulong)Counters.CounterCount;
+        var counters = Counters;
+        var singleSegment = counters.SingleSegment;
+        var counterCount = (ulong)counters.CounterCount;
+        var hashCount = HashCount;
+        var step = hash.Hash2;
         var combined = hash.Hash1;
-        for (var i = 0; i < HashCount; i++)
+        for (var i = 0; i < hashCount; i++)
         {
-            if (Counters.Get(BloomFilterHash.Reduce(combined, counterCount)) == 0)
+            if (SegmentedCounterStorage.Get(ref counters.GetCounterReference(singleSegment, BloomFilterHash.Reduce(combined, counterCount))) == 0)
                 return false;
 
-            combined += hash.Hash2;
+            combined += step;
         }
 
         return true;

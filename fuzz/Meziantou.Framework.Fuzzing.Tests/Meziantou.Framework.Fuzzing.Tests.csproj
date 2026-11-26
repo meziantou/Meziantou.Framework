@@ -66,6 +66,7 @@
     <ProjectReference Include="..\Meziantou.Framework.WasmEngine.Fuzz\Meziantou.Framework.WasmEngine.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform.DevTools.Fuzz\Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform.Fuzz\Meziantou.Framework.WebPlatform.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebTransport.Fuzz\Meziantou.Framework.WebTransport.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Yaml.Fuzz\Meziantou.Framework.Yaml.Fuzz.csproj" />
   </ItemGroup>
 </Project>

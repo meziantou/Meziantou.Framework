@@ -324,6 +324,27 @@ Assert.Equal(bytes, script.ContentBytes?.ToArray());
   no hash or are not CORS requests; `Integrity-Policy-Report-Only` only reports them (`integrity-violation` reports, sent to
   the `endpoints` of the policy). The documents that inherit the policies of the page (its `srcdoc` and `about:blank`
   frames and popups) inherit both policies too.
+- The `Connection-Allowlist` header of a page ([Connection Allowlists](https://w3c.github.io/connection-allowlists/), a
+  draft of Chromium) lists the URL patterns of the connections it may open: `Connection-Allowlist: (response-origin
+  "https://*.cdn.example/*")` lets the page connect to its own origin and to the subdomains of `cdn.example`. The other
+  requests are network errors: `fetch()`, `XMLHttpRequest`, the subresources, the preloads and prefetches, the
+  speculation rules, the navigations it starts (links, frames, `window.open()`), the WebSockets, the WebTransport
+  sessions, and the `navigate()` and
+  `openWindow()` calls of a service worker (a `SecurityError`). The `data:`, `blob:` and `about:` URLs are always
+  allowed. A request that is redirected is blocked, unless the allowlist has `redirects=allow` (then the URLs of the
+  redirects are not checked). `Connection-Allowlist-Report-Only` only reports, and both send `connection-allowlist`
+  reports to the endpoint of their `report-to` parameter (the `ReportingObserver`s of the page receive them, as in
+  Chromium). The documents and workers whose URL is `about:`, `blob:` or `data:` inherit the allowlists; a worker of
+  another URL gets the allowlists of the response of its script, and the request of its script is checked by the
+  allowlists of its creator. The `Connection-Allowlist` header of a `103 Early Hints` response checks its preloads.
+- The `connectionallowlist` attribute of an `iframe`
+  ([HtmlIFrameElement.ConnectionAllowlist](cref:Meziantou.Framework.WebPlatform.Dom.HtmlIFrameElement.ConnectionAllowlist))
+  requires an allowlist of its documents: it is sent in the `Sec-Required-Connection-Allowlist` header of the navigations
+  of the frame, and a response is blocked (the frame shows an error page) unless its `Allow-Connection-Allowlist-From`
+  header is `*` or the origin of the page, or its `Connection-Allowlist` header has only patterns of the required
+  allowlist (and blocks the redirects when it does). The document of the frame enforces the required allowlist, unless its
+  own allowlist is at least as strict. The library has no WebRTC, DNS prefetch or preconnect, so the `webrtc` parameter
+  and the host checks of the specification have nothing to block.
 - [Signature-based Subresource Integrity](https://wicg.github.io/signature-based-sri/) is supported: an `integrity`
   attribute (or the `integrity` option of `fetch()`) with Ed25519 public keys (`ed25519-<base64 key>`) requires a valid
   signature of one of them, sent in the `Signature` and `Signature-Input` headers (HTTP Message Signatures, with the
@@ -464,3 +485,21 @@ var invalid = Assert.Throws<DomException>(() => new WebSocketError("", new WebSo
 Assert.Equal("InvalidAccessError", invalid.Name);
 ```
 <!-- endref -->
+
+## WebTransport
+
+The `WebTransport` sessions of the scripts of the secure contexts are established by
+[DocumentLoader.ConnectWebTransportAsync](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.ConnectWebTransportAsync), after the `connect-src` directive, the connection allowlists and the mixed content checks:
+
+- The loader of [DocumentLoader.Create()](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader.Create) opens the session over HTTP/3 with `Meziantou.Framework.WebTransport`, which needs
+  MsQuic (see [QUIC and WebTransport](../../Quic/01-Introduction.md)). Each session has its own connection.
+- A custom loader gets a [WebTransportConnectionRequest](cref:Meziantou.Framework.WebPlatform.Dom.WebTransportConnectionRequest): the URL, the headers (the `origin` header
+  first), the protocols, the SHA-256 hashes of the `serverCertificateHashes` option and the congestion control. It returns
+  a [WebTransportConnection](cref:Meziantou.Framework.WebPlatform.Dom.WebTransportConnection) (an in-memory session, for instance), or null to reject the session.
+- A session with `serverCertificateHashes` is allowed by the `'unsafe-webtransport-hashes'` keyword of `connect-src` only,
+  whatever its URL. A list whose hashes all use an unsupported algorithm fails the session without calling the loader:
+  the certificate must match one of the hashes.
+- The statistics of `getStats()` count the payload of the streams and the datagrams. `bytesAcknowledged` is absent when
+  the connection does not know it (MsQuic does not report it).
+- The sessions of a document are closed when the document is unloaded, and the sessions of a worker when the worker ends.
+- `exportKeyingMaterial()` is not supported.

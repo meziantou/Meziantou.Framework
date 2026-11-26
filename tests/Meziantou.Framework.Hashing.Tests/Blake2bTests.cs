@@ -29,16 +29,27 @@ public sealed class Blake2bTests
         Assert.Equal(expected, Convert.ToHexStringLower(digest));
         Assert.Equal(expected, Convert.ToHexStringLower(Blake2b.HashData(data, hashSize)));
 
-        // The same digest when the data is appended in several parts
+        // The same digest when the data is appended in parts that are smaller than a block, of a block or larger
         var blake2b = new Blake2b(hashSize);
-        for (var i = 0; i < length; i += 7)
+        foreach (var partLength in (int[])[1, 7, 127, 128, 129, 300])
         {
-            blake2b.AppendData(data.AsSpan(i, Math.Min(7, length - i)));
+            for (var i = 0; i < length; i += partLength)
+            {
+                blake2b.AppendData(data.AsSpan(i, Math.Min(partLength, length - i)));
+            }
+
+            var incremental = new byte[hashSize];
+            blake2b.GetHashAndReset(incremental);
+            Assert.Equal(expected, Convert.ToHexStringLower(incremental));
         }
 
-        var incremental = new byte[hashSize];
-        blake2b.GetHashAndReset(incremental);
-        Assert.Equal(expected, Convert.ToHexStringLower(incremental));
+        // A part of the block size after a partial block
+        if (length > 3)
+        {
+            blake2b.AppendData(data.AsSpan(0, 3));
+            blake2b.AppendData(data.AsSpan(3));
+            Assert.Equal(expected, Convert.ToHexStringLower(blake2b.GetHashAndReset()));
+        }
     }
 
     [Fact]

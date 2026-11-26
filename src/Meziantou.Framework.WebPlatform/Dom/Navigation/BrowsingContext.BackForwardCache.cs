@@ -134,6 +134,13 @@ public sealed partial class BrowsingContext
             AddReason(reasons, "websocket");
         }
 
+        // As in Chromium, the WebTransport sessions do not prevent the back/forward cache: they are terminated, and their
+        // closed promises are rejected
+        if (document.RelevantWindow is { } transportWindow && ReferenceEquals(transportWindow.Document, document))
+        {
+            WebTransportHostSession.Terminate(transportWindow);
+        }
+
         if (document.ChildNavigables is { } children)
         {
             foreach (var child in children)

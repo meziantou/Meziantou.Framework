@@ -2085,6 +2085,7 @@ public sealed partial class BrowsingContext : IDisposable
 
         parameters.RequiredContentSecurityPolicy = requiredPolicy;
         parameters.RequiredDocumentPolicy = GetRequiredDocumentPolicy();
+        parameters.RequiredConnectionAllowlist = GetRequiredConnectionAllowlist();
 
         DocumentResource resource;
         if (srcdoc is null && IsNavigationRequestBlockedByContentSecurityPolicy(url, sourceDocument, isFormSubmission))
@@ -2248,6 +2249,12 @@ public sealed partial class BrowsingContext : IDisposable
             if (requiredPolicy is not null)
             {
                 request.HeaderList.Add(new("Sec-Required-CSP", requiredPolicy));
+            }
+
+            // https://w3c.github.io/connection-allowlists/#sec-required-connection-allowlist
+            if (parameters.RequiredConnectionAllowlist is { } requiredConnectionAllowlist)
+            {
+                request.HeaderList.Add(new("Sec-Required-Connection-Allowlist", requiredConnectionAllowlist));
             }
 
             // https://wicg.github.io/document-policy/#algo-set-sec-required-document-policy-header
@@ -3119,6 +3126,18 @@ public sealed partial class BrowsingContext : IDisposable
             document.RequiredContentSecurityPolicy = requiredPolicy;
         }
 
+        // https://w3c.github.io/connection-allowlists/#html-integration ("create a policy container from a fetch response"):
+        // the connection allowlists of the response, and the allowlist the container requires (the ones of an inherited policy
+        // container are set above)
+        if (parameters.PolicyContainer is null && !parameters.IsNetworkError)
+        {
+            document.ConnectionAllowlists = ConnectionAllowlist.ApplyRequired(ConnectionAllowlist.FromHeaders(parameters.Headers, document.UrlRecord), parameters.RequiredConnectionAllowlist, document.UrlRecord);
+            if (parameters.RequiredConnectionAllowlist is not null && ConnectionAllowlist.Parse(parameters.RequiredConnectionAllowlist, document.UrlRecord, ConnectionAllowlistDisposition.Enforce) is not null)
+            {
+                document.RequiredConnectionAllowlist = parameters.RequiredConnectionAllowlist;
+            }
+        }
+
         // https://w3c.github.io/webappsec-subresource-integrity/#parse-integrity-policy-headers: the integrity policies of the
         // policy container of the document (the ones of an inherited policy container are set above)
         if (parameters.PolicyContainer is null && !parameters.IsNetworkError)
@@ -3774,6 +3793,7 @@ public sealed partial class BrowsingContext : IDisposable
             WebLocks.OnEnvironmentDiscarded(oldWindow);
             oldWindow.ReleaseFileSystemResources();
             WebSocket.MakeDisappear(oldWindow);
+            WebTransportHostSession.MakeDisappear(oldWindow, cleanUpScriptObjects: true);
             EventSource.ForciblyClose(oldWindow);
             IdbFactory.CloseConnections(oldWindow);
         }
@@ -3914,6 +3934,10 @@ public sealed partial class BrowsingContext : IDisposable
         {
             BroadcastChannel.RemoveChannels(documentWindow);
             WebSocket.MakeDisappear(documentWindow);
+
+            // The unloading of the document cleaned up the WebTransport objects; a document destroyed without being
+            // unloaded (its browsing context is disposed) may not run scripts anymore
+            WebTransportHostSession.MakeDisappear(documentWindow, cleanUpScriptObjects: false);
             EventSource.ForciblyClose(documentWindow);
             IdbFactory.CloseConnections(documentWindow);
         }
@@ -4540,6 +4564,12 @@ public sealed partial class BrowsingContext : IDisposable
         /// the serialized policy that the document must enforce, or null.
         /// </summary>
         public string? RequiredContentSecurityPolicy { get; set; }
+
+        /// <summary>
+        /// The required connection allowlist of the navigation params (https://w3c.github.io/connection-allowlists/#navigation-params-required-connection-allowlist):
+        /// the serialized allowlist that the document must enforce, or null.
+        /// </summary>
+        public string? RequiredConnectionAllowlist { get; set; }
 
         /// <summary>The required document policy of the navigable (https://wicg.github.io/document-policy/#required-document-policy), for the <c>Sec-Required-Document-Policy</c> header.</summary>
         public DocumentPolicyRecord RequiredDocumentPolicy { get; set; } = DocumentPolicyRecord.Empty;

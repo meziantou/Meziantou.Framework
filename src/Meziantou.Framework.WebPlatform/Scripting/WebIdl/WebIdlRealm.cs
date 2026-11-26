@@ -188,6 +188,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineFileSystemGlobals();
         }
 
+        // WebTransport and its streams are implemented in Streams.js ([SecureContext, Exposed=(Window,Worker)])
+        if (Features.WebTransportEnabled && isSecureContext && isWindowOrWorker && IsInterfaceEnabled("WritableStream"))
+        {
+            DefineWebTransportGlobals();
+        }
+
         DefineConsoleGlobal();
         DefineWebAssemblyGlobal();
         CaptureJsonFunctions();

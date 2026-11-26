@@ -15,6 +15,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         ["WebSocket"] = static features => features.WebSocketEnabled,
         ["WebSocketStream"] = features => features.WebSocketEnabled,
         ["WebSocketError"] = features => features.WebSocketEnabled,
+        ["WebTransportError"] = features => features.WebTransportEnabled,
         ["EventSource"] = static features => features.EventSourceEnabled,
         ["NavigatorUAData"] = static features => features.ClientHintsEnabled,
         ["Crypto"] = static features => features.WebCryptoEnabled,

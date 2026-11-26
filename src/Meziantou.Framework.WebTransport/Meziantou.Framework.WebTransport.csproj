@@ -1,0 +1,21 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- WebTransport runs over MsQuic, which sends UDP datagrams -->
+    <IsBrowserCompatible>false</IsBrowserCompatible>
+    <Version>1.0.0</Version>
+    <Description>A WebTransport over HTTP/3 client and server, with streams and datagrams, built on MsQuic</Description>
+    <PackageTags>webtransport, http3, quic, msquic, datagram, networking</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WebTransport.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebTransport.Fuzz" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.MsQuic/Meziantou.Framework.MsQuic.csproj" />
+  </ItemGroup>
+
+</Project>

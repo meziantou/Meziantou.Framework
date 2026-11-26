@@ -94,6 +94,21 @@ public partial class HtmlIFrameElement
     }
 
     /// <summary>
+    /// Gets or sets the value of the <c>connectionallowlist</c> content attribute (https://w3c.github.io/connection-allowlists/#dom-htmliframeelement-connectionallowlist):
+    /// a connection allowlist that the documents loaded into the iframe must enforce (Connection Allowlist embedded
+    /// enforcement). A valid value is sent in the <c>Sec-Required-Connection-Allowlist</c> header of the requests of the
+    /// navigations of the iframe, and a response that does not accept it (with an <c>Allow-Connection-Allowlist-From</c>
+    /// header, or with a <c>Connection-Allowlist</c> header at least as strict) is blocked.
+    /// </summary>
+    /// <seealso href="https://w3c.github.io/connection-allowlists/#dom-htmliframeelement-connectionallowlist"/>
+    [IdlMember("connectionAllowlist", "https://w3c.github.io/connection-allowlists/#dom-htmliframeelement-connectionallowlist")]
+    public string ConnectionAllowlist
+    {
+        get => Reflection.GetString(this, "connectionallowlist");
+        set => Reflection.SetString(this, "connectionallowlist", value);
+    }
+
+    /// <summary>
     /// Gets or sets the value of the <c>policy</c> content attribute (https://wicg.github.io/document-policy/#iframe-policy-attribute):
     /// the document policy that the documents loaded into the iframe must declare (Document Policy). It is combined with the
     /// required policy of the document of the iframe, and sent in the <c>Sec-Required-Document-Policy</c> header of the

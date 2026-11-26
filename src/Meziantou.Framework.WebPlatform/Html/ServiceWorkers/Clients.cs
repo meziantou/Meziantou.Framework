@@ -151,6 +151,10 @@ public sealed class Clients
         if (parsedUrl.Serialize() == "about:blank")
             return Task.FromException<WindowClient?>(new TypeErrorException("The URL cannot be about:blank"));
 
+        // https://w3c.github.io/connection-allowlists/#service-worker-integration: the connection allowlists of the service worker
+        if (ConnectionAllowlist.ShouldBlockUrl(parsedUrl, _global.EnvironmentDocument))
+            return Task.FromException<WindowClient?>(new DomException("The URL is blocked by the connection allowlist of the service worker", "SecurityError"));
+
         var promise = new TaskCompletionSource<WindowClient?>();
         var registry = Registry;
         var storageKey = Worker.Registration.StorageKey;
@@ -400,6 +404,10 @@ public sealed class WindowClient : Client
 
         if (parsedUrl.Serialize() == "about:blank")
             return Task.FromException<WindowClient?>(new TypeErrorException("The URL cannot be about:blank"));
+
+        // https://w3c.github.io/connection-allowlists/#service-worker-integration: the connection allowlists of the service worker
+        if (ConnectionAllowlist.ShouldBlockUrl(parsedUrl, Global.EnvironmentDocument))
+            return Task.FromException<WindowClient?>(new DomException("The URL is blocked by the connection allowlist of the service worker", "SecurityError"));
 
         if (Entry.Environment?.ActiveServiceWorker != Global.ServiceWorkerRecord)
             return Task.FromException<WindowClient?>(new TypeErrorException("The client is not controlled by the service worker"));

@@ -176,6 +176,175 @@ public sealed class ReportingTests : IDisposable
         Assert.Equal(["https://example.com/b.js"], _requests.Where(request => request.Url.EndsWith(".js", StringComparison.Ordinal)).Select(request => request.Url));
     }
 
+    [Theory]
+    [InlineData("(response-origin)", "https://example.com", false, false, null)]
+    [InlineData("(response-origin \"https://*.cdn.example/*\");redirects=allow;webrtc=allow;report-to=endpoint", "https://example.com https://*.cdn.example/*", true, true, "endpoint")]
+    [InlineData("(\"relative/path\" 1 token \"https://a.example\" \"https://[\")", "https://a.example", false, false, null)]
+    [InlineData("()", "", false, false, null)]
+    [InlineData("(\"https://a.example\");redirects=\"allow\";report-to=\"endpoint\"", "https://a.example", false, false, null)]
+    [InlineData("(\"https://a.example\");redirects=unknown;webrtc=block", "https://a.example", true, false, null)]
+    [InlineData("(\"https://a.example\"), (\"https://b.example\")", "https://a.example", false, false, null)]
+    public void ConnectionAllowlist_Parse(string value, string patterns, bool allowRedirects, bool allowWebRtc, string? endpoint)
+    {
+        var allowlist = ConnectionAllowlist.Parse(value, Url("https://example.com/page"), ConnectionAllowlistDisposition.Enforce)!;
+
+        Assert.Equal(patterns, string.Join(' ', allowlist.SerializedPatterns));
+        Assert.Equal(allowRedirects, allowlist.AllowRedirects);
+        Assert.Equal(allowWebRtc, allowlist.AllowWebRtc);
+        Assert.Equal(endpoint, allowlist.ReportingEndpoint);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("\"https://a.example\"")]
+    [InlineData("(\"https://a.example\"")]
+    [InlineData("(\"https://a.example\")\nX-Injected: evil")]
+    public void ConnectionAllowlist_Parse_Invalid(string value)
+    {
+        Assert.Null(ConnectionAllowlist.Parse(value, Url("https://example.com/"), ConnectionAllowlistDisposition.Enforce));
+    }
+
+    [Theory]
+    [InlineData("https://example.com/data", true)]
+    [InlineData("https://example.com:8443/data", false)]
+    [InlineData("http://example.com/data", false)]
+    [InlineData("https://www.cdn.example/a.js", true)]
+    [InlineData("https://cdn.example/a.js", false)]
+    [InlineData("data:text/plain,a", true)]
+    [InlineData("blob:https://other.example/1", true)]
+    [InlineData("about:blank", true)]
+    public void ConnectionAllowlist_Matches(string url, bool expected)
+    {
+        var allowlist = ConnectionAllowlist.Parse("(response-origin \"https://*.cdn.example/*\")", Url("https://example.com/page"), ConnectionAllowlistDisposition.Enforce)!;
+
+        Assert.Equal(expected, allowlist.Matches(Url(url)));
+    }
+
+    [Fact]
+    public void ConnectionAllowlist_BlocksTheConnectionsAndReportsThem()
+    {
+        var document = Load("""
+            <script>
+            document.title = 'start';
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.body.dataset.reports = (document.body.dataset.reports ?? '') + report.type + ' ' + report.body.connection + ' ' + report.body.disposition + ' ' + report.body.allowlist.join(',') + ' ' + report.body.url + ';';
+            }).observe();
+            </script>
+            <script src="/a.js"></script>
+            <script src="https://other.example/b.js"></script>
+            <script src="https://cdn.example/c.js"></script>
+            """, [new("Connection-Allowlist", "(response-origin \"https://cdn.example/*\");report-to=allowlist"), new("Connection-Allowlist-Report-Only", "(response-origin);report-to=allowlist"), new("Reporting-Endpoints", "allowlist=\"/reports\"")]);
+
+        // The script of another origin is blocked, the script of the CDN is only reported by the report-only allowlist
+        Assert.Equal("start a c", document.Title);
+        Assert.Equal(
+            "connection-allowlist https://other.example/b.js enforce https://example.com,https://cdn.example/* https://example.com/;connection-allowlist https://cdn.example/c.js report https://example.com https://example.com/;",
+            document.Body!.GetAttribute("data-reports"));
+    }
+
+    [Theory]
+    [InlineData("(response-origin \"https://other.example\")", "start")]
+    [InlineData("(response-origin \"https://other.example\");redirects=allow", "start target")]
+    public void ConnectionAllowlist_BlocksTheRedirects(string allowlist, string title)
+    {
+        var document = Load("""
+            <script>
+            document.title = 'start';
+            new ReportingObserver(reports => {
+              for (const report of reports)
+                document.body.dataset.reports = (document.body.dataset.reports ?? '') + report.body.connection + ';';
+            }).observe();
+            </script>
+            <script src="/redirect.js"></script>
+            """, [new("Connection-Allowlist", allowlist + ";report-to=allowlist"), new("Reporting-Endpoints", "allowlist=\"/reports\"")]);
+
+        // By default, a redirect is blocked even when its target is allowed; the report has the URL of the request
+        Assert.Equal(title, document.Title);
+        Assert.Equal(title == "start" ? "https://example.com/redirect.js;" : null, document.Body!.GetAttribute("data-reports"));
+    }
+
+    [Fact]
+    public void ConnectionAllowlist_IsInheritedWithThePolicyContainer()
+    {
+        Load("""
+            <iframe srcdoc="<script src='https://other.example/a.js'></script><script src='/b.js'></script>"></iframe>
+            <iframe id="blank"></iframe>
+            <script>
+            const script = blank.contentDocument.createElement('script');
+            script.src = 'https://other.example/c.js';
+            blank.contentDocument.body.appendChild(script);
+            </script>
+            """, [new("Connection-Allowlist", "(response-origin)")]);
+
+        // The srcdoc document and the initial about:blank document inherit the allowlist of their parent
+        Assert.Equal(["https://example.com/b.js"], _requests.Where(request => request.Url.EndsWith(".js", StringComparison.Ordinal)).Select(request => request.Url));
+    }
+
+    [Theory]
+    [InlineData("(response-origin)", "(response-origin)", true)]
+    [InlineData("(response-origin)", "(\"https://other.example\")", false)]
+    [InlineData("(response-origin);redirects=block", "(response-origin);redirects=allow", true)]
+    [InlineData("(response-origin);redirects=allow", "(response-origin)", false)]
+    [InlineData("(response-origin \"https://other.example\")", "(response-origin)", false)]
+    [InlineData("", "(response-origin)", false)]
+    [InlineData("not a list", "(response-origin)", false)]
+    [InlineData("(response-origin)", null, true)]
+    [InlineData("(response-origin)", "not a list", true)]
+    public void ConnectionAllowlist_IsValidAttributeValue(string value, string? parentRequired, bool expected)
+    {
+        Assert.Equal(expected, ConnectionAllowlist.IsValidAttributeValue(value, parentRequired));
+    }
+
+    [Theory]
+    [InlineData(null, null, null, false)]
+    [InlineData("(response-origin)", null, null, true)]
+    [InlineData("(response-origin)", "*", null, false)]
+    [InlineData("(response-origin)", "https://parent.example", null, false)]
+    [InlineData("(response-origin)", "https://other.example", null, true)]
+    [InlineData("(response-origin)", null, "(response-origin)", false)]
+    [InlineData("(response-origin \"https://cdn.example\")", null, "(\"https://cdn.example\")", false)]
+    [InlineData("(response-origin)", null, "(response-origin \"https://extra.example\")", true)]
+    [InlineData("(response-origin)", null, "(response-origin);redirects=allow", true)]
+    [InlineData("not a list", null, null, false)]
+    public void ConnectionAllowlist_ShouldBlockByEmbeddedEnforcement(string? requirement, string? allowFrom, string? allowlist, bool expected)
+    {
+        var headers = new List<KeyValuePair<string, string>>();
+        if (allowFrom is not null)
+        {
+            headers.Add(new("Allow-Connection-Allowlist-From", allowFrom));
+        }
+
+        if (allowlist is not null)
+        {
+            headers.Add(new("Connection-Allowlist", allowlist));
+        }
+
+        Assert.Equal(expected, ConnectionAllowlist.ShouldBlockByEmbeddedEnforcement(requirement, headers, Url("https://child.example/"), "https://parent.example"));
+    }
+
+    [Fact]
+    public void ConnectionAllowlist_ApplyRequired()
+    {
+        var responseUrl = Url("https://child.example/");
+        var own = ConnectionAllowlist.FromHeaders([new("Connection-Allowlist", "(response-origin \"https://cdn.example\")")], responseUrl);
+
+        // The required allowlist is enforced when no enforced allowlist of the response satisfies it
+        Assert.Same(own, ConnectionAllowlist.ApplyRequired(own, requirement: null, responseUrl));
+        Assert.Same(own, ConnectionAllowlist.ApplyRequired(own, "(response-origin \"https://cdn.example\" \"https://api.example\")", responseUrl));
+        var applied = ConnectionAllowlist.ApplyRequired(own, "(response-origin)", responseUrl);
+        Assert.Equal(["https://child.example https://cdn.example", "https://child.example"], applied.Select(allowlist => string.Join(' ', allowlist.SerializedPatterns)));
+    }
+
+    [Fact]
+    public void ConnectionAllowlist_IsBlocked_IgnoresTheReportOnlyAllowlists()
+    {
+        var allowlists = ConnectionAllowlist.FromHeaders([new("Connection-Allowlist-Report-Only", "()")], Url("https://example.com/"));
+
+        Assert.False(ConnectionAllowlist.IsBlocked(allowlists, Url("https://other.example/")));
+        Assert.True(ConnectionAllowlist.IsBlocked(ConnectionAllowlist.FromHeaders([new("Connection-Allowlist", "()")], Url("https://example.com/")), Url("https://other.example/")));
+    }
+
     [Fact]
     public void Endpoints_ReportingEndpointsHeader()
     {

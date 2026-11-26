@@ -144,4 +144,5 @@ Assert.Equal(checksum, running);
 ```
 <!-- endref -->
 
-`Crc32` and `Adler32` use the vector and CRC instructions of the processor when they are available.
+`Crc32` and `Adler32` use the vector and CRC instructions of the processor when they are available. `Argon2` uses the
+128-bit vector instructions (AdvSimd on Arm64, SSE2 on x64) when they are available.

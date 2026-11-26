@@ -72,6 +72,7 @@ on:
           - wasm-engine
           - webplatform-devtools
           - webplatform
+          - webtransport
           - yaml
       duration_seconds:
         description: Time budget of each target, in seconds
@@ -169,6 +170,7 @@ env:
       { "project": "Meziantou.Framework.WasmEngine.Fuzz",          "component": "wasm-engine",           "day": 6 },
       { "project": "Meziantou.Framework.WebPlatform.DevTools.Fuzz", "component": "webplatform-devtools",  "day": 3 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
+      { "project": "Meziantou.Framework.WebTransport.Fuzz",        "component": "webtransport",          "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]
 

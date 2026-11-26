@@ -1,3 +1,4 @@
+using System.Buffers;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.Sanitizers;
@@ -42,6 +43,9 @@ public sealed partial class HtmlSanitizer
     }
 
     private const OpenElements InScope = OpenElements.Button | OpenElements.Nobr | OpenElements.Select | OpenElements.Ruby | OpenElements.Paragraph;
+
+    // https://infra.spec.whatwg.org/#ascii-whitespace
+    private static readonly SearchValues<char> HtmlWhitespaces = SearchValues.Create("\t\n\f\r ");
 
     // The element is a kept element, so an element of the HTML namespace
     private OpenElements GetChildrenState(Element element, OpenElements state)
@@ -133,18 +137,21 @@ public sealed partial class HtmlSanitizer
     private bool HasMisplacedTableContent(Element container)
     {
         var containerName = container.LocalName;
-        var pendingNodes = new Stack<Node>();
-        pendingNodes.Push(container);
-        while (pendingNodes.TryPop(out var parent))
+
+        // The stack is only created when there is an element to look into: a table part is usually only made of the next
+        // kind of parts and of white space
+        Stack<Node>? pendingNodes = null;
+        Node? parent = container;
+        while (parent is not null)
         {
             for (var node = parent.FirstChild; node is not null; node = node.NextSibling)
             {
                 switch (node)
                 {
-                    case Text text when text.Data.AsSpan().IndexOfAnyExcept("\t\n\f\r ") >= 0:
+                    case Text text when text.Data.AsSpan().ContainsAnyExcept(HtmlWhitespaces):
                         return true;
 
-                    case Element element when BlockedElements.Contains(element.LocalName) || HasRawTextContent(element):
+                    case Element element when _blockedElements.Contains(element.LocalName) || HasRawTextContent(element):
                         break;
 
                     // A section or a row with misplaced content is unwrapped too, which puts its content in the
@@ -152,7 +159,7 @@ public sealed partial class HtmlSanitizer
                     case Element element when IsValidElement(element) && IsTablePart(containerName, element.LocalName):
                         if (element.LocalName is "tbody" or "thead" or "tfoot" or "tr" or "colgroup" && HasMisplacedTableContent(element))
                         {
-                            pendingNodes.Push(element);
+                            (pendingNodes ??= new()).Push(element);
                         }
 
                         break;
@@ -168,13 +175,15 @@ public sealed partial class HtmlSanitizer
 
                     // An element that is unwrapped puts its content in the container
                     case Element element when !IsValidElement(element) || IsAnyTablePart(element.LocalName):
-                        pendingNodes.Push(element is HtmlTemplateElement template ? template.Content : element);
+                        (pendingNodes ??= new()).Push(element is HtmlTemplateElement template ? template.Content : element);
                         break;
 
                     case Element:
                         return true;
                 }
             }
+
+            parent = pendingNodes is not null && pendingNodes.TryPop(out var next) ? next : null;
         }
 
         return false;
@@ -198,10 +207,10 @@ public sealed partial class HtmlSanitizer
             {
                 switch (node)
                 {
-                    case Text text when text.Data.AsSpan().IndexOfAnyExcept("\t\n\f\r ") >= 0:
+                    case Text text when text.Data.AsSpan().ContainsAnyExcept(HtmlWhitespaces):
                         return false;
 
-                    case Element element when BlockedElements.Contains(element.LocalName) || HasRawTextContent(element):
+                    case Element element when _blockedElements.Contains(element.LocalName) || HasRawTextContent(element):
                         break;
 
                     case Element element when !IsValidElement(element) || (element.LocalName is "tbody" or "thead" or "tfoot" or "tr" or "colgroup" && HasMisplacedTableContent(element)):

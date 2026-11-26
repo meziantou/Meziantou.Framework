@@ -1290,6 +1290,12 @@ public static class PdfFuzzTargets
         yield return FuzzSeed.FromText("document", [0x11], "# Title\nA paragraph of text that is long enough to be broken into several lines of the page.\n- One\n- Two\n|a|b\n|c|d\n|e\n---\n## Section\nEnd.");
         yield return FuzzSeed.FromText("columns", [0x26], "# Columns\nThe quick brown fox jumps over the lazy dog.\nThe quick brown fox jumps over the lazy dog.\n- item");
         yield return FuzzSeed.FromText("long-word", [0x00], new string('W', 200));
+
+        // The rows taller than a page or a column, split between them (PdfFlowDocumentTests)
+        var words = string.Join(' ', Enumerable.Repeat("word", 60));
+        yield return FuzzSeed.FromText("tall-row", [0x00], "|a|b\n|c|" + words);
+        yield return FuzzSeed.FromText("tall-row-columns", [0x20], "|a|b\n|c|" + words);
+        yield return FuzzSeed.FromText("tall-row-span", [0x00], "|a|b\n|" + string.Join(' ', Enumerable.Repeat("span", 50)) + "\n|" + string.Join(' ', Enumerable.Repeat("second", 40)) + "\n|after");
     }
 
     private static IEnumerable<FuzzSeed> GetHeaderFooterSeeds()

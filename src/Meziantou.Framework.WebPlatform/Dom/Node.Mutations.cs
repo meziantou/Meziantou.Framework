@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using Meziantou.Framework.WebPlatform.Html;
 
@@ -298,26 +299,57 @@ public abstract partial class Node
             }
             else
             {
-                var staticNodeList = new List<Node>();
-                for (var i = 0; i < count; i++)
-                {
-                    foreach (var descendant in (nodes is null ? node : nodes[i]).WalkShadowIncludingInclusiveDescendants())
-                    {
-                        staticNodeList.Add(descendant);
-                    }
-                }
-
-                foreach (var n in staticNodeList)
-                {
-                    if (n.IsConnected)
-                    {
-                        n.PostConnectionSteps();
-                    }
-                }
+                RunPostConnectionSteps(node, nodes, count);
             }
         }
 
         NodeDocument.EventLoop?.OnOperationCompleted();
+    }
+
+    /// <summary>
+    /// Runs the post-connection steps of the shadow-including inclusive descendants of the inserted nodes that are still
+    /// connected (https://dom.spec.whatwg.org/#concept-node-insert, step 11). Only the elements have post-connection steps,
+    /// so the static node list holds only the elements; it is built before any step runs, as the steps may change the tree.
+    /// </summary>
+    private static void RunPostConnectionSteps(Node node, List<Node>? nodes, int count)
+    {
+        var staticNodeList = ArrayPool<Element>.Shared.Rent(16);
+        var length = 0;
+        try
+        {
+            for (var i = 0; i < count; i++)
+            {
+                foreach (var descendant in (nodes is null ? node : nodes[i]).WalkShadowIncludingInclusiveDescendants())
+                {
+                    if (descendant is not Element element)
+                        continue;
+
+                    if (length == staticNodeList.Length)
+                    {
+                        var larger = ArrayPool<Element>.Shared.Rent(length * 2);
+                        staticNodeList.AsSpan(0, length).CopyTo(larger);
+                        ArrayPool<Element>.Shared.Return(staticNodeList, clearArray: true);
+                        staticNodeList = larger;
+                    }
+
+                    staticNodeList[length++] = element;
+                }
+            }
+
+            for (var i = 0; i < length; i++)
+            {
+                var element = staticNodeList[i];
+                if (element.IsConnected)
+                {
+                    element.PostConnectionSteps();
+                }
+            }
+        }
+        finally
+        {
+            staticNodeList.AsSpan(0, length).Clear();
+            ArrayPool<Element>.Shared.Return(staticNodeList);
+        }
     }
 
     private void RunInsertionStepsForSubtree()

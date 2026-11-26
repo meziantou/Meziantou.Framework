@@ -7,7 +7,10 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 [IdlInterface("CharacterData", "https://dom.spec.whatwg.org/#characterdata")]
 public abstract partial class CharacterData : Node
 {
-    private string _data;
+    // The data, or a StringBuilder while the HTML parser appends characters to the node (see AppendParsedData): the parser
+    // appends the characters of each character token, so appending to the string would copy the data again for each token
+    // (quadratic, e.g. for text interleaved with ignored tags or NULL characters)
+    private object _data;
 
     private protected CharacterData(Document document, string data)
         : base(document)
@@ -20,29 +23,66 @@ public abstract partial class CharacterData : Node
     [IdlMember("data", "https://dom.spec.whatwg.org/#dom-characterdata-data")]
     public string Data
     {
-        get => _data;
+        get => DataValue;
         set => ReplaceData(0, Length, value ?? "");
     }
 
-    /// <summary>Sets the data without running the "replace data" algorithm (used by the parser to append text).</summary>
+    private string DataValue => _data as string ?? MaterializeData();
+
+    /// <summary>Sets the data without running the "replace data" algorithm.</summary>
     internal void SetDataCore(string value) => _data = value;
+
+    /// <summary>
+    /// Appends characters to the data without running the "replace data" algorithm (used by the HTML parser when it inserts
+    /// characters after a text node): the characters are appended to a buffer, which is copied to the data when it is read
+    /// (see <see cref="FlushParsedData"/>).
+    /// </summary>
+    /// <returns>Whether the data was a string (the buffer is created).</returns>
+    internal bool AppendParsedData(ReadOnlySpan<char> value)
+    {
+        if (_data is StringBuilder builder)
+        {
+            builder.Append(value);
+            return false;
+        }
+
+        var data = (string)_data;
+        _data = new StringBuilder(data, Math.Max(data.Length * 2, data.Length + value.Length)).Append(value);
+        return true;
+    }
+
+    /// <summary>Copies the characters appended by <see cref="AppendParsedData"/> to the data.</summary>
+    internal void FlushParsedData()
+    {
+        if (_data is StringBuilder)
+        {
+            MaterializeData();
+        }
+    }
+
+    private string MaterializeData()
+    {
+        var data = ((StringBuilder)_data).ToString();
+        _data = data;
+        return data;
+    }
 
     /// <summary>Gets the length of the data, in UTF-16 code units.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-characterdata-length"/>
     [IdlMember("length", "https://dom.spec.whatwg.org/#dom-characterdata-length")]
-    public uint Length => (uint)_data.Length;
+    public uint Length => (uint)DataValue.Length;
 
     /// <summary>Gets or sets the text data of the node.</summary>
     public override string? NodeValue
     {
-        get => _data;
+        get => DataValue;
         set => ReplaceData(0, Length, value ?? "");
     }
 
     /// <summary>Gets or sets the text data of the node.</summary>
     public override string? TextContent
     {
-        get => _data;
+        get => DataValue;
         set => ReplaceData(0, Length, value ?? "");
     }
 
@@ -56,9 +96,9 @@ public abstract partial class CharacterData : Node
             throw DomException.IndexSize("The offset is greater than the length of the data");
 
         if (offset + (ulong)count > length)
-            return _data[(int)offset..];
+            return DataValue[(int)offset..];
 
-        return _data.Substring((int)offset, (int)count);
+        return DataValue.Substring((int)offset, (int)count);
     }
 
     /// <summary>Appends the given string to the data.</summary>
@@ -91,8 +131,9 @@ public abstract partial class CharacterData : Node
             count = length - offset;
         }
 
-        QueueMutationRecordIfObserved("characterData", this, null, null, _data);
-        _data = string.Concat(_data.AsSpan(0, (int)offset), data, _data.AsSpan((int)(offset + count)));
+        var oldData = DataValue;
+        QueueMutationRecordIfObserved("characterData", this, null, null, oldData);
+        _data = string.Concat(oldData.AsSpan(0, (int)offset), data, oldData.AsSpan((int)(offset + count)));
         var document = NodeDocument;
         if (document.HasLiveRanges)
         {
@@ -118,7 +159,7 @@ public abstract partial class CharacterData : Node
         ParentNode?.ChildTextContentChanged();
     }
 
-    private protected override bool IsEqualNodeCore(Node otherNode) => otherNode is CharacterData other && _data == other._data && IsEqualCharacterDataCore(other);
+    private protected override bool IsEqualNodeCore(Node otherNode) => otherNode is CharacterData other && DataValue == other.DataValue && IsEqualCharacterDataCore(other);
 
     private protected virtual bool IsEqualCharacterDataCore(CharacterData other) => true;
 }

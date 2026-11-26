@@ -860,7 +860,7 @@ internal sealed partial class HtmlTreeBuilder
         switch (token.Kind)
         {
             case TokenKind.Characters when CurrentNode.IsHtmlNamespace && CurrentNode.TagId is TagId.Table or TagId.Tbody or TagId.Template or TagId.Tfoot or TagId.Thead or TagId.Tr:
-                _pendingTableCharacters.Clear();
+                PendingTableCharacters.Clear();
                 _pendingTableCharactersContainNonWhitespace = false;
                 _originalMode = _mode;
                 _mode = InsertionMode.InTableText;
@@ -1019,16 +1019,16 @@ internal sealed partial class HtmlTreeBuilder
                     _pendingTableCharactersContainNonWhitespace = true;
                 }
 
-                _pendingTableCharacters.Append(c);
+                PendingTableCharacters.Append(c);
             }
 
             return ProcessResult.Done;
         }
 
-        if (_pendingTableCharacters.Length > 0)
+        if (_pendingTableCharacters is { Length: > 0 })
         {
-            var pending = _pendingTableCharacters.ToString();
-            _pendingTableCharacters.Clear();
+            var pending = PendingTableCharacters.ToString();
+            PendingTableCharacters.Clear();
             if (_pendingTableCharactersContainNonWhitespace)
             {
                 ParseError("unexpected-character-in-table");

@@ -40,14 +40,10 @@ internal sealed class NameTable
 
     private static readonly FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> KnownAttributeLookup = KnownAttributeNames.GetAlternateLookup<ReadOnlySpan<char>>();
 
-    private readonly HashSet<string> _names = new(StringComparer.Ordinal);
-    private readonly HashSet<string>.AlternateLookup<ReadOnlySpan<char>> _lookup;
+    // The names that are not known (most fragments have none): the set is created when the first one is interned
+    private HashSet<string>? _names;
+    private HashSet<string>.AlternateLookup<ReadOnlySpan<char>> _lookup;
     private HashSet<string>? _values;
-
-    public NameTable()
-    {
-        _lookup = _names.GetAlternateLookup<ReadOnlySpan<char>>();
-    }
 
     /// <summary>Returns the value of an attribute, shared with the other attributes with the same short value (to use for the attributes whose values repeat, as hashing the unique values costs more than it saves).</summary>
     public string GetAttributeValue(ReadOnlySpan<char> value)
@@ -102,8 +98,15 @@ internal sealed class NameTable
 
     public string Intern(ReadOnlySpan<char> value)
     {
-        if (_lookup.TryGetValue(value, out var existing))
+        if (_names is null)
+        {
+            _names = new(StringComparer.Ordinal);
+            _lookup = _names.GetAlternateLookup<ReadOnlySpan<char>>();
+        }
+        else if (_lookup.TryGetValue(value, out var existing))
+        {
             return existing;
+        }
 
         var result = value.ToString();
         _names.Add(result);

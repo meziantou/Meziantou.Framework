@@ -1128,6 +1128,14 @@ public class CsvSerializerTests
     [InlineData(999999999.9)]
     [InlineData(1e9)]
     [InlineData(123456789.123)]
+    [InlineData(123456789012345.6)]
+    [InlineData(1234.5678901234567)]
+    [InlineData(0.00010000000000000002)]
+    [InlineData(0.0001220703125)]
+    [InlineData(0.000244140625)]
+    [InlineData(1099511627776.0)]
+    [InlineData(999999999999999.875)]
+    [InlineData(1e15)]
     [InlineData(4503599627370497.0)]
     [InlineData(5e-324)]
     [InlineData(double.MaxValue)]
@@ -1160,6 +1168,44 @@ public class CsvSerializerTests
         }
 
         Assert.True(handled > 50_000, "Too few values take the fast path: " + handled.ToString(CultureInfo.InvariantCulture));
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_FormatMatchesBclForShortestValues()
+    {
+        // The values from 10^-4 to 10^15 are all handled, with the shortest number when they have more than 9 decimals: random values, and the powers of
+        // two and their neighbors, whose interval is narrower below them
+        var min = BitConverter.DoubleToInt64Bits(1e-4);
+        var max = BitConverter.DoubleToInt64Bits(1e15);
+        var state = 0x9E3779B97F4A7C15UL;
+        for (var i = 0; i < 200_000; i++)
+        {
+            var value = BitConverter.Int64BitsToDouble(min + (long)(Next(ref state) % (ulong)(max - min)));
+            Assert.True(AssertFormatMatchesBcl(value), value.ToString("R", CultureInfo.InvariantCulture));
+            Assert.True(AssertFormatMatchesBcl(-value), value.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        for (var exponent = -13; exponent <= 49; exponent++)
+        {
+            var power = BitConverter.DoubleToInt64Bits(Math.ScaleB(1, exponent));
+            for (var offset = -2; offset <= 2; offset++)
+            {
+                var value = BitConverter.Int64BitsToDouble(power + offset);
+                Assert.True(AssertFormatMatchesBcl(value), value.ToString("R", CultureInfo.InvariantCulture));
+            }
+        }
+
+        Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min + 1)));
+        Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(max - 1)));
+        Assert.False(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min - 1)));
 
         static ulong Next(ref ulong state)
         {
@@ -1233,6 +1279,22 @@ public class CsvSerializerTests
 
             var index = 2 * (q - InvariantFloatingPoint.MinPowerOfFive);
             Assert.Equal(expected, ((BigInteger)powers[index] << 64) | powers[index + 1], "5^" + q.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_ShortestPowersOfTen()
+    {
+        // g of Schubfach: floor(10^e × 2^(125 - floor(log2(10^e)))) + 1, split in two halves of 63 bits
+        var powers = InvariantFloatingPoint.ShortestPowersOfTen;
+        Assert.HasCount(2 * (InvariantFloatingPoint.MaxShortestPowerOfTen + 1), powers.ToArray());
+        var mask = (BigInteger.One << 63) - 1;
+        for (var e = 0; e <= InvariantFloatingPoint.MaxShortestPowerOfTen; e++)
+        {
+            var power = BigInteger.Pow(10, e);
+            var g = ((power << 125) >> ((int)power.GetBitLength() - 1)) + 1;
+            Assert.Equal(g >> 63, (BigInteger)powers[2 * e], "g1 of 10^" + e.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(g & mask, (BigInteger)powers[(2 * e) + 1], "g0 of 10^" + e.ToString(CultureInfo.InvariantCulture));
         }
     }
 

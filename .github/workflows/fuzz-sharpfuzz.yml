@@ -16,6 +16,7 @@ on:
         default: all
         options:
           - all
+          - aspnetcore-authentication-httpbasic
           - aspnetcore-testing
           - ansi-formatting
           - assertions
@@ -114,6 +115,7 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz", "component": "aspnetcore-authentication-httpbasic", "day": 6 },
       { "project": "Meziantou.AspNetCore.Testing.Fuzz",            "component": "aspnetcore-testing",    "day": 4 },
       { "project": "Meziantou.Framework.AnsiFormatting.Fuzz",       "component": "ansi-formatting",       "day": 0 },
       { "project": "Meziantou.Framework.Assertions.Fuzz",          "component": "assertions",            "day": 1 },

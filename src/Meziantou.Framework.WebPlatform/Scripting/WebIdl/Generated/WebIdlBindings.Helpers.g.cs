@@ -713,6 +713,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_WakeLockType_Values = new[] { "screen" };
 
+    internal static readonly string[] Enum_WebTransportErrorSource_Values = new[] { "stream", "session" };
+
     internal static readonly string[] Enum_WindowAudioPreferenceEnum_Values = new[] { "system", "window", "exclude" };
 
     internal static readonly string[] Enum_WorkerType_Values = new[] { "classic", "module" };
@@ -5144,6 +5146,14 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         return result;
     }
 
+    internal static TValue FromDictionary_Dom_WebTransportErrorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorOptions value)
+    {
+        var result = r.CreateObject();
+        r.SetMember(result, "source", r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Dom_WebTransportErrorSource(value.Source)));
+        r.SetMember(result, "streamErrorCode", (value.StreamErrorCode.HasValue ? r.FromNumber((double)value.StreamErrorCode.GetValueOrDefault()) : r.Adapter.Null));
+        return result;
+    }
+
     internal static TValue FromDictionary_Dom_WheelEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, global::Meziantou.Framework.WebPlatform.Dom.WheelEventInit value)
     {
         var result = r.CreateObject();
@@ -7186,6 +7196,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static string FromEnum_Dom_WakeLockType(global::Meziantou.Framework.WebPlatform.Dom.WakeLockType value) => value switch
     {
         global::Meziantou.Framework.WebPlatform.Dom.WakeLockType.Screen => "screen",
+        _ => value.ToString(),
+    };
+
+    internal static string FromEnum_Dom_WebTransportErrorSource(global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource value) => value switch
+    {
+        global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource.Stream => "stream",
+        global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource.Session => "session",
         _ => value.ToString(),
     };
 
@@ -15496,6 +15513,20 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         };
     }
 
+    internal static global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorOptions ToDictionary_Dom_WebTransportErrorOptions(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
+    {
+        r.CheckDictionary(value, "WebTransportErrorOptions");
+        var m0_value = r.GetDictionaryMember(value, "source");
+        var m0 = r.Adapter.IsUndefined(m0_value) ? (string)"stream" : r.ToEnumerationValue(m0_value, "WebTransportErrorSource", WebIdlHelpers<TAdapter, TValue>.Enum_WebTransportErrorSource_Values);
+        var m1_value = r.GetDictionaryMember(value, "streamErrorCode");
+        var m1 = r.Adapter.IsUndefined(m1_value) ? (uint?)(uint?)null : (r.IsNullOrUndefined(m1_value) ? (uint?)null : r.ToUnsignedLong(m1_value, global::Meziantou.Framework.WebPlatform.Scripting.IntegerConversion.Clamp));
+        return new global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorOptions
+        {
+            Source = WebIdlHelpers<TAdapter, TValue>.ToEnum_Dom_WebTransportErrorSource(m0),
+            StreamErrorCode = m1,
+        };
+    }
+
     internal static global::Meziantou.Framework.WebPlatform.Dom.WheelEventInit ToDictionary_Dom_WheelEventInit(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue value)
     {
         r.CheckDictionary(value, "WheelEventInit");
@@ -17955,6 +17986,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
     internal static global::Meziantou.Framework.WebPlatform.Dom.WakeLockType ToEnum_Dom_WakeLockType(string value) => value switch
     {
         "screen" => global::Meziantou.Framework.WebPlatform.Dom.WakeLockType.Screen,
+        _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
+    };
+
+    internal static global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource ToEnum_Dom_WebTransportErrorSource(string value) => value switch
+    {
+        "stream" => global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource.Stream,
+        "session" => global::Meziantou.Framework.WebPlatform.Dom.WebTransportErrorSource.Session,
         _ => throw new global::System.ArgumentException("Invalid enumeration value", nameof(value)),
     };
 

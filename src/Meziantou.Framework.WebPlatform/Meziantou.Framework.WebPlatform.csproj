@@ -65,6 +65,8 @@
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <!-- The word lists and the dictionary break engines of ICU (the lexical word breaking of the Southeast Asian scripts) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode.Dictionaries\Meziantou.Framework.Unicode.Dictionaries.csproj" />
+    <!-- The WebTransport sessions of HttpDocumentLoader (HTTP/3 over MsQuic) -->
+    <ProjectReference Include="..\Meziantou.Framework.WebTransport\Meziantou.Framework.WebTransport.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_WEBPLATFORM</DefineConstants>

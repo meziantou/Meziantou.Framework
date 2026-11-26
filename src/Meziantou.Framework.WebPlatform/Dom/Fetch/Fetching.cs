@@ -454,7 +454,7 @@ internal static class Fetching
     /// the report-only policies are checked before the URL is upgraded, step 4; the policies of a speculative fetch are
     /// checked by the speculative parser, without reporting), and the integrity policies of the client.
     /// </summary>
-    private static bool IsBlocked(FetchRequest request)
+    internal static bool IsBlocked(FetchRequest request)
     {
         // The three checks run: the violations of the content security policies are also reported for a request that is
         // blocked as mixed content (e.g. a ws: WebSocket of a secure context whose policy has connect-src 'none'), as in the browsers

@@ -86,6 +86,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             Adapter.Set(hooks, Key("createCompressionContext"), adapter.CreateFunction("createCompressionContext", 2, (_, args) => CreateCompressionContext(CompressionFormats.Parse(Adapter.ToString(args[0]))!.Value, Adapter.ToBoolean(args[1]))));
             Adapter.Set(hooks, Key("structuredClone"), adapter.CreateFunction("structuredClone", 1, (_, args) => StructuredDeserialize(StructuredSerialize(args[0], transferList: null))));
             Adapter.Set(hooks, Key("crossRealm"), CreateCrossRealmHooks());
+            Adapter.Set(hooks, Key("webTransport"), CreateWebTransportHooks());
 
             var result = Adapter.Call(EvaluateBuiltIn(script), Adapter.Undefined, [hooks]);
             _streams = result;

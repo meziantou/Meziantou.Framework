@@ -1,111 +1,21 @@
 {
   "webtransport/anticipated-concurrent-incoming-streams.https.any.js": {
-    "total": 18,
-    "failures": {
-      "Anticipated incoming stream hint setters accept boundary and null values": "FAIL",
-      "Anticipated incoming stream hints are null when explicitly null": "FAIL",
-      "Anticipated incoming stream hints are null when omitted": "FAIL",
-      "Constructor reflects stream hints 0/65535": "FAIL",
-      "Constructor reflects stream hints 65535/0": "FAIL",
-      "Constructor reflects stream hints 99/101": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value -1": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value -Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value 65536": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value NaN": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value -1": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value -Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value 65536": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value NaN": "FAIL",
-      "anticipatedConcurrentIncomingBidirectionalStreams setter rejects out-of-range values": "FAIL",
-      "anticipatedConcurrentIncomingUnidirectionalStreams setter rejects out-of-range values": "FAIL"
-    }
+    "total": 18
   },
   "webtransport/anticipated-concurrent-incoming-streams.https.any.js#dedicatedworker": {
-    "total": 18,
-    "failures": {
-      "Anticipated incoming stream hint setters accept boundary and null values": "FAIL",
-      "Anticipated incoming stream hints are null when explicitly null": "FAIL",
-      "Anticipated incoming stream hints are null when omitted": "FAIL",
-      "Constructor reflects stream hints 0/65535": "FAIL",
-      "Constructor reflects stream hints 65535/0": "FAIL",
-      "Constructor reflects stream hints 99/101": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value -1": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value -Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value 65536": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value NaN": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value -1": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value -Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value 65536": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value NaN": "FAIL",
-      "anticipatedConcurrentIncomingBidirectionalStreams setter rejects out-of-range values": "FAIL",
-      "anticipatedConcurrentIncomingUnidirectionalStreams setter rejects out-of-range values": "FAIL"
-    }
+    "total": 18
   },
   "webtransport/anticipated-concurrent-incoming-streams.https.any.js#sharedworker": {
-    "total": 18,
-    "failures": {
-      "Anticipated incoming stream hint setters accept boundary and null values": "FAIL",
-      "Anticipated incoming stream hints are null when explicitly null": "FAIL",
-      "Anticipated incoming stream hints are null when omitted": "FAIL",
-      "Constructor reflects stream hints 0/65535": "FAIL",
-      "Constructor reflects stream hints 65535/0": "FAIL",
-      "Constructor reflects stream hints 99/101": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value -1": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value -Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value 65536": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingBidirectionalStreams value NaN": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value -1": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value -Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value 65536": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value Infinity": "FAIL",
-      "WebTransport constructor rejects anticipatedConcurrentIncomingUnidirectionalStreams value NaN": "FAIL",
-      "anticipatedConcurrentIncomingBidirectionalStreams setter rejects out-of-range values": "FAIL",
-      "anticipatedConcurrentIncomingUnidirectionalStreams setter rejects out-of-range values": "FAIL"
-    }
+    "total": 18
   },
   "webtransport/anticipated-streams.https.any.js": {
-    "total": 8,
-    "failures": {
-      "WebTransportOptions enforces limits on min/maximum anticipated streams": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should accept 0": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should be mutable": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should persist after session close": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should throw on invalid u16 values": "FAIL",
-      "server can create 1000 anticipated unidirectional streams": "FAIL",
-      "server can create 2000 anticipated bidirectional streams": "FAIL",
-      "server can create anticipated number of unidirectional and bidirectional streams": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/anticipated-streams.https.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "WebTransportOptions enforces limits on min/maximum anticipated streams": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should accept 0": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should be mutable": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should persist after session close": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should throw on invalid u16 values": "FAIL",
-      "server can create 1000 anticipated unidirectional streams": "FAIL",
-      "server can create 2000 anticipated bidirectional streams": "FAIL",
-      "server can create anticipated number of unidirectional and bidirectional streams": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/anticipated-streams.https.any.js#sharedworker": {
-    "total": 8,
-    "failures": {
-      "WebTransportOptions enforces limits on min/maximum anticipated streams": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should accept 0": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should be mutable": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should persist after session close": "FAIL",
-      "anticipatedConcurrentIncoming* attributes should throw on invalid u16 values": "FAIL",
-      "server can create 1000 anticipated unidirectional streams": "FAIL",
-      "server can create 2000 anticipated bidirectional streams": "FAIL",
-      "server can create anticipated number of unidirectional and bidirectional streams": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/back-forward-cache-with-closed-webtransport-connection-ccns.https.tentative.window.js": {
     "total": 1,
@@ -114,10 +24,7 @@
     }
   },
   "webtransport/back-forward-cache-with-closed-webtransport-connection.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Testing BFCache support for page with closed WebTransport connection.": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/back-forward-cache-with-open-webtransport-connection-ccns.https.tentative.window.js": {
     "total": 1,
@@ -126,505 +33,130 @@
     }
   },
   "webtransport/back-forward-cache-with-open-webtransport-connection.https.window.js": {
-    "total": 1,
-    "failures": {
-      "Testing BFCache support for page with open WebTransport connection.": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/bidirectional-cancel-crash.https.html": {
-    "crashtest": "TIMEOUT"
+    "crashtest": "PASS"
   },
   "webtransport/close.https.any.js": {
-    "total": 12,
-    "failures": {
-      "close": "FAIL",
-      "close with code and long reason": "FAIL",
-      "close with code and reason": "FAIL",
-      "close without waiting for ready": "FAIL",
-      "opening bidirectional stream before ready": "FAIL",
-      "opening unidirectional stream before ready": "FAIL",
-      "reading closed property after close should work": "FAIL",
-      "server initiated closure while opening bidirectional stream before ready": "FAIL",
-      "server initiated closure while opening unidirectional stream before ready": "FAIL",
-      "server initiated closure with code and reason": "FAIL",
-      "server initiated closure without code and reason": "FAIL",
-      "server initiated connection closure": "FAIL"
-    }
+    "total": 12
   },
   "webtransport/close.https.any.js#dedicatedworker": {
-    "total": 12,
-    "failures": {
-      "close": "FAIL",
-      "close with code and long reason": "FAIL",
-      "close with code and reason": "FAIL",
-      "close without waiting for ready": "FAIL",
-      "opening bidirectional stream before ready": "FAIL",
-      "opening unidirectional stream before ready": "FAIL",
-      "reading closed property after close should work": "FAIL",
-      "server initiated closure while opening bidirectional stream before ready": "FAIL",
-      "server initiated closure while opening unidirectional stream before ready": "FAIL",
-      "server initiated closure with code and reason": "FAIL",
-      "server initiated closure without code and reason": "FAIL",
-      "server initiated connection closure": "FAIL"
-    }
+    "total": 12
   },
   "webtransport/close.https.any.js#sharedworker": {
-    "total": 12,
-    "failures": {
-      "close": "FAIL",
-      "close with code and long reason": "FAIL",
-      "close with code and reason": "FAIL",
-      "close without waiting for ready": "FAIL",
-      "opening bidirectional stream before ready": "FAIL",
-      "opening unidirectional stream before ready": "FAIL",
-      "reading closed property after close should work": "FAIL",
-      "server initiated closure while opening bidirectional stream before ready": "FAIL",
-      "server initiated closure while opening unidirectional stream before ready": "FAIL",
-      "server initiated closure with code and reason": "FAIL",
-      "server initiated closure without code and reason": "FAIL",
-      "server initiated connection closure": "FAIL"
-    }
+    "total": 12
   },
   "webtransport/close2.https.any.js": {
-    "total": 1,
-    "failures": {
-      "pulling incomingBidirectionalStreams while closed resolves should not produce a stream": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/close2.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "pulling incomingBidirectionalStreams while closed resolves should not produce a stream": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/close2.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "pulling incomingBidirectionalStreams while closed resolves should not produce a stream": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/congestion-control.https.any.js": {
-    "total": 4,
-    "failures": {
-      "WebTransport session established with congestionControl \"default\" and attribute is readable": "FAIL",
-      "WebTransport session established with congestionControl \"low-latency\" and attribute is readable": "FAIL",
-      "WebTransport session established with congestionControl \"throughput\" and attribute is readable": "FAIL",
-      "WebTransport session without congestionControl option defaults to \"default\"": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/congestion-control.https.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "WebTransport session established with congestionControl \"default\" and attribute is readable": "FAIL",
-      "WebTransport session established with congestionControl \"low-latency\" and attribute is readable": "FAIL",
-      "WebTransport session established with congestionControl \"throughput\" and attribute is readable": "FAIL",
-      "WebTransport session without congestionControl option defaults to \"default\"": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/congestion-control.https.any.js#sharedworker": {
-    "total": 4,
-    "failures": {
-      "WebTransport session established with congestionControl \"default\" and attribute is readable": "FAIL",
-      "WebTransport session established with congestionControl \"low-latency\" and attribute is readable": "FAIL",
-      "WebTransport session established with congestionControl \"throughput\" and attribute is readable": "FAIL",
-      "WebTransport session without congestionControl option defaults to \"default\"": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/connect.https.any.js": {
-    "total": 15,
-    "failures": {
-      "Cookie header is not echoed back": "FAIL",
-      "Echo back request headers": "FAIL",
-      "Protocol with backslash is escaped in wt-available-protocols header": "FAIL",
-      "Protocol with double-quote is escaped in wt-available-protocols header": "FAIL",
-      "Validate malformed subprotocol response header gets ignored": "FAIL",
-      "Validate subprotocol headers sent": "FAIL",
-      "Validate subprotocol response header received": "FAIL",
-      "Validate subprotocol response header received with parameters handled correctly": "FAIL",
-      "Validate subprotocol response header when no protocols were offered gets ignored": "FAIL",
-      "Validate subprotocol response header with non-offered protocol gets ignored": "FAIL",
-      "WebTransport session establishment fails with status code 301": "FAIL",
-      "WebTransport session establishment fails with status code 404": "FAIL",
-      "WebTransport session establishment with status code 401": "FAIL",
-      "WebTransport session is established with status code 200": "FAIL",
-      "WebTransport session is established with status code 204": "FAIL"
-    }
+    "total": 15
   },
   "webtransport/connect.https.any.js#dedicatedworker": {
-    "total": 15,
-    "failures": {
-      "Cookie header is not echoed back": "FAIL",
-      "Echo back request headers": "FAIL",
-      "Protocol with backslash is escaped in wt-available-protocols header": "FAIL",
-      "Protocol with double-quote is escaped in wt-available-protocols header": "FAIL",
-      "Validate malformed subprotocol response header gets ignored": "FAIL",
-      "Validate subprotocol headers sent": "FAIL",
-      "Validate subprotocol response header received": "FAIL",
-      "Validate subprotocol response header received with parameters handled correctly": "FAIL",
-      "Validate subprotocol response header when no protocols were offered gets ignored": "FAIL",
-      "Validate subprotocol response header with non-offered protocol gets ignored": "FAIL",
-      "WebTransport session establishment fails with status code 301": "FAIL",
-      "WebTransport session establishment fails with status code 404": "FAIL",
-      "WebTransport session establishment with status code 401": "FAIL",
-      "WebTransport session is established with status code 200": "FAIL",
-      "WebTransport session is established with status code 204": "FAIL"
-    }
+    "total": 15
   },
   "webtransport/connect.https.any.js#sharedworker": {
-    "total": 15,
-    "failures": {
-      "Cookie header is not echoed back": "FAIL",
-      "Echo back request headers": "FAIL",
-      "Protocol with backslash is escaped in wt-available-protocols header": "FAIL",
-      "Protocol with double-quote is escaped in wt-available-protocols header": "FAIL",
-      "Validate malformed subprotocol response header gets ignored": "FAIL",
-      "Validate subprotocol headers sent": "FAIL",
-      "Validate subprotocol response header received": "FAIL",
-      "Validate subprotocol response header received with parameters handled correctly": "FAIL",
-      "Validate subprotocol response header when no protocols were offered gets ignored": "FAIL",
-      "Validate subprotocol response header with non-offered protocol gets ignored": "FAIL",
-      "WebTransport session establishment fails with status code 301": "FAIL",
-      "WebTransport session establishment fails with status code 404": "FAIL",
-      "WebTransport session establishment with status code 401": "FAIL",
-      "WebTransport session is established with status code 200": "FAIL",
-      "WebTransport session is established with status code 204": "FAIL"
-    }
+    "total": 15
   },
   "webtransport/constructor-certificate-hashes.https.sub.any.js": {
-    "total": 5,
-    "failures": {
-      "WebTransport constructor should allow an empty serverCertificateHashes list": "FAIL",
-      "WebTransport constructor should allow an empty serverCertificateHashes list with allowPooling": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{\"algorithm\":\"sha-256\"}]": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{\"value\":{\"0\":0,\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0,\"13\":0,\"14\":0,\"15\":0,\"16\":0,\"17\":0,\"18\":0,\"19\":0,\"20\":0,\"21\":0,\"22\":0,\"23\":0,\"24\":0,\"25\":0,\"26\":0,\"27\":0,\"28\":0,\"29\":0,\"30\":0,\"31\":0}}]": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{}]": "FAIL"
-    }
+    "total": 5
   },
   "webtransport/constructor-certificate-hashes.https.sub.any.js#dedicatedworker": {
-    "total": 5,
-    "failures": {
-      "WebTransport constructor should allow an empty serverCertificateHashes list": "FAIL",
-      "WebTransport constructor should allow an empty serverCertificateHashes list with allowPooling": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{\"algorithm\":\"sha-256\"}]": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{\"value\":{\"0\":0,\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0,\"13\":0,\"14\":0,\"15\":0,\"16\":0,\"17\":0,\"18\":0,\"19\":0,\"20\":0,\"21\":0,\"22\":0,\"23\":0,\"24\":0,\"25\":0,\"26\":0,\"27\":0,\"28\":0,\"29\":0,\"30\":0,\"31\":0}}]": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{}]": "FAIL"
-    }
+    "total": 5
   },
   "webtransport/constructor-certificate-hashes.https.sub.any.js#sharedworker": {
-    "total": 5,
-    "failures": {
-      "WebTransport constructor should allow an empty serverCertificateHashes list": "FAIL",
-      "WebTransport constructor should allow an empty serverCertificateHashes list with allowPooling": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{\"algorithm\":\"sha-256\"}]": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{\"value\":{\"0\":0,\"1\":0,\"2\":0,\"3\":0,\"4\":0,\"5\":0,\"6\":0,\"7\":0,\"8\":0,\"9\":0,\"10\":0,\"11\":0,\"12\":0,\"13\":0,\"14\":0,\"15\":0,\"16\":0,\"17\":0,\"18\":0,\"19\":0,\"20\":0,\"21\":0,\"22\":0,\"23\":0,\"24\":0,\"25\":0,\"26\":0,\"27\":0,\"28\":0,\"29\":0,\"30\":0,\"31\":0}}]": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes [{}]": "FAIL"
-    }
+    "total": 5
   },
   "webtransport/constructor-sharedarraybuffer.https.any.js": {
-    "total": 2,
-    "failures": {
-      "WebTransport constructor should reject serverCertificateHashes value of type 'SharedArrayBuffer'": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes value of type 'Uint8Array(SharedArrayBuffer)'": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/constructor-sharedarraybuffer.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "WebTransport constructor should reject serverCertificateHashes value of type 'SharedArrayBuffer'": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes value of type 'Uint8Array(SharedArrayBuffer)'": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/constructor-sharedarraybuffer.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "WebTransport constructor should reject serverCertificateHashes value of type 'SharedArrayBuffer'": "FAIL",
-      "WebTransport constructor should reject serverCertificateHashes value of type 'Uint8Array(SharedArrayBuffer)'": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/constructor.https.sub.any.js": {
-    "total": 29,
-    "failures": {
-      "Connection to port 0 should fail": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true,\"requireUnreliable\":true,\"congestionControl\":\"low-latency\"}": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true,\"requireUnreliable\":true}": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"default\"}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"low-latency\"}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"throughput\"}": "FAIL",
-      "WebTransport constructor should allow options {\"protocols\":[\"a\",\"b\",\"c\"]}": "FAIL",
-      "WebTransport constructor should allow options {\"protocols\":[\"test\"]}": "FAIL",
-      "WebTransport constructor should allow options {\"requireUnreliable\":true}": "FAIL",
-      "WebTransport constructor should reject URL ''": "FAIL",
-      "WebTransport constructor should reject URL 'http://nonexistent.web-platform.test/'": "FAIL",
-      "WebTransport constructor should reject URL 'https:///'": "FAIL",
-      "WebTransport constructor should reject URL 'https://nonexistent.web-platform.test/#failing'": "FAIL",
-      "WebTransport constructor should reject URL 'https://web-platform.test:999999/'": "FAIL",
-      "WebTransport constructor should reject URL 'no-scheme'": "FAIL",
-      "WebTransport constructor should reject URL 'null'": "FAIL",
-      "WebTransport constructor should reject URL 'quic-transport://nonexistent.web-platform.test/'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u0000'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u0001'": "FAIL",
-      "WebTransport constructor should reject protocol list '\n'": "FAIL",
-      "WebTransport constructor should reject protocol list '\r'": "FAIL",
-      "WebTransport constructor should reject protocol list ''": "FAIL",
-      "WebTransport constructor should reject protocol list 'a\nb'": "FAIL",
-      "WebTransport constructor should reject protocol list 'a\rb'": "FAIL",
-      "WebTransport constructor should reject protocol list 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'": "FAIL",
-      "WebTransport constructor should reject protocol list 'test,test'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u007F'": "FAIL",
-      "WebTransport constructor should reject protocol list '誤'": "FAIL"
-    }
+    "total": 29
   },
   "webtransport/constructor.https.sub.any.js#dedicatedworker": {
-    "total": 29,
-    "failures": {
-      "Connection to port 0 should fail": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true,\"requireUnreliable\":true,\"congestionControl\":\"low-latency\"}": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true,\"requireUnreliable\":true}": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"default\"}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"low-latency\"}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"throughput\"}": "FAIL",
-      "WebTransport constructor should allow options {\"protocols\":[\"a\",\"b\",\"c\"]}": "FAIL",
-      "WebTransport constructor should allow options {\"protocols\":[\"test\"]}": "FAIL",
-      "WebTransport constructor should allow options {\"requireUnreliable\":true}": "FAIL",
-      "WebTransport constructor should reject URL ''": "FAIL",
-      "WebTransport constructor should reject URL 'http://nonexistent.web-platform.test/'": "FAIL",
-      "WebTransport constructor should reject URL 'https:///'": "FAIL",
-      "WebTransport constructor should reject URL 'https://nonexistent.web-platform.test/#failing'": "FAIL",
-      "WebTransport constructor should reject URL 'https://web-platform.test:999999/'": "FAIL",
-      "WebTransport constructor should reject URL 'no-scheme'": "FAIL",
-      "WebTransport constructor should reject URL 'null'": "FAIL",
-      "WebTransport constructor should reject URL 'quic-transport://nonexistent.web-platform.test/'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u0000'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u0001'": "FAIL",
-      "WebTransport constructor should reject protocol list '\n'": "FAIL",
-      "WebTransport constructor should reject protocol list '\r'": "FAIL",
-      "WebTransport constructor should reject protocol list ''": "FAIL",
-      "WebTransport constructor should reject protocol list 'a\nb'": "FAIL",
-      "WebTransport constructor should reject protocol list 'a\rb'": "FAIL",
-      "WebTransport constructor should reject protocol list 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'": "FAIL",
-      "WebTransport constructor should reject protocol list 'test,test'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u007F'": "FAIL",
-      "WebTransport constructor should reject protocol list '誤'": "FAIL"
-    }
+    "total": 29
   },
   "webtransport/constructor.https.sub.any.js#sharedworker": {
-    "total": 29,
-    "failures": {
-      "Connection to port 0 should fail": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true,\"requireUnreliable\":true,\"congestionControl\":\"low-latency\"}": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true,\"requireUnreliable\":true}": "FAIL",
-      "WebTransport constructor should allow options {\"allowPooling\":true}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"default\"}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"low-latency\"}": "FAIL",
-      "WebTransport constructor should allow options {\"congestionControl\":\"throughput\"}": "FAIL",
-      "WebTransport constructor should allow options {\"protocols\":[\"a\",\"b\",\"c\"]}": "FAIL",
-      "WebTransport constructor should allow options {\"protocols\":[\"test\"]}": "FAIL",
-      "WebTransport constructor should allow options {\"requireUnreliable\":true}": "FAIL",
-      "WebTransport constructor should reject URL ''": "FAIL",
-      "WebTransport constructor should reject URL 'http://nonexistent.web-platform.test/'": "FAIL",
-      "WebTransport constructor should reject URL 'https:///'": "FAIL",
-      "WebTransport constructor should reject URL 'https://nonexistent.web-platform.test/#failing'": "FAIL",
-      "WebTransport constructor should reject URL 'https://web-platform.test:999999/'": "FAIL",
-      "WebTransport constructor should reject URL 'no-scheme'": "FAIL",
-      "WebTransport constructor should reject URL 'null'": "FAIL",
-      "WebTransport constructor should reject URL 'quic-transport://nonexistent.web-platform.test/'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u0000'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u0001'": "FAIL",
-      "WebTransport constructor should reject protocol list '\n'": "FAIL",
-      "WebTransport constructor should reject protocol list '\r'": "FAIL",
-      "WebTransport constructor should reject protocol list ''": "FAIL",
-      "WebTransport constructor should reject protocol list 'a\nb'": "FAIL",
-      "WebTransport constructor should reject protocol list 'a\rb'": "FAIL",
-      "WebTransport constructor should reject protocol list 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'": "FAIL",
-      "WebTransport constructor should reject protocol list 'test,test'": "FAIL",
-      "WebTransport constructor should reject protocol list '\u007F'": "FAIL",
-      "WebTransport constructor should reject protocol list '誤'": "FAIL"
-    }
+    "total": 29
   },
   "webtransport/csp-fail.https.window.js": {
-    "total": 1,
-    "failures": {
-      "WebTransport connection should fail when CSP connect-src is set to none and reject the promises": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/csp-pass.https.window.js": {
-    "total": 1,
-    "failures": {
-      "WebTransport connection should succeed when CSP connect-src destination is set to the page": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/datagram-bad-chunk.https.any.js": {
-    "total": 1,
-    "failures": {
-      "Datagram should reject when non-buffer-source data is written": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/datagram-bad-chunk.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Datagram should reject when non-buffer-source data is written": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/datagram-bad-chunk.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Datagram should reject when non-buffer-source data is written": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/datagram-cancel-crash.https.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "call cancel() on stream in destroyed realm": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/datagrams-cleanup.https.any.js": {
-    "total": 3,
-    "failures": {
-      "a failed session errors datagrams.readable": "FAIL",
-      "close() closes a byte datagrams.readable": "FAIL",
-      "close() closes datagrams.readable": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/datagrams-cleanup.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "a failed session errors datagrams.readable": "FAIL",
-      "close() closes a byte datagrams.readable": "FAIL",
-      "close() closes datagrams.readable": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/datagrams-cleanup.https.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "a failed session errors datagrams.readable": "FAIL",
-      "close() closes a byte datagrams.readable": "FAIL",
-      "close() closes datagrams.readable": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/datagrams-writable.https.any.js": {
-    "total": 13,
-    "failures": {
-      "WebTransportDatagramsWritable attributes have correct defaults": "FAIL",
-      "WebTransportDatagramsWritable can write and receive datagrams": "FAIL",
-      "WebTransportDatagramsWritable can write max-size datagrams": "FAIL",
-      "WebTransportDatagramsWritable writer.ready works correctly": "FAIL",
-      "createWritable checks the sendGroup before the transport state": "FAIL",
-      "createWritable respects sendOrder option": "FAIL",
-      "createWritable returns WebTransportDatagramsWritable which extends WritableStream": "FAIL",
-      "createWritable throws InvalidStateError on closed transport": "FAIL",
-      "createWritable throws TypeError when sendGroup is from different transport": "FAIL",
-      "multiple WebTransportDatagramsWritable streams can be created": "FAIL",
-      "multiple writes through WebTransportDatagramsWritable work correctly": "FAIL",
-      "sendGroup attribute can be get and set": "FAIL",
-      "sendOrder attribute can be get and set": "FAIL"
-    }
+    "total": 13
   },
   "webtransport/datagrams.https.any.js": {
-    "total": 11,
-    "failures": {
-      "Datagram MaxAge getters/setters work correctly": "FAIL",
-      "Datagram MaxBufferedDatagrams getters/setters work correctly": "FAIL",
-      "Datagram's outgoingMaxBufferedDatagrams correctly regulates written datagrams": "FAIL",
-      "Datagrams are echoed successfully": "FAIL",
-      "Datagrams read is less than or equal to the incomingMaxBufferedDatagrams": "FAIL",
-      "Fail to transfer max-size+1 datagram, handle PMTUD increases": "FAIL",
-      "Reading datagrams with BYOB reader without datagramsReadableType should fail.": "FAIL",
-      "Reading datagrams with insufficient buffer should be rejected.": "FAIL",
-      "Sending and receiving datagrams is ready to use before session is established": "FAIL",
-      "Successfully reading datagrams with BYOB reader.": "FAIL",
-      "Transfer max-size datagram": "FAIL"
-    }
+    "total": 11
   },
   "webtransport/datagrams.https.any.js#dedicatedworker": {
-    "total": 11,
-    "failures": {
-      "Datagram MaxAge getters/setters work correctly": "FAIL",
-      "Datagram MaxBufferedDatagrams getters/setters work correctly": "FAIL",
-      "Datagram's outgoingMaxBufferedDatagrams correctly regulates written datagrams": "FAIL",
-      "Datagrams are echoed successfully": "FAIL",
-      "Datagrams read is less than or equal to the incomingMaxBufferedDatagrams": "FAIL",
-      "Fail to transfer max-size+1 datagram, handle PMTUD increases": "FAIL",
-      "Reading datagrams with BYOB reader without datagramsReadableType should fail.": "FAIL",
-      "Reading datagrams with insufficient buffer should be rejected.": "FAIL",
-      "Sending and receiving datagrams is ready to use before session is established": "FAIL",
-      "Successfully reading datagrams with BYOB reader.": "FAIL",
-      "Transfer max-size datagram": "FAIL"
-    }
+    "total": 11
   },
   "webtransport/datagrams.https.any.js#sharedworker": {
-    "total": 11,
-    "failures": {
-      "Datagram MaxAge getters/setters work correctly": "FAIL",
-      "Datagram MaxBufferedDatagrams getters/setters work correctly": "FAIL",
-      "Datagram's outgoingMaxBufferedDatagrams correctly regulates written datagrams": "FAIL",
-      "Datagrams are echoed successfully": "FAIL",
-      "Datagrams read is less than or equal to the incomingMaxBufferedDatagrams": "FAIL",
-      "Fail to transfer max-size+1 datagram, handle PMTUD increases": "FAIL",
-      "Reading datagrams with BYOB reader without datagramsReadableType should fail.": "FAIL",
-      "Reading datagrams with insufficient buffer should be rejected.": "FAIL",
-      "Sending and receiving datagrams is ready to use before session is established": "FAIL",
-      "Successfully reading datagrams with BYOB reader.": "FAIL",
-      "Transfer max-size datagram": "FAIL"
-    }
+    "total": 11
   },
   "webtransport/draining.https.any.js": {
-    "total": 8,
-    "failures": {
-      "WebTransport should allow opening streams after server-initiated draining": "FAIL",
-      "WebTransport.draining should be a Promise and not resolve immediately": "FAIL",
-      "WebTransport.draining should be accessible before connection is ready": "FAIL",
-      "WebTransport.draining should resolve when server initiates draining": "FAIL",
-      "WebTransport.draining should return the same promise": "FAIL",
-      "draining does not settle closed": "FAIL",
-      "draining stays pending when the session closes without draining": "FAIL",
-      "streams remain usable after draining": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/draining.https.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "WebTransport should allow opening streams after server-initiated draining": "FAIL",
-      "WebTransport.draining should be a Promise and not resolve immediately": "FAIL",
-      "WebTransport.draining should be accessible before connection is ready": "FAIL",
-      "WebTransport.draining should resolve when server initiates draining": "FAIL",
-      "WebTransport.draining should return the same promise": "FAIL",
-      "draining does not settle closed": "FAIL",
-      "draining stays pending when the session closes without draining": "FAIL",
-      "streams remain usable after draining": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/draining.https.any.js#sharedworker": {
-    "total": 8,
-    "failures": {
-      "WebTransport should allow opening streams after server-initiated draining": "FAIL",
-      "WebTransport.draining should be a Promise and not resolve immediately": "FAIL",
-      "WebTransport.draining should be accessible before connection is ready": "FAIL",
-      "WebTransport.draining should resolve when server initiates draining": "FAIL",
-      "WebTransport.draining should return the same promise": "FAIL",
-      "draining does not settle closed": "FAIL",
-      "draining stays pending when the session closes without draining": "FAIL",
-      "streams remain usable after draining": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/echo-large-bidirectional-streams.https.any.js": {
-    "total": 1,
-    "failures": {
-      "Ensure large bidirectional streams does not cause race condition": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/echo-large-bidirectional-streams.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Ensure large bidirectional streams does not cause race condition": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/echo-large-bidirectional-streams.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Ensure large bidirectional streams does not cause race condition": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/export-keying-material.https.any.js": {
     "total": 15,
@@ -641,7 +173,6 @@
       "exportKeyingMaterial rejects after the session closes": "FAIL",
       "exportKeyingMaterial rejects an output length over 4096 bytes": "FAIL",
       "exportKeyingMaterial rejects label and context inputs over 255 bytes": "FAIL",
-      "exportKeyingMaterial requires all three arguments": "FAIL",
       "exportKeyingMaterial respects non-zero ArrayBufferView offsets": "FAIL",
       "exportKeyingMaterial returns the requested number of bytes": "FAIL"
     }
@@ -661,7 +192,6 @@
       "exportKeyingMaterial rejects after the session closes": "FAIL",
       "exportKeyingMaterial rejects an output length over 4096 bytes": "FAIL",
       "exportKeyingMaterial rejects label and context inputs over 255 bytes": "FAIL",
-      "exportKeyingMaterial requires all three arguments": "FAIL",
       "exportKeyingMaterial respects non-zero ArrayBufferView offsets": "FAIL",
       "exportKeyingMaterial returns the requested number of bytes": "FAIL"
     }
@@ -681,846 +211,170 @@
       "exportKeyingMaterial rejects after the session closes": "FAIL",
       "exportKeyingMaterial rejects an output length over 4096 bytes": "FAIL",
       "exportKeyingMaterial rejects label and context inputs over 255 bytes": "FAIL",
-      "exportKeyingMaterial requires all three arguments": "FAIL",
       "exportKeyingMaterial respects non-zero ArrayBufferView offsets": "FAIL",
       "exportKeyingMaterial returns the requested number of bytes": "FAIL"
     }
   },
   "webtransport/headers.https.any.js": {
-    "total": 21,
-    "failures": {
-      "An empty headers object is accepted": "FAIL",
-      "Duplicate header names in sequence form are all sent, in order": "FAIL",
-      "Forbidden request-header names are silently dropped from the headers option": "FAIL",
-      "Header names differing only in case are lowercased and both sent": "FAIL",
-      "Header value containing CR/LF throws TypeError": "FAIL",
-      "HeadersInit Headers object form sends every header": "FAIL",
-      "HeadersInit sequence with an empty inner sequence throws TypeError": "FAIL",
-      "HeadersInit sequence with one inner element throws TypeError": "FAIL",
-      "HeadersInit sequence with three inner elements throws TypeError": "FAIL",
-      "HeadersInit sequence-of-sequences form sends every header": "FAIL",
-      "Invalid header name throws TypeError": "FAIL",
-      "Set-Cookie is stripped from responseHeaders": "FAIL",
-      "headers option forwards a custom header to the server, lowercased": "FAIL",
-      "responseHeaders exposes server-sent response headers": "FAIL",
-      "responseHeaders is a Headers object after ready resolves": "FAIL",
-      "responseHeaders is immutable": "FAIL",
-      "responseHeaders is null before the connection is established": "FAIL",
-      "wt-available-protocols header throws TypeError": "FAIL",
-      "wt-available-protocols header throws TypeError (mixed case)": "FAIL",
-      "wt-available-protocols header throws TypeError (upper case)": "FAIL",
-      "wt-protocol is stripped from responseHeaders": "FAIL"
-    }
+    "total": 21
   },
   "webtransport/headers.https.any.js#dedicatedworker": {
-    "total": 21,
-    "failures": {
-      "An empty headers object is accepted": "FAIL",
-      "Duplicate header names in sequence form are all sent, in order": "FAIL",
-      "Forbidden request-header names are silently dropped from the headers option": "FAIL",
-      "Header names differing only in case are lowercased and both sent": "FAIL",
-      "Header value containing CR/LF throws TypeError": "FAIL",
-      "HeadersInit Headers object form sends every header": "FAIL",
-      "HeadersInit sequence with an empty inner sequence throws TypeError": "FAIL",
-      "HeadersInit sequence with one inner element throws TypeError": "FAIL",
-      "HeadersInit sequence with three inner elements throws TypeError": "FAIL",
-      "HeadersInit sequence-of-sequences form sends every header": "FAIL",
-      "Invalid header name throws TypeError": "FAIL",
-      "Set-Cookie is stripped from responseHeaders": "FAIL",
-      "headers option forwards a custom header to the server, lowercased": "FAIL",
-      "responseHeaders exposes server-sent response headers": "FAIL",
-      "responseHeaders is a Headers object after ready resolves": "FAIL",
-      "responseHeaders is immutable": "FAIL",
-      "responseHeaders is null before the connection is established": "FAIL",
-      "wt-available-protocols header throws TypeError": "FAIL",
-      "wt-available-protocols header throws TypeError (mixed case)": "FAIL",
-      "wt-available-protocols header throws TypeError (upper case)": "FAIL",
-      "wt-protocol is stripped from responseHeaders": "FAIL"
-    }
+    "total": 21
   },
   "webtransport/headers.https.any.js#sharedworker": {
-    "total": 21,
-    "failures": {
-      "An empty headers object is accepted": "FAIL",
-      "Duplicate header names in sequence form are all sent, in order": "FAIL",
-      "Forbidden request-header names are silently dropped from the headers option": "FAIL",
-      "Header names differing only in case are lowercased and both sent": "FAIL",
-      "Header value containing CR/LF throws TypeError": "FAIL",
-      "HeadersInit Headers object form sends every header": "FAIL",
-      "HeadersInit sequence with an empty inner sequence throws TypeError": "FAIL",
-      "HeadersInit sequence with one inner element throws TypeError": "FAIL",
-      "HeadersInit sequence with three inner elements throws TypeError": "FAIL",
-      "HeadersInit sequence-of-sequences form sends every header": "FAIL",
-      "Invalid header name throws TypeError": "FAIL",
-      "Set-Cookie is stripped from responseHeaders": "FAIL",
-      "headers option forwards a custom header to the server, lowercased": "FAIL",
-      "responseHeaders exposes server-sent response headers": "FAIL",
-      "responseHeaders is a Headers object after ready resolves": "FAIL",
-      "responseHeaders is immutable": "FAIL",
-      "responseHeaders is null before the connection is established": "FAIL",
-      "wt-available-protocols header throws TypeError": "FAIL",
-      "wt-available-protocols header throws TypeError (mixed case)": "FAIL",
-      "wt-available-protocols header throws TypeError (upper case)": "FAIL",
-      "wt-protocol is stripped from responseHeaders": "FAIL"
-    }
+    "total": 21
   },
   "webtransport/historical.https.sub.any.js": {
-    "total": 4,
-    "failures": {
-      "WebTransportDatagramDuplexStream#incomingHighWaterMark is removed": "FAIL",
-      "WebTransportDatagramDuplexStream#outgoingHighWaterMark is removed": "FAIL",
-      "WebTransportDatagramDuplexStream#writable is removed": "FAIL",
-      "WebTransportError(init) constructor is removed": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/historical.https.sub.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "WebTransportDatagramDuplexStream#incomingHighWaterMark is removed": "FAIL",
-      "WebTransportDatagramDuplexStream#outgoingHighWaterMark is removed": "FAIL",
-      "WebTransportDatagramDuplexStream#writable is removed": "FAIL",
-      "WebTransportError(init) constructor is removed": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/historical.https.sub.any.js#sharedworker": {
-    "total": 4,
-    "failures": {
-      "WebTransportDatagramDuplexStream#incomingHighWaterMark is removed": "FAIL",
-      "WebTransportDatagramDuplexStream#outgoingHighWaterMark is removed": "FAIL",
-      "WebTransportDatagramDuplexStream#writable is removed": "FAIL",
-      "WebTransportError(init) constructor is removed": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/idlharness-writer.https.sub.any.js": {
-    "total": 11,
-    "failures": {
-      "WebTransportSendStream interface: operation getWriter()": "FAIL",
-      "WebTransportWriter interface object length": "FAIL",
-      "WebTransportWriter interface object name": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface object": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportWriter interface: operation atomicWrite(optional any)": "FAIL",
-      "WebTransportWriter interface: operation commit()": "FAIL"
-    }
+    "total": 11
   },
   "webtransport/idlharness-writer.https.sub.any.js#dedicatedworker": {
-    "total": 11,
-    "failures": {
-      "WebTransportSendStream interface: operation getWriter()": "FAIL",
-      "WebTransportWriter interface object length": "FAIL",
-      "WebTransportWriter interface object name": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface object": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportWriter interface: operation atomicWrite(optional any)": "FAIL",
-      "WebTransportWriter interface: operation commit()": "FAIL"
-    }
+    "total": 11
   },
   "webtransport/idlharness-writer.https.sub.any.js#sharedworker": {
-    "total": 11,
-    "failures": {
-      "WebTransportSendStream interface: operation getWriter()": "FAIL",
-      "WebTransportWriter interface object length": "FAIL",
-      "WebTransportWriter interface object name": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface object": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportWriter interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportWriter interface: operation atomicWrite(optional any)": "FAIL",
-      "WebTransportWriter interface: operation commit()": "FAIL"
-    }
+    "total": 11
   },
   "webtransport/idlharness.https.sub.any.js": {
-    "total": 112,
-    "failures": {
-      "Stringification of webTransport": "FAIL",
-      "WebTransport interface object length": "FAIL",
-      "WebTransport interface object name": "FAIL",
-      "WebTransport interface: attribute anticipatedConcurrentIncomingBidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute anticipatedConcurrentIncomingUnidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute closed": "FAIL",
-      "WebTransport interface: attribute congestionControl": "FAIL",
-      "WebTransport interface: attribute datagrams": "FAIL",
-      "WebTransport interface: attribute draining": "FAIL",
-      "WebTransport interface: attribute incomingBidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute incomingUnidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute protocol": "FAIL",
-      "WebTransport interface: attribute ready": "FAIL",
-      "WebTransport interface: attribute reliability": "FAIL",
-      "WebTransport interface: attribute responseHeaders": "FAIL",
-      "WebTransport interface: attribute supportsReliableOnly": "FAIL",
-      "WebTransport interface: calling close(optional WebTransportCloseInfo) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling createBidirectionalStream(optional WebTransportSendStreamOptions) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling createUnidirectionalStream(optional WebTransportSendStreamOptions) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling exportKeyingMaterial(BufferSource, BufferSource, unsigned long) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: existence and properties of interface object": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransport interface: operation close(optional WebTransportCloseInfo)": "FAIL",
-      "WebTransport interface: operation createBidirectionalStream(optional WebTransportSendStreamOptions)": "FAIL",
-      "WebTransport interface: operation createSendGroup()": "FAIL",
-      "WebTransport interface: operation createUnidirectionalStream(optional WebTransportSendStreamOptions)": "FAIL",
-      "WebTransport interface: operation exportKeyingMaterial(BufferSource, BufferSource, unsigned long)": "FAIL",
-      "WebTransport interface: operation getStats()": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"anticipatedConcurrentIncomingBidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"anticipatedConcurrentIncomingUnidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"close(optional WebTransportCloseInfo)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"closed\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"congestionControl\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createBidirectionalStream(optional WebTransportSendStreamOptions)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createSendGroup()\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createUnidirectionalStream(optional WebTransportSendStreamOptions)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"datagrams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"draining\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"exportKeyingMaterial(BufferSource, BufferSource, unsigned long)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"getStats()\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"incomingBidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"incomingUnidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"protocol\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"ready\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"reliability\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"responseHeaders\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"supportsReliableOnly\" with the proper type": "FAIL",
-      "WebTransport must be primary interface of webTransport": "FAIL",
-      "WebTransportBidirectionalStream interface object length": "FAIL",
-      "WebTransportBidirectionalStream interface object name": "FAIL",
-      "WebTransportBidirectionalStream interface: attribute readable": "FAIL",
-      "WebTransportBidirectionalStream interface: attribute writable": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportDatagramDuplexStream interface object length": "FAIL",
-      "WebTransportDatagramDuplexStream interface object name": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute incomingMaxAge": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute incomingMaxBufferedDatagrams": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute maxDatagramSize": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute outgoingMaxAge": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute outgoingMaxBufferedDatagrams": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute readable": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportDatagramDuplexStream interface: operation createWritable(optional WebTransportSendOptions)": "FAIL",
-      "WebTransportDatagramsWritable interface object length": "FAIL",
-      "WebTransportDatagramsWritable interface object name": "FAIL",
-      "WebTransportDatagramsWritable interface: attribute sendGroup": "FAIL",
-      "WebTransportDatagramsWritable interface: attribute sendOrder": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface object": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportError interface object length": "FAIL",
-      "WebTransportError interface object name": "FAIL",
-      "WebTransportError interface: attribute source": "FAIL",
-      "WebTransportError interface: attribute streamErrorCode": "FAIL",
-      "WebTransportError interface: existence and properties of interface object": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportReceiveStream interface object length": "FAIL",
-      "WebTransportReceiveStream interface object name": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportReceiveStream interface: operation getStats()": "FAIL",
-      "WebTransportSendGroup interface object length": "FAIL",
-      "WebTransportSendGroup interface object name": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface object": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportSendGroup interface: operation getStats()": "FAIL",
-      "WebTransportSendStream interface object length": "FAIL",
-      "WebTransportSendStream interface object name": "FAIL",
-      "WebTransportSendStream interface: attribute sendGroup": "FAIL",
-      "WebTransportSendStream interface: attribute sendOrder": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportSendStream interface: operation getStats()": "FAIL",
-      "idl_test setup": "FAIL"
-    }
+    "total": 112
   },
   "webtransport/idlharness.https.sub.any.js#dedicatedworker": {
-    "total": 112,
-    "failures": {
-      "Stringification of webTransport": "FAIL",
-      "WebTransport interface object length": "FAIL",
-      "WebTransport interface object name": "FAIL",
-      "WebTransport interface: attribute anticipatedConcurrentIncomingBidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute anticipatedConcurrentIncomingUnidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute closed": "FAIL",
-      "WebTransport interface: attribute congestionControl": "FAIL",
-      "WebTransport interface: attribute datagrams": "FAIL",
-      "WebTransport interface: attribute draining": "FAIL",
-      "WebTransport interface: attribute incomingBidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute incomingUnidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute protocol": "FAIL",
-      "WebTransport interface: attribute ready": "FAIL",
-      "WebTransport interface: attribute reliability": "FAIL",
-      "WebTransport interface: attribute responseHeaders": "FAIL",
-      "WebTransport interface: attribute supportsReliableOnly": "FAIL",
-      "WebTransport interface: calling close(optional WebTransportCloseInfo) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling createBidirectionalStream(optional WebTransportSendStreamOptions) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling createUnidirectionalStream(optional WebTransportSendStreamOptions) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling exportKeyingMaterial(BufferSource, BufferSource, unsigned long) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: existence and properties of interface object": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransport interface: operation close(optional WebTransportCloseInfo)": "FAIL",
-      "WebTransport interface: operation createBidirectionalStream(optional WebTransportSendStreamOptions)": "FAIL",
-      "WebTransport interface: operation createSendGroup()": "FAIL",
-      "WebTransport interface: operation createUnidirectionalStream(optional WebTransportSendStreamOptions)": "FAIL",
-      "WebTransport interface: operation exportKeyingMaterial(BufferSource, BufferSource, unsigned long)": "FAIL",
-      "WebTransport interface: operation getStats()": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"anticipatedConcurrentIncomingBidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"anticipatedConcurrentIncomingUnidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"close(optional WebTransportCloseInfo)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"closed\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"congestionControl\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createBidirectionalStream(optional WebTransportSendStreamOptions)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createSendGroup()\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createUnidirectionalStream(optional WebTransportSendStreamOptions)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"datagrams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"draining\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"exportKeyingMaterial(BufferSource, BufferSource, unsigned long)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"getStats()\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"incomingBidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"incomingUnidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"protocol\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"ready\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"reliability\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"responseHeaders\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"supportsReliableOnly\" with the proper type": "FAIL",
-      "WebTransport must be primary interface of webTransport": "FAIL",
-      "WebTransportBidirectionalStream interface object length": "FAIL",
-      "WebTransportBidirectionalStream interface object name": "FAIL",
-      "WebTransportBidirectionalStream interface: attribute readable": "FAIL",
-      "WebTransportBidirectionalStream interface: attribute writable": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportDatagramDuplexStream interface object length": "FAIL",
-      "WebTransportDatagramDuplexStream interface object name": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute incomingMaxAge": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute incomingMaxBufferedDatagrams": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute maxDatagramSize": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute outgoingMaxAge": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute outgoingMaxBufferedDatagrams": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute readable": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportDatagramDuplexStream interface: operation createWritable(optional WebTransportSendOptions)": "FAIL",
-      "WebTransportDatagramsWritable interface object length": "FAIL",
-      "WebTransportDatagramsWritable interface object name": "FAIL",
-      "WebTransportDatagramsWritable interface: attribute sendGroup": "FAIL",
-      "WebTransportDatagramsWritable interface: attribute sendOrder": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface object": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportError interface object length": "FAIL",
-      "WebTransportError interface object name": "FAIL",
-      "WebTransportError interface: attribute source": "FAIL",
-      "WebTransportError interface: attribute streamErrorCode": "FAIL",
-      "WebTransportError interface: existence and properties of interface object": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportReceiveStream interface object length": "FAIL",
-      "WebTransportReceiveStream interface object name": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportReceiveStream interface: operation getStats()": "FAIL",
-      "WebTransportSendGroup interface object length": "FAIL",
-      "WebTransportSendGroup interface object name": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface object": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportSendGroup interface: operation getStats()": "FAIL",
-      "WebTransportSendStream interface object length": "FAIL",
-      "WebTransportSendStream interface object name": "FAIL",
-      "WebTransportSendStream interface: attribute sendGroup": "FAIL",
-      "WebTransportSendStream interface: attribute sendOrder": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportSendStream interface: operation getStats()": "FAIL",
-      "idl_test setup": "FAIL"
-    }
+    "total": 112
   },
   "webtransport/idlharness.https.sub.any.js#sharedworker": {
-    "total": 112,
-    "failures": {
-      "Stringification of webTransport": "FAIL",
-      "WebTransport interface object length": "FAIL",
-      "WebTransport interface object name": "FAIL",
-      "WebTransport interface: attribute anticipatedConcurrentIncomingBidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute anticipatedConcurrentIncomingUnidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute closed": "FAIL",
-      "WebTransport interface: attribute congestionControl": "FAIL",
-      "WebTransport interface: attribute datagrams": "FAIL",
-      "WebTransport interface: attribute draining": "FAIL",
-      "WebTransport interface: attribute incomingBidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute incomingUnidirectionalStreams": "FAIL",
-      "WebTransport interface: attribute protocol": "FAIL",
-      "WebTransport interface: attribute ready": "FAIL",
-      "WebTransport interface: attribute reliability": "FAIL",
-      "WebTransport interface: attribute responseHeaders": "FAIL",
-      "WebTransport interface: attribute supportsReliableOnly": "FAIL",
-      "WebTransport interface: calling close(optional WebTransportCloseInfo) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling createBidirectionalStream(optional WebTransportSendStreamOptions) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling createUnidirectionalStream(optional WebTransportSendStreamOptions) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: calling exportKeyingMaterial(BufferSource, BufferSource, unsigned long) on webTransport with too few arguments must throw TypeError": "FAIL",
-      "WebTransport interface: existence and properties of interface object": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransport interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransport interface: operation close(optional WebTransportCloseInfo)": "FAIL",
-      "WebTransport interface: operation createBidirectionalStream(optional WebTransportSendStreamOptions)": "FAIL",
-      "WebTransport interface: operation createSendGroup()": "FAIL",
-      "WebTransport interface: operation createUnidirectionalStream(optional WebTransportSendStreamOptions)": "FAIL",
-      "WebTransport interface: operation exportKeyingMaterial(BufferSource, BufferSource, unsigned long)": "FAIL",
-      "WebTransport interface: operation getStats()": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"anticipatedConcurrentIncomingBidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"anticipatedConcurrentIncomingUnidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"close(optional WebTransportCloseInfo)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"closed\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"congestionControl\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createBidirectionalStream(optional WebTransportSendStreamOptions)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createSendGroup()\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"createUnidirectionalStream(optional WebTransportSendStreamOptions)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"datagrams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"draining\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"exportKeyingMaterial(BufferSource, BufferSource, unsigned long)\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"getStats()\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"incomingBidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"incomingUnidirectionalStreams\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"protocol\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"ready\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"reliability\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"responseHeaders\" with the proper type": "FAIL",
-      "WebTransport interface: webTransport must inherit property \"supportsReliableOnly\" with the proper type": "FAIL",
-      "WebTransport must be primary interface of webTransport": "FAIL",
-      "WebTransportBidirectionalStream interface object length": "FAIL",
-      "WebTransportBidirectionalStream interface object name": "FAIL",
-      "WebTransportBidirectionalStream interface: attribute readable": "FAIL",
-      "WebTransportBidirectionalStream interface: attribute writable": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportBidirectionalStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportDatagramDuplexStream interface object length": "FAIL",
-      "WebTransportDatagramDuplexStream interface object name": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute incomingMaxAge": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute incomingMaxBufferedDatagrams": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute maxDatagramSize": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute outgoingMaxAge": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute outgoingMaxBufferedDatagrams": "FAIL",
-      "WebTransportDatagramDuplexStream interface: attribute readable": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportDatagramDuplexStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportDatagramDuplexStream interface: operation createWritable(optional WebTransportSendOptions)": "FAIL",
-      "WebTransportDatagramsWritable interface object length": "FAIL",
-      "WebTransportDatagramsWritable interface object name": "FAIL",
-      "WebTransportDatagramsWritable interface: attribute sendGroup": "FAIL",
-      "WebTransportDatagramsWritable interface: attribute sendOrder": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface object": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportDatagramsWritable interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportError interface object length": "FAIL",
-      "WebTransportError interface object name": "FAIL",
-      "WebTransportError interface: attribute source": "FAIL",
-      "WebTransportError interface: attribute streamErrorCode": "FAIL",
-      "WebTransportError interface: existence and properties of interface object": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportError interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportReceiveStream interface object length": "FAIL",
-      "WebTransportReceiveStream interface object name": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportReceiveStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportReceiveStream interface: operation getStats()": "FAIL",
-      "WebTransportSendGroup interface object length": "FAIL",
-      "WebTransportSendGroup interface object name": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface object": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportSendGroup interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportSendGroup interface: operation getStats()": "FAIL",
-      "WebTransportSendStream interface object length": "FAIL",
-      "WebTransportSendStream interface object name": "FAIL",
-      "WebTransportSendStream interface: attribute sendGroup": "FAIL",
-      "WebTransportSendStream interface: attribute sendOrder": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface object": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object's \"constructor\" property": "FAIL",
-      "WebTransportSendStream interface: existence and properties of interface prototype object's @@unscopables property": "FAIL",
-      "WebTransportSendStream interface: operation getStats()": "FAIL",
-      "idl_test setup": "FAIL"
-    }
+    "total": 112
   },
   "webtransport/in-removed-iframe.https.html": {
-    "total": 1,
-    "failures": {
-      "in-removed-iframe": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/incoming-multiple-streams.https.any.js": {
-    "total": 2,
-    "failures": {
-      "Multiple server-initiated bidirectional streams should all be received": "FAIL",
-      "Multiple server-initiated unidirectional streams should all be received": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/incoming-multiple-streams.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "Multiple server-initiated bidirectional streams should all be received": "FAIL",
-      "Multiple server-initiated unidirectional streams should all be received": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/incoming-multiple-streams.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "Multiple server-initiated bidirectional streams should all be received": "FAIL",
-      "Multiple server-initiated unidirectional streams should all be received": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/receive-stream-pull.https.any.js": {
-    "total": 3,
-    "failures": {
-      "A BYOB read smaller than the received bytes keeps the rest for later reads": "FAIL",
-      "A read waits for bytes that have not been received yet": "FAIL",
-      "Bytes received before any read are given to later reads": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/receive-stream-pull.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "A BYOB read smaller than the received bytes keeps the rest for later reads": "FAIL",
-      "A read waits for bytes that have not been received yet": "FAIL",
-      "Bytes received before any read are given to later reads": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/receive-stream-pull.https.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "A BYOB read smaller than the received bytes keeps the rest for later reads": "FAIL",
-      "A read waits for bytes that have not been received yet": "FAIL",
-      "Bytes received before any read are given to later reads": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/receive-stream-stats.https.any.js": {
-    "total": 4,
-    "failures": {
-      "getStats() preserves partial BYOB read counters after cancellation": "FAIL",
-      "getStats() reports finalized client-initiated bidirectional stream counters": "FAIL",
-      "getStats() reports finalized incoming bidirectional stream counters": "FAIL",
-      "getStats() reports finalized incoming unidirectional stream counters": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/receive-stream-stats.https.any.js#dedicatedworker": {
-    "total": 4,
-    "failures": {
-      "getStats() preserves partial BYOB read counters after cancellation": "FAIL",
-      "getStats() reports finalized client-initiated bidirectional stream counters": "FAIL",
-      "getStats() reports finalized incoming bidirectional stream counters": "FAIL",
-      "getStats() reports finalized incoming unidirectional stream counters": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/receive-stream-stats.https.any.js#sharedworker": {
-    "total": 4,
-    "failures": {
-      "getStats() preserves partial BYOB read counters after cancellation": "FAIL",
-      "getStats() reports finalized client-initiated bidirectional stream counters": "FAIL",
-      "getStats() reports finalized incoming bidirectional stream counters": "FAIL",
-      "getStats() reports finalized incoming unidirectional stream counters": "FAIL"
-    }
+    "total": 4
   },
   "webtransport/reliability.https.any.js": {
-    "total": 1,
-    "failures": {
-      "WebTransport reliability is pending before connection establishment": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/reliability.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "WebTransport reliability is pending before connection establishment": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/reliability.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "WebTransport reliability is pending before connection establishment": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/reliability.https.window.js": {
-    "total": 1,
-    "failures": {
-      "WebTransport reliability transitions when the connection is ready": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/response-headers.https.any.js": {
-    "total": 2,
-    "failures": {
-      "responseHeaders is immutable": "FAIL",
-      "wt-protocol is stripped from responseHeaders": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/response-headers.https.any.js#dedicatedworker": {
-    "total": 2,
-    "failures": {
-      "responseHeaders is immutable": "FAIL",
-      "wt-protocol is stripped from responseHeaders": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/response-headers.https.any.js#sharedworker": {
-    "total": 2,
-    "failures": {
-      "responseHeaders is immutable": "FAIL",
-      "wt-protocol is stripped from responseHeaders": "FAIL"
-    }
+    "total": 2
   },
   "webtransport/send-stream-stats.https.any.js": {
-    "total": 1,
-    "failures": {
-      "getStats() reports active and finalized send stream and group counters": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/send-stream-stats.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "getStats() reports active and finalized send stream and group counters": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/send-stream-stats.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "getStats() reports active and finalized send stream and group counters": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/sendgroup.https.any.js": {
-    "total": 13,
-    "failures": {
-      "Multiple send groups can be created and used independently": "FAIL",
-      "Multiple streams can be created with the same send group": "FAIL",
-      "WebTransport streams can have both sendGroup and sendOrder options": "FAIL",
-      "WebTransport.createBidirectionalStream() with sendGroup should create a working stream": "FAIL",
-      "WebTransport.createBidirectionalStream() with sendGroup should respect sendOrder option": "FAIL",
-      "WebTransport.createSendGroup() should return a WebTransportSendGroup instance": "FAIL",
-      "WebTransport.createUnidirectionalStream() with sendGroup should create a working stream": "FAIL",
-      "WebTransport.createUnidirectionalStream() with sendGroup should respect sendOrder option": "FAIL",
-      "WebTransportDatagramsWritable supports sendGroup and sendOrder": "FAIL",
-      "createSendGroup() throws InvalidStateError on a closed transport": "FAIL",
-      "sendGroup can be set to null to clear the group": "FAIL",
-      "sendGroup setter on existing stream updates the sendGroup": "FAIL",
-      "sendGroup setter throws InvalidStateError when sendGroup belongs to a different transport": "FAIL"
-    }
+    "total": 13
   },
   "webtransport/sendgroup.https.any.js#dedicatedworker": {
-    "total": 13,
-    "failures": {
-      "Multiple send groups can be created and used independently": "FAIL",
-      "Multiple streams can be created with the same send group": "FAIL",
-      "WebTransport streams can have both sendGroup and sendOrder options": "FAIL",
-      "WebTransport.createBidirectionalStream() with sendGroup should create a working stream": "FAIL",
-      "WebTransport.createBidirectionalStream() with sendGroup should respect sendOrder option": "FAIL",
-      "WebTransport.createSendGroup() should return a WebTransportSendGroup instance": "FAIL",
-      "WebTransport.createUnidirectionalStream() with sendGroup should create a working stream": "FAIL",
-      "WebTransport.createUnidirectionalStream() with sendGroup should respect sendOrder option": "FAIL",
-      "WebTransportDatagramsWritable supports sendGroup and sendOrder": "FAIL",
-      "createSendGroup() throws InvalidStateError on a closed transport": "FAIL",
-      "sendGroup can be set to null to clear the group": "FAIL",
-      "sendGroup setter on existing stream updates the sendGroup": "FAIL",
-      "sendGroup setter throws InvalidStateError when sendGroup belongs to a different transport": "FAIL"
-    }
+    "total": 13
   },
   "webtransport/sendgroup.https.any.js#sharedworker": {
-    "total": 13,
-    "failures": {
-      "Multiple send groups can be created and used independently": "FAIL",
-      "Multiple streams can be created with the same send group": "FAIL",
-      "WebTransport streams can have both sendGroup and sendOrder options": "FAIL",
-      "WebTransport.createBidirectionalStream() with sendGroup should create a working stream": "FAIL",
-      "WebTransport.createBidirectionalStream() with sendGroup should respect sendOrder option": "FAIL",
-      "WebTransport.createSendGroup() should return a WebTransportSendGroup instance": "FAIL",
-      "WebTransport.createUnidirectionalStream() with sendGroup should create a working stream": "FAIL",
-      "WebTransport.createUnidirectionalStream() with sendGroup should respect sendOrder option": "FAIL",
-      "WebTransportDatagramsWritable supports sendGroup and sendOrder": "FAIL",
-      "createSendGroup() throws InvalidStateError on a closed transport": "FAIL",
-      "sendGroup can be set to null to clear the group": "FAIL",
-      "sendGroup setter on existing stream updates the sendGroup": "FAIL",
-      "sendGroup setter throws InvalidStateError when sendGroup belongs to a different transport": "FAIL"
-    }
+    "total": 13
   },
   "webtransport/sendorder.https.any.js": {
-    "total": 3,
-    "failures": {
-      "WebTransport client should be able to create and handle a bidirectional stream with sendOrder": "FAIL",
-      "WebTransport client should be able to modify existing sendOrder after stream creation": "FAIL",
-      "WebTransport client should be able to modify unset sendOrder after stream creation": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/sendorder.https.any.js#dedicatedworker": {
-    "total": 3,
-    "failures": {
-      "WebTransport client should be able to create and handle a bidirectional stream with sendOrder": "FAIL",
-      "WebTransport client should be able to modify existing sendOrder after stream creation": "FAIL",
-      "WebTransport client should be able to modify unset sendOrder after stream creation": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/sendorder.https.any.js#sharedworker": {
-    "total": 3,
-    "failures": {
-      "WebTransport client should be able to create and handle a bidirectional stream with sendOrder": "FAIL",
-      "WebTransport client should be able to modify existing sendOrder after stream creation": "FAIL",
-      "WebTransport client should be able to modify unset sendOrder after stream creation": "FAIL"
-    }
+    "total": 3
   },
   "webtransport/sendstream-bad-chunk.https.any.js": {
-    "total": 1,
-    "failures": {
-      "WebTransportSendStream should reject when non-buffer-source data is written": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/sendstream-bad-chunk.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "WebTransportSendStream should reject when non-buffer-source data is written": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/sendstream-bad-chunk.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "WebTransportSendStream should reject when non-buffer-source data is written": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/server-certificate-hashes.https.any.js": {
-    "total": 1,
-    "failures": {
-      "Connection fails due to certificate hash mismatch": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/server-certificate-hashes.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "Connection fails due to certificate hash mismatch": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/server-certificate-hashes.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "Connection fails due to certificate hash mismatch": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/stats.https.any.js": {
-    "total": 8,
-    "failures": {
-      "WebTransport client should be able to handle multiple concurrent stats requests": "FAIL",
-      "WebTransport client should be able to handle multiple sequential stats requests": "FAIL",
-      "WebTransport client should be able to provide droppedIncoming values for datagrams": "FAIL",
-      "WebTransport client should be able to provide stats after connection has been closed": "FAIL",
-      "WebTransport client should be able to provide stats after connection has been established": "FAIL",
-      "WebTransport client should be able to provide stats requested right before connection has been closed": "FAIL",
-      "WebTransport client should be able to provide valid stats when requested before connection established": "FAIL",
-      "WebTransport client should throw an error when stats are requested for a failed connection": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/stats.https.any.js#dedicatedworker": {
-    "total": 8,
-    "failures": {
-      "WebTransport client should be able to handle multiple concurrent stats requests": "FAIL",
-      "WebTransport client should be able to handle multiple sequential stats requests": "FAIL",
-      "WebTransport client should be able to provide droppedIncoming values for datagrams": "FAIL",
-      "WebTransport client should be able to provide stats after connection has been closed": "FAIL",
-      "WebTransport client should be able to provide stats after connection has been established": "FAIL",
-      "WebTransport client should be able to provide stats requested right before connection has been closed": "FAIL",
-      "WebTransport client should be able to provide valid stats when requested before connection established": "FAIL",
-      "WebTransport client should throw an error when stats are requested for a failed connection": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/stats.https.any.js#sharedworker": {
-    "total": 8,
-    "failures": {
-      "WebTransport client should be able to handle multiple concurrent stats requests": "FAIL",
-      "WebTransport client should be able to handle multiple sequential stats requests": "FAIL",
-      "WebTransport client should be able to provide droppedIncoming values for datagrams": "FAIL",
-      "WebTransport client should be able to provide stats after connection has been closed": "FAIL",
-      "WebTransport client should be able to provide stats after connection has been established": "FAIL",
-      "WebTransport client should be able to provide stats requested right before connection has been closed": "FAIL",
-      "WebTransport client should be able to provide valid stats when requested before connection established": "FAIL",
-      "WebTransport client should throw an error when stats are requested for a failed connection": "FAIL"
-    }
+    "total": 8
   },
   "webtransport/stream-stats.https.any.js": {
     "total": 11,
     "failures": {
       "WebTransportReceiveStream.getStats() is monotonically non-decreasing": "FAIL",
-      "WebTransportReceiveStream.getStats() returns a valid stats object": "FAIL",
-      "WebTransportReceiveStream.getStats() returns zero stats before any data arrives": "FAIL",
-      "WebTransportReceiveStream.getStats() tracks bytes read by the application": "FAIL",
-      "WebTransportSendGroup.getStats() aggregates bytesWritten from all grouped streams": "FAIL",
-      "WebTransportSendGroup.getStats() excludes streams not in the group": "FAIL",
-      "WebTransportSendGroup.getStats() matches the single stream it contains": "FAIL",
-      "WebTransportSendGroup.getStats() returns zero stats for an empty group": "FAIL",
-      "WebTransportSendStream.getStats() bytesWritten is monotonically non-decreasing": "FAIL",
-      "WebTransportSendStream.getStats() returns a valid stats object": "FAIL",
-      "WebTransportSendStream.getStats() tracks bytes written by the application": "FAIL"
+      "WebTransportReceiveStream.getStats() tracks bytes read by the application": "FAIL"
     }
   },
   "webtransport/stream-stats.https.any.js#dedicatedworker": {
     "total": 11,
     "failures": {
       "WebTransportReceiveStream.getStats() is monotonically non-decreasing": "FAIL",
-      "WebTransportReceiveStream.getStats() returns a valid stats object": "FAIL",
-      "WebTransportReceiveStream.getStats() returns zero stats before any data arrives": "FAIL",
-      "WebTransportReceiveStream.getStats() tracks bytes read by the application": "FAIL",
-      "WebTransportSendGroup.getStats() aggregates bytesWritten from all grouped streams": "FAIL",
-      "WebTransportSendGroup.getStats() excludes streams not in the group": "FAIL",
-      "WebTransportSendGroup.getStats() matches the single stream it contains": "FAIL",
-      "WebTransportSendGroup.getStats() returns zero stats for an empty group": "FAIL",
-      "WebTransportSendStream.getStats() bytesWritten is monotonically non-decreasing": "FAIL",
-      "WebTransportSendStream.getStats() returns a valid stats object": "FAIL",
-      "WebTransportSendStream.getStats() tracks bytes written by the application": "FAIL"
+      "WebTransportReceiveStream.getStats() tracks bytes read by the application": "FAIL"
     }
   },
   "webtransport/stream-stats.https.any.js#sharedworker": {
     "total": 11,
     "failures": {
       "WebTransportReceiveStream.getStats() is monotonically non-decreasing": "FAIL",
-      "WebTransportReceiveStream.getStats() returns a valid stats object": "FAIL",
-      "WebTransportReceiveStream.getStats() returns zero stats before any data arrives": "FAIL",
-      "WebTransportReceiveStream.getStats() tracks bytes read by the application": "FAIL",
-      "WebTransportSendGroup.getStats() aggregates bytesWritten from all grouped streams": "FAIL",
-      "WebTransportSendGroup.getStats() excludes streams not in the group": "FAIL",
-      "WebTransportSendGroup.getStats() matches the single stream it contains": "FAIL",
-      "WebTransportSendGroup.getStats() returns zero stats for an empty group": "FAIL",
-      "WebTransportSendStream.getStats() bytesWritten is monotonically non-decreasing": "FAIL",
-      "WebTransportSendStream.getStats() returns a valid stats object": "FAIL",
-      "WebTransportSendStream.getStats() tracks bytes written by the application": "FAIL"
+      "WebTransportReceiveStream.getStats() tracks bytes read by the application": "FAIL"
     }
   },
   "webtransport/streams-close.https.any.js": {
@@ -1529,13 +383,7 @@
       "Abort client-created bidirectional stream": "FAIL",
       "Abort server-initiated bidirectional stream": "FAIL",
       "Abort unidirectional stream with WebTransportError": "FAIL",
-      "Abort unidirectional stream with default error code": "FAIL",
-      "Close and abort unidirectional stream": "FAIL",
-      "Close outgoing stream / bidi-1": "FAIL",
-      "Close outgoing stream / bidi-2": "FAIL",
-      "Close outgoing stream / uni": "FAIL",
-      "RESET_STREAM coming from server": "FAIL",
-      "STOP_SENDING coming from server": "FAIL"
+      "Close and abort unidirectional stream": "FAIL"
     }
   },
   "webtransport/streams-close.https.any.js#dedicatedworker": {
@@ -1544,13 +392,7 @@
       "Abort client-created bidirectional stream": "FAIL",
       "Abort server-initiated bidirectional stream": "FAIL",
       "Abort unidirectional stream with WebTransportError": "FAIL",
-      "Abort unidirectional stream with default error code": "FAIL",
-      "Close and abort unidirectional stream": "FAIL",
-      "Close outgoing stream / bidi-1": "FAIL",
-      "Close outgoing stream / bidi-2": "FAIL",
-      "Close outgoing stream / uni": "FAIL",
-      "RESET_STREAM coming from server": "FAIL",
-      "STOP_SENDING coming from server": "FAIL"
+      "Close and abort unidirectional stream": "FAIL"
     }
   },
   "webtransport/streams-close.https.any.js#sharedworker": {
@@ -1559,94 +401,34 @@
       "Abort client-created bidirectional stream": "FAIL",
       "Abort server-initiated bidirectional stream": "FAIL",
       "Abort unidirectional stream with WebTransportError": "FAIL",
-      "Abort unidirectional stream with default error code": "FAIL",
-      "Close and abort unidirectional stream": "FAIL",
-      "Close outgoing stream / bidi-1": "FAIL",
-      "Close outgoing stream / bidi-2": "FAIL",
-      "Close outgoing stream / uni": "FAIL",
-      "RESET_STREAM coming from server": "FAIL",
-      "STOP_SENDING coming from server": "FAIL"
+      "Close and abort unidirectional stream": "FAIL"
     }
   },
   "webtransport/streams-echo.https.any.js": {
-    "total": 10,
-    "failures": {
-      "Can read data from a bidirectional stream with BYOB reader": "FAIL",
-      "Can read data from a unidirectional stream with BYOB reader": "FAIL",
-      "Closing the stream with no data still resolves the read request": "FAIL",
-      "Transfer large chunks of data on a bidirectional stream": "FAIL",
-      "Transfer large chunks of data on a unidirectional stream": "FAIL",
-      "WebTransport client should be able to create and handle a bidirectional stream": "FAIL",
-      "WebTransport client should be able to create and handle a bidirectional stream without waiting for ready": "FAIL",
-      "WebTransport client should be able to create, accept, and handle a unidirectional stream": "FAIL",
-      "WebTransport client should be able to create, accept, and handle a unidirectional stream without waiting for ready": "FAIL",
-      "WebTransport server should be able to accept and handle a bidirectional stream": "FAIL"
-    }
+    "total": 10
   },
   "webtransport/streams-echo.https.any.js#dedicatedworker": {
-    "total": 10,
-    "failures": {
-      "Can read data from a bidirectional stream with BYOB reader": "FAIL",
-      "Can read data from a unidirectional stream with BYOB reader": "FAIL",
-      "Closing the stream with no data still resolves the read request": "FAIL",
-      "Transfer large chunks of data on a bidirectional stream": "FAIL",
-      "Transfer large chunks of data on a unidirectional stream": "FAIL",
-      "WebTransport client should be able to create and handle a bidirectional stream": "FAIL",
-      "WebTransport client should be able to create and handle a bidirectional stream without waiting for ready": "FAIL",
-      "WebTransport client should be able to create, accept, and handle a unidirectional stream": "FAIL",
-      "WebTransport client should be able to create, accept, and handle a unidirectional stream without waiting for ready": "FAIL",
-      "WebTransport server should be able to accept and handle a bidirectional stream": "FAIL"
-    }
+    "total": 10
   },
   "webtransport/streams-echo.https.any.js#sharedworker": {
-    "total": 10,
-    "failures": {
-      "Can read data from a bidirectional stream with BYOB reader": "FAIL",
-      "Can read data from a unidirectional stream with BYOB reader": "FAIL",
-      "Closing the stream with no data still resolves the read request": "FAIL",
-      "Transfer large chunks of data on a bidirectional stream": "FAIL",
-      "Transfer large chunks of data on a unidirectional stream": "FAIL",
-      "WebTransport client should be able to create and handle a bidirectional stream": "FAIL",
-      "WebTransport client should be able to create and handle a bidirectional stream without waiting for ready": "FAIL",
-      "WebTransport client should be able to create, accept, and handle a unidirectional stream": "FAIL",
-      "WebTransport client should be able to create, accept, and handle a unidirectional stream without waiting for ready": "FAIL",
-      "WebTransport server should be able to accept and handle a bidirectional stream": "FAIL"
-    }
+    "total": 10
   },
   "webtransport/streams-reset-bidi-keeps-writing.https.any.js": {
-    "total": 1,
-    "failures": {
-      "RESET_STREAM from the server leaves the send half of a bidirectional stream writable": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/streams-reset-bidi-keeps-writing.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "RESET_STREAM from the server leaves the send half of a bidirectional stream writable": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/streams-reset-bidi-keeps-writing.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "RESET_STREAM from the server leaves the send half of a bidirectional stream writable": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/streams-stop-sending-bidi-keeps-reading.https.any.js": {
-    "total": 1,
-    "failures": {
-      "STOP_SENDING from the server leaves the receive half of a bidirectional stream readable": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/streams-stop-sending-bidi-keeps-reading.https.any.js#dedicatedworker": {
-    "total": 1,
-    "failures": {
-      "STOP_SENDING from the server leaves the receive half of a bidirectional stream readable": "FAIL"
-    }
+    "total": 1
   },
   "webtransport/streams-stop-sending-bidi-keeps-reading.https.any.js#sharedworker": {
-    "total": 1,
-    "failures": {
-      "STOP_SENDING from the server leaves the receive half of a bidirectional stream readable": "FAIL"
-    }
+    "total": 1
   }
 }

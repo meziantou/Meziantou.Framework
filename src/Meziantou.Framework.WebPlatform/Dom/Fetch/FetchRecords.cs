@@ -417,6 +417,13 @@ internal sealed partial class FetchRequest
     public bool IsPrefetch { get; set; }
 
     /// <summary>
+    /// Whether the request establishes a WebTransport session whose server certificate is verified by its hashes
+    /// (<c>serverCertificateHashes</c>): the <c>connect-src</c> directive allows it with
+    /// <c>'unsafe-webtransport-hashes'</c> only, whatever its URL.
+    /// </summary>
+    public bool UsesWebTransportCertificateHashes { get; set; }
+
+    /// <summary>
     /// Whether the request is fetched by the user agent for itself and its internal responses are read by the user agent
     /// (e.g. the payment method manifests, which Chromium fetches without CORS): a no-cors request can then use the
     /// "manual" and "error" redirect modes.

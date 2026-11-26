@@ -184,6 +184,12 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineFileSystemGlobals();
         }
 
+        // WebTransport and its streams are implemented in Streams.js ([SecureContext, Exposed=(Window,Worker)])
+        if (Features.WebTransportEnabled && isSecureContext && isWindowOrWorker && IsInterfaceEnabled("WritableStream"))
+        {
+            DefineWebTransportGlobals();
+        }
+
         // The Device Memory API has no IDL in webref: navigator.deviceMemory is defined by hand (WebIdlRealm.DeviceMemory.cs)
         if (Features.DeviceMemoryEnabled && isSecureContext && isWindowOrWorker)
         {

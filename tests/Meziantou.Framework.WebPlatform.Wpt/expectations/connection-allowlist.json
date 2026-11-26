@@ -682,7 +682,10 @@
   "connection-allowlist/tentative/webtransport-dedicated-worker.https.sub.window.js": {
     "total": 5,
     "failures": {
-      "Same-origin WebTransport from a dedicated worker succeeds.": "FAIL"
+      "Cross-origin same-site WebTransport (www) from a dedicated worker is blocked.": "FAIL",
+      "Cross-origin same-site WebTransport (www1) from a dedicated worker is blocked.": "FAIL",
+      "Cross-site WebTransport (www subdomain) from a dedicated worker is blocked.": "FAIL",
+      "Cross-site WebTransport from a dedicated worker is blocked.": "FAIL"
     }
   },
   "connection-allowlist/tentative/webtransport-document.https.sub.window.js": {
@@ -691,20 +694,22 @@
       "Cross-origin same-site WebTransport (www) is blocked.": "FAIL",
       "Cross-origin same-site WebTransport (www1) is blocked.": "FAIL",
       "Cross-site WebTransport (www subdomain) is blocked.": "FAIL",
-      "Cross-site WebTransport is blocked.": "FAIL",
-      "Same-origin WebTransport succeeds.": "FAIL"
+      "Cross-site WebTransport is blocked.": "FAIL"
     }
   },
   "connection-allowlist/tentative/webtransport-service-worker.sub.https.window.js": {
     "total": 2,
     "failures": {
-      "webtransport-service-worker": "FAIL"
+      "webtransport-service-worker 1": "FAIL"
     }
   },
   "connection-allowlist/tentative/webtransport-shared-worker.https.sub.window.js": {
     "total": 5,
     "failures": {
-      "Same-origin WebTransport from a shared worker succeeds.": "FAIL"
+      "Cross-origin same-site WebTransport (www) from a shared worker is blocked.": "FAIL",
+      "Cross-origin same-site WebTransport (www1) from a shared worker is blocked.": "FAIL",
+      "Cross-site WebTransport (www subdomain) from a shared worker is blocked.": "FAIL",
+      "Cross-site WebTransport from a shared worker is blocked.": "FAIL"
     }
   }
 }

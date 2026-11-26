@@ -63,6 +63,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.WasmEngine.Fuzz", WasmEngine.Fuzz.WasmEngineFuzzTargets.All),
         ("Meziantou.Framework.WebPlatform.DevTools.Fuzz", WebPlatform.DevTools.Fuzz.DevToolsFuzzTargets.All),
         ("Meziantou.Framework.WebPlatform.Fuzz", WebPlatform.Fuzz.WebPlatformFuzzTargets.All),
+        ("Meziantou.Framework.WebTransport.Fuzz", WebTransport.Fuzz.WebTransportFuzzTargets.All),
         ("Meziantou.Framework.Yaml.Fuzz", Yaml.Fuzz.YamlFuzzTargets.All),
     ];
 

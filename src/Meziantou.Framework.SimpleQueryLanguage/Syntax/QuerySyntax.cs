@@ -30,8 +30,7 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
     {
         ArgumentNullException.ThrowIfNull(text);
 
-        var tokens = Lexer.Tokenize(text).Where(t => t.Kind != QuerySyntaxKind.WhitespaceToken);
-        var parser = new Parser(tokens);
+        var parser = new Parser(Lexer.Tokenize(text));
         try
         {
             var result = parser.Parse();
@@ -52,15 +51,52 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
     {
         List<QueryDiagnostic>? unknownKeys = null;
 
-        // Walk with an explicit stack: a long conjunction is a left-leaning tree as deep as its term count
-        var stack = new Stack<QuerySyntax>();
-        stack.Push(root);
-        while (stack.TryPop(out var node))
+        // Walk with a loop down the left operands: a long conjunction is a left-leaning tree as deep as its term count. Right
+        // operands are usually terms, which are checked right away; the others wait on a stack, created only for them.
+        Stack<QuerySyntax>? stack = null;
+        QuerySyntax? node = root;
+        while (node is not null)
+        {
+            switch (node)
+            {
+                case AndQuerySyntax andQuery:
+                    VisitOperand(andQuery.Right, ref stack, ref unknownKeys, isKnownKey);
+                    node = andQuery.Left;
+                    continue;
+
+                case OrQuerySyntax orQuery:
+                    VisitOperand(orQuery.Right, ref stack, ref unknownKeys, isKnownKey);
+                    node = orQuery.Left;
+                    continue;
+
+                case NegatedQuerySyntax negatedQuery:
+                    node = negatedQuery.Query;
+                    continue;
+
+                case ParenthesizedQuerySyntax parenthesizedQuery:
+                    node = parenthesizedQuery.Query;
+                    continue;
+
+                default:
+                    VisitOperand(node, ref stack, ref unknownKeys, isKnownKey);
+                    break;
+            }
+
+            node = stack is not null && stack.TryPop(out var next) ? next : null;
+        }
+
+        if (unknownKeys is null)
+            return diagnostics;
+
+        return [.. diagnostics.Concat(unknownKeys).OrderBy(diagnostic => diagnostic.Span.Start)];
+
+        static void VisitOperand(QuerySyntax node, ref Stack<QuerySyntax>? stack, ref List<QueryDiagnostic>? unknownKeys, Func<string, bool> isKnownKey)
         {
             switch (node)
             {
                 case KeyValueQuerySyntax keyValue:
-                    if (!isKnownKey(keyValue.KeyToken.Text))
+                    // The key is a text token, so its value is its text and reading it does not allocate a substring
+                    if (!isKnownKey(keyValue.KeyToken.Value ?? keyValue.KeyToken.Text))
                     {
                         unknownKeys ??= [];
                         unknownKeys.Add(QueryDiagnostic.UnknownKey(keyValue.KeyToken));
@@ -68,30 +104,15 @@ public abstract partial class QuerySyntax : QueryNodeOrToken
 
                     break;
 
-                case AndQuerySyntax andQuery:
-                    stack.Push(andQuery.Right);
-                    stack.Push(andQuery.Left);
+                case TextQuerySyntax:
                     break;
 
-                case OrQuerySyntax orQuery:
-                    stack.Push(orQuery.Right);
-                    stack.Push(orQuery.Left);
-                    break;
-
-                case NegatedQuerySyntax negatedQuery:
-                    stack.Push(negatedQuery.Query);
-                    break;
-
-                case ParenthesizedQuerySyntax parenthesizedQuery:
-                    stack.Push(parenthesizedQuery.Query);
+                default:
+                    stack ??= new Stack<QuerySyntax>();
+                    stack.Push(node);
                     break;
             }
         }
-
-        if (unknownKeys is null)
-            return diagnostics;
-
-        return [.. diagnostics.Concat(unknownKeys).OrderBy(diagnostic => diagnostic.Span.Start)];
     }
 
     public override string ToString()

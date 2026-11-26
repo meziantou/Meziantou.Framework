@@ -44,11 +44,11 @@ internal static class PublicApiModelReader
             NewLine = Environment.NewLine,
             AttributeFilter = includeAllAttributes ? CreateAllAttributesFilter(assembly) : null,
             WriteParameterlessConstructorsWithAttributes = includeAllAttributes,
-        });
+        }, textOnly: true);
 
         var types = assembly.Types.Select(type =>
         {
-            var writer = new DeclarationWriter(Environment.NewLine);
+            var writer = new DeclarationWriter(Environment.NewLine, textOnly: true);
             formatter.WriteType(writer, type);
             var qualifiedName = type.Namespace.Length == 0 ? type.MetadataName : type.Namespace + "." + type.MetadataName;
             return new PublicApiTypeModel(type.Namespace, type.Name, qualifiedName, writer.GetText());

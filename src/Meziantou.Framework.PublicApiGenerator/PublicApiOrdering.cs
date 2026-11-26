@@ -52,7 +52,7 @@ internal static class PublicApiOrdering
     /// <summary>Gets the text of a type as written in a C# declaration, including its nullable annotations.</summary>
     public static string GetTypeSortText(PublicApiTypeReference type)
     {
-        var writer = new DeclarationWriter("\n");
+        var writer = new DeclarationWriter("\n", textOnly: true);
         CSharpCompilableFormatter.WriteTypeReference(writer, type, includeNullableAnnotations: true);
         return writer.GetText();
     }

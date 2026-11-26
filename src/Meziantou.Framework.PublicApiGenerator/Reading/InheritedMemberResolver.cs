@@ -186,6 +186,34 @@ internal sealed class InheritedMemberResolver : IDisposable
 
     private void AddMembers(InheritedMemberSet result, ResolvedType type)
     {
+        // The members of a non-generic type are the same for all its derived types (System.Object, System.Exception...),
+        // so they are collected once
+        InheritedMember[] members;
+        if (type.TypeArguments.IsDefault)
+        {
+            if (!type.Module.InheritedMembers.TryGetValue(type.Handle, out members!))
+            {
+                var list = new List<InheritedMember>();
+                CollectMembers(list, type);
+                members = [.. list];
+                type.Module.InheritedMembers.Add(type.Handle, members);
+            }
+        }
+        else
+        {
+            var list = new List<InheritedMember>();
+            CollectMembers(list, type);
+            members = [.. list];
+        }
+
+        foreach (var member in members)
+        {
+            result.Add(member.Kind, member.Name, member.Arity, member.Parameters);
+        }
+    }
+
+    private void CollectMembers(List<InheritedMember> result, ResolvedType type)
+    {
         var reader = type.Module.Reader;
         var includeInternals = _includeInternalSymbols && ReferenceEquals(type.Module, _mainModule);
         var typeDefinition = reader.GetTypeDefinition(type.Handle);
@@ -194,7 +222,7 @@ internal sealed class InheritedMemberResolver : IDisposable
             var field = reader.GetFieldDefinition(fieldHandle);
             if (IsVisible(field.Attributes, includeInternals) && !field.Attributes.HasFlag(FieldAttributes.SpecialName))
             {
-                result.Add(InheritedMemberKind.Field, reader.GetString(field.Name));
+                result.Add(new(InheritedMemberKind.Field, reader.GetString(field.Name)));
             }
         }
 
@@ -204,7 +232,7 @@ internal sealed class InheritedMemberResolver : IDisposable
             var accessors = property.GetAccessors();
             if (IsVisible(reader, accessors.Getter, includeInternals) || IsVisible(reader, accessors.Setter, includeInternals))
             {
-                result.Add(InheritedMemberKind.Property, reader.GetString(property.Name), arity: 0, GetParameterList(reader, property, type.TypeArguments));
+                result.Add(new(InheritedMemberKind.Property, reader.GetString(property.Name), Arity: 0, GetParameterList(reader, property, type.TypeArguments)));
             }
         }
 
@@ -214,7 +242,7 @@ internal sealed class InheritedMemberResolver : IDisposable
             var accessors = eventDefinition.GetAccessors();
             if (IsVisible(reader, accessors.Adder, includeInternals) || IsVisible(reader, accessors.Remover, includeInternals))
             {
-                result.Add(InheritedMemberKind.Event, reader.GetString(eventDefinition.Name));
+                result.Add(new(InheritedMemberKind.Event, reader.GetString(eventDefinition.Name)));
             }
         }
 
@@ -230,7 +258,7 @@ internal sealed class InheritedMemberResolver : IDisposable
             if (InheritedMemberSet.IsDestructor(name, method.Attributes.HasFlag(MethodAttributes.Static), signature.ParameterTypes.Length))
                 continue;
 
-            result.Add(InheritedMemberKind.Method, name, signature.GenericParameterCount, GetParameterList(reader, method, signature.ParameterTypes));
+            result.Add(new(InheritedMemberKind.Method, name, signature.GenericParameterCount, GetParameterList(reader, method, signature.ParameterTypes)));
         }
 
         var genericParameterCount = typeDefinition.GetGenericParameters().Count;
@@ -242,7 +270,7 @@ internal sealed class InheritedMemberResolver : IDisposable
                 (includeInternals && nestedTypeVisibility is TypeAttributes.NestedAssembly))
             {
                 var name = MetadataNameHelper.RemoveGenericArity(reader.GetString(nestedType.Name));
-                result.Add(InheritedMemberKind.Type, name, nestedType.GetGenericParameters().Count - genericParameterCount);
+                result.Add(new(InheritedMemberKind.Type, name, nestedType.GetGenericParameters().Count - genericParameterCount));
             }
         }
     }
@@ -466,12 +494,18 @@ internal sealed class InheritedMemberResolver : IDisposable
 
     private readonly record struct ResolvedType(Module Module, TypeDefinitionHandle Handle, ImmutableArray<string> TypeArguments);
 
+    // The arguments of InheritedMemberSet.Add for a member of a base type
+    private readonly record struct InheritedMember(InheritedMemberKind Kind, string Name, int Arity = 0, string Parameters = "");
+
     // A type of a signature: its canonical name, and the handle and the type arguments of a named type
     private readonly record struct SignatureType(string Name, EntityHandle Handle = default, ImmutableArray<string> TypeArguments = default, bool IsByReference = false);
 
     private sealed class Module(MetadataReader reader)
     {
         public MetadataReader Reader { get; } = reader;
+
+        // The members of the non-generic types of the module, as collected by CollectMembers
+        public Dictionary<TypeDefinitionHandle, InheritedMember[]> InheritedMembers { get; } = [];
 
         public Dictionary<string, TypeDefinitionHandle> Types
         {

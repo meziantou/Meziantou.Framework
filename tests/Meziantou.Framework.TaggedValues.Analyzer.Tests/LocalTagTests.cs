@@ -96,6 +96,24 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task CommentTagsVariablesDeclaredOutsideOfAStatement()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static Guid LoadOrder([ValueTag("OrderId")] Guid orderId) => Guid.Empty;
+                static bool TryGet(out Guid value) { value = Guid.Empty; return true; }
+
+                Guid _field = TryGet(out var /* ValueTag=ProjectId */ projectId) ? LoadOrder({|MFTV0002:projectId|}) : Guid.Empty;
+
+                Guid Property => TryGet(out Guid /* ValueTag=ProjectId */ id) ? LoadOrder({|MFTV0002:id|}) : Guid.Empty;
+
+                Func<object, Guid> Lambda => value => value is Guid /* ValueTag=ProjectId */ patternId ? LoadOrder({|MFTV0002:patternId|}) : Guid.Empty;
+            }
+            """);
+    }
+
+    [Fact]
     public async Task CommentTagsUsingAndForVariables()
     {
         await VerifyAsync("""
@@ -850,6 +868,38 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
         Assert.Equal(expectedKind, kind.ToString());
         var actualTags = tags.HasKeyOrValue ? "Key=" + string.Join("|", tags.Key) + ";Value=" + string.Join("|", tags.Value) : string.Join("|", tags.Tags);
         Assert.Equal(expectedTags, actualTags);
+    }
+
+    [Fact]
+    public void FindKeyword_ReturnsEveryPosition()
+    {
+        // The text is searched in chunks of 4096 characters: place keywords across the chunk boundaries and at both ends
+        int[] lengths = [0, 7, 8, 9, 4095, 4096, 4103, 4104, 8199, 8200, 12000];
+        int[] keywordPositions = [0, 1, 4088, 4089, 4090, 4095, 4096, 4097, 8184, 8191, 8192, 8193, 11992];
+        foreach (var length in lengths)
+        {
+            foreach (var keywordPosition in keywordPositions.Where(position => position + "ValueTag".Length <= length))
+            {
+                var chars = Enumerable.Repeat('x', length).ToArray();
+                "ValueTag".CopyTo(0, chars, keywordPosition, "ValueTag".Length);
+                AssertPositions(new string(chars));
+            }
+        }
+
+        AssertPositions("ValueTagValueTag ValueTa ValueTag");
+        AssertPositions(string.Concat(Enumerable.Repeat("/* ValueTag=OrderId */ Guid id;\n", 500)));
+
+        static void AssertPositions(string text)
+        {
+            var expected = new List<int>();
+            for (var index = text.IndexOf("ValueTag", StringComparison.Ordinal); index >= 0; index = text.IndexOf("ValueTag", index + 1, StringComparison.Ordinal))
+            {
+                expected.Add(index);
+            }
+
+            var actual = ValueTagComment.FindKeyword(Microsoft.CodeAnalysis.Text.SourceText.From(text));
+            Assert.Equal(expected, actual);
+        }
     }
 
     [Fact]

@@ -525,6 +525,29 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void ImportFollowsTheIndirectObjectsThatAreReferences()
+    {
+        var source = PdfDocument.Open(new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Chain 4 0 R /Loop 6 0 R /Cycle 7 0 R >>")
+            .Add(4, "5 0 R")
+            .Add(5, "(end)")
+            .Add(6, "6 0 R")
+            .Add(7, "8 0 R")
+            .Add(8, "7 0 R")
+            .ToArray());
+
+        var target = new PdfDocument();
+        target.Pages.Add(source.Pages[0]);
+
+        var page = PdfDocument.Open(target.ToByteArray()).Pages[0].Dictionary;
+        Assert.Equal("end", page.GetText(PdfName.Create("Chain")));
+        Assert.Same(PdfNull.Instance, page[PdfName.Create("Loop")]);
+        Assert.Same(PdfNull.Instance, page[PdfName.Create("Cycle")]);
+    }
+
+    [Fact]
     public void ImportResolvesTheNamedDestinations()
     {
         var file = new HandWrittenPdf()

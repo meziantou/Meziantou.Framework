@@ -98,7 +98,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
             throw;
         }
 
-        if (!safeAddresses.Exists(address => address.Equals(selectedAddress)))
+        if (!ContainsAddress(safeAddresses, selectedAddress))
         {
             Log.RejectedSelectedAddressNotInSafeSet(logger, FormatRequestOrigin(requestUri));
             ServerSideRequestForgeryMetrics.IncrementRejectedRequest("selected_address_not_validated");
@@ -106,6 +106,19 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
 
         return selectedAddress;
+    }
+
+    // A loop rather than List.Exists: the lambda captured selectedAddress, which made the async method allocate a
+    // closure and a delegate on every selection.
+    private static bool ContainsAddress(List<IPAddress> addresses, IPAddress selectedAddress)
+    {
+        foreach (var address in addresses)
+        {
+            if (address.Equals(selectedAddress))
+                return true;
+        }
+
+        return false;
     }
 
     private static ValueTask<Stream> ConnectGuardingAgainstProxyAsync(SocketsHttpHandler handler, SocketsHttpConnectionContext context, ServerSideRequestForgeryOptions options, IDnsIpAddressResolver dnsIpAddressResolver, CancellationToken cancellationToken)
@@ -220,12 +233,37 @@ internal static class ServerSideRequestForgeryConnectPipeline
         }
 
         var normalizedAddress = NormalizeAddress(address);
-        if (options.SafeIpNetworks.Any(network => network.Contains(normalizedAddress)))
+        if (AnyNetworkContains(options.SafeIpNetworks, normalizedAddress))
         {
             return true;
         }
 
-        return !options.UnsafeIpNetworks.Any(network => network.Contains(normalizedAddress));
+        return !AnyNetworkContains(options.UnsafeIpNetworks, normalizedAddress);
+    }
+
+    // Runs for every resolved address against every configured network. A plain loop avoids the closure and the two
+    // delegates Enumerable.Any allocated per address, and the delegate call per network.
+    private static bool AnyNetworkContains(ICollection<IPNetwork> networks, IPAddress address)
+    {
+        // The options always create these collections as List<T>; enumerating it directly avoids boxing its enumerator.
+        if (networks is List<IPNetwork> list)
+        {
+            foreach (var network in list)
+            {
+                if (network.Contains(address))
+                    return true;
+            }
+
+            return false;
+        }
+
+        foreach (var network in networks)
+        {
+            if (network.Contains(address))
+                return true;
+        }
+
+        return false;
     }
 
     internal static void EnsureConnectionIsNotToAProxy(SocketsHttpHandler handler, HttpRequestMessage request, DnsEndPoint dnsEndPoint, ServerSideRequestForgeryOptions options)
@@ -339,7 +377,7 @@ internal static class ServerSideRequestForgeryConnectPipeline
     private static bool MatchesEndPoint(Uri proxyUri, DnsEndPoint dnsEndPoint)
     {
         return proxyUri.Port == dnsEndPoint.Port
-            && string.Equals(NormalizeHost(proxyUri.IdnHost), NormalizeHost(dnsEndPoint.Host), StringComparison.OrdinalIgnoreCase);
+            && HostsMatch(proxyUri.IdnHost, dnsEndPoint.Host);
     }
 
     private sealed class ProxyProbeCache
@@ -365,15 +403,18 @@ internal static class ServerSideRequestForgeryConnectPipeline
 
     private static bool IsAllowedScheme(Uri requestUri, ServerSideRequestForgeryOptions options)
     {
-        return options.SafeSchemes.Any(scheme => string.Equals(scheme, requestUri.Scheme, StringComparison.OrdinalIgnoreCase));
+        // SafeSchemes is the HashSet the options create, which compares with OrdinalIgnoreCase: a lookup gives the same
+        // answer as comparing every entry, without enumerating the set and allocating a closure per connection.
+        return options.SafeSchemes.Contains(requestUri.Scheme);
     }
 
     private static bool HostsMatch(string endpointHost, string requestUriHost)
     {
-        return string.Equals(NormalizeHost(endpointHost), NormalizeHost(requestUriHost), StringComparison.OrdinalIgnoreCase);
+        return NormalizeHost(endpointHost).Equals(NormalizeHost(requestUriHost), StringComparison.OrdinalIgnoreCase);
     }
 
-    private static string NormalizeHost(string host)
+    // Returns a slice rather than a new string: an IPv6 literal or a trailing dot would otherwise allocate one per comparison.
+    private static ReadOnlySpan<char> NormalizeHost(ReadOnlySpan<char> host)
     {
         if (host.Length >= 2 && host[0] == '[' && host[^1] == ']')
         {

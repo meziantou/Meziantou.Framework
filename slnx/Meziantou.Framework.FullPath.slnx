@@ -48,6 +48,7 @@
     <Project Path="../fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.TextDiff.Fuzz/Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
@@ -134,6 +135,7 @@
     <Project Path="../src/Meziantou.Framework.Scheduling/Meziantou.Framework.Scheduling.csproj" />
     <Project Path="../src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
     <Project Path="../src/Meziantou.Framework.SyntaxHighlighting/Meziantou.Framework.SyntaxHighlighting.csproj" />
+    <Project Path="../src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />

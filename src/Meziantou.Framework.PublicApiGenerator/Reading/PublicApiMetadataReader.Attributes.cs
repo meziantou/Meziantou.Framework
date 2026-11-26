@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Collections.Immutable;
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Meziantou.Framework.PublicApiGenerator;
 
@@ -162,7 +163,7 @@ internal sealed partial class PublicApiMetadataReader
 
     private static string GetAttributeSortText(PublicApiAttribute attribute)
     {
-        var writer = new DeclarationWriter("\n");
+        var writer = new DeclarationWriter("\n", textOnly: true);
         CSharpCompilableFormatter.WriteAttributeContent(writer, attribute);
         return writer.GetText();
     }
@@ -339,27 +340,49 @@ internal sealed partial class PublicApiMetadataReader
             !(secondaryTargetAttributes is not null && TryGetNullableContextFlag(secondaryTargetAttributes.Value, out nullableContextFlag)) &&
             !(!methodHandle.IsNil && TryGetNullableContextFlag(_metadataReader.GetMethodDefinition(methodHandle).GetCustomAttributes(), out nullableContextFlag)))
         {
-            var found = false;
-            var currentTypeHandle = declaringTypeHandle;
-            while (!currentTypeHandle.IsNil)
-            {
-                var type = _metadataReader.GetTypeDefinition(currentTypeHandle);
-                if (TryGetNullableContextFlag(type.GetCustomAttributes(), out nullableContextFlag))
-                {
-                    found = true;
-                    break;
-                }
-
-                currentTypeHandle = type.GetDeclaringType();
-            }
-
-            if (!found && _metadataReader.IsAssembly)
-            {
-                _ = TryGetNullableContextFlag(_metadataReader.GetAssemblyDefinition().GetCustomAttributes(), out nullableContextFlag);
-            }
+            nullableContextFlag = GetTypeNullableContextFlag(declaringTypeHandle);
         }
 
         return new NullableMetadataInfo(nullableFlags, nullableContextFlag);
+    }
+
+    // Returns the NullableContextAttribute value that applies to the members of a type: the one of the type, of its
+    // closest declaring type, or of the assembly. It is the same for every member, so it is computed once per type.
+    private byte GetTypeNullableContextFlag(TypeDefinitionHandle typeHandle)
+    {
+        var rowNumber = MetadataTokens.GetRowNumber(typeHandle);
+        if ((uint)rowNumber >= (uint)_typeNullableContextFlags.Length)
+            return ComputeTypeNullableContextFlag(typeHandle);
+
+        var value = _typeNullableContextFlags[rowNumber];
+        if (value < 0)
+        {
+            value = ComputeTypeNullableContextFlag(typeHandle);
+            _typeNullableContextFlags[rowNumber] = value;
+        }
+
+        return (byte)value;
+    }
+
+    private byte ComputeTypeNullableContextFlag(TypeDefinitionHandle typeHandle)
+    {
+        var currentTypeHandle = typeHandle;
+        while (!currentTypeHandle.IsNil)
+        {
+            var type = _metadataReader.GetTypeDefinition(currentTypeHandle);
+            if (TryGetNullableContextFlag(type.GetCustomAttributes(), out var nullableContextFlag))
+                return nullableContextFlag;
+
+            currentTypeHandle = type.GetDeclaringType();
+        }
+
+        if (_metadataReader.IsAssembly)
+        {
+            _ = TryGetNullableContextFlag(_metadataReader.GetAssemblyDefinition().GetCustomAttributes(), out var nullableContextFlag);
+            return nullableContextFlag;
+        }
+
+        return 0;
     }
 
     private bool TryGetNullableFlags(CustomAttributeHandleCollection? attributes, out ImmutableArray<byte> nullableFlags)

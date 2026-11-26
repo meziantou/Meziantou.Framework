@@ -59,7 +59,11 @@ public static class Parser
         if (reader is StringReader stringReader)
             return new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(stringReader.ReadToEnd()), maxDepth, sourceName);
 
-        else return new Parser<LookAheadBuffer>(new LookAheadBuffer(reader, Scanner<LookAheadBuffer>.MaxBufferLength), maxDepth, sourceName);
+        if (reader is StreamReader streamReader)
+            return new Parser<StreamReaderLookAheadBuffer>(new StreamReaderLookAheadBuffer(streamReader), maxDepth, sourceName);
+
+        // Other readers can wait for input that is not needed to parse the document when asked for a block of characters, so they are read one character at a time.
+        return new Parser<LookAheadBuffer>(new LookAheadBuffer(reader, Scanner<LookAheadBuffer>.MaxBufferLength), maxDepth, sourceName);
     }
 }
 

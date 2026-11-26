@@ -104,6 +104,30 @@ public sealed class InvalidAnnotationRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_OncePerComment_AndNotForTextThatIsNotAComment()
+    {
+        await VerifyAsync("""
+            class ValueTagSample
+            {
+                const string ValueTagText = "/* ValueTag= */ // ValueTag=";
+                Guid {|MFTV0005:/* ValueTag= ValueTag= */|} _field;
+
+                /// <summary>ValueTag=OrderId</summary>
+                void M()
+                {
+                    #region ValueTag=OrderId
+                    #endregion
+            #if VALUETAG_UNDEFINED
+                    Guid /* ValueTag= */ a = Guid.Empty;
+            #endif
+                }
+            }
+
+            {|MFTV0005:// ValueTag=OrderId|}
+            """);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_ForInvalidTypeArgumentComments()
     {
         await VerifyAsync("""

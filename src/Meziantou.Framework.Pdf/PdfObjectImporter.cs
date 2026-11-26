@@ -135,6 +135,28 @@ internal sealed class PdfObjectImporter
             case PdfNull:
                 return PdfNull.Instance;
 
+            case PdfReference inner:
+            {
+                // An indirect object whose value is a reference (fuzz regression): the copy is that of the object at the
+                // end of the chain. A cycle of such objects leads to no object: it is the null object
+                var chain = new HashSet<PdfReference> { reference };
+                while (inner.Resolve() is PdfReference next)
+                {
+                    if (!chain.Add(inner))
+                        return PdfNull.Instance;
+
+                    inner = next;
+                }
+
+                var target = Copy(inner, depth + 1, fixup);
+                if (target is PdfReference targetReference)
+                {
+                    _references[reference] = targetReference;
+                }
+
+                return target;
+            }
+
             default:
             {
                 var target = _target.Objects.Add(resolved);

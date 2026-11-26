@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Http.ServerSideRequestForgery.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Http.ServerSideRequestForgery.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>

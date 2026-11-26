@@ -169,8 +169,10 @@ public sealed class UnicodeConformanceTests
         static string Format(string value) => string.Join(' ', value.EnumerateRunes().Select(rune => rune.Value.ToString("X4", CultureInfo.InvariantCulture)));
     }
 
-    [Fact]
-    public void Bidi_MatchesBidiTest()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Bidi_MatchesBidiTest(bool allowFastPath)
     {
         // The file gives sequences of classes, without characters: it exercises the rules other than N0.
         var classNames = new Dictionary<string, UnicodeBidirectionalCategory>(StringComparer.Ordinal)
@@ -234,13 +236,7 @@ public sealed class UnicodeConformanceTests
 
                 count++;
                 var levels = new byte[classes.Length];
-                var workspace = new int[UnicodeBidi.GetWorkspaceLength(classes.Length)];
-                for (var i = 0; i < classes.Length; i++)
-                {
-                    workspace[i] = (int)classes[i];
-                }
-
-                var paragraphLevel = UnicodeBidi.ResolveLevelsCore(text: default, direction, levels, workspace);
+                var paragraphLevel = UnicodeBidi.ResolveLevelsFromClasses(classes, direction, levels, allowFastPath);
                 UnicodeBidi.ResetLineLevels(classes, paragraphLevel, levels);
                 var error = Compare(levels, expectedLevels, expectedOrder);
                 if (error is not null && failures.Count < 20)
@@ -262,8 +258,10 @@ public sealed class UnicodeConformanceTests
         Assert.True(count > 700000, $"Only {count} cases were run");
     }
 
-    [Fact]
-    public void Bidi_MatchesBidiCharacterTest()
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Bidi_MatchesBidiCharacterTest(bool allowFastPath)
     {
         var count = 0;
         var failures = new List<string>();
@@ -296,7 +294,12 @@ public sealed class UnicodeConformanceTests
             var paragraph = text.ToString();
             var unitLevels = new byte[paragraph.Length];
             int paragraphLevel;
-            if ((count & 1) == 0)
+            if (!allowFastPath)
+            {
+                var workspace = new int[UnicodeBidi.GetWorkspaceLength(paragraph.Length)];
+                paragraphLevel = UnicodeBidi.ResolveLevels(paragraph, direction, unitLevels, workspace, allowFastPath: false);
+            }
+            else if ((count & 1) == 0)
             {
                 paragraphLevel = UnicodeBidi.ResolveLevels(paragraph, direction, unitLevels);
             }

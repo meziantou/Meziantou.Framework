@@ -61,17 +61,25 @@ internal static class PdfTextStringEncoding
         return ReverseTable.TryGetValue(value, out code);
     }
 
-    /// <summary>Encodes a text: PDFDocEncoding when it can, otherwise UTF-16BE with a byte order mark.</summary>
+    /// <summary>
+    /// Encodes a text: PDFDocEncoding when it can, otherwise UTF-16BE with a byte order mark. A text whose PDFDocEncoding
+    /// starts with the bytes of a byte order mark ("þÿ", "ÿþ", "ï»¿") is in UTF-16BE too, as it would be read in another encoding.
+    /// </summary>
     public static byte[] Encode(string text)
     {
         var bytes = new byte[text.Length];
         for (var i = 0; i < text.Length; i++)
         {
             if (!TryEncodePdfDocEncoding(text[i], out bytes[i]))
-                return [0xFE, 0xFF, .. Encoding.BigEndianUnicode.GetBytes(text)];
+                return EncodeUtf16();
         }
 
+        if (bytes is [0xFE, 0xFF, ..] or [0xFF, 0xFE, ..] or [0xEF, 0xBB, 0xBF, ..])
+            return EncodeUtf16();
+
         return bytes;
+
+        byte[] EncodeUtf16() => [0xFE, 0xFF, .. Encoding.BigEndianUnicode.GetBytes(text)];
     }
 
     private static Dictionary<char, byte> CreateReverseTable()

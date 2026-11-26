@@ -4,11 +4,19 @@ internal sealed class MatchAllEndsWithSegment : Segment
 {
     private readonly string _suffix;
     private readonly StringComparison _stringComparison;
+    private readonly bool _rejectLeadingDot;
 
-    public MatchAllEndsWithSegment(string suffix, bool ignoreCase)
+    /// <param name="suffix">The text the path must end with.</param>
+    /// <param name="ignoreCase">Whether the case of the suffix is ignored.</param>
+    /// <param name="rejectLeadingDot">
+    ///     Whether the '**' and the '*' this segment replaces reject a path segment that starts with a dot, so the
+    ///     segment rejects a path that holds one.
+    /// </param>
+    public MatchAllEndsWithSegment(string suffix, bool ignoreCase, bool rejectLeadingDot = false)
     {
         _suffix = suffix;
         IgnoreCase = ignoreCase;
+        _rejectLeadingDot = rejectLeadingDot;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
 
@@ -18,7 +26,7 @@ internal sealed class MatchAllEndsWithSegment : Segment
 
     public override bool IsMatch(ref PathReader pathReader)
     {
-        if (pathReader.EndText.EndsWith(_suffix.AsSpan(), _stringComparison))
+        if (pathReader.EndText.EndsWith(_suffix.AsSpan(), _stringComparison) && !(_rejectLeadingDot && pathReader.HasSegmentStartingWithDot()))
         {
             pathReader.ConsumeToEnd();
             return true;

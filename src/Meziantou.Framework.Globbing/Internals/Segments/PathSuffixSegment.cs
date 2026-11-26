@@ -8,8 +8,14 @@ internal sealed class PathSuffixSegment : Segment
     public PathSuffixSegment(string[] segments, bool ignoreCase)
     {
         _segments = segments;
+        IgnoreCase = ignoreCase;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
+
+    public bool IgnoreCase { get; }
+
+    /// <summary>The literal names that end the path, the last one matching the last segment of the path.</summary>
+    public string[] Segments => _segments;
 
     public override bool IsMatch(ref PathReader pathReader)
     {

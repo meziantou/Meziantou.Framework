@@ -55,7 +55,7 @@ internal ref struct PathReader
             IsDirectory = itemType is PathItemType.Directory;
         }
 
-        if (!_filename.IsEmpty && _filename.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
+        if (!_filename.IsEmpty && IndexOfSeparator(_filename) >= 0)
             throw new ArgumentException("Filename contains a directory separator", nameof(filename));
     }
 
@@ -79,7 +79,7 @@ internal ref struct PathReader
         {
             if (_currentSegmentLength == int.MinValue)
             {
-                _currentSegmentLength = _pathSeparatorAware ? CurrentText.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : -1;
+                _currentSegmentLength = _pathSeparatorAware ? IndexOfSeparator(CurrentText) : -1;
                 if (_currentSegmentLength == -1)
                 {
                     _currentSegmentLength = CurrentText.Length;
@@ -99,7 +99,7 @@ internal ref struct PathReader
             if (!_filename.IsEmpty)
                 return _filename;
 
-            var endSegmentIndex = CurrentText.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var endSegmentIndex = LastIndexOfSeparator(CurrentText);
             if (endSegmentIndex == -1)
                 return CurrentText;
 
@@ -181,7 +181,7 @@ internal ref struct PathReader
         {
             // When the text holds no separator, index is -1 and the slice starts at 0, which keeps the whole text.
             var text = TextWithoutTrailingSeparator;
-            var index = text.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var index = LastIndexOfSeparator(text);
             CurrentText = text[(index + 1)..];
         }
 
@@ -198,7 +198,7 @@ internal ref struct PathReader
             return;
         }
 
-        var endSegmentIndex = CurrentText.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+        var endSegmentIndex = IndexOfSeparator(CurrentText);
         if (endSegmentIndex == -1)
         {
             CurrentText = _filename;
@@ -240,7 +240,7 @@ internal ref struct PathReader
                 if (currentText.IsEmpty)
                     return false;
 
-                var endSegmentIndex = currentText.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                var endSegmentIndex = LastIndexOfSeparator(currentText);
                 if (endSegmentIndex == -1)
                 {
                     currentSegment = currentText;
@@ -259,6 +259,36 @@ internal ref struct PathReader
 
         ConsumeToEnd();
         return true;
+    }
+
+    /// <summary>Whether one of the segments of the text left to read starts with a dot.</summary>
+    public readonly bool HasSegmentStartingWithDot()
+    {
+        if (!_filename.IsEmpty && _filename[0] == '.')
+            return true;
+
+        var text = CurrentText;
+        if (!text.IsEmpty && text[0] == '.')
+            return true;
+
+        // A single search for the separator followed by a dot, rather than one search per dot: a path such as
+        // 'src/Meziantou.Framework.Globbing/Glob.cs' holds a dot in most of its segments.
+        if (text.IndexOf(['/', '.']) >= 0)
+            return true;
+
+        return Path.DirectorySeparatorChar != '/' && text.IndexOf([Path.DirectorySeparatorChar, '.']) >= 0;
+    }
+
+    // Both separators are '/' on Unix, where a search for a single character is faster. The condition is a
+    // constant for the JIT.
+    public static int IndexOfSeparator(ReadOnlySpan<char> text)
+    {
+        return Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar ? text.IndexOf(Path.DirectorySeparatorChar) : text.IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    }
+
+    public static int LastIndexOfSeparator(ReadOnlySpan<char> text)
+    {
+        return Path.DirectorySeparatorChar == Path.AltDirectorySeparatorChar ? text.LastIndexOf(Path.DirectorySeparatorChar) : text.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
     public static bool IsPathSeparator(char c)

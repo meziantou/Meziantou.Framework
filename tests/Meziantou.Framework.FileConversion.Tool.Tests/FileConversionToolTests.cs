@@ -790,6 +790,8 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Contains("Markdown (.md, .markdown): read, write", console.Output);
         Assert.Contains("HTML (.html, .htm): read, write", console.Output);
         Assert.Contains("--html-stylesheet", console.Output);
+        Assert.Contains("SVG (.svg, .svgz): read", console.Output);
+        Assert.Contains("--svg-width", console.Output);
         Assert.Contains("PST (.pst): read, write", console.Output);
         Assert.Contains("OST (.ost): read, write", console.Output);
         Assert.Contains("Mbox (.mbox, .mbx): read, write", console.Output);
@@ -1108,6 +1110,11 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
     [InlineData("page", "\uFEFF  <!DOCTYPE html><html></html>", "HTML")]
     [InlineData("page", "<HTML lang=en>", "HTML")]
     [InlineData("page", "<p>Hello</p>", null)]
+    [InlineData("drawing.svg", "%PDF- in an SVG document", "SVG")]
+    [InlineData("drawing", "<svg xmlns=\"http://www.w3.org/2000/svg\"/>", "SVG")]
+    [InlineData("drawing", "\uFEFF<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\"/>", "SVG")]
+    [InlineData("drawing", "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"\">", "SVG")]
+    [InlineData("drawing", "<?xml version=\"1.0\"?><root/>", null)]
     public void DetectFormat_TextDocuments(string fileName, string content, string? expected)
     {
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(System.Text.RegularExpressions.Regex.Unescape(content)));
@@ -1313,6 +1320,180 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
 
         Assert.Equal(0, (await RunAsync(temp.GetFullPath("protected.7z"), "-o", temp.GetFullPath("plain.zip"), "--archive-password", "pass")).ExitCode);
         Assert.Equal("Secret", ReadArchive(temp.GetFullPath("plain.zip"))["a.txt"]);
+    }
+
+    [Fact]
+    public async Task SvgToPng_RendersTheDocumentAtItsSize()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes("""<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="20" height="20" fill="red"/><circle cx="30" cy="10" r="10" fill="blue"/></svg>"""));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        using var image = Image.Load(temp.GetFullPath("drawing.png"));
+        using var rgba = image.CloneAs<Rgba32>();
+        Assert.Equal(40, rgba.Size.Width);
+        Assert.Equal(20, rgba.Size.Height);
+        Assert.Equal(new Rgba32(255, 0, 0), rgba.Frames[0][5, 10]);
+        Assert.Equal(new Rgba32(0, 0, 255), rgba.Frames[0][30, 10]);
+
+        // The document paints nothing in the corner: the pixel is transparent
+        Assert.Equal(0, rgba.Frames[0][39, 0].A);
+    }
+
+    [Theory]
+    [InlineData("""width="40" height="20" """, 40, 20)]
+    [InlineData("""viewBox="0 0 10 5" """, 10, 5)]
+    [InlineData("""width="20" viewBox="0 0 10 5" """, 20, 10)]
+    [InlineData("""height="10" viewBox="0,0,10,5" """, 20, 10)]
+    [InlineData("""width="100%" height="100%" viewBox="0 0 64 32" """, 64, 32)]
+    [InlineData("""width="1in" height="0.5in" """, 96, 48)]
+    [InlineData("""width="2em" height="1em" """, 32, 16)]
+    [InlineData("", 300, 150)]
+    [InlineData("""width="50" """, 50, 150)]
+    [InlineData("""viewBox="0 0 -10 5" """, 300, 150)]
+    public async Task SvgToPng_Size(string attributes, int expectedWidth, int expectedHeight)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes($"""<svg xmlns="http://www.w3.org/2000/svg" {attributes}><rect width="100%" height="100%" fill="red"/></svg>"""));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var info = Identify(temp.GetFullPath("drawing.png"));
+        Assert.Equal(expectedWidth, info.Size.Width);
+        Assert.Equal(expectedHeight, info.Size.Height);
+    }
+
+    [Theory]
+    [InlineData(new[] { "--svg-width", "80" }, 80, 40)]
+    [InlineData(new[] { "--svg-height", "10" }, 20, 10)]
+    [InlineData(new[] { "--svg-width", "100", "--svg-height", "100" }, 100, 50)]
+    [InlineData(new[] { "--svg-width", "1000", "--max-width", "200" }, 200, 100)]
+    public async Task SvgToPng_SvgSize(string[] options, int expectedWidth, int expectedHeight)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 20"><rect width="20" height="20" fill="red"/><rect x="20" width="20" height="20" fill="blue"/></svg>"""));
+
+        var (exitCode, console) = await RunAsync([input, "--output-format", "png", .. options]);
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        using var image = Image.Load(temp.GetFullPath("drawing.png"));
+        using var rgba = image.CloneAs<Rgba32>();
+        Assert.Equal(expectedWidth, rgba.Size.Width);
+        Assert.Equal(expectedHeight, rgba.Size.Height);
+
+        // The drawing is scaled, not cropped
+        Assert.Equal(new Rgba32(255, 0, 0), rgba.Frames[0][expectedWidth / 4, expectedHeight / 2]);
+        Assert.Equal(new Rgba32(0, 0, 255), rgba.Frames[0][expectedWidth * 3 / 4, expectedHeight / 2]);
+    }
+
+    [Fact]
+    public async Task SvgToJpeg_UsesTheBackground()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes("""<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16"><rect width="8" height="16" fill="red"/></svg>"""));
+
+        var (exitCode, _) = await RunAsync(input, "-o", temp.GetFullPath("out.jpg"), "--background", "#00ff00");
+
+        Assert.Equal(0, exitCode);
+        using var image = Image.Load(temp.GetFullPath("out.jpg"));
+        using var rgba = image.CloneAs<Rgba32>();
+        var pixel = rgba.Frames[0][13, 8];
+        Assert.True(pixel.G > 200 && pixel.R < 50 && pixel.B < 50);
+    }
+
+    [Fact]
+    public async Task SvgToPdf_WritesAVectorPageOfTheSizeOfTheDocument()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes("""<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect width="200" height="200" fill="red"/><text x="250" y="100">Hello</text></svg>"""));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "pdf");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        var document = PdfDocument.Open(File.ReadAllBytes(temp.GetFullPath("drawing.pdf")));
+        var page = Assert.Single(document.Pages);
+
+        // A CSS pixel is 0.75 point
+        Assert.Equal(300, page.MediaBox.Width, 0.01);
+        Assert.Equal(150, page.MediaBox.Height, 0.01);
+        Assert.Empty(page.GetImages());
+        Assert.Contains("Hello", page.ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task SvgzToPng_DecompressesTheDocument()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        using var compressed = new MemoryStream();
+        using (var gzip = new GZipStream(compressed, CompressionLevel.Optimal, leaveOpen: true))
+        {
+            gzip.Write("""<svg xmlns="http://www.w3.org/2000/svg" width="12" height="6"><rect width="12" height="6" fill="red"/></svg>"""u8);
+        }
+
+        var input = await WriteFileAsync(temp, "drawing.svgz", compressed.ToArray());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        Assert.Equal(12, Identify(temp.GetFullPath("drawing.png")).Size.Width);
+    }
+
+    [Fact]
+    public async Task SvgToPng_LoadsTheImagesOfItsFolder()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        await WriteFileAsync(temp, "images/pixel.png", TestFiles.CreateImage(2, 2, ImageFormat.Png, new Rgba32(0, 255, 0)));
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes("""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10"><image width="10" height="10" xlink:href="images/pixel.png"/></svg>"""));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png");
+
+        Assert.Equal(0, exitCode);
+        Assert.Empty(console.Error);
+        using var image = Image.Load(temp.GetFullPath("drawing.png"));
+        using var rgba = image.CloneAs<Rgba32>();
+        Assert.Equal(new Rgba32(0, 255, 0), rgba.Frames[0][5, 5]);
+    }
+
+    [Theory]
+    [InlineData("""<svg xmlns="http://www.w3.org/2000/svg"><rect""", "is not an SVG document")]
+    [InlineData("""<html xmlns="http://www.w3.org/1999/xhtml"></html>""", "is not an SVG document")]
+    [InlineData("""<svg width="10" height="10"></svg>""", "is not an SVG document")]
+    [InlineData("""<svg xmlns="http://www.w3.org/2000/svg" width="0" height="10"></svg>""", "has an empty size")]
+    [InlineData("""<svg xmlns="http://www.w3.org/2000/svg" width="100000" height="100000"></svg>""", "is too large to be rendered")]
+    public async Task SvgToPng_InvalidDocument(string content, string expectedError)
+    {
+        await using var temp = TemporaryDirectory.Create();
+        var input = await WriteFileAsync(temp, "drawing.svg", Encoding.UTF8.GetBytes(content));
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "png");
+
+        Assert.Equal(1, exitCode);
+        Assert.Contains(expectedError, console.Error, StringComparison.Ordinal);
+        Assert.False(File.Exists(temp.GetFullPath("drawing.png")));
+    }
+
+    [Theory]
+    [InlineData("0 0 10 5", 10.0, 5.0)]
+    [InlineData(" -1.5,2e1 , 3.5e0\t4 ", 3.5, 4.0)]
+    [InlineData("0 0 10", null, null)]
+    [InlineData("0 0 10 5 6", null, null)]
+    [InlineData("0 0 0 5", null, null)]
+    [InlineData("0 0 a 5", null, null)]
+    [InlineData("0 0 NaN 5", null, null)]
+    [InlineData("", null, null)]
+    public void SvgRenderer_ParseViewBox(string value, double? expectedWidth, double? expectedHeight)
+    {
+        var result = Layout.SvgRenderer.ParseViewBox(value);
+        Assert.Equal(expectedWidth, result?.Width);
+        Assert.Equal(expectedHeight, result?.Height);
     }
 
     [Fact]

@@ -29,6 +29,9 @@ internal sealed class FileFormat
 
     public static FileFormat Html { get; } = new("HTML", FileFormatKind.Html, [".html", ".htm"], canRead: true, canWrite: true, isMultiPage: false);
 
+    /// <summary>Gets the SVG format: an SVG document (<c>.svg</c>), or a gzip-compressed SVG document (<c>.svgz</c>).</summary>
+    public static FileFormat Svg { get; } = new("SVG", FileFormatKind.Svg, [".svg", ".svgz"], canRead: true, canWrite: false, isMultiPage: false);
+
     public static FileFormat Cbz { get; } = Comic("CBZ", [".cbz"], ArchiveType.Zip, canWrite: true);
 
     public static FileFormat Cbr { get; } = Comic("CBR", [".cbr"], ArchiveType.Rar, canWrite: false);
@@ -210,6 +213,7 @@ internal sealed class FileFormat
         result.Add(Mobi);
         result.Add(Markdown);
         result.Add(Html);
+        result.Add(Svg);
         result.Add(Cbz);
         result.Add(Cbr);
         result.Add(Cb7);

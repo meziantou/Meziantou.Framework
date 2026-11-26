@@ -26,4 +26,7 @@ internal enum FileFormatKind
 
     /// <summary>An email message (EML, EMLX) or an Outlook item (MSG, OFT, TNEF), converted to another message format.</summary>
     EmailMessage,
+
+    /// <summary>An SVG document, rendered at its size: as an image, or as a vector page for a PDF output.</summary>
+    Svg,
 }

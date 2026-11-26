@@ -1407,6 +1407,147 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TheSubtablesALookupIsTriedWithAtAGlyphAreThoseWhoseDigestsMayContainIt()
+    {
+        // A lookup with many subtables finds them from the bits of the glyph: the same subtables, in the same order, as
+        // testing the digest of each one.
+        var random = new Random(4321);
+        foreach (var count in new[] { 2, 15, 16, 17, 63, 64, 65, 128, 200, 738 })
+        {
+            var digests = new GlyphDigest[count];
+            for (var i = 0; i < count; i++)
+            {
+                switch (random.Next(8))
+                {
+                    case 0:
+                        digests[i] = GlyphDigest.All;
+                        break;
+
+                    case 1:
+                        break;
+
+                    default:
+                        for (var j = random.Next(1, 30); j > 0; j--)
+                        {
+                            var first = random.Next(0, 3000);
+                            if (random.Next(4) == 0)
+                            {
+                                digests[i].AddRange(first, first + random.Next(0, 300));
+                            }
+                            else
+                            {
+                                digests[i].Add(first);
+                            }
+                        }
+
+                        break;
+                }
+            }
+
+            var subtables = new SubtableDigests(digests);
+            Assert.Equal(count >= 16, subtables.IsIndexed);
+            if (!subtables.IsIndexed)
+                continue;
+
+            for (var glyph = 0; glyph < 4096; glyph++)
+            {
+                var expected = Enumerable.Range(0, count).Where(i => digests[i].MayContain(glyph));
+                var actual = new List<int>();
+                for (var word = 0; word < subtables.WordCount; word++)
+                {
+                    var candidates = subtables.GetCandidates(word, glyph);
+                    for (var bit = 0; bit < 64; bit++)
+                    {
+                        if ((candidates & (1UL << bit)) != 0)
+                        {
+                            actual.Add((word * 64) + bit);
+                        }
+                    }
+                }
+
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("noto-sans/NotoSans-Regular.subset.ttf", UnicodeScript.Latin, false, "fiflAVTo.,ae 1234\u2044\u0301\u0308\u0327\u200B\u200C\u200D")]
+    [InlineData("noto-sans-cff/NotoSans-Regular.subset.otf", UnicodeScript.Latin, false, "fiflAVTo 1234\u2044\u2044\u0301\u200B")]
+    [InlineData("noto-sans-cjk/NotoSansCJKjp-Regular.subset.otf", UnicodeScript.Latin, false, "AVo 1234\u2044\u2044\u65E5\u3002")]
+    [InlineData("noto-sans-hebrew/NotoSansHebrew-Regular.without-gpos.ttf", UnicodeScript.Hebrew, true, "\u05D0\u05D1\u05D2\u05D3\u05DC\u05E9\u05B0\u05B4\u05B8\u05BC\u05C1 \u200B\u200C")]
+    [InlineData("noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf", UnicodeScript.Arabic, true, "\u0627\u0628\u062A\u062D\u0644\u0645\u0646\u0647\u0648\u064A\u0640\u064E\u0650\u0651 \u200C\u200D")]
+    [InlineData("noto-sans-syriac/NotoSansSyriac-Regular.ttf", UnicodeScript.Syriac, true, "\u0710\u0712\u0713\u0715\u0717\u0718\u071F\u0720\u0722\u072A\u0730\u0733 \u200C")]
+    [InlineData("noto-sans-devanagari/NotoSansDevanagari-Regular.ttf", UnicodeScript.Devanagari, false, "\u0915\u0917\u0930\u0937\u0924\u092A\u094D\u093F\u0940\u0947\u094B\u0902\u093C \u200C\u200D")]
+    [InlineData("noto-sans-bengali/NotoSansBengali-Regular.ttf", UnicodeScript.Bengali, false, "\u0995\u0997\u09B0\u09B7\u09A4\u09AA\u09CD\u09BF\u09C0\u09C7\u09CB\u0982\u09BC \u200C\u200D")]
+    [InlineData("noto-serif-tibetan/NotoSerifTibetan-Regular.ttf", UnicodeScript.Tibetan, false, "\u0F40\u0F42\u0F51\u0F56\u0F62\u0F66\u0F90\u0FB1\u0FB2\u0F72\u0F74\u0F7C\u0F0B ")]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ShapingTheTwoPartsOfATextCutWhereItIsNotUnsafeToBreakGivesTheGlyphsOfTheText(string file, UnicodeScript script, bool isRightToLeft, string alphabet)
+    {
+        // Where a line can end, a glyph that is not unsafe to break starts a part of the text that is shaped alone as it
+        // is in the text: its glyphs and their positions are the same, and so are those of the part before it. A layout
+        // keeps the glyphs of the parts of a text cut into lines where it can, instead of shaping them again.
+        var face = Font.Load(FixtureRoot.GetDirectory() / "fonts" / file).Face;
+        var random = new Random(file.Length);
+        var cuts = 0;
+        for (var iteration = 0; iteration < 150; iteration++)
+        {
+            var text = new string(Enumerable.Range(0, random.Next(2, 24)).Select(_ => alphabet[random.Next(alphabet.Length)]).ToArray());
+            var whole = ShapeLogically(text, 0);
+            foreach (var lineBreak in Unicode.EnumerateLineBreaks(text, UnicodeLineBreakStrictness.Anywhere, UnicodeWordBreakBehavior.BreakAll))
+            {
+                var position = lineBreak.Index;
+                if (position >= text.Length)
+                    continue;
+
+                var starts = whole.Where(glyph => glyph.Cluster == position).ToArray();
+                if (starts.Length == 0 || starts.Any(glyph => glyph.IsUnsafeToBreak))
+                    continue;
+
+                cuts++;
+                var parts = ShapeLogically(text[..position], 0).Concat(ShapeLogically(text[position..], position));
+                Assert.Equal(whole.Select(Format), parts.Select(Format));
+            }
+        }
+
+        Assert.True(cuts > 100);
+
+        // The glyphs and their positions in the order of the text, whatever the direction of the run.
+        (GlyphInfo Info, GlyphPosition Position, int Cluster, bool IsUnsafeToBreak)[] ShapeLogically(string text, int clusterOffset)
+        {
+            var buffer = new GlyphBuffer(FontResourceLimits.Default);
+            TextShaper.AddText(buffer, text, clusterOffset);
+            TextShaper.Shape(buffer, face, script, languages: [], isRightToLeft, features: []);
+            var glyphs = new (GlyphInfo, GlyphPosition, int, bool)[buffer.Length];
+            for (var i = 0; i < buffer.Length; i++)
+            {
+                glyphs[i] = (buffer.Info[i], buffer.Positions[i], buffer.Info[i].Cluster, buffer.Info[i].IsUnsafeToBreak);
+            }
+
+            if (isRightToLeft)
+            {
+                Array.Reverse(glyphs);
+            }
+
+            return glyphs;
+        }
+
+        static string Format((GlyphInfo Info, GlyphPosition Position, int Cluster, bool IsUnsafeToBreak) glyph)
+            => string.Create(CultureInfo.InvariantCulture, $"{glyph.Info.Glyph}={glyph.Cluster}@{glyph.Position.XOffset},{glyph.Position.YOffset}+{glyph.Position.XAdvance},{glyph.Position.YAdvance}");
+    }
+
+    [Fact]
+    public void ALookupAppliesAtTheGlyphsALookupBeforeItInItsStageMade()
+    {
+        // The lookups of a stage that apply at none of the glyphs of a run are passed over: the glyphs the lookups
+        // before them made are glyphs of the run.
+        var builder = FontSamples.Boxes();
+        builder.RawTables["GSUB"] = FontTestSupport.BuildSingleSubstitutions(("ccmp", FontSamples.BoxA, FontSamples.BoxB), ("ccmp", FontSamples.BoxB, FontSamples.BoxC));
+        var buffer = Shape(FontTestSupport.Load(builder), "AA");
+        Assert.Equal([FontSamples.BoxC, FontSamples.BoxC], buffer.Info.ToArray().Select(info => info.Glyph));
+    }
+
+    [Fact]
     public void TheSubtablesOfTheLookupsOfARunAreLimited()
     {
         // A font can make three lookups of thirty thousand subtables with a few bytes: every offset is the same one.

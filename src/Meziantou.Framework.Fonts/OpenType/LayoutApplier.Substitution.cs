@@ -112,7 +112,7 @@ internal sealed partial class LayoutApplier
         // The ligatures that start with the glyph, by order of preference.
         var set = subtable + FontBinary.UInt16(data, subtable + 6 + (coverage * 2));
         var count = FontBinary.UInt16(data, set);
-        Span<int> positions = stackalloc int[MaxSequenceLength];
+        var positions = GetPositions();
         for (var i = 0; i < count; i++)
         {
             var ligature = set + FontBinary.UInt16(data, set + 2 + (i * 2));

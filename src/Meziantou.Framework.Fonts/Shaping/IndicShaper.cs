@@ -1104,13 +1104,20 @@ internal sealed class IndicShaper
             }
         }
 
-        // A matra drawn before the first syllable of a word has an initial form.
-        if (info[start].SyllablePosition == PreMatra
-            && (start == 0 || info[start - 1].Category is not (UnicodeCategory.Format or UnicodeCategory.OtherNotAssigned or UnicodeCategory.PrivateUse or UnicodeCategory.Surrogate
-                or UnicodeCategory.LowercaseLetter or UnicodeCategory.ModifierLetter or UnicodeCategory.OtherLetter or UnicodeCategory.TitlecaseLetter or UnicodeCategory.UppercaseLetter
-                or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark or UnicodeCategory.NonSpacingMark)))
+        // A matra drawn before the first syllable of a word has an initial form. One that is not, after a letter, would
+        // be at the start of a word if the text was broken before it.
+        if (info[start].SyllablePosition == PreMatra)
         {
-            info[start].Mask |= Bit(Init);
+            if (start == 0 || info[start - 1].Category is not (UnicodeCategory.Format or UnicodeCategory.OtherNotAssigned or UnicodeCategory.PrivateUse or UnicodeCategory.Surrogate
+                or UnicodeCategory.LowercaseLetter or UnicodeCategory.ModifierLetter or UnicodeCategory.OtherLetter or UnicodeCategory.TitlecaseLetter or UnicodeCategory.UppercaseLetter
+                or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark or UnicodeCategory.NonSpacingMark))
+            {
+                info[start].Mask |= Bit(Init);
+            }
+            else
+            {
+                buffer.MarkUnsafeToBreak(start - 1, start + 1);
+            }
         }
     }
 

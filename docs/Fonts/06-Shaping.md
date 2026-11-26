@@ -46,7 +46,10 @@ For each glyph, the buffer has:
   glyph is drawn from the pen. They are in font units.
 
 `Info[i].IsUnsafeToBreak` marks the glyphs before which the text cannot be broken without shaping both parts again:
-what the font did there depends on the characters on both sides, such as joined letters or a kerned pair.
+what the font did there depends on the characters on both sides, such as joined letters, a kerned pair, a mark placed
+on the glyph before it, the digits of a fraction or the forms of a syllable. Where a line can end before the first
+glyph of a cluster that is not marked, shaping the text before it and the text from it apart gives the same glyphs and
+positions: a layout can cut the glyphs there instead of shaping the two parts again.
 
 ## Draw the glyphs
 

@@ -517,6 +517,9 @@ internal sealed partial class LayoutApplier
         position.YOffset = targetY - markY + GetVerticalOffset(target);
         position.AttachmentType = GlyphPosition.MarkAttachment;
         position.AttachmentChain = target - index;
+
+        // The mark is placed from the glyph it is attached to: a break between them would place it elsewhere.
+        _buffer.MarkUnsafeToBreak(target, index + 1);
         index++;
         return true;
     }

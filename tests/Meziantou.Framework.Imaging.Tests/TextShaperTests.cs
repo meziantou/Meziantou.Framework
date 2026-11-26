@@ -148,6 +148,25 @@ public sealed class TextShaperTests
     }
 
     [Fact]
+    public void AJoinerAnIndicSyllableMovesIntoTheClusterBeforeItTakesWhatFollowsItsCharacter()
+    {
+        // A zero width non-joiner and the halant after it are one cluster (1). The non-joiner ends the syllable of the
+        // anusvara, and is drawn before it: it joins the cluster of the anusvara (0). The broken syllable of the halant,
+        // a dotted circle and the halant, then starts at the character of the non-joiner: it is in cluster 0 too, so that
+        // a cluster starts at a character of its own. The reference shaper leaves it in cluster 1.
+        var bengali = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans-bengali" / "NotoSansBengali-Regular.ttf");
+        Assert.Equal("677=0 3=0 6=0 677=0 65=0 35=3", Clusters(bengali, "\u0982\u200C\u09CD\u09A4", UnicodeScript.Bengali));
+
+        // The vowel sign o and an anusvara after a non-joiner: the second non-joiner moves before the anusvara, and the
+        // broken syllable of the nukta after it joins their cluster (1).
+        var devanagari = Font.Load(FixtureRoot.GetDirectory() / "fonts" / "noto-sans-devanagari" / "NotoSansDevanagari-Regular.ttf");
+        Assert.Equal("789=0 42=0 3=1 3=1 100=1 789=1 104=1", Clusters(devanagari, "\u094B\u200C\u0902\u200C\u093C", UnicodeScript.Devanagari));
+
+        // Nothing moves: the clusters are those of the characters.
+        Assert.Equal("56=0 3=1 103=1 71=3", Clusters(devanagari, "\u0915\u200C\u094D\u0924", UnicodeScript.Devanagari));
+    }
+
+    [Fact]
     public void CharactersWithoutVisibleFormBecomeInvisibleGlyphs()
     {
         // The glyph of the space, without advance: nothing is drawn, and the cluster is still there. The kerning of the

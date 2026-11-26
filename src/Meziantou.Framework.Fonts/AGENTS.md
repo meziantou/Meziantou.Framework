@@ -297,7 +297,11 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`OpenType/`) applies t
   glyph; an attached glyph records what it is attached to, and `FinishPositions` resolves the chains once.
 - **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its
   cluster, a cluster never splits what shaping tied together (a ligature, a character and its marks), and clusters never
-  decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed.
+  decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed. `GlyphBuffer.MergeClusters`
+  extends a range to the glyphs that share the largest cluster of the range, not only the cluster of its last glyph:
+  the Indic shaper merges after reordering, and a joiner drawn before an anusvara (U+0982 U+200C U+09CD U+09A4) would
+  otherwise leave the next syllable in a cluster that starts at the joiner's character. The reference shaper gives
+  that cluster; the library does not (`TextShaperTests`).
 - **Bounds.** The buffer refuses to grow beyond `MaxTextGlyphs`. A pass of a lookup over the glyphs is what shaping
   is: it is not charged, and the subtables of the lookups of one run are limited in number instead (a font can have
   several thousand, tried at each glyph; it cannot have millions by pointing every offset at one table). What a rule

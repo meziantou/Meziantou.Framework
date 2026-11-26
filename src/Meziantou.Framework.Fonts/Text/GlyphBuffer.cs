@@ -212,25 +212,30 @@ public sealed class GlyphBuffer
         Length = write;
     }
 
-    /// <summary>Gives a range of glyphs one cluster: the smallest of theirs, extended to the glyphs that already share a cluster with an end of the range.</summary>
+    /// <summary>Gives a range of glyphs one cluster: the smallest of theirs, extended to the glyphs that already share a cluster with an end of the range or the largest cluster of the range.</summary>
     public void MergeClusters(int start, int end)
     {
         if (end - start < 2)
             return;
 
         var cluster = _info[start].Cluster;
+        var largest = cluster;
         for (var i = start + 1; i < end; i++)
         {
             cluster = Math.Min(cluster, _info[i].Cluster);
+            largest = Math.Max(largest, _info[i].Cluster);
         }
 
-        // The glyphs of a cluster stay together: the neighbors that share the cluster of an end join the range.
-        while (end < Length && _info[end - 1].Cluster == _info[end].Cluster)
+        // The glyphs of a cluster stay together: the neighbors that share the cluster of an end join the range, and so
+        // do those of the largest cluster of the range. The glyphs of a range are merged once they changed places: the
+        // glyph that had the largest cluster may no longer be at the end, and the glyphs after the range would then have
+        // a cluster that starts at a character of the merged cluster.
+        while (end < Length && (_info[end - 1].Cluster == _info[end].Cluster || _info[end].Cluster == largest))
         {
             end++;
         }
 
-        while (start > 0 && _info[start - 1].Cluster == _info[start].Cluster)
+        while (start > 0 && (_info[start - 1].Cluster == _info[start].Cluster || _info[start - 1].Cluster == largest))
         {
             start--;
         }

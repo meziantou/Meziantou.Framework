@@ -33,8 +33,9 @@ public sealed partial class BrowsingContext
     /// specification: by the <c>frame-ancestors</c> directives of the policies of the response
     /// (https://w3c.github.io/webappsec-csp/#should-block-navigation-response), by the embedder policy of the container
     /// document (<see cref="IsBlockedByEmbedderPolicy"/>, whose violations are reported), by its <c>X-Frame-Options</c>
-    /// header (https://html.spec.whatwg.org/multipage/document-lifecycle.html#the-x-frame-options-header), or by the required
-    /// CSP of the navigation (https://w3c.github.io/webappsec-cspee/#process-response).
+    /// header (https://html.spec.whatwg.org/multipage/document-lifecycle.html#the-x-frame-options-header), by the required
+    /// CSP of the navigation (https://w3c.github.io/webappsec-cspee/#process-response), or by its required connection allowlist
+    /// (https://w3c.github.io/connection-allowlists/#should-be-blocked-by-embedded-enforcement).
     /// </summary>
     private bool IsNavigationResponseBlocked(UrlRecord responseUrl, IReadOnlyList<KeyValuePair<string, string>> headers, int status, bool checkResourcePolicy, DocumentParameters parameters)
     {
@@ -61,8 +62,14 @@ public sealed partial class BrowsingContext
             return true;
 
         // The origin of the request of the navigation is the origin of its initiator
-        return parameters.RequiredContentSecurityPolicy is { } requiredPolicy
-            && ContentSecurityPolicy.IsResponseBlockedByRequiredPolicy(responseUrl, headers, policies, requiredPolicy, parameters.InitiatorOrigin?.Serialize() ?? "null");
+        if (parameters.RequiredContentSecurityPolicy is { } requiredPolicy
+            && ContentSecurityPolicy.IsResponseBlockedByRequiredPolicy(responseUrl, headers, policies, requiredPolicy, parameters.InitiatorOrigin?.Serialize() ?? "null"))
+        {
+            return true;
+        }
+
+        // https://w3c.github.io/connection-allowlists/#should-be-blocked-by-embedded-enforcement
+        return ConnectionAllowlist.ShouldBlockByEmbeddedEnforcement(parameters.RequiredConnectionAllowlist, headers, responseUrl, parameters.InitiatorOrigin?.Serialize() ?? "null");
     }
 
     /// <summary>
@@ -115,6 +122,24 @@ public sealed partial class BrowsingContext
             return value;
 
         return containerDocument.RequiredContentSecurityPolicy;
+    }
+
+    /// <summary>
+    /// https://w3c.github.io/connection-allowlists/#determine-the-required-connection-allowlist: the required connection
+    /// allowlist of the navigable, for a navigation of a child navigable: the value of the <c>connectionallowlist</c>
+    /// attribute of its iframe container when it is valid, else the required allowlist of the container document. Null for a
+    /// top-level navigable.
+    /// </summary>
+    private string? GetRequiredConnectionAllowlist()
+    {
+        if (Parent is null || Container is not { } container)
+            return null;
+
+        var parentRequired = container.NodeDocument.RequiredConnectionAllowlist;
+        if (container is HtmlIFrameElement && container.GetAttributeValue("connectionallowlist") is { } value && ConnectionAllowlist.IsValidAttributeValue(value, parentRequired))
+            return value;
+
+        return parentRequired;
     }
 
     /// <summary>

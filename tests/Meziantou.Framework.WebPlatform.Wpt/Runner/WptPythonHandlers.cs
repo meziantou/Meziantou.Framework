@@ -23,7 +23,8 @@ namespace Meziantou.Framework.WebPlatform.Wpt.Runner;
 /// (<c>WptPythonHandlers.StorageAccess.cs</c>), the ones of the <c>network-error-logging</c> tests
 /// (<c>WptPythonHandlers.NetworkErrorLogging.cs</c>), the ones of the <c>worklets</c> tests
 /// (<c>WptPythonHandlers.Worklets.cs</c>), the ones of the <c>payment-method-manifest</c> tests
-/// (<c>WptPythonHandlers.Payments.cs</c>), the ones of the <c>fedcm</c> tests (<c>WptPythonHandlers.FedCm.cs</c>), and the other
+/// (<c>WptPythonHandlers.Payments.cs</c>), the ones of the <c>fedcm</c> tests (<c>WptPythonHandlers.FedCm.cs</c>), the ones of the
+/// <c>connection-allowlist</c> tests (<c>WptPythonHandlers.ConnectionAllowlist.cs</c>), and the other
 /// ones (<c>WptPythonHandlers.Html.cs</c>).
 /// </summary>
 internal static partial class WptPythonHandlers
@@ -96,7 +97,7 @@ internal static partial class WptPythonHandlers
     // The static field initializers of the partial declarations run before the static constructor
     static WptPythonHandlers()
     {
-        foreach (var handlers in new[] { CommonHandlers, NetworkHandlers, ResourceHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CompressionDictionaryHandlers, CorsHandlers, SignaturesHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, NetworkErrorLoggingHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers, PaymentsHandlers, FedCmHandlers })
+        foreach (var handlers in new[] { CommonHandlers, NetworkHandlers, ResourceHandlers, SpeculationRulesHandlers, BeaconHandlers, ClearSiteDataHandlers, ClientHintsHandlers, CompressionDictionaryHandlers, CorsHandlers, SignaturesHandlers, EarlyHintsHandlers, ContentSecurityPolicyHandlers, CookieHandlers, CrossOriginIsolationHandlers, CssHandlers, FetchHandlers, FetchMetadataHandlers, HtmlHandlers, MediaHandlers, PaintTimingHandlers, SecurityFeaturesHandlers, ServiceWorkersHandlers, StorageAccessHandlers, NetworkErrorLoggingHandlers, TimingHandlers, WebSocketsHandlers, EventSourceHandlers, PreloadHandlers, WorkletsHandlers, PageApisHandlers, PaymentsHandlers, FedCmHandlers, ConnectionAllowlistHandlers })
         {
             foreach (var (path, handler) in handlers)
             {

@@ -25,4 +25,17 @@ public partial class Document
 
     /// <summary>The report-only integrity policy of the policy container of the document: the <c>Integrity-Policy-Report-Only</c> header of its response.</summary>
     internal IntegrityPolicy ReportOnlyIntegrityPolicy { get; set; } = IntegrityPolicy.Empty;
+
+    /// <summary>
+    /// The connection allowlists of the policy container of the document (https://w3c.github.io/connection-allowlists/#policy-container-connection-allowlists):
+    /// the <c>Connection-Allowlist</c> and <c>Connection-Allowlist-Report-Only</c> headers of its response, and the allowlist
+    /// its container requires.
+    /// </summary>
+    internal IReadOnlyList<ConnectionAllowlist> ConnectionAllowlists { get; set; } = [];
+
+    /// <summary>
+    /// The required connection allowlist of the policy container (https://w3c.github.io/connection-allowlists/#policy-container-required-connection-allowlist):
+    /// the serialized allowlist that the documents of the child navigables of the document must enforce, or null.
+    /// </summary>
+    internal string? RequiredConnectionAllowlist { get; set; }
 }

@@ -54,6 +54,14 @@ public partial class Document
             document.OriginDocument = GetOriginDocument(creator);
         }
 
+        // https://w3c.github.io/connection-allowlists/#html-integration: the connection allowlists are cloned with the policy
+        // container of a worker whose URL is a local scheme
+        if (url.Scheme is "data" or "blob" or "about")
+        {
+            document.ConnectionAllowlists = policySource!.ConnectionAllowlists;
+            document.RequiredConnectionAllowlist = policySource.RequiredConnectionAllowlist;
+        }
+
         // The CSP list is cloned with its self-origin (https://html.spec.whatwg.org/multipage/workers.html#initialize-worker-policy-container):
         // 'self' matches the origin of the creator (or of the creator of the blob URL), not the opaque origin of a data: worker
         if (url.Scheme is "data" or "blob" or "about" && policySource!.ContentSecurityPoliciesOrNull is { } policies)

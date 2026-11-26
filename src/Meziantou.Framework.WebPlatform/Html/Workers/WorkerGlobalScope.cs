@@ -74,7 +74,7 @@ public abstract partial class WorkerGlobalScope : GlobalScope
         }
     }
 
-    /// <summary>Applies the policies of the response of the script of the worker (its referrer policy, its CSP list and its embedder policy).</summary>
+    /// <summary>Applies the policies of the response of the script of the worker (its referrer policy, its CSP list, its embedder policy and its connection allowlists).</summary>
     internal void ApplyResponsePolicies(FetchedWorkerScript script)
     {
         if (ReferrerPolicies.ParseHeader(script.Headers) is { Length: > 0 } referrerPolicy)
@@ -95,6 +95,9 @@ public abstract partial class WorkerGlobalScope : GlobalScope
         // policy of its creator, and the shared and service workers have none (see Document.CreateWorkerEnvironment)
         EnvironmentDocumentCore.EmbedderPolicy = EmbedderPolicy.Obtain(script.Headers, IsSecureContext);
         EnvironmentDocumentCore.AddContentSecurityPolicies(script.Headers);
+
+        // https://w3c.github.io/connection-allowlists/#parse-a-responses-connection-allowlists
+        EnvironmentDocumentCore.ConnectionAllowlists = ConnectionAllowlist.FromHeaders(script.Headers, Url);
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/workers.html#dom-workerglobalscope-self</summary>

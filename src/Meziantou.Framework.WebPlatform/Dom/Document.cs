@@ -129,6 +129,13 @@ public partial class Document : Node
     /// </summary>
     internal bool HasNamedItemCandidates { get; set; }
 
+    /// <summary>
+    /// Whether an aria-owns attribute was ever set on an element of the document, or on the <see cref="ElementInternals"/> of
+    /// a custom element: the relocations of aria-owns (https://w3c.github.io/aria/#aria-owns) of a document without them are
+    /// empty, without walking its tree for each element whose accessibility properties are computed.
+    /// </summary>
+    internal bool HasAriaOwns { get; set; }
+
     /// <summary>The named elements of the document tree by name, created on the first property access once the document has candidate elements.</summary>
     internal DocumentNamedItemMap? NamedItemMap { get; set; }
 
@@ -795,6 +802,11 @@ public partial class Document : Node
         if (oldDocument.HasNamedItemCandidates)
         {
             HasNamedItemCandidates = true;
+        }
+
+        if (oldDocument.HasAriaOwns)
+        {
+            HasAriaOwns = true;
         }
 
         // The fragment parser adopts the children of its root one by one, before their own children are inserted: no list is

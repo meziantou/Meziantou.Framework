@@ -2109,6 +2109,15 @@ public sealed class UnicodeTests
     [InlineData("\u1100\u1161\u11A8\uAC00", new[] { 3, 1 })]
     // A Devanagari conjunct: consonant, virama, consonant.
     [InlineData("\u0915\u094D\u0937\u093F", new[] { 4 })]
+    // GB9c: the extending marks after the linker, and the conjuncts of more than two consonants.
+    [InlineData("\u0915\u0300\u094D\u0300\u0937", new[] { 5 })]
+    [InlineData("\u0915\u094D\u0937\u094D\u0924", new[] { 5 })]
+    // Since Unicode 18.0, GB9c does not need a consonant before the linker, but it needs a linker before the consonant.
+    [InlineData("\u0600\u094D\u0915", new[] { 3 })]
+    [InlineData("a\u094D\u0915", new[] { 3 })]
+    [InlineData("a\u094D\u094D\u0915", new[] { 4 })]
+    [InlineData("\u094D\u0915", new[] { 2 })]
+    [InlineData("\u0915\u0300\u0937", new[] { 2, 1 })]
     // The last ASCII letter takes the mark that follows it.
     [InlineData("ab\u0301", new[] { 1, 2 })]
     [InlineData("a\r\n", new[] { 1, 2 })]
@@ -2424,19 +2433,18 @@ public sealed class UnicodeTests
             if (next is UnicodeGraphemeClusterBreak.Extend or UnicodeGraphemeClusterBreak.ZWJ or UnicodeGraphemeClusterBreak.SpacingMark || previous is UnicodeGraphemeClusterBreak.Prepend)
                 return true;
 
-            // GB9c, as GetGraphemeClusterLength applies it: [\p{InCB=Linker}] [\p{InCB=Extend}\p{InCB=Linker}]* × \p{InCB=Consonant}. The
-            // annex also requires an InCB=Consonant before the first linker.
+            // GB9c, as revised in Unicode 18.0: \p{InCB=Linker} \p{InCB=Extend}* × \p{InCB=Consonant}. Before, it also required an
+            // InCB=Consonant before the linker.
             if (UnicodeProperties.GetIndicConjunctBreak(codePoints[i].CodePoint) is UnicodeIndicConjunctBreak.Consonant)
             {
-                for (var j = i - 1; j >= 0; j--)
+                var j = i - 1;
+                while (j >= 0 && UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint) is UnicodeIndicConjunctBreak.Extend)
                 {
-                    var conjunct = UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint);
-                    if (conjunct is UnicodeIndicConjunctBreak.Linker)
-                        return true;
-
-                    if (conjunct is not UnicodeIndicConjunctBreak.Extend)
-                        break;
+                    j--;
                 }
+
+                if (j >= 0 && UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint) is UnicodeIndicConjunctBreak.Linker)
+                    return true;
             }
 
             // GB11: \p{Extended_Pictographic} Extend* ZWJ × \p{Extended_Pictographic}

@@ -2050,6 +2050,9 @@ public sealed class InternetCalendarTests
     [InlineData("DTSTART:99991231T100000Z", "DURATION:P1D")]
     [InlineData("DTSTART;VALUE=DATE:20240101", "DURATION:PT1H")]
 
+    // The letters are ASCII: 'ſ' (U+017F) is not 's', although it is 'S' once uppercased
+    [InlineData("DTSTART:20240101T100000Z", "DURATION:PT3ſ")]
+
     // The days left after a midnight are a whole number of days minus one tick, which a double rounds up
     [InlineData("DTSTART;VALUE=DATE:20240101", "DURATION:P2913174D")]
     [InlineData("DTSTART:20240101T000000", "DURATION:P2913174D")]

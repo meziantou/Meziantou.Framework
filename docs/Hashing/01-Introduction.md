@@ -25,6 +25,8 @@ which does not support them everywhere (macOS among others). The [Sha3](cref:Mez
 - The package replaces `Meziantou.Framework.Bcrypt`: the BCrypt types keep their names, in the
   [Meziantou.Framework.Hashing](cref:Meziantou.Framework.Hashing) namespace.
 - [Crc32](cref:Meziantou.Framework.Hashing.Crc32) and [Adler32](cref:Meziantou.Framework.Hashing.Adler32) use the vector and CRC instructions of the processor when they are available.
+- [Argon2](cref:Meziantou.Framework.Hashing.Argon2) uses the 128-bit vector instructions of the processor (AdvSimd on Arm64, SSE2 on x64) when
+  they are available.
 
 ## Namespace
 

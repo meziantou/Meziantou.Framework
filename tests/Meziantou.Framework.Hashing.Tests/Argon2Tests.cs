@@ -88,6 +88,47 @@ public sealed class Argon2Tests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void FillBlock_VectorPathMatchesTheScalarReference()
+    {
+        global::Xunit.Assert.SkipUnless(Argon2.IsVector128Supported, "The vector path is not supported on this platform");
+
+        var random = new Random(33);
+        var r = new ulong[128];
+        var z = new ulong[128];
+        for (var iteration = 0; iteration < 16; iteration++)
+        {
+            foreach (var withXor in (bool[])[false, true])
+            {
+                foreach (var nextIsReference in (bool[])[false, true])
+                {
+                    var previous = CreateBlock(random);
+                    var reference = CreateBlock(random);
+                    var next = CreateBlock(random);
+
+                    var expected = (ulong[])next.Clone();
+                    Argon2.FillBlockScalar(previous, nextIsReference ? expected : reference, expected, withXor, r, z);
+
+                    var actual = (ulong[])next.Clone();
+                    Argon2.FillBlockVector128(previous, nextIsReference ? actual : reference, actual, withXor, r);
+                    Assert.Equal(expected, actual);
+                }
+            }
+        }
+
+        static ulong[] CreateBlock(Random random)
+        {
+            var block = new ulong[128];
+            for (var i = 0; i < block.Length; i++)
+            {
+                block[i] = (ulong)random.NextInt64() ^ ((ulong)random.Next() << 63);
+            }
+
+            return block;
+        }
+    }
+
+    [Fact]
     public void DeriveBytes_EmptyInputs()
     {
         // RFC 9106 does not require a minimum length for the password and the nonce

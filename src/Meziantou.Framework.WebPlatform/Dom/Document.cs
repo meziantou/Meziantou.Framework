@@ -789,7 +789,19 @@ public partial class Document : Node
             HasNamedItemCandidates = true;
         }
 
-        var nodes = node.ShadowIncludingInclusiveDescendants().ToList();
+        // The fragment parser adopts the children of its root one by one, before their own children are inserted: no list is
+        // allocated for a leaf node
+        List<Node>? nodes = null;
+        if (node.FirstChild is not null || node is Element { AttachedShadowRoot: not null })
+        {
+            nodes = [];
+            foreach (var descendant in node.WalkShadowIncludingInclusiveDescendants())
+            {
+                nodes.Add(descendant);
+            }
+        }
+
+        var count = nodes?.Count ?? 1;
         var hasRegistries = oldDocument.CustomElementRegistryStorage is not null || CustomElementRegistryStorage is not null;
         var oldRealmWindow = oldDocument.RealmWindow;
         if (ReferenceEquals(oldRealmWindow, RealmWindow))
@@ -797,8 +809,10 @@ public partial class Document : Node
             oldRealmWindow = null;
         }
 
-        foreach (var inclusiveDescendant in nodes)
+        for (var i = 0; i < count; i++)
         {
+            var inclusiveDescendant = nodes is null ? node : nodes[i];
+
             // The node keeps the realm where it was created
             if (oldRealmWindow is not null)
             {
@@ -844,8 +858,9 @@ public partial class Document : Node
             }
         }
 
-        foreach (var inclusiveDescendant in nodes)
+        for (var i = 0; i < count; i++)
         {
+            var inclusiveDescendant = nodes is null ? node : nodes[i];
             if (inclusiveDescendant is Element { IsCustom: true } customElement)
             {
                 CustomElementReactions.EnqueueCallbackReaction(customElement, CustomElementCallbackKind.Adopted, [oldDocument, this]);

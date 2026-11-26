@@ -34,7 +34,7 @@ public static class GlobbingFuzzTargets
     private static readonly string[] Tokens =
     [
         "*", "**", "**/", "/**", "/**/", "?", "[", "]", "[!", "[^", "[a-z]", "[!a-z]", "[]]", "[!]]", "[a-]", "[[:alpha:]]", "[[:upper:]]", "[[:digit:]]", "[[:space:]]", "[[:foo:]]", "[[=a=]]", "[[.-.]]",
-        "{", "}", "{a,b}", ",", "!", "\\", "\\*", "/", "//", ".", "..", "./", "../", ".hidden", "%2A", "%2F", "%25", "*.*", "*.cs", "#", " ", "\t", "\r", "\n", "\uFEFF", "a", "A", "\u00E9", "\u00C9", "\u03A3", "\u03C3", "\u03C2", "\u017F", "\u212A",
+        "{", "}", "{a,b}", ",", "!", "\\", "\\*", "/", "//", ".", "..", "./", "../", ".hidden", "%2A", "%2F", "%25", "*.*", "*.cs", "[Dd]", "*.[Cc]ache", "_ReSharper*/", "#", " ", "\t", "\r", "\n", "\uFEFF", "a", "A", "\u00E9", "\u00C9", "\u03A3", "\u03C3", "\u03C2", "\u017F", "\u212A",
     ];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
@@ -421,6 +421,15 @@ public static class GlobbingFuzzTargets
             yield return CreateSeed("standard ignore-case leading-dot " + pattern, GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot, pattern, standardPaths);
         }
 
+        // A '**' followed by the last segment checks the leading dots of every segment of the path at once
+        string[] trailingRecursivePatterns = ["**/[Bb]in", "**/*.{cs,csproj}", "**/Glob*[A-Z]*.cs", "a/**/b", "**/*.txt"];
+        string[] dotPaths = [".hidden/a.cs", "a/.b/c.cs", "a.b/Bin", "x/.txt", "a/x/b", "a/.x/b", "src/GlobX.cs", "y/bin/"];
+        foreach (var pattern in trailingRecursivePatterns)
+        {
+            yield return CreateSeed("standard dots " + pattern, GlobDialect.Standard, GlobOptions.None, pattern, dotPaths);
+            yield return CreateSeed("standard dots ignore-case " + pattern, GlobDialect.Standard, GlobOptions.IgnoreCase, pattern, dotPaths);
+        }
+
         // fnmatch-conformance.txt rows are "pattern<TAB>text<TAB>Posix result<TAB>PosixPath result"
         var fnmatch = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         using (var reader = new StringReader(FuzzResources.ReadText(typeof(GlobbingFuzzTargets).Assembly, "fnmatch-conformance.txt")))
@@ -545,5 +554,9 @@ public static class GlobbingFuzzTargets
             yield return FuzzSeed.FromText(string.Create(System.Globalization.CultureInfo.InvariantCulture, $"gitignore-{index:D3}"), text);
             index++;
         }
+
+        // The kinds of rules that the rule index groups by name, by extension, by first character or by path suffix
+        yield return FuzzSeed.FromText("gitignore-indexed-rules-1", "[Dd]ebug/\n*.[Cc]ache\n!keep.cache\n_ReSharper*/\n*.sln.docstates\n[a-c]x\0src/Debug/\na/b.Cache\nkeep.cache\na/_ReSharper.x/b.txt\nb.sln.docstates\nDebug\nbx/\nd.docstates");
+        yield return FuzzSeed.FromText("gitignore-indexed-rules-2", "[Tt]est[Rr]esult*/\nUpgradeLog*.XML\n**/Properties/launchSettings.json\n!**/*.[Cc]ache/\n*_i.c\n**/*~\n*.\0TestResults/\na/UpgradeLog1.XML\nProperties/launchSettings.json\nx.cache/\nc_i.c\nd~\ne.\nf.c");
     }
 }

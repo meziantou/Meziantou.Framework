@@ -737,9 +737,12 @@ public sealed partial class Glob : IGlobEvaluatable
         return false;
     }
 
-    private static bool CanMatchLeadingDot(PathReader pathReader, bool matchLeadingDot)
+    private static bool CanMatchLeadingDot(scoped in PathReader pathReader, bool matchLeadingDot)
     {
-        return matchLeadingDot || pathReader.CurrentSegment.IsEmpty || pathReader.CurrentSegment[0] != '.';
+        // The current segment starts with the current text, and it is empty when the text is empty or starts with a
+        // separator, which is not a dot. So the text tells it without searching for the end of the segment.
+        var text = pathReader.CurrentText;
+        return matchLeadingDot || text.IsEmpty || text[0] != '.';
     }
 
     private static bool ShouldRecurse(Segment patternSegment)

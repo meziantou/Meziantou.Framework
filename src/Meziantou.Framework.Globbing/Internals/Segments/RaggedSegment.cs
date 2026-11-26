@@ -33,6 +33,7 @@ internal sealed class RaggedSegment : Segment
             var program = new List<Instruction>();
             Compile(program, segments);
             program.Add(new Instruction(InstructionKind.Match, segment: null, target: 0));
+            AddStarSkips(program);
             _program = [.. program];
         }
 
@@ -44,6 +45,9 @@ internal sealed class RaggedSegment : Segment
 
     /// <summary>The characters the first character of the path segment must be one of, or <see langword="null"/> when the segment does not require any.</summary>
     internal char[]? FirstRequiredCharacters => _firstRequiredCharacters;
+
+    /// <summary>Whether the subsegments hold an alternation, which may match the following subsegments in several ways.</summary>
+    internal bool HasAlternation => _program is not null;
 
     public override bool IsMatch(ref PathReader pathReader)
     {
@@ -218,6 +222,22 @@ internal sealed class RaggedSegment : Segment
                             return false;
 
                         pathReader.ConsumeInSegment(1);
+
+                        // The literal that follows cannot match before the next character it can start with, so the
+                        // positions in between would only fail. Skipping them leaves their memo bits unset, which only
+                        // records fewer failures.
+                        if (instruction.SkipCharacters is { } skipCharacters)
+                        {
+                            var index = pathReader.CurrentSegment.IndexOfAny(skipCharacters);
+                            if (index < 0)
+                                return false;
+
+                            if (index > 0)
+                            {
+                                pathReader.ConsumeInSegment(index);
+                            }
+                        }
+
                         continue;
                     }
 
@@ -283,6 +303,20 @@ internal sealed class RaggedSegment : Segment
                 default:
                     program.Add(new Instruction(InstructionKind.Segment, segment, target: 0));
                     break;
+            }
+        }
+    }
+
+    // A '*' followed by a literal, such as '*.{cs,vb}', only has to retry the literal where its first character is
+    private static void AddStarSkips(List<Instruction> program)
+    {
+        for (var i = 0; i < program.Count - 1; i++)
+        {
+            if (program[i].Kind is InstructionKind.Star
+                && program[i + 1] is { Kind: InstructionKind.Segment, Segment: LiteralSegment { Value.Length: > 0 } literal }
+                && IgnoreCaseExpansion.TryExpand([literal.Value[0]], literal.IgnoreCase, out var characters))
+            {
+                program[i] = new Instruction(InstructionKind.Star, segment: null, target: 0, SearchValues.Create(characters));
             }
         }
     }
@@ -406,15 +440,19 @@ internal sealed class RaggedSegment : Segment
     [StructLayout(LayoutKind.Auto)]
     private readonly struct Instruction
     {
-        public Instruction(InstructionKind kind, Segment? segment, int target)
+        public Instruction(InstructionKind kind, Segment? segment, int target, SearchValues<char>? skipCharacters = null)
         {
             Kind = kind;
             Segment = segment;
             Target = target;
+            SkipCharacters = skipCharacters;
         }
 
         public InstructionKind Kind { get; }
         public Segment? Segment { get; }
         public int Target { get; }
+
+        /// <summary>For a <see cref="InstructionKind.Star"/>, the characters the next instruction can start with, or <see langword="null"/> when any can.</summary>
+        public SearchValues<char>? SkipCharacters { get; }
     }
 }

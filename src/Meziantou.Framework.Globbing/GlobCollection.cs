@@ -320,7 +320,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         if (filename.IsEmpty)
         {
             // The whole path is in 'directory', so its last segment is the item itself, not one of its ancestors.
-            length = directory.LastIndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            length = PathReader.LastIndexOfSeparator(directory);
             if (length < 0)
                 return false;
         }
@@ -330,7 +330,7 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
         var index = 0;
         while (index < length)
         {
-            var separatorIndex = directory[index..length].IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var separatorIndex = PathReader.IndexOfSeparator(directory[index..length]);
             var end = separatorIndex < 0 ? length : index + separatorIndex;
             if (GetLastMatchCore(directory[..end], [], PathItemType.Directory) is GlobMode.Include)
                 return true;

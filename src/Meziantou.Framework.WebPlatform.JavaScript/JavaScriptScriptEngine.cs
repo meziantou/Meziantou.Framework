@@ -29,6 +29,11 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
 
     private readonly ConditionalWeakTable<ClassicScript, JsPreparedScript> _parsedScripts = [];
 
+    // The prepared scripts of the caches run by each global object: a script runs once per realm from a cache, as the
+    // template objects of its tagged templates are the ones of its parse nodes (a script evaluated again in the same realm,
+    // e.g. the same source text inserted twice by the DOM, is parsed again: its tagged templates are new sites)
+    private readonly ConditionalWeakTable<GlobalScope, HashSet<JsPreparedScript>> _cachedScriptsRun = [];
+
     // The event loops of the realms, read from any thread (the jobs of the engine can be queued by other agents)
     private readonly ConditionalWeakTable<JsRealm, DomEventLoop> _eventLoops = [];
     private int _executionDepth;
@@ -342,30 +347,74 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
         return realm.Run(() => realm.CreateError("SyntaxError", error.Message));
     }
 
-    /// <summary>Parses a classic script, or gets it from the cache of the process (see <see cref="ShouldCacheScript"/>).</summary>
+    /// <summary>
+    /// Parses a classic script, or gets it from the cache of the process (see <see cref="ShouldCacheScript"/>) or from
+    /// <see cref="JavaScriptScriptEngineOptions.ScriptCache"/>.
+    /// </summary>
     private bool TryPrepareScript(ClassicScript script, [NotNullWhen(true)] out JsPreparedScript? prepared, [NotNullWhen(false)] out JsSyntaxErrorException? error)
     {
-        // The positions in an inline script are the positions in its document: the cache holds the scripts parsed from the
-        // start of their source text (an inline script whose document has the URL of a script, e.g. after
+        // The positions in an inline script are the positions in its document: the cache of the process holds the scripts
+        // parsed from the start of their source text (an inline script whose document has the URL of a script, e.g. after
         // history.replaceState, is not cached)
         var line = Math.Max(0, script.SourceTextLine - 1);
         var column = script.SourceTextColumn;
-        if (line is not 0 || column is not 0 || !ShouldCacheScript(script))
-            return JsPreparedScript.TryParse(script.SourceText, script.Url, line, column, out prepared, out error);
-
-        if (PreparedScripts.TryGetValue(script.Url, out var cached) && string.Equals(cached.SourceText, script.SourceText, StringComparison.Ordinal))
+        if (line is 0 && column is 0 && ShouldCacheScript(script))
         {
-            prepared = cached.Script;
+            if (PreparedScripts.TryGetValue(script.Url, out var cached) && string.Equals(cached.SourceText, script.SourceText, StringComparison.Ordinal) && TryMarkCachedScriptRun(script.Global, cached.Script))
+            {
+                prepared = cached.Script;
+                error = null;
+                return true;
+            }
+
+            if (!JsPreparedScript.TryParse(script.SourceText, script.Url, 0, 0, out prepared, out error))
+                return false;
+
+            // The first source text of a URL stays in the cache
+            if (PreparedScripts.TryAdd(script.Url, (script.SourceText, prepared)))
+            {
+                TryMarkCachedScriptRun(script.Global, prepared);
+            }
+
+            return true;
+        }
+
+        return TryPrepareCachedScript(script.Global, script.SourceText, script.Url, line, column, unboundNameFunctionStart: -1, out prepared, out error);
+    }
+
+    /// <summary>Parses a script, or gets it from <see cref="JavaScriptScriptEngineOptions.ScriptCache"/> when the realm of the global object did not run it.</summary>
+    private bool TryPrepareCachedScript(GlobalScope global, string sourceText, string? url, int line, int column, int unboundNameFunctionStart, [NotNullWhen(true)] out JsPreparedScript? prepared, [NotNullWhen(false)] out JsSyntaxErrorException? error)
+    {
+        var cache = Options.ScriptCache;
+        JsPreparedScript? cached = null;
+        if (cache is not null && cache.TryGet(sourceText, url, line, column, unboundNameFunctionStart, out cached) && TryMarkCachedScriptRun(global, cached))
+        {
+            prepared = cached;
             error = null;
             return true;
         }
 
-        if (!JsPreparedScript.TryParse(script.SourceText, script.Url, 0, 0, out prepared, out error))
+        if (!JsPreparedScript.TryParse(sourceText, url, line, column, unboundNameFunctionStart, out prepared, out error))
             return false;
 
-        // The first source text of a URL stays in the cache
-        PreparedScripts.TryAdd(script.Url, (script.SourceText, prepared));
+        // A script parsed again because the realm ran the cached one does not replace it: the cached one may be compiled
+        if (cache is not null && cached is null)
+        {
+            cache.Add(sourceText, url, line, column, unboundNameFunctionStart, prepared);
+            TryMarkCachedScriptRun(global, prepared);
+        }
+
         return true;
+    }
+
+    /// <summary>Records that the realm of the global object runs a cached script; returns false when it already did.</summary>
+    private bool TryMarkCachedScriptRun(GlobalScope global, JsPreparedScript script)
+    {
+        var scripts = _cachedScriptsRun.GetOrCreateValue(global);
+        lock (scripts)
+        {
+            return scripts.Add(script);
+        }
     }
 
     /// <summary>The base URLs and the fetch options of the running classic and module scripts (the innermost is the active script).</summary>
@@ -518,7 +567,7 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
         var code = prefix + "function " + source.Name + "(" + string.Join(", ", source.Parameters) + ") {\n" + source.Body + "\n} }." + source.Name + "; })";
         var function = realm.Run(() =>
         {
-            if (!JsPreparedScript.TryParse(code, source.Url, 0, 0, unboundNameFunctionStart: prefix.Length, out var prepared, out var error))
+            if (!TryPrepareCachedScript(source.Window, code, source.Url, 0, 0, unboundNameFunctionStart: prefix.Length, out var prepared, out var error))
                 throw CreateSyntaxError(realm, error);
 
             var engineRealm = (JsRealm)realm.EngineRealm;

@@ -58,9 +58,53 @@ Assert.Equal("Example", title.AsString());
 | [RegexTimeout](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.RegexTimeout) | 2 seconds | The longest time of a regular expression match |
 | [TimeProvider](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.TimeProvider) | the system clock | The clock of `Date` and the local time zone |
 | [ConfigureEngine](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.ConfigureEngine) | none | Sets the other options of the engine, such as the time zone and the default locale of `Intl` |
+| [ScriptCache](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.ScriptCache) | the cache of the process | The parsed scripts reused by the documents: see [Load the same pages many times](#load-the-same-pages-many-times) |
 
 When a limit is exceeded, the script stops and its error is reported: see
 [Running untrusted pages](04-RunningUntrustedPages.md).
+
+## Load the same pages many times
+
+The engines keep the classic scripts they parse in a cache: the inline scripts, the external scripts and the event
+handler attributes such as `onclick`. When a document runs a script that an engine already parsed, with the same source
+text, at the same URL and the same position in its document, it reuses it: the script is not parsed again, and the
+functions that ran often enough to be compiled to .NET code run compiled from the start. A page loaded again and again,
+or a script shared by the pages of a site, runs much faster after the first load, even with a new engine for each page.
+
+By default, all the engines of the process share
+[JavaScriptScriptCache.Shared](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptCache.Shared). Give
+engines a cache of their own to set its capacity, or set
+[ScriptCache](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptEngineOptions.ScriptCache) to `null` to
+parse each script for each document:
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/JavaScriptScriptEngineTests.cs;region=WebPlatformJavaScript_ScriptCache;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The engines that share a cache parse each script once: the default cache is JavaScriptScriptCache.Shared
+var cache = new JavaScriptScriptCache(capacity: 1_000_000); // characters of source text
+for (var i = 0; i < 3; i++)
+{
+    using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { ScriptCache = cache });
+    using var context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = engine });
+    var document = context.Navigate("https://example.com/", _ => "<script>document.title = 'loaded'</script>");
+    context.EventLoop.RunUntilIdle();
+    Assert.Equal("loaded", document.Title);
+}
+
+Assert.Equal(1, cache.Count);
+```
+<!-- endref -->
+
+- The capacity is the total length of the source texts and the URLs of the cached scripts, in characters:
+  [DefaultCapacity](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptCache.DefaultCapacity), 8 million
+  by default. The least recently used scripts are removed first, and a script longer than the capacity is not cached.
+  The memory of a script grows with the functions compiled to .NET code, so lower the capacity when the process loads
+  many different pages and memory matters more than speed.
+- A cached script behaves as a script parsed again: the errors and the stack traces have the positions in its document,
+  and a script that runs again in the same window, such as the same source text inserted twice by the DOM, is parsed
+  again, so its tagged templates are new objects.
+- The cache is thread-safe: the engines of the workers and of other threads share it.
+  [Clear](cref:Meziantou.Framework.WebPlatform.JavaScript.JavaScriptScriptCache.Clear) empties it.
+- The modules are not cached.
 
 ## Console messages and errors
 

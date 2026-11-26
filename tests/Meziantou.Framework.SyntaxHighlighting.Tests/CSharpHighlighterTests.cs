@@ -4476,4 +4476,22 @@ class Factory<T> where T : new() { }
 <span class="hljs-keyword">class</span> <span class="hljs-title">Factory</span>&lt;<span class="hljs-title">T</span>&gt; <span class="hljs-keyword">where</span> <span class="hljs-title">T</span> : <span class="hljs-keyword">new</span>() { }
 """);
     }
+
+    [Fact]
+    public void Comment_DocTagAfterSeveralSpacesOrNone()
+    {
+        AssertHighlighter("csharp",
+"""
+//    TODO: a
+//TODO: b
+int x; //  FIXME: c
+/*   NOTE: d */
+""",
+"""
+<span class="hljs-comment">//    <span class="hljs-doctag">TODO:</span> a</span>
+<span class="hljs-comment">//<span class="hljs-doctag">TODO:</span> b</span>
+<span class="hljs-built_in">int</span> x; <span class="hljs-comment">//  <span class="hljs-doctag">FIXME:</span> c</span>
+<span class="hljs-comment">/*   <span class="hljs-doctag">NOTE:</span> d */</span>
+""");
+    }
 }

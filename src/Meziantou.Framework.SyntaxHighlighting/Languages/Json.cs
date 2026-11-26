@@ -13,10 +13,14 @@ internal static class Json
         // illegal. Skipping those quotes keeps the escaped quotes of a long string value from each
         // rescanning the rest of the line. A key after a stray backslash is therefore a string, even
         // when the tokenizer resumes right after the backslash (see Tokenizer.ScanEntry about \G).
+        //
+        // The content is highlight.js's `(\\.|[^\\"\r\n])*`, unrolled into an atomic group (four times faster). Every
+        // quote of the input starts a candidate, and most of them are values not followed by `:`: giving characters
+        // back cannot end the content on a quote, so there is nothing to backtrack into.
         var attribute = new Mode
         {
             Scope = "attr",
-            Begin = @"(?<!\\)""(\\.|[^\\""\r\n])*""(?=\s*:)",
+            Begin = @"(?<!\\)""(?>[^\\""\r\n]*(?:\\.[^\\""\r\n]*)*)""(?=\s*:)",
         };
 
         var punctuation = new Mode

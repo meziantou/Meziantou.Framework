@@ -61,7 +61,7 @@ private static Product? LoadProduct(string path)
 | Read from | Write to |
 | --- | --- |
 | `string` | `string` (the return value) |
-| `TextReader`, read as the parser needs it | `TextWriter` |
+| `TextReader`, read as the parser needs it (a `StreamReader` by blocks of characters) | `TextWriter` |
 | `Stream` holding UTF-8 text | `Stream`, written as UTF-8 |
 | | `IBufferWriter<char>` |
 

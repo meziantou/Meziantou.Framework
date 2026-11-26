@@ -150,6 +150,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-screen-details", ScreenDetailsTarget) { Seeds = GetScreenDetailsSeeds },
         new("webplatform-hid-report-descriptor", HidReportDescriptorTarget) { Seeds = GetHidReportDescriptorSeeds },
         new("webplatform-midi-messages", MidiMessagesTarget) { Seeds = GetMidiMessagesSeeds },
+        new("webplatform-accessibility", data => AccessibilityProperties(FuzzText.Decode(data.Length > AccessibilityMaxLength ? data[..AccessibilityMaxLength] : data))) { Seeds = GetAccessibilitySeeds, Dictionary = AccessibilityTokens },
     ];
 
     /// <summary>

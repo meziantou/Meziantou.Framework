@@ -798,6 +798,14 @@ public partial class Element : Node
                 IdAttributeChangeSteps(value);
                 break;
 
+            case "aria-owns":
+                if (value is not null)
+                {
+                    NodeDocument.HasAriaOwns = true;
+                }
+
+                break;
+
             case "slot":
                 if (Slots.ShouldUpdateName(oldValue, value))
                 {

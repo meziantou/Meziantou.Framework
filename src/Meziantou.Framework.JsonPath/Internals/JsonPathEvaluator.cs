@@ -33,12 +33,15 @@ internal static class JsonPathEvaluator
 
     public static JsonPathResult Evaluate(JsonPathExpression expression, JsonNode? root, JsonPathEvaluationMode mode, JsonPathEvaluationOptions? options = null)
     {
-        var result = Evaluate(expression, root, JsonNodeNavigator.Instance, mode, options);
-        var matches = new List<JsonPathMatch>(result.Count);
-        foreach (var match in result)
+        // The matches are built from the nodes directly rather than from a JsonPathResult<JsonNode>, which would be a
+        // second list of the same size
+        var evaluation = new EvaluationNavigator<JsonNode>(JsonNodeNavigator.Instance, options);
+        var nodes = EvaluateNodes(expression, root, evaluation, mode);
+        var matches = new List<JsonPathMatch>(nodes.Count);
+        foreach (var (node, path) in nodes)
         {
-            options?.CancellationToken.ThrowIfCancellationRequested();
-            matches.Add(new JsonPathMatch(match.Value, match.RawPath));
+            evaluation.Check();
+            matches.Add(new JsonPathMatch(node, path));
         }
 
         return new JsonPathResult(matches);
@@ -51,29 +54,35 @@ internal static class JsonPathEvaluator
         JsonPathEvaluationMode mode,
         JsonPathEvaluationOptions? options = null)
     {
-        navigator = new EvaluationNavigator<TValue>(navigator, options);
-        var context = new SegmentContext<TValue>(root, navigator, mode, trackPaths: true, limit: int.MaxValue);
+        var evaluation = new EvaluationNavigator<TValue>(navigator, options);
+        var nodes = EvaluateNodes(expression, root, evaluation, mode);
+        var matches = new List<JsonPathMatch<TValue>>(nodes.Count);
+        foreach (var (node, path) in nodes)
+        {
+            evaluation.Check();
+            matches.Add(new JsonPathMatch<TValue>(node, path));
+        }
+
+        return new JsonPathResult<TValue>(matches);
+    }
+
+    private static NodeSink<TValue> EvaluateNodes<TValue>(JsonPathExpression expression, TValue? root, EvaluationNavigator<TValue> evaluation, JsonPathEvaluationMode mode)
+    {
+        var context = new SegmentContext<TValue>(root, evaluation, mode, trackPaths: true, limit: int.MaxValue);
         NodeSink<TValue> currentNodes = [(root, null)];
 
         for (var i = 0; i < expression.Segments.Length; i++)
         {
-            var result = new NodeSink<TValue>((EvaluationNavigator<TValue>)navigator, final: i == expression.Segments.Length - 1);
+            var result = new NodeSink<TValue>(evaluation, final: i == expression.Segments.Length - 1);
             ApplySegment(expression.Segments[i], currentNodes, in context, result);
             currentNodes = result;
         }
 
-        ((EvaluationNavigator<TValue>)navigator).Check();
-        if (expression.Segments.Length is 0 && ((EvaluationNavigator<TValue>)navigator).MaximumResults is 0)
+        evaluation.Check();
+        if (expression.Segments.Length is 0 && evaluation.MaximumResults is 0)
             throw new JsonPathEvaluationException("The maximum result count was exceeded.");
 
-        var matches = new List<JsonPathMatch<TValue>>(currentNodes.Count);
-        foreach (var (node, path) in currentNodes)
-        {
-            ((EvaluationNavigator<TValue>)navigator).Check();
-            matches.Add(new JsonPathMatch<TValue>(node, new NormalizedPath(path)));
-        }
-
-        return new JsonPathResult<TValue>(matches);
+        return currentNodes;
     }
 
     public static (bool Found, TValue? Value) EvaluateFirst<TValue>(
@@ -151,7 +160,7 @@ internal static class JsonPathEvaluator
         NodeSink<TValue> inputNodes,
         in SegmentContext<TValue> context)
     {
-        var result = new NodeSink<TValue>((EvaluationNavigator<TValue>)context.Navigator);
+        var result = new NodeSink<TValue>(context.Navigator);
         ApplySegment(segment, inputNodes, in context, result);
         return result;
     }
@@ -180,7 +189,7 @@ internal static class JsonPathEvaluator
         in SegmentContext<TValue> context,
         NodeSink<TValue> result)
     {
-        ((EvaluationNavigator<TValue>)context.Navigator).Check();
+        context.Navigator.Check();
         if (segment.Kind is SegmentKind.Child)
         {
             ApplyChildSegment(segment.Selectors, node, path, in context, result, strictFailure: true);
@@ -219,7 +228,7 @@ internal static class JsonPathEvaluator
     {
         foreach (var selector in selectors)
         {
-            ((EvaluationNavigator<TValue>)context.Navigator).Check();
+            context.Navigator.Check();
             if (result.IsComplete(context.Limit))
             {
                 return;
@@ -387,7 +396,7 @@ internal static class JsonPathEvaluator
         var selectors = segment.Selectors;
         for (var i = 0; i < selectors.Length; i++)
         {
-            ((EvaluationNavigator<TValue>)navigator).Check();
+            navigator.Check();
             var slot = names.SelectorSlots[i];
             if (slot < 0)
             {
@@ -833,9 +842,9 @@ internal static class JsonPathEvaluator
         LogicalExpression expr,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
-        ((EvaluationNavigator<TValue>)navigator).Check();
+        navigator.Check();
         return expr switch
         {
             // The operands of a chain are held in a list rather than nested pairwise, so a chain of any length
@@ -854,7 +863,7 @@ internal static class JsonPathEvaluator
         LogicalExpression[] operands,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         foreach (var operand in operands)
         {
@@ -871,7 +880,7 @@ internal static class JsonPathEvaluator
         LogicalExpression[] operands,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         foreach (var operand in operands)
         {
@@ -888,8 +897,11 @@ internal static class JsonPathEvaluator
         ExistenceTestExpression test,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
+        if (GetSingularQuery(test.Query, navigator) is { } singular)
+            return TryEvaluateSingularQuery(singular, currentNode, root, navigator, out _);
+
         // Only whether a node exists matters, so stop at the first one.
         var nodes = EvaluateFilterQuery(test.Query, currentNode, root, navigator, limit: 1);
         return nodes.Count > 0;
@@ -899,7 +911,7 @@ internal static class JsonPathEvaluator
         ComparisonExpression comp,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         var left = ResolveComparable(comp.Left, currentNode, root, navigator);
         var right = ResolveComparable(comp.Right, currentNode, root, navigator);
@@ -932,7 +944,7 @@ internal static class JsonPathEvaluator
             Scalar = default;
         }
 
-        private ResolvedValue(ScalarValue scalar)
+        private ResolvedValue(in ScalarValue scalar)
         {
             Kind = ResolvedValueKind.Scalar;
             Node = default;
@@ -949,62 +961,21 @@ internal static class JsonPathEvaluator
 
         public static ResolvedValue<TValue> FromNode(TValue? node) => new(node);
 
-        public static ResolvedValue<TValue> FromScalar(ScalarValue scalar) => new(scalar);
+        public static ResolvedValue<TValue> FromScalar(in ScalarValue scalar) => new(in scalar);
 
         public static ResolvedValue<TValue> FromNothing() => default;
-    }
-
-    private readonly struct ScalarValue
-    {
-        private ScalarValue(JsonPathNodeKind kind, string? stringValue, double numberValue, bool booleanValue, byte[]? numberText = null)
-        {
-            Kind = kind;
-            StringValue = stringValue;
-            NumberValue = numberValue;
-            BooleanValue = booleanValue;
-            NumberText = numberText;
-        }
-
-        public JsonPathNodeKind Kind { get; }
-
-        public string? StringValue { get; }
-
-        public double NumberValue { get; }
-
-        /// <summary>Gets the UTF-8 text of a number literal, or <see langword="null"/> when <see cref="NumberValue"/> is exact.</summary>
-        public byte[]? NumberText { get; }
-
-        public bool BooleanValue { get; }
-
-        public static ScalarValue Null() => new(JsonPathNodeKind.Null, stringValue: null, numberValue: 0, booleanValue: false);
-
-        public static ScalarValue FromBoolean(bool value) => new(JsonPathNodeKind.Boolean, stringValue: null, numberValue: 0, booleanValue: value);
-
-        public static ScalarValue FromNumber(double value) => new(JsonPathNodeKind.Number, stringValue: null, numberValue: value, booleanValue: false);
-
-        public static ScalarValue FromNumber(NumberLiteral value) => new(JsonPathNodeKind.Number, stringValue: null, numberValue: value.Value, booleanValue: false, value.Utf8Text);
-
-        public static ScalarValue FromString(string value) => new(JsonPathNodeKind.String, value, numberValue: 0, booleanValue: false);
     }
 
     private static ResolvedValue<TValue> ResolveComparable<TValue>(
         Comparable comparable,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         switch (comparable)
         {
             case LiteralComparable literal:
-                return literal.Value switch
-                {
-                    null => ResolvedValue<TValue>.FromScalar(ScalarValue.Null()),
-                    true => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: true)),
-                    false => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: false)),
-                    string s => ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(s)),
-                    NumberLiteral number => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(number)),
-                    _ => ResolvedValue<TValue>.FromNothing(),
-                };
+                return literal.IsScalar ? ResolvedValue<TValue>.FromScalar(literal.Scalar) : ResolvedValue<TValue>.FromNothing();
 
             case SingularQueryComparable sq:
             {
@@ -1022,9 +993,9 @@ internal static class JsonPathEvaluator
     }
 
     private static bool CompareEqual<TValue>(
-        ResolvedValue<TValue> left,
-        ResolvedValue<TValue> right,
-        JsonPathNavigator<TValue> navigator)
+        in ResolvedValue<TValue> left,
+        in ResolvedValue<TValue> right,
+        EvaluationNavigator<TValue> navigator)
     {
         if (left.IsNothing && right.IsNothing)
         {
@@ -1055,9 +1026,9 @@ internal static class JsonPathEvaluator
     }
 
     private static bool CompareLessThan<TValue>(
-        ResolvedValue<TValue> left,
-        ResolvedValue<TValue> right,
-        JsonPathNavigator<TValue> navigator)
+        in ResolvedValue<TValue> left,
+        in ResolvedValue<TValue> right,
+        EvaluationNavigator<TValue> navigator)
     {
         if (left.IsNothing || right.IsNothing)
         {
@@ -1085,7 +1056,7 @@ internal static class JsonPathEvaluator
     /// <param name="left">The first string.</param>
     /// <param name="right">The second string.</param>
     /// <returns>A negative number, zero or a positive number, as <see cref="string.CompareTo(string)"/> does.</returns>
-    private static int CompareByScalarValue<TValue>(string? left, string? right, JsonPathNavigator<TValue> navigator)
+    private static int CompareByScalarValue<TValue>(string? left, string? right, EvaluationNavigator<TValue> navigator)
     {
         if (left is null || right is null)
         {
@@ -1095,7 +1066,7 @@ internal static class JsonPathEvaluator
         var shared = Math.Min(left.Length, right.Length);
         for (var i = 0; i < shared; i++)
         {
-            ((EvaluationNavigator<TValue>)navigator).Check();
+            navigator.Check();
             if (left[i] != right[i])
             {
                 return ScalarOrderOf(left[i]) - ScalarOrderOf(right[i]);
@@ -1112,7 +1083,7 @@ internal static class JsonPathEvaluator
     /// </summary>
     private static int ScalarOrderOf(char value) => char.IsSurrogate(value) ? value + 0x10000 : value;
 
-    private static bool ScalarValuesEqual<TValue>(ScalarValue left, ScalarValue right, JsonPathNavigator<TValue> navigator)
+    private static bool ScalarValuesEqual<TValue>(in ScalarValue left, in ScalarValue right, EvaluationNavigator<TValue> navigator)
     {
         if (left.Kind != right.Kind)
         {
@@ -1129,7 +1100,7 @@ internal static class JsonPathEvaluator
         };
     }
 
-    private static bool ScalarAndNodeEqual<TValue>(ScalarValue scalar, TValue? node, JsonPathNavigator<TValue> navigator)
+    private static bool ScalarAndNodeEqual<TValue>(in ScalarValue scalar, TValue? node, EvaluationNavigator<TValue> navigator)
     {
         var kind = navigator.GetKind(node);
         if (scalar.Kind != kind)
@@ -1143,12 +1114,21 @@ internal static class JsonPathEvaluator
             JsonPathNodeKind.Boolean => navigator.TryGetBoolean(node, out var value) && scalar.BooleanValue == value,
             JsonPathNodeKind.Number => navigator.TryGetNumber(node, out var value)
                                        && CompareNumbers(NumberOperand<TValue>.FromScalar(scalar), NumberOperand<TValue>.FromNode(node, value), navigator) is 0,
-            JsonPathNodeKind.String => navigator.TryGetString(node, out var value) && StringsEqual(scalar.StringValue, value, navigator),
+            JsonPathNodeKind.String => StringAndNodeEqual(scalar, node, navigator),
             _ => false,
         };
     }
 
-    private static bool NodesEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
+    private static bool StringAndNodeEqual<TValue>(in ScalarValue scalar, TValue? node, EvaluationNavigator<TValue> navigator)
+    {
+        // A literal is compared with the text of the value, so the value does not have to be decoded to a string
+        if (scalar.Utf8Text is { } utf8 && navigator.TryStringEquals(node, utf8, out var equals))
+            return equals;
+
+        return navigator.TryGetString(node, out var value) && StringsEqual(scalar.StringValue, value, navigator);
+    }
+
+    private static bool NodesEqual<TValue>(TValue? left, TValue? right, EvaluationNavigator<TValue> navigator, int depth)
     {
         if (depth > MaxRecursionDepth)
         {
@@ -1193,15 +1173,15 @@ internal static class JsonPathEvaluator
         }
     }
 
-    private static bool StringsEqual<TValue>(string? left, string? right, JsonPathNavigator<TValue> navigator)
+    private static bool StringsEqual<TValue>(string? left, string? right, EvaluationNavigator<TValue> navigator)
     {
         if (!ReferenceEquals(left, right) && left is not null && right is not null && left.Length == right.Length)
-            ((EvaluationNavigator<TValue>)navigator).Check(left.Length);
+            navigator.Check(left.Length);
 
         return string.Equals(left, right, StringComparison.Ordinal);
     }
 
-    private static bool ArraysEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
+    private static bool ArraysEqual<TValue>(TValue? left, TValue? right, EvaluationNavigator<TValue> navigator, int depth)
     {
         if (navigator.GetArrayLength(left) != navigator.GetArrayLength(right))
         {
@@ -1226,7 +1206,7 @@ internal static class JsonPathEvaluator
         return true;
     }
 
-    private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
+    private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, EvaluationNavigator<TValue> navigator, int depth)
     {
         if (navigator.HasConstantTimePropertyLookup)
         {
@@ -1281,7 +1261,7 @@ internal static class JsonPathEvaluator
         return true;
     }
 
-    private static bool TryGetNumber<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out NumberOperand<TValue> result)
+    private static bool TryGetNumber<TValue>(in ResolvedValue<TValue> value, EvaluationNavigator<TValue> navigator, out NumberOperand<TValue> result)
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
@@ -1317,7 +1297,7 @@ internal static class JsonPathEvaluator
     /// A negative number, zero or a positive number. A <see cref="double.NaN"/>, which only a custom function returns, is
     /// smaller than every number and equal to itself, as <see cref="double.CompareTo(double)"/> orders it.
     /// </returns>
-    private static int CompareNumbers<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator)
+    private static int CompareNumbers<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, EvaluationNavigator<TValue> navigator)
     {
         var comparison = left.Value.CompareTo(right.Value);
         if (comparison is 0)
@@ -1332,7 +1312,7 @@ internal static class JsonPathEvaluator
 
     // Kept apart from CompareNumbers so that its buffers are only allocated on the stack when the doubles are close
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int CompareNumberTexts<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, JsonPathNavigator<TValue> navigator, int doubleComparison)
+    private static int CompareNumberTexts<TValue>(in NumberOperand<TValue> left, in NumberOperand<TValue> right, EvaluationNavigator<TValue> navigator, int doubleComparison)
     {
         Span<byte> leftBuffer = stackalloc byte[JsonNodeNavigator.NumberBufferLength];
         Span<byte> rightBuffer = stackalloc byte[JsonNodeNavigator.NumberBufferLength];
@@ -1367,9 +1347,9 @@ internal static class JsonPathEvaluator
 
         public static NumberOperand<TValue> FromNode(TValue? node, double value) => new(value, node, text: null, isNode: true);
 
-        public static NumberOperand<TValue> FromScalar(ScalarValue scalar) => new(scalar.NumberValue, node: default, scalar.NumberText, isNode: false);
+        public static NumberOperand<TValue> FromScalar(in ScalarValue scalar) => new(scalar.NumberValue, node: default, scalar.Utf8Text, isNode: false);
 
-        public bool TryGetText(JsonPathNavigator<TValue> navigator, Span<byte> buffer, out ReadOnlySpan<byte> result)
+        public bool TryGetText(EvaluationNavigator<TValue> navigator, Span<byte> buffer, out ReadOnlySpan<byte> result)
         {
             if (_isNode)
                 return navigator.TryGetNumberUtf8(_node, buffer, out result);
@@ -1392,7 +1372,7 @@ internal static class JsonPathEvaluator
         }
     }
 
-    private static bool TryGetString<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out string? result)
+    private static bool TryGetString<TValue>(in ResolvedValue<TValue> value, EvaluationNavigator<TValue> navigator, out string? result)
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
@@ -1429,7 +1409,7 @@ internal static class JsonPathEvaluator
         FilterQuery query,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator,
+        EvaluationNavigator<TValue> navigator,
         int limit,
         bool countOnly = false)
     {
@@ -1437,7 +1417,7 @@ internal static class JsonPathEvaluator
         var segments = query.Segments;
         if (segments.Length is 0)
         {
-            var single = new NodeSink<TValue>((EvaluationNavigator<TValue>)navigator, retention: countOnly ? 0 : int.MaxValue);
+            var single = new NodeSink<TValue>(navigator, retention: countOnly ? 0 : int.MaxValue);
             single.Add((startNode, null));
             return single;
         }
@@ -1448,8 +1428,7 @@ internal static class JsonPathEvaluator
         var last = new SegmentContext<TValue>(root, navigator, JsonPathEvaluationMode.Lax, trackPaths: false, limit);
 
         // The first segment starts from a single node, so apply it directly rather than through a one-item list.
-        var evaluation = (EvaluationNavigator<TValue>)navigator;
-        var nodes = new NodeSink<TValue>(evaluation, retention: segments.Length is 1 && countOnly ? 0 : int.MaxValue);
+        var nodes = new NodeSink<TValue>(navigator, retention: segments.Length is 1 && countOnly ? 0 : int.MaxValue);
         if (segments.Length is 1)
         {
             ApplySegment(segments[0], startNode, path: null, in last, nodes);
@@ -1462,25 +1441,35 @@ internal static class JsonPathEvaluator
             nodes = ApplySegment(segments[i], nodes, in intermediate);
         }
 
-        var result = new NodeSink<TValue>(evaluation, retention: countOnly ? 0 : int.MaxValue);
+        var result = new NodeSink<TValue>(navigator, retention: countOnly ? 0 : int.MaxValue);
         ApplySegment(segments[^1], nodes, in last, result);
         nodes = result;
 
         return nodes;
     }
 
+    /// <summary>Gets the singular query that a filter query can be evaluated as, without collecting the nodes of each segment.</summary>
+    /// <returns>
+    /// The singular query, or <see langword="null"/> when the query is not singular, or when the intermediate results are
+    /// limited: the general evaluation counts the node of each segment against that limit.
+    /// </returns>
+    private static SingularQuery? GetSingularQuery<TValue>(FilterQuery query, EvaluationNavigator<TValue> navigator)
+    {
+        return navigator.MaximumIntermediateResults is null ? query.SingularQuery : null;
+    }
+
     private static bool TryEvaluateSingularQuery<TValue>(
         SingularQuery query,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator,
+        EvaluationNavigator<TValue> navigator,
         out TValue? node)
     {
         node = query.IsRelative ? currentNode : root;
 
         foreach (var segment in query.Segments)
         {
-            ((EvaluationNavigator<TValue>)navigator).Check();
+            navigator.Check();
             switch (segment.Kind)
             {
                 case SingularQuerySegmentKind.Name:
@@ -1516,7 +1505,7 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         if (func.ResultType is FunctionExpressionType.LogicalType)
         {
@@ -1546,7 +1535,7 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         if (func.CustomFunction is not null)
         {
@@ -1594,11 +1583,11 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator,
+        EvaluationNavigator<TValue> navigator,
         int limit)
     {
         var nodes = EvaluateCustomFunction(func, currentNode, root, navigator).Nodes;
-        var result = new NodeSink<TValue>((EvaluationNavigator<TValue>)navigator);
+        var result = new NodeSink<TValue>(navigator);
         foreach (var node in nodes)
         {
             if (result.Count >= limit)
@@ -1616,15 +1605,14 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
-        var evaluation = (EvaluationNavigator<TValue>)navigator;
-        evaluation.Check();
+        navigator.Check();
         var function = func.CustomFunction ?? throw new InvalidOperationException("Missing custom function implementation.");
         var arguments = new JsonPathFunctionArgument<TValue>[func.Arguments.Length];
         for (var i = 0; i < arguments.Length; i++)
         {
-            evaluation.Check();
+            navigator.Check();
             var argument = func.Arguments[i];
             arguments[i] = function.ParameterTypes[i] switch
             {
@@ -1637,9 +1625,9 @@ internal static class JsonPathEvaluator
             };
         }
 
-        evaluation.Check();
+        navigator.Check();
         var result = function.Invoke(Array.AsReadOnly(arguments), navigator);
-        evaluation.Check();
+        navigator.Check();
         if (result.Type != function.ResultType)
         {
             throw new JsonPathEvaluationException($"Function '{function.Name}' returned {result.Type}, but declared {function.ResultType}.");
@@ -1673,7 +1661,7 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         var argValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         if (argValue.IsNothing)
@@ -1702,20 +1690,21 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
-        var evaluation = (EvaluationNavigator<TValue>)navigator;
-        evaluation.Check();
+        navigator.Check();
         var argument = func.Arguments[0];
-        if (navigator.IsPure && evaluation.Counts.TryGetValue(func, out var cached))
+        if (navigator.IsPure && navigator.Counts.TryGetValue(func, out var cached))
             return ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(cached));
 
         var invariant = navigator.IsPure && argument.Value is FilterQuery { Kind: FilterQueryKind.Absolute } absolute && ContainsOnlyBuiltInFunctions(absolute);
         if (argument.Value is FilterQuery query)
         {
-            var count = EvaluateFilterQuery(query, currentNode, root, navigator, limit: int.MaxValue, countOnly: true).Count;
+            var count = GetSingularQuery(query, navigator) is { } singular
+                ? (TryEvaluateSingularQuery(singular, currentNode, root, navigator, out _) ? 1 : 0)
+                : EvaluateFilterQuery(query, currentNode, root, navigator, limit: int.MaxValue, countOnly: true).Count;
             if (invariant)
-                evaluation.Counts.Add(func, count);
+                navigator.Counts.Add(func, count);
 
             return ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(count));
         }
@@ -1746,8 +1735,15 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
+        if (func.Arguments[0].Value is FilterQuery query && GetSingularQuery(query, navigator) is { } singular)
+        {
+            return TryEvaluateSingularQuery(singular, currentNode, root, navigator, out var node)
+                ? ResolvedValue<TValue>.FromNode(node)
+                : ResolvedValue<TValue>.FromNothing();
+        }
+
         var nodes = ResolveFunctionArgumentAsNodes(func.Arguments[0], currentNode, root, navigator, limit: 2);
         if (nodes.Count is 1)
         {
@@ -1761,7 +1757,7 @@ internal static class JsonPathEvaluator
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root, navigator);
@@ -1779,14 +1775,14 @@ internal static class JsonPathEvaluator
             return false;
         }
 
-        return IsRegexMatch(func, str, pattern, anchored: true, (EvaluationNavigator<TValue>)navigator);
+        return IsRegexMatch(func, str, pattern, anchored: true, navigator);
     }
 
     private static bool EvaluateSearchFunction<TValue>(
         FunctionCallExpression func,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         var strValue = ResolveFunctionArgumentAsValue(func.Arguments[0], currentNode, root, navigator);
         var patternValue = ResolveFunctionArgumentAsValue(func.Arguments[1], currentNode, root, navigator);
@@ -1804,7 +1800,7 @@ internal static class JsonPathEvaluator
             return false;
         }
 
-        return IsRegexMatch(func, str, pattern, anchored: false, (EvaluationNavigator<TValue>)navigator);
+        return IsRegexMatch(func, str, pattern, anchored: false, navigator);
     }
 
     /// <summary>
@@ -1873,24 +1869,23 @@ internal static class JsonPathEvaluator
         FunctionArgument arg,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator)
+        EvaluationNavigator<TValue> navigator)
     {
         switch (arg.Kind)
         {
             case FunctionArgumentKind.Literal:
-                return arg.Value switch
-                {
-                    null => ResolvedValue<TValue>.FromScalar(ScalarValue.Null()),
-                    true => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: true)),
-                    false => ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(value: false)),
-                    string s => ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(s)),
-                    NumberLiteral number => ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(number)),
-                    _ => ResolvedValue<TValue>.FromNothing(),
-                };
+                return arg.IsScalar ? ResolvedValue<TValue>.FromScalar(arg.Scalar) : ResolvedValue<TValue>.FromNothing();
 
             case FunctionArgumentKind.FilterQuery:
             {
                 var query = (FilterQuery)arg.Value!;
+                if (GetSingularQuery(query, navigator) is { } singular)
+                {
+                    return TryEvaluateSingularQuery(singular, currentNode, root, navigator, out var node)
+                        ? ResolvedValue<TValue>.FromNode(node)
+                        : ResolvedValue<TValue>.FromNothing();
+                }
+
                 var nodes = EvaluateFilterQuery(query, currentNode, root, navigator, limit: 2);
                 if (nodes.Count is 1)
                 {
@@ -1915,7 +1910,7 @@ internal static class JsonPathEvaluator
         FunctionArgument arg,
         TValue? currentNode,
         TValue? root,
-        JsonPathNavigator<TValue> navigator,
+        EvaluationNavigator<TValue> navigator,
         int limit)
     {
         if (arg.Kind is FunctionArgumentKind.FilterQuery)
@@ -1933,7 +1928,7 @@ internal static class JsonPathEvaluator
         return [];
     }
 
-    private static string? GetStringFromValue<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator)
+    private static string? GetStringFromValue<TValue>(in ResolvedValue<TValue> value, EvaluationNavigator<TValue> navigator)
     {
         if (value.Kind is ResolvedValueKind.Scalar)
         {
@@ -1945,7 +1940,7 @@ internal static class JsonPathEvaluator
             : null;
     }
 
-    private static int CountProperties<TValue>(TValue? value, JsonPathNavigator<TValue> navigator)
+    private static int CountProperties<TValue>(TValue? value, EvaluationNavigator<TValue> navigator)
     {
         var count = 0;
         foreach (var property in navigator.GetProperties(value))
@@ -1977,12 +1972,12 @@ internal static class JsonPathEvaluator
         return length + value;
     }
 
-    private static int CountUnicodeScalarValues<TValue>(string s, JsonPathNavigator<TValue> navigator)
+    private static int CountUnicodeScalarValues<TValue>(string s, EvaluationNavigator<TValue> navigator)
     {
         var count = 0;
         for (var i = 0; i < s.Length; i++)
         {
-            ((EvaluationNavigator<TValue>)navigator).Check();
+            navigator.Check();
             count++;
             if (char.IsHighSurrogate(s[i]) && i + 1 < s.Length && char.IsLowSurrogate(s[i + 1]))
             {
@@ -1996,7 +1991,7 @@ internal static class JsonPathEvaluator
     /// <summary>The parts of a segment evaluation that do not change from one node to the next.</summary>
     private readonly struct SegmentContext<TValue>
     {
-        public SegmentContext(TValue? root, JsonPathNavigator<TValue> navigator, JsonPathEvaluationMode mode, bool trackPaths, int limit)
+        public SegmentContext(TValue? root, EvaluationNavigator<TValue> navigator, JsonPathEvaluationMode mode, bool trackPaths, int limit)
         {
             Root = root;
             Navigator = navigator;
@@ -2007,7 +2002,7 @@ internal static class JsonPathEvaluator
 
         public TValue? Root { get; }
 
-        public JsonPathNavigator<TValue> Navigator { get; }
+        public EvaluationNavigator<TValue> Navigator { get; }
 
         public JsonPathEvaluationMode Mode { get; }
 
@@ -2024,18 +2019,18 @@ internal static class JsonPathEvaluator
     /// </summary>
     private readonly struct ArrayElements<TValue> : IDisposable
     {
-        private readonly JsonPathNavigator<TValue> _navigator;
+        private readonly EvaluationNavigator<TValue> _navigator;
         private readonly TValue? _array;
         private readonly TValue?[]? _buffer;
 
-        public ArrayElements(JsonPathNavigator<TValue> navigator, TValue? array, bool copyElements = true)
+        public ArrayElements(EvaluationNavigator<TValue> navigator, TValue? array, bool copyElements = true)
         {
             _navigator = navigator;
             _array = array;
             Length = navigator.GetArrayLength(array);
             if (copyElements && !navigator.HasConstantTimeElementAccess && Length > 1)
             {
-                ((EvaluationNavigator<TValue>)navigator).Check(Length);
+                navigator.Check(Length);
                 _buffer = ArrayPool<TValue?>.Shared.Rent(Length);
                 try
                 {
@@ -2053,7 +2048,7 @@ internal static class JsonPathEvaluator
 
         public bool TryGet(int index, out TValue? value)
         {
-            ((EvaluationNavigator<TValue>)_navigator).Check();
+            _navigator.Check();
             if (_buffer is not null)
             {
                 value = _buffer[index];

@@ -79,6 +79,63 @@ public sealed class JsonPathParseTests
         Assert.Null(result);
     }
 
+    [Theory]
+    [InlineData(" $", "JSONPath query must start with '$' at position 0.")]
+    [InlineData("$ ", "JSONPath query must not contain trailing whitespace.")]
+    [InlineData("$.store.book[?@.price = 10]", "Unexpected character '=' at position 22. Did you mean '=='?")]
+    [InlineData("$[?@.a & @.b]", "Unexpected character '&' at position 7. Did you mean '&&'?")]
+    [InlineData("$[?@.a | @.b]", "Unexpected character '|' at position 7. Did you mean '||'?")]
+    [InlineData("$['unterminated", "Unterminated string starting at position 2.")]
+    [InlineData("$['a\\x']", "Invalid escape sequence '\\x' at position 4.")]
+    [InlineData("$[\"a\\'\"]", "Invalid escape sequence '\\'' in double-quoted string at position 4.")]
+    [InlineData("$['\\uD800']", "High surrogate U+D800 not followed by low surrogate at position 9.")]
+    [InlineData("$['\\uDC00']", "Unexpected low surrogate U+DC00 at position 5.")]
+    [InlineData("$['\\uD800\\u0041']", "Invalid low surrogate U+0041 at position 11.")]
+    [InlineData("$['\\u00G1']", "Invalid hex digits '00G1' at position 5.")]
+    [InlineData("$[1.5]", "Index/slice value must be an integer at position 2.")]
+    [InlineData("$[9007199254740992]", "Index/slice value must be an integer in the I-JSON range at position 2.")]
+    [InlineData("$. a", "Unexpected whitespace after '.' at position 1.")]
+    [InlineData("$.store..", "Expected '[', '*', or member name after '..' at position 9.")]
+    [InlineData("$[?@.price <]", "Unexpected token 'CloseBracket' at position 12. Expected a comparable value.")]
+    [InlineData("$[?@[1.5] == 1]", "Index/slice value must be an integer at position 5.")] // While trying the singular query
+    [InlineData("$[?@. a == 1]", "Unexpected whitespace after '.' at position 4.")] // While trying the singular query
+    [InlineData("$[?@.a == 1 && @.b = 2]", "Unexpected character '=' at position 19. Did you mean '=='?")]
+    [InlineData("$[?foo(@)]", "Unknown function 'foo' at position 3.")]
+    [InlineData("$[?length(@)]", "Function 'length' returns ValueType and cannot be used as a test expression at position 12.")]
+    [InlineData("$[?count(@.a, @.b) > 1]", "Too many arguments for function 'count' at position 14.")]
+    [InlineData("$[?!@.a == 1]", "'!' at position 3 cannot negate a comparison. Enclose the comparison in parentheses.")]
+    [InlineData("$[?@[*] == 1]", "Non-singular query cannot be used in a comparison at position 8. A singular query only has name and index segments, with no blank space inside their brackets.")]
+    [InlineData("$[?(@.a == 1]", "Expected ')' to close parenthesized expression. Got 'CloseBracket' at position 12.")]
+    [InlineData("$[?length(@.a) == length(@.b = 1)]", "Unexpected character '=' at position 29. Did you mean '=='?")]
+    [InlineData("$[?match(@.a, 'x' == 1]", "Expected ')' after function arguments for 'match'. Got 'Equal' at position 18.")]
+    public void Parse_InvalidExpression_ReportsFirstError(string expression, string message)
+    {
+        var exception = Assert.Throws<FormatException>(() => JsonPath.Parse(expression));
+        Assert.Equal(message, exception.Message);
+        Assert.False(JsonPath.TryParse(expression, out var result));
+        Assert.Null(result);
+    }
+
+    [Theory]
+    [InlineData(63, true)]
+    [InlineData(64, false)]
+    public void Parse_NestingLimit(int depth, bool valid)
+    {
+        foreach (var expression in new[]
+        {
+            "$[?" + new string('(', depth) + "@" + new string(')', depth) + "]",
+            "$[?" + string.Concat(Enumerable.Repeat("length(", depth)) + "@" + new string(')', depth) + " == 1]",
+        })
+        {
+            Assert.Equal(valid, JsonPath.TryParse(expression, out _));
+            if (!valid)
+            {
+                var exception = Assert.Throws<FormatException>(() => JsonPath.Parse(expression));
+                Assert.StartsWith("Filter expression nesting exceeds the maximum depth of 64 at position ", exception.Message, StringComparison.Ordinal);
+            }
+        }
+    }
+
     [Fact]
     public void TryParse_NullExpression_ReturnsFalse()
     {

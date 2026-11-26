@@ -6,6 +6,7 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
     private readonly JsonPathNavigator<TValue> _inner;
     private readonly CancellationToken _cancellationToken;
     private readonly long? _maximumWork;
+    private readonly bool _hasLimits;
     private long _work;
 
     public EvaluationNavigator(JsonPathNavigator<TValue> inner, JsonPathEvaluationOptions? options)
@@ -15,6 +16,7 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
         _maximumWork = options?.MaximumWork;
         MaximumResults = options?.MaximumResults;
         MaximumIntermediateResults = options?.MaximumIntermediateResults;
+        _hasLimits = _cancellationToken.CanBeCanceled || _maximumWork is not null;
         if (_maximumWork < 0 || MaximumResults < 0 || MaximumIntermediateResults < 0)
             throw new ArgumentOutOfRangeException(nameof(options), "Evaluation limits must not be negative.");
         Check();
@@ -34,6 +36,13 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
     }
 
     public void Check(long work = 1)
+    {
+        // Called for almost every step of the evaluation, so the common case of no limit stays a single test
+        if (_hasLimits)
+            CheckLimits(work);
+    }
+
+    private void CheckLimits(long work)
     {
         _cancellationToken.ThrowIfCancellationRequested();
         if (_maximumWork is { } maximum)
@@ -58,6 +67,12 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
     }
 
     public override IEnumerable<JsonPathProperty<TValue>> GetProperties(TValue? value)
+    {
+        // Without a limit, a check does nothing, so the properties do not need another enumerator to be checked
+        return _hasLimits ? GetCheckedProperties(value) : _inner.GetProperties(value);
+    }
+
+    private IEnumerable<JsonPathProperty<TValue>> GetCheckedProperties(TValue? value)
     {
         Check();
         foreach (var property in _inner.GetProperties(value))
@@ -101,6 +116,12 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
     {
         Check();
         return _inner.TryGetNumberUtf8(value, buffer, out result);
+    }
+
+    internal override bool TryStringEquals(TValue? value, ReadOnlySpan<byte> utf8, out bool equals)
+    {
+        Check();
+        return _inner.TryStringEquals(value, utf8, out equals);
     }
 
     public override bool TryGetBoolean(TValue? value, out bool result)

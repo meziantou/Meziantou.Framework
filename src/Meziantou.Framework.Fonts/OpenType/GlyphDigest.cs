@@ -19,9 +19,28 @@ internal struct GlyphDigest
     /// <summary>Gets a digest that contains every glyph.</summary>
     public static GlyphDigest All => new() { _mask0 = ulong.MaxValue, _mask1 = ulong.MaxValue, _mask2 = ulong.MaxValue };
 
+    /// <summary>The number of masks.</summary>
+    public const int MaskCount = 3;
+
     /// <summary>Determines whether the set may contain a glyph: <see langword="false"/> when it does not.</summary>
     public readonly bool MayContain(int glyph)
         => ((_mask0 >> (glyph & 63)) & (_mask1 >> ((glyph >> Shift1) & 63)) & (_mask2 >> ((glyph >> Shift2) & 63)) & 1) != 0;
+
+    /// <summary>Gets the bit of a glyph in each mask: the set may contain the glyph when the three masks have them.</summary>
+    public static void GetBits(int glyph, out int bit0, out int bit1, out int bit2)
+    {
+        bit0 = glyph & 63;
+        bit1 = (glyph >> Shift1) & 63;
+        bit2 = (glyph >> Shift2) & 63;
+    }
+
+    /// <summary>Gets one of the masks (0 to <see cref="MaskCount"/> - 1).</summary>
+    public readonly ulong GetMask(int mask) => mask switch
+    {
+        0 => _mask0,
+        1 => _mask1,
+        _ => _mask2,
+    };
 
     public void Add(int glyph)
     {
@@ -29,6 +48,13 @@ internal struct GlyphDigest
         _mask1 |= 1UL << ((glyph >> Shift1) & 63);
         _mask2 |= 1UL << ((glyph >> Shift2) & 63);
     }
+
+    /// <summary>
+    /// Determines whether the set may have a glyph in common with another one: <see langword="false"/> when no glyph the
+    /// other set may contain is one this set may contain.
+    /// </summary>
+    public readonly bool Intersects(in GlyphDigest other)
+        => (_mask0 & other._mask0) != 0 && (_mask1 & other._mask1) != 0 && (_mask2 & other._mask2) != 0;
 
     /// <summary>Adds the glyphs of another digest.</summary>
     public void Add(in GlyphDigest other)

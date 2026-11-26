@@ -35,7 +35,7 @@ internal sealed class LookupDigests
     private readonly ReadOnlyMemory<byte> _data;
     private readonly bool _isPositioning;
     private GlyphDigest[]? _digests;
-    private GlyphDigest[]?[]? _subtableDigests;
+    private SubtableDigests?[]? _subtableDigests;
     private bool[]? _isComputed;
     private Dictionary<int, CoverageCache>? _coverages;
 
@@ -49,13 +49,13 @@ internal sealed class LookupDigests
     /// <summary>Gets the digest of a lookup, which <see cref="LayoutTable.GetLookup"/> has read.</summary>
     /// <param name="index">The index of the lookup in the lookup list.</param>
     /// <param name="subtables">The digest of each subtable of the lookup, or <see langword="null"/> when the lookup has one subtable or cannot be read.</param>
-    public GlyphDigest Get(int index, out GlyphDigest[]? subtables)
+    public GlyphDigest Get(int index, out SubtableDigests? subtables)
     {
         if (_digests is null)
         {
             var count = _table.GetLookupCount(_data.Span);
             _digests = new GlyphDigest[count];
-            _subtableDigests = new GlyphDigest[count][];
+            _subtableDigests = new SubtableDigests[count];
             _isComputed = new bool[count];
         }
 
@@ -89,7 +89,7 @@ internal sealed class LookupDigests
         return coverage;
     }
 
-    private GlyphDigest Compute(int index, out GlyphDigest[]? subtables)
+    private GlyphDigest Compute(int index, out SubtableDigests? subtables)
     {
         var data = _data.Span;
         var lookup = _table.GetLookup(data, index);
@@ -98,7 +98,7 @@ internal sealed class LookupDigests
             return GlyphDigest.All;
 
         var digest = default(GlyphDigest);
-        subtables = lookup.SubtableCount > 1 ? new GlyphDigest[lookup.SubtableCount] : null;
+        var digests = lookup.SubtableCount > 1 ? new GlyphDigest[lookup.SubtableCount] : null;
         for (var i = 0; i < lookup.SubtableCount; i++)
         {
             var subtable = default(GlyphDigest);
@@ -107,14 +107,15 @@ internal sealed class LookupDigests
                 subtable = GlyphDigest.All;
             }
 
-            if (subtables is not null)
+            if (digests is not null)
             {
-                subtables[i] = subtable;
+                digests[i] = subtable;
             }
 
             digest.Add(subtable);
         }
 
+        subtables = digests is null ? null : new SubtableDigests(digests);
         return digest;
     }
 

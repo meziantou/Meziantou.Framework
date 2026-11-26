@@ -219,7 +219,7 @@ internal sealed partial class LayoutApplier
         if (inputCount > MaxSequenceLength)
             return false;
 
-        Span<int> positions = stackalloc int[MaxSequenceLength];
+        var positions = GetPositions();
         positions[0] = index;
         // The glyphs a rule replaces are a sequence a zero width non-joiner breaks, as it breaks a ligature; the glyphs
         // around them are seen through it.

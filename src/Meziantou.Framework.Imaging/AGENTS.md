@@ -1699,6 +1699,15 @@ thin public types over its `FontFace`.
   after a line, only the start is shaped again (`ShapeStart`: two line widths, cut after a space), and the rest is a
   pending item that keeps its advances: shaping the whole rest after each line made a layout quadratic. A line is
   still shaped as a whole: `BuildLine` merges the parts of a run that such a cut separated.
+- **Shaped glyphs are kept where shaping them again gives them** (`Item.Shaping`, `CutGlyphs`, `MergeGlyphs`). An item
+  whose glyphs are those shaping its characters alone gives keeps them when it is cut before the first glyph of a
+  cluster the shaper did not mark unsafe to break (`GlyphInfo.IsUnsafeToBreak`): each part gets its glyphs, and
+  `Shape` does not shape it again. Two parts of the same shaping, next to each other, are merged back without shaping.
+  Anything else (a cut inside a cluster or before a marked glyph, a ruby base, what a line adds, a combined text)
+  is shaped again, as before. A paragraph whose breaks are all safe is shaped once. The layout must stay the one
+  shaping each part again gives: `TextLayoutEngine.Create(..., reusesShapedGlyphs: false)` gives it, and
+  `TextLayoutTests` and `TextLayoutFuzzTests` compare the two. A difference is a missing mark of the shaper (see
+  `TextShaperTests.ShapingTheTwoPartsOfATextCut...`), to fix there, not here.
 - **Measuring a line** goes through `LinePen`: the width so far, and the aligned tabulation stop
   (`TextLayoutOptions.TabStops`) whose advance depends on the text after it, up to the next tabulation or the white
   space that hangs. `FindBreak`, `FindOptimalBreaks`, `Trim` and `BuildLine` all measure with it, so a wrapped line

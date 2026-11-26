@@ -1,5 +1,6 @@
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Typography;
 
 namespace Meziantou.Framework.Imaging.Fuzz;
@@ -26,7 +27,8 @@ public static partial class ImagingFuzzTargets
 
     /// <summary>
     /// <see cref="TextLineBreakStrategy.Optimal"/> line breaking of a text read from the input, compared with greedy
-    /// breaking: the lines cover the text in order, the same layout is found twice, every caret position is finite, the
+    /// breaking: the lines cover the text in order, the same layout is found twice and keeping the glyphs of the parts of
+    /// the text cut into lines gives the layout shaping them again gives, every caret position is finite, the
     /// lines fit the width whenever greedy breaking makes them fit, and, for text aligned at the start without
     /// hyphenation, the sum of the squares of the room left at the end of the lines but the last one is never more than
     /// with greedy breaking. The input is a byte of width (8 to 263 pixels, 16 pixels per em), a byte of options (bit 0:
@@ -72,6 +74,14 @@ public static partial class ImagingFuzzTargets
         var optimal = TextLayout.Create(rich, CreateOptions(TextLineBreakStrategy.Optimal));
         var again = TextLayout.Create(rich, CreateOptions(TextLineBreakStrategy.Optimal));
         FuzzAssert.True(optimal.Lines.SequenceEqual(again.Lines), "Optimal line breaking is not deterministic");
+
+        var spans = rich.SpanList.ToArray();
+        var optimalOptions = CreateOptions(TextLineBreakStrategy.Optimal);
+        var kept = TextLayoutEngine.Create(rich.Text, spans, optimalOptions, 1, optimalOptions.MaxWidth, optimalOptions.MaxHeight);
+        var shaped = TextLayoutEngine.Create(rich.Text, spans, optimalOptions, 1, optimalOptions.MaxWidth, optimalOptions.MaxHeight, reusesShapedGlyphs: false);
+        FuzzAssert.True(
+            kept.Lines.SequenceEqual(shaped.Lines) && kept.Glyphs.SequenceEqual(shaped.Glyphs) && kept.Positions.SequenceEqual(shaped.Positions) && kept.HitBoxes.SequenceEqual(shaped.HitBoxes),
+            "Keeping the glyphs of the parts of the text cut into lines gives another layout than shaping them again");
 
         var position = 0;
         foreach (var line in optimal.Lines)

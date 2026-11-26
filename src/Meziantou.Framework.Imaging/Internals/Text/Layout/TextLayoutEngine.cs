@@ -133,6 +133,10 @@ internal sealed partial class TextLayoutEngine
     private GlyphScratch? _scratch;
     private readonly List<Font> _fonts = [];
     private readonly List<Line> _lines = [];
+    // Whether the glyphs of an item are kept when it is cut or merged where shaping does not depend on the text on the
+    // other side (see Item.Shaping), and the last shaping that gave glyphs that can be.
+    private readonly bool _reusesShapedGlyphs;
+    private int _lastShaping;
     private long _glyphCount;
     private bool _isTruncated;
     private bool _hasMissingGlyphs;
@@ -144,9 +148,10 @@ internal sealed partial class TextLayoutEngine
     private byte[] _bidiLevels = [];
     private byte _bidiLevel;
 
-    private TextLayoutEngine(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight)
+    private TextLayoutEngine(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight, bool reusesShapedGlyphs)
     {
         _text = text;
+        _reusesShapedGlyphs = reusesShapedGlyphs;
         _spans = spans;
         _options = options;
         _scale = scale;
@@ -178,10 +183,15 @@ internal sealed partial class TextLayoutEngine
     /// <param name="scale">What the sizes, the spacings, the indent and the line height are multiplied by.</param>
     /// <param name="maxWidth">The width of the box: what lines are wrapped and aligned at in a horizontal layout, the room of the lines of a vertical one.</param>
     /// <param name="maxHeight">The height of the box: the room of the lines of a horizontal layout, what lines are wrapped and aligned at in a vertical one.</param>
+    /// <param name="reusesShapedGlyphs">
+    /// <see langword="true"/> to keep the glyphs of the parts of a text cut where shaping does not depend on the text
+    /// on the other side; <see langword="false"/> to shape each part again, which gives the same layout (the tests
+    /// compare them).
+    /// </param>
     /// <exception cref="ImageResourceLimitException">The text, its glyphs or its lines exceed a limit of the configuration of the first font.</exception>
-    public static TextLayoutData Create(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight)
+    public static TextLayoutData Create(string text, TextSpan[] spans, TextLayoutOptions options, double scale, double maxWidth, double maxHeight, bool reusesShapedGlyphs = true)
     {
-        var engine = new TextLayoutEngine(text, spans, options, scale, maxWidth, maxHeight);
+        var engine = new TextLayoutEngine(text, spans, options, scale, maxWidth, maxHeight, reusesShapedGlyphs);
         if (text.Length > engine._limits.MaxTextLength)
             throw new ImageResourceLimitException(ImageResourceLimitKind.TextLength, engine._limits.MaxTextLength, text.Length);
 
@@ -821,6 +831,12 @@ internal sealed partial class TextLayoutEngine
     {
         item.IsPending = false;
         item.NeedsShaping = false;
+
+        // The glyphs of the item are already those shaping its characters gives.
+        if (suffix is null && item.Shaping != 0)
+            return;
+
+        item.Shaping = 0;
         item.GlyphCount = 0;
         ReclaimGlyphs(paragraph, item.End - item.Start + (suffix?.Length ?? 0));
         item.GlyphStart = paragraph.Glyphs.Count;
@@ -871,6 +887,7 @@ internal sealed partial class TextLayoutEngine
                 YOffset = (item.IsUpright ? positions[i].XOffset : positions[i].YOffset) * scale,
                 IsInvisible = info[i].IsIgnorable,
                 WidthScale = 1,
+                IsUnsafeToBreak = info[i].IsUnsafeToBreak,
             };
 
             // A glyph hinted with the instructions of its font advances by its hinted advance, a whole number of
@@ -926,6 +943,12 @@ internal sealed partial class TextLayoutEngine
         foreach (ref readonly var glyph in glyphs)
         {
             paragraph.Advances[Math.Clamp(glyph.Cluster, item.Start, item.End - 1) - paragraph.Start] += glyph.Advance;
+        }
+
+        // A ruby base is padded at the ends of the ruby, and the glyphs of what a line adds are not those of its text.
+        if (_reusesShapedGlyphs && suffix is null && item.Ruby < 0)
+        {
+            item.Shaping = ++_lastShaping;
         }
     }
 
@@ -1829,7 +1852,7 @@ internal sealed partial class TextLayoutEngine
             var isMerged = false;
             while (i + 1 < paragraph.Items.Count && paragraph.Items[i + 1] is var next && next.Start == item.End && next.End <= to && next.Start != contentEnd && next.Start < next.End && IsSameRun(item, next))
             {
-                item.End = next.End;
+                MergeGlyphs(item, next);
                 paragraph.Items.RemoveAt(i + 1);
                 isMerged = true;
             }
@@ -2082,6 +2105,7 @@ internal sealed partial class TextLayoutEngine
             }
 
             var second = new Item { Start = position, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsTabulation = item.IsTabulation, Placeholder = item.Placeholder, Ruby = item.Ruby, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft };
+            CutGlyphs(paragraph, item, second, position);
             item.End = position;
             paragraph.Items.Insert(i + 1, second);
             if (item.Start >= lineStart)
@@ -2134,18 +2158,120 @@ internal sealed partial class TextLayoutEngine
         var item = paragraph.Items[index];
         while (index + 1 < paragraph.Items.Count && paragraph.Items[index + 1] is { IsPending: true } next && next.Start == item.End && IsSameRun(item, next))
         {
-            item.End = next.End;
+            MergeGlyphs(item, next);
             paragraph.Items.RemoveAt(index + 1);
         }
 
         var end = FindShapingEnd(paragraph, item);
         if (end < item.End)
         {
-            paragraph.Items.Insert(index + 1, new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, Ruby = item.Ruby, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft });
+            var rest = new Item { Start = end, End = item.End, Style = item.Style, Font = item.Font, Level = item.Level, Script = item.Script, IsPending = true, Ruby = item.Ruby, IsUpright = item.IsUpright, IsCombined = item.IsCombined, IsCombinedRightToLeft = item.IsCombinedRightToLeft };
+            CutGlyphs(paragraph, item, rest, end);
+            paragraph.Items.Insert(index + 1, rest);
             item.End = end;
         }
 
         Shape(paragraph, item);
+    }
+
+    /// <summary>
+    /// Gives each part of an item cut at a position its glyphs, when they are those shaping the part alone gives: the
+    /// glyphs of the item are its own (<see cref="Item.Shaping"/>), the position starts a cluster whose glyphs the
+    /// shaper did not mark unsafe to break, and each part has glyphs. Otherwise the item no longer has glyphs of its own,
+    /// and both parts are shaped again.
+    /// </summary>
+    /// <remarks>
+    /// The clusters of the glyphs of a run never decrease in the order of the text (the shaper keeps them so): the
+    /// glyphs of the part before the position are found by a binary search, in display order, so that cutting the text
+    /// of a long paragraph into lines does not read all of its glyphs at each line.
+    /// </remarks>
+    /// <param name="paragraph">The paragraph.</param>
+    /// <param name="item">The item, which becomes the part before the position.</param>
+    /// <param name="second">The part after the position, which has no glyph yet.</param>
+    /// <param name="position">The position, inside the item.</param>
+    private static void CutGlyphs(Paragraph paragraph, Item item, Item second, int position)
+    {
+        if (item.Shaping == 0)
+            return;
+
+        // The glyphs of a right-to-left item are in display order: the part after the position comes first.
+        var glyphs = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Glyphs).Slice(item.GlyphStart, item.GlyphCount);
+        var isReversed = (item.Level & 1) != 0;
+        var low = 0;
+        var high = glyphs.Length;
+        while (low < high)
+        {
+            var middle = (low + high) >>> 1;
+            if ((glyphs[middle].Cluster < position) != isReversed)
+            {
+                low = middle + 1;
+            }
+            else
+            {
+                high = middle;
+            }
+        }
+
+        // The cut is between the glyphs low - 1 and low; the glyphs of the cluster that starts at the position are on the
+        // side of the part after it.
+        var after = isReversed ? low : glyphs.Length - low;
+        var before = glyphs.Length - after;
+        if (before == 0 || after == 0)
+        {
+            item.Shaping = 0;
+            return;
+        }
+
+        var cluster = isReversed ? glyphs[low - 1] : glyphs[low];
+        var previous = isReversed ? glyphs[low] : glyphs[low - 1];
+        if (cluster.Cluster != position || previous.Cluster >= position)
+        {
+            item.Shaping = 0;
+            return;
+        }
+
+        for (var i = isReversed ? low - 1 : low; i >= 0 && i < glyphs.Length && glyphs[i].Cluster == position; i += isReversed ? -1 : 1)
+        {
+            if (glyphs[i].IsUnsafeToBreak)
+            {
+                item.Shaping = 0;
+                return;
+            }
+        }
+
+        second.Shaping = item.Shaping;
+        second.GlyphCount = after;
+        item.GlyphCount = before;
+        if (isReversed)
+        {
+            second.GlyphStart = item.GlyphStart;
+            item.GlyphStart += after;
+        }
+        else
+        {
+            second.GlyphStart = item.GlyphStart + before;
+        }
+    }
+
+    /// <summary>
+    /// Adds to an item the item that follows it in the text. The glyphs of both stay those of the item when they were
+    /// cut from the same glyphs, next to each other: they are then the glyphs of the text of both shaped together.
+    /// </summary>
+    private static void MergeGlyphs(Item item, Item next)
+    {
+        var isReversed = (item.Level & 1) != 0;
+        var isNext = isReversed ? next.GlyphStart + next.GlyphCount == item.GlyphStart : item.GlyphStart + item.GlyphCount == next.GlyphStart;
+        if (item.Shaping != 0 && next.Shaping == item.Shaping && isNext)
+        {
+            item.GlyphStart = isReversed ? next.GlyphStart : item.GlyphStart;
+            item.GlyphCount += next.GlyphCount;
+        }
+        else
+        {
+            item.Shaping = 0;
+        }
+
+        item.End = next.End;
     }
 
     private static bool IsSameRun(Item first, Item second)
@@ -2918,6 +3044,9 @@ internal sealed partial class TextLayoutEngine
         public double YOffset;
         public bool IsInvisible;
         public double WidthScale;
+
+        /// <summary>The text cannot be cut before the glyph without shaping the two parts again (<see cref="GlyphInfo.IsUnsafeToBreak"/>).</summary>
+        public bool IsUnsafeToBreak;
     }
 
     /// <summary>
@@ -3017,10 +3146,19 @@ internal sealed partial class TextLayoutEngine
         public bool IsCombinedRightToLeft;
 
         /// <summary>
-        /// The item is text of lines to come that was not shaped again when the line before it was made: it has no
-        /// glyph, and its characters have the advances of the last time they were shaped.
+        /// The item is text of lines to come that was not shaped again when the line before it was made: its characters
+        /// have the advances of the last time they were shaped, and it has no glyph unless they are its own
+        /// (<see cref="Shaping"/>).
         /// </summary>
         public bool IsPending;
+
+        /// <summary>
+        /// The shaping the glyphs of the item come from, or 0. When it is not 0, the glyphs are those shaping the
+        /// characters of the item alone gives, and the advances of its characters are theirs: the item was shaped, or
+        /// cut from the glyphs of a longer text where shaping does not depend on the text on the other side
+        /// (<see cref="GlyphInfo.UnsafeToBreak"/>), and is not shaped again.
+        /// </summary>
+        public int Shaping;
 
         /// <summary>
         /// The item was cut since it was last shaped, and is in the line being built: its glyphs and the advances of

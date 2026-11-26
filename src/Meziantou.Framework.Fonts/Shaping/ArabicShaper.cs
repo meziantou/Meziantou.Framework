@@ -142,10 +142,12 @@ internal static partial class ArabicShaper
             if (type == UnicodeJoiningType.Transparent)
                 continue;
 
+            var formBefore = previousForm;
             var form = Step(info[i].CodePoint, type, previous, previousCodePoint, previousType, ref previousForm);
-            if (form == Final || form == Final2 || form == Final3)
+            if (form == Final || form == Final2 || form == Final3 || previousForm != formBefore)
             {
-                // The letter joins the one before it.
+                // The letter joins the one before it, or its form or the form of the one before it depends on the other
+                // (an alaph at the end of a word).
                 buffer.MarkUnsafeToBreak(Math.Max(previous, 0), i + 1);
             }
 

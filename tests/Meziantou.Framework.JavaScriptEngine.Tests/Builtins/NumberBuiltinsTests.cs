@@ -26,6 +26,17 @@ public sealed class NumberBuiltinsTests
     [InlineData(5e-324, 100, "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
     [InlineData(double.NaN, 2, "NaN")]
     [InlineData(double.NegativeInfinity, 2, "-Infinity")]
+    [InlineData(0.1, 19, "0.1000000000000000056")]
+    [InlineData(0.1, 20, "0.10000000000000000555")]
+    [InlineData(12345.6789, 19, "12345.6789000000007945346")]
+    [InlineData(1e-20, 19, "0.0000000000000000000")]
+    [InlineData(1e-30, 19, "0.0000000000000000000")]
+    [InlineData(2.5e-15, 19, "0.0000000000000025000")]
+    [InlineData(99.995, 2, "100.00")]
+    [InlineData(8.345, 2, "8.35")]
+    [InlineData(1.255, 2, "1.25")]
+    [InlineData(4503599627370495.5, 0, "4503599627370496")]
+    [InlineData(0.30000000000000004, 17, "0.30000000000000004")]
     public void ToFixed(double value, int fractionDigits, string expected)
     {
         using var realm = new TestRealm();

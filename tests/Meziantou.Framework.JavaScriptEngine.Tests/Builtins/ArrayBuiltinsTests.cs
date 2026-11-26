@@ -322,6 +322,102 @@ public sealed class ArrayBuiltinsTests
     }
 
     [Fact]
+    public void Species_ChangesAfterUseAreObserved()
+    {
+        // The species of the arrays is cached while Array.prototype.constructor and Array[Symbol.species] do not change
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            const log = [];
+            const array = [1, 2, 3];
+            const run = () => [array.slice(1).constructor.name, array.map(x => x).constructor.name, array.filter(() => true).constructor.name, array.concat([4]).constructor.name, array.splice(0, 0).constructor.name].join();
+            log.push(run());
+            class Other { static get [Symbol.species]() { return Other; } constructor(length) { this.length = length; } }
+            const originalSpecies = Object.getOwnPropertyDescriptor(Array, Symbol.species);
+            Object.defineProperty(Array, Symbol.species, { get() { return Other; }, configurable: true });
+            log.push(run());
+            Object.defineProperty(Array, Symbol.species, originalSpecies);
+            log.push(run());
+            Array.prototype.constructor = Other;
+            log.push(run());
+            Array.prototype.constructor = Array;
+            log.push(run());
+            array.constructor = { [Symbol.species]: Other };
+            log.push(run());
+            delete array.constructor;
+            log.push(run());
+            class MyArray extends Array {}
+            const mine = MyArray.from([1, 2]);
+            log.push([mine.slice(0).constructor.name, mine.concat([]).constructor.name, mine.map(x => x).constructor.name].join());
+            log.join(';')
+            """);
+        Assert.Equal(
+            "Array,Array,Array,Array,Array;Other,Other,Other,Other,Other;Array,Array,Array,Array,Array;Other,Other,Other,Other,Other;Array,Array,Array,Array,Array;Other,Other,Other,Other,Other;Array,Array,Array,Array,Array;MyArray,MyArray,MyArray",
+            engine.ToString(result));
+    }
+
+    [Fact]
+    public void Copies_KeepTheSemanticsOfTheElements()
+    {
+        // slice, concat, spread and Array.from copy the arrays without hole at once: the other arrays use the general algorithm
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            const show = a => a.length + ':' + Array.from({ length: a.length }, (_, i) => i in a ? String(a[i]) : '<hole>').join(',');
+            const log = [];
+            const numbers = [1, 2, 3, 4, 5];
+            const mixed = [1, 'a', null, undefined, { x: 1 }];
+            const holes = [1, , 3];
+            log.push(show(numbers.slice(1, 4)), show(numbers.slice(-2)), show(numbers.slice(3, 1)), show(mixed.slice(1)), show(holes.slice(0)));
+            log.push(show(numbers.concat(mixed, 6, holes)), show(holes.concat(numbers)), show([].concat([], [])));
+            log.push(show([...numbers, ...mixed]), show([0, ...numbers]), show([...holes]), show(Array.from(holes)), show(Array.from(mixed)));
+
+            // The copy is a new array: changing it does not change the source
+            const copy = numbers.slice();
+            copy[0] = 10;
+            copy.push(6);
+            const spread = [...numbers];
+            spread[1] = 20;
+            log.push(show(numbers), show(copy), show(spread));
+
+            // A getter of the prototype is read for a hole only
+            Object.defineProperty(Array.prototype, 1, { get() { return 'proto'; }, configurable: true });
+            log.push(show(holes.slice(0)), show([...holes]), show(numbers.slice(0, 3)));
+            delete Array.prototype[1];
+
+            // An argument that shrinks the array while it is converted
+            const shrinking = [1, 2, 3, 4];
+            log.push(show(shrinking.slice({ valueOf() { shrinking.length = 2; return 0; } }, 4)));
+
+            // The iteration of an array can be observed
+            const iterated = [1, 2];
+            iterated[Symbol.iterator] = function* () { yield 'own'; };
+            log.push(show([...iterated]), show(Array.from(iterated)));
+            const values = Array.prototype[Symbol.iterator];
+            Array.prototype[Symbol.iterator] = function* () { yield 'proto'; };
+            log.push(show([...numbers]), show(Array.from(numbers)));
+            Array.prototype[Symbol.iterator] = values;
+            log.push(show([...numbers]));
+
+            // Symbol.isConcatSpreadable, a subclass, and a mapper
+            const notSpread = [7, 8];
+            notSpread[Symbol.isConcatSpreadable] = false;
+            log.push(numbers.concat(notSpread).length);
+            class MyArray extends Array {}
+            log.push(MyArray.from(numbers) instanceof MyArray, show(Array.from(numbers, x => x * 2)));
+            log.join(';')
+            """);
+        Assert.Equal(
+            "3:2,3,4;2:4,5;0:;4:a,null,undefined,[object Object];3:1,<hole>,3;" +
+            "14:1,2,3,4,5,1,a,null,undefined,[object Object],6,1,<hole>,3;8:1,<hole>,3,1,2,3,4,5;0:;" +
+            "10:1,2,3,4,5,1,a,null,undefined,[object Object];6:0,1,2,3,4,5;3:1,undefined,3;3:1,undefined,3;5:1,a,null,undefined,[object Object];" +
+            "5:1,2,3,4,5;6:10,2,3,4,5,6;5:1,20,3,4,5;" +
+            "3:1,proto,3;3:1,proto,3;3:1,2,3;" +
+            "4:1,2,<hole>,<hole>;" +
+            "1:own;1:own;1:proto;1:proto;5:1,2,3,4,5;" +
+            "6;true;5:2,4,6,8,10",
+            engine.ToString(result));
+    }
+
+    [Fact]
     public void Species_CrossRealmArrayConstructorIsIgnored()
     {
         using var context = new BuiltinsTestContext();

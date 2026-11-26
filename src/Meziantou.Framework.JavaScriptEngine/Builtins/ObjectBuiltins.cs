@@ -172,6 +172,9 @@ internal static class ObjectBuiltins
     private static JsValue Entries(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var obj = JsOperations.ToObject(Arg(arguments, 0));
+        if (PropertyOperations.TryCreateEnumerableOwnPropertiesArray(function.Realm, obj, EnumerableOwnPropertiesKind.KeyValue) is { } array)
+            return array;
+
         var entries = PropertyOperations.EnumerableOwnProperties(obj, EnumerableOwnPropertiesKind.KeyValue);
         return JsArray.Create(function.Realm, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(entries));
     }
@@ -180,6 +183,9 @@ internal static class ObjectBuiltins
     private static JsValue Keys(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var obj = JsOperations.ToObject(Arg(arguments, 0));
+        if (PropertyOperations.TryCreateEnumerableOwnPropertiesArray(function.Realm, obj, EnumerableOwnPropertiesKind.Key) is { } array)
+            return array;
+
         var keys = PropertyOperations.EnumerableOwnProperties(obj, EnumerableOwnPropertiesKind.Key);
         return JsArray.Create(function.Realm, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(keys));
     }
@@ -188,6 +194,9 @@ internal static class ObjectBuiltins
     private static JsValue Values(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
         var obj = JsOperations.ToObject(Arg(arguments, 0));
+        if (PropertyOperations.TryCreateEnumerableOwnPropertiesArray(function.Realm, obj, EnumerableOwnPropertiesKind.Value) is { } array)
+            return array;
+
         var values = PropertyOperations.EnumerableOwnProperties(obj, EnumerableOwnPropertiesKind.Value);
         return JsArray.Create(function.Realm, System.Runtime.InteropServices.CollectionsMarshal.AsSpan(values));
     }

@@ -101,6 +101,41 @@ public sealed class ObjectBuiltinsTests
     }
 
     [Fact]
+    public void KeysValuesEntries_OfOrdinaryObjects()
+    {
+        // The objects whose properties are all in their shape are read at once: the others, and the accessors of the
+        // values, use the general algorithm
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            const show = o => [Object.keys(o).join(), Object.values(o).join(), Object.entries(o).map(e => e.join(':')).join()].join('|');
+            const log = [];
+            const symbol = Symbol('s');
+            log.push(show({ a: 1, b: 'x', [symbol]: 3, c: null }));
+            const hidden = { a: 1 };
+            Object.defineProperty(hidden, 'b', { value: 2, enumerable: false });
+            hidden.c = 3;
+            log.push(show(hidden));
+            log.push(show({ b: 1, 2: 'x', a: 2, 1: 'y' }));
+            const reordered = { a: 1, b: 2 };
+            delete reordered.a;
+            reordered.a = 3;
+            log.push(show(reordered));
+            log.push(show({ get a() { delete this.b; return 1; }, b: 2, c: 3 }));
+            log.push(show({ get a() { this.z = 9; return 1; }, b: 2 }));
+            log.push(show(['x', 'y']), show('ab'), show({}));
+            const large = {};
+            for (let i = 0; i < 100; i++) large['p' + i] = i;
+            log.push(Object.keys(large).length + ':' + Object.values(large).reduce((s, v) => s + v, 0));
+            const o = { a: 1 };
+            log.push(typeof Object.keys(o)[0], Object.keys(o) !== Object.keys(o), Object.entries(o)[0] !== Object.entries(o)[0]);
+            log.join(';')
+            """);
+        Assert.Equal(
+            "a,b,c|1,x,|a:1,b:x,c:;a,c|1,3|a:1,c:3;1,2,b,a|y,x,1,2|1:y,2:x,b:1,a:2;b,a|2,3|b:2,a:3;a,b,c|1,3|a:1,c:3;a,b|1,2|a:1,b:2,z:9;0,1|x,y|0:x,1:y;0,1|a,b|0:a,1:b;||;100:4950;string;true;true",
+            engine.ToString(result));
+    }
+
+    [Fact]
     public void Constructor_WrapsPrimitivesAndCreatesObjects()
     {
         using var context = new FundamentalsTestContext();

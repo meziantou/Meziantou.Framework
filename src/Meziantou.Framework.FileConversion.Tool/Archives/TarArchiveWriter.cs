@@ -78,8 +78,7 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
     public override bool AddSymbolicLink(string name, string target, DateTimeOffset? lastWriteTime)
     {
-        // The records of a pax header cannot contain a null character (the readers reject them)
-        if (target.Contains('\0', StringComparison.Ordinal))
+        if (!CanStore(target))
             return false;
 
         var entry = CreateEntry(TarEntryType.SymbolicLink, name, lastWriteTime);
@@ -90,7 +89,7 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
     public override bool AddHardLink(string name, string target, DateTimeOffset? lastWriteTime)
     {
-        if (target.Contains('\0', StringComparison.Ordinal))
+        if (!CanStore(target))
             return false;
 
         var entry = CreateEntry(TarEntryType.HardLink, name, lastWriteTime);
@@ -110,8 +109,8 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
     private static PaxTarEntry CreateEntry(TarEntryType entryType, string name, DateTimeOffset? lastWriteTime)
     {
-        if (name.Contains('\0', StringComparison.Ordinal))
-            throw new ArgumentException($"The name '{name.Replace('\0', '\uFFFD')}' cannot be stored in a tar archive: it contains a null character", nameof(name));
+        if (!CanStore(name))
+            throw new ArgumentException($"The name '{name.Replace('\0', '\uFFFD').Replace('\n', '\uFFFD')}' cannot be stored in a tar archive: it contains a null character or a line feed", nameof(name));
 
         var entry = new PaxTarEntry(entryType, name);
         if (lastWriteTime is { } time)
@@ -121,4 +120,10 @@ internal sealed class TarArchiveWriter : ArchiveWriter
 
         return entry;
     }
+
+    /// <summary>
+    /// Gets whether a name or a link target can be stored in the records of a pax header: the readers reject a null
+    /// character, and a line feed, which ends a record for .NET (fuzz regression: a file name with a line feed).
+    /// </summary>
+    private static bool CanStore(string value) => value.AsSpan().IndexOfAny('\0', '\n') < 0;
 }

@@ -1057,6 +1057,25 @@ public sealed class PdfReaderTests
     }
 
     [Fact]
+    public async Task APrefetchSkipsTheObjectsThatCannotBeRead()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Unused 4 0 R >>")
+            .Add(4, new string('[', 300) + new string(']', 300))
+            .ToArray();
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        await document.PrefetchPageAsync(0);
+
+        Assert.Equal("", document.Pages[0].ExtractText());
+        Assert.Throws<PdfResourceLimitException>(() => document.Pages[0].Dictionary.GetResolved(PdfName.Create("Unused")));
+    }
+
+    [Fact]
     public async Task AHeaderBeyondTheFirstKilobyteNeedsTheWholeFile()
     {
         var file = new byte[2000].Concat(HandWrittenPdf.CreateSimple().ToArray()).ToArray();

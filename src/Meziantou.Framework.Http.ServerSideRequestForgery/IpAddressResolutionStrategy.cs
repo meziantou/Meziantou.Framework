@@ -18,10 +18,13 @@ public abstract class IpAddressResolutionStrategy
 
     protected internal abstract ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken);
 
+    // The loops index the list instead of using foreach: through IReadOnlyList<T>, foreach boxes the list's enumerator,
+    // one allocation per connection.
     private static IPAddress FindFirstAddress(IReadOnlyList<IPAddress> addresses, AddressFamily family)
     {
-        foreach (var address in addresses)
+        for (var i = 0; i < addresses.Count; i++)
         {
+            var address = addresses[i];
             if (address.AddressFamily == family)
             {
                 return address;
@@ -57,8 +60,9 @@ public abstract class IpAddressResolutionStrategy
         {
             _ = options;
             _ = cancellationToken;
-            foreach (var address in addresses)
+            for (var i = 0; i < addresses.Count; i++)
             {
+                var address = addresses[i];
                 if (address.AddressFamily == AddressFamily.InterNetwork)
                     return ValueTask.FromResult(address);
             }

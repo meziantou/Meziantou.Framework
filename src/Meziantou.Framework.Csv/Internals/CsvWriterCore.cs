@@ -345,11 +345,18 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
-        // Doubles with few decimals too (see InvariantFloatingPoint.TryFormat)
+        // Doubles and floats too (see InvariantFloatingPoint.TryFormat)
         if (typeof(TValue) == typeof(double) && format.IsEmpty && InvariantNumbers.IsInvariant(formatProvider) &&
             InvariantFloatingPoint.TryFormat((double)(object)value, destination, out var doubleWritten, out var doubleTooSmall) && !doubleTooSmall)
         {
             CommitNumber(start, doubleWritten, isInvariantNumber);
+            return;
+        }
+
+        if (typeof(TValue) == typeof(float) && format.IsEmpty && InvariantNumbers.IsInvariant(formatProvider) &&
+            InvariantFloatingPoint.TryFormat((float)(object)value, destination, out var singleWritten, out var singleTooSmall) && !singleTooSmall)
+        {
+            CommitNumber(start, singleWritten, isInvariantNumber);
             return;
         }
 
@@ -386,11 +393,18 @@ internal sealed class CsvWriterCore<T> : IDisposable, IAsyncDisposable
             return;
         }
 
-        // Doubles with few decimals too (see InvariantFloatingPoint.TryFormat)
+        // Doubles and floats too (see InvariantFloatingPoint.TryFormat)
         if (typeof(TValue) == typeof(double) && format.IsEmpty && InvariantNumbers.IsInvariant(formatProvider) &&
             InvariantFloatingPoint.TryFormat((double)(object)value, destination, out var doubleWritten, out var doubleTooSmall) && !doubleTooSmall)
         {
             CommitNumber(start, doubleWritten, isInvariantNumber);
+            return;
+        }
+
+        if (typeof(TValue) == typeof(float) && format.IsEmpty && InvariantNumbers.IsInvariant(formatProvider) &&
+            InvariantFloatingPoint.TryFormat((float)(object)value, destination, out var singleWritten, out var singleTooSmall) && !singleTooSmall)
+        {
+            CommitNumber(start, singleWritten, isInvariantNumber);
             return;
         }
 

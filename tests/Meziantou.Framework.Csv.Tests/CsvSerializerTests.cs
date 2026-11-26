@@ -1137,6 +1137,27 @@ public class CsvSerializerTests
     [InlineData(999999999999999.875)]
     [InlineData(1e15)]
     [InlineData(4503599627370497.0)]
+    [InlineData(9007199254740993.0)]
+    [InlineData(1e16)]
+    [InlineData(12345678901234568.0)]
+    [InlineData(99999999999999984.0)]
+    [InlineData(1e17)]
+    [InlineData(1.2345678901234568e17)]
+    [InlineData(1e21)]
+    [InlineData(1e22)]
+    [InlineData(1e23)]
+    [InlineData(1.5e300)]
+    [InlineData(1e-5)]
+    [InlineData(9.9999e-5)]
+    [InlineData(0.000099999999999999991)]
+    [InlineData(1.2345e-7)]
+    [InlineData(1e-10)]
+    [InlineData(1e-48)]
+    [InlineData(1e80)]
+    [InlineData(1.2345678901234567e-48)]
+    [InlineData(1.2345678901234567e80)]
+    [InlineData(2.2250738585072014e-308)]
+    [InlineData(2.9802322387695312E-08)]
     [InlineData(5e-324)]
     [InlineData(double.MaxValue)]
     [InlineData(double.NaN)]
@@ -1181,10 +1202,10 @@ public class CsvSerializerTests
     [Fact]
     public void FloatingPoint_FormatMatchesBclForShortestValues()
     {
-        // The values from 10^-4 to 10^15 are all handled, with the shortest number when they have more than 9 decimals: random values, and the powers of
-        // two and their neighbors, whose interval is narrower below them
-        var min = BitConverter.DoubleToInt64Bits(1e-4);
-        var max = BitConverter.DoubleToInt64Bits(1e15);
+        // The normal values from about 7e-49 to 5e80 are all handled, with or without an exponent: random values, and the powers of two and their
+        // neighbors, whose interval is narrower below them
+        var min = (long)InvariantFloatingPoint.MinShortestDoubleExponent << 52;
+        var max = ((long)InvariantFloatingPoint.MaxShortestDoubleExponent + 1) << 52;
         var state = 0x9E3779B97F4A7C15UL;
         for (var i = 0; i < 200_000; i++)
         {
@@ -1193,19 +1214,30 @@ public class CsvSerializerTests
             Assert.True(AssertFormatMatchesBcl(-value), value.ToString("R", CultureInfo.InvariantCulture));
         }
 
-        for (var exponent = -13; exponent <= 49; exponent++)
+        for (var exponent = InvariantFloatingPoint.MinShortestDoubleExponent; exponent <= InvariantFloatingPoint.MaxShortestDoubleExponent; exponent++)
         {
-            var power = BitConverter.DoubleToInt64Bits(Math.ScaleB(1, exponent));
+            var power = (long)exponent << 52;
             for (var offset = -2; offset <= 2; offset++)
             {
                 var value = BitConverter.Int64BitsToDouble(power + offset);
-                Assert.True(AssertFormatMatchesBcl(value), value.ToString("R", CultureInfo.InvariantCulture));
+                Assert.True(AssertFormatMatchesBcl(value) || offset < 0, value.ToString("R", CultureInfo.InvariantCulture));
             }
         }
 
-        Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min + 1)));
+        // The limits, where k is the smallest and the largest of the table, and the values around 10^-4 and 10^17, where the BCL starts writing an
+        // exponent
+        Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min)));
         Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(max - 1)));
         Assert.False(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min - 1)));
+        Assert.False(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(max)));
+        foreach (var limit in new[] { 1e-4, 1e17 })
+        {
+            var bits = BitConverter.DoubleToInt64Bits(limit);
+            for (var offset = -3; offset <= 3; offset++)
+            {
+                Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(bits + offset)));
+            }
+        }
 
         static ulong Next(ref ulong state)
         {
@@ -1216,8 +1248,99 @@ public class CsvSerializerTests
         }
     }
 
+    [Theory]
+    [InlineData(0.1f)]
+    [InlineData(0.2f)]
+    [InlineData(0.3f)]
+    [InlineData(1f / 3)]
+    [InlineData(-12.3f)]
+    [InlineData(1f)]
+    [InlineData(100f)]
+    [InlineData(1e-4f)]
+    [InlineData(9.9e-5f)]
+    [InlineData(1e-5f)]
+    [InlineData(-2.5e-7f)]
+    [InlineData(1234567f)]
+    [InlineData(9999999f)]
+    [InlineData(16777216f)]
+    [InlineData(16777218f)]
+    [InlineData(1e8f)]
+    [InlineData(123456790f)]
+    [InlineData(999999940f)]
+    [InlineData(1e9f)]
+    [InlineData(1.5e9f)]
+    [InlineData(4294967296f)]
+    [InlineData(1e10f)]
+    [InlineData(1e20f)]
+    [InlineData(float.MaxValue)]
+    [InlineData(1.17549435e-38f)]
+    [InlineData(1.4e-45f)]
+    [InlineData(1e-40f)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(float.NegativeInfinity)]
+    [InlineData(0f)]
+    public void FloatingPoint_SingleFormatMatchesBcl(float value)
+    {
+        AssertFormatMatchesBcl(value);
+        AssertFormatMatchesBcl(-value);
+    }
+
+    [Fact]
+    public void FloatingPoint_SingleFormatMatchesBclForNormalValues()
+    {
+        // Every normal float is handled (all of them were compared to the BCL once): one value every 4093 bit patterns, and the powers of two and
+        // their neighbors, from the subnormal values to the infinities
+        var handled = 0;
+        for (var bits = 0L; bits <= uint.MaxValue; bits += 4093)
+        {
+            var value = BitConverter.UInt32BitsToSingle((uint)bits);
+            var isHandled = AssertFormatMatchesBcl(value);
+            Assert.Equal(float.IsNormal(value) || value == 0, isHandled);
+            handled += isHandled ? 1 : 0;
+        }
+
+        Assert.True(handled > 1_000_000, "Too few values take the fast path: " + handled.ToString(CultureInfo.InvariantCulture));
+
+        for (var exponent = 0; exponent <= 255; exponent++)
+        {
+            var power = exponent << 23;
+            for (var offset = -2; offset <= 2; offset++)
+            {
+                var value = BitConverter.Int32BitsToSingle(power + offset);
+                Assert.Equal(float.IsNormal(value) || value == 0, AssertFormatMatchesBcl(value));
+            }
+        }
+    }
+
     // The fast path writes the text of the BCL in UTF-16 and UTF-8, or reports a destination too small
     private static bool AssertFormatMatchesBcl(double value)
+    {
+        // .NET 10 writes 2^-25 with 16 digits that do not parse back to it, 2.980232238769531E-08: the fast path writes the 17 digits of .NET 11
+        var expected = Math.Abs(value) == Math.ScaleB(1, -25) ? value.ToString("G17", CultureInfo.InvariantCulture) : value.ToString(CultureInfo.InvariantCulture);
+        var chars = new char[64];
+        if (!InvariantFloatingPoint.TryFormat(value, chars.AsSpan(), out var written, out var tooSmall))
+        {
+            Assert.False(InvariantFloatingPoint.TryFormat(value, new byte[64].AsSpan(), out _, out _));
+            return false;
+        }
+
+        Assert.False(tooSmall);
+        Assert.Equal(expected, new string(chars, 0, written));
+
+        var bytes = new byte[64];
+        Assert.True(InvariantFloatingPoint.TryFormat(value, bytes.AsSpan(), out var bytesWritten, out tooSmall));
+        Assert.False(tooSmall);
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+
+        Assert.True(InvariantFloatingPoint.TryFormat(value, new char[expected.Length - 1].AsSpan(), out written, out tooSmall));
+        Assert.True(tooSmall);
+        Assert.Equal(0, written);
+        return true;
+    }
+
+    // The fast path writes the text of the BCL in UTF-16 and UTF-8, or reports a destination too small
+    private static bool AssertFormatMatchesBcl(float value)
     {
         var expected = value.ToString(CultureInfo.InvariantCulture);
         var chars = new char[64];
@@ -1287,15 +1410,44 @@ public class CsvSerializerTests
     {
         // g of Schubfach: floor(10^e × 2^(125 - floor(log2(10^e)))) + 1, split in two halves of 63 bits
         var powers = InvariantFloatingPoint.ShortestPowersOfTen;
-        Assert.HasCount(2 * (InvariantFloatingPoint.MaxShortestPowerOfTen + 1), powers.ToArray());
+        Assert.HasCount(2 * (InvariantFloatingPoint.MaxPowerOfFive - InvariantFloatingPoint.MinPowerOfFive + 1), powers.ToArray());
         var mask = (BigInteger.One << 63) - 1;
-        for (var e = 0; e <= InvariantFloatingPoint.MaxShortestPowerOfTen; e++)
+        for (var e = InvariantFloatingPoint.MinPowerOfFive; e <= InvariantFloatingPoint.MaxPowerOfFive; e++)
         {
-            var power = BigInteger.Pow(10, e);
-            var g = ((power << 125) >> ((int)power.GetBitLength() - 1)) + 1;
-            Assert.Equal(g >> 63, (BigInteger)powers[2 * e], "g1 of 10^" + e.ToString(CultureInfo.InvariantCulture));
-            Assert.Equal(g & mask, (BigInteger)powers[(2 * e) + 1], "g0 of 10^" + e.ToString(CultureInfo.InvariantCulture));
+            // For a negative e, 10^e is 1 / 10^-e, and floor(log2(10^e)) is -bitLength(10^-e), as 10^-e is not a power of two
+            BigInteger g;
+            if (e >= 0)
+            {
+                var power = BigInteger.Pow(10, e);
+                g = ((power << 125) >> ((int)power.GetBitLength() - 1)) + 1;
+            }
+            else
+            {
+                var power = BigInteger.Pow(10, -e);
+                g = ((BigInteger.One << (125 + (int)power.GetBitLength())) / power) + 1;
+            }
+
+            var index = 2 * (e - InvariantFloatingPoint.MinPowerOfFive);
+            Assert.Equal(g >> 63, (BigInteger)powers[index], "g1 of 10^" + e.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(g & mask, (BigInteger)powers[index + 1], "g0 of 10^" + e.ToString(CultureInfo.InvariantCulture));
         }
+    }
+
+    [Fact]
+    public void FloatingPoint_SerializeMatchesBcl()
+    {
+        // The serializer writes doubles and floats with the text of ToString with the invariant culture, in UTF-16 and UTF-8
+        double[] doubles = [0.1, 0.30000000000000004, -1.5e-7, 1e16, 1.2345678901234568e17, 1e300, 0, -0.0, double.NaN];
+        float[] singles = [0.1f, 1f / 3, -2.5e-7f, 1e8f, 1.5e9f, float.MaxValue, 0, -0f, float.PositiveInfinity];
+        var models = doubles.Select((value, index) => new FloatingPointModel { Double = value, Single = singles[index] }).ToArray();
+        var expected = new StringBuilder("Double,Single,Half\r\n");
+        foreach (var model in models)
+        {
+            expected.Append(model.Double.ToString(CultureInfo.InvariantCulture)).Append(',').Append(model.Single.ToString(CultureInfo.InvariantCulture)).Append(",0\r\n");
+        }
+
+        Assert.Equal(expected.ToString(), CsvSerializer.Serialize(models));
+        Assert.Equal(expected.ToString(), Encoding.UTF8.GetString(CsvSerializer.SerializeToUtf8Bytes(models)));
     }
 
     [Fact]

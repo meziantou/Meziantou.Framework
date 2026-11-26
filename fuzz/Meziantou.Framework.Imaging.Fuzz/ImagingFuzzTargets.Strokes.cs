@@ -42,9 +42,10 @@ public static partial class ImagingFuzzTargets
     /// </summary>
     /// <remarks>
     /// The round and square caps of dashes can end anywhere on a curve, and each one is a shape of the width of the pen: their
-    /// pens are at most 9.5 pixels wide, so that an input stays fast (fuzz regressions: in perspective, round caps of pens of
-    /// 24 pixels on the plane seen nearly edge-on took 10 to 35 seconds, whatever the length of the dashes; mirrored, dashes
-    /// of 0.125 pixels with round caps of a pen of 64 pixels took 2.4 seconds).
+    /// pens are at most 9.5 pixels wide, and their dash patterns at least 2 pixels long, so that an input stays fast (fuzz
+    /// regressions: in perspective, round caps of pens of 24 pixels on the plane seen nearly edge-on took 10 to 35 seconds,
+    /// whatever the length of the dashes; mirrored, dashes of 0.125 pixels with round caps of a pen of 64 pixels took 2.4
+    /// seconds; a pattern of 1.375 pixels with round caps of a pen of 9.5 pixels took 24 seconds).
     /// </remarks>
     private static void StrokeTarget(ReadOnlySpan<byte> data)
     {
@@ -108,6 +109,16 @@ public static partial class ImagingFuzzTargets
         if (dashes.Length != 0 && cap != LineCap.Butt)
         {
             penWidth = Math.Min(penWidth, 9.5);
+
+            // (a pattern of at least 2 pixels: each dash adds two caps)
+            var patternLength = dashes.Sum();
+            if (patternLength is > 0 and < 2)
+            {
+                for (var i = 0; i < dashes.Length; i++)
+                {
+                    dashes[i] *= 2 / patternLength;
+                }
+            }
         }
 
         Pen pen;

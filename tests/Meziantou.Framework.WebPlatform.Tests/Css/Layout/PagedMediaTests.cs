@@ -615,6 +615,30 @@ public sealed class PagedMediaTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Pages_FlexItemPushedFromTheStartOfAColumnOfANestedMultiColumnContainerContinuesInTheNextPage()
+    {
+        // The paragraph of 30 lines (300px) avoids breaks and does not fit in a column of the first page (294px): it is pushed
+        // from the start of the second column to the next page, whose column holds it, and the last item is in the next column.
+        // The second column of the first page does not break inside the pushed paragraph (fuzz regression: the next pages laid
+        // out the paragraph again from its start, one line per column, until the limit of 10,000 pages)
+        var document = Parse($$"""
+            <style>@page { size: 200px 300px; margin: 0 }</style>
+            <div style='padding: 5px; border: 1px solid'><div style='columns: 2'><div style='display: flex; flex-direction: column'>
+            <div id=a style='height: 1px; break-inside: avoid'></div><div id=b style='break-inside: avoid'>{{string.Join(' ', Enumerable.Repeat("XXXX", 30))}}</div><div id=c style='break-inside: avoid'>XXXX</div>
+            </div></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(3, pages.Count);
+        Assert.Equal(0, Assert.Single(GetPageRects(pages, document.GetElementById("a")!)).Page);
+        var b = Assert.Single(GetPageRects(pages, document.GetElementById("b")!));
+        Assert.Equal((1, 300d), (b.Page, b.Rect.Height));
+        var c = Assert.Single(GetPageRects(pages, document.GetElementById("c")!));
+        Assert.Equal(1, c.Page);
+        Assert.True(c.Rect.X > b.Rect.X, "the last item is in the next column");
+    }
+
     [Theory]
     [InlineData("<div style='padding-top: 10px'><div style='columns: 2; column-gap: 0'>{0}</div></div>")]
     [InlineData("<div style='columns: 2; column-gap: 0'><div style='columns: 1; column-gap: 0'>{0}</div></div>")]

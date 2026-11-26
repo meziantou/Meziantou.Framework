@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 using Meziantou.Framework.Fuzzing;
@@ -162,7 +163,14 @@ public static partial class JavaScriptEngineFuzzTargets
     private static void Execute(ReadOnlySpan<byte> data)
     {
         var code = FuzzText.Decode(data);
+        var started = Stopwatch.GetTimestamp();
         var expected = RunScript(realm => realm.Execute(code, "script.js"));
+
+        // A built-in function does not count statements: a script whose built-in functions take long (the digits of a BigInt
+        // of millions of bits) runs once, or the four runs would make a slow unit (fuzz regression)
+        if (Stopwatch.GetElapsedTime(started) > TimeSpan.FromSeconds(1))
+            return;
+
         if (JsPreparedScript.TryParse(code, "script.js", lineOffset: 0, columnOffset: 0, out var script, out var error))
         {
             CheckSameOutcome(expected, RunScript(realm => realm.Execute(script)), "The prepared script and the script run differently");

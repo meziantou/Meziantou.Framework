@@ -13,6 +13,7 @@ public sealed class CssMinifyFormatterTests
     [InlineData("a :hover, a:is(b, c) * { color: red }", "a :hover,a:is(b,c) *{color:red}")]
     [InlineData("li:nth-child(2n + 1 of .a) { color: red }", "li:nth-child(2n+1 of .a){color:red}")]
     [InlineData("a[title = \"a  b\"] { color: red }", "a[title=\"a  b\"]{color:red}")]
+    [InlineData("-- > p, a-- > p, --x > p { color: red }", "-- >p,a-->p,--x>p{color:red}")] // "-->" is the CDC token
     // Declarations
     [InlineData("a { color: red; margin: 0 auto !important; }", "a{color:red;margin:0px auto!important}")]
     [InlineData("a { font: 12px / 1.5 \"Times New Roman\", serif }", "a{font:12px/1.5 Times New Roman,serif}")]

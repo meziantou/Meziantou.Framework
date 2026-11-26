@@ -534,6 +534,7 @@ public sealed class CssomTests
     [InlineData("container-name: sid\\bar")] // A character that is not an ident code point, which an escape gives, written escaped
     [InlineData("link-parameters: param(--a: 1000000000000000000000x 1000000000000000000000% 1000000000000000000000)")] // Large numbers of dimensions, percentages and integers
     [InlineData("link-parameters: param(--a: 999999999999999918052x 999999999999999918052 1234567890123456.5)")] // Numbers just below 1e21, with more than 15 significant digits
+    [InlineData("link-parameters: param(--a: p(-->(x) <!-- y))")] // The CDO and CDC tokens are serialized as their text
     public void Serialization_IsParsedAsTheSameValue(string style)
     {
         var element = CreateElement(style);

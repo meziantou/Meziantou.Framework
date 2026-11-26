@@ -2260,6 +2260,21 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
     }
 
+    [Fact]
+    public void FormatterWritesNoEmptyQuoteLineBeforeASetextHeadingWrittenAsAnAtxHeading()
+    {
+        // In a figure, the blocks are written without a blank line between them: the setext heading after the block quote needs
+        // an empty line of the quote, which ends its paragraph, but the ATX heading it is written as interrupts the paragraph
+        // (fuzz regression: the empty line was written, then removed by formatting the text again)
+        var options = new MarkdownParseOptions { Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension) };
+        var tree = MarkdownSyntaxTree.ParseText(" ^^^\n>!\n+-\n-", options);
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal("^^^\n> !\n## +-\n", formatted.GetRoot().ToFullString());
+        Assert.Equal("^^^\n> !\n## +-\n", MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+    }
+
     [Theory]
     [InlineData("[^1]: 1.  \n   <!-- --> - L    bar", "[^1]:\n    1.\n\n       <!-- --> - L    bar\n")]
     [InlineData("a[^1]\n\n[^1]: 1.  \n   <!-- --> b\n", "a[^1]\n\n[^1]:\n    1.\n\n       <!-- --> b\n")]

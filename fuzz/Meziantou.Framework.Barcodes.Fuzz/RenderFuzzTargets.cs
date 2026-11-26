@@ -212,8 +212,11 @@ internal static class RenderFuzzTargets
         var symbolHeight = (rows + (2.0 * verticalQuietZone)) * effectiveModuleHeight;
         if (hasText)
         {
-            // The scene adds up the quiet zones and the bars: the sum can differ from the product by a rounding error
-            FuzzAssert.True(scene.Width >= symbolWidth * (1 - 1e-12) && scene.Height > symbolHeight,$"The scene ({scene.Width}x{scene.Height}) is smaller than the symbol and its text ({symbolWidth}x{symbolHeight})");
+            // The scene adds up the quiet zones and the bars: the sum can differ from the product by a rounding error. The digits of
+            // EAN and UPC shrink to fit between the guards: with tiny modules, their height is lost in the sum with the bars
+            // (fuzz regression: modules of 6.9E-299 and bars of 3)
+            var hasShrinkingText = symbol is Barcode { EanUpcLayout: not null };
+            FuzzAssert.True(scene.Width >= symbolWidth * (1 - 1e-12) && (hasShrinkingText ? scene.Height >= symbolHeight : scene.Height > symbolHeight), $"The scene ({scene.Width}x{scene.Height}) is smaller than the symbol and its text ({symbolWidth}x{symbolHeight}, a font size of {fontSize})");
 
             // The text is one line, as it is measured, except the groups of digits of EAN and UPC: its control characters are
             // drawn as '?'

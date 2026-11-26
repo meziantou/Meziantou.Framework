@@ -820,6 +820,18 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void GetImages_KeepsTheKeysOfAnInlineImageWithANullCharacter()
+    {
+        // #00 is a null character, which a name read from a file can have, but not a name created from a string (fuzz regression)
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().AppendRawContent("q 5 0 0 5 300 300 cm BI /W 1 /H 1 /BPC 8 /CS /G /A#00b 1 /F /AHx ID 80> EI Q"u8);
+
+        var image = Assert.Single(PdfDocument.Open(document.ToByteArray()).Pages[0].GetImages());
+        Assert.Equal(1, image.Width);
+        Assert.Contains(image.Dictionary, entry => entry.Key.Value == "A\0b");
+    }
+
+    [Fact]
     public void Example_Underlay()
     {
         var document = new PdfDocument();

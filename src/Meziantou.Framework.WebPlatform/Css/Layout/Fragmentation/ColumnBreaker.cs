@@ -214,6 +214,12 @@ internal static partial class ColumnBreaker
         /// </summary>
         private bool _hasDeferredItems;
 
+        /// <summary>
+        /// Whether an item at the start of the current fragmentainer is pushed alone to the next one (see <see cref="StartBreakAppeal"/>):
+        /// the fragmentainer ends before it.
+        /// </summary>
+        private bool _isItemPushedFromStart;
+
         /// <summary>The parallel flows that were placed in the current fragmentainer.</summary>
         private readonly List<ParallelItem> _advanced = [];
         private double _position;
@@ -460,6 +466,7 @@ internal static partial class ColumnBreaker
             _overflowOffset = 0;
             _overflowEndOffset = 0;
             _hasDeferredItems = false;
+            _isItemPushedFromStart = false;
             _advanced.Clear();
             var shortage = double.PositiveInfinity;
 
@@ -727,6 +734,11 @@ internal static partial class ColumnBreaker
                         blockedInside = WithContentProgress(blockingGroup, blockingGroup.ClosedTracks, blockedInside, blockedFrom);
                     }
 
+                    for (var track = blockingGroup.ClosedTracks; track < blockingGroup.TrackStarts.Length; track++)
+                    {
+                        blockedInside = Math.Min(blockedInside, GetPushedItemStart(blockingGroup, track));
+                    }
+
                     RecordInside(blockingGroup, Math.Min(blockedFrom, blockedInside), besideOverflow: true);
                 }
                 else if (groups is not null)
@@ -749,6 +761,9 @@ internal static partial class ColumnBreaker
                                 inside = WithContentProgress(group, track, inside, end);
                             }
 
+                            // (the content of the track from an item pushed to the next fragmentainer is in it: the break is before
+                            // the item, fuzz regression)
+                            inside = Math.Min(inside, GetPushedItemStart(group, track));
                             if (group.TrackStarts[track] + (repeatsOwnEdges ? group.OwnCloneStart : 0) < inside - Epsilon && inside < end - Epsilon && (inside < group.TrackEnds[track] - Epsilon || _flow.SkipGap(inside) <= inside))
                             {
                                 RecordInside(group, inside);
@@ -765,8 +780,12 @@ internal static partial class ColumnBreaker
                 }
 
                 // The whole flow is pushed to the next fragmentainer (also the content that does not fit below the floats of
-                // the fragmentainer, see ApplyFloatShift)
-                if (_shift <= Epsilon && _canBreakBefore && BreaksBeforeAsLastResort)
+                // the fragmentainer, see ApplyFloatShift; and an item at its start that is pushed alone, see StartBreakAppeal)
+                if (_isItemPushedFromStart)
+                {
+                    perfect ??= new BreakCandidate(_position, _position, BreakAppeal.Perfect);
+                }
+                else if (_shift <= Epsilon && _canBreakBefore && BreaksBeforeAsLastResort)
                 {
                     // (a break before the first content of a row: only when the item cannot be broken)
                     lastResort ??= new BreakCandidate(_position, _position, BreakAppeal.LastResort);
@@ -1216,6 +1235,28 @@ internal static partial class ColumnBreaker
         }
 
         /// <summary>
+        /// The start of the first item of a track that is pushed alone from the start of the current fragmentainer to the next one
+        /// (see <see cref="StartBreakAppeal"/>), or +∞. (An item pushed after other content of the fragmentainer does not stop the
+        /// items beside it in its track: they break inside the fragmentainer.)
+        /// </summary>
+        private double GetPushedItemStart(ParallelGroup group, int track)
+        {
+            var start = double.PositiveInfinity;
+            if (!_isItemPushedFromStart)
+                return start;
+
+            foreach (var item in group.StartingItems[track])
+            {
+                if (item.PushedGeneration == _generation && item.PushedIndex == _index)
+                {
+                    start = Math.Min(start, item.Start);
+                }
+            }
+
+            return start;
+        }
+
+        /// <summary>
         /// Places the tracks of a group that are in the current fragmentainer: starts their parallel flows, and ends the tracks whose
         /// items all end in the fragmentainer (the content after a track that grew is shifted). Returns false when the next track
         /// starts after the fragmentainer; sets <paramref name="blockedFrom"/> to the end of the track that continues in the next
@@ -1287,6 +1328,7 @@ internal static partial class ColumnBreaker
                         item.PushedGeneration = _generation;
                         item.PushedIndex = _index;
                         _hasDeferredItems = true;
+                        _isItemPushedFromStart |= !(item.CanBreakBefore && offset > Epsilon);
                         continue;
                     }
 

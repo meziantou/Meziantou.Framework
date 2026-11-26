@@ -161,7 +161,10 @@ public static class MarkdownFuzzTargets
         var html = MarkdownHtmlRenderer.ToHtml(tree).ReplaceLineEndings("\n");
         FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(formatted).ReplaceLineEndings("\n") == html, $"The formatted text {FuzzAssert.Format(formattedText)} does not render as the text {FuzzAssert.Format(text)}");
         var formattedTwice = MarkdownFormatter.FormatText(formatted, formattingOptions);
-        FuzzAssert.True(formattedTwice == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it to {FuzzAssert.Format(formattedTwice)}: {FuzzAssert.Format(text)}");
+        if (formattedTwice != formattedText)
+        {
+            FuzzAssert.Fail($"Formatting the formatted text changes it at {DescribeFirstDifference(formattedText, formattedTwice)}: {FuzzAssert.Format(text)}");
+        }
 
         // The formatter compares the HTML with its line endings as \n, without replacing them
         CheckEqualsIgnoringLineEndings(text, formattedText);
@@ -169,6 +172,14 @@ public static class MarkdownFuzzTargets
     }
 
     private static IEnumerable<string> GetKindsAndValues(MarkdownSyntaxTree tree) => tree.GetRoot().DescendantTokens().Select(token => $"{token.RawKind} {(token.Value is int value ? value : null)}");
+
+    // The offset of the first difference of two texts, and the text around it in both
+    private static string DescribeFirstDifference(string expected, string actual)
+    {
+        var index = expected.AsSpan().CommonPrefixLength(actual);
+        var start = Math.Max(0, index - 80);
+        return $"{index}: {FuzzAssert.Format(expected[start..Math.Min(expected.Length, index + 80)])} becomes {FuzzAssert.Format(actual[start..Math.Min(actual.Length, index + 80)])}";
+    }
 
     private static void CheckEqualsIgnoringLineEndings(string text, string other)
     {

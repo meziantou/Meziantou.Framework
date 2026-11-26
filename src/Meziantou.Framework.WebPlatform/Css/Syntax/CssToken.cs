@@ -96,6 +96,8 @@ internal readonly record struct CssToken
         CssTokenType.Number => NumericValue.ToString(System.Globalization.CultureInfo.InvariantCulture),
         CssTokenType.Percentage => NumericValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + "%",
         CssTokenType.Dimension => NumericValue.ToString(System.Globalization.CultureInfo.InvariantCulture) + Value,
+        CssTokenType.Cdo => "<!--",
+        CssTokenType.Cdc => "-->",
         _ => Type.ToString(),
     };
 }

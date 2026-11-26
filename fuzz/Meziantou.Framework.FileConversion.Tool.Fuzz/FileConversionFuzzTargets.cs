@@ -387,8 +387,17 @@ public static class FileConversionFuzzTargets
             using var copy = Compression.ArchiveFile.Open(output);
             foreach (var (name, content) in files)
             {
+                // A backslash is a separator in the name of a zip entry written by an MS-DOS host, as the copy is: the name is
+                // read back with a slash (fuzz regression)
+                if (archiveType == ArchiveType.Zip && name.Contains('\\', StringComparison.Ordinal))
+                    continue;
+
                 var copied = copy.GetEntry(name.TrimEnd('/'));
-                FuzzAssert.True(copied is not null, "A file of the archive is not in the copy");
+                if (copied is null)
+                {
+                    FuzzAssert.Fail($"A file of the archive is not in the {archiveType} copy: {FuzzAssert.Format(name)} (copy: {string.Join(", ", copy.Entries.Select(entry => FuzzAssert.Format(entry.FullName)))})");
+                }
+
                 FuzzAssert.True(content.AsSpan().SequenceEqual(ArchiveFiles.ReadEntry(copied)), "The content of a file of the archive differs in the copy");
             }
         }

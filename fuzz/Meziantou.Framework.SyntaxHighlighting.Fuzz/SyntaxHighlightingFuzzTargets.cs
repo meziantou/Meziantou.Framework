@@ -38,6 +38,7 @@ public static class SyntaxHighlightingFuzzTargets
         "//", "/*", "*/", "<!--", "-->", "\"\"\"", "'''", "```", "${", "#{", "{{", "}}", "{%", "%}", "<%", "%>", "<?", "?>", "<![CDATA[", "]]>", "</", "/>", "=>", "->", "::", "...", "--", "#!",
         "&amp;", "&lt;", "</span>", "<span class=\"", "<script>", "</script>", "<style>", "</style>",
         "if", "else", "for", "while", "return", "function", "def", "class", "end", "let", "var", "const", "true", "false", "null", "nil", "SELECT", "FROM", "WHERE", "import", "#include", "package",
+        "TODO:", "FIXME:", "css`", "html`", "gql`", "](", "][", "](http://", "Get-", "ConvertTo-", "rb'''",
         "0x1F", "1e10", "3.14", "\u00E9", "\u4E2D", "\U0001F600", "\u2028", "\uFEFF", "\uD800",
     ];
 
@@ -45,7 +46,7 @@ public static class SyntaxHighlightingFuzzTargets
     private static readonly string[] Snippets =
     [
         "using System;\nnamespace N { /* block */ public sealed class C<T> : I where T : new() { private int _x = 0x1F; // line\n    public string M(int a) => $\"v={a}\" + @\"x\"\"y\" + 'c'; }\n}\n#if DEBUG\n#endif\n",
-        "const f = async (a, b = 2) => { let s = `t ${a + b}`; return /re[a-z]+\\//gi.test(s) ? 1e3 : null; }; // x\nclass A extends B { #p = 1; static m() { return <div className=\"x\">{y}</div>; } }\n",
+        "const f = async (a, b = 2) => { let s = `t ${a + b}`; return /re[a-z]+\\//gi.test(s) ? 1e3 : null; }; // x\nclass A extends B { #p = 1; static m() { return <div className=\"x\">{y}</div>; } }\nconst s = styled.css`p { margin: 0 }` + html`<b>${s}</b>`; //   TODO: gql`{ id }`\n",
         "<!DOCTYPE html>\n<html lang=\"en\"><head><style>body { color: #fff; } a:hover::after { content: \"\\201C\"; }</style><script>var x = '<\\/script>' && 1 < 2;</script></head>\n<body><!-- c --><p class=a data-x='y'>&amp; &lt;</p><![CDATA[x]]><br/></body></html>\n",
         "#!/bin/bash\nset -euo pipefail\nfor f in *.txt; do echo \"${f%.txt} $(date +%s)\" | grep -E '^a' >> out.log; done\nif [[ -n $X && $# -gt 0 ]]; then exit 1; fi\ncat <<EOF\nheredoc $HOME `pwd`\nEOF\n",
         "SELECT a.id, COUNT(*) AS n FROM dbo.[t] a LEFT JOIN u ON u.id = a.uid WHERE a.name LIKE 'x''%' AND b <> 3 -- comment\nGROUP BY a.id /* block */ ORDER BY n DESC;\nCREATE TABLE t (id INT PRIMARY KEY, s VARCHAR(10) DEFAULT N'x');\n",

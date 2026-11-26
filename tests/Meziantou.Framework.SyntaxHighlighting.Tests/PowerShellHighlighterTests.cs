@@ -3244,4 +3244,20 @@ $a = 1; $b = 2; $c = 3
 <span class="hljs-variable">$a</span> = <span class="hljs-number">1</span>; <span class="hljs-variable">$b</span> = <span class="hljs-number">2</span>; <span class="hljs-variable">$c</span> = <span class="hljs-number">3</span>
 """);
     }
+
+    [Fact]
+    public void Cmdlet_VerbCaseAndPosition()
+    {
+        AssertHighlighter("powershell",
+"""
+Get-ChildItem -Path . | ConvertTo-Json
+xGet-Item
+get-item $x -eq 1
+""",
+"""
+<span class="hljs-built_in">Get-ChildItem</span> <span class="hljs-literal">-Path</span> . | <span class="hljs-built_in">ConvertTo-Json</span>
+x<span class="hljs-built_in">Get-Item</span>
+<span class="hljs-built_in">get-item</span> <span class="hljs-variable">$x</span> <span class="hljs-operator">-eq</span> <span class="hljs-number">1</span>
+""");
+    }
 }

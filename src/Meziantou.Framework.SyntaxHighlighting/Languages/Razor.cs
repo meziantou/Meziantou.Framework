@@ -69,7 +69,7 @@ internal static class Razor
         var textOpenTag = new Mode { Scope = "built_in", Begin = "[@]{0,1}<text>" };
         var textCloseTag = new Mode { Scope = "built_in", Begin = "</text>", EndsParent = true };
         var razorComment = new Mode { Scope = "comment", Begin = "@\\*", End = "\\*@" };
-        var razorCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var razorCommentDocTag = CommonModes.DocTag;
         var razorCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var razorExpression = new Mode { Begin = "@\\(", End = "\\)", ReturnBegin = true, ReturnEnd = true, SubLanguage = "csharp" };
         var razorExpressionStart = new Mode { Scope = "built_in", Begin = "@\\(" };
@@ -81,7 +81,7 @@ internal static class Razor
         var docTypeAlt = new Mode { Scope = "meta", Begin = "<!DOCTYPE", End = ">" };
         var docTypeAltBrackets = new Mode { Begin = "\\[", End = "\\]" };
         var htmlComment = new Mode { Scope = "comment", Begin = "<!--", End = "-->" };
-        var htmlCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var htmlCommentDocTag = CommonModes.DocTag;
         var htmlCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var cdataAlt = new Mode { Begin = "<\\!\\[CDATA\\[", End = "\\]\\]>" };
         var xmlDeclaration = new Mode { Scope = "meta", Begin = "<\\?xml", End = "\\?>" };

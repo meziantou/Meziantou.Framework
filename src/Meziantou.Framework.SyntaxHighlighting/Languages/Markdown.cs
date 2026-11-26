@@ -22,11 +22,18 @@ internal static class Markdown
         // first candidate, and only the first `[` of a line (or after the scan start) may start a match:
         // if it fails, every later `[` of the line fails too.
         const string FirstBracketOfLine = "\\[(?<=(?:\\G|^)[^\\[\\n]*\\[)";
-        var referenceLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\[).*?\\]" };
-        var safeUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\(((data|javascript|mailto):|(?:http|ftp)s?:\\/\\/)).*?\\)" };
-        var schemeUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\([A-Za-z][A-Za-z0-9+.-]*:\\/\\/).*?\\)" };
-        var relativeUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.+?\\]\\([./?&#]).*?\\)" };
-        var anyUrlLink = new Mode { Begin = FirstBracketOfLine + "(?>.*?\\]\\().*?\\)" };
+
+        // highlight.js's `.+?\]X` (or `.*?\]X`) in an atomic group: the text of the line up to the first `]` followed by X.
+        // The lazy loop tries `\]X` after each character; the regex interpreter runs these loops over the characters
+        // other than `]` much faster (25 to 35%). Likewise, `.*?\]` and `.*?\)` become `[^\]\n]*\]` and `[^)\n]*\)`.
+        static string UpToFirstBracketFollowedBy(string x, bool allowEmpty = false) =>
+            "(?>" + (allowEmpty ? "" : ".") + "[^\\]\\n]*(?:\\](?!" + x + ")[^\\]\\n]*)*\\]" + x + ")";
+
+        var referenceLink = new Mode { Begin = FirstBracketOfLine + UpToFirstBracketFollowedBy("\\[") + "[^\\]\\n]*\\]" };
+        var safeUrlLink = new Mode { Begin = FirstBracketOfLine + UpToFirstBracketFollowedBy("\\((?:(?:data|javascript|mailto):|(?:http|ftp)s?:\\/\\/)") + "[^)\\n]*\\)" };
+        var schemeUrlLink = new Mode { Begin = FirstBracketOfLine + UpToFirstBracketFollowedBy("\\([A-Za-z][A-Za-z0-9+.-]*:\\/\\/") + "[^)\\n]*\\)" };
+        var relativeUrlLink = new Mode { Begin = FirstBracketOfLine + UpToFirstBracketFollowedBy("\\([./?&#]") + "[^)\\n]*\\)" };
+        var anyUrlLink = new Mode { Begin = FirstBracketOfLine + UpToFirstBracketFollowedBy("\\(", allowEmpty: true) + "[^)\\n]*\\)" };
         var strong = new Mode { Scope = "strong" };
         var strongInner = new Mode { Scope = "emphasis" };
         var emphasisStar = new Mode { Begin = "\\*(?![*\\s])", End = "\\*" };

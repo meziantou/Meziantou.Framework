@@ -16,6 +16,10 @@ internal sealed class Mode
     // child mode. Mirrors highlight.js's `on:begin` callback when used as a veto
     // (e.g. JSX tag false-positive detection). See Engine/BeginGuards.cs.
     public string? BeginGuard { get; init; }
+    // Characters that the begin match also covers right before where Begin matches, as if Begin started
+    // with `[ ]*` or `.?`, which give the regex engine nothing to search for. Begin must satisfy the
+    // condition described on PrecedingCharacters.
+    public PrecedingCharacters? BeginPreceding { get; init; }
     public string? SubLanguage { get; init; }
     // When set on a mode with a SubLanguage, the embedded language starts from its root instead of
     // resuming the state its previous region ended in, so an unterminated string in one region does not
@@ -69,6 +73,7 @@ internal sealed class Mode
         BeginScope = source.BeginScope;
         EndScope = source.EndScope;
         BeginGuard = source.BeginGuard;
+        BeginPreceding = source.BeginPreceding;
         SubLanguage = source.SubLanguage;
         RestartsSubLanguage = source.RestartsSubLanguage;
         BeginKeywords = source.BeginKeywords;

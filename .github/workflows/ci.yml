@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Build eng scripts
@@ -45,12 +45,29 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Failed to build $_" }
           }
 
+  # The workflows run the commits recorded in .github/workflows/actions.lock. After adding, removing or
+  # updating an action, run `gh actions-lock` (extension github/gh-actions-lock) and commit the lockfile.
+  verify_actions_lock:
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Verify the workflow lockfile
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh extension install github/gh-actions-lock --pin v0.5.1
+          if ($LASTEXITCODE -ne 0) { throw "Failed to install gh-actions-lock" }
+          gh actions-lock --verify --no-interactive
+          if ($LASTEXITCODE -ne 0) { throw "The workflow lockfile is out of date. Run 'gh actions-lock' and commit .github/workflows/actions.lock" }
+
   validate_generated_files:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Validate generated files and test project TFMs
@@ -64,7 +81,7 @@ jobs:
       # This job only compiles the .NET code, so the npm packages of the projects are not needed
       EnableDefaultNpmPackageFile: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -107,7 +124,7 @@ jobs:
         if: steps.build-project.outputs.has-project != 'true'
         run: Write-Host "No project was impacted. Skipping build."
 
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: binlog-analyzers
@@ -128,7 +145,7 @@ jobs:
       has-trimmable-wpf-projects: ${{ steps.compute-trimmable-projects.outputs.has-wpf-projects }}
       base-commit: ${{ steps.base-commit.outputs.base-commit }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -599,7 +616,7 @@ jobs:
         run: |
           $SanitizedName = "${{ matrix.runs-on }}-${{ matrix.configuration }}-${{ env.ADDITIONAL_ARGUMENTS }}".Replace(":", "_").Replace("/", "_")
           "artifact-name=test-results-$SanitizedName-${{ matrix.test-group.id }}" >> $env:GITHUB_OUTPUT
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - run: git config --global protocol.file.allow always
@@ -636,7 +653,7 @@ jobs:
       - parallel:
           - name: Cache Public API test compilation outputs
             if: steps.build-project.outputs.has-project == 'true'
-            uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+            uses: actions/cache@v6.1.0
             with:
               path: ${{ env.MEZIANTOU_PUBLIC_API_TEST_CACHE_DIRECTORY }}
               key: public-api-test-compilation-cache-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs', 'tests/Meziantou.Framework.PublicApiGenerator.Tests/Meziantou.Framework.PublicApiGenerator.Tests.csproj', 'global.json') }}
@@ -671,7 +688,7 @@ jobs:
       # do not depend on the mirrors
       - name: Restore the WebPlatform external test suites
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WebPlatform.')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.WebPlatform.External
           key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
@@ -687,7 +704,7 @@ jobs:
       # tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json: they are fetched, not committed
       - name: Restore the test262 test suites
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.Test262')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.JavaScriptEngine.External
           key: javascriptengine-external-tests-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.Test262/test262.json') }}
@@ -701,7 +718,7 @@ jobs:
       # tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json
       - name: Restore the Web Tooling Benchmark
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.JavaScriptEngine.External/web-tooling-benchmark
           key: javascriptengine-web-tooling-benchmark-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/web-tooling-benchmark.json') }}
@@ -716,7 +733,7 @@ jobs:
       # script writes each time
       - name: Restore the npm packages of the JavaScript engine tests
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.JavaScriptEngine.NpmPackages')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.JavaScriptEngine.External/npm-packages
           key: javascriptengine-npm-packages-${{ hashFiles('tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/package-lock.json') }}
@@ -730,7 +747,7 @@ jobs:
       # commits pinned in tests/Meziantou.Framework.Pdf.Corpus/corpus.json: they are fetched, not committed
       - name: Restore the PDF corpora
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.Pdf.External
           key: pdf-external-tests-${{ hashFiles('tests/Meziantou.Framework.Pdf.Corpus/corpus.json') }}
@@ -745,7 +762,7 @@ jobs:
       # checks them out from the snapshot of the mirror of eng/wasmengine/corpus.mirror.json, else from upstream
       - name: Restore the WebAssembly test suite
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.WasmEngine.SpecTests')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.WasmEngine.External
           key: wasmengine-external-tests-${{ hashFiles('tests/Meziantou.Framework.WasmEngine.SpecTests/testsuite.json') }}
@@ -761,7 +778,7 @@ jobs:
       # eng/imaging/corpus.mirror.json; without them, the tests download the files they need from upstream
       - name: Restore the conformance corpora of the Imaging interop tests
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Imaging.InteropTests')
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.Imaging.External
           key: imaging-conformance-${{ hashFiles('tests/Meziantou.Framework.Imaging.InteropTests/JpegXlConformance/corpus.json', 'tests/Meziantou.Framework.Imaging.InteropTests/JpegLsConformance/corpus.json') }}
@@ -816,7 +833,7 @@ jobs:
         run: Get-ChildItem -Recurse "${{ env.TestResultsDirectory }}/" -Filter "*.dmp" | Remove-Item -Force -ErrorAction SilentlyContinue
 
       - parallel:
-          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+          - uses: actions/upload-artifact@v7.0.2
             if: always() && steps.build-project.outputs.has-project == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}
@@ -829,7 +846,7 @@ jobs:
                 **/*.binlog
                 ${{ env.TestResultsDirectory }}/**/*
                 **/obj/**/GeneratedFiles/**/*.cs
-          - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+          - uses: actions/upload-artifact@v7.0.2
             if: always() && steps.build-project.outputs.has-project == 'true' && env.EnableCodeCoverage == 'true'
             with:
               name: ${{ steps.compute-artifact-name.outputs.artifact-name }}-coverage
@@ -851,7 +868,7 @@ jobs:
       # Only references and roots the affected libraries, see eng/Trimmable.targets
       TrimmableValidationProjects: ${{ needs.compute_test_matrix.outputs.trimmable-projects }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Publish for win-x64
@@ -874,7 +891,7 @@ jobs:
         runtime: [ "win-x64" ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - run: dotnet publish -mt --configuration Release --runtime ${{ matrix.runtime }} --self-contained eng/Trimmable.Wpf/Trimmable.Wpf.csproj
@@ -898,7 +915,7 @@ jobs:
         aot-project: ${{ fromJson(needs.compute_test_matrix.outputs.aot-matrix) }}
       fail-fast: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Publish and run the native executable
@@ -941,10 +958,10 @@ jobs:
     runs-on: ubuntu-26.04
     needs: [build_and_test]
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Download test results
         id: download-test-results
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: actions/download-artifact@v8.0.2
         background: true
         with:
           pattern: test-results-*-coverage
@@ -967,7 +984,7 @@ jobs:
           - name: Merge coverage files (format cobertura)
             if: ${{ hashFiles('test-results/**/*.coverage') != '' }}
             run: dotnet-coverage merge --output test-result.cobertura.xml --output-format cobertura (Get-ChildItem test-results -Recurse -Filter "*.coverage")
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: code-coverage
           if-no-files-found: warn
@@ -987,7 +1004,7 @@ jobs:
         check: [ specs, chromium-diff ]
       fail-fast: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -1026,7 +1043,7 @@ jobs:
 
       - name: Restore the external test suites
         if: steps.changes.outputs.changed == 'true'
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache@v6.1.0
         with:
           path: tests/Meziantou.Framework.WebPlatform.External
           key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}
@@ -1076,7 +1093,7 @@ jobs:
   final_status_check:
     runs-on: ubuntu-slim
     if: always()
-    needs: [ build_eng_scripts, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage, webplatform ]
+    needs: [ build_eng_scripts, verify_actions_lock, validate_generated_files, run_analyzers, compute_test_matrix, build_and_test, test_trimming, test_trimming_wpf, test_aot, merge_coverage, webplatform ]
     steps:
       - name: Check previous jobs status
         env:

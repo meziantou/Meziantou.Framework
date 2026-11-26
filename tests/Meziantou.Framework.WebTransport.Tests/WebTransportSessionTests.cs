@@ -92,6 +92,21 @@ public sealed class WebTransportSessionTests
     }
 
     [Fact]
+    public async Task Accept_InvalidProtocolCanStillBeRejected()
+    {
+        await using var server = await LoopbackWebTransport.StartAsync();
+        var connectTask = WebTransportSession.ConnectAsync(server.GetUri("/"), server.CreateClientOptions()).AsTask();
+        var request = await server.Listener.AcceptAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+        // A protocol must be printable ASCII: the request is not answered by the failed AcceptAsync
+        await Assert.ThrowsAsync<ArgumentException>(async () => await request.AcceptAsync("écho"));
+        await request.RejectAsync(400);
+
+        var exception = await Assert.ThrowsAsync<WebTransportException>(() => connectTask);
+        Assert.Equal(400, exception.StatusCode);
+    }
+
+    [Fact]
     public async Task Connect_CertificateHashMismatch()
     {
         await using var server = await LoopbackWebTransport.StartAsync();

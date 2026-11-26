@@ -347,6 +347,17 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         public void Datagram(ReadOnlyMemory<byte> datagram) => Call("datagram", realm.FromBuffer(JsBufferKind.Uint8Array, datagram.ToArray()));
 
-        private void Call(string name, params ReadOnlySpan<TValue> arguments) => realm.Adapter.Call(realm.Adapter.Get(events, realm.Key(name)), realm.Adapter.Undefined, arguments);
+        // The cleanup of an unloaded document calls the events outside a task: a script that was terminated (e.g. by the
+        // watchdog of a long-running script) cannot observe them
+        private void Call(string name, params ReadOnlySpan<TValue> arguments)
+        {
+            try
+            {
+                realm.Adapter.Call(realm.Adapter.Get(events, realm.Key(name)), realm.Adapter.Undefined, arguments);
+            }
+            catch (Exception ex) when (realm.Adapter.IsTerminationException(ex))
+            {
+            }
+        }
     }
 }

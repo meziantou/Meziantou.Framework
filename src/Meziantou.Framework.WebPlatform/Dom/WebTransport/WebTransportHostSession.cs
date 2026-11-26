@@ -125,12 +125,14 @@ internal sealed class WebTransportHostSession
 
         foreach (var session in sessions.ToArray())
         {
-            var connection = session._connection;
-            session.End();
-            if (connection is not null)
+            // The connection is disposed before the streams are released: the session resets its streams
+            // (WT_SESSION_GONE), while a released stream would end its writes cleanly
+            if (session._connection is { } connection)
             {
                 _ = DisposeConnectionAsync(connection);
             }
+
+            session.End();
 
             session._events.Failed("The WebTransport session was terminated: its document was unloaded");
         }
@@ -288,13 +290,15 @@ internal sealed class WebTransportHostSession
         if (_state == SessionState.Ended)
             return;
 
-        var connection = _connection;
-        End();
-        if (connection is not null)
+        // The close of the session starts before the streams are released: it resets them (WT_SESSION_GONE), while a
+        // released stream would end its writes cleanly
+        if (_connection is { } connection)
         {
             _eventLoop.BeginOperation();
             _ = CloseAsync(connection, closeCode, reason);
         }
+
+        End();
     }
 
     private async Task CloseAsync(WebTransportConnection connection, uint closeCode, string reason)

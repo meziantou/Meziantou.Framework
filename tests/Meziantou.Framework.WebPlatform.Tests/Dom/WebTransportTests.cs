@@ -156,6 +156,70 @@ public sealed class WebTransportTests : IDisposable
     }
 
     [Fact]
+    public async Task WebTransport_CloseResetsTheOpenStreams()
+    {
+        global::Xunit.Assert.SkipUnless(MsQuicLibrary.IsSupported, "MsQuic is not available: " + MsQuicLibrary.NotSupportedReason);
+
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var certificateRequest = new CertificateRequest("CN=localhost", key, HashAlgorithmName.SHA256);
+        using var ephemeralCertificate = certificateRequest.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-5), DateTimeOffset.UtcNow.AddDays(10));
+        using var certificate = X509CertificateLoader.LoadPkcs12(ephemeralCertificate.Export(X509ContentType.Pkcs12), password: null, X509KeyStorageFlags.Exportable);
+        await using var listener = await WebTransportListener.ListenAsync(new WebTransportListenerOptions
+        {
+            ListenEndPoint = new IPEndPoint(IPAddress.Loopback, 0),
+            ServerCertificate = certificate,
+        });
+
+        // The server reads the stream the page leaves open: the close of the session resets it, so the reads fail
+        // instead of ending as if the page had completed its writes
+        var serverTask = Task.Run(async () =>
+        {
+            var request = await listener.AcceptAsync(TestContext.Current.CancellationToken);
+            await using var session = await request.AcceptAsync();
+            await using var stream = await session.AcceptStreamAsync(TestContext.Current.CancellationToken);
+            var buffer = new byte[1024];
+            try
+            {
+                while (await stream.ReadAsync(buffer, TestContext.Current.CancellationToken) > 0)
+                {
+                }
+
+                return "end of stream";
+            }
+            catch (WebTransportException)
+            {
+                return "reset";
+            }
+        }, TestContext.Current.CancellationToken);
+
+        var hash = string.Join(',', SHA256.HashData(certificate.RawData).Select(b => b.ToString(CultureInfo.InvariantCulture)));
+        var context = CreateContext(DocumentLoader.Create());
+        var document = Load(context, $$"""
+            <script>
+              const wt = new WebTransport('https://localhost:{{listener.LocalEndPoint.Port}}/', {
+                serverCertificateHashes: [{ algorithm: 'sha-256', value: new Uint8Array([{{hash}}]) }],
+              });
+              (async () => {
+                try {
+                  await wt.ready;
+                  const stream = await wt.createBidirectionalStream();
+                  await stream.writable.getWriter().write(new TextEncoder().encode('partial'));
+                  wt.close();
+                  await wt.closed;
+                  document.title = 'closed';
+                } catch (e) {
+                  document.title = 'error:' + e.name + ':' + e.message;
+                }
+              })();
+            </script>
+            """);
+
+        await WaitForTitleAsync(document);
+        Assert.Equal("closed", document.Title);
+        Assert.Equal("reset", await serverTask.WaitAsync(TimeSpan.FromSeconds(30), TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
     public async Task WebTransport_SendsTheRequestToTheLoader()
     {
         var loader = new StubLoader();

@@ -47,9 +47,7 @@ public sealed class WebTransportSessionRequest
     /// <param name="cancellationToken">The token to cancel the operation.</param>
     public async ValueTask<WebTransportSession> AcceptAsync(string? protocol = null, IEnumerable<KeyValuePair<string, string>>? headers = null, CancellationToken cancellationToken = default)
     {
-        if (Interlocked.Exchange(ref _responded, 1) == 1)
-            throw new InvalidOperationException("The request was already answered.");
-
+        // The response is built first: an invalid protocol throws while the request can still be answered
         var fields = new List<QPackField> { new(":status", "200") };
         if (protocol is not null)
         {
@@ -57,6 +55,9 @@ public sealed class WebTransportSessionRequest
         }
 
         AddHeaders(fields, headers);
+        if (Interlocked.Exchange(ref _responded, 1) == 1)
+            throw new InvalidOperationException("The request was already answered.");
+
         try
         {
             await Http3Connection.WriteHeadersAsync(_connectStream, fields, completeWrites: false, cancellationToken).ConfigureAwait(false);

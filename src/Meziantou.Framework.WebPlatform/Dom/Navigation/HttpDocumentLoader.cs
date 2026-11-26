@@ -355,7 +355,7 @@ internal sealed class HttpDocumentLoader(HttpClient httpClient) : DocumentLoader
             var session = await WebTransportSession.ConnectAsync(new Uri(request.Url), options, cancellationToken).ConfigureAwait(false);
             return new HttpWebTransportConnection(session);
         }
-        catch (Exception ex) when (ex is WebTransportException or PlatformNotSupportedException or ArgumentException)
+        catch (Exception ex) when (ex is WebTransportException or PlatformNotSupportedException or ArgumentException or UriFormatException)
         {
             return null;
         }

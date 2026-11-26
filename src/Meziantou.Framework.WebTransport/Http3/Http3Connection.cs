@@ -18,8 +18,13 @@ internal sealed class Http3Connection : IAsyncDisposable
     private readonly Dictionary<long, WebTransportSession> _sessions = [];
     private readonly Dictionary<long, List<(MsQuicStream Stream, int HeaderLength)>> _bufferedStreams = [];
 
-    // The sessions that ended and the CONNECT requests that did not become sessions: their streams are rejected
+    // The sessions that ended and the CONNECT requests that did not become sessions: their streams are rejected. Only
+    // the most recent ones are kept, so a peer cannot grow the set: the streams of an older one are buffered (and
+    // rejected once the buffer is full).
+    private const int MaxClosedSessionIds = 1024;
+
     private readonly HashSet<long> _closedSessionIds = [];
+    private readonly Queue<long> _closedSessionIdOrder = new();
     private readonly Action<Http3Connection, MsQuicStream, Http3FrameReader, List<QPackField>>? _onRequest;
     private int _bufferedStreamCount;
     private int _hasPeerControlStream;
@@ -369,7 +374,15 @@ internal sealed class Http3Connection : IAsyncDisposable
         List<(MsQuicStream Stream, int HeaderLength)>? buffered;
         lock (_lock)
         {
-            _closedSessionIds.Add(sessionId);
+            if (_closedSessionIds.Add(sessionId))
+            {
+                _closedSessionIdOrder.Enqueue(sessionId);
+                if (_closedSessionIdOrder.Count > MaxClosedSessionIds)
+                {
+                    _closedSessionIds.Remove(_closedSessionIdOrder.Dequeue());
+                }
+            }
+
             if (_bufferedStreams.Remove(sessionId, out buffered))
             {
                 _bufferedStreamCount -= buffered.Count;

@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.WebPlatform.Dom;
 
 /// <summary>
@@ -37,9 +39,17 @@ internal sealed class WebTransportHostStream
         ReadResult result;
         try
         {
-            var buffer = new byte[ReadSize];
-            var read = await _stream.ReadAsync(buffer, _cancellation.Token).ConfigureAwait(false);
-            result = read == 0 ? new ReadResult(Chunk: null, IsReset: false, ErrorCode: null, IsFailure: false) : new ReadResult(buffer.AsMemory(0, read), IsReset: false, ErrorCode: null, IsFailure: false);
+            // The chunk is a copy of the bytes read: the buffer of the read goes back to the pool
+            var buffer = ArrayPool<byte>.Shared.Rent(ReadSize);
+            try
+            {
+                var read = await _stream.ReadAsync(buffer.AsMemory(0, ReadSize), _cancellation.Token).ConfigureAwait(false);
+                result = read == 0 ? new ReadResult(Chunk: null, IsReset: false, ErrorCode: null, IsFailure: false) : new ReadResult(buffer.AsSpan(0, read).ToArray(), IsReset: false, ErrorCode: null, IsFailure: false);
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
         catch (WebTransportStreamAbortedException ex)
         {

@@ -821,6 +821,104 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             cancellationToken: CancellationToken.None).AsTask());
     }
 
+    [Theory]
+    [InlineData("https://example.com/", "EXAMPLE.com")]
+    [InlineData("https://example.com/", "example.com.")]
+    [InlineData("https://example.com/", "example.com..")]
+    [InlineData("https://example.com./", "example.com")]
+    [InlineData("https://[2001:4860:4860::8888]/", "2001:4860:4860::8888")]
+    [InlineData("https://[2001:4860:4860::8888]/", "[2001:4860:4860::8888]")]
+    public async Task ResolveAndSelectIpAddressAsync_MatchesHostIgnoringCaseTrailingDotsAndBrackets(string requestUri, string endPointHost)
+    {
+        var address = await ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri(requestUri),
+            dnsEndPoint: new DnsEndPoint(endPointHost, 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("2001:4860:4860::8888")]),
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(IPAddress.Parse("2001:4860:4860::8888"), address);
+    }
+
+    [Theory]
+    [InlineData("https://example.com/", "example.co")]
+    [InlineData("https://example.com/", "example.com.x")]
+    [InlineData("https://example.com/", ".example.com")]
+    [InlineData("https://example.com/", "[example.com")]
+    [InlineData("https://example.com/", "[[example.com]]")]
+    [InlineData("https://[2001:4860:4860::8888]/", "[[2001:4860:4860::8888]]")]
+    [InlineData("https://[2001:4860:4860::8888]/", "2001:4860:4860::8889")]
+    // The brackets are only removed when they enclose the whole host, so a trailing dot after them keeps them.
+    [InlineData("https://[2001:4860:4860::8888]/", "[2001:4860:4860::8888].")]
+    public async Task ResolveAndSelectIpAddressAsync_RejectsHostThatDiffersBeyondCaseTrailingDotsAndBrackets(string requestUri, string endPointHost)
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri(requestUri),
+            dnsEndPoint: new DnsEndPoint(endPointHost, 443),
+            options: new ServerSideRequestForgeryOptions(),
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("2001:4860:4860::8888")]),
+            cancellationToken: CancellationToken.None).AsTask());
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_MatchesCustomSafeSchemeIgnoringCase()
+    {
+        var options = new ServerSideRequestForgeryOptions();
+        options.SafeSchemes.Add("HTTP");
+
+        var address = await ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("http://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 80),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse("203.0.113.10")]),
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(IPAddress.Parse("203.0.113.10"), address);
+    }
+
+    [Fact]
+    public async Task ResolveAndSelectIpAddressAsync_AcceptsASelectedAddressEqualToAValidatedOne()
+    {
+        var options = new ServerSideRequestForgeryOptions
+        {
+            DisallowMixedSafeAndUnsafeIpAddresses = false,
+            ResolutionStrategy = new ReturningCopyOfLastAddressStrategy(),
+        };
+
+        var address = await ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Loopback, IPAddress.Parse("203.0.113.10"), IPAddress.Parse("2001:4860:4860::8888")]),
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(IPAddress.Parse("2001:4860:4860::8888"), address);
+    }
+
+    [Theory]
+    [InlineData("10.1.2.3")]
+    [InlineData("fd00:1::5")]
+    [InlineData("::ffff:10.1.2.3")]
+    public async Task ResolveAndSelectIpAddressAsync_SafeNetworkOverridesUnsafeNetworkAmongSeveral(string address)
+    {
+        var options = new ServerSideRequestForgeryOptions
+        {
+            ResolutionStrategy = IpAddressResolutionStrategy.Random,
+        };
+        options.SafeIpNetworks.Add(IPNetwork.Parse("192.168.0.0/16"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("fd00:1::/32"));
+        options.SafeIpNetworks.Add(IPNetwork.Parse("10.1.0.0/16"));
+
+        var selectedAddress = await ServerSideRequestForgeryConnectPipeline.ResolveAndSelectIpAddressAsync(
+            requestUri: new Uri("https://example.com"),
+            dnsEndPoint: new DnsEndPoint("example.com", 443),
+            options: options,
+            dnsIpAddressResolver: new FakeDnsIpAddressResolver([IPAddress.Parse(address)]),
+            cancellationToken: CancellationToken.None);
+
+        Assert.Equal(IPAddress.Parse(address), selectedAddress);
+    }
+
     [Fact]
     public async Task ResolveAndSelectIpAddressAsync_ThrowsHostNotFoundWhenNoIpAddressIsResolved()
     {
@@ -1124,6 +1222,18 @@ public sealed class ServerSideRequestForgeryConnectPipelineTests
             _ = options;
             _ = cancellationToken;
             return ValueTask.FromResult(IPAddress.Parse("198.51.100.11"));
+        }
+    }
+
+    private sealed class ReturningCopyOfLastAddressStrategy : IpAddressResolutionStrategy
+    {
+        protected internal override ValueTask<IPAddress> ResolveAsync(IReadOnlyList<IPAddress> addresses, ServerSideRequestForgeryOptions options, CancellationToken cancellationToken)
+        {
+            _ = options;
+            _ = cancellationToken;
+
+            // A distinct instance: the pipeline must compare addresses by value, not by reference.
+            return ValueTask.FromResult(new IPAddress(addresses[^1].GetAddressBytes()));
         }
     }
 

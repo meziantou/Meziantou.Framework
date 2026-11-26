@@ -10,6 +10,7 @@
     <Project Path="benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Geo.Benchmarks/Meziantou.Framework.Geo.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Globbing.Benchmarks/Meziantou.Framework.Globbing.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Http.ServerSideRequestForgery.Benchmarks/Meziantou.Framework.Http.ServerSideRequestForgery.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Imaging.Benchmarks/Meziantou.Framework.Imaging.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.JsonPath.Benchmarks/Meziantou.Framework.JsonPath.Benchmarks.csproj" />

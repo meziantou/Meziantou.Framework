@@ -1,3 +1,4 @@
+using System.Text;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -22,6 +23,7 @@ public static class LocatorFuzzTargets
                 "button", "link", "heading", "listitem", "checkbox", "textbox", "img",
                 "<button>", "</button>", "<a href=\"#\">", "<h1>", "<ul><li>", "<label for=\"x\">", "<label>", "</label>", "<input id=\"x\">", "<input type=\"submit\" value=\"Go\">",
                 "<select>", "</select>", "<option>", "<option selected>", "<textarea>", "</textarea>", "<button type=\"button\">", "<input type=\"number\" value=\"3\">", "<input type=\"checkbox\">", "aria-valuetext=\"", "aria-valuenow=\"",
+                "&#8203;", "&#160;", "&#x3000;", "\t", "  ", "<input type=submit value=\"", "<label for=\"", "<output id=\"", "<noscript>",
                 "<img alt=\"", "placeholder=\"", "title=\"", "data-testid=\"", "aria-label=\"", "aria-labelledby=\"", "aria-hidden=\"true\"", "role=\"", "style=\"display: none\"", "<script>", "<style>", " id=\"",
             ],
         },
@@ -124,6 +126,11 @@ public static class LocatorFuzzTargets
         yield return FuzzSeed.FromText("css", "c:li > button\n" + UsersMarkup);
         yield return FuzzSeed.FromText("css-scope", "c::scope > body > ul\n" + UsersMarkup);
         yield return FuzzSeed.FromText("nested-text", "t:a\n<div>a<div>a<span>a</span></div><p>A</p></div><script>a</script>");
+        yield return FuzzSeed.FromText("text-white-space", "t:ada lovelace\n<p>\n  Ada\t&#160;Love&#8203;lace  </p><p>ada&#8203;love</p><div><span>Ada</span> <b>Lovelace</b></div>");
+        yield return FuzzSeed.FromText("text-exact-white-space", "te:Grace Hopper\n<p>Grace&#x3000;&#x2028;Hopper</p><p> Grace  Hopper </p><p>grace hopper</p><p>Grace&#8203; Hopper</p>");
+        yield return FuzzSeed.FromText("text-zero-width-space", "t:ab cd\n<p>a&#8203;b c&#8203;d</p><p>abc d</p><p>&#8203;</p><p></p>");
+        yield return FuzzSeed.FromText("text-input-buttons", "t:send now\n<input type=submit value='Send now'><div>Send <input type=button value=now></div><input value='Send now'><noscript>Send now</noscript>");
+        yield return FuzzSeed.FromText("label-for", "l:Name\n<label for=name>Name</label><input id=name><input id=name><label for=panel>Panel</label><div id=panel></div><label for=secret>Secret</label><input id=secret type=hidden><label for=size>Size</label><span id=size></span><select id=size></select><label for=>Empty <input></label><label for=amount>Amount</label><output id=amount></output>");
     }
 
     private static void Locators(ReadOnlySpan<byte> data)
@@ -219,6 +226,14 @@ public static class LocatorFuzzTargets
                     FuzzAssert.True(elements.All(lax.Contains), "GetByText(exact: true) found an element that GetByText does not find");
                 }
 
+                // The texts agree with a reference implementation: the matching elements are found, and only them
+                var all = page.Document.QuerySelectorAll("*").OfType<Element>().ToList();
+                var expectedFiltered = all.Where(element => IsReferenceTextMatch(GetReferenceText(element), argument, exact: false)).ToList();
+                FuzzAssert.True(expectedFiltered.SequenceEqual(filtered), $"Filter(HasText) finds {filtered.Count} elements, the reference implementation finds {expectedFiltered.Count}");
+                var notFiltered = page.Locator("*").Filter(new LocatorFilterOptions { HasNotText = argument }).GetElements();
+                FuzzAssert.True(all.Except(expectedFiltered).SequenceEqual(notFiltered), "Filter(HasNotText) keeps the elements that Filter(HasText) removes");
+                var expectedText = all.Where(element => IsReferenceSmallestTextMatch(page.Document, element, argument, exact)).ToList();
+                FuzzAssert.True(expectedText.SequenceEqual(elements), $"GetByText finds {elements.Count} elements, the reference implementation finds {expectedText.Count}");
                 break;
 
             case 'l':
@@ -233,6 +248,18 @@ public static class LocatorFuzzTargets
                 {
                     var lax = page.GetByLabel(argument).GetElements();
                     FuzzAssert.True(elements.All(lax.Contains), "GetByLabel(exact: true) found an element that GetByLabel does not find");
+                }
+
+                // The control of a label (HtmlLabelElement.Control) is found by the text of the label, when the label has only a text
+                foreach (var label in page.Document.QuerySelectorAll("label").OfType<HtmlLabelElement>())
+                {
+                    if (label is { Control: { } control, FirstChild: Text { NextSibling: null } labelText }
+                        && control is HtmlButtonElement or HtmlMeterElement or HtmlOutputElement or HtmlProgressElement or HtmlSelectElement or HtmlTextAreaElement or HtmlInputElement
+                        && !control.HasAttribute("aria-labelledby") && !control.HasAttribute("aria-label")
+                        && NormalizeReferenceText(labelText.Data).Length > 0)
+                    {
+                        FuzzAssert.True(page.GetByLabel(labelText.Data, exact: true).GetElements().Contains(control), $"GetByLabel({FuzzAssert.Format(labelText.Data)}) does not find the control of the label");
+                    }
                 }
 
                 break;
@@ -250,6 +277,62 @@ public static class LocatorFuzzTargets
 
                 break;
         }
+    }
+
+    /// <summary>The text of an element, as Playwright computes it: the texts of the descendants and of the shadow root, without the scripts and the styles; the value of an input button.</summary>
+    private static string GetReferenceText(Element element)
+    {
+        if (element is HtmlInputElement { Type: "button" or "submit" or "reset" } button)
+            return button.Value;
+
+        if (IsSkippedForText(element))
+            return "";
+
+        var builder = new StringBuilder();
+        AppendChildren(element);
+        if (element.ShadowRoot is { } shadowRoot)
+        {
+            AppendChildren(shadowRoot);
+        }
+
+        return builder.ToString();
+
+        void AppendChildren(Node parent)
+        {
+            foreach (var child in parent.ChildNodes)
+            {
+                if (child is Text text)
+                {
+                    builder.Append(text.Data);
+                }
+                else if (child is Element childElement)
+                {
+                    builder.Append(GetReferenceText(childElement));
+                }
+            }
+        }
+    }
+
+    private static bool IsSkippedForText(Element element) => element.LocalName is "script" or "style" or "noscript" or "template";
+
+    // Removes the zero-width spaces, then keeps the words separated by one space
+    private static string NormalizeReferenceText(string value) => string.Join(' ', value.Replace("\u200b", "", StringComparison.Ordinal).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+
+    private static bool IsReferenceTextMatch(string text, string argument, bool exact)
+    {
+        var normalizedText = NormalizeReferenceText(text);
+        var normalizedArgument = NormalizeReferenceText(argument);
+        return exact ? string.Equals(normalizedText, normalizedArgument, StringComparison.Ordinal) : normalizedText.Contains(normalizedArgument, StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>The smallest elements whose text matches: the element is not in the head, and the text of none of its children matches.</summary>
+    private static bool IsReferenceSmallestTextMatch(Document document, Element element, string argument, bool exact)
+    {
+        if (IsSkippedForText(element) || (document.Head is { } head && head.Contains(element)) || !IsReferenceTextMatch(GetReferenceText(element), argument, exact))
+            return false;
+
+        var children = element.Children.Concat(element.ShadowRoot?.Children ?? Enumerable.Empty<Element>());
+        return !children.Any(child => !IsSkippedForText(child) && IsReferenceTextMatch(GetReferenceText(child), argument, exact));
     }
 
     private static Locator CreateRoleLocator(FuzzPage page, string argument, bool exact, bool includeHidden)

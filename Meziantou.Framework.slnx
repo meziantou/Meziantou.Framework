@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/benchmarks/">
+    <Project Path="benchmarks/Meziantou.AspNetCore.Testing.Benchmarks/Meziantou.AspNetCore.Testing.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.AnsiFormatting.Benchmarks/Meziantou.Framework.AnsiFormatting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Assertions.Benchmarks/Meziantou.Framework.Assertions.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Barcodes.Benchmarks/Meziantou.Framework.Barcodes.Benchmarks.csproj" />

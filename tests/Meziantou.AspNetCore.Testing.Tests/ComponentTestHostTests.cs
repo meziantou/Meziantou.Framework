@@ -440,6 +440,36 @@ public sealed class ComponentTestHostTests
     }
 
     [Fact]
+    public async Task Markup_RemovesTheElementReferenceAndScopedCssAttributes()
+    {
+        await using var host = new ComponentTestHost();
+        var component = await host.RenderAsync(builder =>
+        {
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "b-abcdef1234", "");
+            builder.AddAttribute(2, "class", "box");
+            builder.AddAttribute(3, "b-0123456789", "");
+            builder.AddElementReferenceCapture(4, _ => { });
+            builder.OpenElement(5, "span");
+            builder.AddAttribute(6, "b-short", "");
+            builder.AddAttribute(7, "b-abc_ef1234", "");
+            builder.AddContent(8, "Text");
+            builder.CloseElement();
+            builder.CloseElement();
+        });
+
+        var defaultMarkup = component.GetMarkup(new MarkupOptions { Indent = false });
+        Assert.DoesNotContain("_bl_", defaultMarkup, StringComparison.Ordinal);
+        Assert.Contains("b-abcdef1234", defaultMarkup, StringComparison.Ordinal);
+
+        var withoutScopedCss = component.GetMarkup(new MarkupOptions { Indent = false, RemoveScopedCssAttributes = true });
+        Assert.Equal("<div class=\"box\"><span b-short=\"\" b-abc_ef1234=\"\">Text</span></div>", withoutScopedCss);
+
+        var withReferences = component.GetMarkup(new MarkupOptions { Indent = false, RemoveElementReferenceAttributes = false, RemoveScopedCssAttributes = true });
+        Assert.StartsWith("<div class=\"box\" _bl_", withReferences, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Dispose_RunsTheJavaScriptCallsOfTheDisposedServices()
     {
         // A service that releases a JavaScript object when it is disposed calls the page: the event loop of the page

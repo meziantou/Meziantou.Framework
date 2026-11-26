@@ -453,46 +453,135 @@ internal sealed class DomBatchApplier(Document document, EventDelegator eventDel
     {
         while (true)
         {
-            for (var i = index; i < parent.Children.Count; i++)
+            var children = parent.Children;
+            var end = Math.Min(children.Count, parent.EmptyChildrenStart);
+            for (var i = index; i < end; i++)
             {
-                if (parent.Children[i].GetFirstDomNode() is { } node)
+                if (children[i].GetFirstDomNode() is { } node)
                     return node;
             }
 
             if (parent is LogicalElement || parent.Parent is not { } grandParent)
                 return null;
 
-            index = grandParent.Children.IndexOf(parent) + 1;
+            index = GetIndex(grandParent, parent) + 1;
             parent = grandParent;
         }
+    }
+
+    private static int GetIndex(LogicalContainer parent, LogicalNode child)
+    {
+        var children = parent.Children;
+        var index = child.IndexHint;
+        if ((uint)index < (uint)children.Count && ReferenceEquals(children[index], child))
+            return index;
+
+        index = children.IndexOf(child);
+        child.IndexHint = index;
+        return index;
     }
 
     private static void InsertLogicalChild(LogicalNode child, LogicalContainer parent, int index)
     {
         parent.Children.Insert(index, child);
         child.Parent = parent;
+        child.IndexHint = index;
+
+        // The children after the new child move by one
+        if (index < parent.EmptyChildrenStart)
+        {
+            parent.EmptyChildrenStart++;
+        }
+
+        if (child.DomNodeCount > 0)
+        {
+            AddDomNodes(parent, index, child.DomNodeCount);
+        }
+
         InsertDomNodes(child, parent, index);
+    }
+
+    /// <summary>Records that the child at an index of a container has new DOM nodes, in the container and its ancestor fragments.</summary>
+    private static void AddDomNodes(LogicalContainer container, int childIndex, int count)
+    {
+        while (true)
+        {
+            if (childIndex >= container.EmptyChildrenStart)
+            {
+                container.EmptyChildrenStart = childIndex + 1;
+            }
+
+            if (container is not LogicalFragment fragment)
+                return;
+
+            var wasEmpty = fragment.DomNodeCount == 0;
+            fragment.AddDomNodeCount(count);
+            if (fragment.Parent is not { } parent)
+                return;
+
+            // A fragment that already had DOM nodes is already before the empty children of its parent
+            childIndex = wasEmpty ? GetIndex(parent, fragment) : -1;
+            container = parent;
+        }
+    }
+
+    private static void RemoveDomNodeCount(LogicalContainer container, int count)
+    {
+        // The empty children of the ancestors stay empty: their start is still valid
+        for (var current = container as LogicalFragment; current is not null; current = current.Parent as LogicalFragment)
+        {
+            current.AddDomNodeCount(-count);
+        }
     }
 
     private static void InsertDomNodes(LogicalNode child, LogicalContainer parent, int index)
     {
         var domParent = GetClosestDomElement(parent) ?? throw new InvalidOperationException("The logical tree has no DOM parent");
         var before = FindNextDomSibling(parent, index + 1);
-        var nodes = new List<Node>();
-        child.CollectDomNodes(nodes);
-        foreach (var node in nodes)
+        InsertDomNodes(child, domParent, before);
+    }
+
+    private static void InsertDomNodes(LogicalNode node, Element domParent, Node? before)
+    {
+        switch (node)
         {
-            domParent.InsertBefore(node, before);
+            case LogicalElement element:
+                domParent.InsertBefore(element.Element, before);
+                break;
+
+            case LogicalDomNode domNode:
+                domParent.InsertBefore(domNode.Node, before);
+                break;
+
+            case LogicalFragment fragment:
+                foreach (var child in fragment.Children)
+                {
+                    InsertDomNodes(child, domParent, before);
+                }
+
+                break;
         }
     }
 
-    private static void RemoveDomNodes(LogicalNode child)
+    private static void RemoveDomNodes(LogicalNode node)
     {
-        var nodes = new List<Node>();
-        child.CollectDomNodes(nodes);
-        foreach (var node in nodes)
+        switch (node)
         {
-            node.ParentNode?.RemoveChild(node);
+            case LogicalElement element:
+                element.Element.ParentNode?.RemoveChild(element.Element);
+                break;
+
+            case LogicalDomNode domNode:
+                domNode.Node.ParentNode?.RemoveChild(domNode.Node);
+                break;
+
+            case LogicalFragment fragment:
+                foreach (var child in fragment.Children)
+                {
+                    RemoveDomNodes(child);
+                }
+
+                break;
         }
     }
 
@@ -502,6 +591,17 @@ internal sealed class DomBatchApplier(Document document, EventDelegator eventDel
         RemoveDomNodes(child);
         parent.Children.RemoveAt(index);
         child.Parent = null;
+
+        // The children after the removed child move by one
+        if (index < parent.EmptyChildrenStart)
+        {
+            parent.EmptyChildrenStart--;
+        }
+
+        if (child.DomNodeCount > 0)
+        {
+            RemoveDomNodeCount(parent, child.DomNodeCount);
+        }
     }
 
     private static void Permute(LogicalContainer parent, List<(int From, int To)> permutations)
@@ -519,7 +619,11 @@ internal sealed class DomBatchApplier(Document document, EventDelegator eventDel
         foreach (var (to, node) in moved)
         {
             parent.Children[to] = node;
+            node.IndexHint = to;
         }
+
+        // The children with DOM nodes may have moved after the empty children
+        parent.EmptyChildrenStart = parent.Children.Count;
 
         Array.Sort(moved, (a, b) => b.To.CompareTo(a.To));
         foreach (var (to, node) in moved)

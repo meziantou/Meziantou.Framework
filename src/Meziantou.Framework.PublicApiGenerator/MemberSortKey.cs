@@ -32,7 +32,8 @@ internal sealed class MemberSortKey
 
     public static int Compare(MemberSortKey x, MemberSortKey y)
     {
-        var result = x._kind.CompareTo(y._kind);
+        // Compared as integers, as Enum.CompareTo boxes its argument
+        var result = ((int)x._kind).CompareTo((int)y._kind);
         if (result != 0)
             return result;
 

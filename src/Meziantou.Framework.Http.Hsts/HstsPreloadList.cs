@@ -25,7 +25,11 @@ internal sealed partial class HstsPreloadList
     // claiming to hold anything longer is rejected rather than trusted.
     private const int MaxHostNameLength = 253;
 
+    /// <summary>The length of the buffer a <see cref="SuffixLookup"/> encodes a host name in: the longest name and the end of the probe.</summary>
+    public const int SuffixLookupBufferLength = MaxHostNameLength + 1;
+
     private const int FormatVersion = 1;
+    private const int PairFastBits = 11;
     private const string ResourceName = "preload.bin";
     private const string IncludePreloadListSwitchName = "Meziantou.Framework.Http.Hsts.IncludePreloadList";
 
@@ -60,11 +64,22 @@ internal sealed partial class HstsPreloadList
     private readonly byte[] _pairPrefixLengths;
     private readonly ushort[] _pairBitLengths;
 
+    // The short pair codes: the bit length of the name in the high 16 bits, then its prefix length and the length
+    // of the code, 0 when the code is longer than PairFastBits
+    private readonly uint[] _pairFastTable;
+
     // The first symbols of the first name of each block, packed in an integer in their order, so the binary search
     // compares integers and decodes a name only when they are equal
     private readonly ulong[] _blockKeys;
+
+    // The number of bits the symbols of the key take in the first name of each block, so that comparing a probe that
+    // has the same key with the name starts after them, or 0 when they take more bits than a byte counts
+    private readonly byte[] _keyBitLengths;
     private readonly int _bitsPerSymbol;
     private readonly int _symbolsPerKey;
+
+    // The number of leading symbols two different keys share, indexed by the leading zeros of their XOR
+    private readonly byte[] _commonSymbolCounts;
 
     private HstsPreloadList(object owner, byte* data, int length, int expectedEntryCount)
     {
@@ -132,8 +147,10 @@ internal sealed partial class HstsPreloadList
         }
 
         // Most of the pair codes are longer than the character codes, and decoding them is most of what walking a
-        // block does, so they get a larger table
-        _lengthPairDecoder = HuffmanDecoder.Create(pairCodeLengths, fastBits: 11)
+        // block does, so they get a larger table, whose entries hold the lengths of the pair rather than its
+        // symbol: the walk then reads one table per name, not three.
+        _pairFastTable = new uint[1 << PairFastBits];
+        _lengthPairDecoder = HuffmanDecoder.CreateLengthPairDecoder(pairCodeLengths, _pairPrefixLengths, _pairBitLengths, _pairFastTable)
             ?? throw CreateInvalidResourceException("the length pair code is invalid");
 
         _blockCount = reader.ReadInt32();
@@ -168,9 +185,21 @@ internal sealed partial class HstsPreloadList
             previous = offset;
         }
 
+        // A key holds as many symbols as fit with the bit that says whether the name goes on
         _bitsPerSymbol = 32 - BitOperations.LeadingZeroCount((uint)symbolCount - 1);
-        _symbolsPerKey = 64 / _bitsPerSymbol;
-        _blockKeys = BuildBlockKeys(bytes);
+        _symbolsPerKey = 63 / _bitsPerSymbol;
+        _keyBitLengths = new byte[_blockCount];
+        _blockKeys = BuildBlockKeys(bytes, _keyBitLengths);
+
+        // The symbols of a key fill its low bits, so the leading zeros of two keys XORed say how many symbols they
+        // share: all of them when only the lowest bit differs. A table, because the division by the symbol width is
+        // not by a constant.
+        _commonSymbolCounts = new byte[65];
+        var unusedBits = 63 - (_symbolsPerKey * _bitsPerSymbol);
+        for (var leadingZeros = 0; leadingZeros < _commonSymbolCounts.Length; leadingZeros++)
+        {
+            _commonSymbolCounts[leadingZeros] = (byte)(Math.Max(0, leadingZeros - unusedBits) / _bitsPerSymbol);
+        }
     }
 
     /// <summary>Gets the instance shared by every collection built with the preload list.</summary>
@@ -197,18 +226,23 @@ internal sealed partial class HstsPreloadList
     /// <summary>Looks a host name up. <paramref name="host"/> must be the canonicalized, ASCII form.</summary>
     public bool TryGetValue(ReadOnlySpan<char> host, int labelCount, out bool includeSubdomains)
     {
+        var lookup = CreateSuffixLookup(host, stackalloc byte[SuffixLookupBufferLength]);
+        return lookup.TryGetValue(host.Length, labelCount, out includeSubdomains);
+    }
+
+    /// <summary>Prepares the lookups of the suffixes of a host name, which must be the canonicalized, ASCII form.</summary>
+    /// <param name="host">The host name.</param>
+    /// <param name="buffer">The memory the lookups encode the host name in, of <see cref="SuffixLookupBufferLength"/> bytes.</param>
+    public SuffixLookup CreateSuffixLookup(ReadOnlySpan<char> host, Span<byte> buffer) => new(this, host, buffer);
+
+    // The probe is coded with the symbols of the names and ends with symbol 0, which is smaller than any character,
+    // so the comparisons are comparisons of bytes. The search starts at `lowerBlock`, which must not be after the
+    // block that can hold the probe, and leaves it at that block. `extendsNoName` is set when the search proved that
+    // no name starts with the probe and goes on, so that no longer suffix of the same host is on the list either.
+    private bool TryGetValue(ReadOnlySpan<byte> probe, ref int lowerBlock, out bool includeSubdomains, out bool extendsNoName)
+    {
         includeSubdomains = false;
-        if (labelCount < 1 || labelCount > MaxLabelCount || host.Length is 0 or > MaxHostNameLength)
-            return false;
-
-        // The probe is coded with the symbols of the names and ends with symbol 0, which is smaller than any
-        // character, so the comparisons are comparisons of bytes. A character no name uses means there is nothing
-        // to search.
-        Span<byte> probe = stackalloc byte[MaxHostNameLength + 1];
-        if (!TryEncodeProbe(host, probe))
-            return false;
-
-        probe = probe[..(host.Length + 1)];
+        extendsNoName = false;
 
         // The last block whose first name is not after the probe is the only one that can hold it. The search
         // narrows by halves without branching on the comparisons, which a binary search mispredicts half the time.
@@ -216,9 +250,9 @@ internal sealed partial class HstsPreloadList
         if (keys.Length == 0)
             return false;
 
-        var probeKey = GetKey(probe);
-        var block = 0;
-        for (var remaining = keys.Length; remaining > 1; remaining -= remaining / 2)
+        var probeKey = GetProbeKey(probe);
+        var block = lowerBlock;
+        for (var remaining = keys.Length - block; remaining > 1; remaining -= remaining / 2)
         {
             var candidate = block + (remaining / 2);
             block = keys[candidate] <= probeKey ? candidate : block;
@@ -227,54 +261,111 @@ internal sealed partial class HstsPreloadList
         if (keys[block] > probeKey)
             return false;
 
-        // Blocks whose first names start with the same symbols as the probe have the same key, and the last of them
-        // may start after the probe
+        // Blocks whose first names start with the same symbols as the probe, and go on like it, have the same key,
+        // and the last of them may start after the probe. A key that holds the whole probe is its name. The first
+        // name of `lowerBlock` is not after the probe, so this stops there.
         var data = Data;
-        while (keys[block] == probeKey && CompareFirstName(data, block, probe) > 0)
+        while (keys[block] == probeKey && IsLongerThanKey(probe) && CompareFirstName(data, block, probe) > 0)
         {
-            if (block == 0 || keys[block - 1] != probeKey)
-                return block > 0 && TryFindInBlock(data, block - 1, probe, out includeSubdomains);
+            if (block == 0)
+                return false;
 
             block--;
         }
 
-        return TryFindInBlock(data, block, probe, out includeSubdomains);
+        lowerBlock = block;
+        return TryFindInBlock(data, block, probe, probeKey, out includeSubdomains, out extendsNoName);
     }
 
     private int CompareFirstName(ReadOnlySpan<byte> data, int block, ReadOnlySpan<byte> probe)
     {
         var bitPosition = GetBlockOffset(data, block);
         var bitLength = DecodeFirstNameBitLength(ref bitPosition);
-        return CompareSuffix(bitPosition, bitPosition + bitLength, start: 0, probe, out _);
+        return CompareFirstNameAfterKey(block, bitPosition, bitPosition + bitLength, probe).Comparison;
+    }
+
+    // Compares the first name of a block, whose symbols are the bits from `bitPosition` to `end`, with a probe that
+    // has the same key and goes on after it like the name: they share the symbols of the key, so the comparison
+    // starts after them.
+    private (int Comparison, int Matched) CompareFirstNameAfterKey(int block, int bitPosition, int end, ReadOnlySpan<byte> probe)
+    {
+        var keyBitLength = _keyBitLengths[block];
+        return keyBitLength == 0
+            ? CompareSuffix(bitPosition, end, start: 0, probe)
+            : CompareSuffix(bitPosition + keyBitLength, end, _symbolsPerKey, probe);
     }
 
     // The names of the block are walked in order, keeping how much of the probe the current name matches. The
     // current name is before the probe and differs from it at that position, so the length of the prefix the next
     // name shares with it says whether that name can be the probe, and most names are skipped by their bit length
     // without decoding them.
-    private bool TryFindInBlock(ReadOnlySpan<byte> data, int block, ReadOnlySpan<byte> probe, out bool includeSubdomains)
+    //
+    // The names that start with the probe and go on come right after it, so when the first name after the probe
+    // leaves it before its end, there are none, which `extendsNoName` reports. A name that leaves the previous one
+    // earlier than the probe does leaves the probe at that position too, before its end.
+    private bool TryFindInBlock(ReadOnlySpan<byte> data, int block, ReadOnlySpan<byte> probe, ulong probeKey, out bool includeSubdomains, out bool extendsNoName)
     {
         includeSubdomains = false;
+        extendsNoName = false;
+        var probeLength = probe.Length - 1;
 
         var first = block * _blockSize;
         var count = Math.Min(_blockSize, _entryCount - first);
         var bitPosition = GetBlockOffset(data, block);
-        var matched = 0;
-        for (var i = 0; i < count; i++)
+        var firstNameBitLength = DecodeFirstNameBitLength(ref bitPosition);
+        var firstNameEnd = bitPosition + firstNameBitLength;
+        int matched;
+
+        // The block is not after the probe, so a key that differs from the probe's is before it, and the first
+        // symbol where the two keys differ is where the first name leaves the probe: decoding the name would only
+        // find the symbols the key already holds, which were decoded when the list was loaded.
+        var blockKey = _blockKeys[block];
+        Debug.Assert(blockKey <= probeKey);
+        if (blockKey != probeKey)
         {
-            var (prefixLength, bitLength) = i == 0 ? (0, DecodeFirstNameBitLength(ref bitPosition)) : DecodeLengthPair(ref bitPosition);
+            matched = _commonSymbolCounts[BitOperations.LeadingZeroCount(blockKey ^ probeKey)];
+        }
+        else if (!IsLongerThanKey(probe))
+        {
+            // The key holds the whole first name, which is the probe
+            includeSubdomains = GetIncludeSubdomains(data, first);
+            return true;
+        }
+        else
+        {
+            (var comparison, matched) = CompareFirstNameAfterKey(block, bitPosition, firstNameEnd, probe);
+            if (comparison == 0)
+            {
+                includeSubdomains = GetIncludeSubdomains(data, first);
+                return true;
+            }
+
+            if (comparison > 0)
+            {
+                extendsNoName = matched < probeLength;
+                return false;
+            }
+        }
+
+        bitPosition = firstNameEnd;
+        for (var i = 1; i < count; i++)
+        {
+            var (prefixLength, bitLength) = DecodeLengthPair(ref bitPosition);
             var end = bitPosition + bitLength;
 
             // The previous name and the probe agree before `matched`, so a name that leaves the previous one
             // earlier is after the probe, and so is every name after it
             if (prefixLength < matched)
+            {
+                extendsNoName = true;
                 return false;
+            }
 
             // A name that leaves the previous one later is still before the probe, where the previous one was, so
             // it is skipped. One that leaves it where the probe does is compared with the probe from there.
             if (prefixLength == matched)
             {
-                var comparison = CompareSuffix(bitPosition, end, prefixLength, probe, out matched);
+                (var comparison, matched) = CompareSuffix(bitPosition, end, prefixLength, probe);
                 if (comparison == 0)
                 {
                     includeSubdomains = GetIncludeSubdomains(data, first + i);
@@ -282,7 +373,10 @@ internal sealed partial class HstsPreloadList
                 }
 
                 if (comparison > 0)
+                {
+                    extendsNoName = matched < probeLength;
                     return false;
+                }
             }
 
             bitPosition = end;
@@ -292,9 +386,10 @@ internal sealed partial class HstsPreloadList
     }
 
     // Compares the name whose suffix is the bits from `bitPosition` to `end` with the probe. The name and the probe
-    // agree before `start`, where the suffix starts, so the character before the suffix is the probe's. `matched`
-    // is the length of the prefix they share.
-    private int CompareSuffix(int bitPosition, int end, int start, ReadOnlySpan<byte> probe, out int matched)
+    // agree before `start`, where the suffix starts, so the character before the suffix is the probe's. `Matched`
+    // is the length of the prefix they share. Returned rather than an out parameter, which would keep the walk's
+    // state in memory and make it reload the fields of the list for every name.
+    private (int Comparison, int Matched) CompareSuffix(int bitPosition, int end, int start, ReadOnlySpan<byte> probe)
     {
         var context = start == 0 ? 0 : probe[start - 1];
         var index = start;
@@ -306,18 +401,14 @@ internal sealed partial class HstsPreloadList
             // at the end of the probe at the latest and `index` stays within it
             var expected = probe[index];
             if (symbol != expected)
-            {
-                matched = index;
-                return symbol < expected ? -1 : 1;
-            }
+                return (symbol < expected ? -1 : 1, index);
 
             context = symbol;
             index++;
         }
 
         // The name ends here: it is the probe if the probe does too, and otherwise a prefix of it, before it
-        matched = index;
-        return probe[index] == 0 ? 0 : -1;
+        return (probe[index] == 0 ? 0 : -1, index);
     }
 
     /// <summary>Enumerates every preloaded entry, materializing the host names on demand.</summary>
@@ -368,7 +459,7 @@ internal sealed partial class HstsPreloadList
     // The first symbols of the first name of each block. Decoding them is most of the cost of loading the list, so
     // this is compiled optimized from the start rather than run once in unoptimized code.
     [MethodImpl(MethodImplOptions.AggressiveOptimization)]
-    private ulong[] BuildBlockKeys(ReadOnlySpan<byte> data)
+    private ulong[] BuildBlockKeys(ReadOnlySpan<byte> data, byte[] keyBitLengths)
     {
         var keys = new ulong[_blockCount];
         Span<byte> name = stackalloc byte[MaxHostNameLength];
@@ -376,9 +467,11 @@ internal sealed partial class HstsPreloadList
         {
             var bitPosition = GetBlockOffset(data, i);
             var bitLength = DecodeFirstNameBitLength(ref bitPosition);
+            var start = bitPosition;
             var end = bitPosition + bitLength;
             var length = DecodeSymbols(ref bitPosition, end, name, start: 0, _symbolsPerKey);
-            keys[i] = GetKey(name[..length]);
+            keyBitLengths[i] = bitPosition - start is var keyBitLength and <= byte.MaxValue ? (byte)keyBitLength : (byte)0;
+            keys[i] = GetKey(name[..length], isLonger: bitPosition < end);
             if (i > 0 && keys[i] < keys[i - 1])
                 throw CreateInvalidResourceException("its names are not sorted");
         }
@@ -387,8 +480,10 @@ internal sealed partial class HstsPreloadList
     }
 
     // The symbols are packed from the most significant bits, so the keys compare as the names they start, and
-    // the symbols after the end of a name are 0 like the end itself
-    private ulong GetKey(ReadOnlySpan<byte> name)
+    // the symbols after the end of a name are 0 like the end itself. The lowest bit says whether the name goes on
+    // after them, so that a name the key holds whole is before the ones that extend it, as in the order of the
+    // names: two equal keys are then the same name, or two names that both go on.
+    private ulong GetKey(ReadOnlySpan<byte> name, bool isLonger)
     {
         var key = 0UL;
         for (var i = 0; i < _symbolsPerKey; i++)
@@ -396,7 +491,18 @@ internal sealed partial class HstsPreloadList
             key = (key << _bitsPerSymbol) | (i < name.Length ? name[i] : 0UL);
         }
 
-        return key;
+        return (key << 1) | (isLonger ? 1UL : 0UL);
+    }
+
+    // The key of a probe, which ends with symbol 0
+    private ulong GetProbeKey(ReadOnlySpan<byte> probe)
+    {
+        return GetKey(probe, isLonger: IsLongerThanKey(probe));
+    }
+
+    private bool IsLongerThanKey(ReadOnlySpan<byte> probe)
+    {
+        return probe.Length - 1 > _symbolsPerKey;
     }
 
     private int DecodeSymbol(int context, ref int bitPosition, int end)
@@ -429,10 +535,26 @@ internal sealed partial class HstsPreloadList
     // Walking a block is mostly this
     private (int PrefixLength, int BitLength) DecodeLengthPair(ref int bitPosition)
     {
-        var pair = _lengthPairDecoder.Decode(ReadWindow(bitPosition), out var length);
-        var bitLength = _pairBitLengths[pair];
+        var window = ReadWindow(bitPosition);
+        var entry = _pairFastTable[(int)(window >> (64 - PairFastBits))];
+        int length;
+        int prefixLength;
+        int bitLength;
+        if (entry != 0)
+        {
+            length = (int)(entry & 0xFF);
+            prefixLength = (int)((entry >> 8) & 0xFF);
+            bitLength = (int)(entry >> 16);
+        }
+        else
+        {
+            var pair = _lengthPairDecoder.DecodeLongCode(window, out length);
+            prefixLength = _pairPrefixLengths[pair];
+            bitLength = _pairBitLengths[pair];
+        }
+
         bitPosition = CheckSuffix(Advance(bitPosition, length, _bitLength), bitLength);
-        return (_pairPrefixLengths[pair], bitLength);
+        return (prefixLength, bitLength);
     }
 
     // The suffix that follows must fit in the stream, so the caller can jump past it
@@ -465,44 +587,6 @@ internal sealed partial class HstsPreloadList
             throw CreateInvalidResourceException("a code runs past the end of its name");
 
         return position;
-    }
-
-    // Writes the symbols of the host name with its labels reversed, and the end of the name
-    private bool TryEncodeProbe(ReadOnlySpan<char> host, Span<byte> probe)
-    {
-        var written = 0;
-        var end = host.Length;
-        for (var i = host.Length - 1; i >= -1; i--)
-        {
-            if (i >= 0 && host[i] != '.')
-                continue;
-
-            foreach (var c in host[(i + 1)..end])
-            {
-                var folded = c is >= 'A' and <= 'Z' ? (char)(c | 0x20) : c;
-                if (folded >= _symbolOfCharacter.Length)
-                    return false;
-
-                var symbol = _symbolOfCharacter[folded];
-                if (symbol == 0)
-                    return false;
-
-                probe[written++] = symbol;
-            }
-
-            if (i >= 0)
-            {
-                if (_dotSymbol == 0)
-                    return false;
-
-                probe[written++] = _dotSymbol;
-            }
-
-            end = i;
-        }
-
-        probe[written] = 0;
-        return true;
     }
 
     private string GetHostName(ReadOnlySpan<byte> name)
@@ -585,6 +669,118 @@ internal sealed partial class HstsPreloadList
         public static readonly HstsPreloadList Instance = Load();
     }
 
+    /// <summary>The memory a <see cref="SuffixLookup"/> encodes a host name in.</summary>
+    /// <remarks>
+    /// The caller declares a local of this type rather than a <see langword="stackalloc"/>: a method that has a loop
+    /// and a <see langword="stackalloc"/> is compiled fully optimized on its first call, which made the first lookup
+    /// of the process about a millisecond slower.
+    /// </remarks>
+    [InlineArray(SuffixLookupBufferLength)]
+    public struct SuffixLookupBuffer
+    {
+        private byte _element;
+    }
+
+    /// <summary>Looks up the suffixes of a host name, from the shortest to the longest.</summary>
+    /// <remarks>
+    /// The labels of the names are reversed, so the suffixes of a host name, which are its last labels, are the
+    /// prefixes of its reversed name: "example.com" is "com.example", the start of "com.example.www". The name is
+    /// encoded once, only as far as the longest suffix looked up, and the probe of a suffix is the start of it. A
+    /// longer suffix is after a shorter one in the order of the names, so its search starts at the block where the
+    /// shorter one was searched, and is not needed at all when the shorter one proved that no name extends it.
+    /// </remarks>
+    public ref struct SuffixLookup
+    {
+        private readonly HstsPreloadList _list;
+        private readonly ReadOnlySpan<char> _host;
+        private readonly Span<byte> _probe;
+
+        // The symbols written so far, the end of the labels of the host that are not written yet (-1 once they all
+        // are), and whether a character no name uses, or the length of the names, stopped the encoding there
+        private int _encodedLength;
+        private int _unencodedEnd;
+        private bool _isStopped;
+
+        private int _previousLength;
+        private int _previousBlock;
+
+        // The length of a suffix that no name starts with and goes on, so that the longer ones are not searched
+        private int _unextendedLength;
+
+        internal SuffixLookup(HstsPreloadList list, ReadOnlySpan<char> host, Span<byte> buffer)
+        {
+            _list = list;
+            _host = host;
+            _probe = buffer;
+            _unencodedEnd = host.Length;
+            _unextendedLength = int.MaxValue;
+        }
+
+        /// <summary>Looks up the suffix made of the last <paramref name="length"/> characters of the host name, which must start a label.</summary>
+        public bool TryGetValue(int length, int labelCount, out bool includeSubdomains)
+        {
+            includeSubdomains = false;
+            if (labelCount < 1 || labelCount > _list.MaxLabelCount || length is <= 0 or > MaxHostNameLength || length > _unextendedLength || !TryEncode(length))
+                return false;
+
+            // The probe ends with symbol 0 where the reversed name goes on with a dot
+            var next = _probe[length];
+            _probe[length] = 0;
+            var block = length > _previousLength ? _previousBlock : 0;
+            var found = _list.TryGetValue(_probe[..(length + 1)], ref block, out includeSubdomains, out var extendsNoName);
+            _probe[length] = next;
+
+            _previousLength = length;
+            _previousBlock = block;
+            if (extendsNoName)
+            {
+                _unextendedLength = length;
+            }
+
+            return found;
+        }
+
+        // Writes the labels of the host from the last one, separated by dots, until `length` symbols are written
+        private bool TryEncode(int length)
+        {
+            while (_encodedLength < length)
+            {
+                if (_isStopped || _unencodedEnd < 0)
+                    return false;
+
+                if (_unencodedEnd < _host.Length && !TryWrite('.'))
+                    return false;
+
+                var labels = _host[.._unencodedEnd];
+                var dot = labels.LastIndexOf('.');
+                foreach (var c in labels[(dot + 1)..])
+                {
+                    if (!TryWrite(c))
+                        return false;
+                }
+
+                _unencodedEnd = dot;
+            }
+
+            return true;
+        }
+
+        private bool TryWrite(char c)
+        {
+            var folded = c is >= 'A' and <= 'Z' ? (char)(c | 0x20) : c;
+            var symbol = folded < _list._symbolOfCharacter.Length ? _list._symbolOfCharacter[folded] : (byte)0;
+            if (symbol == 0 || _encodedLength == MaxHostNameLength)
+            {
+                // A suffix that holds this character is not on the list, but the shorter ones written so far may be
+                _isStopped = true;
+                return false;
+            }
+
+            _probe[_encodedLength++] = symbol;
+            return true;
+        }
+    }
+
     private ref struct HeaderReader(ReadOnlySpan<byte> data)
     {
         private readonly ReadOnlySpan<byte> _data = data;
@@ -646,13 +842,21 @@ internal sealed partial class HstsPreloadList
         /// <summary>Builds the decoder of the code whose length is <paramref name="lengths"/>[symbol], 0 for the symbols that have none.</summary>
         /// <returns>The decoder, or <see langword="null"/> if the lengths do not describe a prefix code.</returns>
         public static HuffmanDecoder? Create(ReadOnlySpan<byte> lengths, int fastBits)
-            => Create(lengths, fastBits, new uint[1 << fastBits], fastTable: default);
+        {
+            var fast = new uint[1 << fastBits];
+            return Create(lengths, fastBits, fast, fast, narrowFastTable: default);
+        }
 
         /// <summary>Builds the decoder of a code whose symbols fit in a byte, writing the table of its short codes to <paramref name="fastTable"/> rather than keeping it.</summary>
         public static HuffmanDecoder? Create(ReadOnlySpan<byte> lengths, Span<ushort> fastTable)
-            => lengths.Length <= byte.MaxValue + 1 ? Create(lengths, FastBits, fast: null, fastTable) : null;
+            => lengths.Length <= byte.MaxValue + 1 ? Create(lengths, FastBits, fast: null, wideFastTable: default, fastTable) : null;
 
-        private static HuffmanDecoder? Create(ReadOnlySpan<byte> lengths, int fastBits, uint[]? fast, Span<ushort> fastTable)
+        /// <summary>Builds the decoder of the length pairs, writing to <paramref name="fastTable"/>, whose size sets how many bits it is indexed by, the lengths of each short code's pair rather than the pair.</summary>
+        /// <remarks>An entry holds the bit length of the pair in its high 16 bits, then its prefix length and the length of the code.</remarks>
+        public static HuffmanDecoder? CreateLengthPairDecoder(ReadOnlySpan<byte> lengths, ReadOnlySpan<byte> prefixLengths, ReadOnlySpan<ushort> bitLengths, uint[] fastTable)
+            => Create(lengths, BitOperations.Log2((uint)fastTable.Length), fast: null, fastTable, narrowFastTable: default, prefixLengths, bitLengths);
+
+        private static HuffmanDecoder? Create(ReadOnlySpan<byte> lengths, int fastBits, uint[]? fast, Span<uint> wideFastTable, Span<ushort> narrowFastTable, ReadOnlySpan<byte> pairPrefixLengths = default, ReadOnlySpan<ushort> pairBitLengths = default)
         {
             var count = new int[MaxCodeLength + 1];
             var maxLength = 0;
@@ -699,14 +903,16 @@ internal sealed partial class HstsPreloadList
                     {
                         var symbolCode = (int)firstCode[length] + (rank - firstIndex[length]);
                         var start = symbolCode << (fastBits - length);
-                        var entry = ((uint)symbol << 8) | (uint)length;
-                        if (fast is null)
+                        var entry = pairBitLengths.IsEmpty
+                            ? ((uint)symbol << 8) | (uint)length
+                            : ((uint)pairBitLengths[symbol] << 16) | ((uint)pairPrefixLengths[symbol] << 8) | (uint)length;
+                        if (wideFastTable.IsEmpty)
                         {
-                            fastTable.Slice(start, 1 << (fastBits - length)).Fill((ushort)entry);
+                            narrowFastTable.Slice(start, 1 << (fastBits - length)).Fill((ushort)entry);
                         }
                         else
                         {
-                            fast.AsSpan(start, 1 << (fastBits - length)).Fill(entry);
+                            wideFastTable.Slice(start, 1 << (fastBits - length)).Fill(entry);
                         }
                     }
                 }

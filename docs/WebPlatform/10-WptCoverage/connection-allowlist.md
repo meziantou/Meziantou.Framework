@@ -10,17 +10,17 @@ description: "The results of the web-platform-tests of connection-allowlist, and
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | Stable | 0 | 0 | 0 | – |
-| [Tentative](#tentative-tests) | 69 | 90 | 0 | 77% |
+| [Tentative](#tentative-tests) | 73 | 90 | 0 | 81% |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **69** | **90** | **0** | **77%** |
+| **All** | **73** | **90** | **0** | **81%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **TEST BUG**: 2
-- **NOT IMPLEMENTED**: 19
+- **NOT IMPLEMENTED**: 15
 
 ## Tentative tests
 
@@ -112,7 +112,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`tentative/websocket-service-worker.sub.https.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/websocket-service-worker.sub.https.window.js) | Pass | 2 / 2 |  |  |
 | [`tentative/websocket-shared-worker.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/websocket-shared-worker.https.sub.window.js) | Pass | 5 / 5 |  |  |
 | [`tentative/websocket.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/websocket.sub.window.js) | Pass | 5 / 5 |  |  |
-| [`tentative/webtransport-dedicated-worker.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-dedicated-worker.https.sub.window.js) | Fail | 4 / 5 | NOT IMPLEMENTED | WebTransport (`WebTransport` is not defined): only the subtests that expect a blocked connection pass |
-| [`tentative/webtransport-document.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-document.https.sub.window.js) | Fail | 0 / 5 | NOT IMPLEMENTED | WebTransport (`WebTransport` is not defined): only the subtests that expect a blocked connection pass |
-| [`tentative/webtransport-service-worker.sub.https.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-service-worker.sub.https.window.js) | Fail | 1 / 2 | NOT IMPLEMENTED | WebTransport (`WebTransport` is not defined): only the subtests that expect a blocked connection pass |
-| [`tentative/webtransport-shared-worker.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-shared-worker.https.sub.window.js) | Fail | 4 / 5 | NOT IMPLEMENTED | WebTransport (`WebTransport` is not defined): only the subtests that expect a blocked connection pass |
+| [`tentative/webtransport-dedicated-worker.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-dedicated-worker.https.sub.window.js) | Pass | 5 / 5 |  |  |
+| [`tentative/webtransport-document.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-document.https.sub.window.js) | Pass | 5 / 5 |  |  |
+| [`tentative/webtransport-service-worker.sub.https.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-service-worker.sub.https.window.js) | Pass | 2 / 2 |  |  |
+| [`tentative/webtransport-shared-worker.https.sub.window.js`](https://wpt.fyi/results/connection-allowlist/tentative/webtransport-shared-worker.https.sub.window.js) | Pass | 5 / 5 |  |  |

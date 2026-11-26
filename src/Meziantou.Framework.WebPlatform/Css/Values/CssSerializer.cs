@@ -534,6 +534,13 @@ internal static partial class CssSerializer
                 // A number serialized without its sign is parsed with the delimiter before it ("+" followed by "+1" written "+1")
                 builder.Insert(start, "/**/");
             }
+            else if (!pendingSpace && adjacent && value is CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension }
+                && start > 0 && start < builder.Length && char.IsAsciiDigit(builder[start]) && WouldMergeWithFollowingName(builder[start - 1]))
+            {
+                // A number serialized with a leading digit (".5" written "0.5", "+5" written "5") is parsed with the name or the
+                // number before it ("a" followed by ".5" written "a0.5", "1px" followed by "+5" written "1px5")
+                builder.Insert(start, "/**/");
+            }
 
             pendingSpace = false;
             componentEnd = builder.Length;

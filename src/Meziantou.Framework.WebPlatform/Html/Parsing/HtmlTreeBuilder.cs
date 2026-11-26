@@ -87,9 +87,13 @@ internal sealed partial class HtmlTreeBuilder
     private InsertionMode _originalMode;
     private readonly List<Element> _openElements = new(32);
 
+    // Enum.GetValues allocates an array at each call
+    private static readonly int TagIdCount = Enum.GetValues<TagId>().Length;
+
     // The number of HTML elements of each tag in the stack of open elements, so "has an element in scope" returns early
     // when there is no such element instead of walking the whole stack (quadratic on deeply nested documents).
-    private readonly int[] _openHtmlElementCounts = new int[Enum.GetValues<TagId>().Length];
+    private readonly int[] _openHtmlElementCounts = new int[TagIdCount];
+
     private readonly List<InsertionMode> _templateModes = [];
 
     // List of active formatting elements. A null element is a marker.
@@ -107,8 +111,11 @@ internal sealed partial class HtmlTreeBuilder
     private int _createdElementCount;
 
     // Pending table character tokens (in table text insertion mode)
-    private readonly System.Text.StringBuilder _pendingTableCharacters = new();
+    private System.Text.StringBuilder? _pendingTableCharacters;
     private bool _pendingTableCharactersContainNonWhitespace;
+
+    // Created when the parser first enters the in table text insertion mode (most fragments have no table)
+    private System.Text.StringBuilder PendingTableCharacters => _pendingTableCharacters ??= new();
 
     public HtmlTreeBuilder(Document document, HtmlTokenizer tokenizer, Action<HtmlParseErrorInfo>? errorHandler, ParserScriptingMode scriptingMode)
     {
@@ -276,6 +283,7 @@ internal sealed partial class HtmlTreeBuilder
         finally
         {
             _runDepth--;
+            FlushBufferedTexts();
             if (_abortRequested && _runDepth == 0)
             {
                 _abortRequested = false;
@@ -1276,7 +1284,9 @@ internal sealed partial class HtmlTreeBuilder
 
     // The script element whose content the parser is inserting, and the characters inserted in it (see TakeParsedScriptText)
     private Element? _parsedScript;
-    private readonly System.Text.StringBuilder _parsedScriptText = new();
+    private System.Text.StringBuilder? _parsedScriptText;
+
+    private System.Text.StringBuilder ParsedScriptText => _parsedScriptText ??= new();
 
     /// <summary>
     /// Whether the element is on the stack of open elements, or is being inserted by the parser, which then pushes it onto the
@@ -1303,13 +1313,13 @@ internal sealed partial class HtmlTreeBuilder
 
         if (_parsedScript is not null && ReferenceEquals(targetParent, _parsedScript))
         {
-            _parsedScriptText.Append(data);
+            ParsedScriptText.Append(data);
         }
 
         var previousSibling = referenceChild is not null ? referenceChild.PreviousSibling : targetParent.LastChild;
         if (previousSibling is Text text)
         {
-            text.SetDataCore(string.Concat(text.Data, data));
+            AppendCharacters(text, data);
 
             // As for a change of the data by the DOM (https://dom.spec.whatwg.org/#concept-cd-replace): the child text content
             // change steps of the parent run (e.g. the style sheet of a style element, written by several document.write()
@@ -1322,11 +1332,50 @@ internal sealed partial class HtmlTreeBuilder
         targetParent.InsertBeforeCore(new Text(targetParent.NodeDocument, _tokenizer.NameTable.GetText(data)), referenceChild);
     }
 
+    // The text node to which the last characters were appended, and the text nodes whose data is buffered (see
+    // CharacterData.AppendParsedData): the data of the text nodes is a string when Run returns
+    private Text? _lastAppendedText;
+    private List<Text>? _bufferedTexts;
+
+    /// <summary>
+    /// Appends characters to a text node. The first characters appended to a text node are concatenated to its data, as most
+    /// text nodes are created by a single character token; the next ones are buffered, so that a text node to which many
+    /// character tokens are appended (e.g. text interleaved with ignored tags or NULL characters) is built in linear time.
+    /// </summary>
+    private void AppendCharacters(Text text, ReadOnlySpan<char> data)
+    {
+        if (!ReferenceEquals(text, _lastAppendedText))
+        {
+            _lastAppendedText = text;
+            text.SetDataCore(string.Concat(text.Data, data));
+            return;
+        }
+
+        if (text.AppendParsedData(data))
+        {
+            (_bufferedTexts ??= []).Add(text);
+        }
+    }
+
+    /// <summary>Copies the buffered characters to the data of the text nodes (see <see cref="AppendCharacters"/>).</summary>
+    private void FlushBufferedTexts()
+    {
+        if (_bufferedTexts is not { Count: > 0 } texts)
+            return;
+
+        foreach (var text in texts)
+        {
+            text.FlushParsedData();
+        }
+
+        texts.Clear();
+    }
+
     /// <summary>Starts recording the characters that the parser inserts in a script element (see <see cref="TakeParsedScriptText"/>).</summary>
     private void BeginParsedScriptText(Element script)
     {
         _parsedScript = script;
-        _parsedScriptText.Clear();
+        ParsedScriptText.Clear();
     }
 
     /// <summary>
@@ -1343,8 +1392,8 @@ internal sealed partial class HtmlTreeBuilder
         _parsedScript = null;
 
         // Usually, the characters are the data of the only child of the script: the string is not copied
-        var text = script.FirstChild is Text { NextSibling: null } child && _parsedScriptText.Equals(child.Data) ? child.Data : _parsedScriptText.ToString();
-        _parsedScriptText.Clear();
+        var text = script.FirstChild is Text { NextSibling: null } child && ParsedScriptText.Equals(child.Data) ? child.Data : ParsedScriptText.ToString();
+        ParsedScriptText.Clear();
         return text;
     }
 

@@ -11,8 +11,4 @@ internal sealed class DiffComputationResult
     internal bool[] LeftModified { get; }
 
     internal bool[] RightModified { get; }
-
-    internal int LeftLength => LeftModified.Length;
-
-    internal int RightLength => RightModified.Length;
 }

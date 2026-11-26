@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
+using System.Text;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.Yaml;
 using Meziantou.Framework.Yaml.Model;
@@ -19,6 +20,7 @@ public class DocumentBenchmarks
 
     private Collection<Order> _orders = null!;
     private string _yaml = null!;
+    private byte[] _utf8Yaml = null!;
 
     [Params(10, 1000)]
     public int Count { get; set; }
@@ -28,6 +30,7 @@ public class DocumentBenchmarks
     {
         _orders = CreateOrders(Count);
         _yaml = YamlSerializer.Serialize(_orders, Options);
+        _utf8Yaml = Encoding.UTF8.GetBytes(_yaml);
     }
 
     [Benchmark]
@@ -35,6 +38,9 @@ public class DocumentBenchmarks
 
     [Benchmark]
     public Collection<Order>? Deserialize() => YamlSerializer.Deserialize<Collection<Order>>(_yaml, Options);
+
+    [Benchmark]
+    public Collection<Order>? DeserializeFromStream() => YamlSerializer.Deserialize<Collection<Order>>(new MemoryStream(_utf8Yaml, writable: false), Options);
 
     [Benchmark]
     public int Parse()

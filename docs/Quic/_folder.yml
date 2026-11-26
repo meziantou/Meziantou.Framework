@@ -1,0 +1,5 @@
+title: QUIC and WebTransport
+description: Use QUIC datagrams, stream priorities and statistics with MsQuic, and open WebTransport sessions over HTTP/3.
+packageIds:
+- Meziantou.Framework.MsQuic
+- Meziantou.Framework.WebTransport

@@ -107,6 +107,16 @@ internal static partial class WptServer
         && !hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
         && url.Port is var port && (url.Protocol == "http:" ? Ports["ws"] : [.. Ports["wss"], .. Ports["h2"]]).Any(p => p.ToString(CultureInfo.InvariantCulture) == port);
 
+    /// <summary>
+    /// Whether a URL is served by the WebTransport server of wptserve (<c>tools/webtransport/h3</c>): the <c>https:</c> URLs of
+    /// the hosts of <see cref="IsHost"/> on the <c>webtransport-h3</c> port.
+    /// </summary>
+    public static bool IsWebTransportHost(Url url) => url.Protocol == "https:"
+        && GetHostname(url) is var hostname
+        && (hostname is Domain or AltDomain or "127.0.0.1" || hostname.EndsWith("." + Domain, StringComparison.Ordinal) || hostname.EndsWith("." + AltDomain, StringComparison.Ordinal))
+        && !hostname.StartsWith(NotSubdomain + ".", StringComparison.Ordinal)
+        && url.Port is var port && Ports["webtransport-h3"].Any(p => p.ToString(CultureInfo.InvariantCulture) == port);
+
     /// <summary>The host name of a URL, without the trailing dot of a fully qualified domain name (<c>web-platform.test.</c> resolves as <c>web-platform.test</c>).</summary>
     private static string GetHostname(Url url) => url.Hostname is [.. var name, '.'] ? name : url.Hostname;
 

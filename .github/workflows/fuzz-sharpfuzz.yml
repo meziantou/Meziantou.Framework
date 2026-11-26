@@ -61,6 +61,7 @@ on:
           - scheduling
           - simple-query-language
           - syntax-highlighting
+          - tagged-values
           - tds-server
           - text-diff
           - toml
@@ -71,6 +72,7 @@ on:
           - wasm-engine
           - webplatform-devtools
           - webplatform
+          - webtransport
           - yaml
       duration_seconds:
         description: Time budget of each target, in seconds
@@ -157,6 +159,7 @@ env:
       { "project": "Meziantou.Framework.Scheduling.Fuzz",          "component": "scheduling",            "day": 3 },
       { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 1 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },
+      { "project": "Meziantou.Framework.TaggedValues.Analyzer.Fuzz", "component": "tagged-values",       "day": 3 },
       { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
       { "project": "Meziantou.Framework.TextDiff.Fuzz",            "component": "text-diff",             "day": 0 },
       { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },
@@ -167,6 +170,7 @@ env:
       { "project": "Meziantou.Framework.WasmEngine.Fuzz",          "component": "wasm-engine",           "day": 6 },
       { "project": "Meziantou.Framework.WebPlatform.DevTools.Fuzz", "component": "webplatform-devtools",  "day": 3 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
+      { "project": "Meziantou.Framework.WebTransport.Fuzz",        "component": "webtransport",          "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]
 

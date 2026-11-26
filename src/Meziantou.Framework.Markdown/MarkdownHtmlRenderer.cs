@@ -58,11 +58,15 @@ public static class MarkdownHtmlRenderer
     /// Gets a value indicating whether two documents render as the same HTML, with the default options. A line ending of the HTML
     /// is the same as another one: the line endings of the code change with the line ending of the document.
     /// </summary>
-    /// <remarks>The HTML is compared in the buffers that it is written to, without creating the strings.</remarks>
+    /// <remarks>
+    /// The HTML is compared in the buffers that it is written to, without creating the strings. It includes the content of the
+    /// footnotes that are not referred to, which the HTML does not show: the formatter must not change them either (fuzz
+    /// regression: a table of such a footnote became a paragraph).
+    /// </remarks>
     internal static bool RenderAsTheSameHtml(MarkdownSyntaxTree tree, MarkdownSyntaxTree other)
     {
-        using var writer = Write(tree, options: null, plainText: false);
-        using var otherWriter = Write(other, options: null, plainText: false);
+        using var writer = Write(tree, options: null, plainText: false, unreferencedFootnotes: true);
+        using var otherWriter = Write(other, options: null, plainText: false, unreferencedFootnotes: true);
         return EqualsIgnoringLineEndings(writer.Written, otherWriter.Written);
     }
 
@@ -117,9 +121,9 @@ public static class MarkdownHtmlRenderer
     }
 
     // Writes the HTML, or the plain text, into a writer that the caller disposes
-    private static Writer Write(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options, bool plainText)
+    private static Writer Write(MarkdownSyntaxTree tree, MarkdownHtmlRendererOptions? options, bool plainText, bool unreferencedFootnotes = false)
     {
-        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText };
+        var writer = new Writer(tree.GetText().Length, tree.Options, options ?? MarkdownHtmlRendererOptions.Default) { PlainText = plainText, WritesUnreferencedFootnotes = unreferencedFootnotes };
         writer.CollectAllAttributes(tree);
 
         if (options?.PragmaLines is true && !plainText)
@@ -175,6 +179,12 @@ public static class MarkdownHtmlRenderer
 
         /// <summary>Gets or sets a value indicating whether the writer writes plain text: the text of the document without HTML, as the plain text of Markdig.</summary>
         public bool PlainText { get; init; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the writer also writes the content of the footnotes that are not referred to,
+        /// after the list of the footnotes: two documents whose footnotes differ only there render as the same HTML otherwise.
+        /// </summary>
+        public bool WritesUnreferencedFootnotes { get; init; }
 
         private PooledStringBuilder Markup
         {
@@ -1483,6 +1493,20 @@ public static class MarkdownHtmlRenderer
             }
 
             Markup.Append("</ol>\n</div>\n");
+            if (WritesUnreferencedFootnotes)
+            {
+                _backLinksParagraph = null;
+                foreach (var footnote in document.Blocks.OfType<MarkdownFootnoteDefinitionSyntax>())
+                {
+                    if (!_footnotes.Contains(footnote))
+                    {
+                        Markup.Append("<template>\n");
+                        WriteBlocks(footnote.Blocks);
+                        Cr();
+                        Markup.Append("</template>\n");
+                    }
+                }
+            }
         }
 
         // The document whose footnotes a node refers to: for the content of a grid table cell, the document of the table

@@ -283,6 +283,69 @@ bin/
         Assert.True(globs.IsMatch("bin", "other.txt", PathItemType.File));
     }
 
+    [Theory]
+    [InlineData("[Dd]ebug/", "src/Debug", true, true)]
+    [InlineData("[Dd]ebug/", "src/debug", true, true)]
+    [InlineData("[Dd]ebug/", "src/Debug/a.txt", false, true)]
+    [InlineData("[Dd]ebug/", "src/DEBUG", true, false)]
+    [InlineData("[Dd]ebug/", "src/Debug", false, false)]
+    [InlineData("[a-c]x", "b/bx", false, true)]
+    [InlineData("[a-c]x", "b/dx", false, false)]
+    [InlineData("*.[Cc]ache", "a/b.Cache", false, true)]
+    [InlineData("*.[Cc]ache", "a/b.c.cache", false, true)]
+    [InlineData("*.[Cc]ache", "a/b.CACHE", false, false)]
+    [InlineData("*.[Pp]ublish.xml", "a/b.publish.xml", false, true)]
+    [InlineData("*.[Pp]ublish.xml", "a/publish.xml", false, false)]
+    [InlineData("UpgradeLog*.XML", "a/UpgradeLog2.XML", false, true)]
+    [InlineData("UpgradeLog*.XML", "a/UpgradeLog2.xml", false, false)]
+    [InlineData("*.bim_*.settings", "a/b.bim_c.settings", false, true)]
+    [InlineData("*.sln.docstates", "a/b.sln.docstates", false, true)]
+    [InlineData("*.sln.docstates", "a/b.docstates", false, false)]
+    [InlineData("*_i.c", "a/b_i.c", false, true)]
+    [InlineData("*_i.c", "a/b.c", false, false)]
+    [InlineData("*.", "a/b.", false, true)]
+    [InlineData("_ReSharper*/", "a/_ReSharper.Caches", true, true)]
+    [InlineData("_ReSharper*/", "a/_ReSharper.Caches/b.txt", false, true)]
+    [InlineData("_ReSharper*/", "a/ReSharper", true, false)]
+    [InlineData("[Tt]est[Rr]esult*/", "a/testResults", true, true)]
+    [InlineData("[Tt]est[Rr]esult*/", "a/TestResult", true, true)]
+    [InlineData("[Tt]est[Rr]esult*/", "a/Tests", true, false)]
+    [InlineData(".*crunch*.local.xml", "a/.ncrunch.local.xml", false, true)]
+    [InlineData("**/Properties/launchSettings.json", "a/Properties/launchSettings.json", false, true)]
+    [InlineData("**/Properties/launchSettings.json", "a/launchSettings.json", false, false)]
+    public void GitIgnoreRuleMatchesTheLastSegment(string rule, string path, bool isDirectory, bool expected)
+    {
+        var globs = GlobCollection.ParseGitIgnore(rule);
+        var itemType = isDirectory ? PathItemType.Directory : PathItemType.File;
+
+        Assert.Equal(expected, globs.IsMatch(path.AsSpan(), [], itemType));
+
+        // A later negation re-includes the path, unless its directory is excluded, and an earlier one does not
+        var directoryIgnored = globs.IsMatch(path.AsSpan(0, path.LastIndexOf('/', StringComparison.Ordinal)), [], PathItemType.Directory);
+        Assert.Equal(directoryIgnored, GlobCollection.ParseGitIgnore(rule + "\n!" + path).IsMatch(path.AsSpan(), [], itemType));
+        Assert.Equal(expected, GlobCollection.ParseGitIgnore("!" + path + "\n" + rule).IsMatch(path.AsSpan(), [], itemType));
+    }
+
+    [Fact]
+    public void GitIgnoreRulesOfEveryKindAreEvaluatedFromTheLastOne()
+    {
+        var globs = GlobCollection.ParseGitIgnore("""
+            *.[Cc]ache
+            ![Bb]uild.cache
+            [Bb]*.cache
+            !build.*
+            *.log
+            !_*
+            """);
+
+        Assert.True(globs.IsMatch("a/b.cache"));
+        Assert.True(globs.IsMatch("a/Build.cache"));
+        Assert.False(globs.IsMatch("a/build.cache"));
+        Assert.True(globs.IsMatch("a/b.log"));
+        Assert.False(globs.IsMatch("a/_b.log"));
+        Assert.False(globs.IsMatch("a/_b.cache"));
+    }
+
     [Fact]
     public void GitIgnoreAppliesTheChildRulesWhenTheParentIsReIncluded()
     {

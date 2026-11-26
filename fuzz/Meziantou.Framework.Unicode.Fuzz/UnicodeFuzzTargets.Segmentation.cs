@@ -24,6 +24,7 @@ public static partial class UnicodeFuzzTargets
     {
         var text = FuzzText.Decode(data);
         var graphemeBoundaries = GetGraphemeBoundaries(text);
+        CheckIndicConjuncts(text, graphemeBoundaries);
 
         var expectedStart = 0;
         var words = Unicode.EnumerateWordBoundaries(text);
@@ -92,6 +93,42 @@ public static partial class UnicodeFuzzTargets
                     FuzzAssert.Equal(expected, FormatPositions(breaks.Select(item => item.Index)), $"The breaks with Anywhere and {wordBreak} are not the grapheme cluster boundaries");
                 }
             }
+        }
+    }
+
+    /// <summary>
+    /// Checks the grapheme cluster boundaries before an InCB=Consonant against rule GB9c of UAX #29, as revised in Unicode
+    /// 18.0: <c>\p{InCB=Linker} \p{InCB=Extend}* × \p{InCB=Consonant}</c>. The consonant is neither a mark nor an emoji, so the
+    /// other rules separate it from what precedes it, except a Prepend character (GB9b).
+    /// </summary>
+    private static void CheckIndicConjuncts(string text, bool[] graphemeBoundaries)
+    {
+        var codePoints = new List<(int Index, int CodePoint)>();
+        for (var index = 0; index < text.Length;)
+        {
+            codePoints.Add((index, CodePointAt(text, index, out var length)));
+            index += length;
+        }
+
+        for (var i = 1; i < codePoints.Count; i++)
+        {
+            var (index, codePoint) = codePoints[i];
+            if (UnicodeProperties.GetIndicConjunctBreak(codePoint) is not UnicodeIndicConjunctBreak.Consonant
+                || UnicodeProperties.GetGraphemeClusterBreak(codePoint) is not UnicodeGraphemeClusterBreak.Other
+                || UnicodeEmoji.IsExtendedPictographic(codePoint)
+                || UnicodeProperties.GetGraphemeClusterBreak(codePoints[i - 1].CodePoint) is UnicodeGraphemeClusterBreak.Prepend)
+            {
+                continue;
+            }
+
+            var j = i - 1;
+            while (j >= 0 && UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint) is UnicodeIndicConjunctBreak.Extend)
+            {
+                j--;
+            }
+
+            var joined = j >= 0 && UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint) is UnicodeIndicConjunctBreak.Linker;
+            FuzzAssert.Equal(!joined, graphemeBoundaries[index], $"The grapheme cluster boundary before the consonant at {index} does not follow rule GB9c");
         }
     }
 
@@ -186,6 +223,7 @@ public static partial class UnicodeFuzzTargets
         ("combining", "e\u0301\u0301\u0323 a\u0308 \u1E0A\u0323 A\u030A \u212B"),
         ("hangul", "\u1100\u1161\u11A8 \uAC00\uAC01 \u1100\u1100\u1161"),
         ("indic", "\u0915\u094D\u0937 \u0915\u093F \u0928\u092E\u0938\u094D\u0924\u0947"),
+        ("indic-linker-without-consonant", "\u0600\u094D\u0915 a\u094D\u0915 \u094D\u094D\u0915 \u0915\u0300\u0937 \u0915\u0300\u094D\u0300\u0937\u094D\u0924"),
         ("thai", "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 \u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35\u0E04\u0E23\u0E31\u0E1A"),
         ("cjk", "\u65E5\u672C\u8A9E\u3002\u3041\u30FC\u300C\u5F15\u7528\u300D\u3001\u30AB\u30BF\u30AB\u30CA"),
         ("mixed-scripts", "Latin \u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC \u0420\u0443\u0441\u0441\u043A\u0438\u0439 \u05E2\u05D1\u05E8\u05D9\u05EA (\u0627\u0644\u0639\u0631\u0628\u064A\u0629) [x]"),

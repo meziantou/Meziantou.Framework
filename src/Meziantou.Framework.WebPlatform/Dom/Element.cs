@@ -581,25 +581,48 @@ public partial class Element : Node
         }
     }
 
-    /// <summary>Whether the attribute is an event handler content attribute of the element (https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-content-attributes).</summary>
-    private bool IsEventHandlerContentAttribute(string localName)
+    private static readonly System.Collections.Frozen.FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> ElementEventHandlerNames = Html.EventHandlerNames.Elements.GetAlternateLookup<ReadOnlySpan<char>>();
+    private static readonly System.Collections.Frozen.FrozenSet<string>.AlternateLookup<ReadOnlySpan<char>> WindowReflectingEventHandlerNames = Html.EventHandlerNames.WindowReflecting.GetAlternateLookup<ReadOnlySpan<char>>();
+
+    /// <summary>
+    /// Returns the type of the event handler (the name without "on") when the attribute is an event handler content attribute
+    /// of the element (https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-content-attributes), or null. The
+    /// type is the string of the list of the event handlers: no string is allocated for each attribute.
+    /// </summary>
+    private string? GetEventHandlerContentAttributeType(string localName)
     {
         if (this is not (HtmlElement or SvgElement or MathMLElement))
-            return false;
+            return null;
 
-        var type = localName[2..];
-        if (Html.EventHandlerNames.Elements.Contains(type))
-            return true;
+        var type = localName.AsSpan(2);
+        if (ElementEventHandlerNames.TryGetValue(type, out var name))
+            return name;
 
         // https://svgwg.org/specs/animations/#InterfaceSVGAnimationElement
-        if (this is SvgAnimationElement && type is "begin" or "end" or "repeat")
-            return true;
+        if (this is SvgAnimationElement)
+        {
+            switch (type)
+            {
+                case "begin":
+                    return "begin";
+                case "end":
+                    return "end";
+                case "repeat":
+                    return "repeat";
+            }
+        }
 
         // https://w3c.github.io/encrypted-media/#htmlmediaelement-extensions
-        if (this is HtmlMediaElement && HtmlMediaElement.EncryptedMediaEventHandlerTypes.Contains(type, StringComparer.Ordinal))
-            return true;
+        if (this is HtmlMediaElement)
+        {
+            foreach (var encryptedMediaType in HtmlMediaElement.EncryptedMediaEventHandlerTypes)
+            {
+                if (type.SequenceEqual(encryptedMediaType))
+                    return encryptedMediaType;
+            }
+        }
 
-        return IsHtmlNamespace && TagId is Html.TagId.Body or Html.TagId.Frameset && Html.EventHandlerNames.WindowReflecting.Contains(type);
+        return IsHtmlNamespace && TagId is Html.TagId.Body or Html.TagId.Frameset && WindowReflectingEventHandlerNames.TryGetValue(type, out name) ? name : null;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/webappapis.html#event-handler-attributes:concept-element-attributes-change-ext</summary>
@@ -787,9 +810,9 @@ public partial class Element : Node
                 break;
 
             default:
-                if (localName.StartsWith("on", StringComparison.Ordinal) && IsEventHandlerContentAttribute(localName))
+                if (localName.StartsWith("on", StringComparison.Ordinal) && GetEventHandlerContentAttributeType(localName) is { } type)
                 {
-                    OnEventHandlerContentAttributeChanged(localName[2..], value);
+                    OnEventHandlerContentAttributeChanged(type, value);
                 }
 
                 break;

@@ -322,31 +322,15 @@
     "total": 5
   },
   "connection-allowlist/tentative/webtransport-dedicated-worker.https.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Same-origin WebTransport from a dedicated worker succeeds.": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/webtransport-document.https.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Cross-origin same-site WebTransport (www) is blocked.": "FAIL",
-      "Cross-origin same-site WebTransport (www1) is blocked.": "FAIL",
-      "Cross-site WebTransport (www subdomain) is blocked.": "FAIL",
-      "Cross-site WebTransport is blocked.": "FAIL",
-      "Same-origin WebTransport succeeds.": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/webtransport-service-worker.sub.https.window.js": {
-    "total": 2,
-    "failures": {
-      "webtransport-service-worker": "FAIL"
-    }
+    "total": 2
   },
   "connection-allowlist/tentative/webtransport-shared-worker.https.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Same-origin WebTransport from a shared worker succeeds.": "FAIL"
-    }
+    "total": 5
   }
 }

@@ -1569,10 +1569,12 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A" }, ReadArchive(temp.GetFullPath("data.7z")));
     }
 
-    [Fact]
-    public async Task Archive_SkipsTheLinksATarArchiveCannotStore()
+    [Theory]
+    [InlineData("a\0b")]
+    [InlineData("a\nb")]
+    public async Task Archive_SkipsTheLinksATarArchiveCannotStore(string target)
     {
-        // The target of a link in a zip archive is its content: a tar archive cannot store one with a null character
+        // The target of a link in a zip archive is its content: a tar archive cannot store one with a null character or a line feed
         await using var temp = TemporaryDirectory.Create();
         using var zip = new MemoryStream();
         using (var archive = new Compression.ZipArchive(zip, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
@@ -1582,7 +1584,7 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
                 stream.Write("A"u8);
             }
 
-            archive.CreateSymbolicLinkEntry("link", "a\0b");
+            archive.CreateSymbolicLinkEntry("link", target);
         }
 
         var input = await WriteFileAsync(temp, "data.zip", zip.ToArray());
@@ -1592,6 +1594,25 @@ public sealed class FileConversionToolTests(ITestOutputHelper testOutputHelper)
         Assert.Equal(0, exitCode);
         Assert.Contains("The symbolic link 'link' is skipped", console.Error);
         Assert.Equal(new Dictionary<string, string?>(StringComparer.Ordinal) { ["a.txt"] = "A" }, ReadArchive(temp.GetFullPath("data.tar")));
+    }
+
+    [Fact]
+    public async Task Archive_ANameWithALineFeedCannotBeConvertedToTar()
+    {
+        await using var temp = TemporaryDirectory.Create();
+        using var zip = new MemoryStream();
+        using (var archive = new Compression.ZipArchive(zip, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+        {
+            using var stream = archive.CreateEntry("a\nb.txt").Open();
+            stream.Write("A"u8);
+        }
+
+        var input = await WriteFileAsync(temp, "data.zip", zip.ToArray());
+
+        var (exitCode, console) = await RunAsync(input, "--output-format", "tar");
+
+        Assert.NotEqual(0, exitCode);
+        Assert.Contains("it contains a null character or a line feed", console.Error);
     }
 
     [Fact]

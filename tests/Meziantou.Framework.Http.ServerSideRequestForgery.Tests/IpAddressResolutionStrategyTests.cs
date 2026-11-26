@@ -51,6 +51,42 @@ public sealed class IpAddressResolutionStrategyTests
     }
 
     [Fact]
+    public async Task Ipv4Only_SelectsTheFirstIpv4Address()
+    {
+        var secondIpv4Address = IPAddress.Parse("203.0.113.11");
+        var address = await IpAddressResolutionStrategy.Ipv4Only.ResolveAsync([Ipv6Address, Ipv4Address, secondIpv4Address], new ServerSideRequestForgeryOptions(), CancellationToken.None);
+        Assert.Same(Ipv4Address, address);
+    }
+
+    [Fact]
+    public async Task Ipv6Only_SelectsTheFirstIpv6Address()
+    {
+        var secondIpv6Address = IPAddress.Parse("2001:db8::2");
+        var address = await IpAddressResolutionStrategy.Ipv6Only.ResolveAsync([Ipv4Address, Ipv6Address, secondIpv6Address], new ServerSideRequestForgeryOptions(), CancellationToken.None);
+        Assert.Same(Ipv6Address, address);
+    }
+
+    [Fact]
+    public async Task PreferIpv4_FallsBackToTheFirstAddressWhenNoIpv4AddressIsAvailable()
+    {
+        var secondIpv6Address = IPAddress.Parse("2001:db8::2");
+        var address = await IpAddressResolutionStrategy.PreferIpv4.ResolveAsync([Ipv6Address, secondIpv6Address], new ServerSideRequestForgeryOptions(), CancellationToken.None);
+        Assert.Same(Ipv6Address, address);
+    }
+
+    [Fact]
+    public async Task PreferIpv4_ThrowsWhenNoAddressIsAvailable()
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => IpAddressResolutionStrategy.PreferIpv4.ResolveAsync([], new ServerSideRequestForgeryOptions(), CancellationToken.None).AsTask());
+    }
+
+    [Fact]
+    public async Task Ipv6Only_ThrowsWhenNoIpv6AddressIsAvailable()
+    {
+        await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => IpAddressResolutionStrategy.Ipv6Only.ResolveAsync([Ipv4Address], new ServerSideRequestForgeryOptions(), CancellationToken.None).AsTask());
+    }
+
+    [Fact]
     public async Task Ipv4Only_ThrowsWhenNoIpv4AddressIsAvailable()
     {
         await Assert.ThrowsAsync<ServerSideRequestForgeryException>(() => IpAddressResolutionStrategy.Ipv4Only.ResolveAsync([Ipv6Address], new ServerSideRequestForgeryOptions(), CancellationToken.None).AsTask());

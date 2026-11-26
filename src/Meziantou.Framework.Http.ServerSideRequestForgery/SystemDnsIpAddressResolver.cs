@@ -22,7 +22,8 @@ internal sealed class SystemDnsIpAddressResolver : IDnsIpAddressResolver
         return await Dns.GetHostAddressesAsync(host, cancellationToken).ConfigureAwait(false);
     }
 
-    private static string NormalizeHostLiteral(string host)
+    // A slice rather than a substring: parsing a bracketed IPv6 literal does not need a copy of it.
+    private static ReadOnlySpan<char> NormalizeHostLiteral(ReadOnlySpan<char> host)
     {
         if (host.Length >= 2 && host[0] == '[' && host[^1] == ']')
         {

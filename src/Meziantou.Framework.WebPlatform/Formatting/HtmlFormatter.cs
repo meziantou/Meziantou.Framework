@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Globalization;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Formatting;
@@ -59,9 +58,16 @@ public abstract class HtmlFormatter
     /// <summary>Returns the markup of <paramref name="node"/> (see <see cref="HtmlMarkupWriter.Write"/>).</summary>
     public string Format(Node node)
     {
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        Format(node, writer);
-        return writer.ToString();
+        using var writer = new PooledStringWriter();
+        try
+        {
+            Format(node, writer);
+            return writer.ToString();
+        }
+        finally
+        {
+            writer.Release();
+        }
     }
 
     /// <summary>Writes the markup of <paramref name="node"/> to <paramref name="output"/> (see <see cref="HtmlMarkupWriter.Write"/>).</summary>

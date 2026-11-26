@@ -14,6 +14,7 @@ public sealed class RarArchiveEntry : ArchiveEntry
     private readonly Func<RarArchiveEntry, Stream> _open;
     private string? _linkTarget;
     private byte[]? _linkTargetBytes;
+    private Exception? _linkTargetError;
 
     internal RarArchiveEntry(RarEntryData data, RarArchive? archive, Func<RarArchiveEntry, Stream> open)
     {
@@ -137,23 +138,48 @@ public sealed class RarArchiveEntry : ArchiveEntry
     /// <inheritdoc/>
     public override Stream Open()
     {
-        // The content of a symbolic link of RAR 1.5-4.x is its target, which may be read already
+        // The content of a symbolic link of RAR 1.5-4.x is its target, which may be read already (or have failed to be read:
+        // the forward-only reader reads the content once)
         if (_linkTargetBytes is not null)
             return new MemoryStream(_linkTargetBytes, writable: false);
 
+        ThrowLinkTargetError();
         return _open(this);
     }
 
     private void ReadLinkTarget()
     {
+        ThrowLinkTargetError();
         if (Header.UnpackedSize > MaxLinkTargetLength)
             throw new InvalidDataException($"The target of the symbolic link '{FullName}' is too long.");
 
-        using var stream = _open(this);
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        var bytes = buffer.ToArray();
-        _linkTarget = System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
-        _linkTargetBytes = bytes;
+        try
+        {
+            using var stream = _open(this);
+            using var buffer = new MemoryStream();
+            stream.CopyTo(buffer);
+            var bytes = buffer.ToArray();
+            _linkTarget = System.Text.Unicode.Utf8.IsValid(bytes) ? Encoding.UTF8.GetString(bytes) : Encoding.Latin1.GetString(bytes);
+            _linkTargetBytes = bytes;
+        }
+        catch (Exception ex) when (ex is InvalidDataException or ArchivePasswordException or NotSupportedException)
+        {
+            _linkTargetError = ex;
+            throw;
+        }
+    }
+
+    private void ThrowLinkTargetError()
+    {
+        if (_linkTargetError is not { } error)
+            return;
+
+        var message = $"The content of the symbolic link '{FullName}' cannot be read. {error.Message}";
+        throw error switch
+        {
+            NotSupportedException => new NotSupportedException(message, error),
+            ArchivePasswordException => new ArchivePasswordException(message, error),
+            _ => new InvalidDataException(message, error),
+        };
     }
 }

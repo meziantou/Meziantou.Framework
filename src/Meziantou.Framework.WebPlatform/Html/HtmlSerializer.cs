@@ -1,4 +1,3 @@
-using System.Globalization;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Formatting;
 
@@ -13,9 +12,16 @@ internal static class HtmlSerializer
     /// <summary>Serializes the children of <paramref name="node"/>.</summary>
     public static string SerializeChildren(Node node, bool serializableShadowRoots = false, IReadOnlyCollection<ShadowRoot>? shadowRoots = null)
     {
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        SerializeChildren(node, writer, serializableShadowRoots, shadowRoots);
-        return writer.ToString();
+        using var writer = new PooledStringWriter();
+        try
+        {
+            SerializeChildren(node, writer, serializableShadowRoots, shadowRoots);
+            return writer.ToString();
+        }
+        finally
+        {
+            writer.Release();
+        }
     }
 
     /// <summary>Serializes the node itself, as for the outerHTML getter.</summary>

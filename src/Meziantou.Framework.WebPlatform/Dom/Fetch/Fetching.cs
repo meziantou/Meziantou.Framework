@@ -455,7 +455,7 @@ internal static class Fetching
     /// checked by the speculative parser, without reporting), the integrity policies of the client, and its
     /// connection allowlists.
     /// </summary>
-    private static bool IsBlocked(FetchRequest request)
+    internal static bool IsBlocked(FetchRequest request)
     {
         // The three checks run: the violations of the content security policies are also reported for a request that is
         // blocked as mixed content (e.g. a ws: WebSocket of a secure context whose policy has connect-src 'none'), as in the browsers

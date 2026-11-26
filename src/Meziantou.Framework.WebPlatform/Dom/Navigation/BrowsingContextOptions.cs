@@ -961,6 +961,20 @@ public abstract class DocumentLoader
     /// before the connection is established. The library disposes the connection.
     /// </remarks>
     public virtual ValueTask<DocumentResource?> ConnectWebSocketAsync(DocumentRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<DocumentResource?>(null);
+
+    /// <summary>
+    /// Establishes the session of a <c>WebTransport</c> object (https://w3c.github.io/webtransport/#initialize-webtransport-over-http):
+    /// an extended CONNECT request (RFC 9220) to <see cref="WebTransportConnectionRequest.Url"/> over HTTP/3. Returns the
+    /// session once the server accepted it, or null when it cannot be established (the server rejected it, the connection
+    /// failed...): the scripts do not learn why. The library checks the content security policies and the mixed content
+    /// before. The default implementation returns null: the WebTransport sessions cannot connect.
+    /// </summary>
+    /// <remarks>
+    /// The method is called from a task of the <see cref="DomEventLoop"/> of the global object of the <c>WebTransport</c>
+    /// object (a window or a worker). <paramref name="cancellationToken"/> is canceled when the session is closed (or its
+    /// document is unloaded) before it is established. The library disposes the connection.
+    /// </remarks>
+    public virtual ValueTask<WebTransportConnection?> ConnectWebTransportAsync(WebTransportConnectionRequest request, CancellationToken cancellationToken) => ValueTask.FromResult<WebTransportConnection?>(null);
 }
 
 /// <summary>A request of a document, given to <see cref="DocumentLoader.LoadAsync"/>.</summary>

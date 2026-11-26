@@ -52,6 +52,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.Scheduling.Fuzz", Scheduling.Fuzz.SchedulingFuzzTargets.All),
         ("Meziantou.Framework.SimpleQueryLanguage.Fuzz", SimpleQueryLanguage.Fuzz.SimpleQueryLanguageFuzzTargets.All),
         ("Meziantou.Framework.SyntaxHighlighting.Fuzz", SyntaxHighlighting.Fuzz.SyntaxHighlightingFuzzTargets.All),
+        ("Meziantou.Framework.TaggedValues.Analyzer.Fuzz", TaggedValues.Analyzer.Fuzz.TaggedValuesFuzzTargets.All),
         ("Meziantou.Framework.TdsServer.Fuzz", TdsServer.Fuzz.TdsServerFuzzTargets.All),
         ("Meziantou.Framework.TextDiff.Fuzz", TextDiffFuzz.TextDiffFuzzTargets.All),
         ("Meziantou.Framework.Toml.Fuzz", Toml.Fuzz.TomlFuzzTargets.All),
@@ -62,6 +63,7 @@ internal static class FuzzProjects
         ("Meziantou.Framework.WasmEngine.Fuzz", WasmEngine.Fuzz.WasmEngineFuzzTargets.All),
         ("Meziantou.Framework.WebPlatform.DevTools.Fuzz", WebPlatform.DevTools.Fuzz.DevToolsFuzzTargets.All),
         ("Meziantou.Framework.WebPlatform.Fuzz", WebPlatform.Fuzz.WebPlatformFuzzTargets.All),
+        ("Meziantou.Framework.WebTransport.Fuzz", WebTransport.Fuzz.WebTransportFuzzTargets.All),
         ("Meziantou.Framework.Yaml.Fuzz", Yaml.Fuzz.YamlFuzzTargets.All),
     ];
 

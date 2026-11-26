@@ -988,6 +988,69 @@ public sealed class HstsDomainPolicyCollectionTests
     }
 
     [Fact]
+    public void PreloadResources_MustUpgradeRequestAgreesWithTheCommittedManifest()
+    {
+        // MustUpgradeRequest encodes a host once and searches each of its suffixes as a prefix of that encoding,
+        // resuming from where the shorter suffix was found, so every suffix of the hosts around the committed ones
+        // must give the answer the manifest gives: a label with a character no name uses only rules out the
+        // suffixes that contain it.
+        var manifest = ReadCommittedManifest().ToDictionary(entry => entry.Host, entry => entry.IncludeSubdomains, StringComparer.Ordinal);
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        foreach (var host in manifest.Keys)
+        {
+            string[] candidates = [host, "www." + host, "a.b." + host, "a!b." + host, "!." + host, host + ".a", host + "-", host[..^1], "." + host, "a.." + host, host.ToUpperInvariant()];
+            foreach (var candidate in candidates)
+            {
+                var expected = ModelMustUpgrade(manifest, candidate.ToLowerInvariant());
+                if (policies.MustUpgradeRequest(candidate) != expected)
+                {
+                    Assert.Fail($"MustUpgradeRequest('{candidate}') returns {!expected} but preload-hosts.txt says {expected}.");
+                }
+            }
+        }
+
+        static bool ModelMustUpgrade(Dictionary<string, bool> manifest, string host)
+        {
+            var start = 0;
+            while (true)
+            {
+                if (manifest.TryGetValue(host[start..], out var includeSubdomains) && (includeSubdomains || start == 0))
+                    return true;
+
+                var dot = host.AsSpan(start).IndexOf('.');
+                if (dot < 0)
+                    return false;
+
+                start += dot + 1;
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("a_b.github.com", true)]
+    [InlineData("a!b.github.com", true)]
+    [InlineData("github.a!b", false)]
+    [InlineData("x.y.z.w.github.com", true)]
+    [InlineData("bbc.co.uk", true)]
+    [InlineData("news.bbc.co.uk", false)]
+    [InlineData("www.example.com", false)]
+    public void MustUpgradeRequest_ChecksEverySuffix(string host, bool expected)
+    {
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        Assert.Equal(expected, policies.MustUpgradeRequest(host));
+    }
+
+    [Fact]
+    public void MustUpgradeRequest_LongHostWithManyLabels()
+    {
+        var policies = new HstsDomainPolicyCollection(includePreloadDomains: true);
+        Assert.True(policies.MustUpgradeRequest(string.Concat(Enumerable.Repeat("a.", 120)) + "github.com"));
+        Assert.False(policies.MustUpgradeRequest(string.Concat(Enumerable.Repeat("a.", 120)) + "example.com"));
+        Assert.True(policies.MustUpgradeRequest(new string('a', 300) + ".github.com"));
+        Assert.False(policies.MustUpgradeRequest(new string('a', 300) + ".example.com"));
+    }
+
+    [Fact]
     public void PreloadResources_AnInconsistentResourceIsRejected()
     {
         var data = ReadPreloadResource();

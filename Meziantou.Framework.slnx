@@ -10,14 +10,21 @@
     <Project Path="benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Geo.Benchmarks/Meziantou.Framework.Geo.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Globbing.Benchmarks/Meziantou.Framework.Globbing.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Hashing.Benchmarks/Meziantou.Framework.Hashing.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.HtmlSanitizer.Benchmarks/Meziantou.Framework.HtmlSanitizer.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Http.Hsts.Benchmarks/Meziantou.Framework.Http.Hsts.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Http.ServerSideRequestForgery.Benchmarks/Meziantou.Framework.Http.ServerSideRequestForgery.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Imaging.Benchmarks/Meziantou.Framework.Imaging.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.JsonPath.Benchmarks/Meziantou.Framework.JsonPath.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Markdown.Benchmarks/Meziantou.Framework.Markdown.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Pdf.Benchmarks/Meziantou.Framework.Pdf.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.PublicApiGenerator.Benchmarks/Meziantou.Framework.PublicApiGenerator.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SimpleQueryLanguage.Benchmarks/Meziantou.Framework.SimpleQueryLanguage.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SyntaxHighlighting.Benchmarks/Meziantou.Framework.SyntaxHighlighting.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.TaggedValues.Benchmarks/Meziantou.Framework.TaggedValues.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.TextDiff.Benchmarks/Meziantou.Framework.TextDiff.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Unicode.Benchmarks/Meziantou.Framework.Unicode.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.VectorGraphics.Benchmarks/Meziantou.Framework.VectorGraphics.Benchmarks.csproj" />
@@ -441,6 +448,7 @@
     <Project Path="src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
+    <Project Path="src/Meziantou.Framework.MsQuic/Meziantou.Framework.MsQuic.csproj" />
     <Project Path="src/Meziantou.Framework.NodeJs/Meziantou.Framework.NodeJs.csproj" />
     <Project Path="src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
@@ -507,6 +515,7 @@
     <Project Path="src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.Wasm/Meziantou.Framework.WebPlatform.Wasm.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+    <Project Path="src/Meziantou.Framework.WebTransport/Meziantou.Framework.WebTransport.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.AccessToken/Meziantou.Framework.Win32.AccessToken.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.Amsi/Meziantou.Framework.Win32.Amsi.csproj" />
     <Project Path="src/Meziantou.Framework.Win32.ChangeJournal/Meziantou.Framework.Win32.ChangeJournal.csproj" />
@@ -660,6 +669,7 @@
     <Project Path="tests/Meziantou.Framework.Markdown.Tests/Meziantou.Framework.Markdown.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.MediaTags.Tests/Meziantou.Framework.MediaTags.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Mermaid.Tests/Meziantou.Framework.Mermaid.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.MsQuic.Tests/Meziantou.Framework.MsQuic.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NodeJs.Tests/Meziantou.Framework.NodeJs.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpClient.Tests/Meziantou.Framework.NtpClient.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.NtpServer.Tests/Meziantou.Framework.NtpServer.Tests.csproj" />
@@ -730,6 +740,7 @@
     <Project Path="tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Tests/Meziantou.Framework.WebPlatform.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Wpt/Meziantou.Framework.WebPlatform.Wpt.csproj" />
+    <Project Path="tests/Meziantou.Framework.WebTransport.Tests/Meziantou.Framework.WebTransport.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.AccessToken.Tests/Meziantou.Framework.Win32.AccessToken.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.AmsiTests/Meziantou.Framework.Win32.AmsiTests.csproj" />
     <Project Path="tests/Meziantou.Framework.Win32.ChangeJournal.Tests/Meziantou.Framework.Win32.ChangeJournal.Tests.csproj" />
@@ -824,6 +835,7 @@
     <Project Path="fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.TextDiff.Fuzz/Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
@@ -834,6 +846,7 @@
     <Project Path="fuzz/Meziantou.Framework.WasmEngine.Fuzz/Meziantou.Framework.WasmEngine.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.WebTransport.Fuzz/Meziantou.Framework.WebTransport.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
 </Solution>

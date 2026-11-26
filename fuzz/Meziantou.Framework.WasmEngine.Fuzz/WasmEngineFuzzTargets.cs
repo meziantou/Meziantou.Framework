@@ -165,7 +165,9 @@ public static class WasmEngineFuzzTargets
             return;
         }
 
-        FuzzAssert.True(bytes.AsSpan().StartsWith("\0asm"u8), "The binary does not start with the magic number");
+        // The bytes of a module in the binary form, (module binary "..."), are written as they are, without the magic number
+        // when they do not have it (fuzz regression: (module binary) is empty)
+        FuzzAssert.True(bytes.AsSpan().StartsWith("\0asm"u8) || text.Contains("binary", StringComparison.Ordinal), "The binary of a module in the text format does not start with the magic number");
 
         // A module of the text format may still be invalid (e.g. a type mismatch): the validation and the compilation agree
         var valid = Runtime.Validate(bytes);

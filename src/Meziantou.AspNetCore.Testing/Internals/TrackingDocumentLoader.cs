@@ -30,6 +30,8 @@ internal sealed class TrackingDocumentLoader(DocumentLoader inner, Func<Document
 
     public override ValueTask<DocumentResource?> ConnectWebSocketAsync(DocumentRequest request, CancellationToken cancellationToken) => inner.ConnectWebSocketAsync(request, cancellationToken);
 
+    public override ValueTask<WebTransportConnection?> ConnectWebTransportAsync(WebTransportConnectionRequest request, CancellationToken cancellationToken) => inner.ConnectWebTransportAsync(request, cancellationToken);
+
     internal sealed class RequestCounters
     {
         private int _requests;

@@ -55,6 +55,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Scheduling.Fuzz\Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.SimpleQueryLanguage.Fuzz\Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.SyntaxHighlighting.Fuzz\Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.TaggedValues.Analyzer.Fuzz\Meziantou.Framework.TaggedValues.Analyzer.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.TdsServer.Fuzz\Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.TextDiff.Fuzz\Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Toml.Fuzz\Meziantou.Framework.Toml.Fuzz.csproj" />
@@ -65,6 +66,7 @@
     <ProjectReference Include="..\Meziantou.Framework.WasmEngine.Fuzz\Meziantou.Framework.WasmEngine.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform.DevTools.Fuzz\Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.WebPlatform.Fuzz\Meziantou.Framework.WebPlatform.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.WebTransport.Fuzz\Meziantou.Framework.WebTransport.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Yaml.Fuzz\Meziantou.Framework.Yaml.Fuzz.csproj" />
   </ItemGroup>
 </Project>

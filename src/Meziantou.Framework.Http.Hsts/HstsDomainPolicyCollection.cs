@@ -271,6 +271,10 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
         var preload = _preload;
         var depth = Math.Max(learned.Buckets.Length, preload?.MaxLabelCount ?? 0);
 
+        // The suffixes are searched as the prefixes of one encoding of the host, each from where the shorter one was
+        var preloadBuffer = default(HstsPreloadList.SuffixLookupBuffer);
+        var preloadLookup = preload is null ? default : preload.CreateSuffixLookup(host, preloadBuffer);
+
         // Only read the clock if a candidate policy is actually found
         var now = default(DateTimeOffset);
         var hasNow = false;
@@ -307,7 +311,7 @@ public sealed class HstsDomainPolicyCollection : IEnumerable<HstsDomainPolicy>
             }
 
             if (preload is not null
-                && preload.TryGetValue(suffix, i + 1, out var includeSubdomains)
+                && preloadLookup.TryGetValue(suffix.Length, i + 1, out var includeSubdomains)
                 && (includeSubdomains || isExactHost)
                 && !IsPreloadSuppressed(suffix))
             {

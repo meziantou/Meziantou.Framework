@@ -128,6 +128,33 @@ public sealed class HtmlFormatterTests
         Assert.Contains("<span>x</span></span>", minified, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public void CustomWriter_WritesWithTheTextWriterMethods()
+    {
+        // The output formats the values with the invariant culture, and its content is read after the writer disposed it
+        var document = HtmlDocumentParser.ParseDocument("<p>a</p>");
+        Assert.Equal("<p>a</p>|1.5|xy" + Environment.NewLine, document.Body!.FirstChild!.ToHtml(new DisposingOutputFormatter()));
+    }
+
+    private sealed class DisposingOutputFormatter : HtmlFormatter
+    {
+        protected override HtmlMarkupWriter CreateWriter(TextWriter output) => new Writer(output);
+
+        private sealed class Writer(TextWriter output) : HtmlMarkupWriter(output)
+        {
+            public override void Write(Node node)
+            {
+                base.Write(node);
+                Output.Write('|');
+                Output.Write(1.5);
+                Output.Write('|');
+                Output.WriteLine(['x', 'y']);
+                Output.Dispose();
+                Assert.Throws<ObjectDisposedException>(() => Output.Write('z'));
+            }
+        }
+    }
+
     private sealed class CustomFormatter : HtmlFormatter
     {
         protected override HtmlMarkupWriter CreateWriter(TextWriter output) => new CustomWriter(output);

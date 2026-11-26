@@ -35,6 +35,7 @@ public static class PublicApiGeneratorFuzzTargets
     [
         new("publicapi-deps-json", DependencyFile) { Seeds = GetSeeds, Dictionary = Tokens },
         new("publicapi-file-names", FileNames) { Seeds = GetFileNameSeeds, Dictionary = FileNameTokens },
+        .. PublicApiEmitterFuzzTargets.Targets,
     ];
 
     private static void FileNames(ReadOnlySpan<byte> data)

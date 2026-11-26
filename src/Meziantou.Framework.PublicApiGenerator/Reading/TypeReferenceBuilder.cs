@@ -195,6 +195,23 @@ internal struct TypeReferenceBuilder
 
     private static PublicApiNamedTypeReference CreateNamed(RawType.Named definition, ImmutableArray<PublicApiTypeReference> typeArguments, PublicApiNullableAnnotation annotation, ImmutableArray<string?> tupleElementNames, bool isDynamic = false)
     {
+        // A type that is not nested has all the type arguments, whatever its arity
+        if (definition.ContainingType is null)
+        {
+            return new PublicApiNamedTypeReference(
+                definition.Namespace,
+                definition.MetadataName,
+                containingType: null,
+                typeArguments,
+                definition.AssemblyName,
+                definition.IsValueType,
+                annotation,
+                tupleElementNames,
+                isPrimitive: definition.IsPrimitive,
+                isFromSerializedName: definition.IsFromSerializedName,
+                isDynamic: isDynamic);
+        }
+
         // Metadata stores the type arguments of all the nesting levels in a single list.
         // They are distributed using the arity of each level, from the outermost type.
         var chain = new List<RawType.Named>();

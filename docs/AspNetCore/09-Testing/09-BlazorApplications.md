@@ -46,7 +46,8 @@ A Blazor WebAssembly application (standalone, or the Interactive WebAssembly com
 // The wwwroot folder of the published application (dotnet publish)
 var wwwroot = typeof(WebAppBrowserTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "WasmAppPath").Value!;
 
-// The runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine. The runtime can be shared between the tests
+// The runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine. Share the runtime between the tests (a
+// static field): it keeps the compiled modules, so the next tests do not compile the runtime of .NET again
 using var wasmRuntime = new WasmWebAssemblyRuntime();
 
 // The fallback file serves the routes of the application (/accounts/42), as MapFallbackToFile does
@@ -74,8 +75,11 @@ await Expect(page).ToHaveUrlAsync("/");
 - The applications of .NET 10 and .NET 11 run.
 - The runtime of .NET is a large module: its functions are interpreted, and the ones that run often are compiled to
   .NET code. Share the [WasmWebAssemblyRuntime](cref:Meziantou.Framework.WebPlatform.Wasm.WasmWebAssemblyRuntime)
-  between the tests. Publishing the application of the tests without AOT compilation (`-p:RunAOTCompilation=false`)
-  makes the module much smaller, and the start faster.
+  between the tests (for instance in a static field): it keeps the compiled module (see
+  [Module cache](../../WebPlatform/06-Scripting/05-WebAssembly.md#module-cache)), so only the first test compiles the
+  runtime of .NET, and the next tests run its hot functions compiled. On the application of the tests of this library,
+  a test takes about 0.6 s instead of 2.5 s from the second one. Publishing the application of the tests without AOT
+  compilation (`-p:RunAOTCompilation=false`) makes the module much smaller, and the start faster.
 - Publish the application with its default options. With `WasmEnableExceptionHandling=false`, the runtime of .NET 10
   fails at startup (a stack overflow in `PackedSimd`), in the browsers too.
 - Mono, the runtime of .NET in the browser, does not run the methods compiled with runtime async

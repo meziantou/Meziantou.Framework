@@ -70,6 +70,57 @@ shared with the `ArrayBuffer` objects of the scripts), and how often the running
 default). A table has at most 10,000,000 elements, the limit of the JavaScript API of browsers: `table.grow` returns -1
 beyond it. The runtime emits the [activities and the metrics](../../WasmEngine/08-Telemetry.md) of the engine.
 
+## Module cache
+
+The runtime keeps the modules it compiled, by the content of their binary: the pages that share the runtime and load
+the same module compile it once. The functions that the instances of a page compiled to .NET code (the ones that run
+often) also run compiled in the next pages, so a large module, such as the runtime of .NET of a Blazor WebAssembly
+application, starts much faster from the second page.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasm_ModuleCache;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Share the runtime between the pages: it keeps the modules it compiled (16 MiB of binaries by default), so the next
+// pages that load a large module, such as the runtime of .NET, do not compile it again
+using var runtime = new WasmWebAssemblyRuntime { ModuleCacheCapacity = 64 * 1024 * 1024 };
+using var engine = new JavaScriptScriptEngine();
+
+foreach (var (a, b) in new[] { (2, 3), (4, 5) })
+{
+    using var context = new BrowsingContext(new BrowsingContextOptions
+    {
+        ScriptEngine = engine,
+        WebAssemblyRuntime = runtime,
+    });
+
+    var document = await context.NavigateAsync("https://example.com/", _ => $$"""
+        <output></output>
+        <script>
+          // (module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))
+          const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 7, 1, 96, 2, 127, 127, 1, 127, 3, 2, 1, 0,
+            7, 7, 1, 3, 97, 100, 100, 0, 0, 10, 9, 1, 7, 0, 32, 0, 32, 1, 106, 11]);
+          WebAssembly.instantiate(bytes).then(({ instance }) => {
+            document.querySelector('output').textContent = instance.exports.add({{a}}, {{b}});
+          });
+        </script>
+        """);
+    await context.EventLoop.RunUntilIdleAsync();
+
+    Assert.Equal((a + b).ToString(System.Globalization.CultureInfo.InvariantCulture), document.QuerySelector("output")!.TextContent);
+}
+```
+<!-- endref -->
+
+- [ModuleCacheCapacity](cref:Meziantou.Framework.WebPlatform.Wasm.WasmWebAssemblyRuntime.ModuleCacheCapacity) is the
+  maximum total size of the binaries of the kept modules: 16 MiB by default. The least recently used modules are removed
+  first, a module larger than the capacity is not kept, and 0 disables the cache.
+- The modules smaller than 1 KiB are not kept: they compile in a fraction of a millisecond, and a compiled module uses
+  about 100 times the size of a small binary.
+- A compiled module uses much more memory than its binary: the runtime of .NET (a 3 MB binary) uses about 170 MB once a
+  page ran it.
+- Each compilation still gives a new `WebAssembly.Module` object to the scripts, and a binary that is not valid is not
+  kept: it fails again at the next compilation.
+- Disposing the runtime releases the modules.
+
 ## Module scripts
 
 A module script can import a WebAssembly module, as a JavaScript module ([ESM integration](https://github.com/WebAssembly/esm-integration)):

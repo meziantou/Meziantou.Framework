@@ -609,7 +609,7 @@ public static partial class Css
     public static string Escape(string ident)
     {
         ArgumentNullException.ThrowIfNull(ident);
-        return CssSerializer.SerializeIdentifier(ident);
+        return CssSerializer.EscapeIdentifier(ident);
     }
 
     /// <summary>https://drafts.csswg.org/css-conditional-3/#dom-css-supports</summary>

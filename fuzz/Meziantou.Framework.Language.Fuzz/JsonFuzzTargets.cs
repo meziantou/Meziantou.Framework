@@ -281,6 +281,19 @@ internal static class JsonFuzzTargets
             return;
 
         var tree = JsonSyntaxTree.ParseText(text);
+
+        // The results of nested descendant segments grow as a power of the size of the document, as RFC 9535 keeps their
+        // duplicates: a query that does more than a budget of work is not checked (fuzz regression: $..*..*..*..*[-1] over
+        // 60 nested objects took 21 seconds)
+        try
+        {
+            _ = path.Evaluate(tree, new JsonPathEvaluationOptions { MaximumWork = 100_000 });
+        }
+        catch (JsonPathEvaluationException)
+        {
+            return;
+        }
+
         var root = tree.GetRoot();
         var query = $"{FuzzAssert.Format(expression)} over {FuzzAssert.Format(text)}";
 

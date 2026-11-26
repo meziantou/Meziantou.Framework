@@ -273,7 +273,8 @@ internal sealed class DngOpcodeList
         /// <summary>Checks that a count of elements of <paramref name="size"/> bytes fits in the remaining parameters.</summary>
         public void EnsureCount(long count, int size)
         {
-            if (count < 0 || count * size > Remaining)
+            // Divided rather than multiplied: a count read from the file times the size can overflow (fuzz regression)
+            if (count < 0 || count > Remaining / size)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"declares {count} values, more than its parameters hold"));
         }
 
@@ -592,7 +593,9 @@ internal sealed class DngOpcodeList
             if (pointsV < 1 || pointsH < 1 || mapPlanes < 1 || !(spacingV > 0) || !(spacingH > 0))
                 throw reader.Invalid("declares an empty gain map or a spacing that is not positive");
 
-            var count = (long)pointsV * pointsH * mapPlanes;
+            // The product of the three counts can be larger than a long: it is then more than the parameters hold
+            var points = (long)pointsV * pointsH;
+            var count = points > long.MaxValue / mapPlanes ? long.MaxValue : points * mapPlanes;
             reader.EnsureCount(count, 4);
             var gains = new float[count];
             for (var i = 0; i < gains.Length; i++)

@@ -338,7 +338,9 @@ public sealed class PdfFormData
                 dictionary[VName] = field.Values.Count switch
                 {
                     0 => null,
-                    1 when field.IsName => PdfName.Create(field.Values[0]),
+                    // A name read from a file can contain the null character (#00), which PdfName.Create refuses: it is
+                    // written as it was read (fuzz regression)
+                    1 when field.IsName => field.Values[0].Contains('\0', StringComparison.Ordinal) ? PdfName.FromBytes(Encoding.UTF8.GetBytes(field.Values[0])) : PdfName.Create(field.Values[0]),
                     1 => PdfString.FromText(field.Values[0]),
                     _ => new PdfArray(field.Values.Select(value => (PdfObject)PdfString.FromText(value))),
                 };

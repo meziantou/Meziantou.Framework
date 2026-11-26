@@ -626,6 +626,19 @@ public sealed class PdfInteractiveFormTests
     }
 
     [Fact]
+    public void FdfNameWithANullCharacterIsWrittenAsItWasRead()
+    {
+        // PdfName.Create refuses the null character, but a name read from a file keeps it (#00)
+        var data = PdfFormData.ParseFdf("%FDF-1.2\n1 0 obj\n<< /FDF << /Fields [<< /T (agree) /V /Yes#00a >>] >> >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF\n"u8.ToArray());
+        Assert.Equal("Yes\0a", data.Fields.Single().Value);
+
+        var fdf = data.ToFdf();
+
+        Assert.Contains("/V /Yes#00a", Encoding.Latin1.GetString(fdf), StringComparison.Ordinal);
+        Assert.Equal("Yes\0a", PdfFormData.ParseFdf(fdf).Fields.Single().Value);
+    }
+
+    [Fact]
     public void FdfIsImported()
     {
         // An FDF file as viewers write it: no cross-reference table, a hierarchy of partial names, names for the buttons

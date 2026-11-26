@@ -181,11 +181,11 @@ public static class GeoJson
         switch (GetType(root))
         {
             case "FeatureCollection":
-                if (!root.TryGetProperty("features", out var features) || features.ValueKind is not JsonValueKind.Array)
+                if (!TryGetMember(root, "features", out var features) || features.ValueKind is not JsonValueKind.Array)
                     throw new FormatException("A FeatureCollection must have a 'features' array.");
 
                 var collection = new GeoFeatureCollection(features.EnumerateArray().Select(ReadFeature));
-                if (root.TryGetProperty("name", out var name) && name.ValueKind is JsonValueKind.String)
+                if (TryGetMember(root, "name", out var name) && name.ValueKind is JsonValueKind.String)
                 {
                     collection.Name = name.GetString();
                 }
@@ -206,9 +206,9 @@ public static class GeoJson
         if (GetType(element) is not "Feature")
             throw new FormatException("The items of a FeatureCollection must be features.");
 
-        var geometry = element.TryGetProperty("geometry", out var geometryElement) && geometryElement.ValueKind is not JsonValueKind.Null ? ReadGeometry(geometryElement) : null;
+        var geometry = TryGetMember(element, "geometry", out var geometryElement) && geometryElement.ValueKind is not JsonValueKind.Null ? ReadGeometry(geometryElement) : null;
         var properties = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (element.TryGetProperty("properties", out var propertiesElement) && propertiesElement.ValueKind is JsonValueKind.Object)
+        if (TryGetMember(element, "properties", out var propertiesElement) && propertiesElement.ValueKind is JsonValueKind.Object)
         {
             foreach (var property in propertiesElement.EnumerateObject())
             {
@@ -216,7 +216,37 @@ public static class GeoJson
             }
         }
 
-        return new GeoFeature(geometry, properties, element.TryGetProperty("id", out var id) ? ReadId(id) : null);
+        return new GeoFeature(geometry, properties, TryGetMember(element, "id", out var id) ? ReadId(id) : null);
+    }
+
+    /// <summary>
+    /// Gets a member of an object. A name with an escaped unpaired surrogate (<c>"\ud800"</c>) is not one of the members
+    /// of GeoJSON: <see cref="JsonElement.TryGetProperty(string, out JsonElement)"/> throws when it compares such a name of
+    /// the length of the member, which is skipped instead, as the streaming reader does (fuzz regression).
+    /// </summary>
+    internal static bool TryGetMember(JsonElement element, string name, out JsonElement value)
+    {
+        try
+        {
+            return element.TryGetProperty(name, out value);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        // The last member of the name wins, as for TryGetProperty
+        value = default;
+        var found = false;
+        foreach (var property in element.EnumerateObject())
+        {
+            if (GeoJsonStreamReader.NameEquals(property, name))
+            {
+                value = property.Value;
+                found = true;
+            }
+        }
+
+        return found;
     }
 
     /// <summary>Reads an identifier: a string, or the JSON text of a number.</summary>
@@ -275,13 +305,13 @@ public static class GeoJson
         var type = GetType(element);
         if (type is "GeometryCollection")
         {
-            if (!element.TryGetProperty("geometries", out var geometries) || geometries.ValueKind is not JsonValueKind.Array)
+            if (!TryGetMember(element, "geometries", out var geometries) || geometries.ValueKind is not JsonValueKind.Array)
                 throw new FormatException("A GeometryCollection must have a 'geometries' array.");
 
             return new GeoGeometryCollection([.. geometries.EnumerateArray().Select(ReadGeometry)]);
         }
 
-        if (!element.TryGetProperty("coordinates", out var coordinates) || coordinates.ValueKind is not JsonValueKind.Array)
+        if (!TryGetMember(element, "coordinates", out var coordinates) || coordinates.ValueKind is not JsonValueKind.Array)
             throw new FormatException($"A {type} must have a 'coordinates' array.");
 
         return type switch
@@ -330,7 +360,7 @@ public static class GeoJson
 
     private static string GetType(JsonElement element)
     {
-        if (element.ValueKind is not JsonValueKind.Object || !element.TryGetProperty("type", out var type) || type.ValueKind is not JsonValueKind.String)
+        if (element.ValueKind is not JsonValueKind.Object || !TryGetMember(element, "type", out var type) || type.ValueKind is not JsonValueKind.String)
             throw new FormatException("A GeoJSON object must have a 'type' member.");
 
         return type.GetString()!;

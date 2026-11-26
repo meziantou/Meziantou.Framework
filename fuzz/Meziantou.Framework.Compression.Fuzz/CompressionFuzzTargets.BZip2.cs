@@ -103,8 +103,14 @@ public static partial class CompressionFuzzTargets
         byte[]? reference;
         try
         {
+            // DeflateStream rejects the incomplete Huffman codes that the decoder accepts, which ReadAll reports as an error
+            // (fuzz regression: an incomplete code of the literals and lengths)
             using var deflate = new DeflateStream(new MemoryStream(bytes), CompressionMode.Decompress);
-            reference = ReadAll(deflate, 81920, MaxDecodedLength + 1, out _);
+            reference = ReadAll(deflate, 81920, MaxDecodedLength + 1, out var referenceError);
+            if (referenceError is not null)
+            {
+                reference = null;
+            }
         }
         catch (InvalidDataException)
         {

@@ -408,9 +408,9 @@ internal sealed class BytecodeBuilder
     // Try regions and positions
     // ------------------------------------------------------------------------------------------------------------------
 
-    public void AddHandler(int start, int end, Label target, int stackDepth, int environmentRegister)
+    public void AddHandler(int start, int end, Label target, int stackDepth, int environmentRegister, bool rethrows = false)
     {
-        _handlers.Add(new ExceptionHandler(start, end, target.Id, stackDepth, environmentRegister));
+        _handlers.Add(new ExceptionHandler(start, end, target.Id, stackDepth, environmentRegister, rethrows));
     }
 
     /// <summary>Records the source offset of the next instruction (for the errors and the stack traces).</summary>

@@ -27,8 +27,13 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
     private readonly Dictionary<PdfReference, PdfPage> _pagesByReference = [];
 
     // The pages whose /Parent is not the node of the page tree that holds them, with that node (null when the page is
-    // the root of the tree): the tree is repaired before it changes, since the pages are inserted next to their parent
-    private List<(PdfPage Page, PdfReference? Parent)>? _misplacedPages;
+    // the root of the tree), or the node itself when it is a direct object: the tree is repaired before it changes,
+    // since the pages are inserted next to their parent
+    private List<(PdfPage Page, PdfReference? Parent, PdfDictionary? DirectParent)>? _misplacedPages;
+
+    // The nodes held by a direct object in the kids of their parent, in the order of the tree: a node must be an
+    // indirect object to be the /Parent of its kids, so the repair makes them indirect (fuzz regression)
+    private List<(PdfArray? Kids, int Index, PdfDictionary Node, PdfReference? Parent, PdfDictionary? DirectParent)>? _directNodes;
 
     internal PdfPageCollection(PdfDocument document)
     {
@@ -36,7 +41,13 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
         if (document.Catalog.Get<PdfDictionary>(PdfNames.Pages) is { } root)
         {
             var visited = new HashSet<PdfObject>(ReferenceEqualityComparer.Instance);
-            Collect(root, document.Catalog[PdfNames.Pages] as PdfReference, parent: null, visited, depth: 0);
+            if (document.Catalog[PdfNames.Pages] is not PdfReference && root.Get<PdfArray>(PdfNames.Kids) is not null && !root.IsType(PdfNames.Page))
+            {
+                // A root held by a direct object: the repair makes it indirect too
+                (_directNodes ??= []).Add((null, 0, root, null, null));
+            }
+
+            Collect(root, document.Catalog[PdfNames.Pages] as PdfReference, parent: null, directParent: null, visited, depth: 0);
         }
     }
 
@@ -395,7 +406,7 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
         }
     }
 
-    private void Collect(PdfDictionary node, PdfReference? reference, PdfReference? parent, HashSet<PdfObject> visited, int depth)
+    private void Collect(PdfDictionary node, PdfReference? reference, PdfReference? parent, PdfDictionary? directParent, HashSet<PdfObject> visited, int depth)
     {
         if (!visited.Add(node) || depth > MaxTreeDepth)
         {
@@ -405,11 +416,19 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
 
         if (node.Get<PdfArray>(PdfNames.Kids) is { } kids && !node.IsType(PdfNames.Page))
         {
-            foreach (var kid in kids)
+            // A node held by a direct object is the parent of its kids once the repair makes it an indirect object
+            var nodeIsDirect = reference is null;
+            for (var i = 0; i < kids.Count; i++)
             {
+                var kid = kids[i];
                 if (PdfReference.ResolveIfReference(kid) is PdfDictionary child)
                 {
-                    Collect(child, kid as PdfReference, reference, visited, depth + 1);
+                    if (kid is not PdfReference && child.Get<PdfArray>(PdfNames.Kids) is not null && !child.IsType(PdfNames.Page))
+                    {
+                        (_directNodes ??= []).Add((kids, i, child, reference, nodeIsDirect ? node : null));
+                    }
+
+                    Collect(child, kid as PdfReference, reference, nodeIsDirect ? node : null, visited, depth + 1);
                 }
                 else
                 {
@@ -432,26 +451,55 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
             _pages.Add(page);
             _pagesByReference[reference] = page;
 
-            // A node held by a direct object cannot be the /Parent of its pages
-            if (depth == 0 || (parent is not null && !parent.Equals(node[PdfNames.Parent] as PdfReference)))
+            // A node held by a direct object cannot be the /Parent of its pages until the repair makes it indirect
+            if (depth == 0 || directParent is not null || (parent is not null && !parent.Equals(node[PdfNames.Parent] as PdfReference)))
             {
-                (_misplacedPages ??= []).Add((page, parent));
+                (_misplacedPages ??= []).Add((page, parent, directParent));
             }
         }
     }
 
     /// <summary>
-    /// Sets the <c>/Parent</c> of the pages to the node of the page tree that holds them, and adds a root to a tree that is
-    /// a page. The pages keep the attributes they inherited from their former parent.
+    /// Makes the nodes held by direct objects indirect, sets the <c>/Parent</c> of the pages to the node of the page tree
+    /// that holds them, and adds a root to a tree that is a page. The pages keep the attributes they inherited from their
+    /// former parent.
     /// </summary>
     private void RepairTree()
     {
-        if (_misplacedPages is null)
+        if (_misplacedPages is null && _directNodes is null)
             return;
 
-        foreach (var (page, parent) in _misplacedPages)
+        var directReferences = new Dictionary<PdfDictionary, PdfReference>(ReferenceEqualityComparer.Instance);
+        foreach (var (kids, index, node, nodeParent, nodeDirectParent) in _directNodes ?? [])
+        {
+            // The nodes are in the order of the tree: the parent of a node is made indirect before it
+            if (kids is not null && (index >= kids.Count || !ReferenceEquals(kids[index], node)))
+                continue;
+
+            var nodeReference = _document.Objects.Add(node);
+            directReferences[node] = nodeReference;
+            if (kids is null)
+            {
+                _document.Catalog[PdfNames.Pages] = nodeReference;
+            }
+            else
+            {
+                kids[index] = nodeReference;
+            }
+
+            if ((nodeParent ?? GetDirectReference(nodeDirectParent)) is { } parentReference)
+            {
+                node[PdfNames.Parent] = parentReference;
+            }
+        }
+
+        foreach (var (page, pageParent, directParent) in _misplacedPages ?? [])
         {
             if (!_pagesByReference.ContainsKey(page.Reference))
+                continue;
+
+            var parent = pageParent ?? GetDirectReference(directParent);
+            if (parent is null && directParent is not null)
                 continue;
 
             MaterializeInherited(page);
@@ -473,6 +521,9 @@ public sealed class PdfPageCollection : IReadOnlyList<PdfPage>
         }
 
         _misplacedPages = null;
+        _directNodes = null;
+
+        PdfReference? GetDirectReference(PdfDictionary? node) => node is not null && directReferences.TryGetValue(node, out var reference) ? reference : null;
     }
 
     private void ReportInvalidNode(PdfReference? reference, string message) => _document.Reader?.Diagnostics.Report(PdfDiagnosticKind.InvalidPageTreeNode, message, objectNumber: reference?.ObjectNumber);

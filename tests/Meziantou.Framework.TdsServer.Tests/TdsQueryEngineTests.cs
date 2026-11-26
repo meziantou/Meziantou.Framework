@@ -4770,19 +4770,21 @@ public sealed class TdsQueryEngineTests
             expectedMaterializedQueries: null);
     }
 
-    [Fact]
-    public async Task SqlClient_QueryEngine_ScalarSubquery_ComparedWithNoRow_MatchesNothing()
+    [Theory]
+    [InlineData("SELECT Id FROM customers WHERE Id <> (SELECT o.Id FROM orders o WHERE o.Id = 42)")]
+    [InlineData("SELECT Id FROM customers WHERE Id <> +(SELECT o.Id FROM orders o WHERE o.Id = 42)")]
+    [InlineData("SELECT Id FROM customers WHERE Id <> -(SELECT o.Id FROM orders o WHERE o.Id = 42)")]
+    [InlineData("SELECT Id FROM customers WHERE Id <> 1 + (SELECT o.Id FROM orders o WHERE o.Id = 42)")]
+    [SuppressMessage("Security", "CA2100:Review SQL queries for security vulnerabilities", Justification = "The query text comes from the test's own inline data.")]
+    public async Task SqlClient_QueryEngine_ScalarSubquery_ComparedWithNoRow_MatchesNothing(string query)
     {
+        // An empty subquery is NULL, through the operators too: no row compares with it
         var queryEngineOptions = CreateQueryEngineOptions();
         await ExecuteQuery(
             queryEngineOptions,
             command =>
             {
-                command.CommandText = """
-                    SELECT Id
-                    FROM customers
-                    WHERE Id <> (SELECT o.Id FROM orders o WHERE o.Id = 42)
-                    """;
+                command.CommandText = query;
             },
             """
             Id

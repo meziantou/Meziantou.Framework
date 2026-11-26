@@ -79,6 +79,37 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void PagesAreAddedNextToAPageOfANodeThatIsADirectObject()
+    {
+        // The second page is in a node held by a direct object, which cannot be its /Parent: the node is made indirect
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R << /Type /Pages /Kids [4 0 R] /Count 1 >>] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>")
+            .Add(4, "<< /Type /Page /MediaBox [0 0 200 200] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages.Duplicate(1);
+        document.Pages.Insert(1, new PdfSize(300, 300));
+        document.Pages.Move(0, 3);
+
+        Assert.Equal([300d, 200d, 200d, 100d], PdfDocument.Open(document.ToByteArray()).Pages.Select(page => page.MediaBox.Width));
+    }
+
+    [Fact]
+    public void PagesAreAddedToARootThatIsADirectObject()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages << /Type /Pages /Kids [3 0 R] /Count 1 >> >>")
+            .Add(3, "<< /Type /Page /MediaBox [0 0 100 100] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages.Insert(0, new PdfSize(200, 200));
+
+        Assert.Equal([200d, 100d], PdfDocument.Open(document.ToByteArray()).Pages.Select(page => page.MediaBox.Width));
+    }
+
+    [Fact]
     public void ANewPageOfAPlainTreeHasNoRotationNorCropBoxEntry()
     {
         var page = new PdfDocument().Pages.Add(PdfSize.A4);

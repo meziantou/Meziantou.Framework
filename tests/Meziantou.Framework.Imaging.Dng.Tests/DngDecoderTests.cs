@@ -230,6 +230,14 @@ public sealed class DngDecoderTests
     }
 
     [Fact]
+    public void AGainMapWhoseSizeOverflowsIsMalformed()
+    {
+        // 2^21 x 2^21 points of 2^20 planes: the bytes of the 2^62 gains overflow a long
+        var data = Variant(DngScenes.Get("bayer-rggb"), opcodeList2: new DngOpcodeWriter().GainMap(new DngOpcodeArea(0, 0, 32, 48), 1 << 21, 1 << 21, 0.5, 0.5, 0, 0, 1 << 20, []).ToArray()).Build();
+        Assert.Equal(ImageFormat.Dng, Assert.Throws<InvalidImageContentException>(() => Image.Identify(data)).Format);
+    }
+
+    [Fact]
     public void ThePreviewsAreAuxiliaryImages()
     {
         var data = DngScenes.Get("thumbnail-exif-xmp").Build();

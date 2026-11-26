@@ -739,8 +739,8 @@ internal static class GlobParser
     // canSkipLeadingDotChecks is settings.MatchLeadingDot. The rewrites below collapse a '**' and the segments that
     // follow it into a single segment that jumps to the end of the path, which skips the per-segment
     // CanMatchLeadingDot checks Glob.IsMatchCore would otherwise run - that is why each one records 'true' in
-    // matchLeadingDot. They are only sound when leading dots are allowed everywhere, so do not loosen this gate
-    // without giving the rewritten segments a way to reject a segment that starts with a dot.
+    // matchLeadingDot. They are only sound when leading dots are allowed everywhere. When they are not, only the
+    // segments that can reject a path holding a segment that starts with a dot (rejectLeadingDot) are used.
     private static Glob CreateGlob(List<Segment> segments, List<bool> matchLeadingDot, bool exclude, bool ignoreCase, GlobMatchType matchType, bool canSkipLeadingDotChecks, bool pathSeparatorAware, GlobDialect dialect)
     {
         // Optimize segments
@@ -806,6 +806,30 @@ internal static class GlobParser
                 matchLeadingDot.RemoveRange(matchLeadingDot.Count - 2, 2);
                 segments.Add(lastSegment);
                 matchLeadingDot.Add(true);
+            }
+        }
+        else if (!canSkipLeadingDotChecks && pathSeparatorAware && segments.Count >= 2 && segments[^2] is RecursiveMatchAllSegment && !matchLeadingDot[^2] && !matchLeadingDot[^1])
+        {
+            // A '**' followed by a segment that matches a single path segment, such as '**/*.cs', matches a path whose
+            // last segment matches that segment and none of whose segments start with a dot. The rewritten segment
+            // checks the dots itself, instead of trying the segment at every depth. It keeps the 'false' of the '**',
+            // which IsPartialMatch reads to skip the directories that start with a dot.
+            Segment? lastSegment = segments[^1] switch
+            {
+                EndsWithSegment endsWith => new MatchAllEndsWithSegment(endsWith.Value, endsWith.IgnoreCase, rejectLeadingDot: true),
+                LiteralSegment or RaggedSegment or StartsWithSegment or ContainsSegment
+                    or CharacterSetSegment or CharacterSetInverseSegment or CharacterRangeSegment or CharacterRangeInverseSegment
+                    or CharacterRangeIgnoreCaseSegment or CharacterRangeIgnoreCaseInverseSegment or CharacterClassSegment
+                    or MatchAnyCharacterSegment or OrSegment => new LastSegment(segments[^1], rejectLeadingDot: true),
+                _ => null,
+            };
+
+            if (lastSegment is not null)
+            {
+                segments.RemoveRange(segments.Count - 2, 2);
+                matchLeadingDot.RemoveRange(matchLeadingDot.Count - 2, 2);
+                segments.Add(lastSegment);
+                matchLeadingDot.Add(false);
             }
         }
 

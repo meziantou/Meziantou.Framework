@@ -59,8 +59,15 @@ public sealed class GitIgnoreMatcher
 
     private readonly ConcurrentDictionary<string, GlobCollection?> _gitIgnoreFiles = new(StringComparer.Ordinal);
 
+    // Finds the directories that were already looked up without allocating their key
+    private readonly ConcurrentDictionary<string, GlobCollection?>.AlternateLookup<ReadOnlySpan<char>> _gitIgnoreFilesLookup;
+
     // The patterns that apply to the whole working tree, from the lowest precedence to the highest
     private readonly GlobCollection[] _excludeFiles;
+
+    // The patterns that apply to the entries of the root directory. The .gitignore file of a directory is loaded once,
+    // so they never change once computed.
+    private GlobCollection[]? _rootPatterns;
 
     /// <summary>Initializes a new instance of the <see cref="GitIgnoreMatcher"/> class.</summary>
     /// <param name="rootDirectory">The root directory of the git working tree.</param>
@@ -84,6 +91,7 @@ public sealed class GitIgnoreMatcher
         }
 
         _excludeFiles = [.. excludeFiles];
+        _gitIgnoreFilesLookup = _gitIgnoreFiles.GetAlternateLookup<ReadOnlySpan<char>>();
     }
 
     /// <summary>Gets the full path of the root directory of the git working tree.</summary>
@@ -124,7 +132,7 @@ public sealed class GitIgnoreMatcher
         var index = 0;
         while (true)
         {
-            var separatorIndex = path[index..].IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var separatorIndex = PathReader.IndexOfSeparator(path[index..]);
             if (separatorIndex < 0)
                 break;
 
@@ -160,11 +168,11 @@ public sealed class GitIgnoreMatcher
     // The patterns that apply to the entries of the directory, from the lowest precedence to the highest
     private GlobCollection[] GetPatterns(ReadOnlySpan<char> relativeDirectory)
     {
-        var patterns = AddGitIgnoreFile(_excludeFiles, []);
+        var patterns = _rootPatterns ??= AddGitIgnoreFile(_excludeFiles, []);
         var index = 0;
         while (index < relativeDirectory.Length)
         {
-            var separatorIndex = relativeDirectory[index..].IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            var separatorIndex = PathReader.IndexOfSeparator(relativeDirectory[index..]);
             var end = separatorIndex < 0 ? relativeDirectory.Length : index + separatorIndex;
             patterns = AddGitIgnoreFile(patterns, relativeDirectory[..end]);
             index = end + 1;
@@ -181,6 +189,10 @@ public sealed class GitIgnoreMatcher
 
     private GlobCollection? GetGitIgnoreFile(ReadOnlySpan<char> relativeDirectory)
     {
+        // The keys use '/' as the separator, so a directory written with another one cannot be found as is
+        if ((Path.DirectorySeparatorChar == '/' || !relativeDirectory.Contains(Path.DirectorySeparatorChar)) && _gitIgnoreFilesLookup.TryGetValue(relativeDirectory, out var gitIgnore))
+            return gitIgnore;
+
         var key = relativeDirectory.ToString();
         if (Path.DirectorySeparatorChar != '/')
         {

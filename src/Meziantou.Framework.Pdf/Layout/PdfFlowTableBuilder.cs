@@ -4,7 +4,8 @@ namespace Meziantou.Framework.Pdf;
 
 /// <summary>
 /// Builds a table of a flow document: its columns, its header rows (repeated on each page the table continues on) and
-/// its rows. A row and the rows its cells span stay on one page.
+/// its rows. A row and the rows its cells span move to the next page or column when they do not fit the rest of the
+/// current one; rows taller than a page or a column are split between them.
 /// </summary>
 public sealed class PdfFlowTableBuilder
 {

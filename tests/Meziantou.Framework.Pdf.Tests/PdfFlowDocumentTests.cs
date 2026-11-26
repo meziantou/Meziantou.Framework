@@ -149,14 +149,118 @@ public sealed class PdfFlowDocumentTests
         var flow = new PdfFlowDocument(SmallPages).Table(table => table
             .Columns(1)
             .HeaderRow("Name")
-            .Row(row => row.Cell(cell => cell.Paragraph("Top").Spacer(200).Paragraph("Bottom"))));
+            .Row(row => row.Cell(cell => cell.Paragraph("Top").Spacer(190).Paragraph("Bottom"))));
 
         var read = PdfDocument.Open(flow.Build().ToByteArray());
 
         Assert.Equal(2, read.Pages.Count);
         Assert.Equal("Name", read.Pages[0].ExtractText().Trim());
         Assert.Equal("Top\nBottom", read.Pages[1].ExtractText().Trim());
+        Assert.All(read.Pages[1].ExtractTextLayout().Lines, line => Assert.True(line.Bounds.Bottom >= 29.5, $"{line.Text}: {line.Bounds}"));
     }
+
+    [Fact]
+    public void ARowTallerThanThePageIsSplitBetweenThePages()
+    {
+        var flow = new PdfFlowDocument(TinyPages());
+        flow.Table(table =>
+        {
+            table.HeaderRow(["a", "b"]);
+            table.Row(cells =>
+            {
+                cells.Cell("c");
+                cells.Cell(string.Join(' ', Enumerable.Repeat("word", 60)));
+            });
+        });
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        Assert.True(read.Pages.Count > 1);
+        AssertLinesInsideTinyPages(read);
+        Assert.All(read.Pages, page => Assert.StartsWith("a b", page.ExtractText()));
+        Assert.Equal(60, CountWords(read, "word"));
+        Assert.Equal(1, CountWords(read, "c"));
+
+        // The cells are laid out again in the parts of the row: their structure elements are not repeated
+        var cells = Assert.Single(read.StructureTree.Elements).Children[0].Children[1].Children[0].Children;
+        Assert.Equal(["TD", "TD"], cells.Select(element => element.Type));
+        Assert.All(cells, cell => Assert.Equal(["P"], cell.Children.Select(element => element.Type)));
+    }
+
+    [Fact]
+    public void ARowTallerThanAColumnIsSplitBetweenTheColumns()
+    {
+        var flow = new PdfFlowDocument(TinyPages());
+        flow.Columns(2, 10, columns => columns.Table(table =>
+        {
+            table.HeaderRow(["a", "b"]);
+            table.Row(cells =>
+            {
+                cells.Cell("c");
+                cells.Cell(string.Join(' ', Enumerable.Repeat("word", 60)));
+            });
+        }));
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        AssertLinesInsideTinyPages(read);
+        Assert.Equal(60, CountWords(read, "word"));
+        var lines = read.Pages[0].ExtractTextLayout().Lines;
+        Assert.Contains(lines, line => line.Text.Contains("word", StringComparison.Ordinal) && line.Bounds.Left < 100);
+        Assert.Contains(lines, line => line.Text.Contains("word", StringComparison.Ordinal) && line.Bounds.Left > 100);
+    }
+
+    [Fact]
+    public void RowsSpannedByACellTallerThanThePageAreSplitBetweenThePages()
+    {
+        var flow = new PdfFlowDocument(TinyPages());
+        flow.Table(table =>
+        {
+            table.HeaderRow(["a", "b"]);
+            table.Row(row => row.Cell(string.Join(' ', Enumerable.Repeat("span", 50)), rowSpan: 2).Cell(string.Join(' ', Enumerable.Repeat("first", 40))));
+            table.Row(row => row.Cell(string.Join(' ', Enumerable.Repeat("second", 40))));
+            table.Row("after", "end");
+        });
+
+        var read = PdfDocument.Open(flow.Build().ToByteArray());
+
+        Assert.True(read.Pages.Count > 2);
+        AssertLinesInsideTinyPages(read);
+        Assert.All(read.Pages, page => Assert.StartsWith("a b", page.ExtractText()));
+        Assert.Equal(50, CountWords(read, "span"));
+        Assert.Equal(40, CountWords(read, "first"));
+        Assert.Equal(40, CountWords(read, "second"));
+        Assert.Equal(1, CountWords(read, "after"));
+
+        // The second row starts below the first one, the spanning cell continues next to them
+        var lines = read.Pages.SelectMany((page, index) => page.ExtractTextLayout().Lines.Select(line => (Page: index, line.Text, line.Bounds))).ToList();
+        var lastFirst = lines.Last(line => line.Text.Contains("first", StringComparison.Ordinal));
+        var firstSecond = lines.First(line => line.Text.Contains("second", StringComparison.Ordinal));
+        Assert.True(firstSecond.Page > lastFirst.Page || firstSecond.Bounds.Top <= lastFirst.Bounds.Bottom, $"{lastFirst} {firstSecond}");
+    }
+
+    private static PdfFlowOptions TinyPages() => new()
+    {
+        PageSize = new PdfSize(200, 220),
+        MarginLeft = 20,
+        MarginRight = 20,
+        MarginTop = 20,
+        MarginBottom = 20,
+    };
+
+    private static void AssertLinesInsideTinyPages(PdfDocument document)
+    {
+        foreach (var page in document.Pages)
+        {
+            foreach (var line in page.ExtractTextLayout().Lines)
+            {
+                Assert.True(line.Bounds.Left >= 19 && line.Bounds.Right <= 181, $"{line.Text}: {line.Bounds}");
+                Assert.True(line.Bounds.Bottom >= 19 && line.Bounds.Top <= 201, $"{line.Text}: {line.Bounds}");
+            }
+        }
+    }
+
+    private static int CountWords(PdfDocument document, string word) => document.Pages.Sum(page => page.ExtractText().Split([' ', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries).Count(text => text == word));
 
     [Fact]
     public void TheHeadingsOfTheCellsAreInTheOutline()

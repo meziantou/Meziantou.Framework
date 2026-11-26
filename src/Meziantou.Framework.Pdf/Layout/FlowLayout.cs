@@ -259,13 +259,9 @@ internal sealed class FlowLayout
 
             // The body is laid out in the space after the label, also in the columns it continues in
             var labelLeft = area.Left;
-            var labelPage = area.PageIndex;
-            var commandsBefore = area switch
-            {
-                PageArea before => before.Pages[^1].Count,
-                CellArea cell => cell.Commands.Count,
-                _ => 0,
-            };
+            var parts = GetParts(area);
+            var labelPage = parts is null ? -1 : parts.Count - 1;
+            var commandsBefore = parts is null ? 0 : parts[^1].Count;
             area.Indent += labelWidth;
             LayoutBlocks(area, list.Items[i], body, depth + 1);
             area.Indent -= labelWidth;
@@ -284,15 +280,12 @@ internal sealed class FlowLayout
     /// </summary>
     private static (int Page, int Index, double Top, double Left)? FindFirstText(FlowArea area, StructNode body, int page, int start)
     {
-        if (area is CellArea cell)
-            return Find(cell.Commands, start, -1);
-
-        if (area is not PageArea pages || page < 0)
+        if (GetParts(area) is not { } parts || page < 0)
             return null;
 
-        for (var i = page; i < pages.Pages.Count; i++)
+        for (var i = page; i < parts.Count; i++)
         {
-            if (Find(pages.Pages[i], i == page ? start : 0, i) is { } found)
+            if (Find(parts[i], i == page ? start : 0, i) is { } found)
                 return found;
         }
 
@@ -313,20 +306,23 @@ internal sealed class FlowLayout
     /// <summary>Inserts a command before another one of a page the area may have left, such as the label of a list item before the first line of its body.</summary>
     private static void Insert(FlowArea area, DrawCommand command, int page, int index)
     {
-        var commands = area switch
-        {
-            PageArea pages when page >= 0 => pages.Pages[page],
-            CellArea cell => cell.Commands,
-            _ => null,
-        };
-        if (commands is null)
+        if (GetParts(area) is not { } parts || page < 0 || page >= parts.Count)
         {
             area.Add(command);
             return;
         }
 
+        var commands = parts[page];
         commands.Insert(Math.Clamp(index, 0, commands.Count), command);
     }
+
+    /// <summary>Gets the commands of the parts of an area: its pages, or the parts of a cell.</summary>
+    private static List<List<DrawCommand>>? GetParts(FlowArea area) => area switch
+    {
+        PageArea pages => pages.Pages,
+        CellArea cell => cell.Parts,
+        _ => null,
+    };
 
     private static bool IsDescendant(StructNode node, StructNode ancestor)
     {
@@ -478,7 +474,7 @@ internal sealed class FlowLayout
             (cellsByRow[item.Cell.Row] ??= []).Add(item);
         }
 
-        // The groups of rows that stay on one page: a row and the rows its cells span
+        // The groups of rows that stay on one page when they fit a column: a row and the rows its cells span
         var groups = new List<(int Start, int End)>();
         for (var r = 0; r < table.RowCount;)
         {
@@ -500,6 +496,32 @@ internal sealed class FlowLayout
         foreach (var (start, end) in groups)
         {
             var groupHeight = Sum(heights, start, end);
+
+            // The height of the group without the space after the content of the cells of its last row, which the bottom
+            // of a column can leave out
+            var contentHeight = Sum(heights, start, end - 1);
+            var rowOffset = 0d;
+            for (var row = start; row < end; row++)
+            {
+                foreach (var (cell, _, content) in cellsByRow[row] ?? [])
+                {
+                    if (cell.Row + cell.RowSpan == end)
+                    {
+                        contentHeight = Math.Max(contentHeight, rowOffset + (2 * padding) - content.ContentBottom);
+                    }
+                }
+
+                rowOffset += heights[row];
+            }
+
+            // A group taller than the next column, or than the column it is at the top of, is split between columns
+            if (area.CanBreak && contentHeight > area.Available && (area.AtTop || contentHeight > area.PeekBreaks(1).Height))
+            {
+                LayoutSplitRows(area, table, cellsByRow, heights, columnLeft, start, end, depth);
+                page = area.PageIndex;
+                continue;
+            }
+
             area.EnsureSpace(groupHeight);
 
             // The header rows again, at the top of the next page, as an artifact, when the group fits below them: a group
@@ -510,8 +532,17 @@ internal sealed class FlowLayout
                 area.Advance(headerHeight);
             }
 
+            // A group that fits the column only without the space after its content ends at the bottom of the column
+            var rowHeights = heights;
+            if (area.CanBreak && groupHeight > area.Available)
+            {
+                rowHeights = (double[])heights.Clone();
+                rowHeights[end - 1] -= Math.Min(groupHeight - area.Available, groupHeight - contentHeight);
+                groupHeight = Sum(rowHeights, start, end);
+            }
+
             page = area.PageIndex;
-            DrawRows(area, table, cellsByRow, heights, columnLeft, start, end, asArtifact: false);
+            DrawRows(area, table, cellsByRow, rowHeights, columnLeft, start, end, asArtifact: false);
             area.Advance(groupHeight);
         }
 
@@ -535,7 +566,7 @@ internal sealed class FlowLayout
         switch (area)
         {
             case CellArea cell:
-                cell.Headings.Add((level, text, top));
+                cell.Headings.Add((level, text, top, cell.PartIndex));
                 break;
             case { PageIndex: >= 0 }:
                 Headings.Add(new PlacedHeading(level, text, area.PageIndex, top));
@@ -558,30 +589,166 @@ internal sealed class FlowLayout
         {
             foreach (var (cell, _, content) in cellsByRow[row] ?? [])
             {
-                DrawCell(area, table, cell, content, new PdfRectangle(area.Left + columnLeft[cell.Column], rowTop[Math.Min(end, cell.Row + cell.RowSpan) - start], area.Left + columnLeft[cell.Column + cell.ColumnSpan], rowTop[cell.Row - start]), asArtifact);
+                DrawCell(area, table, cell, content, part: 0, new PdfRectangle(area.Left + columnLeft[cell.Column], rowTop[Math.Min(end, cell.Row + cell.RowSpan) - start], area.Left + columnLeft[cell.Column + cell.ColumnSpan], rowTop[cell.Row - start]), asArtifact);
             }
         }
     }
 
-    private void DrawCell(FlowArea area, TableBlock table, TableCell cell, CellArea content, PdfRectangle rectangle, bool asArtifact)
+    /// <summary>
+    /// Lays out and draws a group of rows taller than a column (a row and the rows its cells span), split between columns
+    /// and pages as the browsers do: the content of its cells is laid out again in the parts of the columns, from where
+    /// the group starts, below the header rows repeated at the top of the next pages, and each part of a cell is drawn
+    /// with its background, its borders and its padding.
+    /// </summary>
+    private void LayoutSplitRows(FlowArea area, TableBlock table, List<(TableCell Cell, StructNode Node, CellArea Content)>?[] cellsByRow, double[] heights, double[] columnLeft, int start, int end, int depth)
+    {
+        var padding = table.CellPadding;
+        var headerHeight = Sum(heights, 0, table.HeaderRowCount);
+        var repeatHeader = table.HeaderRowCount > 0 && start >= table.HeaderRowCount;
+
+        // The parts of the group: the rest of the column, then the next columns, below the header rows at the top of the
+        // pages when they leave at least half of the page to the rows
+        var parts = new List<(double Height, bool Header)>();
+        (double Height, bool Header) GetPart(int index)
+        {
+            while (parts.Count <= index)
+            {
+                var (height, newPage) = area.PeekBreaks(parts.Count);
+                var header = parts.Count > 0 && newPage && repeatHeader && headerHeight <= height / 2;
+                parts.Add((header ? height - headerHeight : height, header));
+            }
+
+            return parts[index];
+        }
+
+        // An image of a cell is scaled down to fit a part
+        var fullHeight = Math.Max(1, Math.Min(GetPart(1).Height, area.FullHeight - (repeatHeader ? headerHeight : 0)) - (2 * padding));
+
+        // The tops of the rows, as a part and a distance from its top: each row starts below the cells that end above it
+        var rowTop = new (int Part, double Y)[end - start + 1];
+        var placed = new List<(TableCell Cell, CellArea Content)>();
+        var ending = new List<(TableCell Cell, CellArea Content)>?[end - start];
+        var position = (Part: 0, Y: 0d);
+        for (var row = start; row < end; row++)
+        {
+            var cells = new List<(TableCell Cell, CellArea Content)>();
+            foreach (var (cell, node, _) in cellsByRow[row] ?? [])
+            {
+                // The content of the cell is laid out again: its structure elements too
+                node.Children.Clear();
+                var top = position;
+                var width = columnLeft[cell.Column + cell.ColumnSpan] - columnLeft[cell.Column] - (2 * padding);
+                var content = new CellArea(width, fullHeight, part => (part == 0 ? GetPart(top.Part).Height - top.Y : GetPart(top.Part + part).Height) - (2 * padding), atTop: top.Y == 0 && (top.Part > 0 || area.AtTop));
+                LayoutBlocks(content, cell.Blocks, node, depth + 1);
+                cells.Add((cell, content));
+            }
+
+            // A row none of whose cells holds a line in the rest of the part starts in the next part: the rows above it
+            // extend to the bottom of the part
+            if (cells.TrueForAll(item => item.Content.Parts[0].Count == 0) && cells.Exists(item => item.Content.Parts.Count > 1))
+            {
+                position = (position.Part + 1, 0);
+                foreach (var (_, content) in cells.Where(item => item.Content.Parts.Count > 1))
+                {
+                    content.Parts.RemoveAt(0);
+                    for (var i = 0; i < content.Headings.Count; i++)
+                    {
+                        content.Headings[i] = content.Headings[i] with { Part = content.Headings[i].Part - 1 };
+                    }
+                }
+            }
+
+            rowTop[row - start] = position;
+            placed.AddRange(cells);
+            foreach (var item in cells)
+            {
+                (ending[item.Cell.Row + item.Cell.RowSpan - 1 - start] ??= []).Add(item);
+            }
+
+            // The bottom of the row: the lowest of the cells that end in it
+            var bottom = position;
+            foreach (var (cell, content) in ending[row - start] ?? [])
+            {
+                var top = rowTop[cell.Row - start];
+                var last = content.Parts.Count - 1;
+                // The padding of an empty cell at the bottom of a part does not go beyond it
+                var cellBottom = (Part: top.Part + last, Y: (last == 0 ? top.Y : 0) + (2 * padding) - content.Y);
+                cellBottom.Y = Math.Min(cellBottom.Y, Math.Max(GetPart(cellBottom.Part).Height, cellBottom.Part == top.Part ? top.Y : 0));
+                if (cellBottom.Part > bottom.Part || (cellBottom.Part == bottom.Part && cellBottom.Y > bottom.Y))
+                {
+                    bottom = cellBottom;
+                }
+            }
+
+            position = bottom;
+        }
+
+        rowTop[^1] = position;
+        var lastPart = position.Part;
+        if (lastPart > 0 && position.Y <= 0)
+        {
+            lastPart--;
+        }
+
+        GetPart(lastPart);
+        for (var part = 0; part <= lastPart; part++)
+        {
+            if (part > 0)
+            {
+                area.Break();
+                if (parts[part].Header)
+                {
+                    DrawRows(area, table, cellsByRow, heights, columnLeft, 0, table.HeaderRowCount, asArtifact: true);
+                    area.Advance(headerHeight);
+                }
+            }
+
+            var partTop = area.Y;
+            foreach (var (cell, content) in placed)
+            {
+                var top = rowTop[cell.Row - start];
+                var bottom = rowTop[cell.Row + cell.RowSpan - start];
+                if (part < top.Part || part > bottom.Part)
+                    continue;
+
+                var segmentTop = part == top.Part ? top.Y : 0;
+                var segmentBottom = part == bottom.Part ? bottom.Y : parts[part].Height;
+                if (part > top.Part && segmentBottom <= segmentTop)
+                    continue;
+
+                var rectangle = new PdfRectangle(area.Left + columnLeft[cell.Column], partTop - segmentBottom, area.Left + columnLeft[cell.Column + cell.ColumnSpan], partTop - segmentTop);
+                DrawCell(area, table, cell, content, part - top.Part, rectangle, asArtifact: false);
+            }
+
+            area.Advance(part == position.Part ? position.Y : parts[part].Height);
+        }
+    }
+
+    private void DrawCell(FlowArea area, TableBlock table, TableCell cell, CellArea content, int part, PdfRectangle rectangle, bool asArtifact)
     {
         if (cell.IsHeader && table.HeaderBackground is { } background)
         {
             area.Add(new FillCommand(null, rectangle, background));
         }
 
-        foreach (var command in content.Commands)
+        if (part < content.Parts.Count)
         {
-            var placed = command.Translate(rectangle.Left + table.CellPadding, rectangle.Top - table.CellPadding);
-            area.Add(asArtifact ? placed with { Node = null } : placed);
+            foreach (var command in content.Parts[part])
+            {
+                var placed = command.Translate(rectangle.Left + table.CellPadding, rectangle.Top - table.CellPadding);
+                area.Add(asArtifact ? placed with { Node = null } : placed);
+            }
         }
 
         // The headings of the cell are where the cell is: the outline and the table of contents link to them
         if (!asArtifact)
         {
-            foreach (var (level, text, top) in content.Headings)
+            foreach (var (level, text, top, headingPart) in content.Headings)
             {
-                AddHeading(area, level, text, top + rectangle.Top - table.CellPadding);
+                if (headingPart == part)
+                {
+                    AddHeading(area, level, text, top + rectangle.Top - table.CellPadding);
+                }
             }
         }
 

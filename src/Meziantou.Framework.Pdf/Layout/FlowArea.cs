@@ -2,7 +2,7 @@ namespace Meziantou.Framework.Pdf.Layout;
 
 /// <summary>
 /// Where the blocks of a flow document are laid out: the columns of the pages, which break to the next column or page,
-/// or a cell of a table, which grows without bound. <see cref="Y"/> is the top of the next block; the coordinates are
+/// or a cell of a table, which grows without bound or breaks between the parts of a row split between columns. <see cref="Y"/> is the top of the next block; the coordinates are
 /// those of the page (the y axis goes up).
 /// </summary>
 internal abstract class FlowArea
@@ -41,6 +41,12 @@ internal abstract class FlowArea
 
     public abstract void Add(DrawCommand command);
 
+    /// <summary>
+    /// Gets the height available in the column the area would be in after a number of breaks (0: the rest of the current
+    /// column), and whether that column is the first one of a new page, where the header rows of a table are repeated.
+    /// </summary>
+    public abstract (double Height, bool NewPage) PeekBreaks(int count);
+
     /// <summary>Breaks when a block of a height does not fit and is not the first one of the column.</summary>
     public void EnsureSpace(double height)
     {
@@ -50,10 +56,17 @@ internal abstract class FlowArea
         }
     }
 
+    /// <summary>
+    /// Gets the lowest <see cref="Y"/> a block reached, without the spaces after the blocks: for a cell that grows without
+    /// bound, the bottom of its content without the space after its last block, which a column can leave out.
+    /// </summary>
+    public double ContentBottom { get; private set; }
+
     /// <summary>Moves down after a block.</summary>
     public void Advance(double height)
     {
         Y -= height;
+        ContentBottom = Math.Min(ContentBottom, Y);
         AtTop = false;
     }
 }

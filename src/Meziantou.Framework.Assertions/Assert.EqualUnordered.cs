@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -28,6 +29,17 @@ public partial class Assert
         if (expected is null || actual is null)
         {
             EqualUnorderedNull(expected, actual, message, actualExpression, expectedExpression);
+            return;
+        }
+
+        // Lists often hold the same items in the same order. Pairing each item with the one at the same index is then a
+        // complete pairing, found with a single in-order comparison rather than by hashing every item. A default
+        // ImmutableArray<T> would read as an empty list, so it keeps the general path.
+        if (GetUnorderedItemComparerKind(comparer) is UnorderedItemComparerKind.Default
+            && expected is not ImmutableArray<T> { IsDefault: true }
+            && actual is not ImmutableArray<T> { IsDefault: true }
+            && DefaultComparerListsEqual(expected, actual))
+        {
             return;
         }
 

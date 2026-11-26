@@ -12,6 +12,7 @@
     <ProjectReference Include="..\Meziantou.Framework.Fuzzing\Meziantou.Framework.Fuzzing.csproj" />
     <ProjectReference Include="..\Meziantou.AspNetCore.Testing.Fuzz\Meziantou.AspNetCore.Testing.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.AnsiFormatting.Fuzz\Meziantou.Framework.AnsiFormatting.Fuzz.csproj" />
+    <ProjectReference Include="..\Meziantou.Framework.Assertions.Fuzz\Meziantou.Framework.Assertions.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.AtlassianDataFormat.Fuzz\Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Avatar.Fuzz\Meziantou.Framework.Avatar.Fuzz.csproj" />
     <ProjectReference Include="..\Meziantou.Framework.Barcodes.Fuzz\Meziantou.Framework.Barcodes.Fuzz.csproj" />

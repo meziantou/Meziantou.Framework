@@ -15,6 +15,7 @@ public partial class Assert
     private static volatile ListValuesComparerLookup? s_lastListValuesComparerLookup;
     private static readonly ConcurrentDictionary<Type, KeyValuePairAccessor> KeyValuePairAccessors = new();
     private static readonly ConcurrentDictionary<Type, object> DefaultImmutableArrays = new();
+    private static readonly ConcurrentDictionary<Type, LeafSequenceKind> LeafSequenceKinds = new();
     private const BindingFlags PublicStatic = BindingFlags.Public | BindingFlags.Static;
 
     /// <summary>Nesting depth from which <see cref="EnumerableValuesEqual"/> starts tracking the pairs it compares to detect cycles.</summary>
@@ -117,7 +118,8 @@ public partial class Assert
                 // Numeric widening and user-defined implicit conversions can only make values of different runtime
                 // types compare equal, and a value type has no derived types. Only the structural comparison is left,
                 // which still matters for collection-like structs such as ImmutableArray<T> and for pairs and tuples.
-                return ContentValuesEqual(expected, actual);
+                // It never applies to other value types, and would box them, so NotEqual(1, 2) would allocate.
+                return ValueTypeMayHaveContent<TExpected>.Value && ContentValuesEqual(expected, actual);
             }
         }
         else if (object.Equals(expected, actual))
@@ -139,6 +141,16 @@ public partial class Assert
         return (TryCompareNumericValues(expected, actual, out var result) && result)
             || ContentValuesEqual(expected, actual)
             || ValuesEqualAfterImplicitConversion(expected, actual);
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether <see cref="ContentValuesEqual"/> can find two values of the value type
+    /// <typeparamref name="T"/> equal: only sequences and generic types, such as key/value pairs and tuples, are compared
+    /// by content. A <see cref="Nullable{T}"/> is generic, so a boxed value of its underlying type is still compared.
+    /// </summary>
+    private static class ValueTypeMayHaveContent<T>
+    {
+        public static readonly bool Value = typeof(T).IsGenericType || typeof(System.Collections.IEnumerable).IsAssignableFrom(typeof(T));
     }
 
     /// <summary>
@@ -252,6 +264,106 @@ public partial class Assert
 
         result = expectedComparer.ListsEqual(expected, actual);
         return true;
+    }
+
+    private static LeafSequenceKind GetLeafSequenceKind(Type type)
+    {
+        return LeafSequenceKinds.GetOrAdd(type, CreateLeafSequenceKind);
+    }
+
+    private static LeafSequenceKind CreateLeafSequenceKind(Type type)
+    {
+        if (type == typeof(string[]) || type == typeof(List<string>))
+            return LeafSequenceKind.Strings;
+
+        // The other simple values are value types without references, so the items of their arrays can be read as bytes.
+        if (type.IsSZArray && type.GetElementType() is { IsValueType: true } itemType && IsHashSafeLeafType(itemType))
+            return LeafSequenceKind.UnmanagedArray(RuntimeHelpers.SizeOf(itemType.TypeHandle));
+
+        return LeafSequenceKind.None;
+    }
+
+    /// <summary>
+    /// Compares two arrays or lists of leaf values without boxing their items, and without code specific to their item
+    /// type: compiling such code for each item type would cost more than most assertions save. Returns
+    /// <see langword="false"/> when they differ or cannot be compared this way, so only a positive result is meaningful.
+    /// </summary>
+    /// <remarks>
+    /// Items are equal when <see cref="object.Equals(object?)"/> says so, as the value comparison of <c>Assert.Equal</c>
+    /// and the walk of <c>Assert.Equivalent</c> compare two leaf values of the same type. Two values of a simple type
+    /// whose bits are equal are equal. The converse does not hold (<c>0.0</c> and <c>-0.0</c>, the padding of
+    /// <see cref="DateTimeOffset"/>, ...), which only means that such arrays take the general path.
+    /// </remarks>
+    private static bool LeafSequencesEqual(object expected, LeafSequenceKind expectedKind, object actual, LeafSequenceKind actualKind, StringComparison stringComparison)
+    {
+        if (expectedKind.ItemSize > 0)
+        {
+            // Arrays of different types can have equal bits and different values, such as int[] { -1 } and uint[] { uint.MaxValue }.
+            return expected.GetType() == actual.GetType() && UnmanagedArraysBitwiseEqual((Array)expected, (Array)actual, expectedKind.ItemSize);
+        }
+
+        if (expectedKind.IsStrings && actualKind.IsStrings)
+        {
+            var expectedItems = GetStrings(expected);
+            var actualItems = GetStrings(actual);
+            if (expectedItems.Length != actualItems.Length)
+                return false;
+
+            for (var i = 0; i < expectedItems.Length; i++)
+            {
+                // Two null items are equal, and a null item is not equal to a string.
+                if (!string.Equals(expectedItems[i], actualItems[i], stringComparison))
+                    return false;
+            }
+
+            return true;
+        }
+
+        return false;
+
+        static ReadOnlySpan<string?> GetStrings(object value) => value is string?[] array ? array : CollectionsMarshal.AsSpan((List<string?>)value);
+    }
+
+    private static bool UnmanagedArraysBitwiseEqual(Array expected, Array actual, int itemSize)
+    {
+        var length = expected.Length;
+        if (length != actual.Length)
+            return false;
+
+        var byteCount = (long)length * itemSize;
+        if (byteCount > int.MaxValue)
+            return false;
+
+        // Both arrays are single-dimensional arrays of the same value type without references, whose size is itemSize,
+        // so the byte views cover exactly their items.
+        var expectedBytes = unsafe(MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(expected), (int)byteCount));
+        var actualBytes = unsafe(MemoryMarshal.CreateReadOnlySpan(ref MemoryMarshal.GetArrayDataReference(actual), (int)byteCount));
+
+        return expectedBytes.SequenceEqual(actualBytes);
+    }
+
+    /// <summary>Describes how the items of an array or a list of leaf values are compared without boxing them, if they can be.</summary>
+    /// <remarks>A class rather than a struct: the dictionary that caches it then shares the code compiled for reference types.</remarks>
+    private sealed class LeafSequenceKind
+    {
+        private LeafSequenceKind(int itemSize, bool isStrings)
+        {
+            ItemSize = itemSize;
+            IsStrings = isStrings;
+        }
+
+        public static LeafSequenceKind None { get; } = new(itemSize: 0, isStrings: false);
+
+        public static LeafSequenceKind Strings { get; } = new(itemSize: 0, isStrings: true);
+
+        /// <summary>Gets the size of the items of an array of simple value types, or 0 for any other sequence.</summary>
+        public int ItemSize { get; }
+
+        /// <summary>Gets a value indicating whether the sequence is an array or a list of strings.</summary>
+        public bool IsStrings { get; }
+
+        /// <summary>Describes a single-dimensional array of a simple value type, whose items are <paramref name="itemSize"/> bytes long.</summary>
+        public static LeafSequenceKind UnmanagedArray(int itemSize) => new(itemSize, isStrings: false);
     }
 
     private static ListValuesComparer? GetListValuesComparer(Type type)

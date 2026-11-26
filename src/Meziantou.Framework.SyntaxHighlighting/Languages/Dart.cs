@@ -85,13 +85,7 @@ internal static class Dart
         };
         bracedSubst.Contains = [number, @string];
 
-        var docTag = new Mode
-        {
-            Scope = "doctag",
-            Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
-            End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
-            ExcludeBegin = true,
-        };
+        var docTag = CommonModes.DocTag;
 
         // Deviation from highlight.js, which highlights the whole `/** */` comment, delimiters included, as Markdown:
         // the `*` that starts each line became a list bullet and the closing `*/` an emphasis. The comment is

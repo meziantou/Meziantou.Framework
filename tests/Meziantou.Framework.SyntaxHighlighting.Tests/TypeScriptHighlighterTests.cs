@@ -3250,4 +3250,18 @@ const f = <T,>(x: T) => x;
 <span class="hljs-keyword">const</span> f = &lt;T,&gt;<span class="hljs-function">(<span class="hljs-params"><span class="hljs-attr">x</span>: T</span>) =&gt;</span> x;
 """);
     }
+
+    [Fact]
+    public void TaggedTemplate_CssHtml()
+    {
+        AssertHighlighter("typescript",
+"""
+const s: string = css`b { top: 0 }`;
+const t = html`<p>${s}</p>`;
+""",
+"""
+<span class="hljs-keyword">const</span> <span class="hljs-attr">s</span>: <span class="hljs-built_in">string</span> = css`<span class="language-css"><span class="hljs-selector-tag">b</span> { <span class="hljs-attribute">top</span>: <span class="hljs-number">0</span> }`</span>;
+<span class="hljs-keyword">const</span> t = html`<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">p</span>&gt;</span></span><span class="hljs-subst">${s}</span><span class="language-xml"><span class="hljs-tag">&lt;/<span class="hljs-name">p</span>&gt;</span>`</span>;
+""");
+    }
 }

@@ -36,7 +36,7 @@ internal static class Bash
         var bracedVariable = new Mode { Begin = "\\$\\{", End = "\\}" };
         var defaultValueOperator = new Mode { Begin = ":-" };
         var comment = new Mode { BeginParts = ["(^|\\s)", "#.*$"], BeginScope = new Dictionary<int, string> { [2] = "comment" } };
-        var docTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var docTag = CommonModes.DocTag;
         var commentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var heredocStart = new Mode { Begin = "<<-?\\s*(?=\\w+)" };
         var heredocBody = new Mode { };

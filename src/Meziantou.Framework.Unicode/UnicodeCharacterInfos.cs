@@ -16,7 +16,7 @@ internal static partial class UnicodeCharacterInfos
     private const int MaxCodePoint = 0x10FFFF;
 
     // The decoded names, by bucket: a program that reads a few names does not allocate a slot for every one.
-    private static readonly string?[]?[] NameCache = new string?[]?[(NamedCharacterCount + NameBucketSize - 1) / NameBucketSize];
+    private static readonly NameBucket?[] NameCache = new NameBucket?[(NamedCharacterCount + NameBucketSize - 1) / NameBucketSize];
 
     // The names of the ranges of NameRanges: one slot for a range whose characters share their name, one per code point
     // for a range whose names end with the code point.
@@ -176,39 +176,72 @@ internal static partial class UnicodeCharacterInfos
         return new string(buffer[..(length + written)]);
     }
 
-    /// <summary>Decodes the name of <paramref name="codePoint"/> by replaying the front-coding of its bucket.</summary>
+    /// <summary>Gets the name of <paramref name="codePoint"/> from its bucket, decoding it by replaying the front-coding of the bucket the first time.</summary>
     private static string? GetNameInBucket(int bucketOffset, int codePoint)
+    {
+        var bucket = bucketOffset / NameBucketRecordSize;
+        var names = NameCache[bucket];
+        if (names is null)
+            return CreateNameBucket(bucketOffset, codePoint);
+
+        var index = names.CodePoints.AsSpan().BinarySearch(codePoint);
+        if (index < 0)
+            return null;
+
+        var name = names.Names[index];
+        if (name is null)
+        {
+            // Caching keeps a code point looked up more than once from decoding and allocating its name again.
+            name = DecodeNameInBucket(bucketOffset, index);
+            names.Names[index] = name;
+        }
+
+        return name;
+    }
+
+    /// <summary>Reads the code points of the names of a bucket, so that a name is found without replaying the bucket, and decodes the name of a code point.</summary>
+    /// <returns>The name of <paramref name="codePoint"/>, or <see langword="null"/> when it is not in the bucket.</returns>
+    private static string? CreateNameBucket(int bucketOffset, int codePoint)
     {
         var entries = NameEntries;
         var buckets = NameBuckets;
         var position = ReadUInt24(buckets, bucketOffset + 3);
         var current = ReadUInt24(buckets, bucketOffset);
         var bucket = bucketOffset / NameBucketRecordSize;
-        var count = Math.Min(NameBucketSize, NamedCharacterCount - (bucket * NameBucketSize));
+        var codePoints = new int[Math.Min(NameBucketSize, NamedCharacterCount - (bucket * NameBucketSize))];
         Span<int> words = stackalloc int[MaxNameWordCount];
         var wordCount = 0;
-        for (var index = 0; index < count; index++)
+        var names = new string?[codePoints.Length];
+        string? name = null;
+        for (var index = 0; index < codePoints.Length; index++)
         {
             current += ReadNameEntry(entries, ref position, words, ref wordCount);
-            if (current < codePoint)
-                continue;
-
-            if (current > codePoint)
-                return null;
-
-            // Caching keeps a code point looked up more than once from decoding and allocating its name again.
-            var names = NameCache[bucket] ?? CreateCache(ref NameCache[bucket], NameBucketSize);
-            var name = names[index];
-            if (name is null)
+            codePoints[index] = current;
+            if (current == codePoint)
             {
                 name = DecodeName(words[..wordCount]);
                 names[index] = name;
             }
-
-            return name;
         }
 
-        return null;
+        // Two threads may build the bucket at once; the loser's names are simply decoded again.
+        Interlocked.CompareExchange(ref NameCache[bucket], new NameBucket(codePoints, names), comparand: null);
+        return name;
+    }
+
+    /// <summary>Decodes a name of a bucket by replaying the front-coding of the bucket up to it.</summary>
+    private static string DecodeNameInBucket(int bucketOffset, int index)
+    {
+        var entries = NameEntries;
+        var position = ReadUInt24(NameBuckets, bucketOffset + 3);
+        Span<int> words = stackalloc int[MaxNameWordCount];
+        var wordCount = 0;
+        for (var i = 0; i <= index; i++)
+        {
+            ReadNameEntry(entries, ref position, words, ref wordCount);
+        }
+
+        return DecodeName(words[..wordCount]);
     }
 
     private static string DecodeName(ReadOnlySpan<int> words)
@@ -425,7 +458,7 @@ internal static partial class UnicodeCharacterInfos
         {
             if (codePoint == _nextNamedCodePoint)
             {
-                var name = NameCache[_nameOrdinal / NameBucketSize]?[_nameOrdinal % NameBucketSize];
+                var name = NameCache[_nameOrdinal / NameBucketSize]?.Names[_nameOrdinal % NameBucketSize];
                 if (name is null)
                 {
                     var length = WriteName(_words.AsSpan(0, _wordCount), NameEntries, NameWordOffsets, NameWordText, _nameBuffer);
@@ -448,4 +481,7 @@ internal static partial class UnicodeCharacterInfos
             return string.Empty;
         }
     }
+
+    /// <summary>The code points of the names of a bucket, in increasing order, and the names decoded so far.</summary>
+    private sealed record NameBucket(int[] CodePoints, string?[] Names);
 }

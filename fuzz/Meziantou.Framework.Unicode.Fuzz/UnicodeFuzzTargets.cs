@@ -44,7 +44,7 @@ public static partial class UnicodeFuzzTargets
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
-        new("unicode-segmentation", Segmentation) { Seeds = GetSegmentationSeeds, Dictionary = TextTokens },
+        new("unicode-segmentation", Segmentation) { Seeds = GetSegmentationSeeds, Dictionary = [.. TextTokens, "\u00E9", "\u2019", "\u00AB", "\u00BB", ";", "+", "\\", "#", "_", "e-mail", "3.14", "1,024"] },
         new("unicode-normalization", Normalization) { Seeds = GetNormalizationSeeds, Dictionary = TextTokens },
         new("unicode-bidi", Bidi) { Seeds = GetBidiSeeds, Dictionary = TextTokens },
         new("unicode-confusables", Confusables) { Seeds = GetConfusableSeeds, Dictionary = [.. TextTokens, "\u0440", "\u0435", "\u043E", "\u0455", "\u217C", "\u0131", "rn", "m", "vv", "w", "paypal", "p\u0430\u0443\u0440\u0430l"] },

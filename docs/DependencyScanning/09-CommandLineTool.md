@@ -128,7 +128,9 @@ Without `--files`, the tool scans every file, including those in folders whose n
 `--update-lock-files` regenerates the lock files after the updates:
 
 - for NuGet, it runs `dotnet restore --no-cache` on the projects that have a `packages.lock.json` file;
-- for npm, it runs `npm install --no-audit` in the folder of the `package-lock.json` file of each updated `package.json`.
+- for npm, it runs `npm install --no-audit` in the folder of the `package-lock.json` file of each updated `package.json`;
+- for GitHub Actions, it runs `gh actions-lock --no-narrow` at the root of the repository when an updated workflow or
+  action belongs to a repository that has a `.github/workflows/actions.lock` file.
 
 ```bash
 Meziantou.Framework.DependencyScanning.Tool update --directory . --update-lock-files
@@ -136,6 +138,20 @@ Meziantou.Framework.DependencyScanning.Tool update --directory . --update-lock-f
 
 Only use this option on repositories you trust: `dotnet restore` evaluates the MSBuild targets of the projects, and
 `npm install` runs the install scripts of the dependencies. Both execute code from the repository.
+
+### GitHub Actions lock file
+
+When a repository locks its workflows, the runner rejects a workflow whose `uses:` has no entry in
+`.github/workflows/actions.lock`. Updating `actions/checkout@v5` to `v6` without regenerating the lock file makes the
+workflow fail, so use `--update-lock-files` on these repositories.
+
+- `gh actions-lock` regenerates the lock file. Install it with `gh extension install github/gh-actions-lock`, and sign
+  in with `gh auth login`.
+- The tool passes the workflows listed in the `workflows` section of the lock file to `gh actions-lock`, so the
+  workflows that the repository has not locked yet stay unlocked.
+- `--no-narrow` keeps the versions written by the update: `gh actions-lock` would otherwise rewrite a partial version
+  such as `v6` to a full tag such as `v6.0.2`.
+- A repository without `actions.lock` is left as is: the tool never creates the lock file.
 
 ## Options
 
@@ -147,6 +163,6 @@ Only use this option on repositories you trust: `dotnet restore` evaluates the M
 | `--minimum-age <days>` | `list`, `update` | The minimum age of a version, in days. Defaults to 7 |
 | `--upgradable` | `list` | Only list the dependencies that can be upgraded |
 | `--format <Text\|Json>` | `list` | The output format |
-| `--update-lock-files` | `update` | Regenerate the NuGet and npm lock files |
+| `--update-lock-files` | `update` | Regenerate the NuGet, npm and GitHub Actions lock files |
 
 `Meziantou.Framework.DependencyScanning.Tool --help` and `--help` on each command show the same options.

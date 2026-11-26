@@ -24,6 +24,9 @@ internal static class PowerShell
         "Disconnect|Read|Receive|Send|Write|Block|Grant|Protect|Revoke|Unblock|" +
         "Unprotect|Use|ForEach|Sort|Tee|Where";
 
+    // The length of three concatenated verbs, at most. Initialized before Instance, whose initializer uses it.
+    private static readonly int MaxVerbsLength = 3 * ValidVerbs.Split('|').Max(verb => verb.Length);
+
     private const string ComparisonOperators =
         "-and|-as|-band|-bnot|-bor|-bxor|-casesensitive|-ccontains|-ceq|-cge|-cgt|" +
         "-cle|-clike|-clt|-cmatch|-cne|-cnotcontains|-cnotlike|-cnotmatch|-contains|" +
@@ -127,7 +130,10 @@ internal static class PowerShell
             [
                 // At most three concatenated verbs (hljs allows any number): a long run of verbs that is not
                 // followed by `-` would otherwise be rescanned from each of its characters.
-                new Mode { Begin = "(" + ValidVerbs + @"){1,3}(-)[\w\d]+" },
+                // The verbs are at most MaxVerbsLength letters followed by `-`: the lookahead, which the match implies,
+                // rejects most positions without trying each of the hundred verbs there (13 times faster). It is bounded,
+                // so a long run of letters is not rescanned from each of them.
+                new Mode { Begin = "(?=[a-zA-Z]{1," + MaxVerbsLength.ToString(CultureInfo.InvariantCulture) + "}-)(" + ValidVerbs + @"){1,3}(-)[\w\d]+" },
             ],
         };
 

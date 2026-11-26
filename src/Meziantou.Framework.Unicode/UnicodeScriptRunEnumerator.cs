@@ -10,6 +10,11 @@ public ref struct UnicodeScriptRunEnumerator
     private const int PendingScript = -1;
 
     private readonly ReadOnlySpan<char> _text;
+
+    // Whether the characters below U+0300 are read without looking up their cluster: false in the tests that compare
+    // it with the general case.
+    private readonly bool _skipSimpleCharacters;
+
     private int _position;
     private UnicodeScriptRun _current;
 
@@ -20,9 +25,10 @@ public ref struct UnicodeScriptRunEnumerator
     private BracketStack _brackets;
     private int _bracketCount;
 
-    internal UnicodeScriptRunEnumerator(ReadOnlySpan<char> text)
+    internal UnicodeScriptRunEnumerator(ReadOnlySpan<char> text, bool skipSimpleCharacters = true)
     {
         _text = text;
+        _skipSimpleCharacters = skipSimpleCharacters;
     }
 
     /// <summary>Gets the current run.</summary>
@@ -49,7 +55,7 @@ public ref struct UnicodeScriptRunEnumerator
 
         while (_position < _text.Length)
         {
-            if (TrySkipAscii(ref candidates, ref hasCandidates, ref firstScript, ref hasFirstScript))
+            if (_skipSimpleCharacters && TrySkipSimpleCharacters(ref candidates, ref hasCandidates, ref firstScript, ref hasFirstScript))
                 continue;
 
             var length = Unicode.GetGraphemeClusterLength(_text[_position..]);
@@ -166,38 +172,50 @@ public ref struct UnicodeScriptRunEnumerator
         return true;
     }
 
-    /// <summary>Skips the ASCII characters at the current position that are not brackets, which is most of a Latin text.</summary>
+    /// <summary>Skips the characters below U+0300 at the current position that are Latin letters or script-neutral, which is most of a text written with the Latin alphabet.</summary>
     /// <returns><see langword="false"/> when the current character is not one of them, or ends the run.</returns>
     /// <remarks>
-    /// Each of these characters is a cluster on its own, and has no Script_Extensions: the letters are Latin, and the
-    /// others are Common, so they do not change the run. The last of them is left when a character that is not ASCII
-    /// follows, since that character can extend its cluster.
+    /// No character below U+0300 extends a grapheme cluster, so each of these characters is a cluster on its own. They
+    /// have no Script_Extensions and are not brackets: the Latin letters set the run to Latin, and the Common characters
+    /// do not change the run. The last of them is left when a character that can extend its cluster follows.
     /// </remarks>
-    private bool TrySkipAscii(ref ScriptSet candidates, ref bool hasCandidates, ref UnicodeScript firstScript, ref bool hasFirstScript)
+    private bool TrySkipSimpleCharacters(ref ScriptSet candidates, ref bool hasCandidates, ref UnicodeScript firstScript, ref bool hasFirstScript)
     {
-        if (_text[_position] >= 0x80)
+        if (_text[_position] >= SimpleCharacters.Limit)
             return false;
 
+        var kinds = SimpleCharacters.Kinds;
         var remaining = _text[_position..];
         var length = 0;
-        while (length < remaining.Length && remaining[length] < 0x80 && remaining[length] is not ('(' or ')' or '[' or ']' or '{' or '}'))
+        var firstLetter = -1;
+        while ((uint)length < (uint)remaining.Length)
         {
+            var c = remaining[length];
+            if (c >= SimpleCharacters.Limit)
+                break;
+
+            var kind = kinds[c];
+            if (kind is SimpleCharacters.Other)
+                break;
+
+            if (kind is SimpleCharacters.Latin && firstLetter < 0)
+            {
+                firstLetter = length;
+            }
+
             length++;
         }
 
-        if (length > 0 && length < remaining.Length && remaining[length] >= 0x80)
+        if (length > 0 && length < remaining.Length && remaining[length] >= SimpleCharacters.Limit)
         {
             length--;
+            if (firstLetter == length)
+            {
+                firstLetter = -1;
+            }
         }
 
         var segment = remaining[..length];
-        var firstLetter = segment.IndexOfAnyInRange('A', 'Z');
-        var firstLowercase = segment.IndexOfAnyInRange('a', 'z');
-        if (firstLetter < 0 || (firstLowercase >= 0 && firstLowercase < firstLetter))
-        {
-            firstLetter = firstLowercase;
-        }
-
         if (firstLetter >= 0)
         {
             if (hasCandidates && !candidates.Contains((int)UnicodeScript.Latin))
@@ -220,6 +238,37 @@ public ref struct UnicodeScriptRunEnumerator
 
         _position += segment.Length;
         return !segment.IsEmpty;
+    }
+
+    /// <summary>The kind of each character below U+0300, from the tables of the scripts and of the brackets.</summary>
+    private static class SimpleCharacters
+    {
+        public const int Limit = 0x300;
+
+        public const byte Other = 0;
+        public const byte Neutral = 1;
+        public const byte Latin = 2;
+
+        public static readonly byte[] Kinds = Create();
+
+        private static byte[] Create()
+        {
+            var kinds = new byte[Limit];
+            for (var codePoint = 0; codePoint < Limit; codePoint++)
+            {
+                if (!UnicodeScripts.GetScriptExtensionsRaw(codePoint).IsEmpty || UnicodeProperties.GetBidiPairedBracketType(codePoint) is not UnicodeBidiPairedBracketType.None)
+                    continue;
+
+                kinds[codePoint] = UnicodeScripts.GetScript(codePoint) switch
+                {
+                    UnicodeScript.Latin => Latin,
+                    UnicodeScript.Common => Neutral,
+                    _ => Other,
+                };
+            }
+
+            return kinds;
+        }
     }
 
     /// <summary>Gets the scripts a cluster can be written in.</summary>

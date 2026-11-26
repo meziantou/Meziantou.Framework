@@ -294,12 +294,24 @@ internal static class PropertyTablesWriter
             codePoints.Add(records[offset] | (records[offset + 1] << 8) | (records[offset + 2] << 16));
         }
 
-        var pages = string.Join(" or ", codePoints.Select(codePoint => codePoint >> 8).Distinct().Order().Select(page => string.Create(CultureInfo.InvariantCulture, $"0x{page:X}")));
+        // The code points of the blocks that have few entries are tested one by one: the letters of Latin-1, Greek and
+        // Cyrillic are frequent, and their blocks have one or two entries each.
+        const int MaxListedEntriesPerPage = 4;
+        var groups = codePoints.GroupBy(codePoint => codePoint >> 8).ToArray();
+        var listed = string.Join(" or ", groups.Where(group => group.Count() <= MaxListedEntriesPerPage).SelectMany(group => group).Order().Select(codePoint => string.Create(CultureInfo.InvariantCulture, $"0x{codePoint:X}")));
+        var pages = string.Join(" or ", groups.Where(group => group.Count() > MaxListedEntriesPerPage).Select(group => group.Key).Order().Select(page => string.Create(CultureInfo.InvariantCulture, $"0x{page:X}")));
+        var condition = (listed.Length, pages.Length) switch
+        {
+            (0, _) => $"(codePoint >> 8) is {pages}",
+            (_, 0) => $"codePoint is {listed}",
+            _ => $"(codePoint >> 8) is {pages} || codePoint is {listed}",
+        };
+
         destination.Append(string.Create(CultureInfo.InvariantCulture, $$"""
 
-                /// <summary>Determines whether a code point can be in SpecialCasingMappings: it is in one of the blocks of 256 code points that have an entry, and is not below the first entry.</summary>
+                /// <summary>Determines whether a code point can be in SpecialCasingMappings: it is in one of the blocks of 256 code points that have many entries, or it is an entry of another block.</summary>
                 [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                internal static bool MayHaveSpecialCasing(int codePoint) => codePoint >= 0x{{codePoints.Min():X}} && (codePoint >> 8) is {{pages}};
+                internal static bool MayHaveSpecialCasing(int codePoint) => {{condition}};
 
             """).ReplaceLineEndings("\n"));
     }

@@ -159,11 +159,15 @@ internal static class StructuredFields
     /// missing or is not a valid list.
     /// </summary>
     public static List<StructuredFieldMember>? GetList(IReadOnlyList<KeyValuePair<string, string>> headers, string name)
-    {
-        if (Dom.HeaderList.Get(headers, name) is not { } headerValue)
-            return null;
+        => Dom.HeaderList.Get(headers, name) is { } headerValue ? ParseList(headerValue) : null;
 
-        var value = headerValue.Trim(' ', '\t');
+    /// <summary>
+    /// https://www.rfc-editor.org/rfc/rfc8941#name-parsing-a-list: the members of a value parsed as a list (the leading and
+    /// trailing spaces and tabs are ignored), or null when it is not a valid list.
+    /// </summary>
+    public static List<StructuredFieldMember>? ParseList(string input)
+    {
+        var value = input.Trim(' ', '\t');
         var position = 0;
         var members = new List<StructuredFieldMember>();
         while (position < value.Length)

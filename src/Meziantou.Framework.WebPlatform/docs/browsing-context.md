@@ -1741,6 +1741,41 @@ An `iframe` element can require the documents loaded into it to enforce a policy
 - The initial `about:blank` document of an `iframe` is not created by a navigation: it does not enforce the required
   policy of the `csp` attribute (Chromium applies its `sandbox` directive to it).
 
+### Connection Allowlists
+
+[Connection Allowlists](https://w3c.github.io/connection-allowlists/) (a draft community group report, implemented by
+Chromium) restrict the connections of a document or a worker to a list of URL patterns (`ConnectionAllowlist`):
+
+- The `Connection-Allowlist` (enforced) and `Connection-Allowlist-Report-Only` headers are structured field lists whose first
+  member is an inner list of URL pattern strings and `response-origin` tokens (the origin of the URL of the response). The
+  patterns are created without base URL: a relative pattern, or one that is not valid, is ignored. The `report-to`,
+  `redirects` and `webrtc` parameters are tokens (a string is ignored); `redirects` and `webrtc` are `block` by default, and
+  any other token allows them. The other members of the list are ignored.
+- The allowlists are in the policy container: a document of a local scheme and a worker whose URL is `about:`, `blob:` or
+  `data:` inherit them (and the required allowlist), the other workers get the ones of the response of their script.
+- `Fetching.IsBlocked` (main fetch step 7, run for each URL of a redirect chain) checks the allowlists of the client of the
+  request (the `PolicyClient` of the imports of a module worker): the local URLs are allowed, a redirected request is blocked
+  unless the allowlist has `redirects=allow` (the URLs of the redirects are then not checked), and the other URLs must match a
+  pattern. The violations are reported with the URL of the request (the first URL of its URL list). A speculative fetch of
+  the preload scanner is checked without reporting: it would open the connection the allowlist blocks. The navigations,
+  `window.open()`, the WebSockets, the preloads and prefetches and the speculation rules go through it.
+- The preloads of a `103 Early Hints` response are checked by the enforced allowlists of the `103` response, without
+  reporting (there is no environment yet). `WindowClient.navigate()` and `Clients.openWindow()` reject with a `SecurityError`
+  when the allowlists of the service worker block the URL.
+- A report has the type `connection-allowlist`, and its body the `url` of the environment and the `connection` (both stripped
+  for use in reports), the patterns of the allowlist and its `disposition`. It is only generated when the allowlist has a
+  `report-to` endpoint; as in Chromium, the `ReportingObserver`s receive it (the specification does not say).
+- Embedded enforcement mirrors CSP Embedded Enforcement: the required allowlist of a navigation of a child navigable is the
+  `connectionallowlist` attribute of its `iframe` when it is valid (not empty, at most 4096 characters, a structured field
+  list whose first member is an inner list, at least as strict as the required allowlist of the container document, with
+  `response-origin` compared as a literal pattern), else the required allowlist of the container document. It is sent in the
+  `Sec-Required-Connection-Allowlist` header. The response is blocked (an error document) unless its URL has a local scheme,
+  its `Allow-Connection-Allowlist-From` header is `*` or the serialized origin of the request, or its `Connection-Allowlist`
+  header satisfies the requirement (its patterns are patterns of the required allowlist, and it blocks the redirects and WebRTC
+  when the requirement does). The document enforces the required allowlist unless one of its enforced allowlists satisfies it.
+- Not implemented: WebRTC (the `webrtc` parameter only matters to the embedded enforcement), WebTransport, the host checks of
+  the DNS prefetches and the preconnects (the library has none), and the remote validation of the WebAuthn RP IDs.
+
 ### Policy inheritance
 
 A document gets the policies (the CSP list, its self-origin and its Trusted Types directives) of its policy container

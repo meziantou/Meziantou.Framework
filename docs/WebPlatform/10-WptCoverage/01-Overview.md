@@ -50,18 +50,18 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 28,090 | 30,158 | 80 | 93% |
-| [Tentative](#tentative-tests) | 1,686 | 3,073 | 174 | 58% |
+| [Tentative](#tentative-tests) | 1,747 | 3,073 | 174 | 60% |
 | [Reftests](#reftests) | 28,838 | 29,687 | 70 | 97% |
 | [Crash tests](#crash-tests) | 2,131 | 2,144 | 2 | 99% |
-| **All** | **60,745** | **65,062** | **326** | **94%** |
+| **All** | **60,806** | **65,062** | **326** | **94%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
 - **BUG**: 150
-- **TEST BUG**: 1,130
-- **NOT IMPLEMENTED**: 2,793
+- **TEST BUG**: 1,132
+- **NOT IMPLEMENTED**: 2,730
 - **REQUIRES**: 186
   - `hardware`: 4
   - `layout`: 22
@@ -429,7 +429,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`clear-site-data`](clear-site-data.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`clipboard-apis`](clipboard-apis.md#tentative-tests) | 14 | 21 | 0 | 67% |
 | [`compression`](compression.md#tentative-tests) | 0 | 1 | 0 | 0% |
-| [`connection-allowlist`](connection-allowlist.md#tentative-tests) | 8 | 90 | 0 | 9% |
+| [`connection-allowlist`](connection-allowlist.md#tentative-tests) | 69 | 90 | 0 | 77% |
 | [`console`](console.md#tentative-tests) | 1 | 1 | 0 | 100% |
 | [`container-timing`](container-timing.md#tentative-tests) | 40 | 51 | 0 | 78% |
 | [`content-security-policy`](content-security-policy.md#tentative-tests) | 8 | 15 | 0 | 53% |
@@ -589,7 +589,7 @@ The tests that do not pass (failing or disabled), by kind of reason. A test with
 | [`workers`](workers.md#tentative-tests) | 3 | 8 | 0 | 38% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 2 | 2 | 0 | 100% |
-| **Total (166 sections)** | **1,686** | **3,073** | **174** | **58%** |
+| **Total (166 sections)** | **1,747** | **3,073** | **174** | **60%** |
 
 ## Reftests
 

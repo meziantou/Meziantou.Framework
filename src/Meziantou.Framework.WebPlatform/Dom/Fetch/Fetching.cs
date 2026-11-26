@@ -452,7 +452,8 @@ internal static class Fetching
     /// the navigations of the top-level navigables are not mixed content, the navigations of the child navigables are) or
     /// the enforced content security policies of the client, whose violations are reported (https://w3c.github.io/webappsec-csp/#should-block-request;
     /// the report-only policies are checked before the URL is upgraded, step 4; the policies of a speculative fetch are
-    /// checked by the speculative parser, without reporting), and the integrity policies of the client.
+    /// checked by the speculative parser, without reporting), the integrity policies of the client, and its
+    /// connection allowlists.
     /// </summary>
     private static bool IsBlocked(FetchRequest request)
     {
@@ -463,6 +464,10 @@ internal static class Fetching
         // https://w3c.github.io/webappsec-subresource-integrity/#should-request-be-blocked-by-integrity-policy: the violations
         // are reported (a speculative fetch is checked when its response is used)
         blocked |= !request.IsSpeculative && IntegrityPolicy.ShouldBlockRequest(request);
+
+        // https://w3c.github.io/connection-allowlists/#should-request-be-blocked-by-connection-allowlists: the violations are
+        // reported. A speculative fetch is checked too, without reporting: it would open the connection the allowlist blocks
+        blocked |= ConnectionAllowlist.ShouldBlockRequest(request);
 
         var url = request.CurrentUrl;
         if (url.Scheme is "http" or "https")

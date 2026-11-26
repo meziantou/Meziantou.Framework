@@ -3,384 +3,131 @@
     "total": 3
   },
   "connection-allowlist/tentative/dedicated-worker-redirect-block.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Same-origin dedicated worker main script fetch with redirect fails due to redirects=block.": "FAIL",
-      "Same-origin subresource fetch from dedicated worker with cross-origin redirect fails due to redirects=block.": "FAIL",
-      "Same-origin subresource fetch from dedicated worker with same-origin redirect fails due to redirects=block.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/dedicated-worker-redirect-default.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Same-origin dedicated worker main script fetch with redirect fails by default.": "FAIL",
-      "Same-origin subresource fetch from dedicated worker with cross-origin redirect fails by default.": "FAIL",
-      "Same-origin subresource fetch from dedicated worker with same-origin redirect fails by default.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/dedicated-worker.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Cross-origin fetch from a dedicated worker (data: URL) should be blocked by inherited policy.": "FAIL",
-      "Dedicated worker with empty connection allowlist cannot perform any fetches.": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/early_hints_modulepreload_allow.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "connection-allowlist/tentative/early_hints_modulepreload_deny.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "connection-allowlist/tentative/early_hints_preconnect_allow.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "connection-allowlist/tentative/early_hints_preconnect_deny.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "connection-allowlist/tentative/early_hints_preload_allow.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "connection-allowlist/tentative/early_hints_preload_deny.sub.window.js": {
-    "harness": "TIMEOUT",
-    "total": 0
+    "total": 1
   },
   "connection-allowlist/tentative/fetch-keepalive-redirect.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Fetch keepalive redirect from http://web-platform.test:8000 to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch keepalive redirect from http://web-platform.test:8000 to http://web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/fetch-keepalive.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Fetch to http://not-web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://www.not-web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://www.web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://www1.not-web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://www1.web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://www2.not-web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://www2.web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://xn--lve-6lad.not-web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://xn--lve-6lad.web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 with keepalive: true fails.": "FAIL",
-      "Fetch to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 with keepalive: true fails.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/fetch-redirect-allow.sub.window.js": {
     "total": 3
   },
   "connection-allowlist/tentative/fetch-redirect-block.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Fetch redirect from http://web-platform.test:8000 to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch redirect from http://web-platform.test:8000 to http://web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/fetch-redirect-default.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Fetch redirect from http://web-platform.test:8000 to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch redirect from http://web-platform.test:8000 to http://web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/fetch-wildcard.sub.window.js": {
-    "total": 24,
-    "failures": {
-      "Fetch cors/omit to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 24
   },
   "connection-allowlist/tentative/fetch.sub.window.js": {
-    "total": 24,
-    "failures": {
-      "Fetch cors/omit to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www1.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www2.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://xn--lve-6lad.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch cors/omit to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www1.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www2.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://xn--lve-6lad.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 fails.": "FAIL",
-      "Fetch no-cors/omit to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 24
   },
   "connection-allowlist/tentative/iframe-connectionallowlist-embedded-enforcement.https.html": {
-    "harness": "TIMEOUT",
-    "total": 6,
-    "failures": {
-      "A subsuming delivered Connection-Allowlist commits.": "TIMEOUT",
-      "Blanket opt-in commits the framed document.": "TIMEOUT"
-    }
+    "total": 6
   },
   "connection-allowlist/tentative/iframe-connectionallowlist-reflection.html": {
-    "total": 5,
-    "failures": {
-      "connectionAllowlist IDL attribute is exposed on HTMLIFrameElement": "FAIL",
-      "connectionAllowlist getter reflects from the content attribute": "FAIL",
-      "connectionAllowlist reflects the empty string when the attribute is unset": "FAIL",
-      "connectionAllowlist setter reflects to the content attribute": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/iframe-connectionallowlist-request-header.https.html": {
-    "harness": "TIMEOUT",
-    "total": 2,
-    "failures": {
-      "A header-injecting connectionallowlist value delivers no header.": "NOTRUN",
-      "A valid connectionallowlist value is delivered as the request header.": "TIMEOUT"
-    }
+    "total": 2
   },
   "connection-allowlist/tentative/iframe-contentwindow-injection.sub.window.js": {
     "total": 8,
     "failures": {
       "Injecting <link rel=\"prefetch\"> into \" about:\" (space-prefixed) iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> into about: iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> into about:blank iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> into blob: iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> into javascript: URL iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> into same-origin iframe (with its own Connection-Allowlist) contentWindow must be blocked.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> into srcdoc iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL",
-      "Injecting <link rel=\"prefetch\"> via createElement into about:blank iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL"
+      "Injecting <link rel=\"prefetch\"> into about: iframe contentWindow must be blocked by inherited Connection-Allowlist.": "FAIL"
     }
   },
   "connection-allowlist/tentative/link_header_modulepreload_allow.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header modulepreload to an allow-listed url succeeds.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_modulepreload_deny.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header modulepreload to a not allow-listed url fails.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_prefetch_allow.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header prefetch to an allow-listed url succeeds.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_prefetch_as_document_allow.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header prefetch (as=document) to an allow-listed url succeeds.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_prefetch_as_document_deny.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header prefetch (as=document) to a not allow-listed url fails.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_prefetch_deny.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header prefetch to a not allow-listed url fails.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_preload_allow.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header preload to an allow-listed url succeeds.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_header_preload_deny.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Link header preload to a not allow-listed url fails.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/link_rel_modulepreload.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Modulepreload to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Modulepreload to http://web-platform.test:8000 succeeds.": "FAIL",
-      "Modulepreload to http://www.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Modulepreload to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Modulepreload to http://www1.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Modulepreload to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Modulepreload to http://www2.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Modulepreload to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Modulepreload to http://xn--lve-6lad.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Modulepreload to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Modulepreload to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Modulepreload to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/link_rel_prefetch.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Prefetch to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Prefetch to http://web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch to http://www.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch to http://www1.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch to http://www2.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch to http://xn--lve-6lad.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/link_rel_prefetch_as_document.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Prefetch (as=document) to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Prefetch (as=document) to http://web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch (as=document) to http://www.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch (as=document) to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch (as=document) to http://www1.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch (as=document) to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch (as=document) to http://www2.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch (as=document) to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch (as=document) to http://xn--lve-6lad.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch (as=document) to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Prefetch (as=document) to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Prefetch (as=document) to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/link_rel_preload.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Preload to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Preload to http://web-platform.test:8000 succeeds.": "FAIL",
-      "Preload to http://www.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Preload to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Preload to http://www1.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Preload to http://www1.web-platform.test:8000 fails.": "FAIL",
-      "Preload to http://www2.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Preload to http://www2.web-platform.test:8000 fails.": "FAIL",
-      "Preload to http://xn--lve-6lad.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Preload to http://xn--lve-6lad.web-platform.test:8000 fails.": "FAIL",
-      "Preload to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 succeeds.": "FAIL",
-      "Preload to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/link_rel_stylesheet.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Stylesheet to http://not-web-platform.test:8000 fails.": "FAIL",
-      "Stylesheet to http://web-platform.test:8000 succeeds.": "FAIL",
-      "Stylesheet to http://www.not-web-platform.test:8000 fails.": "FAIL",
-      "Stylesheet to http://www.web-platform.test:8000 fails.": "FAIL",
-      "Stylesheet to http://www1.web-platform.test:8000 fails.": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/link_rel_whitespace_bypass.sub.window.js": {
-    "total": 13,
-    "failures": {
-      "<link rel=\"(space)\\tprefetch\\t(space)\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"(space)prefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"\\fprefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"\\nprefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"\\rprefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"\\t(space)prefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"\\tprefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "<link rel=\"prefetch\\t\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "HTML entity encoded rel=\"dns-pre&#102;etch\" (dns-prefetch) to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "HTML entity encoded rel=\"pre&#102;etch\" (prefetch) to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "HTML entity encoded rel=\"preco&#110;&#110;ect\" (preconnect) to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "innerHTML: <link rel=\"(space)prefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL",
-      "innerHTML: <link rel=\"\\tprefetch\"> to blocked origin must be blocked by Connection-Allowlist.": "FAIL"
-    }
+    "total": 13
   },
   "connection-allowlist/tentative/navigation-anchor-new-tab.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Navigation via anchor with target=_blank to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation via anchor with target=_blank to http://www.web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/navigation-redirect-allow.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Redirect from http://not-web-platform.test:8000 to http://web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/navigation-redirect-block.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Redirect from http://not-web-platform.test:8000 to http://web-platform.test:8000 should fail.": "FAIL",
-      "Redirect from http://web-platform.test:8000 to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "Redirect from http://web-platform.test:8000 to http://web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/navigation-redirect-default.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Redirect from http://not-web-platform.test:8000 to http://web-platform.test:8000 should fail.": "FAIL",
-      "Redirect from http://web-platform.test:8000 to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "Redirect from http://web-platform.test:8000 to http://web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/navigation-response-origin.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Navigation to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www.not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www1.not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www1.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www2.not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www2.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://xn--lve-6lad.not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://xn--lve-6lad.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/navigation-wildcard.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Navigation to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www1.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://www2.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://xn--lve-6lad.web-platform.test:8000 should fail.": "FAIL",
-      "Navigation to http://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/navigation-window-open.sub.window.js": {
-    "total": 9,
-    "failures": {
-      "window.open(url) with no target to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "window.open(url) with no target to http://www.web-platform.test:8000 should fail.": "FAIL",
-      "window.open(url, '_self') to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "window.open(url, '_self') to http://www.web-platform.test:8000 should fail.": "FAIL",
-      "window.open(url, name) to http://not-web-platform.test:8000 should fail.": "FAIL",
-      "window.open(url, name) to http://www.web-platform.test:8000 should fail.": "FAIL"
-    }
+    "total": 9
   },
   "connection-allowlist/tentative/payment-request-app-manifest-blocked.https.window.js": {
     "total": 1
@@ -419,153 +166,66 @@
     "total": 1
   },
   "connection-allowlist/tentative/reporting-http.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist report is delivered to the reporting endpoint for a blocked fetch.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-image-blocked.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist report is delivered to the reporting endpoint for a blocked image.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-multiple-violations.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Multiple Connection-Allowlist reports are delivered to the reporting endpoint.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-navigation-blocked.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist report is delivered to the reporting endpoint for a blocked navigation.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-navigation-redirect-blocked.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist report is delivered to the reporting endpoint for a blocked navigation redirect.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-navigation-redirect-report-only.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist-Report-Only report is delivered to the reporting endpoint for a report-only navigation redirect.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-navigation-report-only.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist-Report-Only report is delivered to the reporting endpoint for a report-only navigation.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-report-only.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist report is delivered to the reporting endpoint for a report-only fetch.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/reporting-speculation-rules-prefetch-blocked.https.sub.html": {
-    "total": 1,
-    "failures": {
-      "Connection-Allowlist report is delivered to the reporting endpoint for a blocked speculation rules prefetch.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/service-worker-dedicated-worker.https.sub.window.js": {
-    "total": 3,
-    "failures": {
-      "Fetch is blocked by Dedicated Worker's CA and does not reach Service Worker.": "FAIL",
-      "Fetch is intercepted by Service Worker but blocked by Service Worker's CA.": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/service-worker-navigation.sub.https.window.js": {
-    "total": 2,
-    "failures": {
-      "clients.navigate() is blocked by Document's Connection-Allowlist": "FAIL",
-      "clients.navigate() is blocked by Service Worker's empty Connection-Allowlist": "FAIL"
-    }
+    "total": 2
   },
   "connection-allowlist/tentative/service-worker-reporting-url-sanitization.https.sub.window.js": {
-    "total": 1,
-    "failures": {
-      "Service Worker intercepted fetch reports sanitize target connection URLs.": "FAIL"
-    }
+    "total": 1
   },
   "connection-allowlist/tentative/service-worker-reporting.sub.https.window.js": {
-    "total": 3,
-    "failures": {
-      "Report sent in enforcement mode.": "FAIL",
-      "service-worker-reporting": "FAIL"
-    }
+    "total": 3
   },
   "connection-allowlist/tentative/service-worker-shared-worker.https.sub.window.js": {
+    "harness": "TIMEOUT",
     "total": 3,
     "failures": {
-      "Fetch is blocked by Shared Worker's CA and does not reach Service Worker.": "FAIL",
-      "Fetch is intercepted by Service Worker but blocked by Service Worker's CA.": "FAIL"
+      "Fetch is blocked by Shared Worker's CA and does not reach Service Worker.": "TIMEOUT",
+      "Fetch is intercepted by Service Worker but blocked by Service Worker's CA.": "NOTRUN"
     }
   },
   "connection-allowlist/tentative/service-worker.sub.https.window.js": {
-    "total": 10,
-    "failures": {
-      "Cross-origin fetch from a service worker should be blocked by its own policy.": "FAIL",
-      "Same-origin service worker main script fetch is blocked by creator's non-matching allowlist.": "FAIL",
-      "Service worker main script fetch is blocked by creator's empty allowlist.": "FAIL",
-      "Service worker with empty connection allowlist cannot perform any fetches.": "FAIL"
-    }
+    "total": 10
   },
   "connection-allowlist/tentative/shared-worker.sub.window.js": {
-    "total": 7,
-    "failures": {
-      "Cross-origin fetch from a shared worker (data: URL) should be blocked by inherited policy.": "FAIL",
-      "Shared worker (blob: URL) inherits creator's connection allowlist policy.": "FAIL",
-      "Shared worker with empty connection allowlist cannot perform any fetches.": "FAIL"
-    }
+    "total": 7
   },
   "connection-allowlist/tentative/speculation_rules_prefetch.https.sub.window.js": {
-    "total": 12,
-    "failures": {
-      "Prefetch to https://not-web-platform.test:8443 fails.": "FAIL",
-      "Prefetch to https://web-platform.test:8443 succeeds.": "FAIL",
-      "Prefetch to https://www.not-web-platform.test:8443 succeeds.": "FAIL",
-      "Prefetch to https://www.web-platform.test:8443 fails.": "FAIL",
-      "Prefetch to https://www1.not-web-platform.test:8443 succeeds.": "FAIL",
-      "Prefetch to https://www1.web-platform.test:8443 fails.": "FAIL",
-      "Prefetch to https://www2.not-web-platform.test:8443 succeeds.": "FAIL",
-      "Prefetch to https://www2.web-platform.test:8443 fails.": "FAIL",
-      "Prefetch to https://xn--lve-6lad.not-web-platform.test:8443 succeeds.": "FAIL",
-      "Prefetch to https://xn--lve-6lad.web-platform.test:8443 fails.": "FAIL",
-      "Prefetch to https://xn--n8j6ds53lwwkrqhv28a.not-web-platform.test:8443 succeeds.": "FAIL",
-      "Prefetch to https://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8443 fails.": "FAIL"
-    }
+    "total": 12
   },
   "connection-allowlist/tentative/speculation_rules_prerender.https.sub.window.js": {
-    "total": 6,
-    "failures": {
-      "Prerender to https://web-platform.test:8443 succeeds.": "FAIL",
-      "Prerender to https://www.web-platform.test:8443 fails.": "FAIL",
-      "Prerender to https://www1.web-platform.test:8443 succeeds.": "FAIL",
-      "Prerender to https://www2.web-platform.test:8443 fails.": "FAIL",
-      "Prerender to https://xn--lve-6lad.web-platform.test:8443 fails.": "FAIL",
-      "Prerender to https://xn--n8j6ds53lwwkrqhv28a.web-platform.test:8443 fails.": "FAIL"
-    }
+    "total": 6
   },
   "connection-allowlist/tentative/subresource-blocking.sub.window.js": {
-    "total": 11,
-    "failures": {
-      "<embed src=\"cross-origin\"> to blocked origin must be blocked.": "FAIL",
-      "<img srcset=\"cross-origin\"> to blocked origin must be blocked.": "FAIL",
-      "<object data=\"cross-origin\"> to blocked origin must be blocked.": "FAIL",
-      "<video poster=\"cross-origin\"> to blocked origin must be blocked.": "FAIL",
-      "Button with cross-origin formaction to blocked origin must be blocked.": "FAIL",
-      "CSS @import url() to blocked origin must be blocked.": "FAIL",
-      "CSS background-image: url() to blocked origin must be blocked.": "FAIL",
-      "Form with cross-origin action to blocked origin must be blocked.": "FAIL",
-      "Multi-value rel=\"alternate prefetch\" to blocked origin must be blocked.": "FAIL",
-      "Multi-value rel=\"prefetch stylesheet\" to blocked origin must be blocked.": "FAIL",
-      "Same-origin prefetch control test succeeds (verifies test infrastructure).": "FAIL"
-    }
+    "total": 11
   },
   "connection-allowlist/tentative/web_auth_remote_validation.https.sub.window.js": {
     "total": 2,
@@ -650,34 +310,16 @@
     }
   },
   "connection-allowlist/tentative/websocket-dedicated-worker.sub.window.js": {
-    "total": 2,
-    "failures": {
-      "Cross-origin WebSocket from a dedicated worker (data: URL) should be blocked by inherited policy.": "FAIL"
-    }
+    "total": 2
   },
   "connection-allowlist/tentative/websocket-service-worker.sub.https.window.js": {
-    "total": 2,
-    "failures": {
-      "websocket-service-worker 1": "FAIL"
-    }
+    "total": 2
   },
   "connection-allowlist/tentative/websocket-shared-worker.https.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Cross-origin same-site WebSocket (www) from a shared worker is blocked.": "FAIL",
-      "Cross-origin same-site WebSocket (www1) from a shared worker is blocked.": "FAIL",
-      "Cross-site WebSocket (www subdomain) from a shared worker is blocked.": "FAIL",
-      "Cross-site WebSocket from a shared worker is blocked.": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/websocket.sub.window.js": {
-    "total": 5,
-    "failures": {
-      "Cross-origin same-site WebSocket (www) is blocked.": "FAIL",
-      "Cross-origin same-site WebSocket (www1) is blocked.": "FAIL",
-      "Cross-site WebSocket (www subdomain) is blocked.": "FAIL",
-      "Cross-site WebSocket is blocked.": "FAIL"
-    }
+    "total": 5
   },
   "connection-allowlist/tentative/webtransport-dedicated-worker.https.sub.window.js": {
     "total": 5,

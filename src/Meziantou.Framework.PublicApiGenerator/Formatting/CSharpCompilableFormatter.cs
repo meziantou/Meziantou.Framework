@@ -14,10 +14,13 @@ namespace Meziantou.Framework.PublicApiGenerator;
 internal sealed class CSharpCompilableFormatter
 {
     private readonly PublicApiFormattingOptions _options;
+    private readonly bool _textOnly;
 
-    public CSharpCompilableFormatter(PublicApiFormattingOptions options)
+    // textOnly creates text-only writers (see DeclarationWriter), for the callers that write to a text-only writer
+    public CSharpCompilableFormatter(PublicApiFormattingOptions options, bool textOnly = false)
     {
         _options = options;
+        _textOnly = textOnly;
     }
 
     public void WriteSymbol(DeclarationWriter writer, PublicApiSymbol symbol)
@@ -66,7 +69,7 @@ internal sealed class CSharpCompilableFormatter
     // except the ones that depend on the target framework, which is written in the header of the files.
     public string FormatAssemblyAttributes(PublicApiAssembly assembly, bool includeAllAttributes)
     {
-        var writer = new DeclarationWriter(_options.NewLine);
+        var writer = new DeclarationWriter(_options.NewLine, textOnly: true);
         var attributes = includeAllAttributes
             ? GetAttributes(assembly.Attributes).Where(static attribute => !CSharpSyntaxFacts.ExcludedAssemblyAttributes.Contains(attribute.AttributeType.FullName))
             : assembly.Attributes.Where(static attribute => string.Equals(attribute.AttributeType.FullName, CSharpSyntaxFacts.RequiresPreviewFeaturesAttributeFullName, StringComparison.Ordinal));
@@ -1233,7 +1236,7 @@ internal sealed class CSharpCompilableFormatter
         var result = ImmutableArray.CreateBuilder<ParameterText>(parameters.Length);
         foreach (var parameter in parameters)
         {
-            var writer = new DeclarationWriter(_options.NewLine);
+            var writer = new DeclarationWriter(_options.NewLine, _textOnly);
             if (parameter.IsOptional && !usesDefaultValueSyntax[parameter.Ordinal])
             {
                 WriteOptionalParameterAttributes(writer, parameter);

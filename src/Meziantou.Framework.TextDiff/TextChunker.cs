@@ -60,7 +60,10 @@ public class TextChunker
 
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
-            var lines = new List<string>();
+            // Every line feed ends a line, so counting them sizes the array exactly unless the text uses another
+            // terminator. The chunks are copied to an array anyway, so this saves growing a list and copying it.
+            var lines = new string[value.Count('\n') + 1];
+            var count = 0;
             var start = 0;
 
             while (start < value.Length)
@@ -78,13 +81,27 @@ public class TextChunker
                     end++;
                 }
 
-                lines.Add(value[start..end].ToString());
+                Add(ref lines, ref count, value[start..end].ToString());
                 start = end;
             }
 
-            lines.Add(value[start..].ToString());
+            Add(ref lines, ref count, value[start..].ToString());
+            if (count < lines.Length)
+            {
+                Array.Resize(ref lines, count);
+            }
 
             return lines;
+        }
+
+        private static void Add(ref string[] lines, ref int count, string line)
+        {
+            if (count == lines.Length)
+            {
+                Array.Resize(ref lines, lines.Length * 2);
+            }
+
+            lines[count++] = line;
         }
     }
 
@@ -94,7 +111,7 @@ public class TextChunker
 
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
-            var words = new List<string>();
+            var words = new ChunkArrayBuilder();
             var start = 0;
 
             while (start < value.Length)
@@ -131,7 +148,7 @@ public class TextChunker
                 words.Add(value[start..].ToString());
             }
 
-            return words;
+            return words.ToArrayAndClear();
         }
     }
 
@@ -153,11 +170,11 @@ public class TextChunker
 
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
-            var chars = new List<string>(value.Length);
+            var chars = new string[value.Length];
             for (var i = 0; i < value.Length; i++)
             {
                 var c = value[i];
-                chars.Add(c < AsciiCache.Length ? AsciiCache[c] : c.ToString());
+                chars[i] = c < AsciiCache.Length ? AsciiCache[c] : c.ToString();
             }
 
             return chars;
@@ -168,16 +185,70 @@ public class TextChunker
     {
         public override IEnumerable<string> Chunk(ReadOnlySpan<char> value)
         {
-            var graphemes = new List<string>();
+            // A text has at most one grapheme per char, and exactly one in most texts
+            var graphemes = new string[value.Length];
+            var count = 0;
             while (!value.IsEmpty)
             {
                 var length = StringInfo.GetNextTextElementLength(value);
                 var c = value[0];
-                graphemes.Add(length is 1 && c < CharacterChunker.AsciiCache.Length ? CharacterChunker.AsciiCache[c] : value[..length].ToString());
+                graphemes[count++] = length is 1 && c < CharacterChunker.AsciiCache.Length ? CharacterChunker.AsciiCache[c] : value[..length].ToString();
                 value = value[length..];
             }
 
+            if (count < graphemes.Length)
+            {
+                Array.Resize(ref graphemes, count);
+            }
+
             return graphemes;
+        }
+    }
+
+    /// <summary>Collects chunks in a pooled buffer, so that only the returned array is allocated.</summary>
+    private struct ChunkArrayBuilder
+    {
+        private string[]? _items;
+        private int _count;
+
+        public void Add(string item)
+        {
+            if (_items is null || _count == _items.Length)
+            {
+                Grow();
+            }
+
+            _items![_count++] = item;
+        }
+
+        public string[] ToArrayAndClear()
+        {
+            if (_items is null)
+                return [];
+
+            var result = _items.AsSpan(0, _count).ToArray();
+            ReturnItems();
+            return result;
+        }
+
+        private void Grow()
+        {
+            var items = ArrayPool<string>.Shared.Rent(_items is null ? 256 : _items.Length * 2);
+            if (_items is not null)
+            {
+                _items.AsSpan(0, _count).CopyTo(items);
+                ReturnItems();
+            }
+
+            _items = items;
+        }
+
+        private void ReturnItems()
+        {
+            // Clear the references so the pool does not keep the chunks alive
+            _items.AsSpan(0, _count).Clear();
+            ArrayPool<string>.Shared.Return(_items!);
+            _items = null;
         }
     }
 }

@@ -842,7 +842,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (expected.IsEmpty)
         {
             // Strict mode: a tagged value flows to a declaration that could be tagged
-            if (!reportUntaggedTarget || target is null || !CanDeclareTag(target, resolver) || !resolver.IsStrictModeEnabled(reportTree))
+            if (!reportUntaggedTarget || target is null || !resolver.IsStrictModeEnabled(reportTree) || !CanDeclareTag(target, resolver))
                 return;
 
             var taggedSource = resolver.GetTag(value);
@@ -928,7 +928,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         {
             // Property getters are reported on the property, see AnalyzePropertyReturnedValues. An override or an implementation, such as ToString,
             // gets its tags from the base member, and the callers of the base member would not see a tag added to the override.
-            if (method.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation && !method.ReturnsVoid && !TagResolver.GetOverriddenOrImplementedSymbols(method).Any())
+            if (method.MethodKind is MethodKind.Ordinary or MethodKind.ExplicitInterfaceImplementation && !method.ReturnsVoid && TagResolver.GetOverriddenOrImplementedSymbols(method).Length is 0)
             {
                 ReportMissingReturnTag(context.ReportDiagnostic, resolver, method, ValueTagTargetKind.ReturnValue, block);
             }
@@ -945,22 +945,26 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
     private static void AnalyzePropertyReturnedValues(SymbolStartAnalysisContext context, TagResolver resolver)
     {
-        // The diagnostic is reported on the name of the property, which is outside of the getter, so it is reported when the containing type ends
-        var diagnostics = new ConcurrentQueue<Diagnostic>();
+        // The diagnostic is reported on the name of the property, which is outside of the getter, so it is reported when the containing type ends.
+        // Most types report nothing, so the queue is created by the first diagnostic.
+        ConcurrentQueue<Diagnostic>? diagnostics = null;
         context.RegisterOperationBlockAction(context =>
         {
-            if (context.OwningSymbol is not IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property } || TagResolver.GetOverriddenOrImplementedSymbols(property).Any())
+            if (context.OwningSymbol is not IMethodSymbol { MethodKind: MethodKind.PropertyGet, AssociatedSymbol: IPropertySymbol property } || TagResolver.GetOverriddenOrImplementedSymbols(property).Length > 0)
                 return;
 
             foreach (var block in context.OperationBlocks)
             {
-                ReportMissingReturnTag(diagnostics.Enqueue, resolver, property, ValueTagTargetKind.Symbol, block);
+                ReportMissingReturnTag(diagnostic => LazyInitializer.EnsureInitialized(ref diagnostics).Enqueue(diagnostic), resolver, property, ValueTagTargetKind.Symbol, block);
             }
         });
 
         context.RegisterSymbolEndAction(context =>
         {
-            foreach (var diagnostic in diagnostics)
+            if (Volatile.Read(ref diagnostics) is not { } reportedDiagnostics)
+                return;
+
+            foreach (var diagnostic in reportedDiagnostics)
             {
                 context.ReportDiagnostic(diagnostic);
             }
@@ -1397,12 +1401,26 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeComments(SemanticModelAnalysisContext context, TagResolver resolver)
     {
         var tree = context.SemanticModel.SyntaxTree;
+
+        // A value tag comment contains the keyword, so only the comments at the positions of the keyword are read, in the order of the file
+        var keywordPositions = resolver.GetValueTagKeywordPositions(tree);
+        if (keywordPositions.Length is 0)
+            return;
+
         var root = tree.GetRoot(context.CancellationToken);
-        foreach (var trivia in root.DescendantTrivia())
+        var previousCommentStart = -1;
+        foreach (var keywordPosition in keywordPositions)
         {
+            var trivia = root.FindTrivia(keywordPosition);
             var isLineComment = trivia.IsKind(SyntaxKind.SingleLineCommentTrivia);
             if (!isLineComment && !trivia.IsKind(SyntaxKind.MultiLineCommentTrivia))
                 continue;
+
+            // The keyword appears several times in the comment
+            if (trivia.SpanStart == previousCommentStart)
+                continue;
+
+            previousCommentStart = trivia.SpanStart;
 
             var text = trivia.ToString();
             var kind = ValueTagComment.Parse(text, out var tags);

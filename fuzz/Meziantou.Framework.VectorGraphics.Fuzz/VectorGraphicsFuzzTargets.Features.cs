@@ -34,7 +34,7 @@ public static partial class VectorGraphicsFuzzTargets
         }
 
         var svg = SvgSceneRenderer.Render(scene, options);
-        FuzzAssert.Equal(svg, SvgSceneRenderer.Render(scene, options), "Rendering the scene twice gives different outputs");
+        FuzzAssert.Equal(svg, RenderToWriter(scene, options), "Rendering the scene to a writer gives another output than rendering it to a string");
 
         var document = new XmlDocument { XmlResolver = null };
         try

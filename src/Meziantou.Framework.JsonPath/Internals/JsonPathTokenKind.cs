@@ -44,4 +44,7 @@ internal enum JsonPathTokenKind
 
     // Identifiers (member name shorthand or function name)
     Identifier,
+
+    // An invalid token. The lexer reports why, and returns it again for every token that follows.
+    Error,
 }

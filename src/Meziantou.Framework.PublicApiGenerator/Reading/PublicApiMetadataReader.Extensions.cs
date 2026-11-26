@@ -186,7 +186,7 @@ internal sealed partial class PublicApiMetadataReader
 
     private static string GetTypeText(PublicApiTypeReference type)
     {
-        var writer = new DeclarationWriter("\n");
+        var writer = new DeclarationWriter("\n", textOnly: true);
         CSharpCompilableFormatter.WriteTypeReference(writer, type, includeNullableAnnotations: false);
         return writer.GetText();
     }

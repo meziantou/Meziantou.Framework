@@ -7,13 +7,13 @@ public partial class QuerySyntax
 {
     private sealed class Parser
     {
-        private readonly QueryToken[] _tokens;
+        private readonly List<QueryToken> _tokens;
         private readonly List<QueryDiagnostic> _diagnostics = [];
         private int _tokenIndex;
 
-        public Parser(IEnumerable<QueryToken> tokens)
+        public Parser(List<QueryToken> tokens)
         {
-            _tokens = tokens.ToArray();
+            _tokens = tokens;
         }
 
         private QueryToken Current => _tokens[_tokenIndex];
@@ -22,7 +22,7 @@ public partial class QuerySyntax
         {
             get
             {
-                return _tokenIndex < _tokens.Length - 1 ? _tokens[_tokenIndex + 1] : _tokens[^1];
+                return _tokenIndex < _tokens.Count - 1 ? _tokens[_tokenIndex + 1] : _tokens[^1];
             }
         }
 
@@ -86,50 +86,55 @@ public partial class QuerySyntax
                 goto Again;
             }
 
-            if (tokenDiagnostics.Count > 0 || _diagnostics.Count > 0)
+            if (tokenDiagnostics is not null || _diagnostics.Count > 0)
             {
                 // OrderBy is stable, so problems at the same position keep the order they were found in
-                Diagnostics = [.. tokenDiagnostics.Concat(_diagnostics).OrderBy(diagnostic => diagnostic.Span.Start)];
+                Diagnostics = [.. (tokenDiagnostics ?? []).Concat(_diagnostics).OrderBy(diagnostic => diagnostic.Span.Start)];
             }
 
             return result;
         }
 
-        /// <summary>Reports the unbalanced parentheses and the quoted texts without a closing quote.</summary>
-        private List<QueryDiagnostic> GetTokenDiagnostics()
+        /// <summary>Reports the unbalanced parentheses and the quoted texts without a closing quote, or returns <see langword="null"/> when there is none.</summary>
+        private List<QueryDiagnostic>? GetTokenDiagnostics()
         {
-            var diagnostics = new List<QueryDiagnostic>();
-            var openParentheses = new Stack<int>();
-            for (var i = 0; i < _tokens.Length; i++)
+            // Most queries have no problem and no parenthesis, so the collections are only created when needed
+            List<QueryDiagnostic>? diagnostics = null;
+            Stack<int>? openParentheses = null;
+            for (var i = 0; i < _tokens.Count; i++)
             {
                 var token = _tokens[i];
                 switch (token.Kind)
                 {
                     case QuerySyntaxKind.OpenParenthesisToken:
+                        openParentheses ??= new Stack<int>();
                         openParentheses.Push(i);
                         break;
 
                     case QuerySyntaxKind.CloseParenthesisToken:
-                        if (!openParentheses.TryPop(out var openIndex))
+                        if (openParentheses is null || !openParentheses.TryPop(out var openIndex))
                         {
-                            diagnostics.Add(QueryDiagnostic.UnmatchedCloseParenthesis(token.Span));
+                            (diagnostics ??= []).Add(QueryDiagnostic.UnmatchedCloseParenthesis(token.Span));
                         }
                         else if (openIndex == i - 1)
                         {
-                            diagnostics.Add(QueryDiagnostic.EmptyParentheses(TextSpan.FromBounds(_tokens[openIndex].Span.Start, token.Span.End)));
+                            (diagnostics ??= []).Add(QueryDiagnostic.EmptyParentheses(TextSpan.FromBounds(_tokens[openIndex].Span.Start, token.Span.End)));
                         }
 
                         break;
 
                     case QuerySyntaxKind.QuotedTextToken when token.IsUnterminated:
-                        diagnostics.Add(QueryDiagnostic.UnterminatedQuotedText(token.Span));
+                        (diagnostics ??= []).Add(QueryDiagnostic.UnterminatedQuotedText(token.Span));
                         break;
                 }
             }
 
-            foreach (var openIndex in openParentheses)
+            if (openParentheses is not null)
             {
-                diagnostics.Add(QueryDiagnostic.MissingCloseParenthesis(_tokens[openIndex].Span));
+                foreach (var openIndex in openParentheses)
+                {
+                    (diagnostics ??= []).Add(QueryDiagnostic.MissingCloseParenthesis(_tokens[openIndex].Span));
+                }
             }
 
             return diagnostics;
@@ -142,7 +147,7 @@ public partial class QuerySyntax
         private void MarkUnmatchedCloseParenthesesAsText()
         {
             var depth = 0;
-            for (var i = 0; i < _tokens.Length; i++)
+            for (var i = 0; i < _tokens.Count; i++)
             {
                 switch (_tokens[i].Kind)
                 {
@@ -328,17 +333,21 @@ public partial class QuerySyntax
 
             var start = Current.Span.Start;
             var end = start;
+            var tokenCount = 0;
 
             while (Current.Span.Start == end && CanFollowOperator(Current.Kind))
             {
                 MarkCurrentAsText();
                 end = Current.Span.End;
                 Next();
+                tokenCount++;
             }
 
             var queryText = Current.QueryText;
             var span = TextSpan.FromBounds(start, end);
-            var value = queryText.Substring(span.Start, span.Length);
+
+            // A value made of a single text token is the value of that token, so it does not need a new string
+            var value = (tokenCount is 1 ? _tokens[_tokenIndex - 1].Value : null) ?? queryText.Substring(span.Start, span.Length);
             return new QueryToken(QuerySyntaxKind.TextQuery, queryText, span, value);
         }
 

@@ -32,10 +32,22 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
     private readonly Dictionary<string, TypeDefinitionHandle> _typeDefinitionsByFullName = new(StringComparer.Ordinal);
     private Dictionary<string, PrimitiveTypeCode>? _enumUnderlyingTypes;
 
+    // The full names of the TypeDef and TypeRef rows, indexed by row number. Attributes are matched by the full name of their type,
+    // so the same names are requested for every symbol.
+    private readonly string?[] _typeDefinitionFullNames;
+    private readonly string?[] _typeReferenceFullNames;
+
+    // The NullableContextAttribute value that applies to the members of each TypeDef row, or -1 when it is not computed yet
+    private readonly short[] _typeNullableContextFlags;
+
     private PublicApiMetadataReader(PEReader peReader, PublicApiReadOptions options, string? assemblyDirectory)
     {
         _peReader = peReader;
         _metadataReader = peReader.GetMetadataReader();
+        _typeDefinitionFullNames = new string?[_metadataReader.TypeDefinitions.Count + 1];
+        _typeReferenceFullNames = new string?[_metadataReader.TypeReferences.Count + 1];
+        _typeNullableContextFlags = new short[_metadataReader.TypeDefinitions.Count + 1];
+        _typeNullableContextFlags.AsSpan().Fill(-1);
         _options = options;
         _includeInternalSymbols = options.IncludeInternalSymbols;
         _assemblyDirectory = assemblyDirectory;
@@ -226,6 +238,15 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
 
     private string GetTypeDefinitionFullName(TypeDefinitionHandle handle)
     {
+        var rowNumber = MetadataTokens.GetRowNumber(handle);
+        if ((uint)rowNumber < (uint)_typeDefinitionFullNames.Length)
+            return _typeDefinitionFullNames[rowNumber] ??= ComputeTypeDefinitionFullName(handle);
+
+        return ComputeTypeDefinitionFullName(handle);
+    }
+
+    private string ComputeTypeDefinitionFullName(TypeDefinitionHandle handle)
+    {
         var typeDefinition = _metadataReader.GetTypeDefinition(handle);
         var name = _metadataReader.GetString(typeDefinition.Name);
         var declaringTypeHandle = typeDefinition.GetDeclaringType();
@@ -274,19 +295,31 @@ internal sealed partial class PublicApiMetadataReader : IDisposable
                 return GetTypeDefinitionFullName((TypeDefinitionHandle)handle);
 
             case HandleKind.TypeReference:
-                {
-                    var typeReference = _metadataReader.GetTypeReference((TypeReferenceHandle)handle);
-                    var name = _metadataReader.GetString(typeReference.Name);
-                    if (typeReference.ResolutionScope.Kind == HandleKind.TypeReference)
-                        return GetTypeFullName(typeReference.ResolutionScope) + "+" + name;
-
-                    var namespaceName = typeReference.Namespace.IsNil ? string.Empty : _metadataReader.GetString(typeReference.Namespace);
-                    return namespaceName.Length == 0 ? name : namespaceName + "." + name;
-                }
+                return GetTypeReferenceFullName((TypeReferenceHandle)handle);
 
             default:
                 return string.Empty;
         }
+    }
+
+    private string GetTypeReferenceFullName(TypeReferenceHandle handle)
+    {
+        var rowNumber = MetadataTokens.GetRowNumber(handle);
+        if ((uint)rowNumber < (uint)_typeReferenceFullNames.Length)
+            return _typeReferenceFullNames[rowNumber] ??= ComputeTypeReferenceFullName(handle);
+
+        return ComputeTypeReferenceFullName(handle);
+    }
+
+    private string ComputeTypeReferenceFullName(TypeReferenceHandle handle)
+    {
+        var typeReference = _metadataReader.GetTypeReference(handle);
+        var name = _metadataReader.GetString(typeReference.Name);
+        if (typeReference.ResolutionScope.Kind == HandleKind.TypeReference)
+            return GetTypeFullName(typeReference.ResolutionScope) + "+" + name;
+
+        var namespaceName = typeReference.Namespace.IsNil ? string.Empty : _metadataReader.GetString(typeReference.Namespace);
+        return namespaceName.Length == 0 ? name : namespaceName + "." + name;
     }
 
     private string GetAttributeTypeFullName(CustomAttribute attribute)

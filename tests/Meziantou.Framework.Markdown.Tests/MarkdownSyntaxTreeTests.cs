@@ -2085,6 +2085,25 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted)));
     }
 
+    [Theory]
+    [InlineData("[^]:|\n+-\n\t\tI) x", "[^]:|\n+-\n\t\tI) x")]
+    [InlineData("[^a]: *b*\nc\n", "[^a]: *b*\n    c\n")]
+    public void FormatterKeepsTheContentOfTheFootnotesThatAreNotReferredTo(string text, string expected)
+    {
+        // The HTML does not show these footnotes: their content is compared too, so a table of one does not become a paragraph
+        var options = new MarkdownParseOptions
+        {
+            Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension),
+            PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false, UseHeaderForColumnCount = true },
+        };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(formatted, MarkdownFormatter.FormatText(MarkdownSyntaxTree.ParseText(formatted, options), options: null));
+    }
+
     [Fact]
     public void FormatterParsesTheFirstBlockOfTheItemsOfNestedLists()
     {

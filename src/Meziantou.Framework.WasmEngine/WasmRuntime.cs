@@ -172,7 +172,7 @@ public sealed class WasmRuntime : IDisposable
 
     /// <summary>Converts the text format of a module to its binary format (https://webassembly.github.io/spec/core/text/index.html).</summary>
     /// <param name="text">The text of the module.</param>
-    /// <returns>The binary of the module. It is not validated.</returns>
+    /// <returns>The binary of the module. It is not validated: a module in the binary form, <c>(module binary "...")</c>, gives its bytes as they are.</returns>
     /// <exception cref="FormatException">The text is not valid.</exception>
     public static byte[] WatToWasm(string text)
     {

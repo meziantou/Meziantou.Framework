@@ -28,6 +28,13 @@ internal static class BenchmarkTexts
         "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22 " +
         "\U0001F468\u200D\U0001F469\u200D\U0001F467 \U0001F44D\U0001F3FD \U0001F1EB\U0001F1F7 caf\u00E9 na\u0308ive stra\u00DFe \uFB01nal.\n";
 
+    // Arabic prose, written from right to left: Arabic letters, European and Arabic-Indic digits, punctuation, brackets
+    // and an address in Latin letters
+    private const string ArabicParagraph =
+        "\u0627\u0644\u0644\u063A\u0629 \u0627\u0644\u0639\u0631\u0628\u064A\u0629 \u0645\u0646 \u0623\u0643\u062B\u0631 \u0627\u0644\u0644\u063A\u0627\u062A \u0627\u0646\u062A\u0634\u0627\u0631\u0627\u064B \u0641\u064A \u0627\u0644\u0639\u0627\u0644\u0645\u060C \u0648\u064A\u062A\u062D\u062F\u062B \u0628\u0647\u0627 \u0623\u0643\u062B\u0631 \u0645\u0646 400 \u0645\u0644\u064A\u0648\u0646 \u0634\u062E\u0635. " +
+        "\u0635\u062F\u0631 \u0627\u0644\u0625\u0635\u062F\u0627\u0631 3.14 \u0645\u0646 \u0627\u0644\u0628\u0631\u0646\u0627\u0645\u062C \u0641\u064A \u0661\u0667 \u0645\u0627\u064A\u0648 \u0662\u0660\u0662\u0664 \u0645\u0639 1,024 \u0625\u0635\u0644\u0627\u062D\u0627\u064B (\u0627\u0646\u0638\u0631 \u0627\u0644\u0645\u0634\u0643\u0644\u0629 \u0631\u0642\u0645 42) \u0648\u062A\u062D\u0633\u064A\u0646 \u0641\u064A \u0627\u0644\u0623\u062F\u0627\u0621 \u0628\u0646\u0633\u0628\u0629 12.5%! " +
+        "\u0642\u0627\u0644 \u0627\u0644\u0645\u062F\u064A\u0631: \u00AB\u0647\u0630\u0627 \u0625\u0646\u062C\u0627\u0632 \u0631\u0627\u0626\u0639\u00BB\u060C \u062B\u0645 \u062F\u0641\u0639 9.99 \u062F\u0648\u0644\u0627\u0631 \u0645\u0642\u0627\u0628\u0644 \u0627\u0644\u062F\u0639\u0645 \u0639\u0628\u0631 \u0627\u0644\u0628\u0631\u064A\u062F \u0627\u0644\u0625\u0644\u0643\u062A\u0631\u0648\u0646\u064A \u0639\u0644\u0649 www.example.com/help.\n";
+
     // Thai prose, written without spaces between words and with a space between phrases: the line breaks need a dictionary
     private const string ThaiParagraph =
         "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u0E40\u0E1B\u0E47\u0E19\u0E20\u0E32\u0E29\u0E32\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23\u0E02\u0E2D\u0E07\u0E1B\u0E23\u0E30\u0E40\u0E17\u0E28\u0E44\u0E17\u0E22 " +
@@ -45,6 +52,8 @@ internal static class BenchmarkTexts
 
     public static string Mixed { get; } = Repeat(MixedParagraph);
 
+    public static string Arabic { get; } = Repeat(ArabicParagraph);
+
     public static string Thai { get; } = Repeat(ThaiParagraph);
 
     public static string Get(string name) => name switch
@@ -52,6 +61,7 @@ internal static class BenchmarkTexts
         "English" => English,
         "French" => French,
         "Mixed" => Mixed,
+        "Arabic" => Arabic,
         "Thai" => Thai,
         _ => throw new ArgumentOutOfRangeException(nameof(name)),
     };

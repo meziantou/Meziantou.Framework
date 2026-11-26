@@ -529,6 +529,7 @@ public sealed class CssomTests
     [Theory]
     [InlineData("z-index: 123450000000000000000000001")] // A large integer is not written with an exponent: it would not be an <integer>
     [InlineData("link-parameters: param(--a: ++1 -+1 .+1 +-.5)")] // A delimiter followed by a signed number written without its sign
+    [InlineData("link-parameters: param(--a: a.2 1px+5 1+2 #+3)")] // A name or a number followed by a number written with a leading digit
     public void Serialization_IsParsedAsTheSameValue(string style)
     {
         var element = CreateElement(style);

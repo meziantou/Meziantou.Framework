@@ -1,3 +1,6 @@
+using System.Buffers;
+using Microsoft.CodeAnalysis.Text;
+
 namespace Meziantou.Framework.TaggedValues.Analyzer;
 
 /// <summary>
@@ -11,6 +14,56 @@ namespace Meziantou.Framework.TaggedValues.Analyzer;
 internal static class ValueTagComment
 {
     private const string Keyword = "ValueTag";
+    private const int SearchChunkLength = 4096;
+
+    /// <summary>
+    /// Returns the positions of the <c>ValueTag</c> keyword in the text, in ascending order.
+    /// </summary>
+    /// <remarks>
+    /// A comment that does not contain the keyword is not a value tag comment (see <see cref="Parse"/>), so searching the text skips most files
+    /// and declarations without walking their syntax. The text is copied in chunks rather than as a whole string, as a large file is not a single string.
+    /// </remarks>
+    public static int[] FindKeyword(SourceText text)
+    {
+        if (text.Length < Keyword.Length)
+            return [];
+
+        List<int>? result = null;
+        var buffer = ArrayPool<char>.Shared.Rent(Math.Min(text.Length, SearchChunkLength + Keyword.Length - 1));
+        try
+        {
+            var position = 0;
+            while (true)
+            {
+                // The chunks overlap by Keyword.Length - 1 characters, so a keyword that spans two chunks is found in the first one,
+                // and a keyword found in a chunk starts before the next chunk
+                var count = Math.Min(SearchChunkLength + Keyword.Length - 1, text.Length - position);
+                text.CopyTo(position, buffer, 0, count);
+                var chunk = buffer.AsSpan(0, count);
+                var offset = 0;
+                while (true)
+                {
+                    var index = chunk.Slice(offset).IndexOf(Keyword.AsSpan());
+                    if (index < 0)
+                        break;
+
+                    offset += index;
+                    result ??= [];
+                    result.Add(position + offset);
+                    offset += Keyword.Length;
+                }
+
+                if (position + count >= text.Length)
+                    return result?.ToArray() ?? [];
+
+                position += SearchChunkLength;
+            }
+        }
+        finally
+        {
+            ArrayPool<char>.Shared.Return(buffer);
+        }
+    }
 
     public static ValueTagCommentKind Parse(string commentText, out TagInfo tagInfo)
     {

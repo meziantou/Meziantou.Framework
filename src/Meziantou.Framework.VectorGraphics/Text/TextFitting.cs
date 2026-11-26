@@ -112,6 +112,10 @@ public static class TextFitting
             if (!(maxWidth > 0) || !double.IsFinite(maxWidth))
                 return true;
 
+            // The metrics of Helvetica measure the line without a string of it
+            if (measurer is AfmTextMeasurer afm)
+                return afm.Measure(TrimLineSpan(text, lineStart, lineEnd), font).Width <= maxWidth;
+
             return measurer.Measure(TrimLine(text, lineStart, lineEnd), font).Width <= maxWidth;
         }
 
@@ -131,11 +135,9 @@ public static class TextFitting
         }
     }
 
-    private static string TrimLine(string text, int start, int end)
-    {
-        var span = text.AsSpan(start, end - start);
-        return span.TrimEnd(" \t\r\n\u000B\u000C\u0085\u2028\u2029").ToString();
-    }
+    private static string TrimLine(string text, int start, int end) => TrimLineSpan(text, start, end).ToString();
+
+    private static ReadOnlySpan<char> TrimLineSpan(string text, int start, int end) => text.AsSpan(start, end - start).TrimEnd(" \t\r\n\u000B\u000C\u0085\u2028\u2029");
 
     internal static List<int> GetGraphemeClusterEnds(string text)
     {

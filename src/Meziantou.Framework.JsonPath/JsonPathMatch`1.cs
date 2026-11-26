@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Json;
 /// <typeparam name="TValue">The node type used by the JSONPath navigator.</typeparam>
 public readonly struct JsonPathMatch<TValue>
 {
-    private readonly NormalizedPath _path;
+    private readonly PathNode? _path;
 
-    internal JsonPathMatch(TValue? value, NormalizedPath path)
+    internal JsonPathMatch(TValue? value, PathNode? path)
     {
         Value = value;
         _path = path;
@@ -23,8 +23,5 @@ public readonly struct JsonPathMatch<TValue>
     /// Gets the normalized path of the matched node (e.g. <c>$['store']['book'][0]</c>).
     /// </summary>
     /// <remarks>The path is rendered on first access and cached, so evaluations that never read it do not pay for it.</remarks>
-    public string Path => _path.Value;
-
-    /// <summary>Gets the unrendered path, so adapters can hand it on without forcing it to a string.</summary>
-    internal NormalizedPath RawPath => _path;
+    public string Path => PathNode.GetNormalizedPath(_path);
 }

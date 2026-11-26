@@ -552,14 +552,14 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
     /// <paramref name="destination"/> and consumes them, which is what calling <see cref="ReadCurrentCharacter"/> for
     /// each of them does.
     /// </summary>
-    /// <returns><see langword="false"/> if the current character is not in <paramref name="runCharacters"/>, or the input is not a string.</returns>
-    /// <remarks>The run characters are printable ASCII characters other than space, so <see cref="Skip()"/> would accept each of them and only update the position.</remarks>
+    /// <returns><see langword="false"/> if the current character is not in <paramref name="runCharacters"/>, or the input does not expose its buffered characters.</returns>
+    /// <remarks>
+    /// The run characters are printable ASCII characters other than space, so <see cref="Skip()"/> would accept each of them and only update the position.
+    /// A run that continues after the buffered characters is consumed by the next calls.
+    /// </remarks>
     private bool TryAppendCharacterRun(SearchValues<char> runCharacters, StringBuilder destination)
     {
-        if (_analyzer is not StringLookAheadBuffer buffer)
-            return false;
-
-        var remaining = buffer.Remaining;
+        var remaining = GetBufferedCharacters();
         var length = remaining.IndexOfAnyExcept(runCharacters);
         if (length < 0)
         {
@@ -575,17 +575,14 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         _index += length;
         _column += length;
         _nonBlankOnLine = true;
-        buffer.Skip(length);
+        _analyzer.Skip(length);
         return true;
     }
 
     /// <summary>Consumes the spaces that follow the current position, which is what calling <see cref="Skip()"/> for each of them does.</summary>
     private void SkipSpaceRun()
     {
-        if (_analyzer is not StringLookAheadBuffer buffer)
-            return;
-
-        var remaining = buffer.Remaining;
+        var remaining = GetBufferedCharacters();
         var length = remaining.IndexOfAnyExcept(' ');
         if (length < 0)
         {
@@ -599,7 +596,18 @@ public class Scanner<TBuffer> where TBuffer : ILookAheadBuffer
         _characterIndex += length;
         _index += length;
         _column += length;
-        buffer.Skip(length);
+        _analyzer.Skip(length);
+    }
+
+    /// <summary>Gets the characters of the input that follow the current position and are already in memory, or an empty span when the input does not expose them.</summary>
+    private ReadOnlySpan<char> GetBufferedCharacters()
+    {
+        return _analyzer switch
+        {
+            StringLookAheadBuffer buffer => buffer.Remaining,
+            StreamReaderLookAheadBuffer buffer => buffer.Remaining,
+            _ => default,
+        };
     }
 
     private void SkipLine()

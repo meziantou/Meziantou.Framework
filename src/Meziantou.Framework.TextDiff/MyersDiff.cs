@@ -1,67 +1,61 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
 internal static class MyersDiff
 {
-    private const int StackAllocationThreshold = 64; // The four buffers stay under 1 KB on the stack
+    private const int StackAllocationThreshold = 64; // The two buffers stay under 512 bytes on the stack
 
-    internal static DiffComputationResult Compute(string[] left, string[] right, IEqualityComparer<string> comparer, DiffBudget budget)
+    /// <summary>Diffs two regions of chunk codes, and writes whether each chunk is modified to
+    /// <paramref name="leftModified"/> and <paramref name="rightModified"/>, which have the same lengths.</summary>
+    internal static void Compute(ReadOnlySpan<int> left, ReadOnlySpan<int> right, DiffBudget budget, Span<bool> leftModified, Span<bool> rightModified)
     {
-        return Compute(left.AsSpan(), right.AsSpan(), comparer, budget);
+        leftModified.Clear();
+        rightModified.Clear();
+        FindModified(left, right, budget, leftModified, rightModified);
+        Optimize(leftModified, new CodeEquality(left));
+        Optimize(rightModified, new CodeEquality(right));
     }
 
-    internal static DiffComputationResult Compute(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer, DiffBudget budget)
+    /// <summary>
+    /// Marks the chunks that are not part of a longest common subsequence of the two regions, without sliding the
+    /// changes. <paramref name="leftModified"/> and <paramref name="rightModified"/> must be cleared.
+    /// </summary>
+    internal static void FindModified(ReadOnlySpan<int> left, ReadOnlySpan<int> right, DiffBudget budget, Span<bool> leftModified, Span<bool> rightModified)
     {
-        var h = new Dictionary<string, int>(left.Length + right.Length, comparer);
-        var leftCodesBuffer = left.Length <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[left.Length];
-        var rightCodesBuffer = right.Length <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[right.Length];
-        var leftCodes = leftCodesBuffer[..left.Length];
-        var rightCodes = rightCodesBuffer[..right.Length];
-
-        // No need to clear the code buffers: DiffCodes assigns every element.
-        DiffCodes(left, h, leftCodes);
-        DiffCodes(right, h, rightCodes);
-
-        var leftModified = new bool[left.Length];
-        var rightModified = new bool[right.Length];
-
         var max = left.Length + right.Length + 1;
         var vectorLength = (2 * max) + 2;
 
-        var downVectorBuffer = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[vectorLength];
-        var downVector = downVectorBuffer[..vectorLength];
-        downVector.Clear();
-
-        var upVectorBuffer = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : new int[vectorLength];
-        var upVector = upVectorBuffer[..vectorLength];
-        upVector.Clear();
-
-        LongCommonSubsequence(leftCodes, leftModified, 0, leftCodes.Length, rightCodes, rightModified, 0, rightCodes.Length, downVector, upVector, budget);
-
-        Optimize(leftCodes, leftModified);
-        Optimize(rightCodes, rightModified);
-        return new DiffComputationResult(leftModified, rightModified);
-    }
-
-    private static void DiffCodes(ReadOnlySpan<string> chunks, Dictionary<string, int> h, Span<int> codes)
-    {
-        var lastUsedCode = h.Count;
-
-        for (var i = 0; i < chunks.Length; i++)
+        // Large buffers come from the pool: for a few thousand chunks, they were arrays of the large object heap,
+        // whose allocations trigger full garbage collections.
+        int[]? downVectorArray = null;
+        int[]? upVectorArray = null;
+        try
         {
-            ref var value = ref CollectionsMarshal.GetValueRefOrAddDefault(h, chunks[i], out var exists);
-            if (!exists)
-            {
-                lastUsedCode++;
-                value = lastUsedCode;
-            }
+            var downVector = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : (downVectorArray = ArrayPool<int>.Shared.Rent(vectorLength));
+            downVector = downVector[..vectorLength];
+            downVector.Clear();
 
-            codes[i] = value;
+            var upVector = vectorLength <= StackAllocationThreshold ? stackalloc int[StackAllocationThreshold] : (upVectorArray = ArrayPool<int>.Shared.Rent(vectorLength));
+            upVector = upVector[..vectorLength];
+            upVector.Clear();
+
+            LongCommonSubsequence(left, leftModified, 0, left.Length, right, rightModified, 0, right.Length, downVector, upVector, budget);
+        }
+        finally
+        {
+            DiffAlgorithmHelpers.Return(downVectorArray);
+            DiffAlgorithmHelpers.Return(upVectorArray);
         }
     }
 
-    private static void Optimize(ReadOnlySpan<int> data, bool[] modified)
+    /// <summary>Slides each run of modified chunks of <paramref name="chunks"/> as far forward as it can go.</summary>
+    internal static void Optimize(ReadOnlySpan<string> chunks, IEqualityComparer<string> comparer, Span<bool> modified)
+        => Optimize(modified, new ChunkEquality(chunks, comparer));
+
+    private static void Optimize<TEquality>(Span<bool> modified, TEquality data)
+        where TEquality : IIndexEquality, allows ref struct
     {
         var startPos = 0;
         while (startPos < modified.Length)
@@ -85,7 +79,7 @@ internal static class MyersDiff
                     endPos++;
                 }
 
-                if (endPos >= modified.Length || data[startPos] != data[endPos])
+                if (endPos >= modified.Length || !data.AreEqual(startPos, endPos))
                     break;
 
                 modified[startPos] = false;
@@ -264,11 +258,11 @@ internal static class MyersDiff
 
     private static void LongCommonSubsequence(
         ReadOnlySpan<int> dataLeft,
-        bool[] leftModified,
+        Span<bool> leftModified,
         int lowerLeft,
         int upperLeft,
         ReadOnlySpan<int> dataRight,
-        bool[] rightModified,
+        Span<bool> rightModified,
         int lowerRight,
         int upperRight,
         Span<int> downVector,
@@ -293,8 +287,8 @@ internal static class MyersDiff
 
             if (lowerLeft == upperLeft || lowerRight == upperRight || !ShortestMiddleSnake(dataLeft, lowerLeft, upperLeft, dataRight, lowerRight, upperRight, downVector, upVector, budget, out var smsrd))
             {
-                leftModified.AsSpan(lowerLeft, upperLeft - lowerLeft).Fill(true);
-                rightModified.AsSpan(lowerRight, upperRight - lowerRight).Fill(true);
+                leftModified[lowerLeft..upperLeft].Fill(true);
+                rightModified[lowerRight..upperRight].Fill(true);
                 return;
             }
 
@@ -313,6 +307,27 @@ internal static class MyersDiff
                 upperRight = smsrd.Y;
             }
         }
+    }
+
+    private interface IIndexEquality
+    {
+        bool AreEqual(int x, int y);
+    }
+
+    private readonly ref struct CodeEquality(ReadOnlySpan<int> codes) : IIndexEquality
+    {
+        private readonly ReadOnlySpan<int> _codes = codes;
+
+        public bool AreEqual(int x, int y) => _codes[x] == _codes[y];
+    }
+
+    // The common prefix and suffix of the texts have no code, and a run can slide into the suffix
+    private readonly ref struct ChunkEquality(ReadOnlySpan<string> chunks, IEqualityComparer<string> comparer) : IIndexEquality
+    {
+        private readonly ReadOnlySpan<string> _chunks = chunks;
+        private readonly IEqualityComparer<string> _comparer = comparer;
+
+        public bool AreEqual(int x, int y) => _comparer.Equals(_chunks[x], _chunks[y]);
     }
 
     [StructLayout(LayoutKind.Auto)]

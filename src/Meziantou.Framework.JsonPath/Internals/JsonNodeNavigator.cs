@@ -17,9 +17,11 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
     /// <summary>
     /// The objects and arrays parsed out of a <see cref="JsonValue"/> that wraps a CLR object serialized as one.
     /// Parsing on every access would make walking such a value quadratic. This cache belongs to one evaluation so
-    /// changes to the wrapped value and to returned detached nodes cannot affect later evaluations.
+    /// changes to the wrapped value and to returned detached nodes cannot affect later evaluations. It is created on
+    /// first use: most documents wrap no container, and the table is finalizable, so creating one for every evaluation
+    /// would cost more than a short evaluation does.
     /// </summary>
-    private readonly ConditionalWeakTable<JsonValue, JsonNode> _parsedContainers = new();
+    private ConditionalWeakTable<JsonValue, JsonNode>? _parsedContainers;
 
     public static JsonNodeNavigator Instance => new();
 
@@ -91,8 +93,10 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
             yield break;
         }
 
-        foreach (var property in obj)
+        // Reading the members by index does not box an enumerator, unlike enumerating the object
+        for (var i = 0; i < obj.Count; i++)
         {
+            var property = obj.GetAt(i);
             yield return new JsonPathProperty<JsonNode>(property.Key, property.Value);
         }
     }
@@ -161,6 +165,16 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
         return false;
     }
 
+    internal override bool TryStringEquals(JsonNode? value, ReadOnlySpan<byte> utf8, out bool equals)
+    {
+        // A value parsed from JSON wraps an element, whose text can be compared without decoding it to a string
+        if (value is JsonValue jsonValue && jsonValue.TryGetValue<JsonElement>(out var element))
+            return JsonElementNavigator.TryRawStringEquals(element, utf8, out equals);
+
+        equals = false;
+        return false;
+    }
+
     public override bool TryGetBoolean(JsonNode? value, out bool result)
     {
         if (value is JsonValue jsonValue)
@@ -189,6 +203,7 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
     {
         if (value is JsonValue jsonValue && jsonValue.GetValueKind() is JsonValueKind.Object or JsonValueKind.Array)
         {
+            _parsedContainers ??= new();
             return _parsedContainers.GetValue(jsonValue, wrapped =>
             {
                 var reader = CreateReader(wrapped);

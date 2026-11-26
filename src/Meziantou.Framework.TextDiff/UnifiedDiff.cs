@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
 
@@ -40,26 +41,18 @@ public static class UnifiedDiff
 
         var result = TextDiff.ComputeDiff(oldText, newText, diffOptions, cancellationToken);
 
-        // One item per line, with the 1-based number of the line in each text
-        var lines = new List<(UnifiedDiffLine Line, int OldLine, int NewLine)>(result.Entries.Count);
-        var oldLine = 1;
-        var newLine = 1;
-        foreach (var entry in result.Entries)
-        {
-            lines.Add(entry.Operation switch
-            {
-                TextDiffOperation.Equal => (new UnifiedDiffLine(TextDiffOperation.Equal, entry.OldText!), oldLine++, newLine++),
-                TextDiffOperation.Delete => (new UnifiedDiffLine(TextDiffOperation.Delete, entry.OldText!), oldLine++, newLine),
-                _ => (new UnifiedDiffLine(TextDiffOperation.Insert, entry.NewText!), oldLine, newLine++),
-            });
-        }
-
+        var entries = CollectionsMarshal.AsSpan(result.MutableEntries);
         var hunks = new List<UnifiedDiffHunk>();
         var contextLines = options.ContextLines;
         var index = 0;
+
+        // The 1-based numbers, in each text, of the line of entries[lineIndex]
+        var lineIndex = 0;
+        var oldLine = 1;
+        var newLine = 1;
         while (true)
         {
-            var firstChange = FindChange(lines, index);
+            var firstChange = FindChange(entries, index);
             if (firstChange < 0)
                 break;
 
@@ -67,7 +60,7 @@ public static class UnifiedDiff
             var lastChange = firstChange;
             while (true)
             {
-                var nextChange = FindChange(lines, lastChange + 1);
+                var nextChange = FindChange(entries, lastChange + 1);
                 if (nextChange < 0 || nextChange - lastChange - 1 > 2L * contextLines)
                     break;
 
@@ -75,13 +68,24 @@ public static class UnifiedDiff
             }
 
             var start = (int)Math.Max(index, (long)firstChange - contextLines);
-            var end = (int)Math.Min(lines.Count, (long)lastChange + contextLines + 1);
+            var end = (int)Math.Min(entries.Length, (long)lastChange + contextLines + 1);
+            for (; lineIndex < start; lineIndex++)
+            {
+                AdvanceLineNumbers(entries[lineIndex].Operation, ref oldLine, ref newLine);
+            }
+
             var hunkLines = new UnifiedDiffLine[end - start];
             var oldCount = 0;
             var newCount = 0;
             for (var i = start; i < end; i++)
             {
-                var line = lines[i].Line;
+                var entry = entries[i];
+                var line = entry.Operation switch
+                {
+                    TextDiffOperation.Equal => new UnifiedDiffLine(TextDiffOperation.Equal, entry.OldText!),
+                    TextDiffOperation.Delete => new UnifiedDiffLine(TextDiffOperation.Delete, entry.OldText!),
+                    _ => new UnifiedDiffLine(TextDiffOperation.Insert, entry.NewText!),
+                };
                 hunkLines[i - start] = line;
                 if (line.Operation is not TextDiffOperation.Insert)
                 {
@@ -95,8 +99,8 @@ public static class UnifiedDiff
             }
 
             // An empty range gives the number of the line before it
-            var oldStart = oldCount is 0 ? lines[start].OldLine - 1 : lines[start].OldLine;
-            var newStart = newCount is 0 ? lines[start].NewLine - 1 : lines[start].NewLine;
+            var oldStart = oldCount is 0 ? oldLine - 1 : oldLine;
+            var newStart = newCount is 0 ? newLine - 1 : newLine;
             hunks.Add(new UnifiedDiffHunk(oldStart, oldCount, newStart, newCount, sectionHeading: null, hunkLines));
             index = end;
         }
@@ -122,9 +126,9 @@ public static class UnifiedDiff
         var lines = SplitLines(patch);
         var files = new List<UnifiedDiffFile>();
         var index = 0;
-        while (index < lines.Count)
+        while (index < lines.Length)
         {
-            if (!lines[index].StartsWith("--- ", StringComparison.Ordinal) || index + 1 >= lines.Count || !lines[index + 1].StartsWith("+++ ", StringComparison.Ordinal))
+            if (!lines[index].StartsWith("--- ", StringComparison.Ordinal) || index + 1 >= lines.Length || !lines[index + 1].StartsWith("+++ ", StringComparison.Ordinal))
             {
                 index++;
                 continue;
@@ -135,7 +139,7 @@ public static class UnifiedDiff
             index += 2;
 
             var hunks = new List<UnifiedDiffHunk>();
-            while (index < lines.Count && lines[index].StartsWith("@@ ", StringComparison.Ordinal))
+            while (index < lines.Length && lines[index].StartsWith("@@ ", StringComparison.Ordinal))
             {
                 hunks.Add(ParseHunk(lines, ref index));
                 if (IsExtraHunkLine(lines, index))
@@ -171,9 +175,9 @@ public static class UnifiedDiff
 
     // A line that reads as a line of the hunk just read, but that its header does not count. The header of the next file
     // ("--- " followed by "+++ ") and the "-- " signature separator of git format-patch are not.
-    private static bool IsExtraHunkLine(List<string> lines, int index)
+    private static bool IsExtraHunkLine(string[] lines, int index)
     {
-        if (index >= lines.Count)
+        if (index >= lines.Length)
             return false;
 
         var line = TrimLineEnd(lines[index].AsSpan());
@@ -186,7 +190,7 @@ public static class UnifiedDiff
         if (line[0] is not '-')
             return false;
 
-        if (line.StartsWith("--- ", StringComparison.Ordinal) && index + 1 < lines.Count && lines[index + 1].StartsWith("+++ ", StringComparison.Ordinal))
+        if (line.StartsWith("--- ", StringComparison.Ordinal) && index + 1 < lines.Length && lines[index + 1].StartsWith("+++ ", StringComparison.Ordinal))
             return false;
 
         return !line.SequenceEqual("-- ");
@@ -200,10 +204,10 @@ public static class UnifiedDiff
     };
 
     /// <summary>Splits a text after each <c>'\n'</c>; an empty text has no line.</summary>
-    internal static List<string> SplitLines(ReadOnlySpan<char> text)
+    internal static string[] SplitLines(ReadOnlySpan<char> text)
     {
-        var lines = new List<string>();
-        while (!text.IsEmpty)
+        var lines = new string[CountLines(text)];
+        for (var i = 0; i < lines.Length; i++)
         {
             var end = text.IndexOf('\n') + 1;
             if (end is 0)
@@ -211,22 +215,44 @@ public static class UnifiedDiff
                 end = text.Length;
             }
 
-            lines.Add(text[..end].ToString());
+            lines[i] = text[..end].ToString();
             text = text[end..];
         }
 
         return lines;
     }
 
-    private static int FindChange(List<(UnifiedDiffLine Line, int OldLine, int NewLine)> lines, int start)
+    /// <summary>Returns the number of lines of <paramref name="text"/>, each ending with a line feed except the last one.</summary>
+    internal static int CountLines(ReadOnlySpan<char> text) => text.Count('\n') + (text is [] or [.., '\n'] ? 0 : 1);
+
+    private static int FindChange(ReadOnlySpan<TextDiffEntry> entries, int start)
     {
-        for (var i = start; i < lines.Count; i++)
+        for (var i = start; i < entries.Length; i++)
         {
-            if (lines[i].Line.Operation is not TextDiffOperation.Equal)
+            if (entries[i].Operation is not TextDiffOperation.Equal)
                 return i;
         }
 
         return -1;
+    }
+
+    private static void AdvanceLineNumbers(TextDiffOperation operation, ref int oldLine, ref int newLine)
+    {
+        switch (operation)
+        {
+            case TextDiffOperation.Equal:
+                oldLine++;
+                newLine++;
+                break;
+
+            case TextDiffOperation.Delete:
+                oldLine++;
+                break;
+
+            default:
+                newLine++;
+                break;
+        }
     }
 
     private static string ParseFileName(string line)
@@ -243,7 +269,7 @@ public static class UnifiedDiff
 
     private static ReadOnlySpan<char> TrimLineEnd(ReadOnlySpan<char> line) => line.TrimEnd('\n').TrimEnd('\r');
 
-    private static UnifiedDiffHunk ParseHunk(List<string> lines, ref int index)
+    private static UnifiedDiffHunk ParseHunk(string[] lines, ref int index)
     {
         var headerLineNumber = index + 1;
         var header = TrimLineEnd(lines[index].AsSpan());
@@ -273,9 +299,9 @@ public static class UnifiedDiff
         var hunkLines = new List<UnifiedDiffLine>();
         var oldRemaining = oldCount;
         var newRemaining = newCount;
-        while (oldRemaining > 0 || newRemaining > 0 || (index < lines.Count && lines[index] is ['\\', ..]))
+        while (oldRemaining > 0 || newRemaining > 0 || (index < lines.Length && lines[index] is ['\\', ..]))
         {
-            if (index >= lines.Count)
+            if (index >= lines.Length)
                 throw new FormatException($"Line {headerLineNumber}: the hunk ends before its {oldCount} old and {newCount} new lines.");
 
             var line = lines[index];

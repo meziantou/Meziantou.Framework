@@ -14,8 +14,7 @@ internal sealed class UnaryRangeSyntax<T> : RangeSyntax<T>
 
     public override bool IsInRange(T value, IComparer<T>? comparer)
     {
-        comparer ??= Comparer<T>.Default;
-        var c = comparer.Compare(value, Operand);
+        var c = Compare(value, Operand, comparer);
         return Operator switch
         {
             KeyValueOperator.EqualTo => c == 0,

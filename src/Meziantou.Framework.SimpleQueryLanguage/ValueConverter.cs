@@ -7,6 +7,13 @@ internal static class ValueConverter
 {
     public static bool TryParseValue<TValue>(string value, [MaybeNullWhen(false)] out TValue result)
     {
+        // A string needs no parsing. This is what Convert.ChangeType returns at the end of this method, without looking for a TryParse method first.
+        if (typeof(TValue) == typeof(string))
+        {
+            result = (TValue)(object)value;
+            return true;
+        }
+
         // A boxed Nullable<T> is a boxed T, so parsing the underlying type and casting back to TValue
         // works for every type below. Without this, Nullable<T> falls all the way through to
         // Convert.ChangeType, which throws for a null-able target and silently yields "no match".
@@ -316,7 +323,8 @@ internal static class ValueConverter
         }
 
         // Try find TryParse(string, IFormatProvider, out TValue) method
-        var methodInfo = GetStaticMethodFromHierarchy(type, "TryParse", [typeof(string), typeof(IFormatProvider), type.MakeByRefType()], ValidateReturnType);
+        var (methodWithProvider, methodWithoutProvider) = TryParseMethods<TValue>.Get(type);
+        var methodInfo = methodWithProvider;
         if (methodInfo != null)
         {
             var parameters = new object?[] { value, CultureInfo.InvariantCulture, null };
@@ -332,7 +340,7 @@ internal static class ValueConverter
         }
 
         // Try find TryParse(string, out TValue) method
-        methodInfo = GetStaticMethodFromHierarchy(type, "TryParse", [typeof(string), type.MakeByRefType()], ValidateReturnType);
+        methodInfo = methodWithoutProvider;
         if (methodInfo != null)
         {
             var parameters = new object?[] { value, null };
@@ -358,11 +366,11 @@ internal static class ValueConverter
             result = default;
             return false;
         }
+    }
 
-        static bool ValidateReturnType(MethodInfo methodInfo)
-        {
-            return methodInfo.ReturnType.Equals(typeof(bool));
-        }
+    private static bool ValidateReturnType(MethodInfo methodInfo)
+    {
+        return methodInfo.ReturnType.Equals(typeof(bool));
     }
 
     private static MethodInfo? GetStaticMethodFromHierarchy(Type type, string name, Type[] parameterTypes, Func<MethodInfo, bool> validateReturnType)
@@ -378,4 +386,29 @@ internal static class ValueConverter
 
         return null;
     }
+
+    /// <summary>
+    /// The TryParse methods of the type <see cref="TryParseValue"/> parses <typeparamref name="TValue"/> as. Looking up a method by its
+    /// signature costs more than parsing most values, and the result is the same for every value, so it is looked up once per type.
+    /// </summary>
+    private static class TryParseMethods<TValue>
+    {
+        private static ResolvedMethods? s_methods;
+
+        public static ResolvedMethods Get(Type type)
+        {
+            // Not a static constructor: an exception from the lookup, such as an ambiguous match, must reach the caller as it is.
+            // Concurrent first calls may both look the methods up: they find the same ones.
+            if (s_methods is { } methods)
+                return methods;
+
+            var withProvider = GetStaticMethodFromHierarchy(type, "TryParse", [typeof(string), typeof(IFormatProvider), type.MakeByRefType()], ValidateReturnType);
+            var withoutProvider = withProvider is null ? GetStaticMethodFromHierarchy(type, "TryParse", [typeof(string), type.MakeByRefType()], ValidateReturnType) : null;
+            methods = new ResolvedMethods(withProvider, withoutProvider);
+            s_methods = methods;
+            return methods;
+        }
+    }
+
+    private sealed record ResolvedMethods(MethodInfo? WithProvider, MethodInfo? WithoutProvider);
 }

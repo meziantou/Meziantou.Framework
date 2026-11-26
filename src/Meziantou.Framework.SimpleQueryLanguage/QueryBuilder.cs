@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.SimpleQueryLanguage.Binding;
 using Meziantou.Framework.SimpleQueryLanguage.Ranges;
 using Meziantou.Framework.SimpleQueryLanguage.Syntax;
@@ -272,6 +273,38 @@ public sealed class QueryBuilder<T>
         var boundQuery = BoundQuery.Create(syntax);
 
         var context = new BuildContext(_freeTextFilter, _unhandledPropertyFilter);
+
+        // Evaluate with loops rather than nested delegates: a query can have thousands of disjunctions,
+        // and a chain of delegates that deep overflows the stack. The common shapes skip the loop they do not need.
+        if (boundQuery.Count is 1)
+        {
+            var disjunction = boundQuery[0];
+            var conjunctions = new Predicate<T>[disjunction.Count];
+            for (var i = 0; i < conjunctions.Length; i++)
+            {
+                conjunctions[i] = CreatePredicate(disjunction[i], context);
+            }
+
+            if (conjunctions is [var single])
+                return single;
+
+            return obj => MatchesAll(conjunctions, obj);
+        }
+
+        if (HasSingleTermDisjunctions(boundQuery))
+        {
+            var terms = new Predicate<T>[boundQuery.Count];
+            for (var i = 0; i < terms.Length; i++)
+            {
+                terms[i] = CreatePredicate(boundQuery[i][0], context);
+            }
+
+            return obj => MatchesAny(terms, obj);
+        }
+
+        // Distributing AND over OR repeats the same term in many disjunctions, so create its predicate once.
+        // Only a distribution repeats terms, and it puts at least two terms in each disjunction, so the shapes above have no repeated term.
+        var predicates = new Dictionary<BoundQuery, Predicate<T>>();
         var disjunctions = new Predicate<T>[boundQuery.Count][];
         for (var i = 0; i < boundQuery.Count; i++)
         {
@@ -279,12 +312,11 @@ public sealed class QueryBuilder<T>
             var conjunctions = new Predicate<T>[disjunction.Count];
             for (var j = 0; j < disjunction.Count; j++)
             {
-                // Distributing AND over OR repeats the same term in many disjunctions, so create its predicate once
                 var node = disjunction[j];
-                if (!context.Predicates.TryGetValue(node, out var predicate))
+                if (!predicates.TryGetValue(node, out var predicate))
                 {
                     predicate = CreatePredicate(node, context);
-                    context.Predicates.Add(node, predicate);
+                    predicates.Add(node, predicate);
                 }
 
                 conjunctions[j] = predicate;
@@ -293,12 +325,18 @@ public sealed class QueryBuilder<T>
             disjunctions[i] = conjunctions;
         }
 
-        if (disjunctions is [[var single]])
-            return single;
-
-        // Evaluate with loops rather than nested delegates: a query can have thousands of disjunctions,
-        // and a chain of delegates that deep overflows the stack.
         return obj => Evaluate(disjunctions, obj);
+
+        static bool HasSingleTermDisjunctions(IReadOnlyList<IReadOnlyList<BoundQuery>> disjunctions)
+        {
+            for (var i = 0; i < disjunctions.Count; i++)
+            {
+                if (disjunctions[i].Count is not 1)
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     private static bool Evaluate(Predicate<T>[][] disjunctions, T value)
@@ -310,17 +348,28 @@ public sealed class QueryBuilder<T>
         }
 
         return false;
+    }
 
-        static bool MatchesAll(Predicate<T>[] predicates, T value)
+    private static bool MatchesAll(Predicate<T>[] predicates, T value)
+    {
+        foreach (var predicate in predicates)
         {
-            foreach (var predicate in predicates)
-            {
-                if (!predicate(value))
-                    return false;
-            }
-
-            return true;
+            if (!predicate(value))
+                return false;
         }
+
+        return true;
+    }
+
+    private static bool MatchesAny(Predicate<T>[] predicates, T value)
+    {
+        foreach (var predicate in predicates)
+        {
+            if (predicate(value))
+                return true;
+        }
+
+        return false;
     }
 
     private Predicate<T> CreatePredicate(BoundQuery node, BuildContext context)
@@ -372,12 +421,12 @@ public sealed class QueryBuilder<T>
         return CreatePredicate(new BoundTextQuery(node.IsNegated, $"{node.Key}{node.Operator.ToQueryText()}{node.Value}"), context);
     }
 
-    /// <summary>The handlers as they were when the query was built, and the predicates created so far.</summary>
-    private sealed class BuildContext(Func<T, string, bool>? freeTextFilter, UnhandledPropertyDelegate<T>? unhandledPropertyFilter)
+    /// <summary>The handlers as they were when the query was built.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct BuildContext(Func<T, string, bool>? freeTextFilter, UnhandledPropertyDelegate<T>? unhandledPropertyFilter)
     {
         public Func<T, string, bool>? FreeTextFilter { get; } = freeTextFilter;
         public UnhandledPropertyDelegate<T>? UnhandledPropertyFilter { get; } = unhandledPropertyFilter;
-        public Dictionary<BoundQuery, Predicate<T>> Predicates { get; } = [];
     }
 
     private readonly record struct FilterKeyValue

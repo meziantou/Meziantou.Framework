@@ -25,8 +25,10 @@ public partial class QuerySyntax
             return SearchValues.Create(CollectionsMarshal.AsSpan(terminators));
         }
 
-        public static IEnumerable<QueryToken> Tokenize(string text)
+        /// <summary>Splits the query into tokens, without the whitespace between them, and ends with an end-of-file token.</summary>
+        public static List<QueryToken> Tokenize(string text)
         {
+            var tokens = new List<QueryToken>();
             var position = 0;
 
             while (position < text.Length)
@@ -35,71 +37,69 @@ public partial class QuerySyntax
                 switch (c)
                 {
                     case '(':
-                        yield return ReadSingleCharacterToken(QuerySyntaxKind.OpenParenthesisToken, ref position, text);
+                        tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.OpenParenthesisToken, ref position, text));
                         break;
                     case ')':
-                        yield return ReadSingleCharacterToken(QuerySyntaxKind.CloseParenthesisToken, ref position, text);
+                        tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.CloseParenthesisToken, ref position, text));
                         break;
                     case ':':
-                        yield return ReadSingleCharacterToken(QuerySyntaxKind.ColonToken, ref position, text);
+                        tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.ColonToken, ref position, text));
                         break;
                     case '=':
-                        yield return ReadSingleCharacterToken(QuerySyntaxKind.EqualOperatorToken, ref position, text);
+                        tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.EqualOperatorToken, ref position, text));
                         break;
                     case '<':
                         if (position + 1 < text.Length && text[position + 1] == '=')
                         {
-                            var span = new TextSpan(position, 2);
-                            var token = new QueryToken(QuerySyntaxKind.LessThanOrEqualOperatorToken, text, span, value: null);
-                            position += span.Length;
-                            yield return token;
+                            tokens.Add(ReadTwoCharacterToken(QuerySyntaxKind.LessThanOrEqualOperatorToken, ref position, text));
                         }
                         else if (position + 1 < text.Length && text[position + 1] == '>')
                         {
-                            var span = new TextSpan(position, 2);
-                            var token = new QueryToken(QuerySyntaxKind.NotEqualOperatorToken, text, span, value: null);
-                            position += span.Length;
-                            yield return token;
+                            tokens.Add(ReadTwoCharacterToken(QuerySyntaxKind.NotEqualOperatorToken, ref position, text));
                         }
                         else
                         {
-                            yield return ReadSingleCharacterToken(QuerySyntaxKind.LessThanOperatorToken, ref position, text);
+                            tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.LessThanOperatorToken, ref position, text));
                         }
 
                         break;
                     case '>':
                         if (position + 1 < text.Length && text[position + 1] == '=')
                         {
-                            var span = new TextSpan(position, 2);
-                            var token = new QueryToken(QuerySyntaxKind.GreaterThanOrEqualOperatorToken, text, span, value: null);
-                            position += span.Length;
-                            yield return token;
+                            tokens.Add(ReadTwoCharacterToken(QuerySyntaxKind.GreaterThanOrEqualOperatorToken, ref position, text));
                         }
                         else
                         {
-                            yield return ReadSingleCharacterToken(QuerySyntaxKind.GreaterThanOperatorToken, ref position, text);
+                            tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.GreaterThanOperatorToken, ref position, text));
                         }
 
                         break;
 
                     case '-':
-                        yield return ReadSingleCharacterToken(QuerySyntaxKind.NotKeyword, ref position, text);
+                        tokens.Add(ReadSingleCharacterToken(QuerySyntaxKind.NotKeyword, ref position, text));
                         break;
 
                     case '"':
-                        yield return ReadQuotedText(ref position, text);
+                        tokens.Add(ReadQuotedText(ref position, text));
                         break;
 
                     default:
+                        // The parser ignores whitespace, so it is skipped without creating a token
                         if (char.IsWhiteSpace(c))
-                            yield return ReadWhitespace(ref position, text);
+                        {
+                            SkipWhitespace(ref position, text);
+                        }
                         else
-                            yield return ReadText(ref position, text);
+                        {
+                            tokens.Add(ReadText(ref position, text));
+                        }
+
                         break;
                 }
             }
 
-            yield return new QueryToken(QuerySyntaxKind.EndOfFile, text, new TextSpan(position, 0), value: null);
+            tokens.Add(new QueryToken(QuerySyntaxKind.EndOfFile, text, new TextSpan(position, 0), value: null));
+            return tokens;
         }
 
         private static QueryToken ReadSingleCharacterToken(QuerySyntaxKind kind, ref int position, string text)
@@ -110,21 +110,40 @@ public partial class QuerySyntax
             return token;
         }
 
-        private static QueryToken ReadWhitespace(ref int position, string text)
+        private static QueryToken ReadTwoCharacterToken(QuerySyntaxKind kind, ref int position, string text)
         {
-            var start = position;
+            var span = new TextSpan(position, 2);
+            var token = new QueryToken(kind, text, span, value: null);
+            position += span.Length;
+            return token;
+        }
 
+        private static void SkipWhitespace(ref int position, string text)
+        {
             while (position < text.Length && char.IsWhiteSpace(text[position]))
                 position++;
-
-            var length = position - start;
-            var span = new TextSpan(start, length);
-            return new QueryToken(QuerySyntaxKind.WhitespaceToken, text, span, value: null);
         }
 
         private static QueryToken ReadQuotedText(ref int position, string text)
         {
             var start = position;
+
+            // Most quoted texts have no doubled quote, so the value is a substring of the query
+            var closingQuote = text.AsSpan(start + 1).IndexOf('"');
+            if (closingQuote >= 0)
+            {
+                closingQuote += start + 1;
+            }
+
+            if (closingQuote < 0 || closingQuote + 1 >= text.Length || text[closingQuote + 1] != '"')
+            {
+                var isClosed = closingQuote >= 0;
+                var valueEnd = isClosed ? closingQuote : text.Length;
+                position = isClosed ? closingQuote + 1 : text.Length;
+                var quotedValue = text.Substring(start + 1, valueEnd - start - 1);
+                return new QueryToken(QuerySyntaxKind.QuotedTextToken, text, TextSpan.FromBounds(start, position), quotedValue) { IsUnterminated = !isClosed };
+            }
+
             position++; // skip initial quote
             var sb = new StringBuilder();
             var isTerminated = false;

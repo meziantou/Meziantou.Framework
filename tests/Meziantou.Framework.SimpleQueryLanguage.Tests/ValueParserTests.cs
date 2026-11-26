@@ -70,6 +70,42 @@ public class ValueParserTests
     }
 
     [Fact]
+    public void ParseString_ReturnsTheValue()
+    {
+        var value = "text";
+
+        Assert.True(ValueConverter.TryParseValue<string>(value, out var result));
+        Assert.Same(value, result);
+    }
+
+    [Fact]
+    public void ParseTypesWithTryParseMethod_RepeatedCalls()
+    {
+        // The TryParse methods are looked up once per type, so each type is parsed several times, successfully or not
+        for (var i = 0; i < 3; i++)
+        {
+            Assert.True(ValueConverter.TryParseValue<bool>("True", out var boolean));
+            Assert.True(boolean);
+            Assert.False(ValueConverter.TryParseValue<bool>("yes", out _));
+
+            Assert.True(ValueConverter.TryParseValue<char>("c", out var character));
+            Assert.Equal('c', character);
+            Assert.False(ValueConverter.TryParseValue<char>("cc", out _));
+
+            Assert.True(ValueConverter.TryParseValue<Guid>("3f2504e0-4f89-11d3-9a0c-0305e82c3301", out var guid));
+            Assert.Equal(new Guid("3f2504e0-4f89-11d3-9a0c-0305e82c3301"), guid);
+            Assert.False(ValueConverter.TryParseValue<Guid>("not a guid", out _));
+
+            Assert.True(ValueConverter.TryParseValue<Guid?>("3f2504e0-4f89-11d3-9a0c-0305e82c3301", out var nullableGuid));
+            Assert.Equal(new Guid("3f2504e0-4f89-11d3-9a0c-0305e82c3301"), nullableGuid);
+
+            Assert.True(ValueConverter.TryParseValue<CustomTypeWithTryParse>("test", out var custom));
+            Assert.NotNull(custom);
+            Assert.False(ValueConverter.TryParseValue<CustomTypeWithTryParse>("", out _));
+        }
+    }
+
+    [Fact]
     public void TryParseMethod()
     {
         Assert.True(ValueConverter.TryParseValue<CustomTypeWithTryParse>("test", out var result));

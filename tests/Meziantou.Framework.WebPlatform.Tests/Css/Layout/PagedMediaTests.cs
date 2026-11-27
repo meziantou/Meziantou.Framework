@@ -1489,6 +1489,32 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Theory]
+    [InlineData(15, "<div style='display: grid; grid-template-columns: 1fr 1fr'><div></div><div id=i style='contain: size; width: 0; height: 0'></div></div>")]
+    [InlineData(5, "<div style='display: grid'><div style='height: 10px'></div><div id=i style='height: 0'></div></div>")]
+    public void Pages_GridItemsWithoutBlockSizeAtABreakAfterTheGridAreBeforeIt(int offset, string grid)
+    {
+        // The second page, 100px wide, starts the content laid out again in its inline size. The first line of the paragraph
+        // after the grid fits in it, not its second one: the break is before the paragraph (orphans: 2), after the grid and the
+        // empty paragraph that follows it. The items of the grid at the position of the break, without block size (the items of
+        // a grid without block size, an item in the last row of a grid), are before it: they are in the second page with their
+        // grid and the empty paragraph
+        var document = Parse($$"""
+            <style>@page { size: 100px 25px; margin: 0 } @page :first { size: 200px 25px }</style>
+            <div style='height: 25px'></div>
+            <div style='height: {{offset}}px'></div>
+            {{grid}}
+            <p id=e style='margin: 0'></p>
+            <p id=p style='margin: 0'>XXXX XXXX XXXX</p>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(1, 15d, 0d)], GetPageRects(pages, document.GetElementById("i")!).Select(rect => (rect.Page, rect.Rect.Y, rect.Rect.Height)));
+        Assert.Equal([(1, new PhysicalRect(0, 15, 100, 0))], GetPageRects(pages, document.GetElementById("e")!));
+        Assert.Equal(2, GetPageRects(pages, document.GetElementById("p")!)[0].Page);
+        Assert.Equal(3, pages.Sum(page => CountWords(page.Content)));
+    }
+
+    [Theory]
     [InlineData(100)]
     [InlineData(300)]
     public void Pages_GridItemThatSpansTheRowBeforeTheBreakIsLaidOutInAPageOfAnotherInlineSize(int firstRowHeight)

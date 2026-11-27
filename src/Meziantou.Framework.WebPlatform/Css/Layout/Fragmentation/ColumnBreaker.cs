@@ -859,7 +859,7 @@ internal static partial class ColumnBreaker
 
             // A flow that is pushed to the next fragmentainer starts again there
             var isPushed = (_canBreakBefore || _shift > Epsilon) && next.Position <= _position + Epsilon;
-            Commit(next.Position, isPushed, isAfterContent: next.Sequence == AfterContentSequence);
+            Commit(next.Position, isPushed, isAfterContent: next.Sequence == AfterContentSequence, next.Sequence);
 
             // https://drafts.csswg.org/css-gaps-1/#gaps: "the gap disappears when it coincides with a fragmentation break"
             // (also the block-end margin of the last child of a box: https://drafts.csswg.org/css-break-3/#break-margins)
@@ -1619,7 +1619,8 @@ internal static partial class ColumnBreaker
         /// Ends the current fragmentainer with a break at a position: the parallel flows that start after the break have not
         /// started, the tracks whose items are placed are closed, and the shifts of the content before the break are recorded.
         /// </summary>
-        private void Commit(double position, bool isPushed = false, bool isAfterContent = false)
+        /// <param name="sequence">The order of the break in the content (<see cref="BreakCandidate.Sequence"/>), or 0.</param>
+        private void Commit(double position, bool isPushed = false, bool isAfterContent = false, int sequence = 0)
         {
             _lastPieces.Clear();
             _lastPieces.AddRange(_pieces);
@@ -1644,7 +1645,7 @@ internal static partial class ColumnBreaker
             {
                 // (an item starts with its track at the earliest)
                 var itemStart = Math.Max(item.Start, item.Group!.TrackStarts[item.StartTrack]);
-                if (isPushed || (itemStart >= position - (isAfterContent ? -Epsilon : Epsilon) && itemStart > _position + Epsilon))
+                if (isPushed || (itemStart >= position - (isAfterContent ? -Epsilon : Epsilon) && itemStart > _position + Epsilon && !IsBeforeBreakAt(item.Group, itemStart, position, sequence)))
                 {
                     // The item is after the break: it starts in the next fragmentainer
                     item.Generation = 0;
@@ -1671,7 +1672,7 @@ internal static partial class ColumnBreaker
                 var track = group.ClosedTracks;
                 for (; track < group.TrackStarts.Length; track++)
                 {
-                    if (!IsClosed(group, track, position))
+                    if (!IsClosed(group, track, position, sequence))
                         break;
                 }
 
@@ -1683,9 +1684,9 @@ internal static partial class ColumnBreaker
             }
         }
 
-        private bool IsClosed(ParallelGroup group, int track, double position)
+        private bool IsClosed(ParallelGroup group, int track, double position, int sequence)
         {
-            if (group.TrackStarts[track] >= position - Epsilon && group.TrackStarts[track] > _position + Epsilon)
+            if (group.TrackStarts[track] >= position - Epsilon && group.TrackStarts[track] > _position + Epsilon && !IsBeforeBreakAt(group, group.TrackStarts[track], position, sequence))
                 return false;
 
             foreach (var item in group.StartingItems[track])
@@ -1702,6 +1703,15 @@ internal static partial class ColumnBreaker
 
             return group.StartingItems[track].Count > 0 || group.EndingItems[track].Count > 0 || group.TrackEnds[track] <= position + Epsilon;
         }
+
+        /// <summary>
+        /// Returns whether the content of a group that starts at the position of a break is before the break in the content: the break
+        /// follows the group (e.g. a break after its container, whose items, or the items of its last track, have no block size), not
+        /// a break between its tracks nor before its container. Its items stay in the fragmentainer, with its container, which is
+        /// before the break too (see <see cref="FlowMap.MapEmpty"/>).
+        /// </summary>
+        private static bool IsBeforeBreakAt(ParallelGroup group, double start, double position, int sequence)
+            => sequence > group.Sequence && Math.Abs(start - position) <= Epsilon;
 
         private static BreakAppeal Worst(BreakAppeal a, BreakAppeal b) => a > b ? a : b;
     }

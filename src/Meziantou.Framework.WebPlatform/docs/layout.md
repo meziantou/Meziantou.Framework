@@ -2785,7 +2785,9 @@ documents (see [Paged media](#paged-media-csslayoutpaged-layoutenginepagedcs)).
     (`BreakCandidate.AvoidDepth`; as in the browsers, a break outside of the innermost avoided box).
   - Several breaks may be at the same position (before and after a box without block size): the candidates and such boxes are
     ordered as in the content (`BreakCandidate.Sequence`, `FragmentationFlow.GetEmptyOrdinal`), the latest break that fits is
-    taken, and a box without block size at the end of a fragmentainer stays in it (`FlowMap.MapEmpty`). The break after
+    taken, and a box without block size at the end of a fragmentainer stays in it (`FlowMap.MapEmpty`), also the items
+    without block size of a container of parallel flows that start at a break after the container in the content (a grid
+    without block size, the last row of a grid: `ParallelGroup.Sequence`, `ColumnBreaker.IsBeforeBreakAt`). The break after
     the content of a flow whose parallel flows continue is after the boxes without block size at its position: the contents
     that overflow them (a box with `height: 0`) start in that fragmentainer and are broken there.
   - A forced break at the start of a fragmentainer is taken when it is at a class A break point (after a box without block

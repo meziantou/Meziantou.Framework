@@ -2523,6 +2523,17 @@ internal sealed class FragmentationFlow
             AddCandidate(new BreakCandidate(position, previousEnd, appeal) { Sequence = sequence }, context);
         }
 
+        // (the items without block size are before the breaks at their position that follow the group in the content, see
+        // GetEmptyOrdinal: the breaks after its container, not the breaks between its tracks)
+        group.Sequence = ++_root._sequence;
+        foreach (var item in group.Items)
+        {
+            if (item.Box is { } itemBox && item.End - item.Start <= Epsilon)
+            {
+                (_root._emptyOrdinals ??= []).TryAdd(itemBox, group.Sequence);
+            }
+        }
+
         (Groups ??= []).Add(group);
         (_root._groupsByContainer ??= [])[box] = group;
         for (Fragment? ancestor = box; ancestor is BoxFragment ancestorBox; ancestor = ancestor.Parent)
@@ -3330,6 +3341,15 @@ internal sealed class ParallelGroup(BoxFragment container, double[] trackStarts,
     /// the same position are separated by their forced breaks).
     /// </summary>
     public int[]? ForcedBreakSequences { get; set; }
+
+    /// <summary>
+    /// The order of the items in the content of the strip (see <see cref="BreakCandidate.Sequence"/>), after the breaks between
+    /// the tracks: an item that starts at the position of a break that follows it in the content (a break after the container,
+    /// e.g. the items without block size of a container without block size, or of its last track) is before the break.
+    /// <see cref="int.MaxValue"/> for the contents of a box whose block size does not follow them and for a nested multi-column
+    /// container: they are after the breaks at their start.
+    /// </summary>
+    public int Sequence { get; set; } = int.MaxValue;
 
     public List<ParallelItem> Items { get; } = [];
 

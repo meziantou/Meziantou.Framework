@@ -124,5 +124,51 @@ Assert.Equal([1], logger.Values);
   a generic method, an instance method of a struct (MFWASM003), a class that is not partial (MFWASM001), or two methods
   of the same import (MFWASM004).
 
+### The caller
+
+A first parameter of type [WasmCaller](cref:Meziantou.Framework.WasmEngine.WasmCaller) is not a parameter of the
+WebAssembly function: it receives the caller of the host function, such as the instance whose memory holds the data the
+function reads (see [The caller](03-HostFunctions.md#the-caller)):
+
+<!-- ref:../../tests/Meziantou.Framework.WasmEngine.Tests/WasmSourceGeneratorTests.cs;region=WasmEngine_TypedImportsCallerHost;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static partial class Printer
+{
+    // A first parameter of type WasmCaller receives the caller: the type of the import is (func (param i32 i32) (result i32))
+    [WasmImport("env", "print")]
+    public static int Print(WasmCaller caller, int address, int length)
+    {
+        var memory = caller.GetMemory("memory")!;
+        Printed.Add(System.Text.Encoding.UTF8.GetString(memory.GetSpan().Slice(address, length)));
+        return length;
+    }
+
+    public static IList<string> Printed { get; } = new List<string>();
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.WasmEngine.Tests/WasmSourceGeneratorTests.cs;region=WasmEngine_TypedImportsCaller;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var runtime = new WasmRuntime();
+var module = runtime.Compile(WasmRuntime.WatToWasm("""
+    (module
+      (import "env" "print" (func $print (param i32 i32) (result i32)))
+      (memory (export "memory") 1)
+      (data (i32.const 0) "Hello")
+      (func (export "run") (result i32)
+        (call $print (i32.const 0) (i32.const 5))))
+    """));
+
+using var store = runtime.CreateStore();
+var instance = store.Instantiate(module, Printer.DefineWasmImports(store));
+
+Assert.Equal(5, instance.GetFunction("run")!.Call()[0].I32);
+Assert.Equal(["Hello"], Printer.Printed);
+```
+<!-- endref -->
+
+A `WasmCaller` at another position is reported (MFWASM003).
+
 The strings, the structs and the data in memory are not converted: their layout depends on the toolchain that compiled
 the module. Read and write them in the memory of the instance (see [Memories, tables and globals](04-MemoriesTablesAndGlobals.md)).

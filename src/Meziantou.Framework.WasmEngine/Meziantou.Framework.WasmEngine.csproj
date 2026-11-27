@@ -10,8 +10,8 @@
          members: the types are unsafe, which the updated memory safety rules do not allow -->
     <MeziantouUpdatedMemorySafetyRules>false</MeziantouUpdatedMemorySafetyRules>
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
-    <Description>A WebAssembly engine written in .NET: a decoder, a validator, an interpreter and a compiler to .NET code for WebAssembly 3.0 modules, with host functions, memories, tables, globals, exceptions, GC references, shared memories and the text format.</Description>
-    <PackageTags>webassembly;wasm;wat;engine;runtime;interpreter</PackageTags>
+    <Description>A WebAssembly engine written in .NET: a decoder, a validator, an interpreter and a compiler to .NET code for WebAssembly 3.0 modules, with host functions, memories, tables, globals, exceptions, GC references, shared memories and the text format, and the components of the component model.</Description>
+    <PackageTags>webassembly;wasm;wat;component;engine;runtime;interpreter</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <!-- The reader of the sections that the engine exposes (the custom sections), shared with the WebAssembly JavaScript

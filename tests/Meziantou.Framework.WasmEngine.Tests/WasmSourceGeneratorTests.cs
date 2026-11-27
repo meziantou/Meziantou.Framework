@@ -69,6 +69,44 @@ public sealed partial class WasmSourceGeneratorTests
         #endregion
     }
 
+    #region WasmEngine_TypedImportsCallerHost
+    public static partial class Printer
+    {
+        // A first parameter of type WasmCaller receives the caller: the type of the import is (func (param i32 i32) (result i32))
+        [WasmImport("env", "print")]
+        public static int Print(WasmCaller caller, int address, int length)
+        {
+            var memory = caller.GetMemory("memory")!;
+            Printed.Add(System.Text.Encoding.UTF8.GetString(memory.GetSpan().Slice(address, length)));
+            return length;
+        }
+
+        public static IList<string> Printed { get; } = new List<string>();
+    }
+    #endregion
+
+    [Fact]
+    public void Documentation_TypedImportsCaller()
+    {
+        #region WasmEngine_TypedImportsCaller
+        using var runtime = new WasmRuntime();
+        var module = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (import "env" "print" (func $print (param i32 i32) (result i32)))
+              (memory (export "memory") 1)
+              (data (i32.const 0) "Hello")
+              (func (export "run") (result i32)
+                (call $print (i32.const 0) (i32.const 5))))
+            """));
+
+        using var store = runtime.CreateStore();
+        var instance = store.Instantiate(module, Printer.DefineWasmImports(store));
+
+        Assert.Equal(5, instance.GetFunction("run")!.Call()[0].I32);
+        Assert.Equal(["Hello"], Printer.Printed);
+        #endregion
+    }
+
     public sealed partial class CalculatorHost
     {
         private readonly List<int> _logged = [];
@@ -310,6 +348,10 @@ public sealed partial class WasmSourceGeneratorTests
     [InlineData("MFWASM003", "public partial class A { [WasmImport(\"env\", \"f\")] public static void F(WasmValue value) { } }")]
     [InlineData("MFWASM003", "public partial struct A { [WasmImport(\"env\", \"f\")] public void F() { } }")]
     [InlineData("MFWASM003", "public abstract partial class A { [WasmImport(\"env\", \"f\")] public abstract void F(); }")]
+    [InlineData("MFWASM003", "public partial class A { [WasmImport(\"env\", \"f\")] public static void F(int value, WasmCaller caller) { } }")]
+    [InlineData("MFWASM003", "public partial class A { [WasmImport(\"env\", \"f\")] public static void F(WasmCaller caller, WasmCaller other) { } }")]
+    [InlineData("MFWASM003", "public partial class A { [WasmImport(\"env\", \"f\")] public static void F(in WasmCaller caller) { } }")]
+    [InlineData("MFWASM003", "public partial class A { [WasmImport(\"env\", \"f\")] public static WasmCaller F() => default; }")]
     [InlineData("MFWASM004", "public partial class A { [WasmImport(\"env\", \"f\")] public static void F() { } [WasmImport(\"env\", \"f\")] public static void G() { } }")]
     public void Generator_UnsupportedImport_ReportsADiagnostic(string id, string declarations)
     {
@@ -343,6 +385,12 @@ public sealed partial class WasmSourceGeneratorTests
                         [System.Obsolete("obsolete")]
                         [WasmImport("env", "\"quoted\"\n")]
                         private static void Old() { }
+
+                        [WasmImport("env", "caller")]
+                        public int WithCaller(WasmCaller caller) => caller.Instance is null ? 0 : 1;
+
+                        [WasmImport("env", "caller2")]
+                        public static (int, object?) WithCallerAndValues(WasmCaller caller, int value, object? reference) => (value, reference);
                     }
                 }
 

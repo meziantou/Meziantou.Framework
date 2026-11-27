@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WasmEngine.Wasi</RootNamespace>
+    <Version>1.0.0</Version>
+    <IsAotCompatible>true</IsAotCompatible>
+    <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
+    <Description>WASI for Meziantou.Framework.WasmEngine: WASI Preview 1 (wasi_snapshot_preview1) for modules, and WASI 0.2 and 0.3 for components, with arguments, environment variables, clocks, random numbers, standard streams, exit codes, a sandboxed file system of preopened directories on the disk or in memory, and the sandboxed sockets and HTTP of WASI 0.3 on the network of the machine or in memory.</Description>
+    <PackageTags>webassembly;wasm;wasi;wasip1;wasip2;wasip3;component;engine;runtime;sandbox;sockets;http</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
+    <!-- The host functions are methods marked with [WasmImport]: the source generator of the engine writes their conversions -->
+    <ProjectReference Include="../Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.Wasi.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WasmEngine.Wasi.Fuzz" />
+  </ItemGroup>
+</Project>

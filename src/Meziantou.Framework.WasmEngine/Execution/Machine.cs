@@ -66,6 +66,9 @@ internal sealed unsafe partial class Machine
 
     public Slot[] Stack => _stack;
 
+    /// <summary>The store whose code the machine runs.</summary>
+    public ManagedStore Store => _store;
+
     /// <summary>The first slot that is not used by the running calls.</summary>
     public int Top
     {
@@ -74,7 +77,11 @@ internal sealed unsafe partial class Machine
     }
 
     /// <summary>Calls a function with the arguments of the host.</summary>
-    public void Invoke(ManagedFunction function, ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results)
+    /// <param name="function">The function.</param>
+    /// <param name="arguments">The arguments.</param>
+    /// <param name="results">Receives the results.</param>
+    /// <param name="caller">The instance given to a host function as its caller (the instance of a start function), or null when the host calls the function.</param>
+    public void Invoke(ManagedFunction function, ReadOnlySpan<WasmValue> arguments, Span<WasmValue> results, ManagedInstance? caller = null)
     {
         var type = function.DefinedType;
         var fp = _top;
@@ -89,7 +96,7 @@ internal sealed unsafe partial class Machine
         _top = fp + type.Parameters.Length;
         try
         {
-            Call(function, fp);
+            Call(function, fp, caller);
             for (var i = 0; i < results.Length; i++)
             {
                 results[i] = _stack[fp + i].ToValue(type.Results[i]);
@@ -104,8 +111,11 @@ internal sealed unsafe partial class Machine
         }
     }
 
-    /// <summary>Calls a function whose arguments are at <paramref name="fp"/>: its results are written at <paramref name="fp"/>.</summary>
-    public void Call(ManagedFunction function, int fp)
+    /// <summary>
+    /// Calls a function whose arguments are at <paramref name="fp"/>: its results are written at <paramref name="fp"/>.
+    /// <paramref name="caller"/> is the instance of the calling code, given to a host function (see <see cref="WasmCaller"/>).
+    /// </summary>
+    public void Call(ManagedFunction function, int fp, ManagedInstance? caller)
     {
         if (function is CodeFunction code)
         {
@@ -126,7 +136,7 @@ internal sealed unsafe partial class Machine
         }
         else
         {
-            CallHost((HostFunction)function, fp);
+            CallHost((HostFunction)function, fp, caller);
         }
     }
 
@@ -216,7 +226,7 @@ internal sealed unsafe partial class Machine
         }
     }
 
-    private void CallHost(HostFunction function, int fp)
+    private void CallHost(HostFunction function, int fp, ManagedInstance? caller)
     {
         var type = function.DefinedType;
         var parameters = type.Parameters;
@@ -260,7 +270,15 @@ internal sealed unsafe partial class Machine
         _valueCount = start + count;
         try
         {
-            function.Callback(arguments, results);
+            if (function.Callback is { } callback)
+            {
+                callback(arguments, results);
+            }
+            else
+            {
+                function.CallerCallback!(new WasmCaller(_store, caller), arguments, results);
+            }
+
             _top = savedTop;
             EnsureCapacity(fp + results.Length);
             for (var i = 0; i < results.Length; i++)
@@ -278,13 +296,13 @@ internal sealed unsafe partial class Machine
     }
 
     /// <summary>Calls a function that is not interpreted by the running loop, and returns the WebAssembly exception it throws, or null.</summary>
-    private ManagedException? CallExternal(ManagedFunction function, int fp, int top)
+    private ManagedException? CallExternal(ManagedFunction function, int fp, int top, ManagedInstance caller)
     {
         var savedTop = _top;
         _top = top;
         try
         {
-            Call(function, fp);
+            Call(function, fp, caller);
             return null;
         }
         catch (WasmThrowException ex) when (ex.Exception is ManagedException exception)

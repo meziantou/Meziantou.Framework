@@ -1616,6 +1616,8 @@ internal sealed partial class IlCompiler
 
         Spill(bottom, parameters, Math.Max(parameters, results));
         _il.Emit(OpCodes.Ldarg_1);
+        // The instance of the function is the caller of a host function (see WasmCaller)
+        _il.Emit(OpCodes.Ldarg_2);
         _il.Emit(OpCodes.Ldloc, _callee);
         _il.Emit(OpCodes.Ldloc, _scratch);
         _il.Emit(OpCodes.Ldloc, _scratch);

@@ -1,0 +1,15 @@
+<Project Sdk="Meziantou.NET.Sdk.Test">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.WasmEngine.Wasi.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.WasmEngine.Wasi/Meziantou.Framework.WasmEngine.Wasi.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.11.0" />
+  </ItemGroup>
+
+</Project>

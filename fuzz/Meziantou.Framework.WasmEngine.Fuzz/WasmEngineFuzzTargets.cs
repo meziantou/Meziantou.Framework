@@ -14,6 +14,7 @@ namespace Meziantou.Framework.WasmEngine.Fuzz;
 /// <item>The code cache of a module loads the same code, and a changed cache is not used; the reader of the code of a
 /// cache only throws a <see cref="CodeCacheFormatException"/>.</item>
 /// <item>The readers of the source generator agree with the engine (<see cref="WasmSourceGeneratorFuzzTargets"/>).</item>
+/// <item>The components: their decoding, instantiation and canonical ABI (<see cref="WasmComponentFuzzTargets"/>).</item>
 /// </list>
 /// </summary>
 public static class WasmEngineFuzzTargets
@@ -44,6 +45,7 @@ public static class WasmEngineFuzzTargets
         new("wasm-code-cache-reader", CodeCacheReaderTarget) { Seeds = GetCodeCacheSeeds },
         new("wasm-generator-binary", WasmSourceGeneratorFuzzTargets.BinaryTarget) { Seeds = () => GetSeeds().Concat(WasmSourceGeneratorFuzzTargets.GetBinarySeeds()), Dictionary = BinaryTokens },
         new("wasm-generator-text", WasmSourceGeneratorFuzzTargets.TextTarget) { Seeds = () => GetTextSeeds().Concat(WasmSourceGeneratorFuzzTargets.GetTextSeeds()), Dictionary = TextTokens },
+        .. WasmComponentFuzzTargets.All,
     ];
 
     private static IEnumerable<FuzzSeed> GetSeeds()

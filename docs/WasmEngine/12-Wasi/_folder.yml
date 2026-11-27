@@ -1,0 +1,4 @@
+title: WASI
+description: Run WASI Preview 1 programs and WASI 0.2 and 0.3 components with arguments, environment variables, standard streams, clocks, a sandboxed file system, and the sandboxed sockets and HTTP of WASI 0.3.
+packageIds:
+- Meziantou.Framework.WasmEngine.Wasi

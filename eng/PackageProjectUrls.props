@@ -150,6 +150,7 @@
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.Versioning'">https://framework.meziantou.net/versioning/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WPF'">https://framework.meziantou.net/wpf/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WasmEngine'">https://framework.meziantou.net/webassembly-engine/</PackageProjectUrl>
+    <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WasmEngine.Wasi'">https://framework.meziantou.net/webassembly-engine/wasi/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform'">https://framework.meziantou.net/webplatform/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.DevTools'">https://framework.meziantou.net/webplatform/devtools-protocol/</PackageProjectUrl>
     <PackageProjectUrl Condition="'$(MSBuildProjectName)' == 'Meziantou.Framework.WebPlatform.DevTools.Tool'">https://framework.meziantou.net/webplatform/devtools-protocol/</PackageProjectUrl>

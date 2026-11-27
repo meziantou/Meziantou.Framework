@@ -9,23 +9,29 @@ namespace Meziantou.Framework.WasmEngine.SpecTests.Runner;
 /// <c>WASM_SPEC_UPDATE_EXPECTATIONS=1</c> to rewrite the file from the results (run a single target framework:
 /// <c>-f net10.0</c>, the processes of the target frameworks run concurrently).
 /// </summary>
-internal static class SpecExpectations
+internal sealed class SpecExpectations(FullPath file)
 {
-    private static readonly Lock LockObject = new();
-    private static SortedDictionary<string, string?>? s_entries;
+    private readonly Lock _lock = new();
+    private SortedDictionary<string, string?>? _entries;
+
+    /// <summary>The known failures of the core test suite (expectations.txt).</summary>
+    public static SpecExpectations Core { get; } = new(SpecTestPaths.ExpectationsFile);
+
+    /// <summary>The known failures of the component model test suite (component-expectations.txt).</summary>
+    public static SpecExpectations Components { get; } = new(SpecTestPaths.ComponentExpectationsFile);
 
     public static bool UpdateMode => Environment.GetEnvironmentVariable("WASM_SPEC_UPDATE_EXPECTATIONS") is "1" or "true";
 
-    private static SortedDictionary<string, string?> Entries
+    private SortedDictionary<string, string?> Entries
     {
         get
         {
-            if (s_entries is null)
+            if (_entries is null)
             {
                 var entries = new SortedDictionary<string, string?>(StringComparer.Ordinal);
-                if (File.Exists(SpecTestPaths.ExpectationsFile))
+                if (File.Exists(file))
                 {
-                    foreach (var rawLine in File.ReadAllLines(SpecTestPaths.ExpectationsFile))
+                    foreach (var rawLine in File.ReadAllLines(file))
                     {
                         var line = rawLine.Trim();
                         if (line.Length == 0 || line[0] == '#')
@@ -43,19 +49,19 @@ internal static class SpecExpectations
                     }
                 }
 
-                s_entries = entries;
+                _entries = entries;
             }
 
-            return s_entries;
+            return _entries;
         }
     }
 
     public static string GetKey(string script, int line) => script + ":" + line.ToString(CultureInfo.InvariantCulture);
 
     /// <summary>The number of known failures of a script.</summary>
-    public static int CountFailures(string script)
+    public int CountFailures(string script)
     {
-        lock (LockObject)
+        lock (_lock)
         {
             return Entries.Keys.Count(key => IsKeyOf(key, script));
         }
@@ -63,7 +69,7 @@ internal static class SpecExpectations
 
     private static bool IsKeyOf(string key, string script) => key.Length > script.Length && key.StartsWith(script, StringComparison.Ordinal) && key[script.Length] == ':';
 
-    public static void Check(string script, IReadOnlyList<SpecFailure> failures, bool update = true)
+    public void Check(string script, IReadOnlyList<SpecFailure> failures, bool update = true)
     {
         if (UpdateMode && update)
         {
@@ -72,7 +78,7 @@ internal static class SpecExpectations
         }
 
         HashSet<string> expected;
-        lock (LockObject)
+        lock (_lock)
         {
             expected = Entries.Keys.Where(key => IsKeyOf(key, script)).ToHashSet(StringComparer.Ordinal);
         }
@@ -90,7 +96,7 @@ internal static class SpecExpectations
 
         foreach (var key in expected.Where(key => !actual.Contains(key)).Order(StringComparer.Ordinal))
         {
-            errors.Append("UNEXPECTED PASS: remove '").Append(key).AppendLine("' from expectations.txt");
+            errors.Append("UNEXPECTED PASS: remove '").Append(key).Append("' from ").AppendLine(file.Name);
         }
 
         if (errors.Length > 0)
@@ -99,9 +105,9 @@ internal static class SpecExpectations
         }
     }
 
-    private static void Update(string script, IReadOnlyList<SpecFailure> failures)
+    private void Update(string script, IReadOnlyList<SpecFailure> failures)
     {
-        lock (LockObject)
+        lock (_lock)
         {
             // The reasons written by hand are kept
             var entries = Entries;
@@ -130,7 +136,7 @@ internal static class SpecExpectations
                 content.Append('\n');
             }
 
-            File.WriteAllText(SpecTestPaths.ExpectationsFile, content.ToString());
+            File.WriteAllText(file, content.ToString());
         }
     }
 }

@@ -9,11 +9,13 @@
     <Project Path="../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" />
+    <Project Path="../src/Meziantou.Framework.WasmEngine.Wasi/Meziantou.Framework.WasmEngine.Wasi.csproj" />
     <Project Path="../src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
     <Project Path="../src/Meziantou.Framework/Meziantou.Framework.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="../tests/Meziantou.Framework.WasmEngine.SpecTests/Meziantou.Framework.WasmEngine.SpecTests.csproj" />
     <Project Path="../tests/Meziantou.Framework.WasmEngine.Tests/Meziantou.Framework.WasmEngine.Tests.csproj" />
+    <Project Path="../tests/Meziantou.Framework.WasmEngine.Wasi.Tests/Meziantou.Framework.WasmEngine.Wasi.Tests.csproj" />
   </Folder>
 </Solution>

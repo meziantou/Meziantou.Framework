@@ -182,8 +182,10 @@ public sealed class WasmImportGenerator : IIncrementalGenerator
             reason = "it is an instance method of a struct, which a host function cannot capture";
         }
 
+        // A first parameter of type WasmCaller receives the caller of the host function: it is not a WebAssembly parameter
+        var hasCaller = method.Parameters.Length > 0 && knownTypes.IsCaller(method.Parameters[0].Type) && method.Parameters[0].RefKind == RefKind.None;
         var parameters = new List<(ValueMarshalling Marshalling, WasmTypeInfo Type)>();
-        foreach (var parameter in method.Parameters)
+        foreach (var parameter in hasCaller ? method.Parameters.Skip(1) : method.Parameters)
         {
             if (reason is not null)
                 break;
@@ -191,6 +193,10 @@ public sealed class WasmImportGenerator : IIncrementalGenerator
             if (parameter.RefKind != RefKind.None)
             {
                 reason = "parameter '" + parameter.Name + "' is passed by reference";
+            }
+            else if (knownTypes.IsCaller(parameter.Type))
+            {
+                reason = "parameter '" + parameter.Name + "' of type 'WasmCaller' is not the first parameter";
             }
             else if (knownTypes.GetValue(parameter.Type) is { } value)
             {
@@ -236,7 +242,7 @@ public sealed class WasmImportGenerator : IIncrementalGenerator
             return null;
         }
 
-        return new ImportModel(module, name, method.Name, method.IsStatic, parameters, results);
+        return new ImportModel(module, name, method.Name, method.IsStatic, hasCaller, parameters, results);
     }
 
     private static string Emit(INamedTypeSymbol type, List<ImportModel> imports)
@@ -281,9 +287,15 @@ public sealed class WasmImportGenerator : IIncrementalGenerator
         {
             var parameterTypes = WasmCode.GetValueTypesExpression(import.Parameters.Select(parameter => parameter.Type));
             var resultTypes = WasmCode.GetValueTypesExpression(import.Results.Select(result => result.Type));
-            writer.WriteLine("imports.Define(" + WasmCode.Literal(import.Module) + ", " + WasmCode.Literal(import.Name) + ", store.CreateFunction(new " + Ns + "WasmFunctionType(" + parameterTypes + ", " + resultTypes + "), (__arguments, __results) =>");
+            var lambdaParameters = import.HasCaller ? "(__caller, __arguments, __results)" : "(__arguments, __results)";
+            writer.WriteLine("imports.Define(" + WasmCode.Literal(import.Module) + ", " + WasmCode.Literal(import.Name) + ", store.CreateFunction(new " + Ns + "WasmFunctionType(" + parameterTypes + ", " + resultTypes + "), " + lambdaParameters + " =>");
             writer.OpenBlock();
             var arguments = string.Join(", ", import.Parameters.Select((parameter, index) => WasmCode.FromWasmValue(parameter.Marshalling, parameter.Type.Nullable, "__arguments[" + index.ToString(CultureInfo.InvariantCulture) + "]")));
+            if (import.HasCaller)
+            {
+                arguments = arguments.Length == 0 ? "__caller" : "__caller, " + arguments;
+            }
+
             var call = (import.IsStatic ? typeName : "this") + ".@" + import.MethodName + "(" + arguments + ")";
             switch (import.Results.Count)
             {
@@ -352,13 +364,17 @@ public sealed class WasmImportGenerator : IIncrementalGenerator
         return builder.Append('.').Append(StableHash.Compute(name)).Append(".WasmImports.g.cs").ToString();
     }
 
-    private sealed record ImportModel(string Module, string Name, string MethodName, bool IsStatic, List<(ValueMarshalling Marshalling, WasmTypeInfo Type)> Parameters, List<(ValueMarshalling Marshalling, WasmTypeInfo Type)> Results);
+    private sealed record ImportModel(string Module, string Name, string MethodName, bool IsStatic, bool HasCaller, List<(ValueMarshalling Marshalling, WasmTypeInfo Type)> Parameters, List<(ValueMarshalling Marshalling, WasmTypeInfo Type)> Results);
 
     private sealed record ImportOutput(string HintName, string? Source, ImmutableEquatableArray<DiagnosticInfo> Diagnostics);
 
     private sealed class KnownTypes(Compilation compilation)
     {
         private readonly INamedTypeSymbol? _function = compilation.GetTypeByMetadataName("Meziantou.Framework.WasmEngine.WasmFunction");
+        private readonly INamedTypeSymbol? _caller = compilation.GetTypeByMetadataName("Meziantou.Framework.WasmEngine.WasmCaller");
+
+        /// <summary>Whether the type is <c>WasmCaller</c>, the caller of a host function.</summary>
+        public bool IsCaller(ITypeSymbol type) => _caller is not null && SymbolEqualityComparer.Default.Equals(type, _caller);
 
         /// <summary>The conversion and the WebAssembly type of a .NET type: the reference types are nullable unless the type is annotated as not nullable.</summary>
         public (ValueMarshalling Marshalling, WasmTypeInfo Type)? GetValue(ITypeSymbol type)

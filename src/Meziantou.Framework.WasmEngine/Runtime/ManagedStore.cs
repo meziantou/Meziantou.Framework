@@ -9,11 +9,19 @@ internal sealed class ManagedStore : WasmStore
     private readonly WasmRuntime _runtime;
     private int _disposed;
 
+    // The machine of the OS thread, when it runs the continuations of the asynchronous calls of the components (see
+    // Components.Runtime.ContinuationWorker): each continuation needs its own stack of values
+    [ThreadStatic]
+    private static Machine? t_threadMachine;
+
+    private readonly Machine _machine;
+    private Components.Runtime.ComponentStoreState? _components;
+
     public ManagedStore(WasmRuntime runtime, WasmStoreOptions options)
     {
         _runtime = runtime;
         Options = options;
-        Machine = new Machine(this);
+        _machine = new Machine(this);
         runtime.Telemetry.RecordStoreCreated();
     }
 
@@ -29,9 +37,34 @@ internal sealed class ManagedStore : WasmStore
 
     public WasmStoreOptions Options { get; }
 
-    public Machine Machine { get; }
+    /// <summary>The machine that runs the code on the current OS thread.</summary>
+    public Machine Machine => t_threadMachine is { } machine && machine.Store == this ? machine : _machine;
 
     public TypeRegistry Registry => _runtime.Registry;
+
+    /// <summary>The state of the component model of the store.</summary>
+    public Components.Runtime.ComponentStoreState Components => _components ??= new Components.Runtime.ComponentStoreState(this);
+
+    /// <summary>Creates the machine of the current OS thread, a worker of the continuations of the components.</summary>
+    public Machine CreateThreadMachine()
+    {
+        var machine = new Machine(this);
+        t_threadMachine = machine;
+        return machine;
+    }
+
+    public void ReleaseThreadMachine(Machine machine)
+    {
+        if (Options.CheckInterrupt is not null)
+        {
+            _runtime.Interruptions.Unregister(machine);
+        }
+
+        t_threadMachine = null;
+    }
+
+    /// <summary>Calls the interruption action of the store, while the components wait for the host.</summary>
+    public void CheckComponentInterrupt() => Options.CheckInterrupt?.Invoke();
 
     public void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) != 0, this);
 
@@ -42,8 +75,10 @@ internal sealed class ManagedStore : WasmStore
             _runtime.Telemetry.RecordStoreReleased();
             if (Options.CheckInterrupt is not null)
             {
-                _runtime.Interruptions.Unregister(Machine);
+                _runtime.Interruptions.Unregister(_machine);
             }
+
+            _components?.Dispose();
         }
 
         base.Dispose(disposing);
@@ -255,7 +290,7 @@ internal sealed class ManagedStore : WasmStore
 
         if (info.Start >= 0)
         {
-            Machine.Invoke(instance.Functions[info.Start], [], []);
+            Machine.Invoke(instance.Functions[info.Start], [], [], caller: instance);
         }
 
         return instance;
@@ -351,7 +386,15 @@ internal sealed class ManagedStore : WasmStore
         ArgumentNullException.ThrowIfNull(type);
         ArgumentNullException.ThrowIfNull(callback);
         ThrowIfDisposed();
-        return new HostFunction(this, GetFunctionType(type), callback, state);
+        return new HostFunction(this, GetFunctionType(type), callback, callerCallback: null, state);
+    }
+
+    private protected override WasmFunction CreateCallerFunction(WasmFunctionType type, WasmHostCallerCallback callback, object? state)
+    {
+        ArgumentNullException.ThrowIfNull(type);
+        ArgumentNullException.ThrowIfNull(callback);
+        ThrowIfDisposed();
+        return new HostFunction(this, GetFunctionType(type), callback: null, callback, state);
     }
 
     public override WasmMemory CreateMemory(WasmMemoryType type)

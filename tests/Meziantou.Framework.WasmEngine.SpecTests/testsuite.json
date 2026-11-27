@@ -3,5 +3,15 @@
     "repository": "WebAssembly/testsuite",
     "commit": "92a3d806c7d70f5b63f125e6155b8d76304509f1",
     "paths": ["LICENSE", "*.wast", "legacy", "proposals/threads", "proposals/wide-arithmetic"]
+  },
+  "wasi-testsuite": {
+    "repository": "WebAssembly/wasi-testsuite",
+    "commit": "de056c60895ff589996da758c91200cda41feebe",
+    "paths": ["LICENSE", "tests/assemblyscript/testsuite/wasm32-wasip1", "tests/c/testsuite/wasm32-wasip1", "tests/rust/testsuite/wasm32-wasip1", "tests/rust/testsuite/wasm32-wasip3"]
+  },
+  "component-model": {
+    "repository": "WebAssembly/component-model",
+    "commit": "585526aa1f2c7f76f07557d16e265dede38b3acb",
+    "paths": ["LICENSE", "test"]
   }
 }

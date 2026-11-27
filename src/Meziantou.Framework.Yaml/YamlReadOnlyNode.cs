@@ -163,7 +163,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
         if (!IsPlainRaw(in row, out var raw))
             return false;
 
-        if (raw.SequenceEqual(".inf"u8) || raw.SequenceEqual("+.inf"u8) || raw.SequenceEqual(".Inf"u8) || raw.SequenceEqual(".INF"u8))
+        if (raw.SequenceEqual(".inf"u8) || raw.SequenceEqual("+.inf"u8) || raw.SequenceEqual(".Inf"u8) || raw.SequenceEqual("+.Inf"u8) || raw.SequenceEqual(".INF"u8) || raw.SequenceEqual("+.INF"u8))
         {
             value = double.PositiveInfinity;
             return true;
@@ -281,7 +281,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
         return false;
     }
 
-    /// <summary>Gets the node an alias refers to: the last node before it with that anchor.</summary>
+    /// <summary>Gets the node an alias refers to: the last node before it with that anchor, in the same document.</summary>
     /// <exception cref="InvalidOperationException">The node is not an alias, or its anchor is not defined.</exception>
     public YamlReadOnlyNode ResolveAlias()
     {

@@ -23,7 +23,7 @@ internal abstract class YamlTypedMemberSetter
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "Guarded by RuntimeFeature.IsDynamicCodeSupported.")]
     public static YamlTypedMemberSetter? Create(YamlConverter converter, MemberInfo member, Type memberType, Type declaringType, string memberName, bool disallowNull)
     {
-        if (!RuntimeFeature.IsDynamicCodeSupported || member.DeclaringType is not { IsValueType: false } memberDeclaringType || memberDeclaringType.ContainsGenericParameters)
+        if (!RuntimeFeature.IsDynamicCodeSupported || member.DeclaringType is not { IsValueType: false, IsInterface: false } memberDeclaringType || memberDeclaringType.ContainsGenericParameters)
             return null;
 
         if (memberType.IsByRef || memberType.IsPointer || memberType.IsByRefLike || memberType.ContainsGenericParameters)

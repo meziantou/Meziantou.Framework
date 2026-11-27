@@ -212,6 +212,30 @@ public sealed class YamlObjectConverterContractTests
         public int Y { get; set; }
     }
 
+    private interface IAccessorInterface
+    {
+        string? Name { get; set; }
+
+        int Count { get; set; }
+    }
+
+    private sealed class AccessorInterfaceImplementation : IAccessorInterface
+    {
+        public string? Name { get; set; }
+
+        public int Count { get; set; }
+    }
+
+    [Fact]
+    public void Serialize_InterfaceContract_ReadsItsProperties()
+    {
+        IAccessorInterface value = new AccessorInterfaceImplementation { Name = "a", Count = 2 };
+
+        var yaml = YamlSerializer.Serialize(value);
+
+        Assert.Equal("Name: a\nCount: 2\n", yaml);
+    }
+
     [Fact]
     public void Deserialize_CompiledAccessors_SetEveryKindOfMember()
     {

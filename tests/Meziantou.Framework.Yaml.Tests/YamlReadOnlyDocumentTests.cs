@@ -86,6 +86,37 @@ public sealed class YamlReadOnlyDocumentTests
     }
 
     [Fact]
+    public void ResolveAlias_DoesNotFindAnAnchorOfAnotherDocument()
+    {
+        using var document = YamlReadOnlyDocument.Parse("&a first\n---\n*a\n");
+
+        Assert.Throws<InvalidOperationException>(() => document.GetDocumentRoot(1).ResolveAlias());
+    }
+
+    [Fact]
+    public void Parse_StringWithALoneSurrogate_Throws()
+    {
+        var exception = Assert.Throws<SyntaxErrorException>(() => YamlReadOnlyDocument.Parse("a: b\nc: x\uD800y\n"));
+
+        Assert.Equal((1, 4), (exception.Start.Line, exception.Start.Column));
+    }
+
+    [Theory]
+    [InlineData(".inf")]
+    [InlineData("+.inf")]
+    [InlineData(".Inf")]
+    [InlineData("+.Inf")]
+    [InlineData(".INF")]
+    [InlineData("+.INF")]
+    public void TryGetDouble_PositiveInfinity(string text)
+    {
+        using var document = YamlReadOnlyDocument.Parse(text);
+
+        Assert.True(document.Root.TryGetDouble(out var value));
+        Assert.Equal(double.PositiveInfinity, value);
+    }
+
+    [Fact]
     public void Node_Positions()
     {
         #region YamlReadOnlyDocument_Positions

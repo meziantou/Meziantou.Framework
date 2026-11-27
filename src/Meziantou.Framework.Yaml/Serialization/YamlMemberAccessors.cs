@@ -10,14 +10,14 @@ namespace Meziantou.Framework.Yaml.Serialization;
 /// </summary>
 /// <remarks>
 /// The methods return <see langword="null"/> when the runtime does not support dynamic code, such as NativeAOT, or for a
-/// member they do not handle: a member of a struct, which a delegate would update on a copy, or a read-only field. The
-/// caller then uses reflection.
+/// member they do not handle: a member of a struct, which a delegate would update on a copy, a member of an interface,
+/// which cannot own a dynamic method, or a read-only field. The caller then uses reflection.
 /// </remarks>
 internal static class YamlMemberAccessors
 {
     public static Func<object, object?>? CreateGetter(MemberInfo member)
     {
-        if (!RuntimeFeature.IsDynamicCodeSupported || member.DeclaringType is not { IsValueType: false } declaringType || declaringType.ContainsGenericParameters)
+        if (!RuntimeFeature.IsDynamicCodeSupported || member.DeclaringType is not { IsValueType: false, IsInterface: false } declaringType || declaringType.ContainsGenericParameters)
             return null;
 
         Type memberType;
@@ -66,7 +66,7 @@ internal static class YamlMemberAccessors
 
     public static Action<object, object?>? CreateSetter(MemberInfo member)
     {
-        if (!RuntimeFeature.IsDynamicCodeSupported || member.DeclaringType is not { IsValueType: false } declaringType || declaringType.ContainsGenericParameters)
+        if (!RuntimeFeature.IsDynamicCodeSupported || member.DeclaringType is not { IsValueType: false, IsInterface: false } declaringType || declaringType.ContainsGenericParameters)
             return null;
 
         Type memberType;

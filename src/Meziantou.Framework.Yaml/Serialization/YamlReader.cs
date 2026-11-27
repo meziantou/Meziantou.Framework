@@ -426,9 +426,21 @@ public sealed class YamlReader : YamlReaderWriterBase
                 if (knownValue.Length == raw.Length && Ascii.Equals(raw, knownValue))
                     return knownValue;
             }
+
+            // The bytes are the value: ASCII bytes that match no known value are a value that is not one of them
+            if (Ascii.IsValid(raw))
+                return GetScalarValue();
         }
 
-        return GetScalarValue();
+        // A key with escapes, quotes that change it, or other characters than ASCII is decoded first
+        var value = GetScalarValue();
+        foreach (var knownValue in knownValues)
+        {
+            if (string.Equals(knownValue, value, StringComparison.Ordinal))
+                return knownValue;
+        }
+
+        return value;
     }
 
     /// <summary>Creates the writer that copies a node, so that every scalar of the copy resolves as it did in the source.</summary>

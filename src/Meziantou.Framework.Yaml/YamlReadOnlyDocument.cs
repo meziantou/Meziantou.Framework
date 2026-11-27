@@ -11,6 +11,9 @@ namespace Meziantou.Framework.Yaml;
 /// <remarks>Dispose the document to return its buffers to the pool. Its nodes must not be used after that.</remarks>
 public sealed class YamlReadOnlyDocument : IDisposable
 {
+    // A lone surrogate of the text is an error, like for the other inputs, instead of a replacement character
+    private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+
     private ReadOnlyMemory<byte> _utf8;
     private byte[]? _ownedBuffer;
     private Row[]? _rows;
@@ -59,10 +62,19 @@ public sealed class YamlReadOnlyDocument : IDisposable
     public static YamlReadOnlyDocument Parse(string yaml, Utf8YamlReaderOptions options = default)
     {
         ArgumentNullException.ThrowIfNull(yaml);
-        var buffer = ArrayPool<byte>.Shared.Rent(Encoding.UTF8.GetMaxByteCount(yaml.Length));
+        var buffer = ArrayPool<byte>.Shared.Rent(StrictUtf8.GetMaxByteCount(yaml.Length));
         try
         {
-            var length = Encoding.UTF8.GetBytes(yaml, buffer);
+            int length;
+            try
+            {
+                length = StrictUtf8.GetBytes(yaml, buffer);
+            }
+            catch (EncoderFallbackException exception)
+            {
+                throw CreateInvalidUtf16Exception(yaml, exception.Index);
+            }
+
             return Parse(buffer.AsMemory(0, length), buffer, options);
         }
         catch
@@ -70,6 +82,24 @@ public sealed class YamlReadOnlyDocument : IDisposable
             ArrayPool<byte>.Shared.Return(buffer);
             throw;
         }
+    }
+
+    // The location of the invalid character: a line ends at a line feed, or at a carriage return that no line feed follows
+    private static SyntaxErrorException CreateInvalidUtf16Exception(string yaml, int index)
+    {
+        var line = 0;
+        var lineStart = 0;
+        for (var i = 0; i < index; i++)
+        {
+            if (yaml[i] == '\n' || (yaml[i] == '\r' && (i + 1 >= yaml.Length || yaml[i + 1] != '\n')))
+            {
+                line++;
+                lineStart = i + 1;
+            }
+        }
+
+        var mark = new Mark(index, line, index - lineStart);
+        return new SyntaxErrorException(mark, mark, "The input contains an invalid UTF-16 sequence.");
     }
 
     /// <summary>Reads a UTF-8 YAML stream to its end and parses it.</summary>
@@ -419,14 +449,23 @@ public sealed class YamlReadOnlyDocument : IDisposable
         return new Mark((int)Math.Min(index, int.MaxValue), line, Encoding.UTF8.GetCharCount(buffer[columnStart..offset]));
     }
 
-    // The last node before the alias that has its anchor
+    // The last node before the alias that has its anchor, in the same document: an anchor is not defined in the others
     internal int FindAnchor(int aliasIndex)
     {
         var rows = _rows!;
         var buffer = Utf8Span;
         ref readonly var alias = ref rows[aliasIndex];
         var name = buffer.Slice(alias.Token.Start + 1, alias.Token.Length - 1);
-        for (var i = aliasIndex - 1; i >= 0; i--)
+        var documentRoot = 0;
+        foreach (var root in _documentRoots)
+        {
+            if (root > aliasIndex)
+                break;
+
+            documentRoot = root;
+        }
+
+        for (var i = aliasIndex - 1; i >= documentRoot; i--)
         {
             ref readonly var row = ref rows[i];
             if (row.Token.Properties.AnchorStart >= 0 && buffer.Slice(row.Token.Properties.AnchorStart + 1, row.Token.Properties.AnchorLength - 1).SequenceEqual(name))

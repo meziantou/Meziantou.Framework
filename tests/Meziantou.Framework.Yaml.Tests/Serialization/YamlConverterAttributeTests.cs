@@ -125,6 +125,15 @@ public sealed class YamlConverterAttributeTests
     #endregion
 
     [Fact]
+    public void GetScalarValue_ReturnsTheKnownValueOfADecodedKey()
+    {
+        var range = YamlSerializer.Deserialize<DateRange>("\"sta\\u0072t\": 2024-01-01T00:00:00Z\n'end': 2024-12-31T00:00:00Z\n");
+
+        Assert.Equal(2024, range.Start.Year);
+        Assert.Equal(2024, range.End.Year);
+    }
+
+    [Fact]
     public void CurrentLocation_IsResolvedWhileTheInputIsRead()
     {
         var fromString = YamlSerializer.Deserialize<LocatedValue>("\n  value\n");

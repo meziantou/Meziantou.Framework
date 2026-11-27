@@ -56,7 +56,7 @@ alias.
 | Compare a scalar | [ValueEquals](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.ValueEquals), without allocating |
 | Find a mapping value | The indexer, or [TryGetProperty](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.TryGetProperty) with a string or UTF-8 bytes |
 | Enumerate | [EnumerateMapping](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.EnumerateMapping), [EnumerateSequence](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.EnumerateSequence), [GetLength](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.GetLength) |
-| Follow an alias | [ResolveAlias](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.ResolveAlias): the node of its anchor |
+| Follow an alias | [ResolveAlias](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.ResolveAlias): the node of its anchor, in the same document |
 | Get the text of a node | [GetRawText](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.GetRawText), or [GetRawUtf8Text](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.GetRawUtf8Text) without allocating |
 | Locate a node | [Start](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Start) and [End](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.End), or [Utf8Offset](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Utf8Offset) and [Utf8Length](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Utf8Length) in the UTF-8 bytes |
 | Write a node | [WriteTo](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.WriteTo), with a [UTF-8 writer](12-Utf8Writer.md#copy-a-read-only-document) |

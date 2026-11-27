@@ -169,6 +169,109 @@ public class IOUtilitiesTests
         return (link, target, targetFile);
     }
 
+    [Fact]
+    public void DeleteDoesNotChangeThePermissionsOfSymbolicLinkTargets()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var (root, outside, file, directory) = CreateTreeWithLinksToReadOnlyTargets();
+        try
+        {
+            IOUtilities.Delete(root);
+
+            Assert.False(Directory.Exists(root.FullName));
+            AssertReadOnlyTargetsAreUnchanged(file, directory);
+        }
+        finally
+        {
+            DeleteReadOnlyTargets(outside, directory);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteAsyncDoesNotChangeThePermissionsOfSymbolicLinkTargets()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var (root, outside, file, directory) = CreateTreeWithLinksToReadOnlyTargets();
+        try
+        {
+            await IOUtilities.DeleteAsync(root, XunitCancellationToken);
+
+            Assert.False(Directory.Exists(root.FullName));
+            AssertReadOnlyTargetsAreUnchanged(file, directory);
+        }
+        finally
+        {
+            DeleteReadOnlyTargets(outside, directory);
+        }
+    }
+
+    [Fact]
+    public async Task DeleteASymbolicLinkDoesNotChangeThePermissionsOfItsTarget()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var (root, outside, file, directory) = CreateTreeWithLinksToReadOnlyTargets();
+        try
+        {
+            IOUtilities.Delete(new FileInfo(Path.Combine(root.FullName, "file-link")));
+            IOUtilities.Delete(Path.Combine(root.FullName, "directory-link"));
+            await IOUtilities.DeleteAsync(new FileInfo(Path.Combine(root.FullName, "nested", "file-link")), XunitCancellationToken);
+            await IOUtilities.DeleteAsync(Path.Combine(root.FullName, "nested", "directory-link"), XunitCancellationToken);
+
+            Assert.Equal([Path.Combine(root.FullName, "nested")], Directory.GetFileSystemEntries(root.FullName, "*", SearchOption.AllDirectories));
+            AssertReadOnlyTargetsAreUnchanged(file, directory);
+        }
+        finally
+        {
+            root.Delete(recursive: true);
+            DeleteReadOnlyTargets(outside, directory);
+        }
+    }
+
+    // Setting FileSystemInfo.Attributes on Unix changes the mode of the target of a symbolic link, not of the link
+    [UnsupportedOSPlatform("windows")]
+    private static (DirectoryInfo Root, DirectoryInfo Outside, string File, string Directory) CreateTreeWithLinksToReadOnlyTargets()
+    {
+        var outside = Directory.CreateTempSubdirectory();
+        var file = Path.Combine(outside.FullName, "read-only.txt");
+        File.WriteAllText(file, "content");
+        File.SetUnixFileMode(file, UnixFileMode.UserRead);
+        var directory = Path.Combine(outside.FullName, "read-only");
+        Directory.CreateDirectory(directory);
+        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+        var root = Directory.CreateTempSubdirectory();
+        var nested = root.CreateSubdirectory("nested");
+        foreach (var parent in new[] { root.FullName, nested.FullName })
+        {
+            File.CreateSymbolicLink(Path.Combine(parent, "file-link"), file);
+            Directory.CreateSymbolicLink(Path.Combine(parent, "directory-link"), directory);
+        }
+
+        return (root, outside, file, directory);
+    }
+
+    [UnsupportedOSPlatform("windows")]
+    private static void AssertReadOnlyTargetsAreUnchanged(string file, string directory)
+    {
+        Assert.True(File.Exists(file));
+        Assert.True(Directory.Exists(directory));
+        Assert.Equal(UnixFileMode.UserRead, File.GetUnixFileMode(file));
+        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserExecute, File.GetUnixFileMode(directory));
+    }
+
+    [UnsupportedOSPlatform("windows")]
+    private static void DeleteReadOnlyTargets(DirectoryInfo outside, string directory)
+    {
+        File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        outside.Delete(recursive: true);
+    }
+
     // FileSystemInfo.Exists is cached, so this reproduces the window between the Exists check
     // and the enumeration of the directory content, without depending on timing.
     private static DirectoryInfo CreateDirectoryRemovedAfterTheExistsCheck()

@@ -192,6 +192,51 @@ public class TemporaryDirectoryTests
     }
 
     [Fact]
+    public async Task DisposeDoesNotChangeThePermissionsOfSymbolicLinkTargets()
+    {
+        // Setting FileSystemInfo.Attributes on Unix changes the mode of the target of a symbolic link
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var outside = Directory.CreateTempSubdirectory();
+        try
+        {
+            var file = Path.Combine(outside.FullName, "read-only.txt");
+            File.WriteAllText(file, "content");
+            File.SetUnixFileMode(file, UnixFileMode.UserRead);
+            var directory = Path.Combine(outside.FullName, "read-only");
+            Directory.CreateDirectory(directory);
+            File.SetUnixFileMode(directory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+
+            FullPath path;
+            using (var dir = TemporaryDirectory.Create())
+            {
+                path = dir.FullPath;
+                File.CreateSymbolicLink(dir.GetFullPath("file-link"), file);
+                Directory.CreateSymbolicLink(dir.GetFullPath("directory-link"), directory);
+            }
+
+            await using (var dir = TemporaryDirectory.Create())
+            {
+                dir.CreateDirectory("sub");
+                File.CreateSymbolicLink(dir.GetFullPath("sub/file-link"), file);
+                Directory.CreateSymbolicLink(dir.GetFullPath("sub/directory-link"), directory);
+            }
+
+            Assert.False(Directory.Exists(path));
+            Assert.True(File.Exists(file));
+            Assert.True(Directory.Exists(directory));
+            Assert.Equal(UnixFileMode.UserRead, File.GetUnixFileMode(file));
+            Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserExecute, File.GetUnixFileMode(directory));
+        }
+        finally
+        {
+            File.SetUnixFileMode(Path.Combine(outside.FullName, "read-only"), UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            outside.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
     public async Task ImplicitConversions()
     {
         await using var dir = TemporaryDirectory.Create();

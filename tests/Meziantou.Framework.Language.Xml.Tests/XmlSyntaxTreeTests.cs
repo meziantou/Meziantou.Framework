@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -619,6 +620,89 @@ public sealed class XmlSyntaxTreeTests
         var formatted = FormatText("<root x='&#10;'>\n<a>l1\nl2</a>\n</root>", new XmlFormattingOptions { NewLine = "\r\n" });
 
         Assert.Equal("<root x=\"&#xA;\">\r\n  <a>l1\nl2</a>\r\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_FormatsManySiblingsInLinearTime()
+    {
+        // Compare two sizes instead of using a fixed time limit, which depends on the speed of the machine: four times
+        // the input is about four times slower when the time is linear, and sixteen times when it is quadratic. The
+        // fastest of two runs of each size reduces the noise of a busy machine, and a large size that runs fast enough
+        // passes anyway.
+        const int Count = 20_000;
+        Measure(Count / 4);
+        var small = Min(Measure(Count), Measure(Count));
+        var large = Min(Measure(4 * Count), Measure(4 * Count));
+        Assert.True(large < small * 8 || large < TimeSpan.FromSeconds(2), $"{Count} siblings took {small}, {4 * Count} siblings took {large}");
+
+        static TimeSpan Measure(int count)
+        {
+            var compact = "<r>" + string.Concat(Enumerable.Repeat("<a/>", count)) + "</r>";
+            var expected = "<r>" + string.Concat(Enumerable.Repeat("\n  <a />", count)) + "\n</r>";
+            var carriageReturns = "<r>" + string.Concat(Enumerable.Repeat("x&#13;<a/>", count)) + "</r>";
+
+            var stopwatch = Stopwatch.StartNew();
+            var formatted = Formatter.Format(XmlSyntaxTree.ParseText(compact)).ToFullString();
+            var formattedAgain = Formatter.Format(XmlSyntaxTree.ParseText(formatted)).ToFullString();
+            var withCarriageReturns = Formatter.Format(XmlSyntaxTree.ParseText(carriageReturns)).ToFullString();
+            var elapsed = stopwatch.Elapsed;
+
+            Assert.Equal(expected, formatted);
+            Assert.Equal(expected, formattedAgain);
+            Assert.Equal("<r>" + string.Concat(Enumerable.Repeat("x&#xD;<a />", count)) + "</r>", withCarriageReturns);
+            return elapsed;
+        }
+
+        static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
+    }
+
+    [Fact]
+    public void Formatter_FormatsDeepNestingUpToTheMaxDepth()
+    {
+        const int Depth = 20_000;
+        const int MaxDepth = 64;
+        var text = string.Concat(Enumerable.Repeat("<a>", Depth)) + string.Concat(Enumerable.Repeat("</a>", Depth));
+        var expected = new StringBuilder("<a>");
+        for (var depth = 2; depth <= MaxDepth + 1; depth++)
+        {
+            expected.Append('\n').Append(' ', 2 * (depth - 1)).Append("<a>");
+        }
+
+        expected.Append(text, 3 * (MaxDepth + 1), text.Length - (3 * (MaxDepth + 1)) - (4 * MaxDepth));
+        for (var depth = MaxDepth; depth >= 1; depth--)
+        {
+            expected.Append('\n').Append(' ', 2 * (depth - 1)).Append("</a>");
+        }
+
+        var formatted = Formatter.Format(XmlSyntaxTree.ParseText(text)).ToFullString();
+
+        Assert.Equal(expected.ToString(), formatted);
+    }
+
+    [Fact]
+    public void Formatter_MaxDepth_KeepsTheContentOfDeeperElements()
+    {
+        #region XmlFormattingOptions_MaxDepth
+        var tree = XmlSyntaxTree.ParseText("<root><a><b><c/></b></a><d>  <e/></d></root>");
+        var formatted = Formatter.Format(tree.GetRoot(), new XmlFormattingOptions { MaxDepth = 2 });
+        Assert.Equal("<root>\n  <a>\n    <b><c /></b>\n  </a>\n  <d>\n    <e />\n  </d>\n</root>", formatted.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void Formatter_MaxDepth_KeepsTheWhitespaceOfDeeperElements()
+    {
+        var formatted = FormatText("<root><a>\n<b/>  <c/></a></root>", new XmlFormattingOptions { MaxDepth = 1, AttributeWrapping = true });
+
+        Assert.Equal("<root>\n  <a>\n<b />  <c /></a>\n</root>", formatted);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void XmlFormattingOptions_MaxDepth_RejectsValuesLessThanOne(int value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XmlFormattingOptions { MaxDepth = value });
     }
 
     private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();

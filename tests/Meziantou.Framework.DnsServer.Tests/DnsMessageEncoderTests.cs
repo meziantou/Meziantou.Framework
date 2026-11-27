@@ -803,6 +803,26 @@ public sealed class DnsMessageEncoderTests
         Assert.True(allocated < 64 * 1024, $"Rejecting the message allocated {allocated} bytes.");
     }
 
+    [Fact]
+    public void Decode_LongCompressionPointerChain_IsRejected()
+    {
+        // Every pointer goes backwards and adds no label, so only a bound on the number of hops keeps a
+        // message whose names all point at the end of a long chain from costing millions of hops.
+        var message = CreateMessageWithPointerChain(pointerCount: 200);
+
+        Assert.Throws<DnsProtocolException>(() => DnsMessageEncoder.DecodeQuery(message));
+    }
+
+    [Fact]
+    public void Decode_ShortCompressionPointerChain_IsDecoded()
+    {
+        var message = CreateMessageWithPointerChain(pointerCount: 3);
+
+        var decoded = DnsMessageEncoder.DecodeQuery(message);
+        Assert.HasCount(2, decoded.AdditionalRecords);
+        Assert.Equal("example", decoded.AdditionalRecords[1].Name);
+    }
+
     [Theory]
     [InlineData(12)]  // points at itself
     [InlineData(20)]  // points forward
@@ -1112,6 +1132,37 @@ public sealed class DnsMessageEncoderTests
 
         Assert.Equal("mail.example.com", Assert.IsType<DnsMxRecordData>(decoded.Answers[0].Data).Exchange);
         Assert.Equal("ns1.example.com", Assert.IsType<DnsNsRecordData>(decoded.Answers[1].Data).NameServer);
+    }
+
+    private static byte[] CreateMessageWithPointerChain(int pointerCount)
+    {
+        // A root question, a record of an unknown type whose data holds the name "example" followed by a chain of
+        // pointers each pointing at the previous one, and a record whose name points at the end of the chain.
+        var message = new List<byte> { 0x12, 0x34, 0x01, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x01, 0x00, 0x01 };
+        message.AddRange([0x00, 0xFF, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00]);
+        var rdataLengthPosition = message.Count;
+        message.AddRange([0x00, 0x00]);
+        var rdataStart = message.Count;
+        var previous = message.Count;
+        message.Add(7);
+        message.AddRange("example"u8.ToArray());
+        message.Add(0);
+        for (var i = 0; i < pointerCount; i++)
+        {
+            var current = message.Count;
+            message.Add((byte)(0xC0 | (previous >> 8)));
+            message.Add((byte)previous);
+            previous = current;
+        }
+
+        var rdataLength = message.Count - rdataStart;
+        message[rdataLengthPosition] = (byte)(rdataLength >> 8);
+        message[rdataLengthPosition + 1] = (byte)rdataLength;
+
+        message.Add((byte)(0xC0 | (previous >> 8)));
+        message.Add((byte)previous);
+        message.AddRange([0xFF, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]);
+        return [.. message];
     }
 
     private static DnsMessage CreateSimpleQuery(string name, DnsQueryType type)

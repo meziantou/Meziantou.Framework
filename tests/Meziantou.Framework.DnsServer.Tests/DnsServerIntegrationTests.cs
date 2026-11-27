@@ -854,6 +854,68 @@ public sealed class DnsServerIntegrationTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5359:Do Not Disable Certificate Validation")]
+    public async Task DoQ_FailedHandshake_DoesNotStopTheListener()
+    {
+        if (!System.Net.Quic.QuicListener.IsSupported)
+            return;
+
+        using var certificate = CreateSelfSignedCertificate();
+        var server = await StartAllProtocolsServerAsync(certificate, includeQuic: true);
+        await using var app = server.App;
+        var quicPort = server.QuicPort ?? throw new InvalidOperationException("QUIC listener port was not configured.");
+        var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+
+        try
+        {
+            // A client that rejects the server certificate makes the server-side handshake fail
+            var rejectingClientOptions = new System.Net.Quic.QuicClientConnectionOptions
+            {
+                RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, quicPort),
+                DefaultStreamErrorCode = 0,
+                DefaultCloseErrorCode = 0,
+                ClientAuthenticationOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "127.0.0.1",
+                    ApplicationProtocols = [new SslApplicationProtocol("doq")],
+                    RemoteCertificateValidationCallback = (_, _, _, _) => false,
+                },
+            };
+
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+            {
+                await using var connection = await System.Net.Quic.QuicConnection.ConnectAsync(rejectingClientOptions);
+            });
+
+            // A client that does not speak DoQ fails the ALPN negotiation
+            var wrongAlpnClientOptions = new System.Net.Quic.QuicClientConnectionOptions
+            {
+                RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, quicPort),
+                DefaultStreamErrorCode = 0,
+                DefaultCloseErrorCode = 0,
+                ClientAuthenticationOptions = new SslClientAuthenticationOptions
+                {
+                    TargetHost = "127.0.0.1",
+                    ApplicationProtocols = [new SslApplicationProtocol("h3")],
+                    RemoteCertificateValidationCallback = (_, _, _, _) => true,
+                },
+            };
+
+            await Assert.ThrowsAnyAsync<Exception>(async () =>
+            {
+                await using var connection = await System.Net.Quic.QuicConnection.ConnectAsync(wrongAlpnClientOptions);
+            });
+
+            await AssertDnsOverQuic(quicPort).WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.False(lifetime.ApplicationStopping.IsCancellationRequested);
+        }
+        finally
+        {
+            await app.StopAsync();
+        }
+    }
+
     [SuppressMessage("Security", "CA5359:Do Not Disable Certificate Validation")]
     private static async Task AssertDnsOverQuic(int quicPort)
     {
@@ -1726,8 +1788,9 @@ public sealed class DnsServerIntegrationTests
 
         var cert = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddMinutes(-1), DateTimeOffset.UtcNow.AddHours(1));
 
-        // Export and re-import to ensure the private key is available on all platforms
+        // Export and re-import to ensure the private key is available on all platforms.
+        // MsQuic built with OpenSSL (macOS) exports the certificate as PKCS #12, so the key must be exportable.
         var pfxBytes = cert.Export(X509ContentType.Pfx);
-        return X509CertificateLoader.LoadPkcs12(pfxBytes, password: null);
+        return X509CertificateLoader.LoadPkcs12(pfxBytes, password: null, X509KeyStorageFlags.Exportable);
     }
 }

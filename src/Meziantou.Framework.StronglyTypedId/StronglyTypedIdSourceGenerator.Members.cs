@@ -108,17 +108,17 @@ public partial class StronglyTypedIdSourceGenerator
                     {
                         using (writer.BeginBlock($"if ({PropertyName} == null)"))
                         {
-                            writer.WriteLine($$"""return "{{context.TypeName}} { Value = <null> }";""");
+                            writer.WriteLine($$"""return "{{context.Name}} { Value = <null> }";""");
                         }
 
                         using (writer.BeginBlock("else"))
                         {
-                            writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                            writer.WriteLine($$"""return "{{context.Name}} { Value = " + {{PropertyAsStringName}} + " }";""");
                         }
                     }
                     else
                     {
-                        writer.WriteLine($$"""return "{{context.TypeName}} { Value = " + {{PropertyAsStringName}} + " }";""");
+                        writer.WriteLine($$"""return "{{context.Name}} { Value = " + {{PropertyAsStringName}} + " }";""");
                     }
                 }
                 else

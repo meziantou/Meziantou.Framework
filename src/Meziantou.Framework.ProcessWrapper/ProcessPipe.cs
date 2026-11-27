@@ -91,7 +91,12 @@ public sealed class ProcessPipe
         lock (_writerLock)
         {
             ThrowIfWriterDisposed();
+
+            // Once the reader is gone, the pipe silently discards what is written. Report it as a broken
+            // pipe instead, so the process writing to this pipe can be stopped as a shell would do.
+            ThrowIfBrokenPipe();
             _outputStream.Write(buffer);
+            ThrowIfBrokenPipe();
         }
     }
 
@@ -108,6 +113,12 @@ public sealed class ProcessPipe
     private void ThrowIfReaderDisposed()
     {
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _isReaderDisposed), this);
+    }
+
+    private void ThrowIfBrokenPipe()
+    {
+        if (Volatile.Read(ref _isReaderDisposed))
+            throw new ProcessPipeBrokenException();
     }
 
     private void DisposeWriterCore()

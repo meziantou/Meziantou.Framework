@@ -61,6 +61,18 @@ public sealed class BencodeWriter
         }
     }
 
+    /// <summary>Writes a value that is already encoded, such as the bytes a value was parsed from.</summary>
+    internal void WriteEncodedValue(ReadOnlySpan<byte> value)
+    {
+        var rootValueWasCompleted = StartValue();
+        WriteBytes(value);
+
+        if (rootValueWasCompleted)
+        {
+            _isComplete = true;
+        }
+    }
+
     public void WriteUtf8String(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

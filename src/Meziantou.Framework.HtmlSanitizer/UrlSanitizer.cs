@@ -92,14 +92,39 @@ public static partial class UrlSanitizer
             }
             else
             {
-                // Skip the descriptors of the candidate, they end at the next comma
-                var descriptorSeparatorIndex = remaining.IndexOf(',');
-                remaining = descriptorSeparatorIndex < 0 ? [] : remaining[(descriptorSeparatorIndex + 1)..];
+                // Skip the descriptors of the candidate, they end at the next comma that is not inside parentheses
+                remaining = remaining[GetDescriptorsLength(remaining)..];
             }
 
             if (!candidateUrl.IsEmpty && !IsSafeUrl(candidateUrl))
                 return false;
         }
+    }
+
+    // The "in descriptor" and "in parens" states of the tokenizer of the descriptors: a comma inside parentheses does not end
+    // the candidate ("a 1x(,q)/,javascript:alert(1) 2x" is a single candidate). Returns the length of the descriptors and
+    // of the comma that ends them.
+    private static int GetDescriptorsLength(ReadOnlySpan<char> descriptors)
+    {
+        var inParentheses = false;
+        for (var i = 0; i < descriptors.Length; i++)
+        {
+            switch (descriptors[i])
+            {
+                case ')' when inParentheses:
+                    inParentheses = false;
+                    break;
+
+                case '(':
+                    inParentheses = true;
+                    break;
+
+                case ',' when !inParentheses:
+                    return i + 1;
+            }
+        }
+
+        return descriptors.Length;
     }
 
     private static bool IsSafeUrl(ReadOnlySpan<char> url)

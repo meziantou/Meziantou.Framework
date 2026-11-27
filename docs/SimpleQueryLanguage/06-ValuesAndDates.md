@@ -20,6 +20,26 @@ that cannot be parsed matches nothing.
 
 Values never depend on the culture of the machine: `1.5` is one and a half everywhere.
 
+## Days
+
+When `TValue` is `DateTime` or `DateTimeOffset`, or their nullable versions, a date written without a time, such as
+`2026-01-31` or `01/31/2026`, is the whole day, from its first instant to the first instant of the next day, excluded:
+
+| Query | Matches |
+| --- | --- |
+| `created:2026-01-31` | The instants of January 31. |
+| `created<>2026-01-31` | The instants before or after January 31. |
+| `created:2026-01-01..2026-01-31` | From January 1 to the end of January 31. |
+| `created<=2026-01-31` | Before February 1. |
+| `created>2026-01-31` | From February 1. |
+| `created<2026-01-31` and `created>=2026-01-31` | Before January 31, and from January 31. |
+
+A value with a time, such as `2026-01-31T10:00` or `2026-01-31T00:00:00Z`, is an instant. So is a
+[relative date](#relative-dates): `@today` is the start of the day. The day is in UTC, like the dates written in a query.
+This applies to [AddRangeHandler](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.AddRangeHandler) and to
+[ExpressionQueryBuilder\<T\>.AddHandler\<TValue\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.AddHandler). The other handlers of
+[QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}) receive the start of the day.
+
 ## Date keywords
 
 When `TValue` is `DateTime`, `DateTimeOffset` or `DateOnly`, or their nullable versions, these keywords are ranges:

@@ -62,6 +62,11 @@ is computed from the audio instead.
 - A native item has a type of four Latin-1 characters and no flags. The type of an item a property represents (`©nam`,
   `trkn`, `covr`, `----`, `tvsh`…) or of a box of the movie structure (`moov`, `meta`, `stco`…) is refused.
 - Only one picture is stored: the front cover.
+- Writing the tags resizes the `moov` atom, which moves the atoms after it. The absolute file offsets that point at
+  them are updated: the chunk offsets of the tracks (`stco`, `co64`), and in fragmented files, the base data offsets of
+  the track fragments (`tfhd`) and the fragment positions of the random access index (`tfra`). A file with a segment
+  index (`sidx`) before `moov` is refused with [MediaTagError.UnsupportedFormat](cref:Meziantou.Framework.MediaTags.MediaTagError.UnsupportedFormat) when
+  its `moov` atom changes size.
 - The video items are [MediaKind](cref:Meziantou.Framework.MediaTags.MediaTagInfo.MediaKind) (`stik`), [Description](cref:Meziantou.Framework.MediaTags.MediaTagInfo.Description) (`desc`), [LongDescription](cref:Meziantou.Framework.MediaTags.MediaTagInfo.LongDescription) (`ldes`), [TvShow](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvShow) (`tvsh`),
   [TvNetwork](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvNetwork) (`tvnn`), [TvEpisodeId](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvEpisodeId) (`tven`), [TvSeason](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvSeason) (`tvsn`) and [TvEpisode](cref:Meziantou.Framework.MediaTags.MediaTagInfo.TvEpisode) (`tves`). The video size is
   read from the header of the first video track.

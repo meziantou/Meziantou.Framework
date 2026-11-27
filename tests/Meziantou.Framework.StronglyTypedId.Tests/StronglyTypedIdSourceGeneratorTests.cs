@@ -198,6 +198,81 @@ public sealed class StronglyTypedIdSourceGeneratorTests
     }
 
     [Fact]
+    public async Task GenerateTypeInKeywordNamespace()
+    {
+        var sourceCode = """
+            namespace @class.@int
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct KwId {}
+            }
+
+            namespace Other
+            {
+                [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                public partial struct Test {}
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.HasCount(2, result.GeneratorResult.GeneratedTrees);
+        Assert.Contains(result.GeneratorResult.GeneratedTrees, tree => tree.FilePath.EndsWith("class.int.KwId.g.cs", StringComparison.Ordinal));
+
+        AssertGeneratedTypes(result, ["class.int.KwId", "Other.Test"]);
+    }
+
+    [Theory]
+    [InlineData("struct")]
+    [InlineData("record struct")]
+    [InlineData("class")]
+    [InlineData("record")]
+    public async Task GenerateKeywordNamedTypes(string keyword)
+    {
+        var sourceCode = $$"""
+            namespace @class.@int
+            {
+                public partial class @static
+                {
+                    [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+                    public partial {{keyword}} @event {}
+                }
+            }
+            """;
+
+        var result = await GenerateFiles(sourceCode);
+        Assert.Empty(result.GeneratorResult.Diagnostics);
+        Assert.Single(result.GeneratorResult.GeneratedTrees);
+
+        AssertGeneratedTypes(result, ["class.int.static+event"]);
+        var symbol = result.OutputCompilation.GetTypeByMetadataName("class.int.static+event");
+        Assert.NotNull(symbol);
+        Assert.Contains(symbol.GetTypeMembers(), member => member.Name == "eventJsonConverter");
+        Assert.Contains(symbol.GetTypeMembers(), member => member.Name == "eventNewtonsoftJsonConverter");
+    }
+
+    [Fact]
+    public async Task GenerateKeywordNamedTypeToString()
+    {
+        var sourceCode = """
+            [Meziantou.Framework.Annotations.StronglyTypedId(typeof(int))]
+            public partial struct @event {}
+            """;
+
+        await TestGeneratedAssembly(sourceCode, typeName: "event", type =>
+        {
+            var from = (MethodInfo)type.GetMember("FromInt32").Single();
+            var instance = from.Invoke(null, [10]);
+            Assert.Equal("event { Value = 10 }", instance!.ToString());
+            Assert.Equal("10", System.Text.Json.JsonSerializer.Serialize(instance));
+            var converterType = type.GetNestedType("eventTypeConverter");
+            Assert.NotNull(converterType);
+            var converter = (System.ComponentModel.TypeConverter)Activator.CreateInstance(converterType)!;
+            Assert.Equal(instance, converter.ConvertFromInvariantString("10"));
+        });
+    }
+
+    [Fact]
     public async Task DummyAttribute()
     {
         var sourceCode = """

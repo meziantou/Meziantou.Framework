@@ -14,6 +14,8 @@ internal sealed partial class ContentSecurityPolicyFormatter : HttpHeaderValueFo
         return headerValue;
     }
 
-    [GeneratedRegex("(?<=nonce-).*?(?=')", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
+    // nonce-source = "'nonce-" base64-value "'" (CSP3). Matching only the base64 / base64url
+    // characters keeps the match linear and inside a single source expression.
+    [GeneratedRegex("(?<='nonce-)[A-Za-z0-9+/=_-]*(?=')", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex ContentSecurityPolicyNonceRegex { get; }
 }

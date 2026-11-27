@@ -796,13 +796,26 @@ internal sealed partial class PowerShellParser
             }
 
             var positionBefore = _lexer.Position;
+            var isBareWord = PowerShellLexer.IsNameStart(_lexer.Current);
+            var keyStart = new HashKeyStart(positionBefore, _pendingTrivia.Count > 0, FollowsLineBreakTrivia(), _allowEmptyParentheses, _paramBlockAllowed);
+            if (!isBareWord && IsKnownFailedHashKey(keyStart))
+            {
+                AddMissingHashEntryEqualsDiagnostic(positionBefore);
+                break;
+            }
+
             var checkpoint = CreateCheckpoint();
+            var deepestBefore = _deepestRecursion;
+            _deepestRecursion = -1;
 
             // A key may be a bare word or any simple expression, as in `@{ $parameter.Name = $parameter.Value }`, and
             // a value may be an array or a whole pipeline, as in `@{ Names = $items | Sort-Object }`.
-            var key = PowerShellLexer.IsNameStart(_lexer.Current)
+            var key = isBareWord
                 ? new PowerShellLiteralExpressionSyntax(SyntaxKind.PowerShellBareWord, ReadIdentifierToken())
-                : ParsePostfixExpression();
+                : ParseHashKeyExpression();
+
+            var deepest = _deepestRecursion;
+            _deepestRecursion = Math.Max(deepestBefore, deepest);
 
             // The `=` has to be on the same line as the key.
             AccumulateInlineTrivia();
@@ -811,7 +824,12 @@ internal sealed partial class PowerShellParser
                 // Without the `=` this is not an entry. Going back to where the key started and ending the literal
                 // there leaves what follows, often the statements after a forgotten `}`, to be read as statements.
                 Restore(checkpoint);
-                AddDiagnostic(new TextSpan(positionBefore, 0), "SHELL0012", "Expected '=' after the key of a hash literal entry, or '}' to close the hash literal.");
+                if (!isBareWord)
+                {
+                    _failedHashKeys[keyStart] = new FailedHashKey(_depth, deepest < 0 ? -1 : deepest - _depth, deepest >= _options.MaxRecursionDepth);
+                }
+
+                AddMissingHashEntryEqualsDiagnostic(positionBefore);
                 break;
             }
 
@@ -856,6 +874,60 @@ internal sealed partial class PowerShellParser
         }
 
         return new PowerShellHashLiteralSyntax(openToken, ParserHelpers.List(entries), ExpectCharacter('}', SyntaxKind.CloseBraceToken));
+    }
+
+    private ShellExpressionSyntax ParseHashKeyExpression()
+    {
+        _hashKeySpeculations++;
+        try
+        {
+            // A key that is itself a hash literal, as in `@{ @{ @{`, nests without going through any other guarded
+            // parse. The other keys go through one before they can nest, so they are left at the depth they always had.
+            if (_lexer.Current != '@' || _lexer.Peek(1) != '{')
+                return ParsePostfixExpression();
+
+            if (!TryEnterRecursion(new TextSpan(_lexer.Position, 0)))
+                return new ShellRawExpressionSyntax(ConsumeRestAsToken());
+
+            try
+            {
+                return ParsePostfixExpression();
+            }
+            finally
+            {
+                _depth--;
+            }
+        }
+        finally
+        {
+            _hashKeySpeculations--;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether the key that starts at <paramref name="keyStart"/> was already found to be followed by no
+    /// <c>=</c>, which spares parsing it again, and accounts for the nesting its parse would reach.
+    /// </summary>
+    private bool IsKnownFailedHashKey(HashKeyStart keyStart)
+    {
+        if (!_failedHashKeys.TryGetValue(keyStart, out var failure) || !failure.AppliesAt(_depth))
+            return false;
+
+        if (failure.ReachedLimit)
+        {
+            _deepestRecursion = Math.Max(_deepestRecursion, _options.MaxRecursionDepth);
+        }
+        else if (failure.RelativeDeepest >= 0)
+        {
+            _deepestRecursion = Math.Max(_deepestRecursion, _depth + failure.RelativeDeepest);
+        }
+
+        return true;
+    }
+
+    private void AddMissingHashEntryEqualsDiagnostic(int position)
+    {
+        AddDiagnostic(new TextSpan(position, 0), "SHELL0012", "Expected '=' after the key of a hash literal entry, or '}' to close the hash literal.");
     }
 
     /// <summary>Returns whether a <c>;</c> comes next once whitespace, line breaks, and comments are skipped.</summary>
@@ -1390,7 +1462,7 @@ internal sealed partial class PowerShellParser
         var (trivia, fullStart) = TakeTrivia();
         var start = _lexer.Position;
         _lexer.Position = _lexer.Text.Length;
-        var text = _lexer.Text[start..];
+        var text = GetRestOfText(start);
 
         return new ScannedToken(SyntaxKind.BadToken, text, text, leadingTrivia: trivia, fullStart: fullStart);
     }

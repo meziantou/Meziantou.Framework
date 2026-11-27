@@ -57,7 +57,7 @@ static partial class IOUtilities
                     {
                         try
                         {
-                            Retry(() => RemoveReadOnlyAttribute(childInfo));
+                            Retry(() => RemoveReadOnlyAttributeOfEntry(childInfo));
                             Retry(() => childInfo.Delete());
                         }
                         catch (FileNotFoundException)
@@ -74,7 +74,7 @@ static partial class IOUtilities
                 }
             }
 
-            Retry(() => RemoveReadOnlyAttribute(fileSystemInfo));
+            Retry(() => RemoveReadOnlyAttributeOfEntry(fileSystemInfo));
             Retry(() => DeleteFileSystemInfo(fileSystemInfo));
         }
         catch (FileNotFoundException)
@@ -105,6 +105,16 @@ static partial class IOUtilities
 
             Thread.Sleep(50);
         }
+    }
+
+    // Removing a link only needs write permission on its parent directory on Unix, and setting the
+    // attributes of a link there changes the mode of its target, which can be outside the deleted tree.
+    private static void RemoveReadOnlyAttributeOfEntry(FileSystemInfo fileSystemInfo)
+    {
+        if (!OperatingSystem.IsWindows() && fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
+            return;
+
+        RemoveReadOnlyAttribute(fileSystemInfo);
     }
 
     private static void RemoveReadOnlyAttribute(FileSystemInfo fileSystemInfo)
@@ -160,7 +170,7 @@ static partial class IOUtilities
                     {
                         try
                         {
-                            await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(childInfo), cancellationToken).ConfigureAwait(false);
+                            await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttributeOfEntry(childInfo),cancellationToken).ConfigureAwait(false);
                             await RetryOnSharingViolationAsync(() => childInfo.Delete(), cancellationToken).ConfigureAwait(false);
                         }
                         catch (FileNotFoundException)
@@ -177,7 +187,7 @@ static partial class IOUtilities
                 }
             }
 
-            await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(fileSystemInfo), cancellationToken).ConfigureAwait(false);
+            await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttributeOfEntry(fileSystemInfo),cancellationToken).ConfigureAwait(false);
             await RetryOnSharingViolationAsync(() => DeleteFileSystemInfo(fileSystemInfo), cancellationToken).ConfigureAwait(false);
         }
         catch (FileNotFoundException)

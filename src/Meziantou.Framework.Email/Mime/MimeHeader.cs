@@ -28,9 +28,10 @@ public sealed class MimeHeader
     /// <param name="name">The name of the header.</param>
     /// <param name="value">The text.</param>
     /// <returns>The header.</returns>
+    /// <exception cref="ArgumentException">The name is empty or contains a character other than the printable ASCII characters, or a colon.</exception>
     public static MimeHeader Create(string name, string value)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        ValidateName(name);
         ArgumentNullException.ThrowIfNull(value);
         return new MimeHeader(name, MimeEncoding.EncodeHeaderText(value.ReplaceLineEndings(" ")), rawBytes: null);
     }
@@ -39,11 +40,25 @@ public sealed class MimeHeader
     /// <param name="name">The name of the header.</param>
     /// <param name="rawValue">The value, as it is written.</param>
     /// <returns>The header.</returns>
+    /// <exception cref="ArgumentException">The name is empty or contains a character other than the printable ASCII characters, or a colon.</exception>
     public static MimeHeader CreateRaw(string name, string rawValue)
     {
-        ArgumentException.ThrowIfNullOrEmpty(name);
+        ValidateName(name);
         ArgumentNullException.ThrowIfNull(rawValue);
         return new MimeHeader(name, rawValue.ReplaceLineEndings(" "), rawBytes: null);
+    }
+
+    /// <summary>Checks that a name is a field name ([RFC 5322] 2.2): printable ASCII characters other than the colon, so that it cannot end the header or start another one.</summary>
+    private static void ValidateName(string name)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(name);
+        foreach (var c in name)
+        {
+            if (c is < '!' or > '~' or ':')
+            {
+                throw new ArgumentException("The name of a header must contain only printable ASCII characters other than the colon.", nameof(name));
+            }
+        }
     }
 
     /// <summary>Returns the name and the value of the header.</summary>

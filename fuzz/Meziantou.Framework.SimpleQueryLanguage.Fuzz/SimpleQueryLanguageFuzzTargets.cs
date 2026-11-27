@@ -1191,6 +1191,8 @@ public static partial class SimpleQueryLanguageFuzzTargets
             "status<Closed", "status>=pending", "status:Active..Closed", "status<>Closed..*", "-status>1", "previous<=Closed OR previous:*..Active", "previous<>pending",
             "status:42 OR status<-1", "name:John", "name:john -name:doe", "name<>JOHN", "name:\"\"", "name<John",
             "price:1,000.5", "price>=1.5e1", "price:0.1..2.5", "price:NaN", "price<-Infinity",
+            "created:2026-03-15", "created<>2026-03-15", "created<=2026-03-15", "created>2026-03-15", "created:2026-03-01..2026-03-15", "created:2026-03-15T00:00",
+            "created:9999-12-31", "created>9999-12-31", "created<=9999-12-31",
         ];
 
         var result = new HashSet<string>(StringComparer.Ordinal);

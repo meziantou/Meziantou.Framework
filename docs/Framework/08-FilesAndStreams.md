@@ -62,7 +62,8 @@ Assert.False(Directory.Exists(destination));
 - [Delete](cref:Meziantou.Framework.IOUtilities.Delete) deletes a file, or a folder and its content, and does nothing when the path does not exist. It removes the
   read-only attribute that prevents deleting a file, makes read-only folders writable (on Linux and macOS, deleting a
   file requires write permission on its folder, as in the Go module cache), and retries when a file is temporarily locked by another process,
-  such as an antivirus. Symbolic links and junctions are deleted as links: the content of their target is kept.
+  such as an antivirus. Symbolic links and junctions are deleted as links: the content and the permissions of their
+  target are kept.
 - [DeleteAsync](cref:Meziantou.Framework.IOUtilities.DeleteAsync) does the same and waits asynchronously between the retries.
 - [PathUnprotect](cref:Meziantou.Framework.IOUtilities.PathUnprotect) removes the read-only attribute of a file, and [IsSharingViolation](cref:Meziantou.Framework.IOUtilities.IsSharingViolation) tells whether an `IOException` was
   caused by a file locked by another process.

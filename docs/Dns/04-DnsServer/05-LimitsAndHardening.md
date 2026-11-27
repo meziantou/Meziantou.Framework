@@ -65,8 +65,9 @@ Before the handler runs, the server:
 - answers a message it cannot parse with [FormError](cref:Meziantou.Framework.DnsServer.Protocol.DnsResponseCode.FormError) (HTTP 400 for DNS over HTTPS), so the client does not wait for a
   timeout;
 - answers an EDNS version other than 0 with [BadVersion](cref:Meziantou.Framework.DnsServer.Protocol.DnsResponseCode.BadVersion) (RFC 6891);
-- limits decompressed names to 255 bytes and requires compression pointers to point backwards, so a crafted message
-  cannot expand without limit;
+- limits decompressed names to 255 bytes, requires compression pointers to point backwards and follows at most 127
+  pointers per name, so a crafted message cannot expand without limit or make decoding its names cost millions of
+  pointer hops;
 - for DNS over HTTPS, rejects bodies larger than a DNS message before reading them.
 
 The server does not limit the number of queries per client. A public server needs rate limiting: in the handler, by

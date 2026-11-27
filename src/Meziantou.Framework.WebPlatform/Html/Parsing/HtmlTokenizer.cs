@@ -183,6 +183,13 @@ internal sealed class HtmlTokenizer
     private bool _hasCurrentAttribute;
     private bool _currentAttributeIsDuplicate;
 
+    // The names of the attributes of the current tag, used to find the duplicates once the tag has many attributes: comparing
+    // the name with each attribute is quadratic in the number of attributes. The set holds the first _attributeNameSetCount
+    // attributes of _attributes.
+    private const int AttributeNameSetThreshold = 16;
+    private HashSet<string>? _attributeNameSet;
+    private int _attributeNameSetCount;
+
     /// <summary>Whether the current tag token had a duplicate-attribute parse error (https://w3c.github.io/webappsec-csp/#is-element-nonceable).</summary>
     private bool _tagHadDuplicateAttribute;
     private int _streamErrorsReportedUpTo;
@@ -824,6 +831,12 @@ internal sealed class HtmlTokenizer
         _tagName.Clear();
         _selfClosing = false;
         _attributes.Clear();
+        if (_attributeNameSetCount > 0)
+        {
+            _attributeNameSet!.Clear();
+            _attributeNameSetCount = 0;
+        }
+
         _hasCurrentAttribute = false;
         _tagHadDuplicateAttribute = false;
     }
@@ -832,14 +845,35 @@ internal sealed class HtmlTokenizer
     private void LeaveAttributeName()
     {
         _currentAttributeIsDuplicate = false;
-        foreach (var attribute in _attributes)
+        if (_attributes.Count < AttributeNameSetThreshold)
         {
-            if (_attributeName.Equals(attribute.Name))
+            foreach (var attribute in _attributes)
             {
-                ReportError("duplicate-attribute");
-                _currentAttributeIsDuplicate = true;
-                return;
+                if (_attributeName.Equals(attribute.Name))
+                {
+                    ReportDuplicateAttribute();
+                    return;
+                }
             }
+
+            return;
+        }
+
+        _attributeNameSet ??= new HashSet<string>(StringComparer.Ordinal);
+        while (_attributeNameSetCount < _attributes.Count)
+        {
+            _attributeNameSet.Add(_attributes[_attributeNameSetCount++].Name);
+        }
+
+        if (_attributeNameSet.GetAlternateLookup<ReadOnlySpan<char>>().Contains(_attributeName.Span))
+        {
+            ReportDuplicateAttribute();
+        }
+
+        void ReportDuplicateAttribute()
+        {
+            ReportError("duplicate-attribute");
+            _currentAttributeIsDuplicate = true;
         }
     }
 

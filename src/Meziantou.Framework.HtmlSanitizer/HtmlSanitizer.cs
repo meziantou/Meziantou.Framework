@@ -163,80 +163,95 @@ public sealed partial class HtmlSanitizer
             throw new ArgumentException($"The fragment creates more than {MaxElementCount.ToString(CultureInfo.InvariantCulture)} elements (see {nameof(MaxElementCount)})", nameof(html), ex);
         }
 
-        Sanitize(fragment);
-        body.Append(fragment);
+        // The kept nodes are copied into another fragment rather than unwrapping the other elements in place: moving a node
+        // walks its whole subtree, so nested elements that are not allowed would take a time quadratic in the depth, while
+        // the copies are inserted before their children, which inserts only leaf nodes.
+        var output = document.CreateDocumentFragment();
+        Sanitize(fragment, output);
+        body.Append(output);
         return body.GetHtml();
     }
 
     // The traversal is iterative on purpose: a hostile fragment can nest elements thousands of levels deep
     // and a recursive walk would overflow the stack.
-    private void Sanitize(Node root)
+    // The source nodes are visited in tree order, and each kept node is appended to the copy of its nearest kept ancestor
+    // (or to the output fragment), so the copies are in the same order as the source nodes. The pending items are the next
+    // source node to visit, the node its copy is appended to, and the open elements of the copies of its ancestors.
+    private void Sanitize(Node source, Node output)
     {
-        var pendingNodes = new Stack<(Node Parent, OpenElements State)>();
-        pendingNodes.Push((root, OpenElements.None));
-        List<Element>? leadingNewLineElements = null;
+        var document = output.OwnerDocument!;
+        var pendingNodes = new Stack<(Node Node, Node Parent, OpenElements State)>();
+        if (source.FirstChild is { } firstNode)
+        {
+            pendingNodes.Push((firstNode, output, OpenElements.None));
+        }
 
+        // The parser gives an element the "is" value of its start tag (customized built-in elements), and the serializer
+        // writes that value as an "is" attribute when the element has none, so removing the attribute is not enough: the
+        // copy of the element is created without an "is" value when the attribute is not allowed. The parser only sets
+        // the value of an element that has the attribute, so a copy keeps the value only when it keeps the attribute.
+        var keepIsValue = IsValidAttribute("is");
+        List<Element>? leadingNewLineElements = null;
         while (pendingNodes.TryPop(out var item))
         {
-            var (parent, state) = item;
-            var node = parent.FirstChild;
-            while (node is not null)
+            var (node, parent, state) = item;
+
+            // The next sibling is visited after the content of the node, which is pushed after it
+            if (node.NextSibling is { } nextSibling)
             {
-                var next = node.NextSibling;
-                switch (node)
-                {
-                    // Blocked elements, and elements whose content is raw text rather than markup, are removed with
-                    // their content. The content of a raw text element (script, style, iframe, noscript, …) is
-                    // serialized verbatim, so neither keeping it nor promoting it to the parent can be made safe.
-                    // This is checked before ValidElements on purpose: adding such an element to the allow list
-                    // would otherwise write its content straight through without ever sanitizing it.
-                    case Element element when _blockedElements.Contains(element.LocalName) || HasRawTextContent(element):
-                        element.Remove();
-                        break;
+                pendingNodes.Push((nextSibling, parent, state));
+            }
 
-                    // The element is not allowed but its content is, so only the tag is dropped. The promoted children
-                    // take the place of the element, so they are sanitized next.
-                    // Unwrapping an element can move its content where the parser never puts it, which a browser
-                    // would read back differently (a link in a link, a button in a button, a div in a p, ...), so such
-                    // an element is unwrapped too (see IsMisnested).
-                    case Element element when !IsValidElement(element) || IsMisnested(element, parent, state):
-                        next = Unwrap(element) ?? next;
-                        break;
+            switch (node)
+            {
+                // Blocked elements, and elements whose content is raw text rather than markup, are removed with
+                // their content. The content of a raw text element (script, style, iframe, noscript, …) is
+                // serialized verbatim, so neither keeping it nor promoting it to the parent can be made safe.
+                // This is checked before ValidElements on purpose: adding such an element to the allow list
+                // would otherwise write its content straight through without ever sanitizing it.
+                case Element element when _blockedElements.Contains(element.LocalName) || HasRawTextContent(element):
+                    break;
 
-                    case Element element:
-                        // GetAttributeNames allocates an array, even when there are no attributes
-                        if (element.HasAttributes() && SanitizeAttributes(element))
-                        {
-                            element = RecreateWithoutIsValue(element);
-                        }
+                // The element is not allowed but its content is, so only the tag is dropped: its content is
+                // copied in the place of the element, so it is sanitized as the content of the parent.
+                // Unwrapping an element can move its content where the parser never puts it, which a browser
+                // would read back differently (a link in a link, a button in a button, a div in a p, ...), so such
+                // an element is unwrapped too (see IsMisnested).
+                case Element element when !IsValidElement(element) || IsMisnested(element, parent, state):
+                    if (GetContent(element).FirstChild is { } firstChild)
+                    {
+                        pendingNodes.Push((firstChild, parent, state));
+                    }
 
-                        if (IgnoresLeadingNewLine(element))
-                        {
-                            (leadingNewLineElements ??= []).Add(element);
-                        }
+                    break;
 
-                        // The content of a template element is not made of its children but of a separate fragment
-                        Node content = element is HtmlTemplateElement template ? template.Content : element;
-                        pendingNodes.Push((content, GetChildrenState(element, state)));
-                        break;
+                case Element element:
+                    var copy = CopyElement(element, keepIsValue);
+                    parent.AppendChild(copy);
+                    if (IgnoresLeadingNewLine(copy))
+                    {
+                        (leadingNewLineElements ??= []).Add(copy);
+                    }
 
-                    case Text text when text.Data.Contains('\r', StringComparison.Ordinal):
-                        text.Data = NormalizeNewLines(text.Data);
-                        break;
+                    if (GetContent(element).FirstChild is { } firstElementChild)
+                    {
+                        pendingNodes.Push((firstElementChild, GetContent(copy), GetChildrenState(element, state)));
+                    }
 
-                    // The serializer escapes the text, so it can never be read back as markup
-                    case Text:
-                        break;
+                    break;
 
-                    case Comment when AllowComments:
-                        break;
+                case Text text when text.Data.Contains('\r', StringComparison.Ordinal):
+                    parent.AppendChild(document.CreateTextNode(NormalizeNewLines(text.Data)));
+                    break;
 
-                    default:
-                        parent.RemoveChild(node);
-                        break;
-                }
+                // The serializer escapes the text, so it can never be read back as markup
+                case Text text:
+                    parent.AppendChild(document.CreateTextNode(text.Data));
+                    break;
 
-                node = next;
+                case Comment comment when AllowComments:
+                    parent.AppendChild(document.CreateComment(comment.Data));
+                    break;
             }
         }
 
@@ -255,52 +270,33 @@ public sealed partial class HtmlSanitizer
         }
     }
 
+    // The content of a template element is not made of its children but of a separate fragment
+    private static Node GetContent(Element element) => element is HtmlTemplateElement template ? template.Content : element;
+
     private static bool IgnoresLeadingNewLine(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "pre" or "listing";
 
     // The elements that insert a marker in the list of active formatting elements, so a link they contain does not
     // close a link that contains them (https://html.spec.whatwg.org/multipage/parsing.html#concept-parser-marker)
     private static bool IsFormattingScope(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "applet" or "caption" or "marquee" or "object" or "td" or "template" or "th";
 
-    private static Node? Unwrap(Element element)
+    // The copy gets the attributes that are allowed, in one pass: removing the other ones one by one, or reading the
+    // attributes by name, would be quadratic in the number of attributes. The attributes are read by index: the attribute
+    // nodes (Element.Attributes) are not created, and the parser accepts attribute names that SetAttribute rejects.
+    private Element CopyElement(Element element, bool keepIsValue)
     {
-        Node content = element is HtmlTemplateElement template ? template.Content : element;
-        var parent = element.ParentNode!;
-        var firstChild = content.FirstChild;
-        while (content.FirstChild is { } child)
+        var copy = element.CloneWithoutAttributes(keepIsValue);
+        for (var i = 0; i < element.AttributeCount; i++)
         {
-            parent.InsertBefore(child, element);
-        }
+            var name = element.GetAttributeQualifiedName(i);
+            if (!IsValidAttribute(name))
+                continue;
 
-        element.Remove();
-        return firstChild;
-    }
-
-    // Returns whether the "is" attribute was removed
-    private bool SanitizeAttributes(Element element)
-    {
-        // The attributes are read by name: Element.Attributes would create an Attr node for each of them. The element is
-        // an element of the HTML namespace created by the parser, whose attributes have no namespace, no prefix and a
-        // name in lowercase, and are never duplicated (the parser drops the duplicates of a start tag), so a name finds
-        // the attribute it comes from.
-        var removedIsAttribute = false;
-        var names = element.GetAttributeNames();
-        for (var i = names.Count - 1; i >= 0; i--)
-        {
             // The values are decoded by the parser and encoded again by the serializer, so they are validated as the
             // browser reads them: an entity cannot mask the scheme of a URL
-            var name = names[i];
-            if (!IsValidAttribute(name))
-            {
-                removedIsAttribute |= name is "is";
-                element.RemoveAttribute(name);
-                continue;
-            }
-
-            var value = element.GetAttribute(name)!;
+            var value = element.GetAttributeValue(i);
             if (value.Contains('\r', StringComparison.Ordinal))
             {
                 value = NormalizeNewLines(value);
-                SetAttributeValue(element, name, value);
             }
 
             // An attribute can be in both sets: a value that is a safe URL can still be an unsafe srcset value
@@ -308,41 +304,13 @@ public sealed partial class HtmlSanitizer
             if ((_uriAttributes.Contains(name) && !UrlSanitizer.IsSafeUrl(value)) ||
                 (_srcsetAttributes.Contains(name) && !UrlSanitizer.IsSafeSrcset(value)))
             {
-                SetAttributeValue(element, name, "");
+                value = "";
             }
+
+            copy.AppendAttribute(element.GetAttributeLocalName(i), element.GetAttributeNamespace(i), element.GetAttributePrefix(i), value);
         }
 
-        return removedIsAttribute;
-
-        // Setting the value of the node rather than calling SetAttribute: the parser accepts attribute names that
-        // SetAttribute rejects
-        static void SetAttributeValue(Element element, string name, string value) => element.GetAttributeNode(name)!.Value = value;
-    }
-
-    // The parser gives an element the "is" value of its start tag (customized built-in elements), and the serializer
-    // writes that value as an "is" attribute when the element has none, so removing the attribute is not enough. The
-    // element is replaced with one created without an "is" value, which gets its attributes and its content.
-    private static Element RecreateWithoutIsValue(Element element)
-    {
-        var replacement = element.OwnerDocument!.CreateElementNS(element.NamespaceUri, element.LocalName);
-        var attributes = element.Attributes;
-        while (attributes.Count > 0)
-        {
-            // Moving the nodes rather than copying the values: the parser accepts attribute names that SetAttribute rejects
-            var attribute = attributes[0];
-            element.RemoveAttributeNode(attribute);
-            replacement.SetAttributeNode(attribute);
-        }
-
-        Node content = element is HtmlTemplateElement template ? template.Content : element;
-        Node replacementContent = replacement is HtmlTemplateElement replacementTemplate ? replacementTemplate.Content : replacement;
-        while (content.FirstChild is { } child)
-        {
-            replacementContent.AppendChild(child);
-        }
-
-        element.ParentNode!.ReplaceChild(replacement, element);
-        return replacement;
+        return copy;
     }
 
     // A character reference such as "&#13;" decodes to a carriage return, which the serializer writes as is. A browser

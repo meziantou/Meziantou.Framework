@@ -13,6 +13,8 @@ namespace Meziantou.Framework.Language.Xml;
 /// </example>
 public sealed class XmlFormattingOptions
 {
+    private readonly int _maxDepth = 64;
+
     public static XmlFormattingOptions Default { get; } = new();
 
     /// <summary>Gets the number of spaces per indentation level. It is ignored when <see cref="UseTabs"/> is <see langword="true"/>. The default is 2.</summary>
@@ -37,4 +39,22 @@ public sealed class XmlFormattingOptions
 
     /// <summary>Gets a value indicating whether a self-closing tag ends with <c> /&gt;</c> instead of <c>/&gt;</c>. The default is <see langword="true"/>.</summary>
     public bool SpaceBeforeSelfClosingSlash { get; init; } = true;
+
+    /// <summary>Gets the number of nested element levels the formatter lays out. The default is 64.</summary>
+    /// <remarks>
+    /// The root element is at depth 1. An element deeper than this value still starts on its own line, but the whitespace
+    /// of its content is kept as it is, like the content of an element that contains text, and its attributes stay on its
+    /// first line even when <see cref="AttributeWrapping"/> is set. This bounds the indentation, so the size of the output
+    /// stays proportional to the size of the input.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1.</exception>
+    public int MaxDepth
+    {
+        get => _maxDepth;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            _maxDepth = value;
+        }
+    }
 }

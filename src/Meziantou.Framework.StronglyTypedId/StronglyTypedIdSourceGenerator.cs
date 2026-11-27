@@ -245,7 +245,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
         // Write debug info
         writer.WriteLine("// Id Type: " + attribute.IdType);
-        writer.WriteLine("// TypeName: " + attribute.TypeName);
+        writer.WriteLine("// TypeName: " + attribute.Name);
 
         if (attribute.IdType is IdType.System_String)
         {
@@ -363,13 +363,14 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
 
     /// <summary>
     /// Gets the name of the generated file for a type. Roslyn requires the name to be unique within a generator, so the fully-qualified name of the type is used instead of its short name.
+    /// The names are not escaped (<c>@class</c> is written <c>class</c>) as Roslyn rejects the <c>@</c> character in a hint name.
     /// </summary>
     private static string GetHintName(PartialTypeContext context)
     {
         var sb = new StringBuilder();
-        if (!string.IsNullOrWhiteSpace(context.Namespace))
+        if (!string.IsNullOrWhiteSpace(context.HintNamespace))
         {
-            sb.Append(context.Namespace);
+            AppendHintName(sb, context.HintNamespace);
             sb.Append('.');
         }
 
@@ -385,9 +386,21 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
                 sb.Append('.');
             }
 
-            sb.Append(context.Name);
+            AppendHintName(sb, context.Name);
+        }
+
+        // An identifier can contain characters that are not valid in a hint name, such as connector punctuations
+        static void AppendHintName(StringBuilder sb, string value)
+        {
+            foreach (var c in value)
+            {
+                sb.Append(char.IsLetterOrDigit(c) || c is '.' or '_' ? c : '_');
+            }
         }
     }
+
+    /// <summary>Escapes an identifier when it is a reserved keyword so it can be written in the generated code.</summary>
+    private static string EscapeIdentifier(string name) => SyntaxFacts.GetKeywordKind(name) is SyntaxKind.None ? name : "@" + name;
 
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "Disposed manually")]
     private static int BeginPartialContext(CSharpGeneratedFileWriter writer, PartialTypeContext context, Action<CSharpGeneratedFileWriter>? writeAttributes = null, string? baseTypes = null)
@@ -419,7 +432,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             writer.Write("partial ");
             writer.Write(context.Keyword);
             writer.Write(' ');
-            writer.Write(context.Name);
+            writer.Write(EscapeIdentifier(context.Name));
             if (baseTypes is not null)
             {
                 writer.Write(" : ");
@@ -528,7 +541,8 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             IdType = idType;
             Options = options;
             ApplyOptions();
-            TypeName = typeSymbol.Name;
+            Name = typeSymbol.Name;
+            TypeName = EscapeIdentifier(Name);
             IsSealed = typeSymbol.IsSealed;
             IsReferenceType = typeSymbol.IsReferenceType;
             PartialTypeContext = GetContext(typeSymbol);
@@ -665,7 +679,7 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             var tomlWriterSymbol = compilation.GetTypeByMetadataName("Meziantou.Framework.Toml.Serialization.TomlWriter");
             SupportTomlConverter = compilation.GetTypeByMetadataName("Meziantou.Framework.Toml.Serialization.TomlConverter`1") is not null && tomlWriterSymbol is not null;
             SupportTomlWriteDecimalValue = tomlWriterSymbol is not null && tomlWriterSymbol.GetMembers("WriteDecimalValue").Any(member => member is IMethodSymbol { IsStatic: false, DeclaredAccessibility: Accessibility.Public, Parameters: [{ Type.SpecialType: SpecialType.System_Decimal }] });
-            UserDeclaredConverters = GetUserDeclaredConverters(typeSymbol, TypeName);
+            UserDeclaredConverters = GetUserDeclaredConverters(typeSymbol, Name);
             SupportNotNullWhenAttribute = compilation.GetTypeByMetadataName("System.Diagnostics.CodeAnalysis.NotNullWhenAttribute") is { } type && compilation.IsSymbolAccessibleWithin(type, compilation.Assembly);
             SupportStaticInterfaces = compilation.SyntaxTrees.FirstOrDefault()?.Options is CSharpParseOptions { LanguageVersion: >= (LanguageVersion)1100 };
             SupportGuidCreateVersion7 = compilation.SupportGuidCreateVersion7();
@@ -741,13 +755,14 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
             static PartialTypeContext GetContext(ITypeSymbol typeSymbol)
             {
                 var ns = typeSymbol.ContainingNamespace?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted));
-                var partialType = new PartialTypeContext(GetType(typeSymbol), ns, typeSymbol.Name);
+                var hintNs = typeSymbol.ContainingNamespace?.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat.WithGlobalNamespaceStyle(SymbolDisplayGlobalNamespaceStyle.Omitted).RemoveMiscellaneousOptions(SymbolDisplayMiscellaneousOptions.EscapeKeywordIdentifiers));
+                var partialType = new PartialTypeContext(GetType(typeSymbol), ns, hintNs, typeSymbol.Name);
 
                 var current = partialType;
                 var parentType = typeSymbol.ContainingSymbol as ITypeSymbol;
                 while (parentType is not null)
                 {
-                    current.Parent = new PartialTypeContext(GetType(parentType), ns, parentType.Name);
+                    current.Parent = new PartialTypeContext(GetType(parentType), ns, hintNs, parentType.Name);
                     current = current.Parent;
                     parentType = parentType.ContainingSymbol as ITypeSymbol;
                 }
@@ -819,6 +834,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         }
 
         // Computed info
+
+        /// <summary>Gets the name of the type, as declared in metadata (<c>event</c> for <c>@event</c>).</summary>
+        public string Name { get; }
+
+        /// <summary>Gets the name of the type, escaped to be written in C# code (<c>@event</c>).</summary>
         public string TypeName { get; }
         public bool IsSealed { get; }
         public bool IsReferenceType { get; }
@@ -883,12 +903,12 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         private const string YamlConverterSuffix = "YamlConverter";
         private const string TomlConverterSuffix = "TomlConverter";
 
-        public string TypeConverterTypeName => TypeName + TypeConverterSuffix;
-        public string SystemTextJsonConverterTypeName => TypeName + SystemTextJsonConverterSuffix;
-        public string NewtonsoftJsonConverterTypeName => TypeName + NewtonsoftJsonConverterSuffix;
-        public string MongoDbConverterTypeName => TypeName + MongoDbConverterSuffix;
-        public string YamlConverterTypeName => TypeName + YamlConverterSuffix;
-        public string TomlConverterTypeName => TypeName + TomlConverterSuffix;
+        public string TypeConverterTypeName => Name + TypeConverterSuffix;
+        public string SystemTextJsonConverterTypeName => Name + SystemTextJsonConverterSuffix;
+        public string NewtonsoftJsonConverterTypeName => Name + NewtonsoftJsonConverterSuffix;
+        public string MongoDbConverterTypeName => Name + MongoDbConverterSuffix;
+        public string YamlConverterTypeName => Name + YamlConverterSuffix;
+        public string TomlConverterTypeName => Name + TomlConverterSuffix;
 
         /// <summary>Gets the converters whose nested type is already declared by the user.</summary>
         public StronglyTypedIdConverters UserDeclaredConverters { get; }
@@ -1284,7 +1304,11 @@ public sealed partial class StronglyTypedIdSourceGenerator : IIncrementalGenerat
         MongoDB_Bson_ObjectId,
     }
 
-    private sealed record PartialTypeContext(string Keyword, string? Namespace, string Name)
+    /// <param name="Keyword">The keyword of the declaration (<c>class</c>, <c>record struct</c>, ...).</param>
+    /// <param name="Namespace">The namespace, escaped to be written in C# code.</param>
+    /// <param name="HintNamespace">The namespace, not escaped, used to compute the hint name.</param>
+    /// <param name="Name">The name of the type, not escaped.</param>
+    private sealed record PartialTypeContext(string Keyword, string? Namespace, string? HintNamespace, string Name)
     {
         public PartialTypeContext? Parent { get; set; }
     }

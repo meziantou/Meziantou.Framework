@@ -200,6 +200,20 @@ Assert.Equal("<root>\r\n    <item id = \"1\" />\r\n</root>", formatted.ToFullStr
 | [AttributeWrapping](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.AttributeWrapping) | `false` | Whether each attribute of an element that has more than one goes on its own line |
 | [SpaceAroundEquals](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.SpaceAroundEquals) | `false` | Whether `=` has a space on both sides |
 | [SpaceBeforeSelfClosingSlash](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.SpaceBeforeSelfClosingSlash) | `true` | Whether a self-closing tag ends with ` />` rather than `/>` |
+| [MaxDepth](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.MaxDepth) | 64 | The number of nested element levels laid out |
+
+The root element is at depth 1. An element deeper than [MaxDepth](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.MaxDepth) still starts on its own line, but its
+whitespace is kept as it is, like the content of an element that contains text. The limit bounds the indentation, so
+a deeply nested document does not produce an output much larger than itself. A value less than 1 throws an
+`ArgumentOutOfRangeException`.
+
+<!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlFormattingOptions_MaxDepth;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = XmlSyntaxTree.ParseText("<root><a><b><c/></b></a><d>  <e/></d></root>");
+var formatted = Formatter.Format(tree.GetRoot(), new XmlFormattingOptions { MaxDepth = 2 });
+Assert.Equal("<root>\n  <a>\n    <b><c /></b>\n  </a>\n  <d>\n    <e />\n  </d>\n</root>", formatted.ToFullString());
+```
+<!-- endref -->
 
 [XmlDocumentSyntax.NormalizeWhitespace()](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax.NormalizeWhitespace) formats a document with the default options.
 

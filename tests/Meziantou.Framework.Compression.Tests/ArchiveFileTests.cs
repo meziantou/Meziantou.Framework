@@ -414,6 +414,87 @@ public sealed class ArchiveFileTests
         }
     }
 
+    [Theory]
+    [InlineData("c", "b/..")]
+    [InlineData("d", "b/b/b/b/b/b/b/b/b/b/b/b/../../../../../../../../../../../../outside.txt")]
+    [InlineData("sub/d", "../b/sub2/..")]
+    [InlineData("e", "missing/..")]
+    public async Task ExtractToDirectory_RejectsLinksThatGoUpThroughALink(string name, string target)
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            using var tar = new MemoryStream();
+            using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+            {
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.Directory, "sub"));
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.SymbolicLink, "b") { LinkName = "." });
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.SymbolicLink, name) { LinkName = target });
+            }
+
+            var data = tar.ToArray();
+            var destination = Path.Combine(directory.FullName, "out");
+            using (var archive = ArchiveFile.Open(new MemoryStream(data)))
+            {
+                Assert.Throws<IOException>(() => archive.ExtractToDirectory(destination));
+            }
+
+            Assert.Null(new FileInfo(Path.Combine(destination, name)).LinkTarget);
+
+            var asyncDestination = Path.Combine(directory.FullName, "async");
+            using (var reader = ArchiveReader.Create(new MemoryStream(data)))
+            {
+                await Assert.ThrowsAsync<IOException>(() => reader.ExtractToDirectoryAsync(asyncDestination, cancellationToken: TestContext.Current.CancellationToken));
+            }
+
+            Assert.Null(new FileInfo(Path.Combine(asyncDestination, name)).LinkTarget);
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ExtractToDirectory_AllowsLinksThroughALinkThatDoNotGoUp()
+    {
+        var directory = Directory.CreateTempSubdirectory();
+        try
+        {
+            using var tar = new MemoryStream();
+            using (var writer = new System.Formats.Tar.TarWriter(tar, leaveOpen: true))
+            {
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.Directory, "sub"));
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.RegularFile, "hello.txt") { DataStream = new MemoryStream("Hello"u8.ToArray()) });
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.SymbolicLink, "b") { LinkName = "." });
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.SymbolicLink, "c") { LinkName = "b/b/hello.txt" });
+                writer.WriteEntry(new System.Formats.Tar.PaxTarEntry(System.Formats.Tar.TarEntryType.SymbolicLink, "sub/d") { LinkName = "../sub/../hello.txt" });
+            }
+
+            var data = tar.ToArray();
+            var destination = Path.Combine(directory.FullName, "out");
+            using (var archive = ArchiveFile.Open(new MemoryStream(data)))
+            {
+                archive.ExtractToDirectory(destination);
+            }
+
+            Assert.Equal("Hello", File.ReadAllText(Path.Combine(destination, "c")));
+            Assert.Equal("Hello", File.ReadAllText(Path.Combine(destination, "sub", "d")));
+
+            var asyncDestination = Path.Combine(directory.FullName, "async");
+            using (var reader = ArchiveReader.Create(new MemoryStream(data)))
+            {
+                await reader.ExtractToDirectoryAsync(asyncDestination, cancellationToken: TestContext.Current.CancellationToken);
+            }
+
+            Assert.Equal("Hello", await File.ReadAllTextAsync(Path.Combine(asyncDestination, "c"), TestContext.Current.CancellationToken));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
     [Fact]
     public void ExtractToDirectory_ReplacesALinkInsteadOfWritingToItsTarget()
     {

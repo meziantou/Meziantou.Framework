@@ -88,10 +88,9 @@ public static class YamlFuzzTargets
             CheckClones(document, data.Length);
         }
 
-        // A byte order mark is a document prefix, which can repeat (YAML 1.2 §9.2): the parser reads an empty document for
-        // a second one at the start of the stream, which the grammar does not have
+        // The parser reads repeated byte order marks differently, see HasRepeatedByteOrderMark
         var expected = ReadParserNodes(yaml);
-        if (expected.Error is null && !yaml.StartsWith("\uFEFF\uFEFF", StringComparison.Ordinal))
+        if (expected.Error is null && !HasRepeatedByteOrderMark(yaml))
         {
             FuzzAssert.True(actual.Error is null, $"The reader rejects YAML that the parser accepts: {actual.Error}");
             FuzzAssert.Equal(expected.Events, actual.Events, "The reader and the parser read different nodes");
@@ -792,9 +791,8 @@ public static class YamlFuzzTargets
         }
         catch (YamlException ex)
         {
-            // The parser reads byte order marks that follow each other at the start of a line as document prefixes,
-            // which the scanner of the syntax tree does not read (YAML 1.2 §9.2)
-            FuzzAssert.True(parserError is not null || yaml.Contains("\uFEFF\uFEFF", StringComparison.Ordinal), $"The syntax tree rejects YAML that the parser accepts: {ex.Message}");
+            // The scanner of the syntax tree reads repeated byte order marks differently, see HasRepeatedByteOrderMark
+            FuzzAssert.True(parserError is not null || HasRepeatedByteOrderMark(yaml), $"The syntax tree rejects YAML that the parser accepts: {ex.Message}");
             return;
         }
 
@@ -815,6 +813,25 @@ public static class YamlFuzzTargets
         FuzzAssert.False(withoutTrivia.Tokens.Any(token => IsTrivia(token.Kind)), "The syntax tree contains trivia although it is excluded");
         FuzzAssert.Equal(FormatTokens(tree.Tokens.Where(token => !IsTrivia(token.Kind))), FormatTokens(withoutTrivia.Tokens), "Excluding the trivia changes the other tokens");
         FuzzAssert.Equal(tree.Root.Span.ToString(), withoutTrivia.Root.Span.ToString(), "Excluding the trivia changes the span of the root node");
+    }
+
+    /// <summary>
+    /// A byte order mark is a document prefix, which can repeat (YAML 1.2 §9.2). Utf8YamlReader reads the byte order marks
+    /// that follow each other at the start of a line as prefixes. The scanner-based parser reads an empty document for the
+    /// second one, or rejects it, which the grammar does not do.
+    /// </summary>
+    private static bool HasRepeatedByteOrderMark(string yaml)
+    {
+        var index = yaml.IndexOf("\uFEFF\uFEFF", StringComparison.Ordinal);
+        while (index >= 0)
+        {
+            if (index == 0 || yaml[index - 1] is '\n' or '\r')
+                return true;
+
+            index = yaml.IndexOf("\uFEFF\uFEFF", index + 1, StringComparison.Ordinal);
+        }
+
+        return false;
     }
 
     private static bool IsTrivia(YamlSyntaxKind kind) => kind is YamlSyntaxKind.WhitespaceTrivia or YamlSyntaxKind.NewLineTrivia or YamlSyntaxKind.CommentTrivia;

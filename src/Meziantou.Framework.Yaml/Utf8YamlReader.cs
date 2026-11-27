@@ -53,6 +53,10 @@ public ref struct Utf8YamlReader
     private readonly int _lineNumber;
     private readonly long _charOffset;
 
+    // The byte order marks at the start of the line, before the buffer. A byte order mark token moves the start of the
+    // line after it, so the buffer of the next reader can start in the middle of the line, after them.
+    private readonly int _lineByteOrderMarks;
+
     // When the block is not final, a token is complete only if a line break follows it in the buffer
     private readonly int _lastLineBreak;
 
@@ -154,6 +158,7 @@ public ref struct Utf8YamlReader
             _bufferStart = state._data.BufferStart;
             _lineNumber = state._data.LineNumber;
             _charOffset = state._data.CharOffset;
+            _lineByteOrderMarks = state._data.LineByteOrderMarks;
             RestoreState(in state);
 
             // The state shares the entries of a deep stack. The caller reads the block again from the same state after an
@@ -209,6 +214,7 @@ public ref struct Utf8YamlReader
             state._data.BufferStart = _bufferStart + consumed;
             state._data.LineNumber = _lineNumber + CountLines(_buffer[..consumed]);
             state._data.CharOffset = _charOffset + Encoding.UTF8.GetCharCount(_buffer[..consumed]);
+            state._data.LineByteOrderMarks = CountLineByteOrderMarks(_buffer[..consumed], _lineByteOrderMarks);
             state._data.Pos -= consumed;
             state._data.LineStart -= consumed;
             state._data.ConsumedEnd -= consumed;
@@ -248,6 +254,7 @@ public ref struct Utf8YamlReader
                 BufferStart = _bufferStart,
                 LineNumber = _lineNumber,
                 CharOffset = _charOffset,
+                LineByteOrderMarks = _lineByteOrderMarks,
                 Pos = _pos,
                 LineStart = _lineStart,
                 ConsumedEnd = _consumedEnd,
@@ -288,6 +295,21 @@ public ref struct Utf8YamlReader
         _properties = state._data.Properties;
         _pending = state._data.Pending;
         _tagDirectives = state._data.TagDirectives;
+    }
+
+    // The byte order marks at the start of the line that continues after the consumed bytes
+    private static int CountLineByteOrderMarks(ReadOnlySpan<byte> consumed, int previous)
+    {
+        var lineBreak = consumed.LastIndexOfAny((byte)'\r', (byte)'\n');
+        var count = lineBreak < 0 ? previous : 0;
+        var line = consumed[(lineBreak + 1)..];
+        while (line.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        {
+            count++;
+            line = line[3..];
+        }
+
+        return count;
     }
 
     private static int CountLines(ReadOnlySpan<byte> span)
@@ -2883,13 +2905,18 @@ public ref struct Utf8YamlReader
             }
         }
 
-        // A byte order mark at the start of a line, before a document, is not a column
-        if (offset >= lineStart + 3 && buffer[lineStart..].StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        // A byte order mark at the start of a line, before a document, is not a column. The line can start before the
+        // buffer, with byte order marks that a previous reader consumed: the first one is not a column, the others are.
+        var column = Encoding.UTF8.GetCharCount(buffer[lineStart..offset]);
+        if (lineStart == 0 && _lineByteOrderMarks > 0)
         {
-            lineStart += 3;
+            column += _lineByteOrderMarks - 1;
+        }
+        else if (offset >= lineStart + 3 && buffer[lineStart..].StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        {
+            column--;
         }
 
-        var column = Encoding.UTF8.GetCharCount(buffer[lineStart..offset]);
         var index = _charOffset + Encoding.UTF8.GetCharCount(buffer[..offset]);
         return new Mark((int)Math.Min(index, int.MaxValue), line, column);
     }
@@ -3237,6 +3264,7 @@ public ref struct Utf8YamlReader
         public long BufferStart;
         public int LineNumber;
         public long CharOffset;
+        public int LineByteOrderMarks;
         public int Pos;
         public int LineStart;
         public int ConsumedEnd;

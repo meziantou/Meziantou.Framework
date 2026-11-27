@@ -109,6 +109,21 @@ public class ParserTests : ParserTestHelper
         Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
     }
 
+    [Theory]
+    [InlineData("\uFEFF\uFEFF, bar\n")]
+    [InlineData("\uFEFF\uFEFF\uFEFF{ a\n")]
+    [InlineData("\uFEFF\uFEFF%FOO\n--- [\n")]
+    public void StreamReaderParser_ErrorAfterByteOrderMarks_ReportsTheSamePositionAsTheStringParser(string yaml)
+    {
+        // The reader of the next block starts after the byte order marks that it consumed: only the first one of the
+        // line is not a column
+        var expected = Assert.Throws<SyntaxErrorException>(() => ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))));
+        using var reader = CreateTrickleStreamReader(yaml);
+        var actual = Assert.Throws<SyntaxErrorException>(() => ReadEventsWithPositions(Parser.CreateParser(reader)));
+
+        Assert.Equal(expected.Message, actual.Message);
+    }
+
     private static StreamReader CreateTrickleStreamReader(string yaml)
     {
         // The byte order mark of the document, if any, is kept as a character, like the string parser sees it

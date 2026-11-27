@@ -1235,25 +1235,16 @@ internal static partial class ColumnBreaker
         }
 
         /// <summary>
-        /// The start of the first item of a track that is pushed alone from the start of the current fragmentainer to the next one
-        /// (see <see cref="StartBreakAppeal"/>), or +∞. (An item pushed after other content of the fragmentainer does not stop the
-        /// items beside it in its track: they break inside the fragmentainer.)
+        /// The start of the item of a track that is pushed alone from the start of the current fragmentainer to the next one (see
+        /// <see cref="StartBreakAppeal"/>), when it is the only item of the track (e.g. an item of a column flex container), or +∞.
+        /// (The items beside a pushed item in its track, e.g. in a line of a row flex container, break inside the fragmentainer.)
         /// </summary>
         private double GetPushedItemStart(ParallelGroup group, int track)
         {
-            var start = double.PositiveInfinity;
-            if (!_isItemPushedFromStart)
-                return start;
+            if (!_isItemPushedFromStart || group.StartingItems[track] is not [var item] || item.PushedGeneration != _generation || item.PushedIndex != _index)
+                return double.PositiveInfinity;
 
-            foreach (var item in group.StartingItems[track])
-            {
-                if (item.PushedGeneration == _generation && item.PushedIndex == _index)
-                {
-                    start = Math.Min(start, item.Start);
-                }
-            }
-
-            return start;
+            return item.Start;
         }
 
         /// <summary>
@@ -1328,7 +1319,7 @@ internal static partial class ColumnBreaker
                         item.PushedGeneration = _generation;
                         item.PushedIndex = _index;
                         _hasDeferredItems = true;
-                        _isItemPushedFromStart |= !(item.CanBreakBefore && offset > Epsilon);
+                        _isItemPushedFromStart |= !(item.CanBreakBefore && offset > Epsilon) && group.StartingItems[track].Count == 1;
                         continue;
                     }
 

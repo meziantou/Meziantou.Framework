@@ -92,6 +92,29 @@ public sealed class HardeningTests
     }
 
     [Fact]
+    public void Html_ManyAttributes_DuplicatesAreFoundInLinearTime()
+    {
+        // The tokenizer compared the name of each attribute with the previous ones (quadratic in the number of attributes):
+        // the duplicates after the first attributes are found with a set
+        const int Count = 80_000;
+        var html = "<p " + string.Join(' ', Enumerable.Range(0, Count).Select(i => $"a{i}=1")) + " a0=2 a20=2 a79999=2 b=3>";
+
+        var errors = 0;
+        var element = HtmlDocumentParser.ParseDocument(html, new HtmlParserOptions { ParseErrorHandler = error => errors += error.Code is "duplicate-attribute" ? 1 : 0 }).QuerySelector("p")!;
+        Assert.Equal(3, errors);
+        Assert.Equal(Count + 1, element.AttributeCount);
+        Assert.Equal("1", element.GetAttribute("a0"));
+        Assert.Equal("1", element.GetAttribute("a20"));
+        Assert.Equal("1", element.GetAttribute("a79999"));
+        Assert.Equal("3", element.GetAttribute("b"));
+
+        // The set of the names is cleared for the next tag
+        var second = (Element)HtmlDocumentParser.ParseDocument(html + "<p a0=1 a1=1 a2=1 a3=1 a4=1 a5=1 a6=1 a7=1 a8=1 a9=1 a10=1 a11=1 a12=1 a13=1 a14=1 a15=1 a16=1 a20=4 a79999=4>").QuerySelectorAll("p")[1];
+        Assert.Equal("4", second.GetAttribute("a20"));
+        Assert.Equal("4", second.GetAttribute("a79999"));
+    }
+
+    [Fact]
     public void Html_ManyOptions_AreParsed()
     {
         var select = (HtmlSelectElement)HtmlDocumentParser.ParseDocument("<select>" + string.Concat(Enumerable.Repeat("<option>a", Depth))).QuerySelector("select")!;

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 
 namespace Meziantou.Framework.Sanitizers.Tests;
@@ -545,6 +546,23 @@ public class HtmlSanitizerTests
         var sanitizer = new HtmlSanitizer();
         var stopwatch = Stopwatch.StartNew();
         Assert.Equal("", sanitizer.SanitizeHtmlFragment(html));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
+    }
+
+    // The attributes used to be removed and read by name, and the tokenizer compared each name with the previous ones,
+    // so an element with many attributes took a time quadratic in their number (10 seconds for these elements)
+    [Theory]
+    [InlineData("aria-x", true)]
+    [InlineData("x", false)]
+    public void Sanitize_ManyAttributes_LinearTime(string prefix, bool isAllowed)
+    {
+        const int Count = 76_000;
+        var html = "<p " + string.Join(' ', Enumerable.Range(0, Count).Select(i => prefix + i.ToString(CultureInfo.InvariantCulture))) + ">a</p>";
+        var expected = isAllowed ? "<p " + string.Join(' ', Enumerable.Range(0, Count).Select(i => prefix + i.ToString(CultureInfo.InvariantCulture) + "=\"\"")) + ">a</p>" : "<p>a</p>";
+
+        var sanitizer = new HtmlSanitizer();
+        var stopwatch = Stopwatch.StartNew();
+        Assert.Equal(expected, sanitizer.SanitizeHtmlFragment(html));
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
     }
 

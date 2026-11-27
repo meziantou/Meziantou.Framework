@@ -186,6 +186,11 @@ public sealed partial class HtmlSanitizer
             pendingNodes.Push((firstNode, output, OpenElements.None));
         }
 
+        // The parser gives an element the "is" value of its start tag (customized built-in elements), and the serializer
+        // writes that value as an "is" attribute when the element has none, so removing the attribute is not enough: the
+        // copy of the element is created without an "is" value when the attribute is not allowed. The parser only sets
+        // the value of an element that has the attribute, so a copy keeps the value only when it keeps the attribute.
+        var keepIsValue = IsValidAttribute("is");
         List<Element>? leadingNewLineElements = null;
         while (pendingNodes.TryPop(out var item))
         {
@@ -221,9 +226,7 @@ public sealed partial class HtmlSanitizer
                     break;
 
                 case Element element:
-                    // GetAttributeNames allocates an array, even when there are no attributes
-                    var removedIsAttribute = element.HasAttributes() && SanitizeAttributes(element);
-                    var copy = removedIsAttribute ? CreateWithoutIsValue(element) : (Element)element.CloneNode(subtree: false);
+                    var copy = CopyElement(element, keepIsValue);
                     parent.AppendChild(copy);
                     if (IgnoresLeadingNewLine(copy))
                     {
@@ -276,32 +279,24 @@ public sealed partial class HtmlSanitizer
     // close a link that contains them (https://html.spec.whatwg.org/multipage/parsing.html#concept-parser-marker)
     private static bool IsFormattingScope(Element element) => element.NamespaceUri == HtmlNamespace && element.LocalName is "applet" or "caption" or "marquee" or "object" or "td" or "template" or "th";
 
-    // Returns whether the "is" attribute was removed
-    private bool SanitizeAttributes(Element element)
+    // The copy gets the attributes that are allowed, in one pass: removing the other ones one by one, or reading the
+    // attributes by name, would be quadratic in the number of attributes. The attributes are read by index: the attribute
+    // nodes (Element.Attributes) are not created, and the parser accepts attribute names that SetAttribute rejects.
+    private Element CopyElement(Element element, bool keepIsValue)
     {
-        // The attributes are read by name: Element.Attributes would create an Attr node for each of them. The element is
-        // an element of the HTML namespace created by the parser, whose attributes have no namespace, no prefix and a
-        // name in lowercase, and are never duplicated (the parser drops the duplicates of a start tag), so a name finds
-        // the attribute it comes from.
-        var removedIsAttribute = false;
-        var names = element.GetAttributeNames();
-        for (var i = names.Count - 1; i >= 0; i--)
+        var copy = element.CloneWithoutAttributes(keepIsValue);
+        for (var i = 0; i < element.AttributeCount; i++)
         {
+            var name = element.GetAttributeQualifiedName(i);
+            if (!IsValidAttribute(name))
+                continue;
+
             // The values are decoded by the parser and encoded again by the serializer, so they are validated as the
             // browser reads them: an entity cannot mask the scheme of a URL
-            var name = names[i];
-            if (!IsValidAttribute(name))
-            {
-                removedIsAttribute |= name is "is";
-                element.RemoveAttribute(name);
-                continue;
-            }
-
-            var value = element.GetAttribute(name)!;
+            var value = element.GetAttributeValue(i);
             if (value.Contains('\r', StringComparison.Ordinal))
             {
                 value = NormalizeNewLines(value);
-                SetAttributeValue(element, name, value);
             }
 
             // An attribute can be in both sets: a value that is a safe URL can still be an unsafe srcset value
@@ -309,30 +304,10 @@ public sealed partial class HtmlSanitizer
             if ((_uriAttributes.Contains(name) && !UrlSanitizer.IsSafeUrl(value)) ||
                 (_srcsetAttributes.Contains(name) && !UrlSanitizer.IsSafeSrcset(value)))
             {
-                SetAttributeValue(element, name, "");
+                value = "";
             }
-        }
 
-        return removedIsAttribute;
-
-        // Setting the value of the node rather than calling SetAttribute: the parser accepts attribute names that
-        // SetAttribute rejects
-        static void SetAttributeValue(Element element, string name, string value) => element.GetAttributeNode(name)!.Value = value;
-    }
-
-    // The parser gives an element the "is" value of its start tag (customized built-in elements), and the serializer
-    // writes that value as an "is" attribute when the element has none, so removing the attribute is not enough. The
-    // copy of the element is created without an "is" value, and gets the attributes of the element.
-    private static Element CreateWithoutIsValue(Element element)
-    {
-        var copy = element.OwnerDocument!.CreateElementNS(element.NamespaceUri, element.LocalName);
-        var attributes = element.Attributes;
-        while (attributes.Count > 0)
-        {
-            // Moving the nodes rather than copying the values: the parser accepts attribute names that SetAttribute rejects
-            var attribute = attributes[0];
-            element.RemoveAttributeNode(attribute);
-            copy.SetAttributeNode(attribute);
+            copy.AppendAttribute(element.GetAttributeLocalName(i), element.GetAttributeNamespace(i), element.GetAttributePrefix(i), value);
         }
 
         return copy;

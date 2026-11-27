@@ -1,6 +1,14 @@
 {
   "repository": "meziantou/test-corpus-wasmengine",
   "snapshots": {
+    "component-model": {
+      "pin": [
+        "WebAssembly/component-model@585526aa1f2c7f76f07557d16e265dede38b3acb",
+        "LICENSE",
+        "test"
+      ],
+      "snapshot": "ad147e773de0b0a8f6cfb1a08ba7156eab792eba"
+    },
     "testsuite": {
       "pin": [
         "WebAssembly/testsuite@92a3d806c7d70f5b63f125e6155b8d76304509f1",
@@ -11,6 +19,17 @@
         "proposals/wide-arithmetic"
       ],
       "snapshot": "0422dc4420b9218b1783fc6c314ec72e15b7a9e2"
+    },
+    "wasi-testsuite": {
+      "pin": [
+        "WebAssembly/wasi-testsuite@de056c60895ff589996da758c91200cda41feebe",
+        "LICENSE",
+        "tests/assemblyscript/testsuite/wasm32-wasip1",
+        "tests/c/testsuite/wasm32-wasip1",
+        "tests/rust/testsuite/wasm32-wasip1",
+        "tests/rust/testsuite/wasm32-wasip3"
+      ],
+      "snapshot": "1e2ccf056e2502e906d6a9b220f933df1507b5c2"
     }
   }
 }

@@ -85,7 +85,7 @@ public class CssWriter
     internal void WriteDeclarationBlock(CssRule? parentRule, List<CssDeclarationEntry> declarations)
     {
         _blocks.Push(new BlockState(BlockKind.Root));
-        foreach (var declaration in GetDeclarationsToWrite(CssStyleDeclaration.GetSerializedDeclarations(declarations)))
+        foreach (var declaration in GetDeclarationsToWrite(SerializeDeclarations(declarations)))
         {
             WriteDeclaration(parentRule, declaration.Name, declaration.Value, declaration.Important);
         }
@@ -285,7 +285,7 @@ public class CssWriter
                     merged.Add(declaration);
                 }
 
-                foreach (var declaration in GetDeclarationsToWrite(CssStyleDeclaration.GetSerializedDeclarations(merged)))
+                foreach (var declaration in GetDeclarationsToWrite(SerializeDeclarations(merged)))
                 {
                     WriteDeclaration(rule, declaration.Name, declaration.Value, declaration.Important);
                 }
@@ -298,11 +298,22 @@ public class CssWriter
 
     private void WriteDeclarations(CssRule rule)
     {
-        foreach (var declaration in GetDeclarationsToWrite(rule.GetDeclarations()))
+        var declarations = rule.DeclarationEntries is { } entries ? SerializeDeclarations(entries) : rule.GetDeclarations();
+        foreach (var declaration in GetDeclarationsToWrite(declarations))
         {
             WriteDeclaration(rule, declaration.Name, declaration.Value, declaration.Important);
         }
     }
+
+    /// <summary>
+    /// Whether the declarations are serialized in the order in which their serialization is parsed
+    /// (<see cref="CssStyleDeclaration.GetStableSerializedDeclarations"/>), so that formatting the output again does not
+    /// change it, instead of the order of the CSSOM serialization.
+    /// </summary>
+    internal virtual bool SerializeDeclarationsInParsedOrder => false;
+
+    private List<CssSerializedDeclaration> SerializeDeclarations(List<CssDeclarationEntry> declarations)
+        => SerializeDeclarationsInParsedOrder ? CssStyleDeclaration.GetStableSerializedDeclarations(declarations) : CssStyleDeclaration.GetSerializedDeclarations(declarations);
 
     /// <summary>
     /// Whether the longhands whose value is only known through the shorthand that set them (e.g. the longhands of

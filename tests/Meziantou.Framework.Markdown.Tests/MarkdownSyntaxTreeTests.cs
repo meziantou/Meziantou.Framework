@@ -1974,6 +1974,25 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Rendering took {stopwatch.Elapsed}");
     }
 
+    // Collecting and blanking the attributes of a pipe table row was quadratic in their number: 2.4 MB of attributes in a row
+    // took 2 minutes, and 1.6 MB in a cell of the delimiter row took 8 minutes
+    [Theory]
+    [InlineData("| a | b |\n|---|---|\n| ", "a{.c} ", "")]
+    [InlineData("| a |\n|-", "{.c}", "-|\n")]
+    public void ManyAttributesInAPipeTableRowAreLinear(string prefix, string repeated, string suffix)
+    {
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
+        var text = prefix + string.Concat(Enumerable.Repeat(repeated, 200_000)) + suffix;
+
+        var stopwatch = Stopwatch.StartNew();
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+        var html = MarkdownHtmlRenderer.ToHtml(tree);
+
+        Assert.StartsWith("<table", html, StringComparison.Ordinal);
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing and rendering took {stopwatch.Elapsed}");
+    }
+
     [Fact]
     public void TheAdvancedExtensionsAreTheOnesOfMarkdig()
     {

@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.Yaml.Events;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>
 /// Writes a stream as the text it was loaded from, with only the nodes that changed rewritten. The changes are found by
@@ -12,22 +12,22 @@ namespace Meziantou.Framework.Yaml.Model;
 internal static class YamlSourceEditor
 {
     /// <summary>The state of a node, recorded before its first change: its event, its location and its children.</summary>
-    public static YamlNodeSnapshot CaptureCurrent(YamlNode node)
+    public static YamlNodeSnapshot CaptureCurrent(IYamlModelNode node)
     {
         switch (node)
         {
             case YamlStream stream:
                 return new YamlNodeSnapshot { Documents = [.. stream] };
 
-            case YamlDocument document:
+            case YamlStreamDocument document:
                 return new YamlNodeSnapshot { Header = document.DocumentStart, Contents = document.Contents };
 
             case YamlValue value:
                 return new YamlNodeSnapshot { Header = value.Scalar, Start = value.Scalar.Start, End = value.Scalar.End };
 
             case YamlMapping mapping:
-                var keys = new YamlElement[mapping.Count];
-                var values = new YamlElement?[mapping.Count];
+                var keys = new YamlNode[mapping.Count];
+                var values = new YamlNode?[mapping.Count];
                 var index = 0;
                 foreach (var entry in mapping)
                 {
@@ -82,7 +82,7 @@ internal static class YamlSourceEditor
 
     // The state of a node loaded from the text: recorded before its first change, or its current state while it is
     // unchanged. Null for a node that was not loaded from the text.
-    private static YamlNodeSnapshot? SnapshotOf(YamlNode? node)
+    private static YamlNodeSnapshot? SnapshotOf(IYamlModelNode? node)
     {
         if (node is null || !node.IsTracked)
             return null;
@@ -185,7 +185,7 @@ internal static class YamlSourceEditor
         return builder.ToString();
     }
 
-    private static bool AddDocumentEdits(YamlDocument document, string source, List<Edit> edits)
+    private static bool AddDocumentEdits(YamlStreamDocument document, string source, List<Edit> edits)
     {
         var snapshot = SnapshotOf(document);
         if (snapshot is null || !ReferenceEquals(snapshot.Header, document.DocumentStart))
@@ -209,7 +209,7 @@ internal static class YamlSourceEditor
         return true;
     }
 
-    private static void AddNodeEdits(YamlElement node, string source, bool inFlow, List<Edit> edits)
+    private static void AddNodeEdits(YamlNode node, string source, bool inFlow, List<Edit> edits)
     {
         RuntimeHelpers.EnsureSufficientExecutionStack();
         var snapshot = SnapshotOf(node)!;
@@ -217,7 +217,7 @@ internal static class YamlSourceEditor
         {
             // A copy of an anchored node: its text is the alias, which stays as long as neither the copy nor the anchored
             // node changed. Otherwise the copy is written in the flow style, which is valid where the alias was.
-            if (IsChanged(node) || node.AliasTarget is not YamlElement target || IsChanged(target) || target.Anchor is null || s_liveNodes?.Contains(target) is not true)
+            if (IsChanged(node) || node.AliasTarget is not YamlNode target || IsChanged(target) || target.Anchor is null || s_liveNodes?.Contains(target) is not true)
             {
                 edits.Add(new Edit(aliasStart.Index, node.AliasEnd!.Value.Index, Emit(node, aliasStart.Column, inFlow: true)));
             }
@@ -498,7 +498,7 @@ internal static class YamlSourceEditor
 
     // Replaces the value of a block mapping entry (keyEnd is the end of its key), or of a block sequence item (keyEnd is
     // -1), at the indentation of the collection
-    private static bool TryReplaceValue(YamlElement? previous, YamlElement? value, int column, int keyEnd, string source, List<Edit> edits)
+    private static bool TryReplaceValue(YamlNode? previous, YamlNode? value, int column, int keyEnd, string source, List<Edit> edits)
     {
         if (SnapshotOf(previous) is not { } snapshot || previous!.AliasStart is not null)
             return false;
@@ -549,14 +549,14 @@ internal static class YamlSourceEditor
         return true;
     }
 
-    private static void ReplaceNode(YamlElement node, bool inFlow, List<Edit> edits)
+    private static void ReplaceNode(YamlNode node, bool inFlow, List<Edit> edits)
     {
         var snapshot = SnapshotOf(node)!;
         edits.Add(new Edit(snapshot.Start.Index, snapshot.End.Index, Emit(node, snapshot.Start.Column, inFlow)));
     }
 
     // Whether the node or one of its descendants changed since it was loaded
-    private static bool IsChanged(YamlElement? node)
+    private static bool IsChanged(YamlNode? node)
     {
         RuntimeHelpers.EnsureSufficientExecutionStack();
         if (node is null)
@@ -601,11 +601,11 @@ internal static class YamlSourceEditor
         }
     }
 
-    private static Mark StartOf(YamlElement node) => SnapshotOf(node)!.Start;
+    private static Mark StartOf(YamlNode node) => SnapshotOf(node)!.Start;
 
-    private static Mark EndOf(YamlElement node) => SnapshotOf(node)!.End;
+    private static Mark EndOf(YamlNode node) => SnapshotOf(node)!.End;
 
-    private static int EntryEnd(string source, YamlElement[] keys, YamlElement?[] values, int index)
+    private static int EntryEnd(string source, YamlNode[] keys, YamlNode?[] values, int index)
     {
         var end = SnapshotOf(values[index]) is { } value ? Math.Max(value.End.Index, EndOf(keys[index]).Index) : EndOf(keys[index]).Index;
         return NextLineStart(source, end);
@@ -630,14 +630,14 @@ internal static class YamlSourceEditor
         return source[position] == '\r' && position + 1 < source.Length && source[position + 1] == '\n' ? position + 2 : position + 1;
     }
 
-    private static string EmitEntry(YamlElement key, YamlElement? value, int column)
+    private static string EmitEntry(YamlNode key, YamlNode? value, int column)
     {
         var mapping = new YamlMapping { { key.DeepCloneElement(), value?.DeepCloneElement() } };
         return Emit(mapping, column, inFlow: false);
     }
 
     // Writes a node with the emitter, with the lines after the first one indented to the column of the node
-    private static string Emit(YamlElement node, int column, bool inFlow)
+    private static string Emit(YamlNode node, int column, bool inFlow)
     {
         var element = node.DeepCloneElement();
         element.AliasStart = null;
@@ -693,7 +693,7 @@ internal static class YamlSourceEditor
     }
 
     // The emitter writes an empty plain scalar as '' where it cannot leave it empty, which is a string instead of a null
-    private static void WriteEmptyScalarsAsNull(YamlElement element)
+    private static void WriteEmptyScalarsAsNull(YamlNode element)
     {
         switch (element)
         {
@@ -723,7 +723,7 @@ internal static class YamlSourceEditor
         }
     }
 
-    private static void SetFlowStyle(YamlElement element)
+    private static void SetFlowStyle(YamlNode element)
     {
         switch (element)
         {
@@ -763,7 +763,7 @@ internal static class YamlSourceEditor
         return writer.ToString();
     }
 
-    private static YamlElement DeepCloneElement(this YamlElement element) => (YamlElement)element.DeepClone();
+    private static YamlNode DeepCloneElement(this YamlNode element) => (YamlNode)element.DeepClone();
 
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Edit(int Start, int End, string Text);

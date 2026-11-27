@@ -2,10 +2,10 @@ using Meziantou.Framework.Yaml.Events;
 using Meziantou.Framework.Yaml.Schemas;
 using Meziantou.Framework.Yaml.Serialization;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>Represents the Yaml Value.</summary>
-public class YamlValue : YamlElement
+public class YamlValue : YamlNode
 {
     private Scalar _scalar;
 

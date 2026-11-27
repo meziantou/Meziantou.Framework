@@ -1,20 +1,61 @@
 using Meziantou.Framework.Yaml.Events;
-using DocumentStart = Meziantou.Framework.Yaml.Events.DocumentStart;
 using Scalar = Meziantou.Framework.Yaml.Events.Scalar;
-using StreamStart = Meziantou.Framework.Yaml.Events.StreamStart;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
-/// <summary>Represents the Yaml Node.</summary>
-public abstract class YamlNode
+/// <summary>
+/// A node of the document object model: a <see cref="YamlMapping"/>, a <see cref="YamlSequence"/> or a
+/// <see cref="YamlValue"/>, like <c>JsonNode</c> in System.Text.Json.
+/// </summary>
+/// <remarks>
+/// A <see cref="YamlStreamDocument"/> holds the root node of a document, and a <see cref="YamlStream"/> holds documents:
+/// they are not nodes. For a read-only document that does not create an object per node, see <see cref="YamlDocument"/>.
+/// </remarks>
+public abstract class YamlNode : IYamlModelNode
 {
-    /// <summary>Reads the next YAML element from the event stream.</summary>
-    protected static YamlElement? ReadElement(EventReader eventReader)
+    /// <summary>Gets or sets anchor.</summary>
+    public abstract string? Anchor { get; set; }
+
+    /// <summary>Gets or sets tag.</summary>
+    public abstract string? Tag { get; set; }
+
+    /// <summary>Gets is Canonical.</summary>
+    public abstract bool IsCanonical { get; }
+
+    /// <summary>Gets or sets a value indicating whether the node was loaded from a text that keeps its changes, see <see cref="YamlStream.ToStringPreservingFormatting"/>.</summary>
+    internal bool IsTracked { get; set; }
+
+    /// <summary>Gets or sets the state of the node before its first change, or <see langword="null"/> while it is unchanged.</summary>
+    internal YamlNodeSnapshot? Snapshot { get; set; }
+
+    bool IYamlModelNode.IsTracked { get => IsTracked; set => IsTracked = value; }
+
+    YamlNodeSnapshot? IYamlModelNode.Snapshot { get => Snapshot; set => Snapshot = value; }
+
+    /// <summary>Gets or sets the location of the alias this node was copied from when it was loaded.</summary>
+    internal Mark? AliasStart { get; set; }
+
+    internal Mark? AliasEnd { get; set; }
+
+    /// <summary>Gets or sets the anchored node this node was copied from when it was loaded.</summary>
+    internal YamlNode? AliasTarget { get; set; }
+
+    /// <summary>Records the state of the node before its first change.</summary>
+    internal void OnChanging()
+    {
+        if (IsTracked && Snapshot is null)
+        {
+            Snapshot = YamlSourceEditor.CaptureCurrent(this);
+        }
+    }
+
+    /// <summary>Reads the next YAML node from the event stream.</summary>
+    internal static YamlNode? ReadElement(EventReader eventReader)
     {
         return ReadElement(eventReader, context: null);
     }
 
-    internal static YamlElement? ReadElement(EventReader eventReader, YamlModelLoadContext? context)
+    internal static YamlNode? ReadElement(EventReader eventReader, YamlModelLoadContext? context)
     {
         if (eventReader.Peek<MappingStart>() is { } mappingStart)
         {
@@ -55,7 +96,7 @@ public abstract class YamlNode
             // copied. That copy is what makes alias amplification possible, so it is charged against a budget first.
             context.ChargeAliasExpansion(anchored, alias.Value, alias.Start, alias.End);
 
-            var clone = (YamlElement)anchored.DeepClone();
+            var clone = anchored.DeepClone();
             clone.Anchor = null;
             clone.AliasStart = alias.Start;
             clone.AliasEnd = alias.End;
@@ -71,39 +112,16 @@ public abstract class YamlNode
         return null;
     }
 
-    /// <summary>Gets or sets a value indicating whether the node was loaded from a text that keeps its changes, see <see cref="YamlStream.ToStringPreservingFormatting"/>.</summary>
-    internal bool IsTracked { get; set; }
-
-    /// <summary>Gets or sets the state of the node before its first change, or <see langword="null"/> while it is unchanged.</summary>
-    internal YamlNodeSnapshot? Snapshot { get; set; }
-
-    /// <summary>Records the state of the node before its first change.</summary>
-    internal void OnChanging()
-    {
-        if (IsTracked && Snapshot is null)
-        {
-            Snapshot = YamlSourceEditor.CaptureCurrent(this);
-        }
-    }
-
-    /// <summary>Gets or sets the location of the alias this node was copied from when it was loaded.</summary>
-    internal Mark? AliasStart { get; set; }
-
-    internal Mark? AliasEnd { get; set; }
-
-    /// <summary>Gets or sets the anchored node this node was copied from when it was loaded.</summary>
-    internal YamlNode? AliasTarget { get; set; }
-
-    private static void RegisterAnchor(YamlElement element, YamlModelLoadContext? context, Mark start, Mark end)
+    private static void RegisterAnchor(YamlNode node, YamlModelLoadContext? context, Mark start, Mark end)
     {
         if (context is null)
         {
             return;
         }
 
-        element.IsTracked = context.TrackSource;
+        node.IsTracked = context.TrackSource;
 
-        var anchor = element.Anchor;
+        var anchor = node.Anchor;
         if (!string.IsNullOrEmpty(anchor))
         {
             if (!context.AllowAnchors)
@@ -111,8 +129,8 @@ public abstract class YamlNode
                 throw new YamlException(start, end, "YAML anchors are not allowed.");
             }
 
-            context.Anchors[anchor] = element;
-            context.RegisterNodeCount(element);
+            context.Anchors[anchor] = node;
+            context.RegisterNodeCount(node);
         }
     }
 
@@ -122,57 +140,22 @@ public abstract class YamlNode
         return new YamlNodeEventEnumerator(this);
     }
 
-    /// <summary>Writes to.</summary>
+    /// <summary>Writes the node as a YAML document.</summary>
     public void WriteTo(TextWriter writer, bool suppressDocumentTags = false)
     {
         WriteTo(new Emitter(writer), suppressDocumentTags);
     }
 
-    /// <summary>Writes to.</summary>
+    /// <summary>Writes the node as a YAML document.</summary>
     public void WriteTo(IEmitter emitter, bool suppressDocumentTags = false)
     {
-        ArgumentNullException.ThrowIfNull(emitter);
-
-        // The emitter expects a stream, and a node inside a document. A stream provides both, even when it has no
-        // document at all, and a document provides the latter.
-        if (this is not YamlStream)
-        {
-            emitter.Emit(new StreamStart());
-            if (this is not YamlDocument)
-            {
-                emitter.Emit(new DocumentStart());
-            }
-        }
-
-        foreach (var evnt in EnumerateEvents())
-        {
-            if (suppressDocumentTags && evnt is DocumentStart { Tags.Count: > 0 } document)
-            {
-                // The event belongs to the document, so clearing its directives would remove them from the model.
-                emitter.Emit(new DocumentStart(document.Version, tags: null, document.IsImplicit, document.Start, document.End));
-                continue;
-            }
-
-            emitter.Emit(evnt);
-        }
+        YamlModelText.WriteTo(this, emitter, suppressDocumentTags);
     }
 
     /// <summary>Returns a string representation of the current instance.</summary>
     public override string ToString()
     {
-        return ToYaml().Trim();
-    }
-
-    /// <summary>Writes this node as a YAML document.</summary>
-    /// <remarks>
-    /// Unlike <see cref="ToString"/>, the text is not trimmed: the trailing line breaks of a "keep" block scalar and
-    /// the indentation of its content are part of the value.
-    /// </remarks>
-    private string ToYaml()
-    {
-        var sb = new StringBuilder();
-        WriteTo(new StringWriter(sb, CultureInfo.InvariantCulture), suppressDocumentTags: true);
-        return sb.ToString();
+        return YamlModelText.ToYaml(this).Trim();
     }
 
     /// <summary>Converts this node to an instance of <typeparamref name="T"/>.</summary>
@@ -184,12 +167,11 @@ public abstract class YamlNode
     /// <summary>Converts this YAML node to an object.</summary>
     public object? ToObject(Type type, YamlSerializerOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(type);
-        return YamlSerializer.Deserialize(ToYaml(), type, options);
+        return YamlModelText.ToObject(this, type, options);
     }
 
-    /// <summary>Creates a YAML element from an object.</summary>
-    public static YamlElement FromObject(object value, YamlSerializerOptions? options = null, Type? expectedType = null)
+    /// <summary>Creates a YAML node from an object.</summary>
+    public static YamlNode FromObject(object value, YamlSerializerOptions? options = null, Type? expectedType = null)
     {
         ArgumentNullException.ThrowIfNull(value);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
@@ -200,12 +182,12 @@ public abstract class YamlNode
         var contents = stream.Count == 0 ? null : stream[0].Contents;
         if (contents is null)
         {
-            throw new YamlException("Unable to materialize a YAML element from the serialized object graph.");
+            throw new YamlException("Unable to materialize a YAML node from the serialized object graph.");
         }
 
         return contents;
     }
 
-    /// <summary>Creates a deep clone of the current value.</summary>
+    /// <summary>Creates a deep clone of the current node.</summary>
     public abstract YamlNode DeepClone();
 }

@@ -1,4 +1,4 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests;
@@ -76,7 +76,7 @@ field2: *data
         // The converter path builds the same model and had the same defect.
         var yaml = CreateAliasBomb(10);
 
-        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<YamlElement>(yaml));
+        var exception = Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<YamlNode>(yaml));
 
         Assert.Contains("alias expansion", exception.Message);
     }

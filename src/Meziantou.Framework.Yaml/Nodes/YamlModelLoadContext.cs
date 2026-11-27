@@ -1,4 +1,4 @@
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>
 /// Tracks the anchors declared by a document and bounds how many nodes aliases are allowed to materialize.
@@ -22,7 +22,7 @@ internal sealed class YamlModelLoadContext
         AllowAliases = allowAliases;
     }
 
-    public Dictionary<string, YamlElement> Anchors { get; } = new(StringComparer.Ordinal);
+    public Dictionary<string, YamlNode> Anchors { get; } = new(StringComparer.Ordinal);
 
     public bool AllowAnchors { get; }
 
@@ -33,7 +33,7 @@ internal sealed class YamlModelLoadContext
 
     /// <summary>Charges the nodes an alias is about to materialize against the budget.</summary>
     /// <exception cref="YamlException">Expanding the alias would exceed the budget.</exception>
-    public void ChargeAliasExpansion(YamlElement anchored, string alias, Mark start, Mark end)
+    public void ChargeAliasExpansion(YamlNode anchored, string alias, Mark start, Mark end)
     {
         var remaining = _maxAliasExpansionNodeCount - _aliasExpansionNodeCount;
         var count = CountNodes(anchored, remaining);
@@ -46,7 +46,7 @@ internal sealed class YamlModelLoadContext
     }
 
     /// <summary>Records the node count of an anchored element so later aliases can be charged without rewalking it.</summary>
-    public void RegisterNodeCount(YamlElement element)
+    public void RegisterNodeCount(YamlNode element)
     {
         // Only anchored elements can be expanded later, so nothing else is worth measuring.
         _nodeCounts[element] = CountNodes(element, long.MaxValue);
@@ -59,7 +59,7 @@ internal sealed class YamlModelLoadContext
     /// Stopping at the limit keeps the work bounded by the remaining budget, so counting cannot itself become the
     /// expensive operation the budget exists to prevent.
     /// </remarks>
-    private long CountNodes(YamlElement element, long limit)
+    private long CountNodes(YamlNode element, long limit)
     {
         if (_nodeCounts.TryGetValue(element, out var cached))
         {
@@ -67,7 +67,7 @@ internal sealed class YamlModelLoadContext
         }
 
         long count = 0;
-        var pending = new Stack<YamlElement>();
+        var pending = new Stack<YamlNode>();
         pending.Push(element);
 
         while (pending.Count > 0)

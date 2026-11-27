@@ -1,6 +1,6 @@
 using Meziantou.Framework.DependencyScanning.Internals;
 using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using static Meziantou.Framework.DependencyScanning.Internals.YamlParserUtilities;
 
 namespace Meziantou.Framework.DependencyScanning.Scanners;

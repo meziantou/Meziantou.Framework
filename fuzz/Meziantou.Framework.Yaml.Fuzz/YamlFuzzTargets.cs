@@ -4,7 +4,7 @@ using System.Text;
 using System.Text.Unicode;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Syntax;
 using TagDirective = Meziantou.Framework.Yaml.Tokens.TagDirective;
 
@@ -60,7 +60,7 @@ public static class YamlFuzzTargets
     /// <see cref="Utf8YamlReader"/> reads the same nodes as the scanner-based parser (<see cref="Parser{TBuffer}"/>) from
     /// every document that parser accepts. Its tokens, indicators and properties cover every byte that is not
     /// whitespace, a line break or a comment. Reading the input in parts gives the same tokens at the same positions,
-    /// and <see cref="YamlReadOnlyDocument"/> holds the same nodes. A clone of a node holds the same nodes at the same positions.
+    /// and <see cref="YamlDocument"/> holds the same nodes. A clone of a node holds the same nodes at the same positions.
     /// </summary>
     private static void Utf8Reader(ReadOnlySpan<byte> data)
     {
@@ -76,7 +76,7 @@ public static class YamlFuzzTargets
             var chunkSize = 1 + (data.Length % 13);
             FuzzAssert.Equal(positions, ReadUtf8ReaderPositions(utf8, chunkSize), $"Reading the input in parts of {chunkSize} bytes gives different tokens");
 
-            using var document = YamlReadOnlyDocument.Parse(utf8);
+            using var document = YamlDocument.Parse(utf8);
             var documentNodes = new List<string>();
             for (var i = 0; i < document.DocumentCount; i++)
             {
@@ -106,10 +106,10 @@ public static class YamlFuzzTargets
     private static void Utf8Writer(ReadOnlySpan<byte> data)
     {
         var utf8 = Encoding.UTF8.GetBytes(FuzzText.Decode(data));
-        YamlReadOnlyDocument source;
+        YamlDocument source;
         try
         {
-            source = YamlReadOnlyDocument.Parse(utf8);
+            source = YamlDocument.Parse(utf8);
         }
         catch (YamlException)
         {
@@ -170,11 +170,11 @@ public static class YamlFuzzTargets
             return buffer.WrittenSpan.ToArray();
         }
 
-        static YamlReadOnlyDocument ParseWriterOutput(byte[] output)
+        static YamlDocument ParseWriterOutput(byte[] output)
         {
             try
             {
-                return YamlReadOnlyDocument.Parse(output);
+                return YamlDocument.Parse(output);
             }
             catch (YamlException ex)
             {
@@ -186,24 +186,24 @@ public static class YamlFuzzTargets
     // Indicators, a document marker and a line break: a comment must not change what is around it
     private const string CommentText = "a: [b] {c} 'd' \"e\" #f &g *h !i\n--- ...";
 
-    private static void WriteAsStrings(YamlReadOnlyNode node, Utf8YamlWriter writer, bool inFlow, ref int position)
+    private static void WriteAsStrings(YamlElement node, Utf8YamlWriter writer, bool inFlow, ref int position)
     {
-        if (node.Kind is not YamlReadOnlyNodeKind.Alias && node.Anchor is { } anchor)
+        if (node.Kind is not YamlElementKind.Alias && node.Anchor is { } anchor)
         {
             writer.WriteAnchor(anchor);
         }
 
         switch (node.Kind)
         {
-            case YamlReadOnlyNodeKind.Alias:
+            case YamlElementKind.Alias:
                 writer.WriteAliasValue(node.Anchor);
                 break;
 
-            case YamlReadOnlyNodeKind.Scalar:
+            case YamlElementKind.Scalar:
                 writer.WriteStringValue(node.GetString());
                 break;
 
-            case YamlReadOnlyNodeKind.Sequence:
+            case YamlElementKind.Sequence:
                 var flowSequence = inFlow || node.IsFlow;
                 writer.WriteStartSequence(node.IsFlow ? YamlStyle.Flow : YamlStyle.Block);
                 foreach (var item in node.EnumerateSequence())
@@ -241,18 +241,18 @@ public static class YamlFuzzTargets
         }
     }
 
-    private static void AssertSameStrings(YamlReadOnlyNode expected, YamlReadOnlyNode actual)
+    private static void AssertSameStrings(YamlElement expected, YamlElement actual)
     {
         FuzzAssert.Equal(expected.Kind, actual.Kind, "A node written as a string has another kind");
         switch (expected.Kind)
         {
-            case YamlReadOnlyNodeKind.Scalar:
+            case YamlElementKind.Scalar:
                 var value = expected.GetString();
                 FuzzAssert.Equal(EscapeValue(value), EscapeValue(actual.GetString()), "A string reads back as another value");
                 FuzzAssert.True(actual.ScalarStyle is not ScalarStyle.Plain || !ResolvesToNonString(value), $"The string '{EscapeValue(value)}' is written plain, which reads as another type");
                 break;
 
-            case YamlReadOnlyNodeKind.Sequence:
+            case YamlElementKind.Sequence:
                 FuzzAssert.Equal(expected.GetLength(), actual.GetLength(), "A sequence has another number of items");
                 var expectedItems = expected.EnumerateSequence();
                 var actualItems = actual.EnumerateSequence();
@@ -263,7 +263,7 @@ public static class YamlFuzzTargets
 
                 break;
 
-            case YamlReadOnlyNodeKind.Mapping:
+            case YamlElementKind.Mapping:
                 FuzzAssert.Equal(expected.GetLength(), actual.GetLength(), "A mapping has another number of entries");
                 var expectedEntries = expected.EnumerateMapping();
                 var actualEntries = actual.EnumerateMapping();
@@ -283,7 +283,7 @@ public static class YamlFuzzTargets
 
     // The nodes, with only the part of the scalar style that gives the type: an untagged plain scalar may be a null, a
     // boolean or a number, while any other scalar is a string
-    private static string ReadTypedNodes(YamlReadOnlyDocument document)
+    private static string ReadTypedNodes(YamlDocument document)
     {
         var nodes = new List<string>();
         for (var i = 0; i < document.DocumentCount; i++)
@@ -294,22 +294,22 @@ public static class YamlFuzzTargets
         return string.Join('\n', nodes);
     }
 
-    private static void AddTypedNodes(YamlReadOnlyNode node, List<string> nodes)
+    private static void AddTypedNodes(YamlElement node, List<string> nodes)
     {
-        var properties = (node.Kind is YamlReadOnlyNodeKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag);
+        var properties = (node.Kind is YamlElementKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag);
         switch (node.Kind)
         {
-            case YamlReadOnlyNodeKind.Alias:
+            case YamlElementKind.Alias:
                 nodes.Add("=ALI *" + node.Anchor);
                 break;
 
-            case YamlReadOnlyNodeKind.Scalar:
+            case YamlElementKind.Scalar:
                 var value = node.GetString();
                 var typed = node.ScalarStyle is ScalarStyle.Plain && node.Tag is null && Yaml.Serialization.YamlScalar.ResolvesToNonString(value, YamlSchemaKind.Core);
                 nodes.Add("=VAL" + properties + (typed ? " typed " : " string ") + EscapeValue(value));
                 break;
 
-            case YamlReadOnlyNodeKind.Sequence:
+            case YamlElementKind.Sequence:
                 nodes.Add("+SEQ" + (node.IsFlow ? " []" : "") + properties);
                 foreach (var item in node.EnumerateSequence())
                 {
@@ -376,7 +376,7 @@ public static class YamlFuzzTargets
 
         return builder.ToString();
 
-        static void Represent(YamlElement node, StringBuilder builder)
+        static void Represent(YamlNode node, StringBuilder builder)
         {
             switch (node)
             {
@@ -416,9 +416,9 @@ public static class YamlFuzzTargets
 
     // A clone of a node holds the same nodes, with the same text and positions, and its aliases resolve to the same nodes.
     // Every node is cloned in a small document, and a sample of them in a larger one.
-    private static void CheckClones(YamlReadOnlyDocument document, int seed)
+    private static void CheckClones(YamlDocument document, int seed)
     {
-        var nodes = new List<YamlReadOnlyNode>();
+        var nodes = new List<YamlElement>();
         for (var i = 0; i < document.DocumentCount; i++)
         {
             CollectReadOnlyNodes(document.GetDocumentRoot(i), nodes);
@@ -437,17 +437,17 @@ public static class YamlFuzzTargets
             FuzzAssert.True(clone.Clone() == clone, "The clone of a clone is another node");
         }
 
-        static void CollectReadOnlyNodes(YamlReadOnlyNode node, List<YamlReadOnlyNode> nodes)
+        static void CollectReadOnlyNodes(YamlElement node, List<YamlElement> nodes)
         {
             nodes.Add(node);
-            if (node.Kind is YamlReadOnlyNodeKind.Sequence)
+            if (node.Kind is YamlElementKind.Sequence)
             {
                 foreach (var item in node.EnumerateSequence())
                 {
                     CollectReadOnlyNodes(item, nodes);
                 }
             }
-            else if (node.Kind is YamlReadOnlyNodeKind.Mapping)
+            else if (node.Kind is YamlElementKind.Mapping)
             {
                 foreach (var entry in node.EnumerateMapping())
                 {
@@ -457,15 +457,15 @@ public static class YamlFuzzTargets
             }
         }
 
-        static void DescribeReadOnlyNodes(YamlReadOnlyNode node, List<string> lines)
+        static void DescribeReadOnlyNodes(YamlElement node, List<string> lines)
         {
-            var descendants = new List<YamlReadOnlyNode>();
+            var descendants = new List<YamlElement>();
             CollectReadOnlyNodes(node, descendants);
             AddReadOnlyNodes(node, lines);
             foreach (var descendant in descendants)
             {
                 var target = "";
-                if (descendant.Kind is YamlReadOnlyNodeKind.Alias)
+                if (descendant.Kind is YamlElementKind.Alias)
                 {
                     try
                     {
@@ -482,20 +482,20 @@ public static class YamlFuzzTargets
         }
     }
 
-    private static void AddReadOnlyNodes(YamlReadOnlyNode node, List<string> nodes)
+    private static void AddReadOnlyNodes(YamlElement node, List<string> nodes)
     {
-        var properties = (node.Kind is YamlReadOnlyNodeKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag);
+        var properties = (node.Kind is YamlElementKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " !" + node.Tag);
         switch (node.Kind)
         {
-            case YamlReadOnlyNodeKind.Alias:
+            case YamlElementKind.Alias:
                 nodes.Add("=ALI *" + node.Anchor);
                 break;
 
-            case YamlReadOnlyNodeKind.Scalar:
+            case YamlElementKind.Scalar:
                 nodes.Add("=VAL" + properties + " " + node.ScalarStyle.ToString() + " " + EscapeValue(node.GetString()));
                 break;
 
-            case YamlReadOnlyNodeKind.Sequence:
+            case YamlElementKind.Sequence:
                 nodes.Add("+SEQ" + (node.IsFlow ? " []" : "") + properties);
                 foreach (var item in node.EnumerateSequence())
                 {
@@ -568,7 +568,7 @@ public static class YamlFuzzTargets
         FuzzAssert.Equal(Represent(stream), Represent(reloaded), $"The text written after a change loads to different nodes: {FuzzAssert.Format(written)}");
 
         // Every other untagged scalar value of a mapping becomes a new scalar
-        static int ChangeScalars(YamlElement node)
+        static int ChangeScalars(YamlNode node)
         {
             var count = 0;
             switch (node)

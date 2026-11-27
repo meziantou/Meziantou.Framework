@@ -1,5 +1,5 @@
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Scalar = Meziantou.Framework.Yaml.Events.Scalar;
 
 namespace Meziantou.Framework.Yaml.Tests;
@@ -99,7 +99,7 @@ public sealed class YamlLineBreakTests
     public void EmitterRoundTripKeepsTheCharacter(char character)
     {
         var value = $"a{character}b";
-        var stream = new YamlStream { new YamlDocument { Contents = new YamlValue(value) } };
+        var stream = new YamlStream { new YamlStreamDocument { Contents = new YamlValue(value) } };
 
         using var writer = new StringWriter();
         stream.WriteTo(writer);

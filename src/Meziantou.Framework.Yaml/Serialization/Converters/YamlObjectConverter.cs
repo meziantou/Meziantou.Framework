@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Reflection;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
@@ -2925,8 +2925,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             case ExtensionDataKind.Mapping:
             {
-                var elementConverter = reader.GetConverter(typeof(YamlElement));
-                return elementConverter.Read(reader, typeof(YamlElement));
+                var elementConverter = reader.GetConverter(typeof(YamlNode));
+                return elementConverter.Read(reader, typeof(YamlNode));
             }
 
             default:
@@ -2993,17 +2993,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     throw new NotSupportedException($"Extension data member '{member.Name}' on '{instance.GetType()}' must be a '{typeof(YamlMapping)}'.");
                 }
 
-                if (value is not null and not YamlElement)
+                if (value is not null and not YamlNode)
                 {
-                    throw new NotSupportedException($"Extension data mapping value must be a '{typeof(YamlElement)}'.");
+                    throw new NotSupportedException($"Extension data mapping value must be a '{typeof(YamlNode)}'.");
                 }
 
-                var element = (YamlElement?)value;
+                var element = (YamlNode?)value;
                 for (var i = 0; i < mapping.Count; i++)
                 {
                     if (mapping[i].Key is YamlValue keyValue && string.Equals(keyValue.Value, key, StringComparison.Ordinal))
                     {
-                        mapping[i] = new KeyValuePair<YamlElement, YamlElement?>(mapping[i].Key, element);
+                        mapping[i] = new KeyValuePair<YamlNode, YamlNode?>(mapping[i].Key, element);
                         return;
                     }
                 }
@@ -3144,7 +3144,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     {
         if (writer.Options.MappingOrder == YamlMappingOrderPolicy.Sorted)
         {
-            var items = new List<KeyValuePair<string, YamlElement?>>(mapping.Count);
+            var items = new List<KeyValuePair<string, YamlNode?>>(mapping.Count);
             for (var i = 0; i < mapping.Count; i++)
             {
                 var pair = mapping[i];
@@ -3153,7 +3153,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     throw new YamlException(Mark.Empty, Mark.Empty, "Only scalar mapping keys are supported for extension data.");
                 }
 
-                items.Add(new KeyValuePair<string, YamlElement?>(keyValue.Value, pair.Value));
+                items.Add(new KeyValuePair<string, YamlNode?>(keyValue.Value, pair.Value));
             }
 
             items.Sort(static (x, y) => string.CompareOrdinal(x.Key, y.Key));

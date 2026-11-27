@@ -101,9 +101,9 @@ Assert.Equal("Id: 1\nColor: red\n", YamlSerializer.Serialize(product)); // writt
 ```
 <!-- endref -->
 
-The member must be a [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), or a `Dictionary<string, TValue>`, `IDictionary<string, TValue>` or
-`IReadOnlyDictionary<string, TValue>` whose values are `object` or [YamlNode](cref:Meziantou.Framework.Yaml.Model.YamlNode). With [YamlNode](cref:Meziantou.Framework.Yaml.Model.YamlNode) values, or a
-[YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), the extra content keeps its original form instead of being converted to .NET values. A type can have one
+The member must be a [YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping), or a `Dictionary<string, TValue>`, `IDictionary<string, TValue>` or
+`IReadOnlyDictionary<string, TValue>` whose values are `object` or [YamlNode](cref:Meziantou.Framework.Yaml.Nodes.YamlNode). With [YamlNode](cref:Meziantou.Framework.Yaml.Nodes.YamlNode) values, or a
+[YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping), the extra content keeps its original form instead of being converted to .NET values. A type can have one
 extension data member only.
 
 For a read-only dictionary, the serializer creates a `Dictionary<string, TValue>` with the current entries and the new

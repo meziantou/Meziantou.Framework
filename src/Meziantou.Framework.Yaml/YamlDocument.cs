@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Yaml;
 /// are decoded only when asked for, and every node keeps the location of its text in the input.
 /// </summary>
 /// <remarks>Dispose the document to return its buffers to the pool. Its nodes must not be used after that.</remarks>
-public sealed class YamlReadOnlyDocument : IDisposable
+public sealed class YamlDocument : IDisposable
 {
     // A lone surrogate of the text is an error, like for the other inputs, instead of a replacement character
     private static readonly UTF8Encoding StrictUtf8 = new(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
@@ -31,7 +31,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
     private readonly int[]? _segmentStarts;
     private readonly int[]? _segmentSourceStarts;
 
-    private YamlReadOnlyDocument(ReadOnlyMemory<byte> utf8, byte[]? ownedBuffer, Row[] rows, int rowCount, int[] documentRoots, string?[]? tags, Utf8YamlReader.TagDirective[]?[] documentTagDirectives)
+    private YamlDocument(ReadOnlyMemory<byte> utf8, byte[]? ownedBuffer, Row[] rows, int rowCount, int[] documentRoots, string?[]? tags, Utf8YamlReader.TagDirective[]?[] documentTagDirectives)
     {
         _documentTagDirectives = documentTagDirectives;
         _utf8 = utf8;
@@ -42,7 +42,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
         _tags = tags;
     }
 
-    private YamlReadOnlyDocument(byte[] utf8, Row[] rows, string?[]? tags, LineIndex lineIndex, int[] segmentStarts, int[] segmentSourceStarts)
+    private YamlDocument(byte[] utf8, Row[] rows, string?[]? tags, LineIndex lineIndex, int[] segmentStarts, int[] segmentSourceStarts)
         : this(utf8, ownedBuffer: null, rows, rows.Length, documentRoots: [0], tags, documentTagDirectives: [null])
     {
         _isClone = true;
@@ -56,17 +56,17 @@ public sealed class YamlReadOnlyDocument : IDisposable
 
     /// <summary>Gets the root node of the first document.</summary>
     /// <exception cref="InvalidOperationException">The stream has no document.</exception>
-    public YamlReadOnlyNode Root => DocumentCount > 0 ? GetDocumentRoot(0) : throw new InvalidOperationException("The YAML stream has no document.");
+    public YamlElement Root => DocumentCount > 0 ? GetDocumentRoot(0) : throw new InvalidOperationException("The YAML stream has no document.");
 
     /// <summary>Gets the UTF-8 input of the document.</summary>
     public ReadOnlyMemory<byte> Utf8Text => _utf8;
 
     /// <summary>Gets the root node of a document of the stream.</summary>
-    public YamlReadOnlyNode GetDocumentRoot(int index) => new(this, _documentRoots[index]);
+    public YamlElement GetDocumentRoot(int index) => new(this, _documentRoots[index]);
 
     /// <summary>Parses a UTF-8 YAML stream. The document keeps a reference to <paramref name="utf8Yaml"/>, which must not change while it is used.</summary>
     /// <exception cref="YamlException">The input is not valid YAML.</exception>
-    public static YamlReadOnlyDocument Parse(ReadOnlyMemory<byte> utf8Yaml, Utf8YamlReaderOptions options = default)
+    public static YamlDocument Parse(ReadOnlyMemory<byte> utf8Yaml, Utf8YamlReaderOptions options = default)
     {
         return Parse(utf8Yaml, ownedBuffer: null, options);
     }
@@ -74,7 +74,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
     /// <summary>Parses a YAML stream.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="yaml"/> is <see langword="null"/>.</exception>
     /// <exception cref="YamlException">The input is not valid YAML.</exception>
-    public static YamlReadOnlyDocument Parse(string yaml, Utf8YamlReaderOptions options = default)
+    public static YamlDocument Parse(string yaml, Utf8YamlReaderOptions options = default)
     {
         ArgumentNullException.ThrowIfNull(yaml);
         var buffer = ArrayPool<byte>.Shared.Rent(StrictUtf8.GetMaxByteCount(yaml.Length));
@@ -120,7 +120,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
     /// <summary>Reads a UTF-8 YAML stream to its end and parses it.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="utf8Yaml"/> is <see langword="null"/>.</exception>
     /// <exception cref="YamlException">The input is not valid YAML.</exception>
-    public static YamlReadOnlyDocument Parse(Stream utf8Yaml, Utf8YamlReaderOptions options = default)
+    public static YamlDocument Parse(Stream utf8Yaml, Utf8YamlReaderOptions options = default)
     {
         ArgumentNullException.ThrowIfNull(utf8Yaml);
         var buffer = ArrayPool<byte>.Shared.Rent(utf8Yaml.CanSeek ? (int)Math.Clamp(utf8Yaml.Length - utf8Yaml.Position + 1, 256, Array.MaxLength) : 4096);
@@ -153,7 +153,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
         }
     }
 
-    private static YamlReadOnlyDocument Parse(ReadOnlyMemory<byte> utf8, byte[]? ownedBuffer, Utf8YamlReaderOptions options)
+    private static YamlDocument Parse(ReadOnlyMemory<byte> utf8, byte[]? ownedBuffer, Utf8YamlReaderOptions options)
     {
         var rows = ArrayPool<Row>.Shared.Rent(Math.Max(16, utf8.Length / 8));
         var rowCount = 0;
@@ -265,7 +265,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
                 rowCount++;
             }
 
-            return new YamlReadOnlyDocument(utf8, ownedBuffer, rows, rowCount, [.. roots], tags?.ToArray(), [.. rootTagDirectives]);
+            return new YamlDocument(utf8, ownedBuffer, rows, rowCount, [.. roots], tags?.ToArray(), [.. rootTagDirectives]);
         }
         catch
         {
@@ -283,7 +283,7 @@ public sealed class YamlReadOnlyDocument : IDisposable
 
     /// <summary>Writes every document of the stream, with its <c>%TAG</c> directives, each one after the first with a <c>---</c> marker.</summary>
     /// <param name="writer">The destination.</param>
-    /// <remarks>See <see cref="YamlReadOnlyNode.WriteTo(Utf8YamlWriter)"/>. The tags are written with the handles of the directives.</remarks>
+    /// <remarks>See <see cref="YamlElement.WriteTo(Utf8YamlWriter)"/>. The tags are written with the handles of the directives.</remarks>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     public void WriteTo(Utf8YamlWriter writer)
     {
@@ -484,10 +484,10 @@ public sealed class YamlReadOnlyDocument : IDisposable
     // A copy of the node in a document that owns its arrays: the rows of the node, and the rows of the anchors that its
     // aliases refer to before it, so that an alias resolves to the same node. The bytes are copied by lines, so that the
     // positions are the ones of the input and a block scalar is followed by the same byte.
-    internal YamlReadOnlyNode CloneNode(int index)
+    internal YamlElement CloneNode(int index)
     {
         if (_isClone)
-            return new YamlReadOnlyNode(this, index);
+            return new YamlElement(this, index);
 
         var rows = _rows;
         ObjectDisposedException.ThrowIf(rows is null, this);
@@ -571,8 +571,8 @@ public sealed class YamlReadOnlyDocument : IDisposable
             rowStart += range.End - range.Start;
         }
 
-        var clone = new YamlReadOnlyDocument(text, cloneRows, _tags, CreateLineIndex(text, segmentStarts, segmentSourceStarts, sourceLines), segmentStarts, segmentSourceStarts);
-        return new YamlReadOnlyNode(clone, cloneIndex);
+        var clone = new YamlDocument(text, cloneRows, _tags, CreateLineIndex(text, segmentStarts, segmentSourceStarts, sourceLines), segmentStarts, segmentSourceStarts);
+        return new YamlElement(clone, cloneIndex);
 
         // Adds the node and its descendants, unless a range has them; a range they contain is replaced
         void AddRange(int row)

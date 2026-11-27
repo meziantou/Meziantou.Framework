@@ -150,12 +150,12 @@ The first document needs no marker. To write another one, call [WriteStartDocume
 
 ## Copy a read-only document
 
-[YamlReadOnlyNode.WriteTo](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.WriteTo) writes a node of a [read-only document](11-ReadOnlyDocument.md) with its anchors, tags
-and collection styles, and [YamlReadOnlyDocument.WriteTo](cref:Meziantou.Framework.Yaml.YamlReadOnlyDocument.WriteTo) writes all its documents:
+[YamlElement.WriteTo](cref:Meziantou.Framework.Yaml.YamlElement.WriteTo) writes a node of a [read-only document](11-ReadOnlyDocument.md) with its anchors, tags
+and collection styles, and [YamlDocument.WriteTo](cref:Meziantou.Framework.Yaml.YamlDocument.WriteTo) writes all its documents:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Utf8YamlWriterTests.cs;region=Utf8YamlWriter_WriteTo;format=md-fenced-code-block;dedent=true -->
 ```csharp
-using var document = YamlReadOnlyDocument.Parse("""
+using var document = YamlDocument.Parse("""
     name: web # a comment is not a node: it is not written
     settings: {replicas: 3, image: "nginx:1.27"}
     """);

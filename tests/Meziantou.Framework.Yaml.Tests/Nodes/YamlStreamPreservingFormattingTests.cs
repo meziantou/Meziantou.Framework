@@ -1,6 +1,6 @@
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
-namespace Meziantou.Framework.Yaml.Tests.Model;
+namespace Meziantou.Framework.Yaml.Tests.Nodes;
 
 public sealed class YamlStreamPreservingFormattingTests
 {
@@ -161,7 +161,7 @@ public sealed class YamlStreamPreservingFormattingTests
         AssertSameData(stream, stream.ToStringPreservingFormatting());
     }
 
-    private static bool ChangeEveryOtherScalar(YamlElement? node, YamlNode parent, object? key)
+    private static bool ChangeEveryOtherScalar(YamlNode? node, object parent, object? key)
     {
         switch (node)
         {
@@ -170,12 +170,12 @@ public sealed class YamlStreamPreservingFormattingTests
                 switch (parent)
                 {
                     case YamlMapping mapping:
-                        mapping[(YamlElement)key!] = replacement;
+                        mapping[(YamlNode)key!] = replacement;
                         break;
                     case YamlSequence sequence:
                         sequence[(int)key!] = replacement;
                         break;
-                    case YamlDocument document:
+                    case YamlStreamDocument document:
                         document.Contents = replacement;
                         break;
                 }

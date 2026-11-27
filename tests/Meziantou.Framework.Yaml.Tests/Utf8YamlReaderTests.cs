@@ -343,8 +343,8 @@ public sealed class Utf8YamlReaderTests
             Assert.Equal(positions, ReadEventsAndPositions(utf8, chunkSize));
         }
 
-        using var document = YamlReadOnlyDocument.Parse(utf8);
-        Assert.Equal(YamlReadOnlyNodeKind.Sequence, document.Root.Kind);
+        using var document = YamlDocument.Parse(utf8);
+        Assert.Equal(YamlElementKind.Sequence, document.Root.Kind);
         Assert.Null(CheckTokenCoverage(utf8));
     }
 

@@ -1,5 +1,5 @@
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Schemas;
 
 namespace Meziantou.Framework.Yaml.Tests;

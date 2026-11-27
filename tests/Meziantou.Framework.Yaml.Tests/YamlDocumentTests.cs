@@ -1,11 +1,11 @@
 namespace Meziantou.Framework.Yaml.Tests;
 
-public sealed class YamlReadOnlyDocumentTests
+public sealed class YamlDocumentTests
 {
     [Fact]
     public void Parse_ReadsMappingsSequencesAndScalars()
     {
-        using var document = YamlReadOnlyDocument.Parse("""
+        using var document = YamlDocument.Parse("""
             name: demo # comment
             replicas: 3
             enabled: true
@@ -19,7 +19,7 @@ public sealed class YamlReadOnlyDocumentTests
             """);
 
         var root = document.Root;
-        Assert.Equal(YamlReadOnlyNodeKind.Mapping, root.Kind);
+        Assert.Equal(YamlElementKind.Mapping, root.Kind);
         Assert.Equal(7, root.GetLength());
         Assert.Equal("demo", root["name"].GetString());
         Assert.True(root["replicas"].TryGetInt64(out var replicas));
@@ -42,9 +42,9 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Documentation_Clone()
     {
-        #region YamlReadOnlyDocument_Clone
-        YamlReadOnlyNode settings;
-        using (var document = YamlReadOnlyDocument.Parse("""
+        #region YamlDocument_Clone
+        YamlElement settings;
+        using (var document = YamlDocument.Parse("""
             defaults: &defaults
               timeout: 30
             settings:
@@ -79,7 +79,7 @@ public sealed class YamlReadOnlyDocumentTests
     [InlineData("? complex key\n: value\nk: plain multi\n  line\n")]
     public void Clone_KeepsEveryNode(string yaml)
     {
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         for (var i = 0; i < document.DocumentCount; i++)
         {
             foreach (var node in Descendants(document.GetDocumentRoot(i)))
@@ -91,13 +91,13 @@ public sealed class YamlReadOnlyDocumentTests
             }
         }
 
-        static IEnumerable<YamlReadOnlyNode> Descendants(YamlReadOnlyNode node)
+        static IEnumerable<YamlElement> Descendants(YamlElement node)
         {
             yield return node;
-            IEnumerable<YamlReadOnlyNode> children = node.Kind switch
+            IEnumerable<YamlElement> children = node.Kind switch
             {
-                YamlReadOnlyNodeKind.Sequence => node.EnumerateSequence(),
-                YamlReadOnlyNodeKind.Mapping => node.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }),
+                YamlElementKind.Sequence => node.EnumerateSequence(),
+                YamlElementKind.Mapping => node.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }),
                 _ => [],
             };
 
@@ -110,7 +110,7 @@ public sealed class YamlReadOnlyDocumentTests
             }
         }
 
-        static void AssertSameNode(YamlReadOnlyNode expected, YamlReadOnlyNode actual)
+        static void AssertSameNode(YamlElement expected, YamlElement actual)
         {
             Assert.Equal(expected.Kind, actual.Kind);
             Assert.Equal(expected.Anchor, actual.Anchor);
@@ -124,11 +124,11 @@ public sealed class YamlReadOnlyDocumentTests
             Assert.Equal(expected.Utf8Length, actual.Utf8Length);
             switch (expected.Kind)
             {
-                case YamlReadOnlyNodeKind.Scalar:
+                case YamlElementKind.Scalar:
                     Assert.Equal(expected.GetString(), actual.GetString());
                     break;
 
-                case YamlReadOnlyNodeKind.Alias:
+                case YamlElementKind.Alias:
                     var target = Record.Exception(() => expected.ResolveAlias());
                     if (target is null)
                     {
@@ -143,8 +143,8 @@ public sealed class YamlReadOnlyDocumentTests
 
                 default:
                     Assert.Equal(expected.GetLength(), actual.GetLength());
-                    var expectedChildren = expected.Kind is YamlReadOnlyNodeKind.Sequence ? expected.EnumerateSequence().ToList() : expected.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }).ToList();
-                    var actualChildren = actual.Kind is YamlReadOnlyNodeKind.Sequence ? actual.EnumerateSequence().ToList() : actual.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }).ToList();
+                    var expectedChildren = expected.Kind is YamlElementKind.Sequence ? expected.EnumerateSequence().ToList() : expected.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }).ToList();
+                    var actualChildren = actual.Kind is YamlElementKind.Sequence ? actual.EnumerateSequence().ToList() : actual.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }).ToList();
                     Assert.HasCount(expectedChildren.Count, actualChildren);
                     for (var i = 0; i < expectedChildren.Count; i++)
                     {
@@ -155,7 +155,7 @@ public sealed class YamlReadOnlyDocumentTests
             }
         }
 
-        static string Write(YamlReadOnlyNode node)
+        static string Write(YamlElement node)
         {
             var buffer = new System.Buffers.ArrayBufferWriter<byte>();
             using (var writer = new Utf8YamlWriter(buffer))
@@ -170,7 +170,7 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Clone_OfADisposedDocument_Throws()
     {
-        var document = YamlReadOnlyDocument.Parse("a: 1\n");
+        var document = YamlDocument.Parse("a: 1\n");
         var root = document.Root;
         document.Dispose();
 
@@ -180,8 +180,8 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void ReadmeExample_Read()
     {
-        #region YamlReadOnlyDocument_Read
-        using var document = YamlReadOnlyDocument.Parse("""
+        #region YamlDocument_Read
+        using var document = YamlDocument.Parse("""
             services:
               web:
                 image: nginx
@@ -213,20 +213,20 @@ public sealed class YamlReadOnlyDocumentTests
     public void Node_GetRawText_ReturnsTheSourceBytes()
     {
         var yaml = "a: &x !!str value\nb:\n  - 1\n  - [2, 3] # c\nc: *x\n";
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var root = document.Root;
         Assert.Equal("&x !!str value", root["a"].GetRawText());
         Assert.Equal("- 1\n  - [2, 3]", root["b"].GetRawText());
         Assert.Equal("x", root["a"].Anchor);
         Assert.Equal("tag:yaml.org,2002:str", root["a"].Tag);
-        Assert.Equal(YamlReadOnlyNodeKind.Alias, root["c"].Kind);
+        Assert.Equal(YamlElementKind.Alias, root["c"].Kind);
         Assert.Equal("value", root["c"].ResolveAlias().GetString());
     }
 
     [Fact]
     public void ResolveAlias_DoesNotFindAnAnchorOfAnotherDocument()
     {
-        using var document = YamlReadOnlyDocument.Parse("&a first\n---\n*a\n");
+        using var document = YamlDocument.Parse("&a first\n---\n*a\n");
 
         Assert.Throws<InvalidOperationException>(() => document.GetDocumentRoot(1).ResolveAlias());
     }
@@ -234,7 +234,7 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Parse_StringWithALoneSurrogate_Throws()
     {
-        var exception = Assert.Throws<SyntaxErrorException>(() => YamlReadOnlyDocument.Parse("a: b\nc: x\uD800y\n"));
+        var exception = Assert.Throws<SyntaxErrorException>(() => YamlDocument.Parse("a: b\nc: x\uD800y\n"));
 
         Assert.Equal((1, 4), (exception.Start.Line, exception.Start.Column));
     }
@@ -248,7 +248,7 @@ public sealed class YamlReadOnlyDocumentTests
     [InlineData("+.INF")]
     public void TryGetDouble_PositiveInfinity(string text)
     {
-        using var document = YamlReadOnlyDocument.Parse(text);
+        using var document = YamlDocument.Parse(text);
 
         Assert.True(document.Root.TryGetDouble(out var value));
         Assert.Equal(double.PositiveInfinity, value);
@@ -257,9 +257,9 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Node_Positions()
     {
-        #region YamlReadOnlyDocument_Positions
+        #region YamlDocument_Positions
         var yaml = "name: café\r\nemoji: 😀 # comment\r\nlist: [a, b]\r\n";
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var list = document.Root["list"];
 
         // Start and End are UTF-16 positions: they slice the string the document was parsed from
@@ -290,17 +290,17 @@ public sealed class YamlReadOnlyDocumentTests
             }
         }
 
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var actual = new List<string>();
         AddStarts(document.Root, actual);
         Assert.Equal(expected, actual);
 
-        static void AddStarts(YamlReadOnlyNode node, List<string> starts)
+        static void AddStarts(YamlElement node, List<string> starts)
         {
             starts.Add($"{node.Start.Index}:{node.Start.Line}:{node.Start.Column}");
             switch (node.Kind)
             {
-                case YamlReadOnlyNodeKind.Mapping:
+                case YamlElementKind.Mapping:
                     foreach (var entry in node.EnumerateMapping())
                     {
                         AddStarts(entry.Key, starts);
@@ -309,7 +309,7 @@ public sealed class YamlReadOnlyDocumentTests
 
                     break;
 
-                case YamlReadOnlyNodeKind.Sequence:
+                case YamlElementKind.Sequence:
                     foreach (var item in node.EnumerateSequence())
                     {
                         AddStarts(item, starts);
@@ -323,7 +323,7 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Node_ValueEquals_ComparesWithUtf16Text()
     {
-        using var document = YamlReadOnlyDocument.Parse("café: \"a\\tb\"\nkey: 😀\n");
+        using var document = YamlDocument.Parse("café: \"a\\tb\"\nkey: 😀\n");
         var root = document.Root;
         Assert.True(root.TryGetProperty("café".AsSpan(), out var value));
         Assert.True(value.ValueEquals("a\tb".AsSpan()));
@@ -337,7 +337,7 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Parse_MultipleDocuments()
     {
-        using var document = YamlReadOnlyDocument.Parse("a\n---\nb\n...\n--- [c]\n");
+        using var document = YamlDocument.Parse("a\n---\nb\n...\n--- [c]\n");
         Assert.Equal(3, document.DocumentCount);
         Assert.Equal("a", document.GetDocumentRoot(0).GetString());
         Assert.Equal("b", document.GetDocumentRoot(1).GetString());
@@ -347,7 +347,7 @@ public sealed class YamlReadOnlyDocumentTests
     [Fact]
     public void Dispose_ThenAccess_Throws()
     {
-        var document = YamlReadOnlyDocument.Parse("a: b");
+        var document = YamlDocument.Parse("a: b");
         var root = document.Root;
         document.Dispose();
         Assert.Throws<ObjectDisposedException>(() => root.GetLength());
@@ -359,7 +359,7 @@ public sealed class YamlReadOnlyDocumentTests
     {
         var utf8 = Encoding.UTF8.GetBytes(YamlTestSuite.Get(id).Yaml);
         var expected = Utf8YamlReaderTests.ReadEvents(utf8).Split('\n').Where(line => !line.StartsWith("+STR", StringComparison.Ordinal) && !line.StartsWith("-STR", StringComparison.Ordinal) && !line.StartsWith("+DOC", StringComparison.Ordinal) && !line.StartsWith("-DOC", StringComparison.Ordinal));
-        using var document = YamlReadOnlyDocument.Parse(utf8);
+        using var document = YamlDocument.Parse(utf8);
         var actual = new List<string>();
         for (var i = 0; i < document.DocumentCount; i++)
         {
@@ -372,23 +372,23 @@ public sealed class YamlReadOnlyDocumentTests
     // With normalizeScalarStyles, a scalar is only distinguished by the type its style gives it: an untagged plain scalar
     // may be a null, a boolean or a number, while another scalar is a string, like a plain one that is not a null, a
     // boolean or a number
-    private static bool IsTypedPlain(YamlReadOnlyNode node)
+    private static bool IsTypedPlain(YamlElement node)
         => node.ScalarStyle is ScalarStyle.Plain && node.Tag is null && Meziantou.Framework.Yaml.Serialization.YamlScalar.ResolvesToNonString(node.GetString(), YamlSchemaKind.Core);
 
-    internal static void AddEvents(YamlReadOnlyNode node, List<string> events, bool normalizeScalarStyles = false)
+    internal static void AddEvents(YamlElement node, List<string> events, bool normalizeScalarStyles = false)
     {
-        var properties = (node.Kind is YamlReadOnlyNodeKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " <" + node.Tag + ">");
+        var properties = (node.Kind is YamlElementKind.Alias || node.Anchor is null ? "" : " &" + node.Anchor) + (node.Tag is null ? "" : " <" + node.Tag + ">");
         switch (node.Kind)
         {
-            case YamlReadOnlyNodeKind.Alias:
+            case YamlElementKind.Alias:
                 events.Add("=ALI *" + node.Anchor);
                 break;
 
-            case YamlReadOnlyNodeKind.Scalar:
+            case YamlElementKind.Scalar:
                 events.Add("=VAL" + properties + " " + (normalizeScalarStyles ? (IsTypedPlain(node) ? ':' : '"') : YamlTestSuite.ScalarIndicator(node.ScalarStyle)) + YamlTestSuite.EscapeEventValue(node.GetString()));
                 break;
 
-            case YamlReadOnlyNodeKind.Sequence:
+            case YamlElementKind.Sequence:
                 events.Add("+SEQ" + (node.IsFlow ? " []" : "") + properties);
                 foreach (var item in node.EnumerateSequence())
                 {

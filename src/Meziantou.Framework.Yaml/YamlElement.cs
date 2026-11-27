@@ -6,28 +6,28 @@ using System.Text;
 
 namespace Meziantou.Framework.Yaml;
 
-/// <summary>A node of a <see cref="YamlReadOnlyDocument"/>: a scalar, a mapping, a sequence or an alias.</summary>
+/// <summary>A node of a <see cref="YamlDocument"/>: a scalar, a mapping, a sequence or an alias.</summary>
 [StructLayout(LayoutKind.Auto)]
-public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
+public readonly struct YamlElement : IEquatable<YamlElement>
 {
-    private readonly YamlReadOnlyDocument _document;
+    private readonly YamlDocument _document;
     private readonly int _index;
 
-    internal YamlReadOnlyNode(YamlReadOnlyDocument document, int index)
+    internal YamlElement(YamlDocument document, int index)
     {
         _document = document;
         _index = index;
     }
 
-    private ref readonly YamlReadOnlyDocument.Row Row => ref _document.GetRow(_index);
+    private ref readonly YamlDocument.Row Row => ref _document.GetRow(_index);
 
     /// <summary>Gets the kind of the node.</summary>
-    public YamlReadOnlyNodeKind Kind => Row.Token.Kind switch
+    public YamlElementKind Kind => Row.Token.Kind switch
     {
-        Utf8YamlTokenKind.MappingStart => YamlReadOnlyNodeKind.Mapping,
-        Utf8YamlTokenKind.SequenceStart => YamlReadOnlyNodeKind.Sequence,
-        Utf8YamlTokenKind.Alias => YamlReadOnlyNodeKind.Alias,
-        _ => YamlReadOnlyNodeKind.Scalar,
+        Utf8YamlTokenKind.MappingStart => YamlElementKind.Mapping,
+        Utf8YamlTokenKind.SequenceStart => YamlElementKind.Sequence,
+        Utf8YamlTokenKind.Alias => YamlElementKind.Alias,
+        _ => YamlElementKind.Scalar,
     };
 
     /// <summary>Gets the style of the scalar.</summary>
@@ -52,14 +52,14 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     /// <summary>Gets the tag of the node resolved with the %TAG directives, such as <c>tag:yaml.org,2002:str</c>.</summary>
     public string? Tag => _document.GetTag(Row.TagIndex);
 
-    /// <summary>Gets the offset of the node in <see cref="YamlReadOnlyDocument.Utf8Text"/>, in bytes, at its anchor or tag if any.</summary>
+    /// <summary>Gets the offset of the node in <see cref="YamlDocument.Utf8Text"/>, in bytes, at its anchor or tag if any.</summary>
     /// <remarks>
     /// The offset counts UTF-8 bytes, even when the document was parsed from a string. Use <see cref="Start"/> for a
     /// position in the string. The offset of a node of a <see cref="Clone"/> is the offset in the input of the original.
     /// </remarks>
     public int Utf8Offset => _document.GetSourceOffset(Row.NodeStart);
 
-    /// <summary>Gets the length of the text of the node in <see cref="YamlReadOnlyDocument.Utf8Text"/>, in bytes, with its properties and its content.</summary>
+    /// <summary>Gets the length of the text of the node in <see cref="YamlDocument.Utf8Text"/>, in bytes, with its properties and its content.</summary>
     public int Utf8Length => Row.NodeEnd - Row.NodeStart;
 
     /// <summary>Gets the location of the start of the node, at its anchor or tag if any.</summary>
@@ -94,7 +94,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     /// <para>A node of a copy is returned as is. A copy is another node: it is not equal to the original.</para>
     /// </remarks>
     /// <exception cref="ObjectDisposedException">The document of the node is disposed.</exception>
-    public YamlReadOnlyNode Clone() => _document.CloneNode(_index);
+    public YamlElement Clone() => _document.CloneNode(_index);
 
     /// <summary>Writes the node and its descendants: their values, styles, anchors and tags.</summary>
     /// <param name="writer">The destination.</param>
@@ -106,7 +106,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     /// <exception cref="ArgumentException">
     /// A tag is neither <c>!</c>, a local tag nor a URI, and the writer has no <c>%TAG</c> directive whose prefix starts
     /// it: see <see cref="Utf8YamlWriter.WriteTagDirective(ReadOnlySpan{char}, ReadOnlySpan{char})"/>.
-    /// <see cref="YamlReadOnlyDocument.WriteTo(Utf8YamlWriter)"/> writes the directives of the documents.
+    /// <see cref="YamlDocument.WriteTo(Utf8YamlWriter)"/> writes the directives of the documents.
     /// </exception>
     public void WriteTo(Utf8YamlWriter writer)
     {
@@ -234,7 +234,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     /// <summary>Gets the item of a sequence.</summary>
     /// <exception cref="InvalidOperationException">The node is not a sequence.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is outside the sequence.</exception>
-    public YamlReadOnlyNode this[int index]
+    public YamlElement this[int index]
     {
         get
         {
@@ -250,16 +250,16 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
                 child = _document.GetRow(child).EndRow;
             }
 
-            return new YamlReadOnlyNode(_document, child);
+            return new YamlElement(_document, child);
         }
     }
 
     /// <summary>Gets the value of a mapping entry whose key is the scalar <paramref name="key"/>.</summary>
     /// <exception cref="KeyNotFoundException">The mapping has no such key.</exception>
-    public YamlReadOnlyNode this[string key] => TryGetProperty(key, out var value) ? value : throw new KeyNotFoundException($"The mapping has no key '{key}'.");
+    public YamlElement this[string key] => TryGetProperty(key, out var value) ? value : throw new KeyNotFoundException($"The mapping has no key '{key}'.");
 
     /// <summary>Finds the value of a mapping entry whose key is a scalar equal to a UTF-8 text, without allocating.</summary>
-    public bool TryGetProperty(ReadOnlySpan<byte> utf8Key, out YamlReadOnlyNode value)
+    public bool TryGetProperty(ReadOnlySpan<byte> utf8Key, out YamlElement value)
     {
         foreach (var entry in EnumerateMapping())
         {
@@ -276,14 +276,14 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
 
     /// <summary>Finds the value of a mapping entry whose key is a scalar equal to <paramref name="key"/>.</summary>
     /// <exception cref="ArgumentNullException"><paramref name="key"/> is <see langword="null"/>.</exception>
-    public bool TryGetProperty(string key, out YamlReadOnlyNode value)
+    public bool TryGetProperty(string key, out YamlElement value)
     {
         ArgumentNullException.ThrowIfNull(key);
         return TryGetProperty(key.AsSpan(), out value);
     }
 
     /// <summary>Finds the value of a mapping entry whose key is a scalar equal to <paramref name="key"/>, without allocating.</summary>
-    public bool TryGetProperty(ReadOnlySpan<char> key, out YamlReadOnlyNode value)
+    public bool TryGetProperty(ReadOnlySpan<char> key, out YamlElement value)
     {
         foreach (var entry in EnumerateMapping())
         {
@@ -300,13 +300,13 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
 
     /// <summary>Gets the node an alias refers to: the last node before it with that anchor, in the same document.</summary>
     /// <exception cref="InvalidOperationException">The node is not an alias, or its anchor is not defined.</exception>
-    public YamlReadOnlyNode ResolveAlias()
+    public YamlElement ResolveAlias()
     {
         if (Row.Token.Kind is not Utf8YamlTokenKind.Alias)
             throw new InvalidOperationException("The node is not an alias.");
 
         var anchored = _document.FindAnchor(_index);
-        return anchored >= 0 ? new YamlReadOnlyNode(_document, anchored) : throw new InvalidOperationException($"The anchor '{Anchor}' is not defined.");
+        return anchored >= 0 ? new YamlElement(_document, anchored) : throw new InvalidOperationException($"The anchor '{Anchor}' is not defined.");
     }
 
     /// <summary>Enumerates the items of a sequence.</summary>
@@ -330,22 +330,22 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     }
 
     /// <inheritdoc/>
-    public bool Equals(YamlReadOnlyNode other) => ReferenceEquals(_document, other._document) && _index == other._index;
+    public bool Equals(YamlElement other) => ReferenceEquals(_document, other._document) && _index == other._index;
 
     /// <inheritdoc/>
-    public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => obj is YamlReadOnlyNode other && Equals(other);
+    public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => obj is YamlElement other && Equals(other);
 
     /// <inheritdoc/>
     public override int GetHashCode() => HashCode.Combine(_document, _index);
 
     /// <summary>Returns the value of a scalar, or the text of a collection.</summary>
-    public override string ToString() => Kind is YamlReadOnlyNodeKind.Scalar ? GetString() : GetRawText();
+    public override string ToString() => Kind is YamlElementKind.Scalar ? GetString() : GetRawText();
 
-    public static bool operator ==(YamlReadOnlyNode left, YamlReadOnlyNode right) => left.Equals(right);
+    public static bool operator ==(YamlElement left, YamlElement right) => left.Equals(right);
 
-    public static bool operator !=(YamlReadOnlyNode left, YamlReadOnlyNode right) => !left.Equals(right);
+    public static bool operator !=(YamlElement left, YamlElement right) => !left.Equals(right);
 
-    private ref readonly YamlReadOnlyDocument.Row EnsureScalar()
+    private ref readonly YamlDocument.Row EnsureScalar()
     {
         ref readonly var row = ref Row;
         if (row.Token.Kind is not Utf8YamlTokenKind.Scalar)
@@ -354,7 +354,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
         return ref row;
     }
 
-    private bool IsPlainRaw(in YamlReadOnlyDocument.Row row, out ReadOnlySpan<byte> raw)
+    private bool IsPlainRaw(in YamlDocument.Row row, out ReadOnlySpan<byte> raw)
     {
         if (row.Token.Kind is not Utf8YamlTokenKind.Scalar || (ScalarStyle)(row.Token.Flags & Utf8YamlTokenFlags.ScalarStyleMask) is not ScalarStyle.Plain || (row.Token.Flags & Utf8YamlTokenFlags.RawValue) == Utf8YamlTokenFlags.None)
         {
@@ -368,20 +368,20 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
 
     /// <summary>Enumerates the items of a sequence.</summary>
     [StructLayout(LayoutKind.Auto)]
-    public struct SequenceEnumerator : IEnumerable<YamlReadOnlyNode>, IEnumerator<YamlReadOnlyNode>
+    public struct SequenceEnumerator : IEnumerable<YamlElement>, IEnumerator<YamlElement>
     {
-        private readonly YamlReadOnlyDocument _document;
+        private readonly YamlDocument _document;
         private readonly int _parent;
         private int _current;
 
-        internal SequenceEnumerator(YamlReadOnlyDocument document, int parent)
+        internal SequenceEnumerator(YamlDocument document, int parent)
         {
             _document = document;
             _parent = parent;
             _current = -1;
         }
 
-        public readonly YamlReadOnlyNode Current => new(_document, _current);
+        public readonly YamlElement Current => new(_document, _current);
 
         readonly object IEnumerator.Current => Current;
 
@@ -399,7 +399,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
 
         public readonly SequenceEnumerator GetEnumerator() => new(_document, _parent);
 
-        readonly IEnumerator<YamlReadOnlyNode> IEnumerable<YamlReadOnlyNode>.GetEnumerator() => GetEnumerator();
+        readonly IEnumerator<YamlElement> IEnumerable<YamlElement>.GetEnumerator() => GetEnumerator();
 
         readonly IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -410,14 +410,14 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
 
     /// <summary>Enumerates the entries of a mapping.</summary>
     [StructLayout(LayoutKind.Auto)]
-    public struct MappingEnumerator : IEnumerable<KeyValuePair<YamlReadOnlyNode, YamlReadOnlyNode>>, IEnumerator<KeyValuePair<YamlReadOnlyNode, YamlReadOnlyNode>>
+    public struct MappingEnumerator : IEnumerable<KeyValuePair<YamlElement, YamlElement>>, IEnumerator<KeyValuePair<YamlElement, YamlElement>>
     {
-        private readonly YamlReadOnlyDocument _document;
+        private readonly YamlDocument _document;
         private readonly int _parent;
         private int _key;
         private int _value;
 
-        internal MappingEnumerator(YamlReadOnlyDocument document, int parent)
+        internal MappingEnumerator(YamlDocument document, int parent)
         {
             _document = document;
             _parent = parent;
@@ -425,7 +425,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
             _value = -1;
         }
 
-        public readonly KeyValuePair<YamlReadOnlyNode, YamlReadOnlyNode> Current => new(new YamlReadOnlyNode(_document, _key), new YamlReadOnlyNode(_document, _value));
+        public readonly KeyValuePair<YamlElement, YamlElement> Current => new(new YamlElement(_document, _key), new YamlElement(_document, _value));
 
         readonly object IEnumerator.Current => Current;
 
@@ -448,7 +448,7 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
 
         public readonly MappingEnumerator GetEnumerator() => new(_document, _parent);
 
-        readonly IEnumerator<KeyValuePair<YamlReadOnlyNode, YamlReadOnlyNode>> IEnumerable<KeyValuePair<YamlReadOnlyNode, YamlReadOnlyNode>>.GetEnumerator() => GetEnumerator();
+        readonly IEnumerator<KeyValuePair<YamlElement, YamlElement>> IEnumerable<KeyValuePair<YamlElement, YamlElement>>.GetEnumerator() => GetEnumerator();
 
         readonly IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 

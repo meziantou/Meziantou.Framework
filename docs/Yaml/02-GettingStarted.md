@@ -89,8 +89,8 @@ Assert.Equal("Sample product", name);
 ```
 <!-- endref -->
 
-A [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream) holds every document of the text; each document contains mappings ([YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping)), sequences
-([YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence)) and scalars ([YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue)). See [Document object model](05-DocumentObjectModel.md).
+A [YamlStream](cref:Meziantou.Framework.Yaml.Nodes.YamlStream) holds every document of the text; each document contains mappings ([YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping)), sequences
+([YamlSequence](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence)) and scalars ([YamlValue](cref:Meziantou.Framework.Yaml.Nodes.YamlValue)). See [Document object model](05-DocumentObjectModel.md).
 
 ## Next steps
 

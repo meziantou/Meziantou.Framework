@@ -276,11 +276,94 @@ namespace Meziantou.Framework.Yaml
         public YamlDerivedType(System.Type derivedType, string discriminator) { }
     }
 
+    public sealed class YamlDocument : System.IDisposable
+    {
+        public int DocumentCount { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlElement Root { get => throw null; }
+        public System.ReadOnlyMemory<byte> Utf8Text { get => throw null; }
+        public void Dispose() { }
+        public Meziantou.Framework.Yaml.YamlElement GetDocumentRoot(int index) => throw null;
+        public static Meziantou.Framework.Yaml.YamlDocument Parse(System.IO.Stream utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
+        public static Meziantou.Framework.Yaml.YamlDocument Parse(System.ReadOnlyMemory<byte> utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
+        public static Meziantou.Framework.Yaml.YamlDocument Parse(string yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
+        public void WriteTo(Meziantou.Framework.Yaml.Utf8YamlWriter writer) { }
+    }
+
     public enum YamlDuplicateKeyHandling
     {
         Error = 0,
         LastWins = 1,
         FirstWins = 2,
+    }
+
+    public readonly struct YamlElement : System.IEquatable<Meziantou.Framework.Yaml.YamlElement>
+    {
+        public string? Anchor { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
+        public bool IsFlow { get => throw null; }
+        public bool IsNull { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlElement this[int index] { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlElement this[string key] { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlElementKind Kind { get => throw null; }
+        public Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
+        public string? Tag { get => throw null; }
+        public int Utf8Length { get => throw null; }
+        public int Utf8Offset { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlElement Clone() => throw null;
+        public Meziantou.Framework.Yaml.YamlElement.MappingEnumerator EnumerateMapping() => throw null;
+        public Meziantou.Framework.Yaml.YamlElement.SequenceEnumerator EnumerateSequence() => throw null;
+        public bool Equals(Meziantou.Framework.Yaml.YamlElement other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public int GetLength() => throw null;
+        public string GetRawText() => throw null;
+        public System.ReadOnlySpan<byte> GetRawUtf8Text() => throw null;
+        public string GetString() => throw null;
+        public Meziantou.Framework.Yaml.YamlElement ResolveAlias() => throw null;
+        public override string ToString() => throw null;
+        public bool TryGetBoolean(out bool value) => throw null;
+        public bool TryGetDouble(out double value) => throw null;
+        public bool TryGetInt64(out long value) => throw null;
+        public bool TryGetProperty(System.ReadOnlySpan<byte> utf8Key, out Meziantou.Framework.Yaml.YamlElement value) => throw null;
+        public bool TryGetProperty(System.ReadOnlySpan<char> key, out Meziantou.Framework.Yaml.YamlElement value) => throw null;
+        public bool TryGetProperty(string key, out Meziantou.Framework.Yaml.YamlElement value) => throw null;
+        public bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) => throw null;
+        public bool ValueEquals(System.ReadOnlySpan<char> text) => throw null;
+        public bool ValueEquals(string text) => throw null;
+        public void WriteTo(Meziantou.Framework.Yaml.Utf8YamlWriter writer) { }
+        public static bool operator ==(Meziantou.Framework.Yaml.YamlElement left, Meziantou.Framework.Yaml.YamlElement right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Yaml.YamlElement left, Meziantou.Framework.Yaml.YamlElement right) => throw null;
+        public struct MappingEnumerator : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlElement, Meziantou.Framework.Yaml.YamlElement>>, System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlElement, Meziantou.Framework.Yaml.YamlElement>>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlElement, Meziantou.Framework.Yaml.YamlElement> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public readonly Meziantou.Framework.Yaml.YamlElement.MappingEnumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlElement, Meziantou.Framework.Yaml.YamlElement>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlElement,Meziantou.Framework.Yaml.YamlElement>>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+        }
+        public struct SequenceEnumerator : System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.YamlElement>, System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.YamlElement>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly Meziantou.Framework.Yaml.YamlElement Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public readonly Meziantou.Framework.Yaml.YamlElement.SequenceEnumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.YamlElement> System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.YamlElement>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+        }
+    }
+
+    public enum YamlElementKind
+    {
+        Scalar = 0,
+        Mapping = 1,
+        Sequence = 2,
+        Alias = 3,
     }
 
     public class YamlException : System.Exception
@@ -356,89 +439,6 @@ namespace Meziantou.Framework.Yaml
         public bool InferClosedTypePolymorphism { get => throw null; init { } }
         public string TypeDiscriminatorPropertyName { get => throw null; init { } }
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; init { } }
-    }
-
-    public sealed class YamlReadOnlyDocument : System.IDisposable
-    {
-        public int DocumentCount { get => throw null; }
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode Root { get => throw null; }
-        public System.ReadOnlyMemory<byte> Utf8Text { get => throw null; }
-        public void Dispose() { }
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode GetDocumentRoot(int index) => throw null;
-        public static Meziantou.Framework.Yaml.YamlReadOnlyDocument Parse(System.IO.Stream utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
-        public static Meziantou.Framework.Yaml.YamlReadOnlyDocument Parse(System.ReadOnlyMemory<byte> utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
-        public static Meziantou.Framework.Yaml.YamlReadOnlyDocument Parse(string yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
-        public void WriteTo(Meziantou.Framework.Yaml.Utf8YamlWriter writer) { }
-    }
-
-    public readonly struct YamlReadOnlyNode : System.IEquatable<Meziantou.Framework.Yaml.YamlReadOnlyNode>
-    {
-        public string? Anchor { get => throw null; }
-        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
-        public bool IsFlow { get => throw null; }
-        public bool IsNull { get => throw null; }
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode this[int index] { get => throw null; }
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode this[string key] { get => throw null; }
-        public Meziantou.Framework.Yaml.YamlReadOnlyNodeKind Kind { get => throw null; }
-        public Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
-        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
-        public string? Tag { get => throw null; }
-        public int Utf8Length { get => throw null; }
-        public int Utf8Offset { get => throw null; }
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode Clone() => throw null;
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode.MappingEnumerator EnumerateMapping() => throw null;
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode.SequenceEnumerator EnumerateSequence() => throw null;
-        public bool Equals(Meziantou.Framework.Yaml.YamlReadOnlyNode other) => throw null;
-        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
-        public override int GetHashCode() => throw null;
-        public int GetLength() => throw null;
-        public string GetRawText() => throw null;
-        public System.ReadOnlySpan<byte> GetRawUtf8Text() => throw null;
-        public string GetString() => throw null;
-        public Meziantou.Framework.Yaml.YamlReadOnlyNode ResolveAlias() => throw null;
-        public override string ToString() => throw null;
-        public bool TryGetBoolean(out bool value) => throw null;
-        public bool TryGetDouble(out double value) => throw null;
-        public bool TryGetInt64(out long value) => throw null;
-        public bool TryGetProperty(System.ReadOnlySpan<byte> utf8Key, out Meziantou.Framework.Yaml.YamlReadOnlyNode value) => throw null;
-        public bool TryGetProperty(System.ReadOnlySpan<char> key, out Meziantou.Framework.Yaml.YamlReadOnlyNode value) => throw null;
-        public bool TryGetProperty(string key, out Meziantou.Framework.Yaml.YamlReadOnlyNode value) => throw null;
-        public bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) => throw null;
-        public bool ValueEquals(System.ReadOnlySpan<char> text) => throw null;
-        public bool ValueEquals(string text) => throw null;
-        public void WriteTo(Meziantou.Framework.Yaml.Utf8YamlWriter writer) { }
-        public static bool operator ==(Meziantou.Framework.Yaml.YamlReadOnlyNode left, Meziantou.Framework.Yaml.YamlReadOnlyNode right) => throw null;
-        public static bool operator !=(Meziantou.Framework.Yaml.YamlReadOnlyNode left, Meziantou.Framework.Yaml.YamlReadOnlyNode right) => throw null;
-        public struct MappingEnumerator : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode>>, System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode>>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
-        {
-            public readonly System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode> Current { get => throw null; }
-            readonly object System.Collections.IEnumerator.Current { get => throw null; }
-            public readonly void Dispose() { }
-            public readonly Meziantou.Framework.Yaml.YamlReadOnlyNode.MappingEnumerator GetEnumerator() => throw null;
-            System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode,Meziantou.Framework.Yaml.YamlReadOnlyNode>>.GetEnumerator() => throw null;
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-            public bool MoveNext() => throw null;
-            public void Reset() { }
-        }
-        public struct SequenceEnumerator : System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.YamlReadOnlyNode>, System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.YamlReadOnlyNode>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
-        {
-            public readonly Meziantou.Framework.Yaml.YamlReadOnlyNode Current { get => throw null; }
-            readonly object System.Collections.IEnumerator.Current { get => throw null; }
-            public readonly void Dispose() { }
-            public readonly Meziantou.Framework.Yaml.YamlReadOnlyNode.SequenceEnumerator GetEnumerator() => throw null;
-            System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.YamlReadOnlyNode> System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.YamlReadOnlyNode>.GetEnumerator() => throw null;
-            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-            public bool MoveNext() => throw null;
-            public void Reset() { }
-        }
-    }
-
-    public enum YamlReadOnlyNodeKind
-    {
-        Scalar = 0,
-        Mapping = 1,
-        Sequence = 2,
-        Alias = 3,
     }
 
     public enum YamlReferenceHandling
@@ -751,73 +751,58 @@ namespace Meziantou.Framework.Yaml.Events
         public override string ToString() => throw null;
     }
 }
-namespace Meziantou.Framework.Yaml.Model
+namespace Meziantou.Framework.Yaml.Nodes
 {
-    public abstract class YamlContainer : Meziantou.Framework.Yaml.Model.YamlElement
+    public abstract class YamlContainer : Meziantou.Framework.Yaml.Nodes.YamlNode
     {
         public abstract bool IsImplicit { get; set; }
         public abstract Meziantou.Framework.Yaml.YamlStyle Style { get; set; }
     }
 
-    public class YamlDocument : Meziantou.Framework.Yaml.Model.YamlNode
-    {
-        public Meziantou.Framework.Yaml.Model.YamlElement? Contents { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.Events.DocumentEnd DocumentEnd { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.Events.DocumentStart DocumentStart { get => throw null; set { } }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlDocument Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlDocument Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
-    }
-
-    public abstract class YamlElement : Meziantou.Framework.Yaml.Model.YamlNode
-    {
-        public abstract string? Anchor { get; set; }
-        public abstract bool IsCanonical { get; }
-        public abstract string? Tag { get; set; }
-    }
-
-    public class YamlMapping : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>>, System.Collections.IEnumerable
+    public class YamlMapping : Meziantou.Framework.Yaml.Nodes.YamlContainer, System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?>>, System.Collections.Generic.IDictionary<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?>>, System.Collections.Generic.IList<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?>>, System.Collections.IEnumerable
     {
         public override string? Anchor { get => throw null; set { } }
         public int Count { get => throw null; }
         public override bool IsCanonical { get => throw null; }
         public override bool IsImplicit { get => throw null; set { } }
         public bool IsReadOnly { get => throw null; }
-        public Meziantou.Framework.Yaml.Model.YamlElement? this[Meziantou.Framework.Yaml.Model.YamlElement key] { get => throw null; set { } }
-        public System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> this[int index] { get => throw null; set { } }
-        public Meziantou.Framework.Yaml.Model.YamlElement? this[string key] { get => throw null; set { } }
-        public System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement> Keys { get => throw null; }
+        public Meziantou.Framework.Yaml.Nodes.YamlNode? this[Meziantou.Framework.Yaml.Nodes.YamlNode key] { get => throw null; set { } }
+        public System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?> this[int index] { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Nodes.YamlNode? this[string key] { get => throw null; set { } }
+        public System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Nodes.YamlNode> Keys { get => throw null; }
         public Meziantou.Framework.Yaml.Events.MappingStart MappingStart { get => throw null; set { } }
         public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
         public override string? Tag { get => throw null; set { } }
-        public System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement?> Values { get => throw null; }
-        public void Add(Meziantou.Framework.Yaml.Model.YamlElement key, Meziantou.Framework.Yaml.Model.YamlElement? value) { }
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Add(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) { }
+        public System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Nodes.YamlNode?> Values { get => throw null; }
+        public void Add(Meziantou.Framework.Yaml.Nodes.YamlNode key, Meziantou.Framework.Yaml.Nodes.YamlNode? value) { }
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode,Meziantou.Framework.Yaml.Nodes.YamlNode>>.Add(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?> item) { }
         public void Clear() { }
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Contains(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
-        public bool ContainsKey(Meziantou.Framework.Yaml.Model.YamlElement key) => throw null;
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode,Meziantou.Framework.Yaml.Nodes.YamlNode>>.Contains(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?> item) => throw null;
+        public bool ContainsKey(Meziantou.Framework.Yaml.Nodes.YamlNode key) => throw null;
         public bool ContainsKey(string key) => throw null;
-        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.CopyTo(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>[] array, int arrayIndex) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?>> GetEnumerator() => throw null;
+        void System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode,Meziantou.Framework.Yaml.Nodes.YamlNode>>.CopyTo(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?>[] array, int arrayIndex) { }
+        public override Meziantou.Framework.Yaml.Nodes.YamlNode DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?>> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public int IndexOf(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
-        public void Insert(int index, System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) { }
-        public static Meziantou.Framework.Yaml.Model.YamlMapping Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        public bool Remove(Meziantou.Framework.Yaml.Model.YamlElement key) => throw null;
+        public int IndexOf(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?> item) => throw null;
+        public void Insert(int index, System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?> item) { }
+        public static Meziantou.Framework.Yaml.Nodes.YamlMapping Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public bool Remove(Meziantou.Framework.Yaml.Nodes.YamlNode key) => throw null;
         public bool Remove(string key) => throw null;
-        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement,Meziantou.Framework.Yaml.Model.YamlElement>>.Remove(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Model.YamlElement, Meziantou.Framework.Yaml.Model.YamlElement?> item) => throw null;
+        bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode,Meziantou.Framework.Yaml.Nodes.YamlNode>>.Remove(System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.Nodes.YamlNode, Meziantou.Framework.Yaml.Nodes.YamlNode?> item) => throw null;
         public void RemoveAt(int index) { }
-        public bool TryGetValue(Meziantou.Framework.Yaml.Model.YamlElement key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Model.YamlElement value) => throw null;
-        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Model.YamlElement value) => throw null;
+        public bool TryGetValue(Meziantou.Framework.Yaml.Nodes.YamlNode key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Nodes.YamlNode value) => throw null;
+        public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out Meziantou.Framework.Yaml.Nodes.YamlNode value) => throw null;
     }
 
     public abstract class YamlNode
     {
-        public abstract Meziantou.Framework.Yaml.Model.YamlNode DeepClone();
+        public abstract string? Anchor { get; set; }
+        public abstract bool IsCanonical { get; }
+        public abstract string? Tag { get; set; }
+        public abstract Meziantou.Framework.Yaml.Nodes.YamlNode DeepClone();
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent> EnumerateEvents() => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlElement FromObject(object value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null, System.Type? expectedType = null) => throw null;
-        protected static Meziantou.Framework.Yaml.Model.YamlElement? ReadElement(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlNode FromObject(object value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null, System.Type? expectedType = null) => throw null;
         public object? ToObject(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public T? ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public override string ToString() => throw null;
@@ -829,7 +814,6 @@ namespace Meziantou.Framework.Yaml.Model
     {
         public Meziantou.Framework.Yaml.Events.ParsingEvent Current { get => throw null; }
         object System.Collections.IEnumerator.Current { get => throw null; }
-        public YamlNodeEventEnumerator(Meziantou.Framework.Yaml.Model.YamlNode root) { }
         public void Dispose() { }
         public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Events.ParsingEvent> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
@@ -837,56 +821,78 @@ namespace Meziantou.Framework.Yaml.Model
         public void Reset() { }
     }
 
-    public class YamlSequence : Meziantou.Framework.Yaml.Model.YamlContainer, System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Model.YamlElement>, System.Collections.IEnumerable
+    public class YamlSequence : Meziantou.Framework.Yaml.Nodes.YamlContainer, System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Nodes.YamlNode>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Nodes.YamlNode>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Nodes.YamlNode>, System.Collections.IEnumerable
     {
         public override string? Anchor { get => throw null; set { } }
         public int Count { get => throw null; }
         public override bool IsCanonical { get => throw null; }
         public override bool IsImplicit { get => throw null; set { } }
         public bool IsReadOnly { get => throw null; }
-        public Meziantou.Framework.Yaml.Model.YamlElement this[int index] { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Nodes.YamlNode this[int index] { get => throw null; set { } }
         public Meziantou.Framework.Yaml.Events.SequenceStart SequenceStart { get => throw null; set { } }
         public override Meziantou.Framework.Yaml.YamlStyle Style { get => throw null; set { } }
         public override string? Tag { get => throw null; set { } }
-        public void Add(Meziantou.Framework.Yaml.Model.YamlElement item) { }
+        public void Add(Meziantou.Framework.Yaml.Nodes.YamlNode item) { }
         public void Clear() { }
-        public bool Contains(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
-        public void CopyTo(Meziantou.Framework.Yaml.Model.YamlElement[] array, int arrayIndex) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlElement> GetEnumerator() => throw null;
+        public bool Contains(Meziantou.Framework.Yaml.Nodes.YamlNode item) => throw null;
+        public void CopyTo(Meziantou.Framework.Yaml.Nodes.YamlNode[] array, int arrayIndex) { }
+        public override Meziantou.Framework.Yaml.Nodes.YamlNode DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Nodes.YamlNode> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public int IndexOf(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
-        public void Insert(int index, Meziantou.Framework.Yaml.Model.YamlElement item) { }
-        public static Meziantou.Framework.Yaml.Model.YamlSequence Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        public bool Remove(Meziantou.Framework.Yaml.Model.YamlElement item) => throw null;
+        public int IndexOf(Meziantou.Framework.Yaml.Nodes.YamlNode item) => throw null;
+        public void Insert(int index, Meziantou.Framework.Yaml.Nodes.YamlNode item) { }
+        public static Meziantou.Framework.Yaml.Nodes.YamlSequence Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public bool Remove(Meziantou.Framework.Yaml.Nodes.YamlNode item) => throw null;
         public void RemoveAt(int index) { }
     }
 
-    public class YamlStream : Meziantou.Framework.Yaml.Model.YamlNode, System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Model.YamlDocument>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Model.YamlDocument>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Model.YamlDocument>, System.Collections.IEnumerable
+    public class YamlStream : System.Collections.Generic.ICollection<Meziantou.Framework.Yaml.Nodes.YamlStreamDocument>, System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Nodes.YamlStreamDocument>, System.Collections.Generic.IList<Meziantou.Framework.Yaml.Nodes.YamlStreamDocument>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
         public bool IsReadOnly { get => throw null; }
-        public Meziantou.Framework.Yaml.Model.YamlDocument this[int index] { get => throw null; set { } }
-        public void Add(Meziantou.Framework.Yaml.Model.YamlDocument item) { }
+        public Meziantou.Framework.Yaml.Nodes.YamlStreamDocument this[int index] { get => throw null; set { } }
+        public void Add(Meziantou.Framework.Yaml.Nodes.YamlStreamDocument item) { }
         public void Clear() { }
-        public bool Contains(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
-        public void CopyTo(Meziantou.Framework.Yaml.Model.YamlDocument[] array, int arrayIndex) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
-        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Model.YamlDocument> GetEnumerator() => throw null;
+        public bool Contains(Meziantou.Framework.Yaml.Nodes.YamlStreamDocument item) => throw null;
+        public void CopyTo(Meziantou.Framework.Yaml.Nodes.YamlStreamDocument[] array, int arrayIndex) { }
+        public Meziantou.Framework.Yaml.Nodes.YamlStream DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent> EnumerateEvents() => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.Nodes.YamlStreamDocument> GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
-        public int IndexOf(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
-        public void Insert(int index, Meziantou.Framework.Yaml.Model.YamlDocument item) { }
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
-        public bool Remove(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
+        public int IndexOf(Meziantou.Framework.Yaml.Nodes.YamlStreamDocument item) => throw null;
+        public void Insert(int index, Meziantou.Framework.Yaml.Nodes.YamlStreamDocument item) { }
+        public static Meziantou.Framework.Yaml.Nodes.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlStream Load(System.IO.TextReader stream) => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlStream Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlStream Load(System.IO.TextReader stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
+        public bool Remove(Meziantou.Framework.Yaml.Nodes.YamlStreamDocument item) => throw null;
         public void RemoveAt(int index) { }
+        public object? ToObject(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public T? ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public override string ToString() => throw null;
         public string ToStringPreservingFormatting() => throw null;
         public void WritePreservingFormatting(System.IO.TextWriter writer) { }
+        public void WriteTo(Meziantou.Framework.Yaml.IEmitter emitter, bool suppressDocumentTags = false) { }
+        public void WriteTo(System.IO.TextWriter writer, bool suppressDocumentTags = false) { }
     }
 
-    public class YamlValue : Meziantou.Framework.Yaml.Model.YamlElement
+    public class YamlStreamDocument
+    {
+        public Meziantou.Framework.Yaml.Nodes.YamlNode? Contents { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Events.DocumentEnd DocumentEnd { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Events.DocumentStart DocumentStart { get => throw null; set { } }
+        public Meziantou.Framework.Yaml.Nodes.YamlStreamDocument DeepClone() => throw null;
+        public System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.Events.ParsingEvent> EnumerateEvents() => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlStreamDocument Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlStreamDocument Load(Meziantou.Framework.Yaml.EventReader eventReader, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
+        public object? ToObject(System.Type type, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public T? ToObject<T>(Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public override string ToString() => throw null;
+        public void WriteTo(Meziantou.Framework.Yaml.IEmitter emitter, bool suppressDocumentTags = false) { }
+        public void WriteTo(System.IO.TextWriter writer, bool suppressDocumentTags = false) { }
+    }
+
+    public class YamlValue : Meziantou.Framework.Yaml.Nodes.YamlNode
     {
         public override string? Anchor { get => throw null; set { } }
         public override bool IsCanonical { get => throw null; }
@@ -897,8 +903,8 @@ namespace Meziantou.Framework.Yaml.Model
         public override string? Tag { get => throw null; set { } }
         public string Value { get => throw null; set { } }
         public YamlValue(object value, Meziantou.Framework.Yaml.Schemas.IYamlSchema? schema = null) { }
-        public override Meziantou.Framework.Yaml.Model.YamlNode DeepClone() => throw null;
-        public static Meziantou.Framework.Yaml.Model.YamlValue Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
+        public override Meziantou.Framework.Yaml.Nodes.YamlNode DeepClone() => throw null;
+        public static Meziantou.Framework.Yaml.Nodes.YamlValue Load(Meziantou.Framework.Yaml.EventReader eventReader) => throw null;
     }
 }
 namespace Meziantou.Framework.Yaml.Schemas

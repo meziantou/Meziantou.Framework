@@ -59,8 +59,8 @@ Assert.Equal(["name", "items", "name"], keys);
 
 [CurrentDepth](cref:Meziantou.Framework.Yaml.EventReader.CurrentDepth) gives the nesting depth of the current event, and `Skip(untilDepth)` skips events until that depth.
 
-To load a part of the stream as a [node](05-DocumentObjectModel.md), call [YamlDocument.Load](cref:Meziantou.Framework.Yaml.Model.YamlDocument.Load), [YamlMapping.Load](cref:Meziantou.Framework.Yaml.Model.YamlMapping.Load),
-[YamlSequence.Load](cref:Meziantou.Framework.Yaml.Model.YamlSequence.Load) or [YamlValue.Load](cref:Meziantou.Framework.Yaml.Model.YamlValue.Load) with the [EventReader](cref:Meziantou.Framework.Yaml.EventReader) positioned on it.
+To load a part of the stream as a [node](05-DocumentObjectModel.md), call [YamlStreamDocument.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlStreamDocument.Load), [YamlMapping.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping.Load),
+[YamlSequence.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence.Load) or [YamlValue.Load](cref:Meziantou.Framework.Yaml.Nodes.YamlValue.Load) with the [EventReader](cref:Meziantou.Framework.Yaml.EventReader) positioned on it.
 
 ## Write events
 
@@ -98,5 +98,5 @@ Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
   value, it uses another one: a multi-line plain scalar is written quoted, and a literal or folded scalar that a block
   scalar cannot represent is written double-quoted. An empty plain scalar, which is a null, stays plain: as a mapping
   key, it is written as an explicit key (`? `), because `''` would read back as an empty string.
-- A [node](05-DocumentObjectModel.md) writes its events to an emitter with [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo), and lists them with
-  [EnumerateEvents](cref:Meziantou.Framework.Yaml.Model.YamlNode.EnumerateEvents).
+- A [node](05-DocumentObjectModel.md) writes its events to an emitter with [WriteTo](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.WriteTo), and lists them with
+  [EnumerateEvents](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.EnumerateEvents).

@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.Yaml;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Syntax;
 
 namespace Meziantou.Framework.Yaml.Benchmarks;

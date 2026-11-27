@@ -1,23 +1,23 @@
 using System.Collections;
 using Meziantou.Framework.Yaml.Events;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>Represents the Yaml Sequence.</summary>
-public class YamlSequence : YamlContainer, IList<YamlElement>
+public class YamlSequence : YamlContainer, IList<YamlNode>
 {
     private SequenceStart _sequenceStart;
-    private readonly List<YamlElement> _contents;
+    private readonly List<YamlNode> _contents;
 
     /// <summary>Initializes a new instance of this type.</summary>
     public YamlSequence()
     {
         _sequenceStart = new SequenceStart();
         SequenceEnd = new SequenceEnd();
-        _contents = new List<YamlElement>();
+        _contents = new List<YamlNode>();
     }
 
-    internal YamlSequence(SequenceStart sequenceStart, SequenceEnd sequenceEnd, List<YamlElement> contents)
+    internal YamlSequence(SequenceStart sequenceStart, SequenceEnd sequenceEnd, List<YamlNode> contents)
     {
         _contents = contents;
         SequenceStart = sequenceStart;
@@ -111,7 +111,7 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     {
         var sequenceStart = eventReader.Expect<SequenceStart>();
 
-        var contents = new List<YamlElement>();
+        var contents = new List<YamlNode>();
         while (!eventReader.Accept<SequenceEnd>())
         {
             var item = ReadElement(eventReader, context);
@@ -130,13 +130,13 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     }
 
     /// <summary>Gets enumerator.</summary>
-    public IEnumerator<YamlElement> GetEnumerator()
+    public IEnumerator<YamlNode> GetEnumerator()
     {
         return _contents.GetEnumerator();
     }
 
     /// <summary>Adds an item.</summary>
-    public void Add(YamlElement item)
+    public void Add(YamlNode item)
     {
         OnChanging();
         _contents.Add(item);
@@ -150,19 +150,19 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     }
 
     /// <summary>Determines whether a value exists.</summary>
-    public bool Contains(YamlElement item)
+    public bool Contains(YamlNode item)
     {
         return _contents.Contains(item);
     }
 
     /// <summary>Copies the elements to an array starting at the specified index.</summary>
-    public void CopyTo(YamlElement[] array, int arrayIndex)
+    public void CopyTo(YamlNode[] array, int arrayIndex)
     {
         _contents.CopyTo(array, arrayIndex);
     }
 
     /// <summary>Removes an item.</summary>
-    public bool Remove(YamlElement item)
+    public bool Remove(YamlNode item)
     {
         OnChanging();
         var index = IndexOf(item);
@@ -182,13 +182,13 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     public bool IsReadOnly { get { return false; } }
 
     /// <summary>Gets the zero-based index of the specified item.</summary>
-    public int IndexOf(YamlElement item)
+    public int IndexOf(YamlNode item)
     {
         return _contents.IndexOf(item);
     }
 
     /// <summary>Inserts an item at the specified index.</summary>
-    public void Insert(int index, YamlElement item)
+    public void Insert(int index, YamlNode item)
     {
         OnChanging();
         _contents.Insert(index, item);
@@ -202,7 +202,7 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     }
 
     /// <summary>Gets or sets an element at the specified index.</summary>
-    public YamlElement this[int index]
+    public YamlNode this[int index]
     {
         get { return _contents[index]; }
         set
@@ -215,9 +215,9 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     /// <summary>Creates a deep clone of the current value.</summary>
     public override YamlNode DeepClone()
     {
-        var contentsClone = new List<YamlElement>(_contents.Count);
+        var contentsClone = new List<YamlNode>(_contents.Count);
         for (var i = 0; i < _contents.Count; i++)
-            contentsClone.Add((YamlElement)_contents[i].DeepClone());
+            contentsClone.Add((YamlNode)_contents[i].DeepClone());
 
         return new YamlSequence(_sequenceStart, SequenceEnd, contentsClone);
     }

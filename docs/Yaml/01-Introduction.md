@@ -51,10 +51,10 @@ The library has several layers. Use the highest one that does what you need:
 | To | Use | Page |
 | --- | --- | --- |
 | Convert YAML to your own types and back | [YamlSerializer](cref:Meziantou.Framework.Yaml.YamlSerializer) | [Serialization](03-Serialization/01-Overview.md) |
-| Read or change a document without a type for it | [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream), [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) | [Document object model](05-DocumentObjectModel.md) |
+| Read or change a document without a type for it | [YamlStream](cref:Meziantou.Framework.Yaml.Nodes.YamlStream), [YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Nodes.YamlValue) | [Document object model](05-DocumentObjectModel.md) |
 | Edit a file while keeping its comments and layout, or report positions | [YamlSyntaxTree](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree) | [Syntax tree](06-SyntaxTree.md) |
 | Process a stream of parsing events, or write events | [Parser](cref:Meziantou.Framework.Yaml.Parser), [EventReader](cref:Meziantou.Framework.Yaml.EventReader), [Emitter](cref:Meziantou.Framework.Yaml.Emitter) | [Parser and emitter](07-ParserAndEmitter.md) |
-| Look up values in a document you do not change | [YamlReadOnlyDocument](cref:Meziantou.Framework.Yaml.YamlReadOnlyDocument) | [Read-only document](11-ReadOnlyDocument.md) |
+| Look up values in a document you do not change | [YamlDocument](cref:Meziantou.Framework.Yaml.YamlDocument) | [Read-only document](11-ReadOnlyDocument.md) |
 | Read tokens from UTF-8 bytes, with their positions | [Utf8YamlReader](cref:Meziantou.Framework.Yaml.Utf8YamlReader) | [UTF-8 reader](10-Utf8Reader.md) |
 | Write YAML node by node as UTF-8 | [Utf8YamlWriter](cref:Meziantou.Framework.Yaml.Utf8YamlWriter) | [UTF-8 writer](12-Utf8Writer.md) |
 
@@ -65,9 +65,9 @@ object.
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) | [YamlSerializer](cref:Meziantou.Framework.Yaml.YamlSerializer), [YamlSerializerOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions), [YamlException](cref:Meziantou.Framework.Yaml.YamlException), the parser, the event reader, the emitter, [Utf8YamlReader](cref:Meziantou.Framework.Yaml.Utf8YamlReader), [Utf8YamlWriter](cref:Meziantou.Framework.Yaml.Utf8YamlWriter) and [YamlReadOnlyDocument](cref:Meziantou.Framework.Yaml.YamlReadOnlyDocument) |
+| [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) | [YamlSerializer](cref:Meziantou.Framework.Yaml.YamlSerializer), [YamlSerializerOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions), [YamlException](cref:Meziantou.Framework.Yaml.YamlException), the parser, the event reader, the emitter, [Utf8YamlReader](cref:Meziantou.Framework.Yaml.Utf8YamlReader), [Utf8YamlWriter](cref:Meziantou.Framework.Yaml.Utf8YamlWriter) and [YamlDocument](cref:Meziantou.Framework.Yaml.YamlDocument) |
 | [Meziantou.Framework.Yaml.Serialization](cref:Meziantou.Framework.Yaml.Serialization) | The attributes, converters, [YamlReader](cref:Meziantou.Framework.Yaml.Serialization.YamlReader), [YamlWriter](cref:Meziantou.Framework.Yaml.Serialization.YamlWriter) and [YamlSerializerContext](cref:Meziantou.Framework.Yaml.Serialization.YamlSerializerContext) |
-| [Meziantou.Framework.Yaml.Model](cref:Meziantou.Framework.Yaml.Model) | The document object model: [YamlStream](cref:Meziantou.Framework.Yaml.Model.YamlStream), [YamlDocument](cref:Meziantou.Framework.Yaml.Model.YamlDocument), [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) |
+| [Meziantou.Framework.Yaml.Nodes](cref:Meziantou.Framework.Yaml.Nodes) | The document object model: [YamlStream](cref:Meziantou.Framework.Yaml.Nodes.YamlStream), [YamlStreamDocument](cref:Meziantou.Framework.Yaml.Nodes.YamlStreamDocument), [YamlMapping](cref:Meziantou.Framework.Yaml.Nodes.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Nodes.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Nodes.YamlValue) |
 | [Meziantou.Framework.Yaml.Syntax](cref:Meziantou.Framework.Yaml.Syntax) | The syntax tree |
 | [Meziantou.Framework.Yaml.Events](cref:Meziantou.Framework.Yaml.Events) | The parsing events |
 | [Meziantou.Framework.Yaml.Schemas](cref:Meziantou.Framework.Yaml.Schemas) | The schemas that resolve untagged scalars |

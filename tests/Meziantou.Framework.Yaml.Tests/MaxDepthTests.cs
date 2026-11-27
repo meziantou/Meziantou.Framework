@@ -1,5 +1,5 @@
 using System.Runtime.ExceptionServices;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests;
@@ -66,7 +66,7 @@ public sealed class MaxDepthTests
         var yaml = CreateDeepFlowSequenceYaml(depth);
         var options = new YamlSerializerOptions { MaxDepth = depth };
 
-        var node = YamlSerializer.Deserialize<YamlElement>(yaml, options);
+        var node = YamlSerializer.Deserialize<YamlNode>(yaml, options);
 
         Assert.IsType<YamlSequence>(node);
     }

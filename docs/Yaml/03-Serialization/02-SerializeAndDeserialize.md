@@ -82,7 +82,7 @@ known at run time only.
 
 A stream can hold several documents separated by `---`. [Deserialize](cref:Meziantou.Framework.Yaml.YamlSerializer.Deserialize) binds the first one; to read all of them, load
 the stream with [`YamlStream`](../05-DocumentObjectModel.md#read-several-documents) and convert each document with
-[ToObject\<T\>](cref:Meziantou.Framework.Yaml.Model.YamlNode.ToObject).
+[ToObject\<T\>](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.ToObject).
 
 ## Options
 

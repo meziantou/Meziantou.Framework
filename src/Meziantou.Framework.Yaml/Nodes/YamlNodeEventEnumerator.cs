@@ -3,19 +3,18 @@ using System.Diagnostics;
 using Meziantou.Framework.Yaml.Events;
 using Scalar = Meziantou.Framework.Yaml.Events.Scalar;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>Represents the Yaml Node Event Enumerator.</summary>
 public sealed class YamlNodeEventEnumerator : IEnumerable<ParsingEvent>, IEnumerator<ParsingEvent>
 {
-    private readonly YamlNode _root;
-    private YamlNode? _currentNode;
+    private readonly IYamlModelNode _root;
+    private IYamlModelNode? _currentNode;
     private int _currentIndex;
-    private Stack<YamlNode>? _nodePath;
+    private Stack<IYamlModelNode>? _nodePath;
     private Stack<int>? _indexPath;
 
-    /// <summary>Initializes a new instance of this type.</summary>
-    public YamlNodeEventEnumerator(YamlNode root)
+    internal YamlNodeEventEnumerator(IYamlModelNode root)
     {
         this._root = root;
         _currentNode = root;
@@ -62,7 +61,7 @@ public sealed class YamlNodeEventEnumerator : IEnumerable<ParsingEvent>, IEnumer
             return true;
         }
 
-        if (_currentNode is YamlDocument document)
+        if (_currentNode is YamlStreamDocument document)
         {
             if (_currentIndex == -1)
             {
@@ -155,7 +154,7 @@ public sealed class YamlNodeEventEnumerator : IEnumerable<ParsingEvent>, IEnumer
         return false;
     }
 
-    private void Push(YamlNode nextNode)
+    private void Push(IYamlModelNode nextNode)
     {
         if (nextNode is YamlValue value)
         {
@@ -166,7 +165,7 @@ public sealed class YamlNodeEventEnumerator : IEnumerable<ParsingEvent>, IEnumer
 
         if (_nodePath == null)
         {
-            _nodePath = new Stack<YamlNode>();
+            _nodePath = new Stack<IYamlModelNode>();
             _indexPath = new Stack<int>();
         }
 

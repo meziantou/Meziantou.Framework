@@ -45,7 +45,7 @@ public sealed class Utf8YamlWriterTests
     public void ReadmeExample_WriteTo()
     {
         #region Utf8YamlWriter_WriteTo
-        using var document = YamlReadOnlyDocument.Parse("""
+        using var document = YamlDocument.Parse("""
             name: web # a comment is not a node: it is not written
             settings: {replicas: 3, image: "nginx:1.27"}
             """);
@@ -127,7 +127,7 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("[" + expected + ", x]\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal(value, document.Root[0].GetString());
     }
 
@@ -181,7 +181,7 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("key: " + expected + (expected is [.., '\n'] ? "" : "\n"), yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal(value, document.Root["key"].GetString());
     }
 
@@ -299,7 +299,7 @@ public sealed class Utf8YamlWriterTests
 
             """, yaml);
 
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var root = document.Root;
         Assert.Equal("tag:yaml.org,2002:str", root["a"].Tag);
         Assert.Equal("x", root["a"].Anchor);
@@ -349,7 +349,7 @@ public sealed class Utf8YamlWriterTests
             """, Encoding.UTF8.GetString(buffer.WrittenSpan));
         #endregion
 
-        using var document = YamlReadOnlyDocument.Parse(buffer.WrittenMemory);
+        using var document = YamlDocument.Parse(buffer.WrittenMemory);
         Assert.Equal("tag:example.com,2000:point", document.Root["origin"].Tag);
         Assert.Equal(0, document.Root["servers"].GetLength());
     }
@@ -371,7 +371,7 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("a\n...\n%TAG !x! y-\n--- !x!light green\n--- null\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal("y-light", document.GetDocumentRoot(1).Tag);
     }
 
@@ -395,7 +395,7 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("%TAG ! tag:example.com,2000:\n%TAG !e! %7Ba%25\n---\n- !<!local> a\n- !x b\n- !e!b%21 c\n- !!str d\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal(["!local", "tag:example.com,2000:x", "{a%b!", "tag:yaml.org,2002:str"], document.Root.EnumerateSequence().Select(node => node.Tag));
     }
 
@@ -455,7 +455,7 @@ public sealed class Utf8YamlWriterTests
              --- a
 
             """, yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal(1, document.Root[0]["a"].TryGetInt64(out var a) ? a : 0);
         Assert.Equal(0, document.Root[1].GetLength());
         Assert.Equal("--- a", document.GetDocumentRoot(1).GetString());
@@ -481,7 +481,7 @@ public sealed class Utf8YamlWriterTests
     public void WriteTo_WritesTheTagDirectivesOfTheDocuments()
     {
         var yaml = "%TAG !e! tag:example.com,2000:\n--- !e!point {x: 1}\n...\n%TAG !m! y-\n--- !m!light green\n--- !local x\n";
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8YamlWriter(buffer))
         {
@@ -496,7 +496,7 @@ public sealed class Utf8YamlWriterTests
     [InlineData(" --- a :: b\n", "'--- a :': b\n")]
     public void WriteTo_CopiesThePlainScalarsThatKeepTheirMeaning(string yaml, string expected)
     {
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var written = Write(document.WriteTo);
 
         Assert.Equal(expected, written);
@@ -505,7 +505,7 @@ public sealed class Utf8YamlWriterTests
     [Fact]
     public void WriteTo_PlainScalarOfABlockMappingInAFlowSequence()
     {
-        using var document = YamlReadOnlyDocument.Parse("k: c:d, e\n");
+        using var document = YamlDocument.Parse("k: c:d, e\n");
         var written = Write(writer =>
         {
             writer.WriteStartSequence(YamlStyle.Flow);
@@ -529,7 +529,7 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("- &a:\u2028é value\n- *a:\u2028é\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal("value", document.Root[1].ResolveAlias().GetString());
     }
 
@@ -556,9 +556,9 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("? - a\n  - b\n: v1\n? " + longKey + "\n: v2\n?\n: x: q\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var entries = document.Root.EnumerateMapping().ToList();
-        Assert.Equal(YamlReadOnlyNodeKind.Sequence, entries[0].Key.Kind);
+        Assert.Equal(YamlElementKind.Sequence, entries[0].Key.Kind);
         Assert.Equal(longKey, entries[1].Key.GetString());
         Assert.True(entries[2].Key.IsNull);
         Assert.Equal("q", entries[2].Value["x"].GetString());
@@ -581,7 +581,7 @@ public sealed class Utf8YamlWriterTests
 
         // An empty document needs its marker
         Assert.Equal("a\n---\nb: 1\n...\n---\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         Assert.Equal(3, document.DocumentCount);
         Assert.True(document.GetDocumentRoot(2).IsNull);
     }
@@ -609,7 +609,7 @@ public sealed class Utf8YamlWriterTests
         });
 
         Assert.Equal("[-42, 18446744073709551615, 5.0, 0.1, 1E+300, -0.0, .nan, .inf, -.inf, 2.5, 12.50, true, null]\n", yaml);
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         var values = document.Root.EnumerateSequence().Take(11).Select(node => node.TryGetDouble(out var value) ? value : throw new InvalidOperationException(node.GetString())).ToArray();
         Assert.Equal([-42.0, 1.8446744073709552E+19, 5.0, 0.1, 1e300, -0.0, double.NaN, double.PositiveInfinity, double.NegativeInfinity, 2.5, 12.5], values);
         Assert.Equal(ScalarStyle.Plain, document.Root[11].ScalarStyle);
@@ -687,7 +687,7 @@ public sealed class Utf8YamlWriterTests
     [MemberData(nameof(Utf8YamlReaderTests.ValidYamlTestSuiteCases), MemberType = typeof(Utf8YamlReaderTests))]
     public void YamlTestSuite_WriteTo_WritesTheSameNodes(string id)
     {
-        using var source = YamlReadOnlyDocument.Parse(YamlTestSuite.Get(id).Yaml);
+        using var source = YamlDocument.Parse(YamlTestSuite.Get(id).Yaml);
         var buffer = new ArrayBufferWriter<byte>();
         using (var writer = new Utf8YamlWriter(buffer))
         {
@@ -695,7 +695,7 @@ public sealed class Utf8YamlWriterTests
         }
 
         var yaml = Encoding.UTF8.GetString(buffer.WrittenSpan);
-        using var written = YamlReadOnlyDocument.Parse(buffer.WrittenMemory);
+        using var written = YamlDocument.Parse(buffer.WrittenMemory);
         Assert.Equal(ReadNodes(source), ReadNodes(written));
 
         // The output only uses the constructs that the scanner-based parser reads the same way
@@ -703,12 +703,12 @@ public sealed class Utf8YamlWriterTests
         Assert.Equal(parserEvents, Utf8YamlReaderTests.ReadEvents(buffer.WrittenSpan.ToArray()));
     }
 
-    private static List<string> ReadNodes(YamlReadOnlyDocument document)
+    private static List<string> ReadNodes(YamlDocument document)
     {
         var events = new List<string>();
         for (var i = 0; i < document.DocumentCount; i++)
         {
-            YamlReadOnlyDocumentTests.AddEvents(document.GetDocumentRoot(i), events, normalizeScalarStyles: true);
+            YamlDocumentTests.AddEvents(document.GetDocumentRoot(i), events, normalizeScalarStyles: true);
         }
 
         return events;
@@ -716,7 +716,7 @@ public sealed class Utf8YamlWriterTests
 
     private static string ReadSingleScalar(string yaml, out ScalarStyle style)
     {
-        using var document = YamlReadOnlyDocument.Parse(yaml);
+        using var document = YamlDocument.Parse(yaml);
         style = document.Root.ScalarStyle;
         return document.Root.GetString();
     }

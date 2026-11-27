@@ -2,21 +2,21 @@ using System.Buffers;
 using System.Text;
 using BenchmarkDotNet.Attributes;
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using SY = System.Text.Yaml;
 
 namespace Meziantou.Framework.Yaml.Benchmarks;
 
 /// <summary>
 /// Parses the documents of Styml's benchmark corpus into a read-only document and writes them back as UTF-8, compared
-/// with Styml's <c>YamlDocument</c> and <c>Utf8YamlWriter</c>, the document object model and the event emitter.
+/// with Styml's <c>YamlStreamDocument</c> and <c>Utf8YamlWriter</c>, the document object model and the event emitter.
 /// </summary>
 [MemoryDiagnoser]
 public class ReadOnlyDocumentBenchmarks
 {
     private byte[] _utf8 = null!;
     private string _text = null!;
-    private YamlReadOnlyDocument _document = null!;
+    private YamlDocument _document = null!;
     private SY.YamlDocument _stymlDocument = null!;
     private List<ParsingEvent> _events = null!;
     private ArrayBufferWriter<byte> _buffer = null!;
@@ -32,7 +32,7 @@ public class ReadOnlyDocumentBenchmarks
         stream.CopyTo(memoryStream);
         _utf8 = memoryStream.ToArray();
         _text = Encoding.UTF8.GetString(_utf8);
-        _document = YamlReadOnlyDocument.Parse(_utf8);
+        _document = YamlDocument.Parse(_utf8);
         _stymlDocument = SY.YamlDocument.Parse(_utf8, default);
         _buffer = new ArrayBufferWriter<byte>(_utf8.Length * 2);
 
@@ -57,7 +57,7 @@ public class ReadOnlyDocumentBenchmarks
     [Benchmark(Baseline = true)]
     public int ReadOnlyDocument_Parse()
     {
-        using var document = YamlReadOnlyDocument.Parse(_utf8);
+        using var document = YamlDocument.Parse(_utf8);
         return document.DocumentCount;
     }
 

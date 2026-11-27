@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Collections.Immutable;
 using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 using Meziantou.Framework.Yaml.Serialization;
 
 namespace Meziantou.Framework.Yaml.Tests.Serialization;

@@ -1,22 +1,22 @@
 using System.Collections;
 using Meziantou.Framework.Yaml.Events;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
-/// <summary>Represents the Yaml Stream.</summary>
-public class YamlStream : YamlNode, IList<YamlDocument>
+/// <summary>A YAML stream: a list of <see cref="YamlStreamDocument"/>.</summary>
+public class YamlStream : IList<YamlStreamDocument>, IYamlModelNode
 {
-    private readonly List<YamlDocument> _documents;
+    private readonly List<YamlStreamDocument> _documents;
 
     /// <summary>Initializes a new instance of this type.</summary>
     public YamlStream()
     {
         StreamStart = new StreamStart();
         StreamEnd = new StreamEnd();
-        _documents = new List<YamlDocument>();
+        _documents = new List<YamlStreamDocument>();
     }
 
-    private YamlStream(StreamStart streamStart, StreamEnd streamEnd, List<YamlDocument> documents)
+    private YamlStream(StreamStart streamStart, StreamEnd streamEnd, List<YamlStreamDocument> documents)
     {
         StreamStart = streamStart;
         StreamEnd = streamEnd;
@@ -66,7 +66,7 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     /// <remarks>
     /// A changed scalar replaces the text of the scalar. An entry added to or removed from a block mapping or sequence
     /// adds or removes its lines. Other changes, such as reordered entries or a changed flow collection, rewrite the
-    /// smallest node that contains them. A stream that was not loaded from a text is written like <see cref="YamlNode.WriteTo(TextWriter, bool)"/>.
+    /// smallest node that contains them. A stream that was not loaded from a text is written like <see cref="WriteTo(TextWriter, bool)"/>.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
     public void WritePreservingFormatting(TextWriter writer)
@@ -105,14 +105,14 @@ public class YamlStream : YamlNode, IList<YamlDocument>
         ArgumentNullException.ThrowIfNull(eventReader);
 
         // One context for the whole stream so alias expansion is bounded across every document, not per document.
-        var context = YamlDocument.CreateContext(options);
+        var context = YamlStreamDocument.CreateContext(options);
         context.TrackSource = trackSource;
 
         var streamStart = eventReader.Expect<StreamStart>();
 
-        var documents = new List<YamlDocument>();
+        var documents = new List<YamlStreamDocument>();
         while (!eventReader.Accept<StreamEnd>())
-            documents.Add(YamlDocument.Load(eventReader, context));
+            documents.Add(YamlStreamDocument.Load(eventReader, context));
 
         var streamEnd = eventReader.Expect<StreamEnd>();
 
@@ -125,13 +125,13 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     }
 
     /// <summary>Gets enumerator.</summary>
-    public IEnumerator<YamlDocument> GetEnumerator()
+    public IEnumerator<YamlStreamDocument> GetEnumerator()
     {
         return _documents.GetEnumerator();
     }
 
     /// <summary>Adds an item.</summary>
-    public void Add(YamlDocument item)
+    public void Add(YamlStreamDocument item)
     {
         OnChanging();
         _documents.Add(item);
@@ -145,19 +145,19 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     }
 
     /// <summary>Determines whether a value exists.</summary>
-    public bool Contains(YamlDocument item)
+    public bool Contains(YamlStreamDocument item)
     {
         return _documents.Contains(item);
     }
 
     /// <summary>Copies the elements to an array starting at the specified index.</summary>
-    public void CopyTo(YamlDocument[] array, int arrayIndex)
+    public void CopyTo(YamlStreamDocument[] array, int arrayIndex)
     {
         _documents.CopyTo(array, arrayIndex);
     }
 
     /// <summary>Removes an item.</summary>
-    public bool Remove(YamlDocument item)
+    public bool Remove(YamlStreamDocument item)
     {
         OnChanging();
         var index = IndexOf(item);
@@ -177,13 +177,13 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     public bool IsReadOnly { get { return false; } }
 
     /// <summary>Gets the zero-based index of the specified item.</summary>
-    public int IndexOf(YamlDocument item)
+    public int IndexOf(YamlStreamDocument item)
     {
         return _documents.IndexOf(item);
     }
 
     /// <summary>Inserts an item at the specified index.</summary>
-    public void Insert(int index, YamlDocument item)
+    public void Insert(int index, YamlStreamDocument item)
     {
         OnChanging();
         _documents.Insert(index, item);
@@ -197,7 +197,7 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     }
 
     /// <summary>Gets or sets an element at the specified index.</summary>
-    public YamlDocument this[int index]
+    public YamlStreamDocument this[int index]
     {
         get { return _documents[index]; }
         set
@@ -207,12 +207,67 @@ public class YamlStream : YamlNode, IList<YamlDocument>
         }
     }
 
-    /// <summary>Creates a deep clone of the current value.</summary>
-    public override YamlNode DeepClone()
+    /// <summary>Gets or sets a value indicating whether the stream was loaded from a text that keeps its changes, see <see cref="ToStringPreservingFormatting"/>.</summary>
+    internal bool IsTracked { get; set; }
+
+    /// <summary>Gets or sets the state of the stream before its first change, or <see langword="null"/> while it is unchanged.</summary>
+    internal YamlNodeSnapshot? Snapshot { get; set; }
+
+    bool IYamlModelNode.IsTracked { get => IsTracked; set => IsTracked = value; }
+
+    YamlNodeSnapshot? IYamlModelNode.Snapshot { get => Snapshot; set => Snapshot = value; }
+
+    /// <summary>Records the state of the stream before its first change.</summary>
+    internal void OnChanging()
     {
-        var documentsClone = new List<YamlDocument>(_documents.Count);
+        if (IsTracked && Snapshot is null)
+        {
+            Snapshot = YamlSourceEditor.CaptureCurrent(this);
+        }
+    }
+
+    /// <summary>Enumerates the parsing events of the stream.</summary>
+    public IEnumerable<ParsingEvent> EnumerateEvents()
+    {
+        return new YamlNodeEventEnumerator(this);
+    }
+
+    /// <summary>Writes the stream as YAML.</summary>
+    public void WriteTo(TextWriter writer, bool suppressDocumentTags = false)
+    {
+        WriteTo(new Emitter(writer), suppressDocumentTags);
+    }
+
+    /// <summary>Writes the stream as YAML.</summary>
+    public void WriteTo(IEmitter emitter, bool suppressDocumentTags = false)
+    {
+        YamlModelText.WriteTo(this, emitter, suppressDocumentTags);
+    }
+
+    /// <summary>Returns a string representation of the current instance.</summary>
+    public override string ToString()
+    {
+        return YamlModelText.ToYaml(this).Trim();
+    }
+
+    /// <summary>Converts the stream to an instance of <typeparamref name="T"/>.</summary>
+    public T? ToObject<T>(YamlSerializerOptions? options = null)
+    {
+        return (T?)ToObject(typeof(T), options);
+    }
+
+    /// <summary>Converts the stream to an object.</summary>
+    public object? ToObject(Type type, YamlSerializerOptions? options = null)
+    {
+        return YamlModelText.ToObject(this, type, options);
+    }
+
+    /// <summary>Creates a deep clone of the current value.</summary>
+    public YamlStream DeepClone()
+    {
+        var documentsClone = new List<YamlStreamDocument>(_documents.Count);
         for (var i = 0; i < _documents.Count; i++)
-            documentsClone.Add((YamlDocument)_documents[i].DeepClone());
+            documentsClone.Add(_documents[i].DeepClone());
 
         return new YamlStream(StreamStart, StreamEnd, documentsClone);
     }

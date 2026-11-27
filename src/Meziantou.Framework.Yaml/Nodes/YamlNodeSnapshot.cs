@@ -1,6 +1,6 @@
 using Meziantou.Framework.Yaml.Events;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>The state of a node when it was loaded, to find what changed since and where the node is in the source text.</summary>
 internal sealed class YamlNodeSnapshot
@@ -13,13 +13,13 @@ internal sealed class YamlNodeSnapshot
 
     public Mark End { get; set; }
 
-    public YamlElement[]? Keys { get; set; }
+    public YamlNode[]? Keys { get; set; }
 
-    public YamlElement?[]? Values { get; set; }
+    public YamlNode?[]? Values { get; set; }
 
-    public YamlElement[]? Items { get; set; }
+    public YamlNode[]? Items { get; set; }
 
-    public YamlElement? Contents { get; set; }
+    public YamlNode? Contents { get; set; }
 
-    public YamlDocument[]? Documents { get; set; }
+    public YamlStreamDocument[]? Documents { get; set; }
 }

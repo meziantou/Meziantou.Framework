@@ -46,7 +46,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     private static readonly DiagnosticDescriptor UnsupportedExtensionDataMember = new(
         id: "MFY003",
         title: "Unsupported extension data member",
-        messageFormat: "Type '{0}' contains extension data member '{1}' of unsupported type '{2}'. Extension data members must be 'Dictionary<string, TValue>', 'IDictionary<string, TValue>', 'IReadOnlyDictionary<string, TValue>' where TValue is 'object' or 'Meziantou.Framework.Yaml.Model.YamlNode', or 'Meziantou.Framework.Yaml.Model.YamlMapping'.",
+        messageFormat: "Type '{0}' contains extension data member '{1}' of unsupported type '{2}'. Extension data members must be 'Dictionary<string, TValue>', 'IDictionary<string, TValue>', 'IReadOnlyDictionary<string, TValue>' where TValue is 'object' or 'Meziantou.Framework.Yaml.Nodes.YamlNode', or 'Meziantou.Framework.Yaml.Nodes.YamlMapping'.",
         category: "Meziantou.Framework.Yaml.SourceGeneration",
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
@@ -2113,13 +2113,13 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
         {
             switch (current.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat))
             {
-                case "global::Meziantou.Framework.Yaml.Model.YamlSequence":
+                case "global::Meziantou.Framework.Yaml.Nodes.YamlSequence":
                     return CSharpUnionCaseKind.Sequence;
-                case "global::Meziantou.Framework.Yaml.Model.YamlMapping":
+                case "global::Meziantou.Framework.Yaml.Nodes.YamlMapping":
                     return CSharpUnionCaseKind.Mapping;
-                case "global::Meziantou.Framework.Yaml.Model.YamlValue":
+                case "global::Meziantou.Framework.Yaml.Nodes.YamlValue":
                     return CSharpUnionCaseKind.Scalar;
-                case "global::Meziantou.Framework.Yaml.Model.YamlContainer":
+                case "global::Meziantou.Framework.Yaml.Nodes.YamlContainer":
                     return CSharpUnionCaseKind.Sequence | CSharpUnionCaseKind.Mapping;
             }
         }
@@ -3600,7 +3600,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
     private static bool IsSupportedExtensionDataMemberType(ITypeSymbol type)
     {
-        if (string.Equals(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::Meziantou.Framework.Yaml.Model.YamlMapping", StringComparison.Ordinal))
+        if (string.Equals(type.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::Meziantou.Framework.Yaml.Nodes.YamlMapping", StringComparison.Ordinal))
         {
             return true;
         }
@@ -3625,7 +3625,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
     {
         for (var current = type; current is not null; current = (current as INamedTypeSymbol)?.BaseType)
         {
-            if (string.Equals(current.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::Meziantou.Framework.Yaml.Model.YamlNode", StringComparison.Ordinal))
+            if (string.Equals(current.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::Meziantou.Framework.Yaml.Nodes.YamlNode", StringComparison.Ordinal))
             {
                 return true;
             }
@@ -3651,7 +3651,7 @@ public sealed partial class YamlSerializerContextGenerator : IIncrementalGenerat
 
         ExtensionDataKind kind;
         ITypeSymbol? dictionaryValueType = null;
-        if (string.Equals(memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::Meziantou.Framework.Yaml.Model.YamlMapping", StringComparison.Ordinal))
+        if (string.Equals(memberType.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat), "global::Meziantou.Framework.Yaml.Nodes.YamlMapping", StringComparison.Ordinal))
         {
             kind = ExtensionDataKind.Mapping;
         }

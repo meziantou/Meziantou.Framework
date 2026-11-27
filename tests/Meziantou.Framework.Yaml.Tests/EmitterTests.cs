@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using Meziantou.Framework.Yaml.Events;
-using Meziantou.Framework.Yaml.Model;
+using Meziantou.Framework.Yaml.Nodes;
 
 namespace Meziantou.Framework.Yaml.Tests;
 
@@ -377,7 +377,7 @@ public class EmitterTests : YamlTest
         var yaml = SaveAndReload(input, out var reloaded);
 
         Assert.Equal(expected, yaml);
-        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(expectedTag, ((YamlNode)reloaded[^1].Contents!).Tag);
         Assert.Equal(yaml, Save(reloaded));
     }
 
@@ -392,7 +392,7 @@ public class EmitterTests : YamlTest
         var yaml = SaveAndReload(input, out var reloaded);
 
         Assert.Equal(expected, yaml);
-        Assert.Equal(expectedTag, ((YamlElement)reloaded[^1].Contents!).Tag);
+        Assert.Equal(expectedTag, ((YamlNode)reloaded[^1].Contents!).Tag);
         Assert.Equal(yaml, Save(reloaded));
     }
 
@@ -436,7 +436,7 @@ public class EmitterTests : YamlTest
     [Fact]
     public void WriteTo_DocumentWithoutContents_WritesEmptyDocument()
     {
-        var stream = new YamlStream { new YamlDocument() };
+        var stream = new YamlStream { new YamlStreamDocument() };
 
         var reloaded = YamlStream.Load(new StringReader(Save(stream)));
         Assert.HasCount(1, reloaded);
@@ -453,10 +453,10 @@ public class EmitterTests : YamlTest
         Assert.Equal("%TAG !e! tag:example.com,2000:\n--- !e!foo bar\n...\n", Save(stream));
     }
 
-    private static string Save(YamlNode node)
+    private static string Save(YamlStream stream)
     {
         using var writer = new StringWriter { NewLine = "\n" };
-        node.WriteTo(writer);
+        stream.WriteTo(writer);
         return writer.ToString();
     }
 

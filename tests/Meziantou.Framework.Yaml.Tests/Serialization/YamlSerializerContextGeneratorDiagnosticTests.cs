@@ -781,7 +781,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     [Theory]
     [InlineData("IDictionary<string, object?>")]
     [InlineData("IReadOnlyDictionary<string, object?>")]
-    [InlineData("IReadOnlyDictionary<string, Meziantou.Framework.Yaml.Model.YamlNode>")]
+    [InlineData("IReadOnlyDictionary<string, Meziantou.Framework.Yaml.Nodes.YamlNode>")]
     public void AnalyzerAcceptsDictionaryInterfaceExtensionDataMember(string memberType)
     {
         var source = """
@@ -812,7 +812,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
     {
         const string Source = """
             using System.Collections.Generic;
-            using Meziantou.Framework.Yaml.Model;
+            using Meziantou.Framework.Yaml.Nodes;
             using Meziantou.Framework.Yaml.Serialization;
 
             public sealed class Model
@@ -1755,7 +1755,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
 
             using System.Collections.Generic;
             using Meziantou.Framework.Yaml;
-            using Meziantou.Framework.Yaml.Model;
+            using Meziantou.Framework.Yaml.Nodes;
             using Meziantou.Framework.Yaml.Serialization;
 
             namespace Meziantou.Framework.Yaml.GeneratedSourceProbe;
@@ -1852,7 +1852,7 @@ public class YamlSerializerContextGeneratorDiagnosticTests
         AssertGeneratedSourceDoesNotContain(generatedSource, "options.DuplicateKeyHandling");
         AssertGeneratedSourceDoesNotContain(generatedSource, "if (options.");
         AssertGeneratedSourceDoesNotContain(generatedSource, "switch (options.");
-        AssertGeneratedSourceDoesNotContain(generatedSource, "extensionData is not global::Meziantou.Framework.Yaml.Model.YamlMapping");
+        AssertGeneratedSourceDoesNotContain(generatedSource, "extensionData is not global::Meziantou.Framework.Yaml.Nodes.YamlMapping");
         AssertGeneratedSourceDoesNotContain(generatedSource, "writer.Options");
         AssertGeneratedSourceDoesNotContain(generatedSource, "options.IncludeFields");
         AssertGeneratedSourceDoesNotContain(generatedSource, "options.IgnoreReadOnlyFields");

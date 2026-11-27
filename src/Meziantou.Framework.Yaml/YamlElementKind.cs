@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.Yaml;
 
-/// <summary>The kind of a <see cref="YamlReadOnlyNode"/>.</summary>
-public enum YamlReadOnlyNodeKind
+/// <summary>The kind of a <see cref="YamlElement"/>.</summary>
+public enum YamlElementKind
 {
     /// <summary>A scalar.</summary>
     Scalar,

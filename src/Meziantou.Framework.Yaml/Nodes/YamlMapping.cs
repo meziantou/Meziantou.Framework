@@ -1,14 +1,14 @@
 using System.Collections;
 using Meziantou.Framework.Yaml.Events;
 
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>Represents the Yaml Mapping.</summary>
-public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>, IList<KeyValuePair<YamlElement, YamlElement?>>
+public class YamlMapping : YamlContainer, IDictionary<YamlNode, YamlNode?>, IList<KeyValuePair<YamlNode, YamlNode?>>
 {
     private MappingStart _mappingStart;
-    private readonly List<YamlElement> _keys;
-    private readonly Dictionary<YamlElement, YamlElement?> _contents;
+    private readonly List<YamlNode> _keys;
+    private readonly Dictionary<YamlNode, YamlNode?> _contents;
 
     private Dictionary<string, YamlValue>? _stringKeys;
 
@@ -17,11 +17,11 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     {
         _mappingStart = new MappingStart();
         MappingEnd = new MappingEnd();
-        _keys = new List<YamlElement>();
-        _contents = new Dictionary<YamlElement, YamlElement?>();
+        _keys = new List<YamlNode>();
+        _contents = new Dictionary<YamlNode, YamlNode?>();
     }
 
-    internal YamlMapping(MappingStart mappingStart, MappingEnd mappingEnd, List<YamlElement> keys, Dictionary<YamlElement, YamlElement?> contents)
+    internal YamlMapping(MappingStart mappingStart, MappingEnd mappingEnd, List<YamlNode> keys, Dictionary<YamlNode, YamlNode?> contents)
     {
         _keys = keys;
         _contents = contents;
@@ -116,8 +116,8 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     {
         var mappingStart = eventReader.Expect<MappingStart>();
 
-        var keys = new List<YamlElement>();
-        var contents = new Dictionary<YamlElement, YamlElement?>();
+        var keys = new List<YamlNode>();
+        var contents = new Dictionary<YamlNode, YamlNode?>();
         while (!eventReader.Accept<MappingEnd>())
         {
             var key = ReadElement(eventReader, context);
@@ -143,12 +143,12 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Gets enumerator.</summary>
-    public IEnumerator<KeyValuePair<YamlElement, YamlElement?>> GetEnumerator()
+    public IEnumerator<KeyValuePair<YamlNode, YamlNode?>> GetEnumerator()
     {
-        return _keys.Select(k => new KeyValuePair<YamlElement, YamlElement?>(k, _contents[k])).GetEnumerator();
+        return _keys.Select(k => new KeyValuePair<YamlNode, YamlNode?>(k, _contents[k])).GetEnumerator();
     }
 
-    void ICollection<KeyValuePair<YamlElement, YamlElement?>>.Add(KeyValuePair<YamlElement, YamlElement?> item)
+    void ICollection<KeyValuePair<YamlNode, YamlNode?>>.Add(KeyValuePair<YamlNode, YamlNode?> item)
     {
         Add(item.Key, item.Value);
     }
@@ -163,12 +163,12 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         _stringKeys = null;
     }
 
-    bool ICollection<KeyValuePair<YamlElement, YamlElement?>>.Contains(KeyValuePair<YamlElement, YamlElement?> item)
+    bool ICollection<KeyValuePair<YamlNode, YamlNode?>>.Contains(KeyValuePair<YamlNode, YamlNode?> item)
     {
-        return _contents.TryGetValue(item.Key, out var value) && EqualityComparer<YamlElement?>.Default.Equals(value, item.Value);
+        return _contents.TryGetValue(item.Key, out var value) && EqualityComparer<YamlNode?>.Default.Equals(value, item.Value);
     }
 
-    void ICollection<KeyValuePair<YamlElement, YamlElement?>>.CopyTo(KeyValuePair<YamlElement, YamlElement?>[] array, int arrayIndex)
+    void ICollection<KeyValuePair<YamlNode, YamlNode?>>.CopyTo(KeyValuePair<YamlNode, YamlNode?>[] array, int arrayIndex)
     {
         ArgumentNullException.ThrowIfNull(array);
         ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
@@ -180,11 +180,11 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         // Copy in key order, which is the order the mapping is enumerated and written in.
         for (var i = 0; i < _keys.Count; i++)
         {
-            array[arrayIndex + i] = new KeyValuePair<YamlElement, YamlElement?>(_keys[i], _contents[_keys[i]]);
+            array[arrayIndex + i] = new KeyValuePair<YamlNode, YamlNode?>(_keys[i], _contents[_keys[i]]);
         }
     }
 
-    bool ICollection<KeyValuePair<YamlElement, YamlElement?>>.Remove(KeyValuePair<YamlElement, YamlElement?> item)
+    bool ICollection<KeyValuePair<YamlNode, YamlNode?>>.Remove(KeyValuePair<YamlNode, YamlNode?> item)
     {
         OnChanging();
         return Remove(item.Key);
@@ -196,7 +196,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     public bool IsReadOnly { get { return false; } }
 
     /// <summary>Adds an item.</summary>
-    public void Add(YamlElement key, YamlElement? value)
+    public void Add(YamlNode key, YamlNode? value)
     {
         OnChanging();
         _contents.Add(key, value);
@@ -209,7 +209,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Determines whether key.</summary>
-    public bool ContainsKey(YamlElement key)
+    public bool ContainsKey(YamlNode key)
     {
         return _contents.ContainsKey(key);
     }
@@ -224,7 +224,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Removes an item.</summary>
-    public bool Remove(YamlElement key)
+    public bool Remove(YamlNode key)
     {
         OnChanging();
         var index = _keys.IndexOf(key);
@@ -258,13 +258,13 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Tries to get Value.</summary>
-    public bool TryGetValue(YamlElement key, [MaybeNullWhen(false)] out YamlElement value)
+    public bool TryGetValue(YamlNode key, [MaybeNullWhen(false)] out YamlNode value)
     {
         return _contents.TryGetValue(key, out value);
     }
 
     /// <summary>Tries to get Value.</summary>
-    public bool TryGetValue(string key, [MaybeNullWhen(false)] out YamlElement value)
+    public bool TryGetValue(string key, [MaybeNullWhen(false)] out YamlNode value)
     {
         if (_stringKeys == null)
             _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
@@ -279,7 +279,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Gets or sets an element at the specified index.</summary>
-    public YamlElement? this[YamlElement key]
+    public YamlNode? this[YamlNode key]
     {
         get
         {
@@ -304,7 +304,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Gets or sets an element at the specified index.</summary>
-    public YamlElement? this[string key]
+    public YamlNode? this[string key]
     {
         get
         {
@@ -330,15 +330,15 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
 
     /// <summary>Gets keys.</summary>
     /// <remarks>The collection is read-only; use the mapping members to add or remove entries.</remarks>
-    public ICollection<YamlElement> Keys { get { return _keys.AsReadOnly(); } }
+    public ICollection<YamlNode> Keys { get { return _keys.AsReadOnly(); } }
 
     /// <summary>Gets values.</summary>
     /// <remarks>The values are listed in the same order as <see cref="Keys"/>.</remarks>
-    public ICollection<YamlElement?> Values
+    public ICollection<YamlNode?> Values
     {
         get
         {
-            var values = new YamlElement?[_keys.Count];
+            var values = new YamlNode?[_keys.Count];
             for (var i = 0; i < _keys.Count; i++)
             {
                 values[i] = _contents[_keys[i]];
@@ -349,13 +349,13 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Gets the zero-based index of the specified item.</summary>
-    public int IndexOf(KeyValuePair<YamlElement, YamlElement?> item)
+    public int IndexOf(KeyValuePair<YamlNode, YamlNode?> item)
     {
         return _keys.IndexOf(item.Key);
     }
 
     /// <summary>Inserts an item at the specified index.</summary>
-    public void Insert(int index, KeyValuePair<YamlElement, YamlElement?> item)
+    public void Insert(int index, KeyValuePair<YamlNode, YamlNode?> item)
     {
         OnChanging();
         if (_contents.ContainsKey(item.Key))
@@ -395,9 +395,9 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     }
 
     /// <summary>Gets or sets an element at the specified index.</summary>
-    public KeyValuePair<YamlElement, YamlElement?> this[int index]
+    public KeyValuePair<YamlNode, YamlNode?> this[int index]
     {
-        get { return new KeyValuePair<YamlElement, YamlElement?>(_keys[index], _contents[_keys[index]]); }
+        get { return new KeyValuePair<YamlNode, YamlNode?>(_keys[index], _contents[_keys[index]]); }
         set
         {
             OnChanging();
@@ -430,16 +430,16 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Creates a deep clone of the current value.</summary>
     public override YamlNode DeepClone()
     {
-        var keysClone = new List<YamlElement>(_keys.Count);
+        var keysClone = new List<YamlNode>(_keys.Count);
         for (var i = 0; i < _keys.Count; i++)
-            keysClone.Add((YamlElement)_keys[i].DeepClone());
+            keysClone.Add((YamlNode)_keys[i].DeepClone());
 
-        var cloneContents = new Dictionary<YamlElement, YamlElement?>();
+        var cloneContents = new Dictionary<YamlNode, YamlNode?>();
 
         for (var i = 0; i < _keys.Count; i++)
         {
             var content = _contents[_keys[i]];
-            cloneContents[keysClone[i]] = content is null ? null : (YamlElement)content.DeepClone();
+            cloneContents[keysClone[i]] = content is null ? null : (YamlNode)content.DeepClone();
         }
 
         return new YamlMapping(_mappingStart,

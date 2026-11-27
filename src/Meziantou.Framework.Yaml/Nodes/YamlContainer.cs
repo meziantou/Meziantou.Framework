@@ -1,7 +1,7 @@
-namespace Meziantou.Framework.Yaml.Model;
+namespace Meziantou.Framework.Yaml.Nodes;
 
 /// <summary>Represents the Yaml Container.</summary>
-public abstract class YamlContainer : YamlElement
+public abstract class YamlContainer : YamlNode
 {
     /// <summary>Gets or sets style.</summary>
     public abstract YamlStyle Style { get; set; }

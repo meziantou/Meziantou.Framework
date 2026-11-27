@@ -1642,22 +1642,22 @@ public sealed partial class YamlSerializerContextGenerator
             }
             else
             {
-                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>>)extensionData;");
+                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>)extensionData;");
                 EmitMappingOrderBranch(
                     builder,
                     sortedMappingOrder,
                     "            ",
                     sortedIndent =>
                     {
-                        builder.Append(sortedIndent).AppendLine("var items = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>>(list.Count);");
+                        builder.Append(sortedIndent).AppendLine("var items = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>(list.Count);");
                         builder.Append(sortedIndent).AppendLine("for (var i = 0; i < list.Count; i++)");
                         builder.Append(sortedIndent).AppendLine("{");
                         builder.Append(sortedIndent).AppendLine("    var pair = list[i];");
-                        builder.Append(sortedIndent).AppendLine("    if (pair.Key is not global::Meziantou.Framework.Yaml.Model.YamlValue keyValue)");
+                        builder.Append(sortedIndent).AppendLine("    if (pair.Key is not global::Meziantou.Framework.Yaml.Nodes.YamlValue keyValue)");
                         builder.Append(sortedIndent).AppendLine("    {");
                         builder.Append(sortedIndent).AppendLine("        throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Only scalar mapping keys are supported for extension data.\");");
                         builder.Append(sortedIndent).AppendLine("    }");
-                        builder.Append(sortedIndent).AppendLine("    items.Add(new global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>(keyValue.Value, pair.Value));");
+                        builder.Append(sortedIndent).AppendLine("    items.Add(new global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>(keyValue.Value, pair.Value));");
                         builder.Append(sortedIndent).AppendLine("}");
                         builder.Append(sortedIndent).AppendLine("items.Sort(static (x, y) => global::System.String.CompareOrdinal(x.Key, y.Key));");
                         builder.Append(sortedIndent).AppendLine("for (var i = 0; i < items.Count; i++)");
@@ -1675,7 +1675,7 @@ public sealed partial class YamlSerializerContextGenerator
                         builder.Append(sortedIndent).AppendLine("    }");
                         builder.Append(sortedIndent).AppendLine("    else");
                         builder.Append(sortedIndent).AppendLine("    {");
-                        builder.Append(sortedIndent).AppendLine("        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlNode));");
+                        builder.Append(sortedIndent).AppendLine("        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Nodes.YamlNode));");
                         builder.Append(sortedIndent).AppendLine("        converter.Write(writer, extensionValue);");
                         builder.Append(sortedIndent).AppendLine("    }");
                         builder.Append(sortedIndent).AppendLine("}");
@@ -1685,7 +1685,7 @@ public sealed partial class YamlSerializerContextGenerator
                         builder.Append(declarationIndent).AppendLine("for (var i = 0; i < list.Count; i++)");
                         builder.Append(declarationIndent).AppendLine("{");
                         builder.Append(declarationIndent).AppendLine("    var pair = list[i];");
-                        builder.Append(declarationIndent).AppendLine("    if (pair.Key is not global::Meziantou.Framework.Yaml.Model.YamlValue keyValue)");
+                        builder.Append(declarationIndent).AppendLine("    if (pair.Key is not global::Meziantou.Framework.Yaml.Nodes.YamlValue keyValue)");
                         builder.Append(declarationIndent).AppendLine("    {");
                         builder.Append(declarationIndent).AppendLine("        throw new global::Meziantou.Framework.Yaml.YamlException(global::Meziantou.Framework.Yaml.Mark.Empty, global::Meziantou.Framework.Yaml.Mark.Empty, \"Only scalar mapping keys are supported for extension data.\");");
                         builder.Append(declarationIndent).AppendLine("    }");
@@ -1702,7 +1702,7 @@ public sealed partial class YamlSerializerContextGenerator
                         builder.Append(declarationIndent).AppendLine("    }");
                         builder.Append(declarationIndent).AppendLine("    else");
                         builder.Append(declarationIndent).AppendLine("    {");
-                        builder.Append(declarationIndent).AppendLine("        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlNode));");
+                        builder.Append(declarationIndent).AppendLine("        var converter = writer.GetConverter(typeof(global::Meziantou.Framework.Yaml.Nodes.YamlNode));");
                         builder.Append(declarationIndent).AppendLine("        converter.Write(writer, extensionValue);");
                         builder.Append(declarationIndent).AppendLine("    }");
                         builder.Append(declarationIndent).AppendLine("}");
@@ -2108,12 +2108,12 @@ public sealed partial class YamlSerializerContextGenerator
             {
                 builder.AppendLine("        void ReadAndStoreExtensionData(string extensionKey, global::Meziantou.Framework.Yaml.Mark extensionKeyStart, global::Meziantou.Framework.Yaml.Mark extensionKeyEnd)");
                 builder.AppendLine("        {");
-                builder.AppendLine("            var converter = reader.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlElement));");
-                builder.AppendLine("            var extensionValue = (global::Meziantou.Framework.Yaml.Model.YamlElement?)converter.Read(reader, typeof(global::Meziantou.Framework.Yaml.Model.YamlElement));");
+                builder.AppendLine("            var converter = reader.GetConverter(typeof(global::Meziantou.Framework.Yaml.Nodes.YamlNode));");
+                builder.AppendLine("            var extensionValue = (global::Meziantou.Framework.Yaml.Nodes.YamlNode?)converter.Read(reader, typeof(global::Meziantou.Framework.Yaml.Nodes.YamlNode));");
                 builder.Append("            var mapping = ").Append(extensionData.AccessExpression("instance")).AppendLine(";");
                 builder.AppendLine("            if (mapping is null)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                mapping = new global::Meziantou.Framework.Yaml.Model.YamlMapping();");
+                builder.AppendLine("                mapping = new global::Meziantou.Framework.Yaml.Nodes.YamlMapping();");
                 if (extensionData.CanAssign)
                 {
                     builder.Append("                ").Append(extensionData.AssignExpression!("mapping")).AppendLine(";");
@@ -2123,17 +2123,17 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("                ").Append(GetExtensionDataNotAssignableThrowStatement(extensionData, typeName)).AppendLine();
                 }
                 builder.AppendLine("            }");
-                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>>)mapping;");
+                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>)mapping;");
                 builder.AppendLine("            for (var i = 0; i < list.Count; i++)");
                 builder.AppendLine("            {");
                 builder.AppendLine("                var pair = list[i];");
-                builder.AppendLine("                if (pair.Key is global::Meziantou.Framework.Yaml.Model.YamlValue keyValue && global::System.String.Equals(keyValue.Value, extensionKey, global::System.StringComparison.Ordinal))");
+                builder.AppendLine("                if (pair.Key is global::Meziantou.Framework.Yaml.Nodes.YamlValue keyValue && global::System.String.Equals(keyValue.Value, extensionKey, global::System.StringComparison.Ordinal))");
                 builder.AppendLine("                {");
-                builder.AppendLine("                    list[i] = new global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>(pair.Key, extensionValue);");
+                builder.AppendLine("                    list[i] = new global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>(pair.Key, extensionValue);");
                 builder.AppendLine("                    return;");
                 builder.AppendLine("                }");
                 builder.AppendLine("            }");
-                builder.AppendLine("            mapping.Add(new global::Meziantou.Framework.Yaml.Model.YamlValue(extensionKey), extensionValue);");
+                builder.AppendLine("            mapping.Add(new global::Meziantou.Framework.Yaml.Nodes.YamlValue(extensionKey), extensionValue);");
                 builder.AppendLine("        }");
                 builder.AppendLine();
             }
@@ -2552,20 +2552,20 @@ public sealed partial class YamlSerializerContextGenerator
             }
             else
             {
-                builder.AppendLine("        global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>>? extensionEntries = null;");
+                builder.AppendLine("        global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>? extensionEntries = null;");
                 builder.AppendLine("        global::Meziantou.Framework.Yaml.Mark extensionKeyStart = default;");
                 builder.AppendLine("        global::Meziantou.Framework.Yaml.Mark extensionKeyEnd = default;");
                 builder.AppendLine("        void BufferExtensionData(string extensionKey, global::Meziantou.Framework.Yaml.Mark keyStart, global::Meziantou.Framework.Yaml.Mark keyEnd)");
                 builder.AppendLine("        {");
                 builder.AppendLine("            if (extensionEntries is null)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                extensionEntries = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>>();");
+                builder.AppendLine("                extensionEntries = new global::System.Collections.Generic.List<global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>();");
                 builder.AppendLine("                extensionKeyStart = keyStart;");
                 builder.AppendLine("                extensionKeyEnd = keyEnd;");
                 builder.AppendLine("            }");
-                builder.AppendLine("            var converter = reader.GetConverter(typeof(global::Meziantou.Framework.Yaml.Model.YamlElement));");
-                builder.AppendLine("            var extensionValue = (global::Meziantou.Framework.Yaml.Model.YamlElement?)converter.Read(reader, typeof(global::Meziantou.Framework.Yaml.Model.YamlElement));");
-                builder.AppendLine("            extensionEntries.Add(new global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Model.YamlElement?>(extensionKey, extensionValue));");
+                builder.AppendLine("            var converter = reader.GetConverter(typeof(global::Meziantou.Framework.Yaml.Nodes.YamlNode));");
+                builder.AppendLine("            var extensionValue = (global::Meziantou.Framework.Yaml.Nodes.YamlNode?)converter.Read(reader, typeof(global::Meziantou.Framework.Yaml.Nodes.YamlNode));");
+                builder.AppendLine("            extensionEntries.Add(new global::System.Collections.Generic.KeyValuePair<string, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>(extensionKey, extensionValue));");
                 builder.AppendLine("        }");
             }
         }
@@ -3076,10 +3076,10 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("            var mapping = ").Append(initOnlyExtensionDataValueVarName).AppendLine(";");
                     builder.AppendLine("            if (mapping is null)");
                     builder.AppendLine("            {");
-                    builder.AppendLine("                mapping = new global::Meziantou.Framework.Yaml.Model.YamlMapping();");
+                    builder.AppendLine("                mapping = new global::Meziantou.Framework.Yaml.Nodes.YamlMapping();");
                     builder.Append("                ").Append(initOnlyExtensionDataValueVarName).AppendLine(" = mapping;");
                     builder.AppendLine("            }");
-                    builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>>)mapping;");
+                    builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>)mapping;");
                     builder.AppendLine("            for (var entryIndex = 0; entryIndex < extensionEntries.Count; entryIndex++)");
                     builder.AppendLine("            {");
                     builder.AppendLine("                var entry = extensionEntries[entryIndex];");
@@ -3089,16 +3089,16 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.AppendLine("                for (var i = 0; i < list.Count; i++)");
                     builder.AppendLine("                {");
                     builder.AppendLine("                    var pair = list[i];");
-                    builder.AppendLine("                    if (pair.Key is global::Meziantou.Framework.Yaml.Model.YamlValue keyValue && global::System.String.Equals(keyValue.Value, extensionKey, global::System.StringComparison.Ordinal))");
+                    builder.AppendLine("                    if (pair.Key is global::Meziantou.Framework.Yaml.Nodes.YamlValue keyValue && global::System.String.Equals(keyValue.Value, extensionKey, global::System.StringComparison.Ordinal))");
                     builder.AppendLine("                    {");
-                    builder.AppendLine("                        list[i] = new global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>(pair.Key, extensionValue);");
+                    builder.AppendLine("                        list[i] = new global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>(pair.Key, extensionValue);");
                     builder.AppendLine("                        replaced = true;");
                     builder.AppendLine("                        break;");
                     builder.AppendLine("                    }");
                     builder.AppendLine("                }");
                     builder.AppendLine("                if (!replaced)");
                     builder.AppendLine("                {");
-                    builder.AppendLine("                    mapping.Add(new global::Meziantou.Framework.Yaml.Model.YamlValue(extensionKey), extensionValue);");
+                    builder.AppendLine("                    mapping.Add(new global::Meziantou.Framework.Yaml.Nodes.YamlValue(extensionKey), extensionValue);");
                     builder.AppendLine("                }");
                     builder.AppendLine("            }");
                 }
@@ -3228,7 +3228,7 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.Append("            var mapping = ").Append(extensionData.AccessExpression("instance")).AppendLine(";");
                 builder.AppendLine("            if (mapping is null)");
                 builder.AppendLine("            {");
-                builder.AppendLine("                mapping = new global::Meziantou.Framework.Yaml.Model.YamlMapping();");
+                builder.AppendLine("                mapping = new global::Meziantou.Framework.Yaml.Nodes.YamlMapping();");
                 if (extensionData.CanAssign)
                 {
                     builder.Append("                ").Append(extensionData.AssignExpression!("mapping")).AppendLine(";");
@@ -3238,7 +3238,7 @@ public sealed partial class YamlSerializerContextGenerator
                     builder.Append("                ").Append(GetExtensionDataNotAssignableThrowStatement(extensionData, typeName)).AppendLine();
                 }
                 builder.AppendLine("            }");
-                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>>)mapping;");
+                builder.AppendLine("            var list = (global::System.Collections.Generic.IList<global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>>)mapping;");
                 builder.AppendLine("            for (var entryIndex = 0; entryIndex < extensionEntries.Count; entryIndex++)");
                 builder.AppendLine("            {");
                 builder.AppendLine("                var entry = extensionEntries[entryIndex];");
@@ -3248,16 +3248,16 @@ public sealed partial class YamlSerializerContextGenerator
                 builder.AppendLine("                for (var i = 0; i < list.Count; i++)");
                 builder.AppendLine("                {");
                 builder.AppendLine("                    var pair = list[i];");
-                builder.AppendLine("                    if (pair.Key is global::Meziantou.Framework.Yaml.Model.YamlValue keyValue && global::System.String.Equals(keyValue.Value, extensionKey, global::System.StringComparison.Ordinal))");
+                builder.AppendLine("                    if (pair.Key is global::Meziantou.Framework.Yaml.Nodes.YamlValue keyValue && global::System.String.Equals(keyValue.Value, extensionKey, global::System.StringComparison.Ordinal))");
                 builder.AppendLine("                    {");
-                builder.AppendLine("                        list[i] = new global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Model.YamlElement, global::Meziantou.Framework.Yaml.Model.YamlElement?>(pair.Key, extensionValue);");
+                builder.AppendLine("                        list[i] = new global::System.Collections.Generic.KeyValuePair<global::Meziantou.Framework.Yaml.Nodes.YamlNode, global::Meziantou.Framework.Yaml.Nodes.YamlNode?>(pair.Key, extensionValue);");
                 builder.AppendLine("                        replaced = true;");
                 builder.AppendLine("                        break;");
                 builder.AppendLine("                    }");
                 builder.AppendLine("                }");
                 builder.AppendLine("                if (!replaced)");
                 builder.AppendLine("                {");
-                builder.AppendLine("                    mapping.Add(new global::Meziantou.Framework.Yaml.Model.YamlValue(extensionKey), extensionValue);");
+                builder.AppendLine("                    mapping.Add(new global::Meziantou.Framework.Yaml.Nodes.YamlValue(extensionKey), extensionValue);");
                 builder.AppendLine("                }");
                 builder.AppendLine("            }");
             }
@@ -3574,7 +3574,7 @@ public sealed partial class YamlSerializerContextGenerator
             return;
         }
 
-        // YamlSequence is also an ICollection<YamlElement>, so this check must come before the collection ones. Reading
+        // YamlSequence is also an ICollection<YamlNode>, so this check must come before the collection ones. Reading
         // it as a plain collection would drop the tags, anchors and scalar styles the node model keeps.
         if (IsYamlNodeType(typeSymbol))
         {

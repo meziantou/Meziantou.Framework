@@ -350,9 +350,15 @@ public ref struct Utf8YamlReader
         FlowSequenceAfterEntry,
         FlowMappingKey,
         FlowMappingValue,
+
+        // The value of an entry whose key is a quoted scalar or a flow collection, which ':' can follow without a space
+        FlowMappingJsonValue,
         FlowMappingAfterValue,
         FlowPairKey,
         FlowPairValue,
+
+        // The value of a pair whose key is a quoted scalar or a flow collection, or whose ':' the key was read with
+        FlowPairJsonValue,
         FlowPairEnd,
     }
 
@@ -548,10 +554,12 @@ public ref struct Utf8YamlReader
             ContainerState.FlowSequenceEntry => ReadFlowSequenceEntry(),
             ContainerState.FlowSequenceAfterEntry => ReadFlowSequenceAfterEntry(),
             ContainerState.FlowMappingKey => ReadFlowMappingKey(),
-            ContainerState.FlowMappingValue => ReadFlowMappingValue(),
+            ContainerState.FlowMappingValue => ReadFlowMappingValue(afterJsonKey: false),
+            ContainerState.FlowMappingJsonValue => ReadFlowMappingValue(afterJsonKey: true),
             ContainerState.FlowMappingAfterValue => ReadFlowMappingAfterValue(),
             ContainerState.FlowPairKey => ReadFlowPairKey(),
-            ContainerState.FlowPairValue => ReadFlowPairValue(),
+            ContainerState.FlowPairValue => ReadFlowPairValue(afterJsonKey: false),
+            ContainerState.FlowPairJsonValue => ReadFlowPairValue(afterJsonKey: true),
             _ => ReadFlowPairEnd(),
         };
     }
@@ -744,8 +752,9 @@ public ref struct Utf8YamlReader
 
         var c = buffer[_pos];
 
-        // A byte order mark can start a document prefix
-        if (c == 0xEF && _pos == _lineStart && buffer[_pos..].StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        // A byte order mark can start a document prefix, which is before the directives, or precede the '---' that
+        // ends them
+        if (c == 0xEF && _pos == _lineStart && (!_hasDirectives || DocumentMarkerAt(_pos) == '-') && buffer[_pos..].StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
         {
             SetToken(Utf8YamlTokenKind.ByteOrderMark, Utf8YamlTokenFlags.None, _pos, 3);
             _pos += 3;
@@ -1012,6 +1021,10 @@ public ref struct Utf8YamlReader
         switch (c)
         {
             case (byte)'[' or (byte)'{':
+                // An implicit key is on one line, followed by ':'
+                if (!IsFlowCollectionImplicitKey(_pos))
+                    throw CreateError(_pos, "Expected ':' after the mapping key, on the line where it ends");
+
                 PushFlowCollection(c, indent);
                 return true;
 
@@ -1077,6 +1090,11 @@ public ref struct Utf8YamlReader
         SetState(ContainerState.BlockMappingKey);
         if (pos < buffer.Length && pos - _lineStart == indent && buffer[pos] == ':' && IsBlankAt(pos + 1) && !IsDocumentMarker(pos))
         {
+            // Like a key, the ':' of the value is indented by spaces
+            var indentation = buffer[_lineStart..pos];
+            if (indentation.Contains((byte)'\t') && !indentation.ContainsAnyExcept((byte)' ', (byte)'\t'))
+                throw CreateError(pos, "A tab cannot be used for indentation");
+
             _indicator = pos;
             _pos = pos + 1;
             _consumedEnd = pos + 1;
@@ -1117,6 +1135,11 @@ public ref struct Utf8YamlReader
                 lineCrossed = true;
                 if (_pos - _lineStart <= parentIndent)
                     break;
+
+                // Like the content, the properties are indented by spaces
+                var propertySpaces = CountSpaces(_lineStart);
+                if (propertySpaces < _pos - _lineStart && propertySpaces <= parentIndent)
+                    throw CreateError(_pos, "A tab cannot be used for indentation");
 
                 if (_properties.HasValue)
                 {
@@ -1380,6 +1403,18 @@ public ref struct Utf8YamlReader
     private bool EndFlowCollection(Utf8YamlTokenKind kind)
     {
         PopEntry();
+        switch (_depth > 0 ? (ContainerState)(PeekEntry() & 0xF) : ContainerState.None)
+        {
+            // The collection is the key of a flow mapping entry or of a pair
+            case ContainerState.FlowMappingValue:
+                SetState(ContainerState.FlowMappingJsonValue);
+                break;
+
+            case ContainerState.FlowPairValue:
+                SetState(ContainerState.FlowPairJsonValue);
+                break;
+        }
+
         SetToken(kind, Utf8YamlTokenFlags.Flow, _pos, 1);
         _pos++;
         _newLine = false;
@@ -1402,7 +1437,7 @@ public ref struct Utf8YamlReader
             throw CreateError(pos, "Expected a node before ','");
 
         SetState(ContainerState.FlowSequenceAfterEntry);
-        if (c == '?' && IsBlankOrFlowIndicatorAt(pos + 1))
+        if (c == '?' && IsBlankAt(pos + 1))
         {
             PushEntry(ContainerState.FlowPairKey, CurrentIndent);
             SetToken(Utf8YamlTokenKind.MappingStart, Utf8YamlTokenFlags.Flow, pos, 0);
@@ -1464,19 +1499,34 @@ public ref struct Utf8YamlReader
             throw CreateError(pos, "Expected a key before ','");
 
         SetState(ContainerState.FlowMappingValue);
-        if (c == '?' && IsBlankOrFlowIndicatorAt(pos + 1))
+        if (c == '?' && IsBlankAt(pos + 1))
         {
             ConsumeExplicitKeyIndicator(pos);
-            return ReadFlowNode(pairAllowed: false);
+            return ReadFlowKeyNode(ContainerState.FlowMappingJsonValue);
         }
 
         if (c == ':' && IsBlankOrFlowIndicatorAt(pos + 1))
             return EmitEmptyScalar(pos);
 
-        return ReadFlowNode(pairAllowed: false);
+        return ReadFlowKeyNode(ContainerState.FlowMappingJsonValue);
     }
 
-    private bool ReadFlowMappingValue()
+    // A quoted scalar is a JSON-like key, which ':' can follow without a space. A flow collection is one too, see
+    // EndFlowCollection. jsonValueState is the state of the entry after such a key.
+    private bool ReadFlowKeyNode(ContainerState jsonValueState)
+    {
+        var depth = _depth;
+        var result = ReadFlowNode(pairAllowed: false);
+        if (_depth == depth && _token.Kind == Utf8YamlTokenKind.Scalar && (_token.Flags & Utf8YamlTokenFlags.ScalarStyleMask) is Utf8YamlTokenFlags.SingleQuoted or Utf8YamlTokenFlags.DoubleQuoted)
+        {
+            SetState(jsonValueState);
+        }
+
+        return result;
+    }
+
+    // After a key that is not JSON-like, a ':' followed by a character of a plain scalar is not the value indicator
+    private bool ReadFlowMappingValue(bool afterJsonKey)
     {
         SkipFlowTrivia();
         var buffer = _buffer;
@@ -1486,7 +1536,7 @@ public ref struct Utf8YamlReader
 
         var c = buffer[pos];
         SetState(ContainerState.FlowMappingAfterValue);
-        if (c == ':')
+        if (c == ':' && (afterJsonKey || IsBlankOrFlowIndicatorAt(pos + 1)))
         {
             ConsumeIndicator(pos);
             return ReadFlowNode(pairAllowed: false);
@@ -1524,15 +1574,16 @@ public ref struct Utf8YamlReader
     {
         SkipFlowTrivia();
         SetState(ContainerState.FlowPairValue);
-        if (_pos < _buffer.Length && _buffer[_pos] == '?' && IsBlankOrFlowIndicatorAt(_pos + 1))
+        if (_pos < _buffer.Length && _buffer[_pos] == '?' && IsBlankAt(_pos + 1))
         {
             ConsumeExplicitKeyIndicator(_pos);
         }
 
-        return ReadFlowNode(pairAllowed: false);
+        return ReadFlowKeyNode(ContainerState.FlowPairJsonValue);
     }
 
-    private bool ReadFlowPairValue()
+    // After a key that is not JSON-like, a ':' followed by a character of a plain scalar is not the value indicator
+    private bool ReadFlowPairValue(bool afterJsonKey)
     {
         SkipFlowTrivia();
         var pos = _pos;
@@ -1540,7 +1591,7 @@ public ref struct Utf8YamlReader
             throw CreateError(pos, "Unterminated flow sequence");
 
         SetState(ContainerState.FlowPairEnd);
-        if (_buffer[pos] == ':')
+        if (_buffer[pos] == ':' && (afterJsonKey || IsBlankOrFlowIndicatorAt(pos + 1)))
         {
             ConsumeIndicator(pos);
             return ReadFlowNode(pairAllowed: false);
@@ -1578,6 +1629,13 @@ public ref struct Utf8YamlReader
         if (pos >= buffer.Length)
             throw CreateError(pos, "Unterminated flow collection");
 
+        // The implicit key of a pair in a flow sequence is on one line, with its properties (YAML 1.2 §7.4.2): a node
+        // whose properties are on a previous line is not a key
+        if (pairAllowed && propertiesStart >= 0 && buffer[propertiesStart..pos].IndexOfAny(LineBreaks) >= 0)
+        {
+            pairAllowed = false;
+        }
+
         var c = buffer[pos];
         switch (c)
         {
@@ -1590,7 +1648,7 @@ public ref struct Utf8YamlReader
                     SetToken(Utf8YamlTokenKind.MappingStart, Utf8YamlTokenFlags.Flow, keyStart, 0);
                     _pos = keyStart;
 
-                    // The properties of the key can be on a previous line
+                    // The key is read again from its first property
                     _lineStart = _buffer[..keyStart].LastIndexOfAny(LineBreaks) + 1;
                     return true;
                 }
@@ -1627,17 +1685,17 @@ public ref struct Utf8YamlReader
                     throw CreateError(pos, "An alias cannot have properties");
 
                 ScanAlias();
-                CheckKeyColon(flow: true);
+                CheckKeyColon(flow: true, jsonLike: false);
                 break;
 
             case (byte)'"':
                 ScanDoubleQuoted(CurrentIndent);
-                CheckKeyColon(flow: true);
+                CheckKeyColon(flow: true, jsonLike: true);
                 break;
 
             case (byte)'\'':
                 ScanSingleQuoted(CurrentIndent);
-                CheckKeyColon(flow: true);
+                CheckKeyColon(flow: true, jsonLike: true);
                 break;
 
             default:
@@ -1646,10 +1704,11 @@ public ref struct Utf8YamlReader
                 break;
         }
 
-        if (pairAllowed && _scanColon >= 0)
+        // A plain scalar on several lines is the key of a flow mapping, but not of a pair of a flow sequence
+        if (pairAllowed && _scanColon >= 0 && !_scanMultiLine)
         {
             CheckImplicitKeyLength();
-            PushEntry(ContainerState.FlowPairValue, CurrentIndent);
+            PushEntry(ContainerState.FlowPairJsonValue, CurrentIndent);
             var indicator = _indicator;
             _indicator = -1;
             EmitScanned();
@@ -1708,7 +1767,7 @@ public ref struct Utf8YamlReader
                     break;
 
                 // An explicit key: its node starts after the indicator, and a quoted scalar there is skipped as a whole
-                case (byte)'?' when atNodeStart && IsBlankOrFlowIndicatorAt(p + 1):
+                case (byte)'?' when atNodeStart && IsBlankAt(p + 1):
                     afterJsonNode = false;
                     break;
 
@@ -2059,8 +2118,9 @@ public ref struct Utf8YamlReader
         return Encoding.UTF8.GetString(buffer, 0, prefixLength + suffixLength);
     }
 
-    // Sets _scanColon when ':' follows the scanned scalar or alias on the same line
-    private void CheckKeyColon(bool flow)
+    // Sets _scanColon when ':' follows the scanned scalar or alias on the same line. In a flow collection, it can follow a
+    // JSON-like key, a quoted scalar, without a space; it is followed by a space or a flow indicator after another key.
+    private void CheckKeyColon(bool flow, bool jsonLike = false)
     {
         _scanColon = -1;
         if (_scanMultiLine)
@@ -2073,7 +2133,7 @@ public ref struct Utf8YamlReader
             p++;
         }
 
-        if (p < buffer.Length && buffer[p] == ':' && (flow || IsBlankAt(p + 1)))
+        if (p < buffer.Length && buffer[p] == ':' && (flow ? jsonLike || IsBlankOrFlowIndicatorAt(p + 1) : IsBlankAt(p + 1)))
         {
             _scanColon = p;
         }
@@ -2204,8 +2264,9 @@ public ref struct Utf8YamlReader
 
                     if (q < buffer.Length && buffer[q] is (byte)'\r' or (byte)'\n')
                     {
-                        // An empty line inside the scalar is indented by spaces: a tab is allowed only after the indentation
-                        if (!flow && q > indentEnd && indentEnd - lineStart <= parentIndent && tabInEmptyLine < 0)
+                        // An empty line inside the scalar is indented by spaces: a tab is allowed only after the indentation.
+                        // In a flow collection, the indentation is the one of the block collection that contains it.
+                        if (q > indentEnd && indentEnd - lineStart <= parentIndent && tabInEmptyLine < 0)
                         {
                             tabInEmptyLine = indentEnd;
                         }

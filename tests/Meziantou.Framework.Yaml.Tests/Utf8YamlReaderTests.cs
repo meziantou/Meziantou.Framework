@@ -347,7 +347,7 @@ public sealed class Utf8YamlReaderTests
 
     // A flow collection is a JSON-like key, in a flow sequence too (YAML 1.2 §7.4.2)
     [Theory]
-    [InlineData("---\n[!!set\n  [ a, [ [[b,c]]: d, e]]: 23\n]\n")]
+    [InlineData("---\n[\n  !!set [ a, [ [[b,c]]: d, e]]: 23\n]\n")]
     public void Read_FlowCollectionKeys_GiveTheSameTokensInEveryMode(string yaml)
     {
         var utf8 = Encoding.UTF8.GetBytes(yaml);
@@ -382,6 +382,49 @@ public sealed class Utf8YamlReaderTests
         Assert.Throws<SyntaxErrorException>(() => YamlTestSuite.ReadEvents(new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml))));
         var exception = Assert.Throws<SyntaxErrorException>(() => ReadEvents(Encoding.UTF8.GetBytes(yaml)));
         Assert.Contains("Expected a directive name", exception.Message, StringComparison.Ordinal);
+    }
+
+    // A '?' or ':' indicator that a character of a plain scalar follows, an implicit key on several lines in a flow
+    // sequence or a block mapping, a tab as indentation, a byte order mark after a directive: the scanner-based parser
+    // rejects them too
+    [Theory]
+    [InlineData("[?]\n")]
+    [InlineData("{*a :x}\n")]
+    [InlineData("[ *a :v ]\n")]
+    [InlineData("[\n? foo\n# bar\n:baz\n]\n")]
+    [InlineData("[ !!str\n : value ]\n")]
+    [InlineData("[ &a\n [x]: y ]\n")]
+    [InlineData("[\nf\noo: b]\n")]
+    [InlineData("?\n\t! a\n")]
+    [InlineData("- ? a\n\t : x\n")]
+    [InlineData("key: [a\n\t\n  b]\n")]
+    [InlineData("a: 1\n[23\n ]: 42\n")]
+    [InlineData("%YAML 1.2\n\uFEFF\n---\n")]
+    [InlineData("%YAML 1.2\n\uFEFF---\n%YAML 1.2\n---\n")]
+    public void Read_InputThatTheGrammarRejects_Throws(string yaml)
+    {
+        Assert.ThrowsAny<YamlException>(() => YamlTestSuite.ReadEvents(new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml))));
+        Assert.ThrowsAny<YamlException>(() => ReadEvents(Encoding.UTF8.GetBytes(yaml)));
+    }
+
+    [Theory]
+    [InlineData("[? a]\n")]
+    [InlineData("{\"a\":x}\n")]
+    [InlineData("{ *a : x }\n")]
+    [InlineData("[ [a]:v ]\n")]
+    [InlineData("[ !!str : value ]\n")]
+    [InlineData("{ !!str\n : value }\n")]
+    [InlineData("{ a\n b: c }\n")]
+    [InlineData("- [\n\t\n foo\n ]\n")]
+    [InlineData("-  [f\n\n\t\n  ]\n")]
+    [InlineData("a: 1\n[b, c]: 2\n")]
+    [InlineData("\uFEFF%YAML 1.2\n---\n")]
+    [InlineData("%YAML 1.2\n\uFEFF--- a\n")]
+    [InlineData("%TAG !m! !my-\n--- !m!a b\n...\n%TAG !m! !my-\n\uFEFF--- !m!c d\n")]
+    public void Read_InputThatTheGrammarAccepts_ReadsTheSameEventsAsTheScanner(string yaml)
+    {
+        var expected = YamlTestSuite.ReadEvents(new Parser<StringLookAheadBuffer>(new StringLookAheadBuffer(yaml)));
+        Assert.Equal(expected, ReadEvents(Encoding.UTF8.GetBytes(yaml)));
     }
 
     [Fact]

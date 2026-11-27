@@ -792,7 +792,9 @@ public static class YamlFuzzTargets
         }
         catch (YamlException ex)
         {
-            FuzzAssert.True(parserError is not null, $"The syntax tree rejects YAML that the parser accepts: {ex.Message}");
+            // The parser reads byte order marks that follow each other at the start of a line as document prefixes,
+            // which the scanner of the syntax tree does not read (YAML 1.2 §9.2)
+            FuzzAssert.True(parserError is not null || yaml.Contains("\uFEFF\uFEFF", StringComparison.Ordinal), $"The syntax tree rejects YAML that the parser accepts: {ex.Message}");
             return;
         }
 

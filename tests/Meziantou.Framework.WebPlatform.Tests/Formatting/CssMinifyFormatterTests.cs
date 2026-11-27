@@ -87,4 +87,18 @@ public sealed class CssMinifyFormatterTests
         var minified = sheet.ToCss(new CssMinifyFormatter());
         Assert.Equal(sheet.ToCss(), CssFormatterTests.Parse(minified).ToCss());
     }
+
+    [Theory]
+    // The CSSOM serialization writes border-block-start-radius and corner-block-start-shape, as border-end-end-radius is between
+    // the longhands of corner-block-start: they are adjacent once the serialization is parsed again
+    [InlineData("a { corner-block-start: bevel 1px; corner-inline-end: bevel 1px }", "a{corner-block-start:bevel 1px;corner-end-end:bevel 1px}")]
+    [InlineData("a { corner-top-right: scoop 20px 5px; corner-block-start: round 10% / 2rem; corner-inline-end: superellipse(-0.5) 4px 2%; corner-top-left: 10px / 5px notch }", "a{corner-top-right:scoop 20px 5px;corner-block-start:round superellipse(-.5) 10% 4px/2rem 4px;corner-end-end:superellipse(-.5) 2%;corner-top-left:notch 10px 5px}")]
+    // The declarations of another mapping logic between the longhands are kept between them
+    [InlineData("a { margin: 10px; margin-inline: 10px; margin-block: 10px; margin-inline-end: 10px; margin-bottom: 10px }", "a{margin-top:10px;margin-right:10px;margin-left:10px;margin-inline-start:10px;margin-block:10px;margin-inline-end:10px;margin-bottom:10px}")]
+    public void Minify_MinifyingTheOutputDoesNotChangeIt(string css, string expected)
+    {
+        var minified = Minify(css);
+        Assert.Equal(expected, minified);
+        Assert.Equal(minified, Minify(minified));
+    }
 }

@@ -1300,7 +1300,46 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
     /// Returns the declarations written by https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block: the longhands
     /// that can be serialized together are replaced by their shorthand, and the custom property names are escaped.
     /// </summary>
-    internal static List<CssSerializedDeclaration> GetSerializedDeclarations(List<CssDeclarationEntry> declarations)
+    internal static List<CssSerializedDeclaration> GetSerializedDeclarations(List<CssDeclarationEntry> declarations) => GetSerializedDeclarations(declarations, parsedOrder: null);
+
+    /// <summary>
+    /// Returns the declarations written by <see cref="GetSerializedDeclarations(List{CssDeclarationEntry})"/> for the
+    /// declarations in the order in which their serialization is parsed, so that serializing the parsed declarations again
+    /// writes the same declarations.
+    /// </summary>
+    /// <remarks>
+    /// The serialization is not stable: a shorthand is written at the position of its first longhand, so its other longhands
+    /// are moved before the declarations that were between them. The longhands of a shorthand that was not written because of
+    /// such a declaration of their logical property group (e.g. the longhands of <c>corner-block-start</c> around
+    /// <c>border-end-end-radius</c>) can be adjacent once parsed again: serializing them again writes the shorthand. The
+    /// declarations are serialized again in the order in which their serialization is parsed until that order does not change.
+    /// </remarks>
+    internal static List<CssSerializedDeclaration> GetStableSerializedDeclarations(List<CssDeclarationEntry> declarations)
+    {
+        // The order usually does not change after the first pass: the number of passes is bounded, in case it does not converge
+        const int MaxPasses = 8;
+        var parsedOrder = new List<CssDeclarationEntry>(declarations.Count);
+        var result = GetSerializedDeclarations(declarations, parsedOrder);
+        for (var pass = 1; pass < MaxPasses; pass++)
+        {
+            // The longhands whose value is only known through the shorthand that set them are written as that shorthand by
+            // the formatters (CssWriter.WritePendingLonghandsAsShorthand): their parsed order is not the one of parsedOrder
+            if (parsedOrder.SequenceEqual(declarations) || result.Exists(declaration => declaration.PendingShorthandName is not null))
+                break;
+
+            declarations = parsedOrder;
+            parsedOrder = new List<CssDeclarationEntry>(declarations.Count);
+            result = GetSerializedDeclarations(declarations, parsedOrder);
+        }
+
+        return result;
+    }
+
+    /// <param name="parsedOrder">
+    /// When not null, receives the declarations in the order in which the serialization is parsed: the longhands of a
+    /// shorthand are set in the order of <see cref="CssPropertyRegistry.GetLonghandsRecursive"/>, as the parser does.
+    /// </param>
+    private static List<CssSerializedDeclaration> GetSerializedDeclarations(List<CssDeclarationEntry> declarations, List<CssDeclarationEntry>? parsedOrder)
     {
         var result = new List<CssSerializedDeclaration>(declarations.Count);
         if (declarations.Count == 0)
@@ -1376,6 +1415,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
                         continue;
 
                     result.Add(new CssSerializedDeclaration(shorthandName, value, important));
+                    parsedOrder?.AddRange(current);
                     foreach (var entry in current)
                     {
                         alreadySerialized.Add(entry.Name);
@@ -1393,6 +1433,7 @@ public partial class CssStyleDeclaration : IReadOnlyList<string>
             result.Add(longhandValue is { Value.Length: 0, ShorthandName: { } pendingShorthandName, ShorthandValue: { } pendingShorthandValue }
                 ? new CssSerializedDeclaration(property, "", declaration.Important, pendingShorthandName, pendingShorthandValue)
                 : new CssSerializedDeclaration(CssPropertyRegistry.IsCustomProperty(property) ? CssSerializer.SerializeIdentifier(property) : property, longhandValue.Value, declaration.Important));
+            parsedOrder?.Add(declaration);
             alreadySerialized.Add(property);
         }
 

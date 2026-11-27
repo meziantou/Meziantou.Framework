@@ -188,10 +188,22 @@ public static class GeoMapsFuzzTargets
         }
     }
 
+    // Called once, during the first input of the target: it cannot use the folder of the input
     private static byte[] CreateTemplate()
     {
-        using var directory = new TemporaryFolder();
-        var path = Path.Combine(directory.Path, "template.gpkg");
+        var directory = Directory.CreateTempSubdirectory("mfw-geo-maps-fuzz-template-");
+        try
+        {
+            return CreateTemplate(Path.Combine(directory.FullName, "template.gpkg"));
+        }
+        finally
+        {
+            directory.Delete(recursive: true);
+        }
+    }
+
+    private static byte[] CreateTemplate(string path)
+    {
         var square = new GeoPolygon([[new(0, 0), new(4, 0), new(4, 4), new(0, 4), new(0, 0)]]);
         var properties = new Dictionary<string, object?>(StringComparer.Ordinal)
         {
@@ -357,16 +369,37 @@ public static class GeoMapsFuzzTargets
         return [.. header, .. WellKnownBinary.Write(geometry)];
     }
 
+    /// <summary>
+    /// The empty folder of the current thread, emptied again when disposed: an input does not nest another one. The files
+    /// of every input have the same paths. Microsoft.Data.Sqlite keeps a pool group per connection string, even without
+    /// pooling, and from the fourth minute a timer removes the unused groups every 30 seconds, in a time quadratic in
+    /// their number, under the lock that opening a connection takes. With a new folder per input, the hundreds of
+    /// thousands of connection strings of a campaign stalled the input running at the fifth minute for 20 to 35 seconds.
+    /// </summary>
     private sealed class TemporaryFolder : IDisposable
     {
         private const string SharedMemoryPath = "/dev/shm";
 
-        // Each input writes three SQLite files, which SQLite syncs to the disk. On the CI runners, tens of thousands of
-        // inputs exhaust the I/O budget of the disk, and an input then stalls for tens of seconds (a slow unit that
-        // replays in milliseconds). /dev/shm is a file system in memory, whose sync costs nothing.
-        public TemporaryFolder() => Path = CreateInSharedMemory() ?? Directory.CreateTempSubdirectory("mfw-geo-maps-fuzz-").FullName;
+        [ThreadStatic]
+        private static string? s_path;
+
+        public TemporaryFolder()
+        {
+            Path = s_path ??= Create();
+            Clear();
+        }
 
         public string Path { get; }
+
+        public void Dispose() => Clear();
+
+        // /dev/shm is a file system in memory, where the syncs of SQLite cost nothing
+        private static string Create()
+        {
+            var path = CreateInSharedMemory() ?? Directory.CreateTempSubdirectory("mfw-geo-maps-fuzz-").FullName;
+            AppDomain.CurrentDomain.ProcessExit += (_, _) => Delete(path);
+            return path;
+        }
 
         // null when there is no /dev/shm or it cannot be written (read-only mount, no permission)
         private static string? CreateInSharedMemory()
@@ -384,11 +417,30 @@ public static class GeoMapsFuzzTargets
             }
         }
 
-        public void Dispose()
+        private void Clear()
+        {
+            foreach (var directory in Directory.EnumerateDirectories(Path))
+            {
+                Delete(directory);
+            }
+
+            foreach (var file in Directory.EnumerateFiles(Path))
+            {
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+
+        private static void Delete(string path)
         {
             try
             {
-                Directory.Delete(Path, recursive: true);
+                Directory.Delete(path, recursive: true);
             }
             catch (IOException)
             {

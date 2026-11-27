@@ -1345,10 +1345,11 @@ internal sealed partial class GridLayoutAlgorithm
             var itemRows = new Dictionary<ContainerBox, GridItemRows>(_items.Count);
             foreach (var item in _items)
             {
+                // (the rows of a subgrid of the rows of its parent are fixed when the rows of the parent are)
                 var hasFixedRows = item.RowEnd > item.RowStart;
                 for (var row = item.RowStart; row < item.RowEnd && hasFixedRows; row++)
                 {
-                    hasFixedRows = row >= 0 && row < _rows.Length && _rows[row].Min == GridMinFunction.Fixed && _rows[row].Max == GridMaxFunction.Fixed;
+                    hasFixedRows = row >= 0 && row < _rows.Length && IsFixedTrack(GridAxis.Rows, row);
                 }
 
                 itemRows[item.Box] = new GridItemRows(item.RowStart, item.RowEnd, item.StretchesRows, item.ColumnStart, hasFixedRows);

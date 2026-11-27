@@ -46,6 +46,8 @@ public sealed partial class CssMinifyFormatter : CssFormatter
 
         internal override bool MergeAdjacentDeclarations => true;
 
+        internal override bool SerializeDeclarationsInParsedOrder => true;
+
         protected override bool ShouldWrite(CssRule rule) => !_formatter.RemoveEmptyRules || !IsEmpty(rule);
 
         protected override void WritePrelude(CssRule rule, string prelude)

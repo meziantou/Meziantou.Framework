@@ -438,7 +438,7 @@ internal static class CssSubstitution
                 }
 
                 var builder = new SubstitutionBuilder();
-                arguments.Add(Append(builder, values, source, context) ? (builder.ToString().Trim(), builder.Tainted) : (null, false));
+                arguments.Add(Append(builder, values, source, context) ? (CssSerializer.TrimWhitespace(builder.ToString()), builder.Tainted) : (null, false));
             }
         }
 
@@ -750,7 +750,7 @@ internal static class CssSubstitution
             return null;
 
         tainted |= value.Tainted;
-        return value.ToString().Trim();
+        return CssSerializer.TrimWhitespace(value.ToString());
     }
 
     /// <summary>Returns the value of a substitution function, or null when it is invalid.</summary>
@@ -794,7 +794,7 @@ internal static class CssSubstitution
             return null;
 
         tainted |= builder.Tainted;
-        return builder.ToString().Trim();
+        return CssSerializer.TrimWhitespace(builder.ToString());
     }
 
     private static int SkipWhitespace(List<CssComponentValue> values, int index)
@@ -1190,7 +1190,7 @@ internal static class CssSubstitution
             return null;
 
         tainted |= fallbackBuilder.Tainted;
-        return fallbackBuilder.ToString().Trim();
+        return CssSerializer.TrimWhitespace(fallbackBuilder.ToString());
     }
 
     /// <summary>Returns the value of the attribute of an attr() function, or null when it is missing or invalid (the fallback is used).</summary>
@@ -1264,7 +1264,7 @@ internal static class CssSubstitution
                 if (component is { IsDataType: true } && component.Name is not ("string" or "custom-ident"))
                     return CssSerializer.SerializeValue(ValueMatcher.RemoveWhitespace(values), property: null);
 
-                return substituted.Trim();
+                return CssSerializer.TrimWhitespace(substituted);
             }
         }
     }

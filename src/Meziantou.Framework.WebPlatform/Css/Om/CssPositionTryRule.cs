@@ -32,7 +32,7 @@ public sealed class CssPositionTryRule : CssRule
 
     internal override string GetPrelude() => "@position-try " + Name;
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/css-anchor-position-1/#csspositiontrydescriptors: the declarations of a <c>@position-try</c> rule.</summary>

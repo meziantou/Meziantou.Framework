@@ -734,14 +734,33 @@ internal sealed partial class GridLayoutAlgorithm
         var start = item.GetStart(axis);
         var span = item.GetSpan(axis);
         var shared = new GridTrack[span];
+        var fixedTracks = new bool[span];
         for (var i = 0; i < span; i++)
         {
-            shared[i] = tracks[reversed ? item.GetEnd(axis) - 1 - i : start + i];
+            var index = reversed ? item.GetEnd(axis) - 1 - i : start + i;
+            shared[i] = tracks[index];
+            fixedTracks[i] = IsFixedTrack(axis, index);
         }
 
         subgrid.SetTracks(ownAxis, shared);
-        subgrid._input!.Get(ownAxis)!.Tracks = GetSubgridTrackPositions(item, axis, reversed);
+        var input = subgrid._input!.Get(ownAxis)!;
+        input.Tracks = GetSubgridTrackPositions(item, axis, reversed);
+        input.FixedTracks = fixedTracks;
         subgrid.PrepareNestedSubgrids(ownAxis);
+    }
+
+    /// <summary>
+    /// Returns whether the track sizing functions of a track are fixed (a length, a resolved percentage). The tracks of a subgridded
+    /// axis set from the positions given by the parent grid (see <see cref="ApplyParentTracks"/>) have no sizing functions of
+    /// their own: they are fixed when the tracks of the parent are.
+    /// </summary>
+    private bool IsFixedTrack(GridAxis axis, int index)
+    {
+        if ((axis == GridAxis.Columns ? _columnsFromParent : _rowsFromParent) && _input?.Get(axis) is { } input)
+            return input.FixedTracks is { } fixedTracks && index < fixedTracks.Length && fixedTracks[index];
+
+        var track = GetTracks(axis)[index];
+        return track.Min == GridMinFunction.Fixed && track.Max == GridMaxFunction.Fixed;
     }
 
     /// <summary>Replaces the tracks of an axis by the tracks of the parent grid (a subgridded axis of the instance that places the items of a subgrid).</summary>

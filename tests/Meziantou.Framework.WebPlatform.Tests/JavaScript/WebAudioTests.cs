@@ -719,15 +719,8 @@ public sealed class WebAudioTests : IDisposable
     {
         // A 16-bit stereo stream at 8000 Hz with one frame of 4 samples: the left channel is verbatim, the side channel
         // (left - right) is constant
-        var bits = new System.Text.StringBuilder();
-        void Write(long value, int count)
-        {
-            for (var i = count - 1; i >= 0; i--)
-            {
-                bits.Append(((value >> i) & 1) != 0 ? '1' : '0');
-            }
-        }
-
+        var writer = new FlacBitWriter();
+        void Write(long value, int count) => writer.Write(value, count);
         Write(0x664C6143, 32); // fLaC
         Write(0x80, 8); // The last metadata block, STREAMINFO
         Write(34, 24);
@@ -757,23 +750,87 @@ public sealed class WebAudioTests : IDisposable
         Write(-16384, 16);
         Write(0b0_000000_0, 8); // A constant subframe (17 bits for the side channel)
         Write(-100, 17);
-        while (bits.Length % 8 != 0)
-        {
-            bits.Append('0');
-        }
-
+        writer.AlignToByte();
         Write(0, 16); // CRC-16
-        var flac = new byte[bits.Length / 8];
-        for (var i = 0; i < flac.Length; i++)
-        {
-            flac[i] = Convert.ToByte(bits.ToString(i * 8, 8), 2);
-        }
 
-        var buffer = Decode(new OfflineAudioContext(1, 128, 8000), flac);
+        var buffer = Decode(new OfflineAudioContext(1, 128, 8000), writer.ToArray());
 
         Assert.Equal(4u, buffer.Length);
         Assert.Equal([1000 / 32768f, -2000 / 32768f, 0.5f, -0.5f], buffer.GetChannelData(0).ToArray());
         Assert.Equal([1100 / 32768f, -1900 / 32768f, 16484 / 32768f, -16284 / 32768f], buffer.GetChannelData(1).ToArray());
+    }
+
+    [Fact]
+    public void DecodeAudioData_RejectsAFlacFrameWhoseSampleRateIsOutOfRange()
+    {
+        // The STREAMINFO block gives 44100 Hz, but the frame gives 1 Hz: the audio would be resampled from 1 Hz
+        var writer = new FlacBitWriter();
+        void Write(long value, int count) => writer.Write(value, count);
+        Write(0x664C6143, 32); // fLaC
+        Write(0x80, 8); // The last metadata block, STREAMINFO
+        Write(34, 24);
+        Write(4, 16);
+        Write(4, 16);
+        Write(0, 48);
+        Write(44100, 20);
+        Write(0, 3); // 1 channel
+        Write(15, 5); // 16 bits
+        Write(4, 36);
+        Write(0, 128);
+
+        Write(0xFFF8, 16); // The frame header
+        Write(6, 4); // The block size in 8 bits
+        Write(13, 4); // The sample rate in 16 bits, in Hz
+        Write(0, 4); // Mono
+        Write(4, 3); // 16 bits
+        Write(0, 1);
+        Write(0, 8); // Frame 0
+        Write(3, 8); // Block size - 1
+        Write(1, 16); // 1 Hz
+        Write(0, 8); // CRC-8
+
+        Write(0b0_000000_0, 8); // A constant subframe
+        Write(1000, 16);
+        writer.AlignToByte();
+        Write(0, 16); // CRC-16
+
+        var task = new OfflineAudioContext(1, 128, 8000).DecodeAudioData(writer.ToArray());
+
+        Assert.True(task.IsFaulted);
+        Assert.Equal("EncodingError", Assert.IsType<DomException>(task.Exception!.InnerException).Name);
+    }
+
+    /// <summary>Writes the bits of a FLAC stream, most significant bit first.</summary>
+    private sealed class FlacBitWriter
+    {
+        private readonly System.Text.StringBuilder _bits = new();
+
+        public void Write(long value, int count)
+        {
+            for (var i = count - 1; i >= 0; i--)
+            {
+                _bits.Append(((value >> i) & 1) != 0 ? '1' : '0');
+            }
+        }
+
+        public void AlignToByte()
+        {
+            while (_bits.Length % 8 != 0)
+            {
+                _bits.Append('0');
+            }
+        }
+
+        public byte[] ToArray()
+        {
+            var bytes = new byte[_bits.Length / 8];
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                bytes[i] = Convert.ToByte(_bits.ToString(i * 8, 8), 2);
+            }
+
+            return bytes;
+        }
     }
 
     [Fact]

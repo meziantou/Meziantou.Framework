@@ -1335,6 +1335,57 @@ public sealed class PagedMediaTests : IDisposable
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }
 
+    [Fact]
+    public void Pages_StretchedItemOfASubgridContinuedOnAPageOfAnotherInlineSizeGrowsWithItsLinesPushedByTheBreaks()
+    {
+        // The third item of the grid is a subgrid of its last two rows, whose item (its text, 7 lines in the 40px wide first
+        // column of the 25px wide first page) is stretched in its first row (70px). The pages of 25px push its third, fifth and
+        // seventh lines (5px at the end of each page): as the stretched items of a grid whose rows are automatic, the item grows
+        // with them, and the subgrid with it: its last line is in the fourth page (the grid keeps the layout of the first page in
+        // the 200px wide next ones), before the paragraph after the grid, which is laid out in their inline size from there
+        var document = Parse($$"""
+            <style>@page { size: 200px 25px; margin: 0 } @page :first { size: 25px 25px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>
+              <div></div><div></div>
+              <div id=a style='grid-row: span 2; display: grid; grid-template-rows: subgrid'>{{Words(7)}}</div>
+              <div style='height: 55px'></div>
+            </div>
+            <p id=b style='margin: 0'>{{Words(15)}}</p>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(22, pages.Sum(page => CountWords(page.Content)));
+        Assert.Equal([25, 25, 25, 10], GetPageRects(pages, document.GetElementById("a")!).Select(rect => rect.Rect.Height));
+        Assert.Equal((3, new PhysicalRect(0, 0, 40, 10)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
+        Assert.Equal(3, GetPageRects(pages, document.GetElementById("b")!)[0].Page);
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Theory]
+    [InlineData("", new double[] { 25, 25, 25, 10 })]
+    [InlineData("grid-template-rows: 0 70px 0", new double[] { 25, 25, 20, 0 })]
+    public void Pages_StretchedItemOfASubgridGrowsWithItsContentsPushedByTheBreaksUnlessTheRowsOfItsGridAreFixed(string rows, double[] blockSizes)
+    {
+        // The rows of a subgrid are sized by its grid: as the stretched items of a grid, an item stretched in the rows of the
+        // subgrid (its text) grows with its lines pushed by the breaks when they are automatic, and the subgrid with it, not when
+        // they are fixed (as in Blink, its last line overflows it, in the fourth page)
+        var document = Parse($$"""
+            <style>@page { size: 25px 25px; margin: 0 }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start; {{rows}}'>
+              <div></div><div></div>
+              <div id=a style='grid-row: span 2; display: grid; grid-template-rows: subgrid'>{{Words(7)}}</div>
+              <div style='height: 55px'></div>
+            </div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(blockSizes, GetPageRects(pages, document.GetElementById("a")!).Select(rect => rect.Rect.Height));
+        Assert.Equal(7, pages.Sum(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
     [Theory]
     [InlineData("<table style='width: 100%; border-spacing: 0'><tr style='height: 100px'><td></td></tr><tr style='height: 100px'><td></td></tr><tr style='height: 100px'><td></td></tr><tr id=r style='height: 100px'><td></td></tr></table>")]
     [InlineData("<table style='width: 100%; border-spacing: 0'><tbody><tr style='height: 300px'><td></td></tr></tbody><tbody id=r><tr style='height: 100px'><td></td></tr></tbody></table>")]
@@ -1435,6 +1486,32 @@ public sealed class PagedMediaTests : IDisposable
         Assert.Equal((16, new PhysicalRect(0, 0, 400, 10)), Assert.Single(GetPageRects(pages, document.GetElementById("b")!)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Theory]
+    [InlineData(15, "<div style='display: grid; grid-template-columns: 1fr 1fr'><div></div><div id=i style='contain: size; width: 0; height: 0'></div></div>")]
+    [InlineData(5, "<div style='display: grid'><div style='height: 10px'></div><div id=i style='height: 0'></div></div>")]
+    public void Pages_GridItemsWithoutBlockSizeAtABreakAfterTheGridAreBeforeIt(int offset, string grid)
+    {
+        // The second page, 100px wide, starts the content laid out again in its inline size. The first line of the paragraph
+        // after the grid fits in it, not its second one: the break is before the paragraph (orphans: 2), after the grid and the
+        // empty paragraph that follows it. The items of the grid at the position of the break, without block size (the items of
+        // a grid without block size, an item in the last row of a grid), are before it: they are in the second page with their
+        // grid and the empty paragraph
+        var document = Parse($$"""
+            <style>@page { size: 100px 25px; margin: 0 } @page :first { size: 200px 25px }</style>
+            <div style='height: 25px'></div>
+            <div style='height: {{offset}}px'></div>
+            {{grid}}
+            <p id=e style='margin: 0'></p>
+            <p id=p style='margin: 0'>XXXX XXXX XXXX</p>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([(1, 15d, 0d)], GetPageRects(pages, document.GetElementById("i")!).Select(rect => (rect.Page, rect.Rect.Y, rect.Rect.Height)));
+        Assert.Equal([(1, new PhysicalRect(0, 15, 100, 0))], GetPageRects(pages, document.GetElementById("e")!));
+        Assert.Equal(2, GetPageRects(pages, document.GetElementById("p")!)[0].Page);
+        Assert.Equal(3, pages.Sum(page => CountWords(page.Content)));
     }
 
     [Theory]

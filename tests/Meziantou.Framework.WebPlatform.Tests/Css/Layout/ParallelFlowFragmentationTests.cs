@@ -729,6 +729,23 @@ public sealed class ParallelFlowFragmentationTests : IDisposable
         Assert.Equal([Rect(75, 0, 25, 60)], GetClientRects(document, "b2"));
     }
 
+    [Theory]
+    [InlineData(50, "<div id=g style='display: grid; grid-template-columns: 1fr 1fr'><div></div><div id=i style='contain: size; width: 0; height: 0'></div></div>")]
+    [InlineData(0, "<div id=g style='display: grid'><div style='height: 50px'></div><div id=i></div></div>")]
+    public void Grid_ItemsWithoutBlockSizeAtAForcedBreakAfterTheGridAreBeforeIt(int offset, string grid)
+    {
+        // The forced break is after the grid, at the position of its items without block size (in a grid without block size, in
+        // the last row of a grid): they are before it, in the first column with their grid
+        var document = Parse($$"""
+            <div style='height: {{offset}}px'></div>
+            {{grid}}
+            <div id=b style='height: 10px; break-before: column'></div>
+            """);
+        Assert.Single(GetClientRects(document, "g"));
+        Assert.Equal([50d], GetClientRects(document, "i").Select(rect => rect.Y));
+        Assert.Equal([Rect(50, 0, 50, 10)], GetClientRects(document, "b"));
+    }
+
     [Fact]
     public void FlexRow_ItemWithADefiniteBlockSizeBreaksBesideAMonolithicItemThatOverflows()
     {

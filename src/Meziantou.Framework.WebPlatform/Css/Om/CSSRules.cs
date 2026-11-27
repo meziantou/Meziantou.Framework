@@ -132,7 +132,10 @@ public abstract partial class CssRule
     internal virtual bool HasMultilineBlock => false;
 
     /// <summary>The declarations or descriptors of the block of the rule, as serialized by https://drafts.csswg.org/cssom/#serialize-a-css-declaration-block.</summary>
-    internal virtual List<CssSerializedDeclaration> GetDeclarations() => [];
+    internal virtual List<CssSerializedDeclaration> GetDeclarations() => DeclarationEntries is { } declarations ? CssStyleDeclaration.GetSerializedDeclarations(declarations) : [];
+
+    /// <summary>The declarations of the block of the rule, when it is a declaration block, or null.</summary>
+    internal virtual List<CssDeclarationEntry>? DeclarationEntries => null;
 
     /// <summary>The child rules (of grouping rules and @keyframes).</summary>
     internal virtual List<CssRule>? ChildRules => null;
@@ -372,7 +375,7 @@ public sealed class CssStyleRule : CssGroupingRule
     /// <summary>The declarations are written on the line of the selectors, unless the rule contains nested rules.</summary>
     internal override bool HasMultilineBlock => ChildRules.Count > 0;
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/css-nesting/#the-cssnestrule</summary>
@@ -396,7 +399,7 @@ public sealed class CssNestedDeclarations : CssRule
     /// <summary>The nested declarations have no prelude and no block: only their declarations are written.</summary>
     internal override string GetPrelude() => "";
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/css-conditional-3/#the-cssmediarule-interface</summary>
@@ -790,7 +793,7 @@ public sealed class CssFontFaceRule : CssRule
 
     internal override string GetPrelude() => "@font-face";
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-csspagerule-interface</summary>
@@ -835,7 +838,7 @@ public sealed class CssPageRule : CssGroupingRule
     /// <summary>The margin rules are written on the line of the selector, after the declarations.</summary>
     internal override bool HasMultilineBlock => false;
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/cssom/#the-cssmarginrule-interface</summary>
@@ -864,7 +867,7 @@ public sealed class CssMarginRule : CssRule
 
     internal override string GetPrelude() => "@" + Name;
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/css-animations/#interface-csskeyframesrule</summary>
@@ -1040,7 +1043,7 @@ public sealed class CssKeyframeRule : CssRule
 
     internal override string GetPrelude() => KeyText;
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/css-cascade-5/#csslayerblockrule</summary>

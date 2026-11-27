@@ -102,7 +102,7 @@ public sealed class CssFontFeatureValuesRule : CssRule
 
     internal override string GetPrelude() => "@font-feature-values " + FontFamily;
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(_descriptors);
+    internal override List<CssDeclarationEntry> DeclarationEntries => _descriptors;
 
     /// <summary>
     /// The non-empty feature value blocks, serialized as at-rules whose declarations are the feature values: in the order of

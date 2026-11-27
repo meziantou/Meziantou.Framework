@@ -77,4 +77,12 @@ internal sealed class SubgridAxisInput
     /// direction), once the parent grid sized the tracks, else null.
     /// </summary>
     public (double Start, double End)[]? Tracks { get; set; }
+
+    /// <summary>
+    /// Whether the track sizing functions of the tracks of the parent grid are fixed (by track of the subgrid, set with
+    /// <see cref="Tracks"/>): the tracks of the subgrid are sized by the parent, so their own sizing functions are not resolved,
+    /// and the stretched items of the subgrid in its rows grow with their contents pushed by the breaks unless the rows of the
+    /// parent are fixed (see <see cref="GridItemRows.HasFixedRows"/>).
+    /// </summary>
+    public bool[]? FixedTracks { get; set; }
 }

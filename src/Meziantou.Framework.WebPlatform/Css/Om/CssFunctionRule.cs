@@ -129,7 +129,7 @@ public sealed class CssFunctionDeclarations : CssRule
     /// <summary>Like the nested declarations, only the declarations are written.</summary>
     internal override string GetPrelude() => "";
 
-    internal override List<CssSerializedDeclaration> GetDeclarations() => CssStyleDeclaration.GetSerializedDeclarations(Style.Declarations);
+    internal override List<CssDeclarationEntry> DeclarationEntries => Style.Declarations;
 }
 
 /// <summary>https://drafts.csswg.org/css-mixins-1/#cssfunctiondescriptors: the local variables (custom properties) and the result descriptor of a @function rule.</summary>

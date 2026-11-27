@@ -244,6 +244,51 @@ public sealed class CalendarTests
     }
 
     [Fact]
+    public void ICalendar_LineBreaksInValues_AreEscaped()
+    {
+        var calendar = new VCalendar();
+        var ev = calendar.Add(new VEvent
+        {
+            Uid = "u1\rEND:VEVENT\rBEGIN:VEVENT\rSUMMARY:injected",
+            Summary = "a\rb",
+            Status = "CONFIRMED\r\nX-INJ:1",
+        });
+        ev.AddAttendee(new CalendarAttendee("bob@example.com\rX-INJ:2", "Bob\rX-INJ:3", "REQ-PARTICIPANT\nX-INJ:4"));
+        var text = calendar.ToString();
+
+        Assert.DoesNotMatch(@"\r(?!\n)|(?<!\r)\n", text);
+        Assert.DoesNotContain("\nX-INJ", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("\nSUMMARY:injected", text, StringComparison.Ordinal);
+
+        var copy = VCalendar.Parse(text).Single();
+        var copyEvent = copy.Events.Single();
+        Assert.Equal("a\nb", copyEvent.Summary);
+        Assert.Equal("u1\\nEND:VEVENT\\nBEGIN:VEVENT\\nSUMMARY:injected", copyEvent.Uid);
+        var attendee = copyEvent.Attendees.Single();
+        Assert.Equal("Bob\nX-INJ:3", attendee.Name);
+        Assert.Equal("REQ-PARTICIPANT\nX-INJ:4", attendee.Role);
+        Assert.Equal(text, copy.ToString());
+    }
+
+    [Theory]
+    [InlineData(VCardVersion.V21)]
+    [InlineData(VCardVersion.V30)]
+    [InlineData(VCardVersion.V40)]
+    public void VCard_LineBreaksInParameters_AreEscaped(VCardVersion version)
+    {
+        var card = new VCard { FormattedName = "Alice" };
+        card.Phones.Add(new VCardValue("+1 555 0100", "cell\rX-INJ:1"));
+        var other = new ContentLine("X-CUSTOM", "value\rX-INJ:2");
+        other.Parameters.Add(new ContentLineParameter(name: null, "a\rX-INJ:3"));
+        card.OtherProperties.Add(other);
+        var text = card.ToString(version);
+
+        Assert.DoesNotMatch(@"\r(?!\n)|(?<!\r)\n", text);
+        Assert.DoesNotContain("\nX-INJ", text, StringComparison.Ordinal);
+        Assert.Equal("Alice", VCard.Parse(text).Single().FormattedName);
+    }
+
+    [Fact]
     public void VTimeZone_Offsets()
     {
         var calendar = VCalendar.Load(GetPath("calendar.ics")).Single();

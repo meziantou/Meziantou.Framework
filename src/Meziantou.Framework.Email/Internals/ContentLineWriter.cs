@@ -32,8 +32,8 @@ internal static class ContentLineWriter
             builder.Append(';');
             if (parameter.Name is null)
             {
-                // A parameter without a name (vCard 2.1) is written as it was read
-                builder.AppendJoin(';', parameter.Values);
+                // A parameter without a name (vCard 2.1) is written as it was read, but a line break would end the line
+                builder.AppendJoin(';', parameter.Values.Select(value => ReplaceLineBreaks(value, "^n")));
                 continue;
             }
 
@@ -48,12 +48,13 @@ internal static class ContentLineWriter
             builder.AppendJoin(',', parameter.Values.Select(FormatParameterValue));
         }
 
-        builder.Append(':').Append(line.Value.Replace("\r\n", "\\n", StringComparison.Ordinal).Replace("\n", "\\n", StringComparison.Ordinal));
+        // A line break would end the line, so it is escaped in all the values, a lone CR included
+        builder.Append(':').Append(ReplaceLineBreaks(line.Value, "\\n"));
         return builder.ToString();
     }
 
     /// <summary>Replaces the line breaks (CRLF, CR and LF, not the other characters <see cref="string.ReplaceLineEndings()"/> knows, such as the form feed).</summary>
-    internal static string ReplaceLineBreaks(string value, string replacement) => value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Replace("\n", replacement, StringComparison.Ordinal);
+    internal static string ReplaceLineBreaks(string value, string replacement) => value.AsSpan().IndexOfAny('\r', '\n') < 0 ? value : value.Replace("\r\n", "\n", StringComparison.Ordinal).Replace('\r', '\n').Replace("\n", replacement, StringComparison.Ordinal);
 
     /// <summary>Replaces the escaped line breaks of a text (<c>\n</c>, not <c>\\n</c>) by CRLF, and keeps the other escapes: quoted-printable writes the line breaks as <c>=0D=0A</c>.</summary>
     private static string UnescapeLineBreaks(string value)
@@ -89,10 +90,10 @@ internal static class ContentLineWriter
 
     private static string FormatParameterValue(string value)
     {
-        if (value.Contains('^', StringComparison.Ordinal) || value.Contains('\n', StringComparison.Ordinal) || value.Contains('"', StringComparison.Ordinal))
+        if (value.AsSpan().IndexOfAny("^\r\n\"") >= 0)
         {
-            // [RFC 6868]; vCard 2.1 has no escaping, so the reader decodes it in all the versions
-            value = value.Replace("^", "^^", StringComparison.Ordinal).Replace("\n", "^n", StringComparison.Ordinal).Replace("\"", "^'", StringComparison.Ordinal);
+            // [RFC 6868]; vCard 2.1 has no escaping, so the reader decodes it in all the versions. A lone CR is a line break too.
+            value = ReplaceLineBreaks(value.Replace("^", "^^", StringComparison.Ordinal), "^n").Replace("\"", "^'", StringComparison.Ordinal);
         }
 
         return value.AsSpan().IndexOfAny(":;,") >= 0 ? "\"" + value + "\"" : value;

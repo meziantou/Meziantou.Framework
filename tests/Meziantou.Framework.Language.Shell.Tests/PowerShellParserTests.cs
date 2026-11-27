@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Language.Shell.Tests;
 
 public sealed class PowerShellParserTests
@@ -898,17 +900,34 @@ public sealed class PowerShellParserTests
     /// literal, parsing each key again at every level used to double the work per level of nesting.
     /// </summary>
     [Theory]
-    [InlineData("$(@{", 64)]
-    [InlineData("@{$(", 64)]
-    [InlineData("{@{", 64)]
-    [InlineData("@{", 4000)]
+    [InlineData("$(@{", 256)]
+    [InlineData("@{$(", 256)]
+    [InlineData("{@{", 256)]
+    [InlineData("@{", 1000)]
     public async Task HashLiteralKeysNestingHashLiterals_ParseInLinearTime(string fragment, int count)
     {
-        var text = string.Concat(Enumerable.Repeat(fragment, count));
+        // Compare two sizes instead of using a fixed time limit, which depends on the speed of the machine: four times
+        // the input is about four times slower when the time is linear, and sixteen times when it is quadratic. The
+        // fastest of two runs of each size reduces the noise of a busy machine, and a large size that runs fast enough
+        // passes anyway. The exponential time of the bug never ends, so each parse also has a generous time limit.
         var cancellationToken = TestContext.Current.CancellationToken;
-        var tree = await Task.Run(() => ShellSyntaxTree.ParseText(text, ShellDialect.PowerShell), cancellationToken).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+        await MeasureAsync(count / 4);
+        var small = Min(await MeasureAsync(count), await MeasureAsync(count));
+        var large = Min(await MeasureAsync(4 * count), await MeasureAsync(4 * count));
+        Assert.True(large < small * 8 || large < TimeSpan.FromMilliseconds(200), $"{count} repetitions took {small}, {4 * count} repetitions took {large}");
 
-        Assert.Equal(text, tree.GetRoot().ToFullString());
+        async Task<TimeSpan> MeasureAsync(int count)
+        {
+            var text = string.Concat(Enumerable.Repeat(fragment, count));
+            var stopwatch = Stopwatch.StartNew();
+            var tree = await Task.Run(() => ShellSyntaxTree.ParseText(text, ShellDialect.PowerShell), cancellationToken).WaitAsync(TimeSpan.FromMinutes(1), cancellationToken);
+            var elapsed = stopwatch.Elapsed;
+
+            Assert.Equal(text, tree.GetRoot().ToFullString());
+            return elapsed;
+        }
+
+        static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
     }
 
     [Fact]

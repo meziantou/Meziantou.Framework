@@ -625,20 +625,35 @@ public sealed class XmlSyntaxTreeTests
     [Fact]
     public void Formatter_FormatsManySiblingsInLinearTime()
     {
-        const int Count = 80_000;
-        var compact = "<r>" + string.Concat(Enumerable.Repeat("<a/>", Count)) + "</r>";
-        var expected = "<r>" + string.Concat(Enumerable.Repeat("\n  <a />", Count)) + "\n</r>";
+        // Compare two sizes instead of using a fixed time limit, which depends on the speed of the machine: four times
+        // the input is about four times slower when the time is linear, and sixteen times when it is quadratic. The
+        // fastest of two runs of each size reduces the noise of a busy machine, and a large size that runs fast enough
+        // passes anyway.
+        const int Count = 20_000;
+        Measure(Count / 4);
+        var small = Min(Measure(Count), Measure(Count));
+        var large = Min(Measure(4 * Count), Measure(4 * Count));
+        Assert.True(large < small * 8 || large < TimeSpan.FromMilliseconds(200), $"{Count} siblings took {small}, {4 * Count} siblings took {large}");
 
-        var stopwatch = Stopwatch.StartNew();
-        var formatted = Formatter.Format(XmlSyntaxTree.ParseText(compact)).ToFullString();
-        var formattedAgain = Formatter.Format(XmlSyntaxTree.ParseText(formatted)).ToFullString();
-        var withCarriageReturns = Formatter.Format(XmlSyntaxTree.ParseText("<r>" + string.Concat(Enumerable.Repeat("x&#13;<a/>", Count)) + "</r>")).ToFullString();
-        stopwatch.Stop();
+        static TimeSpan Measure(int count)
+        {
+            var compact = "<r>" + string.Concat(Enumerable.Repeat("<a/>", count)) + "</r>";
+            var expected = "<r>" + string.Concat(Enumerable.Repeat("\n  <a />", count)) + "\n</r>";
+            var carriageReturns = "<r>" + string.Concat(Enumerable.Repeat("x&#13;<a/>", count)) + "</r>";
 
-        Assert.Equal(expected, formatted);
-        Assert.Equal(expected, formattedAgain);
-        Assert.Equal("<r>" + string.Concat(Enumerable.Repeat("x&#xD;<a />", Count)) + "</r>", withCarriageReturns);
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(15), $"Formatting took {stopwatch.Elapsed}");
+            var stopwatch = Stopwatch.StartNew();
+            var formatted = Formatter.Format(XmlSyntaxTree.ParseText(compact)).ToFullString();
+            var formattedAgain = Formatter.Format(XmlSyntaxTree.ParseText(formatted)).ToFullString();
+            var withCarriageReturns = Formatter.Format(XmlSyntaxTree.ParseText(carriageReturns)).ToFullString();
+            var elapsed = stopwatch.Elapsed;
+
+            Assert.Equal(expected, formatted);
+            Assert.Equal(expected, formattedAgain);
+            Assert.Equal("<r>" + string.Concat(Enumerable.Repeat("x&#xD;<a />", count)) + "</r>", withCarriageReturns);
+            return elapsed;
+        }
+
+        static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
     }
 
     [Fact]

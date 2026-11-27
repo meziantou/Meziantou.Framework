@@ -540,13 +540,11 @@ public class HtmlSanitizerTests
     [Fact]
     public void Sanitize_DeeplyNestedUnknownElements_LinearTime()
     {
-        const int Depth = 99_000;
-        var html = string.Concat(Enumerable.Repeat("<x>", Depth));
-
-        var sanitizer = new HtmlSanitizer();
-        var stopwatch = Stopwatch.StartNew();
-        Assert.Equal("", sanitizer.SanitizeHtmlFragment(html));
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
+        AssertLinearTime(24_750, depth =>
+        {
+            var html = string.Concat(Enumerable.Repeat("<x>", depth));
+            Assert.Equal("", new HtmlSanitizer().SanitizeHtmlFragment(html));
+        });
     }
 
     // The attributes used to be removed and read by name, and the tokenizer compared each name with the previous ones,
@@ -556,27 +554,43 @@ public class HtmlSanitizerTests
     [InlineData("x", false)]
     public void Sanitize_ManyAttributes_LinearTime(string prefix, bool isAllowed)
     {
-        const int Count = 76_000;
-        var html = "<p " + string.Join(' ', Enumerable.Range(0, Count).Select(i => prefix + i.ToString(CultureInfo.InvariantCulture))) + ">a</p>";
-        var expected = isAllowed ? "<p " + string.Join(' ', Enumerable.Range(0, Count).Select(i => prefix + i.ToString(CultureInfo.InvariantCulture) + "=\"\"")) + ">a</p>" : "<p>a</p>";
-
-        var sanitizer = new HtmlSanitizer();
-        var stopwatch = Stopwatch.StartNew();
-        Assert.Equal(expected, sanitizer.SanitizeHtmlFragment(html));
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
+        AssertLinearTime(19_000, count =>
+        {
+            var html = "<p " + string.Join(' ', Enumerable.Range(0, count).Select(i => prefix + i.ToString(CultureInfo.InvariantCulture))) + ">a</p>";
+            var expected = isAllowed ? "<p " + string.Join(' ', Enumerable.Range(0, count).Select(i => prefix + i.ToString(CultureInfo.InvariantCulture) + "=\"\"")) + ">a</p>" : "<p>a</p>";
+            Assert.Equal(expected, new HtmlSanitizer().SanitizeHtmlFragment(html));
+        });
     }
 
     [Fact]
     public void Sanitize_DeeplyNestedUnknownElementsInterleavedWithAllowedElements_LinearTime()
     {
-        const int Depth = 49_500;
-        var html = string.Concat(Enumerable.Repeat("<x><span>", Depth));
-        var expected = string.Concat(Enumerable.Repeat("<span>", Depth)) + string.Concat(Enumerable.Repeat("</span>", Depth));
+        AssertLinearTime(12_375, depth =>
+        {
+            var html = string.Concat(Enumerable.Repeat("<x><span>", depth));
+            var expected = string.Concat(Enumerable.Repeat("<span>", depth)) + string.Concat(Enumerable.Repeat("</span>", depth));
+            Assert.Equal(expected, new HtmlSanitizer().SanitizeHtmlFragment(html));
+        });
+    }
 
-        var sanitizer = new HtmlSanitizer();
-        var stopwatch = Stopwatch.StartNew();
-        Assert.Equal(expected, sanitizer.SanitizeHtmlFragment(html));
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
+    // Compares two sizes instead of using a fixed time limit, which depends on the speed of the machine: four times the
+    // input is about four times slower when the time is linear, and sixteen times when it is quadratic. The fastest of two
+    // runs of each size reduces the noise of a busy machine, and a large size that runs fast enough passes anyway.
+    private static void AssertLinearTime(int size, Action<int> action)
+    {
+        action(size / 4);
+        var small = Min(Measure(size), Measure(size));
+        var large = Min(Measure(4 * size), Measure(4 * size));
+        Assert.True(large < small * 8 || large < TimeSpan.FromMilliseconds(200), $"Size {size} took {small}, size {4 * size} took {large}");
+
+        TimeSpan Measure(int size)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            action(size);
+            return stopwatch.Elapsed;
+        }
+
+        static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
     }
 
     [Fact]

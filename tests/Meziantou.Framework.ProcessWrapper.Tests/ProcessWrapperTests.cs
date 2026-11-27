@@ -1503,7 +1503,8 @@ public class ProcessWrapperTests
     {
         // The upstream command writes far more than the pipe's pause threshold while the downstream
         // command exits without draining it, which used to deadlock the pipe's writer against DisposeReader.
-        var pipeline = CreateLargeOutputCommand(1024 * 1024)
+        // The upstream command then writes to a broken pipe, so it may exit with a non-zero exit code.
+        var pipeline = CreateLargeOutputCommand(1024 * 1024).WithValidation(ProcessValidationMode.None)
             | CreateExitImmediatelyCommand().WithValidation(ProcessValidationMode.None);
 
         // The budget only exists to turn a deadlock into a failure instead of a run that never ends, so it has
@@ -1515,6 +1516,69 @@ public class ProcessWrapperTests
 
         Assert.Same(execution, completed);
         await execution;
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenDownstreamStopsReading_StopsUpstream()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var execution = Run();
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromMinutes(2)));
+
+        Assert.Same(execution, completed);
+        await execution;
+
+        static async Task Run()
+        {
+            #region ProcessWrapper_PipeOperatorBrokenPipe
+            // yes never ends by itself: it stops when head exits and closes the pipe.
+            // It then exits with a non-zero exit code, so its validation is disabled.
+            var result = await (ProcessWrapper.Create("yes").WithValidation(ProcessValidationMode.None)
+                | ProcessWrapper.Create("head").WithArguments("-n", "1"))
+                .ExecuteBufferedAsync();
+
+            Assert.Equal("y", result.Output.StandardOutput.Single().Text);
+            #endregion
+        }
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenDownstreamStopsReading_StopsEveryUpstreamCommand()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var pipeline = ProcessWrapper.Create("yes").WithValidation(ProcessValidationMode.None)
+            | ProcessWrapper.Create("cat").WithValidation(ProcessValidationMode.None)
+            | ProcessWrapper.Create("cat").WithValidation(ProcessValidationMode.None)
+            | ProcessWrapper.Create("head").WithArguments("-n", "1");
+
+        var execution = pipeline.ExecuteBufferedAsync();
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromMinutes(2)));
+
+        Assert.Same(execution, completed);
+        var result = await execution;
+        Assert.Equal("y", result.Output.StandardOutput.Single().Text);
+    }
+
+    [Fact]
+    public async Task ExecuteBufferedAsync_WithPipeOperator_WhenDownstreamStopsReading_UpstreamFailsValidation()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        // The upstream command ends with a broken pipe, which is a non-zero exit code.
+        var pipeline = ProcessWrapper.Create("yes")
+            | ProcessWrapper.Create("head").WithArguments("-n", "1");
+
+        var execution = pipeline.ExecuteBufferedAsync();
+        var completed = await Task.WhenAny(execution, Task.Delay(TimeSpan.FromMinutes(2)));
+
+        Assert.Same(execution, completed);
+        var exception = await Assert.ThrowsAsync<ProcessExecutionException>(async () => await execution);
+        Assert.False(exception.ExitCode.IsSuccess);
     }
 
     [Fact]

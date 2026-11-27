@@ -486,6 +486,10 @@ public class YamlNodeTest
         Assert.Equal("%TAG !t! tag.com,2000:app/\n--- !t!foo x", root["a"]!.ToString().ReplaceLineEndings("\n"));
         Assert.Equal("x", root["a"]!.ToObject<string>());
 
+        // A tag of one character has no prefix and suffix for a directive, and no verbatim form
+        Assert.Equal("%TAG !t! y\n--- !t!-light v", new YamlValue("v") { Tag = "y-light" }.ToString().ReplaceLineEndings("\n"));
+        Assert.Throws<YamlException>(() => new YamlValue("v") { Tag = "a" }.ToString());
+
         root["c"] = new YamlValue("z") { Tag = "other.org,2000:baz" };
         Assert.Equal("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n%TAG !t! other.org,2000:\n---\na: !e!foo x\nb: !u!bar y\nc: !t!baz z\n", WriteTo(stream, suppressDocumentTags: false));
 

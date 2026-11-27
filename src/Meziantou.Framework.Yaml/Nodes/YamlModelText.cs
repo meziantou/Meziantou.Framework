@@ -73,7 +73,7 @@ internal static class YamlModelText
             pending.Push(contents);
             while (pending.TryPop(out var node))
             {
-                if (node.Tag is { } tag && NeedsTagDirective(tag) && FindTagDirective(added, tag) is null)
+                if (node.Tag is { } tag && !Emitter.HasVerbatimForm(tag) && FindTagDirective(added, tag) is null)
                 {
                     if (FindTagDirective(declared, tag) is { } directive)
                     {
@@ -125,29 +125,6 @@ internal static class YamlModelText
         return new TagDirectiveCollection([.. kept ?? [], .. added ?? []]);
     }
 
-    // A local tag and a URI have a verbatim form. A URI starts with a scheme: a letter, then letters, digits, '+', '-'
-    // or '.', then ':'.
-    private static bool NeedsTagDirective(string tag)
-    {
-        if (tag is ['!', ..])
-            return false;
-
-        if (!char.IsAsciiLetter(tag[0]))
-            return true;
-
-        for (var i = 1; i < tag.Length; i++)
-        {
-            var c = tag[i];
-            if (c == ':')
-                return false;
-
-            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.'))
-                return true;
-        }
-
-        return true;
-    }
-
     // The emitter writes a tag with the handle of a directive whose prefix starts it, followed by a non-empty suffix
     private static TagDirective? FindTagDirective(IEnumerable<TagDirective>? directives, string tag)
     {
@@ -164,7 +141,7 @@ internal static class YamlModelText
     }
 
     // A new directive whose prefix ends at the last ':', '/' or '#' before the end of the tag, so that the tags that
-    // share it share the directive. A tag of one character has no prefix and suffix: it cannot be written.
+    // share it share the directive. A tag of one character has no prefix and suffix: the emitter throws.
     private static TagDirective? CreateTagDirective(string tag, TagDirectiveCollection? declared, List<TagDirective>? added)
     {
         if (tag.Length < 2)

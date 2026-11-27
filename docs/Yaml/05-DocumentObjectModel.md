@@ -146,7 +146,8 @@ Assert.Equal("""
 - A tag that is neither a local tag nor a URI, such as the `tag.com,2000:app/foo` of `%TAG !e! tag.com,2000:app/`, has
   no verbatim form: it is written with the handle of a `%TAG` directive. The directive of the document whose prefix
   starts the tag is written, even when `suppressDocumentTags` is `true`. Without one, such as for a node written alone,
-  a new directive is written, with the handle `!t!`.
+  a new directive is written, with the handle `!t!`. A tag of one character, such as `a`, cannot be written: a
+  directive needs a prefix and a suffix. Writing it throws a [YamlException](cref:Meziantou.Framework.Yaml.YamlException).
 - [DeepClone](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.DeepClone) copies a node and all its children; a stream and a document have their own.
 
 ## Keep the formatting

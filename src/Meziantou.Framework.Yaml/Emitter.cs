@@ -571,9 +571,38 @@ public partial class Emitter : IEmitter
             {
                 _tagData.Handle = tagDirective.Handle;
                 _tagData.Suffix = tag.Substring(tagDirective.Prefix.Length);
-                break;
+                return;
             }
         }
+
+        // The verbatim form of a tag that is neither a local tag nor a URI cannot be read back
+        if (!HasVerbatimForm(tag))
+            throw new YamlException($"The tag '{tag}' cannot be written: it is neither a local tag nor a URI, and no %TAG directive of the document has a prefix that starts it.");
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether a tag can be written in the verbatim form <c>!&lt;...&gt;</c>: a local tag, or a
+    /// URI, which starts with a scheme: a letter, then letters, digits, '+', '-' or '.', then ':'.
+    /// </summary>
+    internal static bool HasVerbatimForm(string tag)
+    {
+        if (tag is ['!', ..])
+            return true;
+
+        if (!char.IsAsciiLetter(tag[0]))
+            return false;
+
+        for (var i = 1; i < tag.Length; i++)
+        {
+            var c = tag[i];
+            if (c == ':')
+                return true;
+
+            if (!char.IsAsciiLetterOrDigit(c) && c is not ('+' or '-' or '.'))
+                return false;
+        }
+
+        return false;
     }
 
     /// <summary>Gets a value indicating whether a %TAG directive whose prefix is a local tag, other than the default "!", produces the tag.</summary>

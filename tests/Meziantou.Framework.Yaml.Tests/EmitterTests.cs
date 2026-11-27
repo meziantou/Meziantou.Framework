@@ -385,7 +385,37 @@ public class EmitterTests : YamlTest
     }
 
     [Theory]
-    [InlineData("%TAG !m! !m!!booly-\n--- !m!light green\n", "%TAG !m! !m!!booly-\n--- !m!light green\n...\n", "!m!!booly-light")]
+    [InlineData("a")]
+    [InlineData("y-light")]
+    [InlineData("tag.com,2000:app/foo")]
+    public void Emit_TagWithoutVerbatimFormOrDirective_Throws(string tag)
+    {
+        // The verbatim form of a tag that is neither a local tag nor a URI cannot be read back
+        using var writer = new StringWriter();
+        var emitter = new Emitter(writer);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart());
+
+        var exception = Assert.Throws<YamlException>(() => emitter.Emit(new Scalar(anchor: null, tag, "x", ScalarStyle.Plain, isPlainImplicit: false, isQuotedImplicit: false)));
+        Assert.Contains("cannot be written", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Emit_TagWithoutVerbatimForm_IsWrittenWithADirective()
+    {
+        using var writer = new StringWriter { NewLine = "\n" };
+        var emitter = new Emitter(writer);
+        emitter.Emit(new StreamStart());
+        emitter.Emit(new DocumentStart(version: null, new TagDirectiveCollection([new Tokens.TagDirective("!y!", "y-")]), isImplicit: true));
+        emitter.Emit(new Scalar(anchor: null, "y-light", "x", ScalarStyle.Plain, isPlainImplicit: false, isQuotedImplicit: false));
+        emitter.Emit(new DocumentEnd(isImplicit: true));
+        emitter.Emit(new StreamEnd());
+
+        Assert.Equal("%TAG !y! y-\n--- !y!light x\n...\n", writer.ToString());
+    }
+
+    [Theory]
+    [InlineData("%TAG !m! !m!!booly-\n--- !m!light green\n","%TAG !m! !m!!booly-\n--- !m!light green\n...\n", "!m!!booly-light")]
     [InlineData("%TAG !m! !m!!booly-\n--- !<!m!light> green\n", "%TAG !m! !m!!booly-\n--- !m%21light green\n...\n", "!m!light")]
     [InlineData("%TAG !! !!booly-\n--- !!light green\n", "%TAG !! !!booly-\n--- !!light green\n...\n", "!!booly-light")]
     [InlineData("%TAG !m! !other-\n--- !m!light green\n", "%TAG !m! !other-\n--- !m!light green\n...\n", "!other-light")]

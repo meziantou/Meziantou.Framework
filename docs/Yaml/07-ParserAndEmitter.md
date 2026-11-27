@@ -98,5 +98,9 @@ Assert.Equal("name: api\nports: [80, 443]\n", writer.ToString());
   value, it uses another one: a multi-line plain scalar is written quoted, and a literal or folded scalar that a block
   scalar cannot represent is written double-quoted. An empty plain scalar, which is a null, stays plain: as a mapping
   key, it is written as an explicit key (`? `), because `''` would read back as an empty string.
+- A tag is written with the handle of a `%TAG` directive of the document whose prefix starts it, such as `!!str` for
+  `tag:yaml.org,2002:str`, else in the verbatim form `!<...>`. Only a local tag (`!point`) and a URI
+  (`tag:example.com,2000:point`) have a verbatim form: the emitter throws a
+  [YamlException](cref:Meziantou.Framework.Yaml.YamlException) for another tag, such as `y-light`, that no directive starts.
 - A [node](05-DocumentObjectModel.md) writes its events to an emitter with [WriteTo](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.WriteTo), and lists them with
   [EnumerateEvents](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.EnumerateEvents).

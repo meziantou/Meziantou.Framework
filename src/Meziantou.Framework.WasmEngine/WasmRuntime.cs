@@ -153,6 +153,25 @@ public sealed class WasmRuntime : IDisposable
         }
     }
 
+    /// <summary>
+    /// Compiles a component of the component model (https://github.com/WebAssembly/component-model): its core modules
+    /// are compiled, and it is instantiated by <see cref="WasmStore.InstantiateComponent"/>. It can be called from any thread.
+    /// </summary>
+    /// <param name="bytes">The binary of the component. The component keeps the array: do not change it.</param>
+    /// <returns>The component.</returns>
+    /// <exception cref="WasmCompileException">The component is not valid.</exception>
+    /// <exception cref="ObjectDisposedException">The runtime is disposed.</exception>
+    public Components.WasmComponent CompileComponent(byte[] bytes)
+    {
+        ArgumentNullException.ThrowIfNull(bytes);
+        ThrowIfDisposed();
+        return Components.WasmComponent.Compile(this, bytes);
+    }
+
+    /// <summary>Returns whether a binary is a component (and not a core module): the layer of its preamble is 1.</summary>
+    /// <param name="bytes">The binary.</param>
+    public static bool IsComponent(ReadOnlySpan<byte> bytes) => Components.Binary.ComponentDecoder.IsComponent(bytes);
+
     /// <summary>Compiles a module. It can be called from any thread.</summary>
     /// <param name="bytes">The binary of the module, which is copied.</param>
     /// <returns>The module, which can be instantiated by the stores of the runtime.</returns>
@@ -170,16 +189,26 @@ public sealed class WasmRuntime : IDisposable
         return new ManagedStore(this, options ?? DefaultStoreOptions);
     }
 
-    /// <summary>Converts the text format of a module to its binary format (https://webassembly.github.io/spec/core/text/index.html).</summary>
-    /// <param name="text">The text of the module.</param>
-    /// <returns>The binary of the module. It is not validated: a module in the binary form, <c>(module binary "...")</c>, gives its bytes as they are.</returns>
+    /// <summary>
+    /// Converts the text format of a module (https://webassembly.github.io/spec/core/text/index.html) or of a component
+    /// (<c>(component ...)</c>, https://github.com/WebAssembly/component-model/blob/main/design/mvp/Explainer.md) to its binary format.
+    /// </summary>
+    /// <param name="text">The text of the module or of the component.</param>
+    /// <returns>
+    /// The binary of the module, or the binary of the component when the text is a component. It is not validated: a module
+    /// in the binary form, <c>(module binary "...")</c>, gives its bytes as they are.
+    /// </returns>
     /// <exception cref="FormatException">The text is not valid.</exception>
     public static byte[] WatToWasm(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
         try
         {
-            return Text.WatParser.ParseModule(text);
+            var nodes = Text.SExpressionReader.Parse(text);
+            if (nodes is [var node] && node.IsListOf("component"))
+                return Text.ComponentWatParser.ParseComponent(node);
+
+            return Text.WatParser.ParseModule(nodes);
         }
         catch (Text.WatException ex)
         {

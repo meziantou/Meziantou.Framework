@@ -1221,7 +1221,7 @@ internal sealed unsafe partial class Machine
 
             {
                 var calleeFp = sp - callee!.DefinedType.Parameters.Length;
-                exception = CallExternal(callee, calleeFp, sp);
+                exception = CallExternal(callee, calleeFp, sp, instance);
                 stack = _stack;
                 if (exception is not null)
                     goto HandleException;
@@ -1248,7 +1248,7 @@ internal sealed unsafe partial class Machine
                     continue;
                 }
 
-                exception = CallExternal(callee, fp, fp + parameterCount);
+                exception = CallExternal(callee, fp, fp + parameterCount, instance);
                 stack = _stack;
                 if (exception is not null)
                 {

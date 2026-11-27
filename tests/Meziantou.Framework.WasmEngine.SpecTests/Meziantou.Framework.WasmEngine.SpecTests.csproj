@@ -5,6 +5,9 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
+    <!-- The WASI test suite (WasiTests) -->
+    <ProjectReference Include="../../src/Meziantou.Framework.WasmEngine.Wasi/Meziantou.Framework.WasmEngine.Wasi.csproj" />
     <ProjectReference Include="../../src/Meziantou.Framework.FullPath/Meziantou.Framework.FullPath.csproj" />
+    <ProjectReference Include="../../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
   </ItemGroup>
 </Project>

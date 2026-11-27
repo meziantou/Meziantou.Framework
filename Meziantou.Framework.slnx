@@ -509,6 +509,7 @@
     <Project Path="src/Meziantou.Framework.VectorGraphics/Meziantou.Framework.VectorGraphics.csproj" />
     <Project Path="src/Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
     <Project Path="src/Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" />
+    <Project Path="src/Meziantou.Framework.WasmEngine.Wasi/Meziantou.Framework.WasmEngine.Wasi.csproj" />
     <Project Path="src/Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.DevTools.Tool/Meziantou.Framework.WebPlatform.DevTools.Tool.csproj" />
     <Project Path="src/Meziantou.Framework.WebPlatform.DevTools/Meziantou.Framework.WebPlatform.DevTools.csproj" />
@@ -736,6 +737,7 @@
     <Project Path="tests/Meziantou.Framework.Versioning.Tests/Meziantou.Framework.Versioning.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WasmEngine.SpecTests/Meziantou.Framework.WasmEngine.SpecTests.csproj" />
     <Project Path="tests/Meziantou.Framework.WasmEngine.Tests/Meziantou.Framework.WasmEngine.Tests.csproj" />
+    <Project Path="tests/Meziantou.Framework.WasmEngine.Wasi.Tests/Meziantou.Framework.WasmEngine.Wasi.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.AotTests/Meziantou.Framework.WebPlatform.AotTests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.DevTools.Tests/Meziantou.Framework.WebPlatform.DevTools.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.WebPlatform.Imaging.Tests/Meziantou.Framework.WebPlatform.Imaging.Tests.csproj" />
@@ -847,6 +849,7 @@
     <Project Path="fuzz/Meziantou.Framework.VectorGraphics.Fuzz/Meziantou.Framework.VectorGraphics.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.Versioning.Fuzz/Meziantou.Framework.Versioning.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WasmEngine.Fuzz/Meziantou.Framework.WasmEngine.Fuzz.csproj" />
+    <Project Path="fuzz/Meziantou.Framework.WasmEngine.Wasi.Fuzz/Meziantou.Framework.WasmEngine.Wasi.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
     <Project Path="fuzz/Meziantou.Framework.WebTransport.Fuzz/Meziantou.Framework.WebTransport.Fuzz.csproj" />

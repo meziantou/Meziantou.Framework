@@ -1,0 +1,2 @@
+compiled:rust-wasip3/http-client-trailers # the HTTP/1.1 client of .NET does not send the trailers of the requests
+host:rust-wasip3/http-client-trailers # the HTTP/1.1 client of .NET does not send the trailers of the requests

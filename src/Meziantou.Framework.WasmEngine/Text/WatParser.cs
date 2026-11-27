@@ -77,9 +77,12 @@ internal sealed partial class WatParser
 
     /// <summary>Converts a text that is a module, or the fields of a module.</summary>
     /// <exception cref="FormatException">The text is not valid.</exception>
-    public static byte[] ParseModule(string text)
+    public static byte[] ParseModule(string text) => ParseModule(SExpressionReader.Parse(text));
+
+    /// <summary>Converts the nodes of a text that is a module, or the fields of a module.</summary>
+    /// <exception cref="FormatException">The text is not valid.</exception>
+    public static byte[] ParseModule(List<SNode> nodes)
     {
-        var nodes = SExpressionReader.Parse(text);
         if (nodes.Count == 1 && nodes[0].IsListOf("module"))
             return EncodeModule(nodes[0]);
 

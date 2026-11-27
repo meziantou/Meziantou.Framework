@@ -983,6 +983,190 @@ public sealed class WasmRuntimeTests
     }
 
     [Fact]
+    public void Documentation_HostFunctionCaller()
+    {
+        #region WasmEngine_HostFunctionCaller
+        using var runtime = new WasmRuntime();
+        var module = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (import "env" "print" (func $print (param i32 i32)))
+              (memory (export "memory") 1)
+              (data (i32.const 16) "Hello, world")
+              (func (export "run")
+                (call $print (i32.const 16) (i32.const 12))))
+            """));
+
+        using var store = runtime.CreateStore();
+        var printed = new List<string>();
+
+        // The host function receives its caller: the instance whose code called it, whose memory holds the text
+        var print = store.CreateFunction(
+            new WasmFunctionType([WasmValueType.I32, WasmValueType.I32], []),
+            (caller, arguments, results) =>
+            {
+                var memory = caller.GetMemory("memory")!;
+                printed.Add(Encoding.UTF8.GetString(memory.GetSpan().Slice(arguments[0].I32, arguments[1].I32)));
+            });
+
+        var instance = store.Instantiate(module, new WasmImports().Define("env", "print", print));
+        instance.GetFunction("run")!.Call();
+
+        Assert.Equal(["Hello, world"], printed);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(2)]
+    public void HostFunctions_Caller_IsTheInstanceOfTheCallingCode(int threshold)
+    {
+        using var runtime = new WasmRuntime(new WasmRuntimeOptions { CompilationThreshold = threshold });
+        var library = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (import "env" "host" (func $host (param i32)))
+              (func (export "relay") (param i32) (call $host (local.get 0))))
+            """));
+        var module = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (type $t (func (param i32)))
+              (import "env" "host" (func $host (type $t)))
+              (import "lib" "relay" (func $relay (type $t)))
+              (table $table 1 funcref)
+              (elem (table $table) (i32.const 0) func $host)
+              (elem declare func $host)
+              (func $tail (param i32) (return_call $host (local.get 0)))
+              (func $tail_indirect (param i32) (return_call_indirect $table (type $t) (local.get 0) (i32.const 0)))
+              (func $tail_ref (param i32) (return_call_ref $t (local.get 0) (ref.func $host)))
+              (func (export "run") (param $n i32)
+                (loop $next
+                  (call $host (i32.const 1))
+                  (call_indirect $table (type $t) (i32.const 2) (i32.const 0))
+                  (call_ref $t (i32.const 3) (ref.func $host))
+                  (call $tail (i32.const 4))
+                  (call $tail_indirect (i32.const 5))
+                  (call $tail_ref (i32.const 6))
+                  (call $relay (i32.const 7))
+                  (br_if $next (local.tee $n (i32.sub (local.get $n) (i32.const 1)))))))
+            """));
+        using var store = runtime.CreateStore();
+        var calls = new List<(int Value, WasmInstance? Caller, WasmStore Store)>();
+        var host = store.CreateFunction(
+            new WasmFunctionType([WasmValueType.I32], []),
+            (caller, arguments, results) => calls.Add((arguments[0].I32, caller.Instance, caller.Store)));
+        var imports = new WasmImports().Define("env", "host", host);
+        var libraryInstance = store.Instantiate(library, imports);
+        imports.Define("lib", libraryInstance);
+        var first = store.Instantiate(module, imports);
+        var second = store.Instantiate(module, imports);
+
+        // The calls of the code of an instance, direct, indirect, by reference or tail calls, give that instance; the
+        // function of the library gives the instance of the library
+        foreach (var instance in new[] { first, second, first })
+        {
+            calls.Clear();
+            instance.GetFunction("run")!.Call(WasmValue.FromI32(10));
+            Assert.HasCount(70, calls);
+            foreach (var (value, caller, callerStore) in calls)
+            {
+                Assert.Same(value == 7 ? libraryInstance : instance, caller);
+                Assert.Same(store, callerStore);
+            }
+        }
+
+        // A call from .NET has no calling instance
+        calls.Clear();
+        host.Call(WasmValue.FromI32(8));
+        var (_, hostCaller, _) = Assert.Single(calls);
+        Assert.Null(hostCaller);
+    }
+
+    [Fact]
+    public void HostFunctions_Caller_OfLongLoopsContinuedInCompiledCode_IsTheInstance()
+    {
+        // The function is called once: its loop continues in .NET code (OSR) after 100 iterations
+        using var runtime = new WasmRuntime(new WasmRuntimeOptions { CompilationThreshold = 1 });
+        var module = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (import "env" "host" (func $host))
+              (func (export "run") (param $n i32)
+                (loop $next
+                  (call $host)
+                  (br_if $next (local.tee $n (i32.sub (local.get $n) (i32.const 1)))))))
+            """));
+        using var store = runtime.CreateStore();
+        var callers = new List<WasmInstance?>();
+        var host = store.CreateFunction(new WasmFunctionType([], []), (caller, arguments, results) => callers.Add(caller.Instance));
+        var instance = store.Instantiate(module, new WasmImports().Define("env", "host", host));
+        instance.GetFunction("run")!.Call(WasmValue.FromI32(1000));
+
+        Assert.HasCount(1000, callers);
+        Assert.All(callers, caller => Assert.Same(instance, caller));
+    }
+
+    [Fact]
+    public void HostFunctions_Caller_OfTheStartFunction_IsTheNewInstance()
+    {
+        var module = Compile("""
+            (module
+              (import "env" "init" (func $init))
+              (memory (export "memory") 1)
+              (start $init))
+            """);
+        using var store = Runtime.CreateStore();
+        WasmInstance? startCaller = null;
+        var init = store.CreateFunction(
+            new WasmFunctionType([], []),
+            (caller, arguments, results) =>
+            {
+                startCaller = caller.Instance;
+                caller.GetMemory("memory")!.GetSpan()[0] = 42;
+            });
+        var instance = store.Instantiate(module, new WasmImports().Define("env", "init", init));
+
+        Assert.Same(instance, startCaller);
+        Assert.Equal(42, instance.GetMemory("memory")!.GetSpan()[0]);
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(0)]
+    [InlineData(2)]
+    public void HostFunctions_Caller_GrowsTheMemoryOfTheCaller(int threshold)
+    {
+        using var runtime = new WasmRuntime(new WasmRuntimeOptions { CompilationThreshold = threshold });
+        var module = runtime.Compile(WasmRuntime.WatToWasm("""
+            (module
+              (import "env" "grow" (func $grow (result i32)))
+              (memory (export "memory") 1)
+              (func (export "run") (result i32)
+                (local $i i32) (local $sum i32) (local $address i32)
+                (loop $next
+                  ;; The host function grows the memory by a page, and writes the index of the iteration in the new page
+                  (local.set $address (call $grow))
+                  (local.set $sum (i32.add (local.get $sum) (i32.load (local.get $address))))
+                  (br_if $next (i32.lt_u (local.tee $i (i32.add (local.get $i) (i32.const 1))) (i32.const 5))))
+                (i32.add (local.get $sum) (memory.size))))
+            """));
+        using var store = runtime.CreateStore();
+        var iteration = 0;
+        var grow = store.CreateFunction(
+            new WasmFunctionType([], [WasmValueType.I32]),
+            (caller, arguments, results) =>
+            {
+                var memory = caller.GetMemory("memory")!;
+                var page = memory.Grow(1);
+                var address = (int)(page * 65536);
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(memory.GetSpan()[address..], ++iteration);
+                results[0] = WasmValue.FromI32(address);
+            });
+        var instance = store.Instantiate(module, new WasmImports().Define("env", "grow", grow));
+
+        // 1 + 2 + 3 + 4 + 5, and 6 pages
+        Assert.Equal(15 + 6, instance.GetFunction("run")!.Call()[0].I32);
+    }
+
+    [Fact]
     public async Task Documentation_SharedMemory()
     {
         #region WasmEngine_SharedMemory

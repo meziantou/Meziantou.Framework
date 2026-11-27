@@ -47,6 +47,54 @@ Assert.Equal([1, 2], logged);
   with [WasmImportAttribute](cref:Meziantou.Framework.WasmEngine.WasmImportAttribute): see
   [Typed exports and imports](10-SourceGenerator.md).
 
+## The caller
+
+A host function that reads or writes the memory of the module, such as a function that prints a string, needs the
+instance that called it: the [CreateFunction](cref:Meziantou.Framework.WasmEngine.WasmStore.CreateFunction(Meziantou.Framework.WasmEngine.WasmFunctionType,Meziantou.Framework.WasmEngine.WasmHostCallerCallback,System.Object))
+overload that takes a [WasmHostCallerCallback](cref:Meziantou.Framework.WasmEngine.WasmHostCallerCallback) gives it to
+the callback, as a [WasmCaller](cref:Meziantou.Framework.WasmEngine.WasmCaller):
+
+<!-- ref:../../tests/Meziantou.Framework.WasmEngine.Tests/WasmRuntimeTests.cs;region=WasmEngine_HostFunctionCaller;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var runtime = new WasmRuntime();
+var module = runtime.Compile(WasmRuntime.WatToWasm("""
+    (module
+      (import "env" "print" (func $print (param i32 i32)))
+      (memory (export "memory") 1)
+      (data (i32.const 16) "Hello, world")
+      (func (export "run")
+        (call $print (i32.const 16) (i32.const 12))))
+    """));
+
+using var store = runtime.CreateStore();
+var printed = new List<string>();
+
+// The host function receives its caller: the instance whose code called it, whose memory holds the text
+var print = store.CreateFunction(
+    new WasmFunctionType([WasmValueType.I32, WasmValueType.I32], []),
+    (caller, arguments, results) =>
+    {
+        var memory = caller.GetMemory("memory")!;
+        printed.Add(Encoding.UTF8.GetString(memory.GetSpan().Slice(arguments[0].I32, arguments[1].I32)));
+    });
+
+var instance = store.Instantiate(module, new WasmImports().Define("env", "print", print));
+instance.GetFunction("run")!.Call();
+
+Assert.Equal(["Hello, world"], printed);
+```
+<!-- endref -->
+
+- [Instance](cref:Meziantou.Framework.WasmEngine.WasmCaller.Instance) is the instance whose code called the function,
+  directly, through a table, by reference or with a tail call. When a function of another instance (an import) calls the
+  host function, the caller is that other instance. For the start function of a module, it is the instance being
+  instantiated. It is null when .NET calls the function ([Invoke](cref:Meziantou.Framework.WasmEngine.WasmFunction.Invoke)).
+- [GetMemory](cref:Meziantou.Framework.WasmEngine.WasmCaller.GetMemory) and
+  [GetExport](cref:Meziantou.Framework.WasmEngine.WasmCaller.GetExport) return the exports of the calling instance.
+- The bytes of a memory are replaced when it grows: get the span of the memory at each call, after the calls that can
+  grow it.
+- A `WasmCaller` is a `ref struct`: it is valid only while the callback runs.
+
 The other imports are created by [CreateMemory](cref:Meziantou.Framework.WasmEngine.WasmStore.CreateMemory),
 [CreateTable](cref:Meziantou.Framework.WasmEngine.WasmStore.CreateTable),
 [CreateGlobal](cref:Meziantou.Framework.WasmEngine.WasmStore.CreateGlobal) and

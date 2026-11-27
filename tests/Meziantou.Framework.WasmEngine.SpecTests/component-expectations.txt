@@ -1,0 +1,26 @@
+async/big-interleaving-test.wast:1004 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: unreachable
+async/big-interleaving-test.wast:1016 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1034 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1094 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1128 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1174 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1202 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1230 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1276 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1326 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1358 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1414 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1462 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1539 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: cannot drop an end with a pending copy
+async/big-interleaving-test.wast:1551 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1561 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1574 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1590 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1603 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1614 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1625 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1638 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:1654 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:943 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: unreachable
+async/big-interleaving-test.wast:954 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped
+async/big-interleaving-test.wast:966 # listed in nyi.txt of the test suite: assert_return: WasmTrapException: the store is locked down: a component trapped

@@ -10,6 +10,14 @@ namespace Meziantou.Framework.WasmEngine
         public WasmAllocationException(string message, System.Exception? innerException) { }
     }
 
+    public ref struct WasmCaller
+    {
+        public Meziantou.Framework.WasmEngine.WasmInstance? Instance { get => throw null; }
+        public Meziantou.Framework.WasmEngine.WasmStore Store { get => throw null; }
+        public Meziantou.Framework.WasmEngine.WasmExtern? GetExport(string name) => throw null;
+        public Meziantou.Framework.WasmEngine.WasmMemory? GetMemory(string name) => throw null;
+    }
+
     public sealed class WasmCompileException : Meziantou.Framework.WasmEngine.WasmException
     {
         public WasmCompileException(string message) { }
@@ -120,6 +128,8 @@ namespace Meziantou.Framework.WasmEngine
 
     public delegate void WasmHostCallback(System.ReadOnlySpan<Meziantou.Framework.WasmEngine.WasmValue> arguments, System.Span<Meziantou.Framework.WasmEngine.WasmValue> results);
 
+    public delegate void WasmHostCallerCallback(Meziantou.Framework.WasmEngine.WasmCaller caller, System.ReadOnlySpan<Meziantou.Framework.WasmEngine.WasmValue> arguments, System.Span<Meziantou.Framework.WasmEngine.WasmValue> results);
+
     public sealed class WasmHostReference
     {
         public object Value { get => throw null; }
@@ -226,8 +236,10 @@ namespace Meziantou.Framework.WasmEngine
         public Meziantou.Framework.WasmEngine.WasmModule Compile(System.ReadOnlySpan<byte> bytes) => throw null;
         public Meziantou.Framework.WasmEngine.WasmModule Compile(byte[] bytes) => throw null;
         public Meziantou.Framework.WasmEngine.WasmModule Compile(byte[] bytes, System.ReadOnlySpan<byte> codeCache) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.WasmComponent CompileComponent(byte[] bytes) => throw null;
         public Meziantou.Framework.WasmEngine.WasmStore CreateStore(Meziantou.Framework.WasmEngine.WasmStoreOptions? options = null) => throw null;
         public void Dispose() { }
+        public static bool IsComponent(System.ReadOnlySpan<byte> bytes) => throw null;
         public bool Validate(System.ReadOnlySpan<byte> bytes) => throw null;
         public static byte[] WatToWasm(string text) => throw null;
     }
@@ -258,6 +270,7 @@ namespace Meziantou.Framework.WasmEngine
         public abstract Meziantou.Framework.WasmEngine.WasmRuntime Runtime { get; }
         public abstract Meziantou.Framework.WasmEngine.WasmExceptionReference CreateException(Meziantou.Framework.WasmEngine.WasmTag tag, System.ReadOnlySpan<Meziantou.Framework.WasmEngine.WasmValue> payload);
         public abstract Meziantou.Framework.WasmEngine.WasmFunction CreateFunction(Meziantou.Framework.WasmEngine.WasmFunctionType type, Meziantou.Framework.WasmEngine.WasmHostCallback callback, object? state = null);
+        public Meziantou.Framework.WasmEngine.WasmFunction CreateFunction(Meziantou.Framework.WasmEngine.WasmFunctionType type, Meziantou.Framework.WasmEngine.WasmHostCallerCallback callback, object? state = null) => throw null;
         public abstract Meziantou.Framework.WasmEngine.WasmGlobal CreateGlobal(Meziantou.Framework.WasmEngine.WasmGlobalType type, Meziantou.Framework.WasmEngine.WasmValue value);
         public abstract Meziantou.Framework.WasmEngine.WasmMemory CreateMemory(Meziantou.Framework.WasmEngine.WasmMemoryType type);
         public abstract Meziantou.Framework.WasmEngine.WasmTable CreateTable(Meziantou.Framework.WasmEngine.WasmTableType type, Meziantou.Framework.WasmEngine.WasmValue value);
@@ -269,6 +282,7 @@ namespace Meziantou.Framework.WasmEngine
         public Meziantou.Framework.WasmEngine.WasmInstance Instantiate(Meziantou.Framework.WasmEngine.WasmModule module) => throw null;
         public Meziantou.Framework.WasmEngine.WasmInstance Instantiate(Meziantou.Framework.WasmEngine.WasmModule module, Meziantou.Framework.WasmEngine.WasmImports imports) => throw null;
         public abstract Meziantou.Framework.WasmEngine.WasmInstance Instantiate(Meziantou.Framework.WasmEngine.WasmModule module, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.WasmExtern> imports);
+        public Meziantou.Framework.WasmEngine.Components.WasmComponentInstance InstantiateComponent(Meziantou.Framework.WasmEngine.Components.WasmComponent component, Meziantou.Framework.WasmEngine.Components.ComponentImports? imports = null) => throw null;
         public abstract void SetArrayElement(Meziantou.Framework.WasmEngine.WasmGcObject array, int index, Meziantou.Framework.WasmEngine.WasmValue value, Meziantou.Framework.WasmEngine.WasmValueType type);
     }
 
@@ -420,5 +434,496 @@ namespace Meziantou.Framework.WasmEngine
     public sealed class WasmWaitSignal
     {
         public bool IsSet { get => throw null; }
+    }
+}
+namespace Meziantou.Framework.WasmEngine.Components
+{
+    public abstract class ComponentAsyncValueType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? ElementType { get => throw null; }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentBorrowType : Meziantou.Framework.WasmEngine.Components.ComponentHandleType
+    {
+        public ComponentBorrowType(Meziantou.Framework.WasmEngine.Components.ComponentResourceType resource) { }
+    }
+
+    public sealed class ComponentCallContext
+    {
+        public System.Threading.CancellationToken CancellationToken { get => throw null; init { } }
+        public Meziantou.Framework.WasmEngine.WasmStore Store { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentFunctionType Type { get => throw null; }
+        public void RunInBackground(System.Func<System.Threading.Tasks.Task> operation) { }
+    }
+
+    public readonly struct ComponentCase : System.IEquatable<Meziantou.Framework.WasmEngine.Components.ComponentCase>
+    {
+        public string Name { get => throw null; init { } }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? Type { get => throw null; init { } }
+        public ComponentCase(string Name, Meziantou.Framework.WasmEngine.Components.ComponentValueType? Type) { }
+        public void Deconstruct(out string Name, out Meziantou.Framework.WasmEngine.Components.ComponentValueType? Type) => throw null;
+        public bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentCase other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WasmEngine.Components.ComponentCase left, Meziantou.Framework.WasmEngine.Components.ComponentCase right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WasmEngine.Components.ComponentCase left, Meziantou.Framework.WasmEngine.Components.ComponentCase right) => throw null;
+    }
+
+    public sealed class ComponentComponentType : Meziantou.Framework.WasmEngine.Components.ComponentType
+    {
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor> Exports { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor> Imports { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ComponentEnumType : Meziantou.Framework.WasmEngine.Components.ComponentLabelsType
+    {
+        public ComponentEnumType(System.Collections.Generic.IEnumerable<string> labels) { }
+    }
+
+    public sealed class ComponentErrorContext
+    {
+        public string DebugMessage { get => throw null; }
+        public ComponentErrorContext(string debugMessage) { }
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct ComponentExternDescriptor : System.IEquatable<Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor>
+    {
+        public string Name { get => throw null; init { } }
+        public Meziantou.Framework.WasmEngine.Components.ComponentExternType Type { get => throw null; init { } }
+        public ComponentExternDescriptor(string Name, Meziantou.Framework.WasmEngine.Components.ComponentExternType Type) { }
+        public void Deconstruct(out string Name, out Meziantou.Framework.WasmEngine.Components.ComponentExternType Type) => throw null;
+        public bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor left, Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor left, Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor right) => throw null;
+    }
+
+    public enum ComponentExternKind
+    {
+        CoreModule = 0,
+        Function = 1,
+        Value = 2,
+        Type = 3,
+        Component = 4,
+        Instance = 5,
+    }
+
+    public sealed class ComponentExternType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentExternKind Kind { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentModuleType? ModuleType { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentType? Type { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? ValueType { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public readonly struct ComponentField : System.IEquatable<Meziantou.Framework.WasmEngine.Components.ComponentField>
+    {
+        public string Name { get => throw null; init { } }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType Type { get => throw null; init { } }
+        public ComponentField(string Name, Meziantou.Framework.WasmEngine.Components.ComponentValueType Type) { }
+        public void Deconstruct(out string Name, out Meziantou.Framework.WasmEngine.Components.ComponentValueType Type) => throw null;
+        public bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentField other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WasmEngine.Components.ComponentField left, Meziantou.Framework.WasmEngine.Components.ComponentField right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WasmEngine.Components.ComponentField left, Meziantou.Framework.WasmEngine.Components.ComponentField right) => throw null;
+    }
+
+    public sealed class ComponentFlagsType : Meziantou.Framework.WasmEngine.Components.ComponentLabelsType
+    {
+        public ComponentFlagsType(System.Collections.Generic.IEnumerable<string> labels) { }
+    }
+
+    public sealed class ComponentFunction
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentFunctionType? Type { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValue? Call(params Meziantou.Framework.WasmEngine.Components.ComponentValue[] arguments) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentFunction FromAsyncCallback(Meziantou.Framework.WasmEngine.Components.ComponentHostAsyncCallback callback, Meziantou.Framework.WasmEngine.Components.ComponentFunctionType? type = null) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentFunction FromCallback(Meziantou.Framework.WasmEngine.Components.ComponentHostCallback callback, Meziantou.Framework.WasmEngine.Components.ComponentFunctionType? type = null) => throw null;
+    }
+
+    public sealed class ComponentFunctionType : Meziantou.Framework.WasmEngine.Components.ComponentType, System.IEquatable<Meziantou.Framework.WasmEngine.Components.ComponentFunctionType>
+    {
+        public bool IsAsync { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentField> Parameters { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? Result { get => throw null; }
+        public ComponentFunctionType(System.Collections.Generic.IEnumerable<Meziantou.Framework.WasmEngine.Components.ComponentField> parameters, Meziantou.Framework.WasmEngine.Components.ComponentValueType? result, bool isAsync = false) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.WasmEngine.Components.ComponentFunctionType? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ComponentFutureReader : System.IDisposable
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? ElementType { get => throw null; }
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.WasmEngine.Components.ComponentValue?> ReadAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class ComponentFutureType : Meziantou.Framework.WasmEngine.Components.ComponentAsyncValueType
+    {
+        public ComponentFutureType(Meziantou.Framework.WasmEngine.Components.ComponentValueType? elementType) { }
+    }
+
+    public sealed class ComponentFutureWriter
+    {
+        public static Meziantou.Framework.WasmEngine.Components.ComponentFutureWriter Create(Meziantou.Framework.WasmEngine.Components.ComponentValueType? elementType, out Meziantou.Framework.WasmEngine.Components.ComponentValue readable) => throw null;
+        public void Write(Meziantou.Framework.WasmEngine.Components.ComponentValue? value) { }
+    }
+
+    public abstract class ComponentHandleType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentResourceType Resource { get => throw null; }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public delegate System.Threading.Tasks.ValueTask<Meziantou.Framework.WasmEngine.Components.ComponentValue?> ComponentHostAsyncCallback(Meziantou.Framework.WasmEngine.Components.ComponentCallContext context, Meziantou.Framework.WasmEngine.Components.ComponentValue[] arguments);
+
+    public delegate Meziantou.Framework.WasmEngine.Components.ComponentValue? ComponentHostCallback(Meziantou.Framework.WasmEngine.Components.ComponentCallContext context, System.ReadOnlySpan<Meziantou.Framework.WasmEngine.Components.ComponentValue> arguments);
+
+    public sealed class ComponentImports
+    {
+        public System.Collections.Generic.IEnumerable<string> Names { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports Define(string name, Meziantou.Framework.WasmEngine.Components.ComponentFunction function) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports Define(string name, Meziantou.Framework.WasmEngine.Components.ComponentImports instance) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports Define(string name, Meziantou.Framework.WasmEngine.Components.ComponentType type) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports Define(string name, Meziantou.Framework.WasmEngine.Components.WasmComponent component) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports Define(string name, Meziantou.Framework.WasmEngine.Components.WasmComponentInstance instance) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports Define(string name, Meziantou.Framework.WasmEngine.WasmModule module) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentImports DefineAll(Meziantou.Framework.WasmEngine.Components.WasmComponentInstance instance) => throw null;
+    }
+
+    public sealed class ComponentInstanceType : Meziantou.Framework.WasmEngine.Components.ComponentType
+    {
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentExternDescriptor> Exports { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentExternType? GetExport(string name) => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public abstract class ComponentLabelsType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public System.Collections.Immutable.ImmutableArray<string> Labels { get => throw null; }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentListType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType ElementType { get => throw null; }
+        public int? FixedLength { get => throw null; }
+        public ComponentListType(Meziantou.Framework.WasmEngine.Components.ComponentValueType elementType, int? fixedLength = null) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentMapType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType KeyType { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType ValueType { get => throw null; }
+        public ComponentMapType(Meziantou.Framework.WasmEngine.Components.ComponentValueType keyType, Meziantou.Framework.WasmEngine.Components.ComponentValueType valueType) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentModuleType
+    {
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.WasmExport> Exports { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.WasmImport> Imports { get => throw null; }
+    }
+
+    public sealed class ComponentOptionType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType Type { get => throw null; }
+        public ComponentOptionType(Meziantou.Framework.WasmEngine.Components.ComponentValueType type) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentOwnType : Meziantou.Framework.WasmEngine.Components.ComponentHandleType
+    {
+        public ComponentOwnType(Meziantou.Framework.WasmEngine.Components.ComponentResourceType resource) { }
+    }
+
+    public sealed class ComponentPrimitiveType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentRecordType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentField> Fields { get => throw null; }
+        public ComponentRecordType(System.Collections.Generic.IEnumerable<Meziantou.Framework.WasmEngine.Components.ComponentField> fields) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentResource
+    {
+        public object? Representation { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentResourceType Type { get => throw null; }
+        public ComponentResource(Meziantou.Framework.WasmEngine.Components.ComponentResourceType type, object? representation) { }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ComponentResourceType : Meziantou.Framework.WasmEngine.Components.ComponentType
+    {
+        public bool IsHostResource { get => throw null; }
+        public string? Name { get => throw null; }
+        public ComponentResourceType(string? name = null, System.Action<Meziantou.Framework.WasmEngine.Components.ComponentResource>? destructor = null) { }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class ComponentResultType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? Error { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? Ok { get => throw null; }
+        public ComponentResultType(Meziantou.Framework.WasmEngine.Components.ComponentValueType? ok, Meziantou.Framework.WasmEngine.Components.ComponentValueType? error) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class ComponentStreamReader : System.IDisposable
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueType? ElementType { get => throw null; }
+        public bool IsCompleted { get => throw null; }
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> destination, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask<Meziantou.Framework.WasmEngine.Components.ComponentValue[]> ReadAsync(int maxCount, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class ComponentStreamType : Meziantou.Framework.WasmEngine.Components.ComponentAsyncValueType
+    {
+        public ComponentStreamType(Meziantou.Framework.WasmEngine.Components.ComponentValueType? elementType) { }
+    }
+
+    public sealed class ComponentStreamWriter : System.IDisposable
+    {
+        public bool IsReaderDropped { get => throw null; }
+        public System.Threading.CancellationToken ReaderDroppedToken { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentStreamWriter Create(Meziantou.Framework.WasmEngine.Components.ComponentValueType? elementType, out Meziantou.Framework.WasmEngine.Components.ComponentValue readable) => throw null;
+        public void Dispose() { }
+        public System.Threading.Tasks.ValueTask<int> WriteAsync(Meziantou.Framework.WasmEngine.Components.ComponentValue[] values, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.ValueTask<int> WriteAsync(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class ComponentTupleType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentValueType> Types { get => throw null; }
+        public ComponentTupleType(System.Collections.Generic.IEnumerable<Meziantou.Framework.WasmEngine.Components.ComponentValueType> types) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public abstract class ComponentType
+    {
+    }
+
+    public readonly struct ComponentValue : System.IEquatable<Meziantou.Framework.WasmEngine.Components.ComponentValue>
+    {
+        public string CaseName { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueKind Kind { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue NoneValue { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValue? Payload { get => throw null; }
+        public bool AsBool() => throw null;
+        public byte[] AsBytes() => throw null;
+        public System.Text.Rune AsChar() => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentErrorContext AsErrorContext() => throw null;
+        public float AsF32() => throw null;
+        public double AsF64() => throw null;
+        public System.Collections.Generic.IReadOnlyList<string> AsFlags() => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentFutureReader AsFutureReader() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.Components.ComponentValue> AsList() => throw null;
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.Components.ComponentValue> AsRecord() => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentResource AsResource() => throw null;
+        public short AsS16() => throw null;
+        public int AsS32() => throw null;
+        public long AsS64() => throw null;
+        public sbyte AsS8() => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentStreamReader AsStreamReader() => throw null;
+        public string AsString() => throw null;
+        public ushort AsU16() => throw null;
+        public uint AsU32() => throw null;
+        public ulong AsU64() => throw null;
+        public byte AsU8() => throw null;
+        public bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValue other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue Error(Meziantou.Framework.WasmEngine.Components.ComponentValue? value = null) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromBool(bool value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromBytes(System.ReadOnlySpan<byte> bytes) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromCase(string name, Meziantou.Framework.WasmEngine.Components.ComponentValue? payload = null) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromChar(System.Text.Rune value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromEnum(string name) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromErrorContext(Meziantou.Framework.WasmEngine.Components.ComponentErrorContext errorContext) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromF32(float value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromF64(double value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromFlags(System.Collections.Generic.IEnumerable<string> labels) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromList(System.Collections.Generic.IEnumerable<Meziantou.Framework.WasmEngine.Components.ComponentValue> values) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromOption(Meziantou.Framework.WasmEngine.Components.ComponentValue? value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromRecord(params System.ReadOnlySpan<Meziantou.Framework.WasmEngine.Components.ComponentValue> fields) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromResource(Meziantou.Framework.WasmEngine.Components.ComponentResource resource) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromS16(short value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromS32(int value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromS64(long value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromS8(sbyte value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromString(string value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromTuple(params System.ReadOnlySpan<Meziantou.Framework.WasmEngine.Components.ComponentValue> fields) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromU16(ushort value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromU32(uint value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromU64(ulong value) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue FromU8(byte value) => throw null;
+        public override int GetHashCode() => throw null;
+        public bool IsCase(string name) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue Ok(Meziantou.Framework.WasmEngine.Components.ComponentValue? value = null) => throw null;
+        public static Meziantou.Framework.WasmEngine.Components.ComponentValue Some(Meziantou.Framework.WasmEngine.Components.ComponentValue value) => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.WasmEngine.Components.ComponentValue left, Meziantou.Framework.WasmEngine.Components.ComponentValue right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WasmEngine.Components.ComponentValue left, Meziantou.Framework.WasmEngine.Components.ComponentValue right) => throw null;
+    }
+
+    public enum ComponentValueKind
+    {
+        None = 0,
+        Bool = 1,
+        S8 = 2,
+        U8 = 3,
+        S16 = 4,
+        U16 = 5,
+        S32 = 6,
+        U32 = 7,
+        S64 = 8,
+        U64 = 9,
+        F32 = 10,
+        F64 = 11,
+        Char = 12,
+        String = 13,
+        List = 14,
+        Record = 15,
+        Case = 16,
+        Flags = 17,
+        Resource = 18,
+        Stream = 19,
+        Future = 20,
+        ErrorContext = 21,
+    }
+
+    public abstract class ComponentValueType : Meziantou.Framework.WasmEngine.Components.ComponentType, System.IEquatable<Meziantou.Framework.WasmEngine.Components.ComponentValueType>
+    {
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType Bool { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType Char { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType ErrorContext { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType F32 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType F64 { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentValueTypeKind Kind { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType S16 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType S32 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType S64 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType S8 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType String { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType U16 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType U32 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType U64 { get => throw null; }
+        public static Meziantou.Framework.WasmEngine.Components.ComponentPrimitiveType U8 { get => throw null; }
+        public abstract bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.WasmEngine.Components.ComponentValueType? other);
+        public sealed override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public abstract int GetHashCode();
+        public sealed override string ToString() => throw null;
+    }
+
+    public enum ComponentValueTypeKind
+    {
+        Bool = 0,
+        S8 = 1,
+        U8 = 2,
+        S16 = 3,
+        U16 = 4,
+        S32 = 5,
+        U32 = 6,
+        S64 = 7,
+        U64 = 8,
+        F32 = 9,
+        F64 = 10,
+        Char = 11,
+        String = 12,
+        ErrorContext = 13,
+        List = 14,
+        Record = 15,
+        Tuple = 16,
+        Variant = 17,
+        Enum = 18,
+        Option = 19,
+        Result = 20,
+        Flags = 21,
+        Own = 22,
+        Borrow = 23,
+        Stream = 24,
+        Future = 25,
+        Map = 26,
+    }
+
+    public sealed class ComponentVariantType : Meziantou.Framework.WasmEngine.Components.ComponentValueType
+    {
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.WasmEngine.Components.ComponentCase> Cases { get => throw null; }
+        public ComponentVariantType(System.Collections.Generic.IEnumerable<Meziantou.Framework.WasmEngine.Components.ComponentCase> cases) { }
+        public override bool Equals(Meziantou.Framework.WasmEngine.Components.ComponentValueType? other) => throw null;
+        public override int GetHashCode() => throw null;
+    }
+
+    public sealed class WasmComponent
+    {
+        public System.ReadOnlyMemory<byte> Bytes { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.Components.WasmComponentImport> Exports { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.Components.WasmComponentImport> Imports { get => throw null; }
+        public Meziantou.Framework.WasmEngine.WasmRuntime Runtime { get => throw null; }
+    }
+
+    public readonly struct WasmComponentImport : System.IEquatable<Meziantou.Framework.WasmEngine.Components.WasmComponentImport>
+    {
+        public Meziantou.Framework.WasmEngine.Components.ComponentExternKind Kind { get => throw null; init { } }
+        public string Name { get => throw null; init { } }
+        public WasmComponentImport(string Name, Meziantou.Framework.WasmEngine.Components.ComponentExternKind Kind) { }
+        public void Deconstruct(out string Name, out Meziantou.Framework.WasmEngine.Components.ComponentExternKind Kind) => throw null;
+        public bool Equals(Meziantou.Framework.WasmEngine.Components.WasmComponentImport other) => throw null;
+        #nullable disable
+        public override bool Equals(object obj) => throw null;
+        #nullable restore
+        public override int GetHashCode() => throw null;
+        #nullable disable
+        public override string ToString() => throw null;
+        #nullable restore
+        public static bool operator ==(Meziantou.Framework.WasmEngine.Components.WasmComponentImport left, Meziantou.Framework.WasmEngine.Components.WasmComponentImport right) => throw null;
+        public static bool operator !=(Meziantou.Framework.WasmEngine.Components.WasmComponentImport left, Meziantou.Framework.WasmEngine.Components.WasmComponentImport right) => throw null;
+    }
+
+    public sealed class WasmComponentInstance
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WasmEngine.Components.WasmComponentImport> Exports { get => throw null; }
+        public Meziantou.Framework.WasmEngine.Components.ComponentFunction? GetFunction(string name) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.WasmComponentInstance? GetInstance(string name) => throw null;
+        public Meziantou.Framework.WasmEngine.Components.ComponentType? GetType(string name) => throw null;
+        public T Run<T>(System.Func<System.Threading.Tasks.Task<T>> operation) => throw null;
     }
 }

@@ -156,8 +156,11 @@ internal sealed unsafe partial class Machine
     /// <summary>The exception of a frame deeper than <see cref="_jitDepthLimit"/>.</summary>
     internal static Exception JitStackOverflow() => Traps.StackOverflow();
 
-    /// <summary>Calls a function whose arguments are at <paramref name="fp"/>, the slots from <paramref name="top"/> being free, from a frame of .NET code at <paramref name="depth"/>.</summary>
-    internal void JitCall(ManagedFunction callee, int fp, int top, int depth)
+    /// <summary>
+    /// Calls a function whose arguments are at <paramref name="fp"/>, the slots from <paramref name="top"/> being free, from
+    /// a frame of .NET code at <paramref name="depth"/> of a function of <paramref name="caller"/>.
+    /// </summary>
+    internal void JitCall(ManagedInstance caller, ManagedFunction callee, int fp, int top, int depth)
     {
         var savedTop = _top;
         var savedDepth = _nativeDepth;
@@ -165,7 +168,7 @@ internal sealed unsafe partial class Machine
         _nativeDepth = depth;
         try
         {
-            Call(callee, fp);
+            Call(callee, fp, caller);
         }
         finally
         {

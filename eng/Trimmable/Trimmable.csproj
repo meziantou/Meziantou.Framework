@@ -370,6 +370,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.VectorGraphics\Meziantou.Framework.VectorGraphics.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Versioning\Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WasmEngine\Meziantou.Framework.WasmEngine.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WasmEngine.Wasi\Meziantou.Framework.WasmEngine.Wasi.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.DevTools\Meziantou.Framework.WebPlatform.DevTools.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Imaging\Meziantou.Framework.WebPlatform.Imaging.csproj" />
@@ -741,6 +742,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.VectorGraphics" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Versioning" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WasmEngine" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.WasmEngine.Wasi" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.DevTools" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Imaging" />

@@ -205,7 +205,9 @@ internal static class SExpressionReader
                     return annotation && !custom ? null : SNode.List(start, items);
                 }
 
-                if (ReadNode(text, ref position, inAnnotation || annotation, keepCustom: !annotation && !inAnnotation && items.Count > 0 && items[0].IsKeyword("module")) is { } item)
+                // The custom annotations are kept in a module, and in a core module of a component: (core module ...)
+                var inModule = items.Count > 0 && (items[0].IsKeyword("module") || (items.Count > 1 && items[0].IsKeyword("core") && items[1].IsKeyword("module")));
+                if (ReadNode(text, ref position, inAnnotation || annotation, keepCustom: !annotation && !inAnnotation && inModule) is { } item)
                 {
                     items.Add(item);
                 }

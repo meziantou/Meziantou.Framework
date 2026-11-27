@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text;
 
 namespace Meziantou.Framework.Sanitizers.Tests;
@@ -531,6 +532,33 @@ public class HtmlSanitizerTests
 
         var sanitizer = new HtmlSanitizer();
         Assert.Equal("test", sanitizer.SanitizeHtmlFragment(html));
+    }
+
+    // Unwrapping an element used to move its content in the DOM, which walks the whole subtree of each moved node, so
+    // nested elements that are not allowed took a time quadratic in the depth (40 seconds for this fragment)
+    [Fact]
+    public void Sanitize_DeeplyNestedUnknownElements_LinearTime()
+    {
+        const int Depth = 99_000;
+        var html = string.Concat(Enumerable.Repeat("<x>", Depth));
+
+        var sanitizer = new HtmlSanitizer();
+        var stopwatch = Stopwatch.StartNew();
+        Assert.Equal("", sanitizer.SanitizeHtmlFragment(html));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
+    }
+
+    [Fact]
+    public void Sanitize_DeeplyNestedUnknownElementsInterleavedWithAllowedElements_LinearTime()
+    {
+        const int Depth = 49_500;
+        var html = string.Concat(Enumerable.Repeat("<x><span>", Depth));
+        var expected = string.Concat(Enumerable.Repeat("<span>", Depth)) + string.Concat(Enumerable.Repeat("</span>", Depth));
+
+        var sanitizer = new HtmlSanitizer();
+        var stopwatch = Stopwatch.StartNew();
+        Assert.Equal(expected, sanitizer.SanitizeHtmlFragment(html));
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(5), $"Sanitization took {stopwatch.Elapsed}");
     }
 
     [Fact]

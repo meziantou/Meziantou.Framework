@@ -21,5 +21,5 @@ internal sealed class YamlUInt32Converter : YamlConverter<uint>
     }
 
     public override void Write(YamlWriter writer, uint value)
-        => writer.WriteScalar(value.ToString(CultureInfo.InvariantCulture));
+        => writer.WriteScalar(value);
 }

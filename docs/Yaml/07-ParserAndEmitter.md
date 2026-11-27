@@ -9,6 +9,10 @@ library: it builds no tree, so it suits large documents and code that only needs
 [EventReader](cref:Meziantou.Framework.Yaml.EventReader) and [Emitter](cref:Meziantou.Framework.Yaml.Emitter) are in the [Meziantou.Framework.Yaml](cref:Meziantou.Framework.Yaml) namespace, and the events in
 [Meziantou.Framework.Yaml.Events](cref:Meziantou.Framework.Yaml.Events).
 
+The parser creates an object for each event. To read UTF-8 bytes without allocating, or to get the exact position of
+every token, use the [UTF-8 reader](10-Utf8Reader.md) the parser is built on. To write UTF-8 YAML without creating
+events, use the [UTF-8 writer](12-Utf8Writer.md).
+
 ## Read events
 
 [Parser.CreateParser](cref:Meziantou.Framework.Yaml.Parser.CreateParser) reads a `TextReader`. Wrap the parser in an [EventReader](cref:Meziantou.Framework.Yaml.EventReader) to consume the events with

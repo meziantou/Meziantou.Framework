@@ -2,6 +2,15 @@ namespace Meziantou.Framework.Yaml.Serialization.Converters;
 
 internal static class SequenceReadHelpers
 {
+    /// <summary>Reads an element with its converter, without boxing it when the converter is typed.</summary>
+    public static TElement ReadElement<TElement>(YamlReader reader, YamlConverter converter)
+    {
+        if (converter is YamlConverter<TElement> typedConverter)
+            return typedConverter.Read(reader)!;
+
+        return (TElement)converter.Read(reader, typeof(TElement))!;
+    }
+
     /// <summary>Reads a sequence into a new <see cref="List{T}"/> exposed as <typeparamref name="TCollection"/>.</summary>
     /// <remarks>
     /// An alias resolves to the object of its anchor, which is not necessarily a list: an array aliased by an
@@ -44,8 +53,7 @@ internal static class SequenceReadHelpers
 
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = elementConverter.Read(reader, typeof(TElement));
-            list.Add((TElement)value!);
+            list.Add(SequenceReadHelpers.ReadElement<TElement>(reader, elementConverter));
         }
 
         reader.Read();
@@ -112,8 +120,7 @@ internal static class SequenceReadHelpers
 
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = elementConverter.Read(reader, typeof(TElement));
-            collection.Add((TElement)value!);
+            collection.Add(SequenceReadHelpers.ReadElement<TElement>(reader, elementConverter));
         }
 
         reader.Read();

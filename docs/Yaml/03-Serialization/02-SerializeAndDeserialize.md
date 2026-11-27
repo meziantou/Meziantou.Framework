@@ -61,9 +61,21 @@ private static Product? LoadProduct(string path)
 | Read from | Write to |
 | --- | --- |
 | `string` | `string` (the return value) |
+| `ReadOnlySpan<byte>` holding UTF-8 text, read as is | |
 | `TextReader`, read as the parser needs it (a `StreamReader` by blocks of characters) | `TextWriter` |
-| `Stream` holding UTF-8 text | `Stream`, written as UTF-8 |
+| `Stream`: UTF-8 as is, in one read for a seekable stream up to 1 MB and by blocks otherwise; UTF-16 or UTF-32 when it starts with their byte order mark | `Stream`, written as UTF-8 |
 | | `IBufferWriter<char>` |
+
+The parser reads UTF-8: a string or a `TextReader` is converted to UTF-8 as it is read, while UTF-8 bytes and a UTF-8
+stream are read without a conversion, so they are the fastest input:
+
+<!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerStreamTests.cs;region=YamlSerializer_DeserializeUtf8;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The bytes are parsed as is, without being decoded to a string first
+var ports = YamlSerializer.Deserialize<Dictionary<string, int>>("http: 80\nhttps: 443\n"u8);
+Assert.Equal(443, ports!["https"]);
+```
+<!-- endref -->
 
 The methods are synchronous. Each one has a generic form ([Deserialize\<T\>](cref:Meziantou.Framework.Yaml.YamlSerializer.Deserialize)) and a form that takes a `Type`, for a type
 known at run time only.

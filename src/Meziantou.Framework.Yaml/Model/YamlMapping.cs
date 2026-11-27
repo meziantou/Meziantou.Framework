@@ -34,7 +34,11 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     {
         get => _mappingStart;
         [MemberNotNull(nameof(_mappingStart))]
-        set => _mappingStart = value;
+        set
+        {
+            OnChanging();
+            _mappingStart = value;
+        }
     }
 
     internal MappingEnd MappingEnd { get; }
@@ -152,6 +156,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Removes all elements from the collection.</summary>
     public void Clear()
     {
+        OnChanging();
         _contents.Clear();
         _keys.Clear();
 
@@ -181,6 +186,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
 
     bool ICollection<KeyValuePair<YamlElement, YamlElement?>>.Remove(KeyValuePair<YamlElement, YamlElement?> item)
     {
+        OnChanging();
         return Remove(item.Key);
     }
 
@@ -192,6 +198,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Adds an item.</summary>
     public void Add(YamlElement key, YamlElement? value)
     {
+        OnChanging();
         _contents.Add(key, value);
         _keys.Add(key);
 
@@ -219,6 +226,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Removes an item.</summary>
     public bool Remove(YamlElement key)
     {
+        OnChanging();
         var index = _keys.IndexOf(key);
         if (index >= 0)
         {
@@ -233,6 +241,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Removes an item.</summary>
     public bool Remove(string key)
     {
+        OnChanging();
         if (_stringKeys == null)
             _stringKeys = Keys.OfType<YamlValue>().ToDictionary(k => k.Value, k => k, StringComparer.Ordinal);
 
@@ -279,6 +288,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         }
         set
         {
+            OnChanging();
             if (!_contents.ContainsKey(key))
             {
                 _keys.Add(key);
@@ -347,6 +357,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Inserts an item at the specified index.</summary>
     public void Insert(int index, KeyValuePair<YamlElement, YamlElement?> item)
     {
+        OnChanging();
         if (_contents.ContainsKey(item.Key))
             throw new ArgumentException("Key already present", nameof(item));
 
@@ -362,6 +373,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
     /// <summary>Removes at.</summary>
     public void RemoveAt(int index)
     {
+        OnChanging();
         var key = _keys[index];
 
         _keys.RemoveAt(index);
@@ -388,6 +400,7 @@ public class YamlMapping : YamlContainer, IDictionary<YamlElement, YamlElement?>
         get { return new KeyValuePair<YamlElement, YamlElement?>(_keys[index], _contents[_keys[index]]); }
         set
         {
+            OnChanging();
             if (_keys[index] != value.Key && _contents.ContainsKey(value.Key))
                 throw new ArgumentException("Key already present at a different index.", nameof(value));
 

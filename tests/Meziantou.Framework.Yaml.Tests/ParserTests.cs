@@ -67,6 +67,21 @@ public class ParserTests : ParserTestHelper
         Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
     }
 
+    [Theory]
+    [InlineData("- a\n- b\n\n# comment\n\n--- \n- c\n")]
+    [InlineData("|\n  literal\n\n  text\n\n # comment\n")]
+    [InlineData("key: value\n\n\n# first comment\n# second comment\n")]
+    [InlineData("key:\n  - item\n\n# comment\n")]
+    [InlineData("# first\n---\n- a\n\n# second\n\uFEFF---\n- b\n")]
+    public void StreamReaderParser_CommentsAfterTheLastNode_ReportTheSamePositionsAsTheStringParser(string yaml)
+    {
+        // The end of the document and of its collections are at the end of the last node, in bytes that the refills of
+        // the buffer drop before reading the comments
+        using var reader = CreateTrickleStreamReader(yaml);
+
+        Assert.Equal(ReadEventsWithPositions(Parser.CreateParser(new StringReader(yaml))), ReadEventsWithPositions(Parser.CreateParser(reader)));
+    }
+
     private static StreamReader CreateTrickleStreamReader(string yaml)
     {
         // The byte order mark of the document, if any, is kept as a character, like the string parser sees it
@@ -87,7 +102,7 @@ public class ParserTests : ParserTestHelper
     }
 
     /// <summary>A read-only stream that returns between 1 and 3 bytes per read.</summary>
-    private sealed class TrickleStream(byte[] data) : Stream
+    internal sealed class TrickleStream(byte[] data) : Stream
     {
         private int _position;
 

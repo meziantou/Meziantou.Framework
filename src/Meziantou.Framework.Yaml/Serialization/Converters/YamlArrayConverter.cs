@@ -34,8 +34,7 @@ internal sealed class YamlArrayConverter<TElement> : YamlConverter<TElement[]?>
         var items = new List<TElement>();
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = _elementConverter.Read(reader, typeof(TElement));
-            items.Add((TElement)value!);
+            items.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
         }
 
         reader.Read();

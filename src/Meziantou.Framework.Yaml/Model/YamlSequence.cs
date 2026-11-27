@@ -31,6 +31,7 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
         [MemberNotNull(nameof(_sequenceStart))]
         set
         {
+            OnChanging();
             _sequenceStart = value;
         }
     }
@@ -137,12 +138,14 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     /// <summary>Adds an item.</summary>
     public void Add(YamlElement item)
     {
+        OnChanging();
         _contents.Add(item);
     }
 
     /// <summary>Removes all elements from the collection.</summary>
     public void Clear()
     {
+        OnChanging();
         _contents.Clear();
     }
 
@@ -161,6 +164,7 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     /// <summary>Removes an item.</summary>
     public bool Remove(YamlElement item)
     {
+        OnChanging();
         var index = IndexOf(item);
         if (index >= 0)
         {
@@ -186,12 +190,14 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
     /// <summary>Inserts an item at the specified index.</summary>
     public void Insert(int index, YamlElement item)
     {
+        OnChanging();
         _contents.Insert(index, item);
     }
 
     /// <summary>Removes at.</summary>
     public void RemoveAt(int index)
     {
+        OnChanging();
         _contents.RemoveAt(index);
     }
 
@@ -201,6 +207,7 @@ public class YamlSequence : YamlContainer, IList<YamlElement>
         get { return _contents[index]; }
         set
         {
+            OnChanging();
             _contents[index] = value;
         }
     }

@@ -53,8 +53,7 @@ internal sealed class YamlMutableCollectionConverter<TCollection, TElement> : Ya
 
         while (reader.TokenType != YamlTokenType.EndSequence)
         {
-            var value = _elementConverter.Read(reader, typeof(TElement));
-            collection.Add((TElement)value!);
+            collection.Add(SequenceReadHelpers.ReadElement<TElement>(reader, _elementConverter));
         }
 
         reader.Read();

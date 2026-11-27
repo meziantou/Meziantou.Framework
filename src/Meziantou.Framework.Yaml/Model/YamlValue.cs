@@ -74,6 +74,7 @@ public class YamlValue : YamlElement
         [MemberNotNull(nameof(_scalar))]
         set
         {
+            OnChanging();
             ArgumentNullException.ThrowIfNull(value);
 
             _scalar = value;

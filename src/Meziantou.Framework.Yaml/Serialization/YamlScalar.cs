@@ -407,6 +407,43 @@ public static class YamlScalar
     }
 #endif
 
+    // The scalars that GetScalarChars reads without allocating: the numbers and the keywords are short
+    private const int ScalarCharsLength = 64;
+
+    // The characters of the current scalar. When its bytes are its value and are ASCII, they are widened into the buffer
+    // instead of being decoded to a string.
+    private static ReadOnlySpan<char> GetScalarChars(YamlReader reader, Span<char> buffer)
+    {
+        if (reader.TryGetRawUtf8Scalar(out var utf8) && utf8.Length <= buffer.Length && System.Text.Ascii.ToUtf16(utf8, buffer, out var length) is System.Buffers.OperationStatus.Done)
+            return buffer[..length];
+
+        return reader.ScalarValue.AsSpan();
+    }
+
+    /// <summary>
+    /// Parses the current scalar token as a date and time in the round-trip format, with the invariant culture.
+    /// </summary>
+    /// <param name="reader">The reader positioned on a scalar token.</param>
+    /// <param name="result">The parsed date and time.</param>
+    /// <returns><see langword="true"/> when the scalar is a date and time.</returns>
+    public static bool TryParseDateTime(YamlReader reader, out DateTime result)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        return DateTime.TryParse(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result);
+    }
+
+    /// <summary>
+    /// Parses the current scalar token as a date and time with an offset in the round-trip format, with the invariant culture.
+    /// </summary>
+    /// <param name="reader">The reader positioned on a scalar token.</param>
+    /// <param name="result">The parsed date and time with an offset.</param>
+    /// <returns><see langword="true"/> when the scalar is a date and time with an offset.</returns>
+    public static bool TryParseDateTimeOffset(YamlReader reader, out DateTimeOffset result)
+    {
+        ArgumentNullException.ThrowIfNull(reader);
+        return DateTimeOffset.TryParse(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result);
+    }
+
     /// <summary>
     /// Determines whether the current scalar token represents YAML null while honoring scalar style and <see cref="YamlSerializerOptions.UseSchema"/>.
     /// </summary>
@@ -431,7 +468,7 @@ public static class YamlScalar
             return false;
         }
 
-        return IsNull(reader.ScalarValue.AsSpan(), reader.ScalarStyle);
+        return IsNull(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), reader.ScalarStyle);
     }
 
     /// <summary>
@@ -455,7 +492,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseBool(reader.ScalarValue.AsSpan(), out result);
+        return TryParseBool(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
     /// <summary>
@@ -480,7 +517,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseInt32(reader.ScalarValue.AsSpan(), out result);
+        return TryParseInt32(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
     /// <summary>
@@ -505,7 +542,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseUInt32(reader.ScalarValue.AsSpan(), out result);
+        return TryParseUInt32(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
     /// <summary>
@@ -528,7 +565,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseUInt64(reader.ScalarValue.AsSpan(), out result);
+        return TryParseUInt64(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
     /// <summary>
@@ -551,7 +588,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseInt64(reader.ScalarValue.AsSpan(), out result);
+        return TryParseInt64(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
     /// <summary>
@@ -575,7 +612,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseDouble(reader.ScalarValue.AsSpan(), out result);
+        return TryParseDouble(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
     /// <summary>
@@ -599,7 +636,7 @@ public static class YamlScalar
                     return TryConvertToDecimal(value, out result);
                 }
 
-                if (TryParseDecimal(reader.ScalarValue.AsSpan(), out result))
+                if (TryParseDecimal(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result))
                 {
                     return true;
                 }
@@ -611,7 +648,7 @@ public static class YamlScalar
             return false;
         }
 
-        return TryParseDecimal(reader.ScalarValue.AsSpan(), out result);
+        return TryParseDecimal(GetScalarChars(reader, stackalloc char[ScalarCharsLength]), out result);
     }
 
 #if NET11_0_OR_GREATER
@@ -752,6 +789,13 @@ public static class YamlScalar
         // The only non-string rules of the built-in schemas that match a scalar starting with a letter are the null
         // and boolean words, so the rules are not evaluated for any other word, such as "name" or "type".
         if (value.Length > 0 && char.IsAsciiLetter(value[0]) && !IsSchemaKeyword(value))
+        {
+            return false;
+        }
+
+        // The non-string values of the core and JSON schemas, numbers, booleans and null, contain no whitespace: the rules
+        // are not evaluated for a sentence or an address that starts with a digit
+        if (schemaKind is YamlSchemaKind.Core or YamlSchemaKind.Json && value.ContainsAny(' ', '\t', '\n'))
         {
             return false;
         }

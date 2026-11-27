@@ -14,13 +14,17 @@ namespace Meziantou.Framework.Yaml.Benchmarks;
 /// </summary>
 [MemoryDiagnoser]
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded benchmark inputs.")]
-public class DocumentBenchmarks
+public class DocumentBenchmarks : IDisposable
 {
     private static readonly YamlSerializerOptions Options = new();
+
+    private static readonly System.Text.Yaml.YamlSerializerOptions StymlOptions = new() { PropertyNameCaseInsensitive = true };
 
     private Collection<Order> _orders = null!;
     private string _yaml = null!;
     private byte[] _utf8Yaml = null!;
+    private readonly MemoryStream _stream = new();
+    private YamlTypeInfo<Collection<Order>> _typeInfo = null!;
 
     [Params(10, 1000)]
     public int Count { get; set; }
@@ -31,16 +35,68 @@ public class DocumentBenchmarks
         _orders = CreateOrders(Count);
         _yaml = YamlSerializer.Serialize(_orders, Options);
         _utf8Yaml = Encoding.UTF8.GetBytes(_yaml);
+        var context = new BenchmarkYamlContext();
+        _typeInfo = (YamlTypeInfo<Collection<Order>>)context.GetTypeInfo(typeof(Collection<Order>), context.Options)!;
+
+        // Both serializers must read the same orders, or the comparison is meaningless
+        var expected = YamlSerializer.Serialize(Deserialize(), Options);
+        var actual = YamlSerializer.Serialize(Styml_DeserializeFromUtf8(), Options);
+        if (!string.Equals(expected, actual, StringComparison.Ordinal))
+            throw new InvalidOperationException("Styml does not read the same orders:\n" + actual[..Math.Min(actual.Length, 2000)]);
+
+        // The source-generated metadata reads and writes the same YAML as reflection
+        if (!string.Equals(expected, YamlSerializer.Serialize(Deserialize_SourceGenerated(), Options), StringComparison.Ordinal) || !string.Equals(_yaml, Serialize_SourceGenerated(), StringComparison.Ordinal))
+            throw new InvalidOperationException("The source-generated metadata does not read or write the same orders");
     }
 
     [Benchmark]
     public string Serialize() => YamlSerializer.Serialize(_orders, Options);
 
     [Benchmark]
+    public long SerializeToStream()
+    {
+        _stream.SetLength(0);
+        YamlSerializer.Serialize(_stream, _orders, Options);
+        return _stream.Length;
+    }
+
+    [Benchmark]
+    public string Styml_Serialize() => System.Text.Yaml.YamlSerializer.Serialize(_orders, StymlOptions);
+
+    [Benchmark]
+    public long Styml_SerializeToStream()
+    {
+        _stream.SetLength(0);
+        System.Text.Yaml.YamlSerializer.Serialize(_stream, _orders, StymlOptions);
+        return _stream.Length;
+    }
+
+    [Benchmark]
+    public string Serialize_SourceGenerated() => YamlSerializer.Serialize(_orders, _typeInfo);
+
+    [Benchmark]
+    public Collection<Order>? Deserialize_SourceGenerated() => YamlSerializer.Deserialize(_utf8Yaml.AsSpan(), _typeInfo);
+
+    [Benchmark]
     public Collection<Order>? Deserialize() => YamlSerializer.Deserialize<Collection<Order>>(_yaml, Options);
 
     [Benchmark]
     public Collection<Order>? DeserializeFromStream() => YamlSerializer.Deserialize<Collection<Order>>(new MemoryStream(_utf8Yaml, writable: false), Options);
+
+    // A stream that cannot seek is read by blocks: the locations of the keys are computed as they are read
+    [Benchmark]
+    public Collection<Order>? DeserializeFromNonSeekableStream()
+    {
+        using var stream = new NonSeekableStream(new MemoryStream(_utf8Yaml, writable: false));
+        return YamlSerializer.Deserialize<Collection<Order>>(stream, Options);
+    }
+
+    [Benchmark]
+    public Collection<Order>? DeserializeFromUtf8() => YamlSerializer.Deserialize<Collection<Order>>(_utf8Yaml.AsSpan(), Options);
+
+    // Styml's serializer, from the same UTF-8 bytes
+    [Benchmark]
+    public Collection<Order>? Styml_DeserializeFromUtf8() => System.Text.Yaml.YamlSerializer.Deserialize<Collection<Order>>(_utf8Yaml.AsSpan(), StymlOptions);
 
     [Benchmark]
     public int Parse()
@@ -60,6 +116,8 @@ public class DocumentBenchmarks
 
     [Benchmark]
     public YamlSyntaxTree ParseSyntaxTree() => YamlSyntaxTree.Parse(_yaml);
+
+    public void Dispose() => _stream.Dispose();
 
     internal static Collection<Order> CreateOrders(int count)
     {
@@ -122,6 +180,41 @@ public class DocumentBenchmarks
         public Collection<OrderLine>? Lines { get; set; }
 
         public Dictionary<string, string>? Metadata { get; set; }
+    }
+
+    private sealed class NonSeekableStream(Stream inner) : Stream
+    {
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+
+        public override int Read(Span<byte> buffer) => inner.Read(buffer);
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 
     public sealed class Customer

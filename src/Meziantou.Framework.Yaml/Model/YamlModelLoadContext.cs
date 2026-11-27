@@ -28,6 +28,9 @@ internal sealed class YamlModelLoadContext
 
     public bool AllowAliases { get; }
 
+    /// <summary>Gets or sets a value indicating whether the loaded nodes record their changes, to be written back into their text.</summary>
+    public bool TrackSource { get; set; }
+
     /// <summary>Charges the nodes an alias is about to materialize against the budget.</summary>
     /// <exception cref="YamlException">Expanding the alias would exceed the budget.</exception>
     public void ChargeAliasExpansion(YamlElement anchored, string alias, Mark start, Mark end)

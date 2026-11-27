@@ -134,6 +134,129 @@ namespace Meziantou.Framework.Yaml
         protected override string GetKeyForItem(Meziantou.Framework.Yaml.Tokens.TagDirective item) => throw null;
     }
 
+    public ref struct Utf8YamlReader
+    {
+        public readonly int AnchorLength { get => throw null; }
+        public readonly System.ReadOnlySpan<byte> AnchorName { get => throw null; }
+        public readonly int AnchorStart { get => throw null; }
+        public readonly long BufferOffset { get => throw null; }
+        public readonly int BytesConsumed { get => throw null; }
+        public readonly int CurrentDepth { get => throw null; }
+        public readonly Meziantou.Framework.Yaml.Utf8YamlReaderState CurrentState { get => throw null; }
+        public readonly int ExplicitKeyIndicatorOffset { get => throw null; }
+        public readonly int IndicatorOffset { get => throw null; }
+        public readonly bool IsFlow { get => throw null; }
+        public readonly int MaxValueLength { get => throw null; }
+        public readonly System.ReadOnlySpan<byte> RawValueSpan { get => throw null; }
+        public readonly Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
+        public readonly System.ReadOnlySpan<byte> Tag { get => throw null; }
+        public readonly int TagLength { get => throw null; }
+        public readonly int TagStart { get => throw null; }
+        public readonly Meziantou.Framework.Yaml.Utf8YamlTokenFlags TokenFlags { get => throw null; }
+        public readonly Meziantou.Framework.Yaml.Utf8YamlTokenKind TokenKind { get => throw null; }
+        public readonly int TokenLength { get => throw null; }
+        public readonly System.ReadOnlySpan<byte> TokenSpan { get => throw null; }
+        public readonly int TokenStart { get => throw null; }
+        public readonly bool ValueIsRaw { get => throw null; }
+        public Utf8YamlReader(System.ReadOnlySpan<byte> utf8Yaml) { }
+        public Utf8YamlReader(System.ReadOnlySpan<byte> utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options) { }
+        public Utf8YamlReader(System.ReadOnlySpan<byte> utf8Yaml, bool isFinalBlock, Meziantou.Framework.Yaml.Utf8YamlReaderState state) { }
+        public readonly int CopyValue(System.Span<byte> destination) => throw null;
+        public readonly Meziantou.Framework.Yaml.Mark GetMark(int offset) => throw null;
+        public readonly string GetString() => throw null;
+        public readonly string? GetTag() => throw null;
+        public bool Read() => throw null;
+        public readonly bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) => throw null;
+        public readonly bool ValueEquals(System.ReadOnlySpan<char> text) => throw null;
+        public readonly bool ValueEquals(string text) => throw null;
+    }
+
+    public struct Utf8YamlReaderOptions
+    {
+        public int MaxDepth { readonly get => throw null; set { } }
+    }
+
+    public struct Utf8YamlReaderState
+    {
+        public readonly Meziantou.Framework.Yaml.Utf8YamlReaderOptions Options { get => throw null; }
+        public Utf8YamlReaderState(Meziantou.Framework.Yaml.Utf8YamlReaderOptions options) { }
+    }
+
+    [System.Flags]
+    public enum Utf8YamlTokenFlags : ushort
+    {
+        None = 0,
+        Plain = 1,
+        SingleQuoted = 2,
+        DoubleQuoted = 3,
+        Literal = 4,
+        Folded = 5,
+        ScalarStyleMask = 7,
+        Flow = 8,
+        Implicit = 16,
+        RawValue = 32,
+        KeepChomping = 64,
+        StripChomping = 128,
+    }
+
+    public enum Utf8YamlTokenKind : byte
+    {
+        None = 0,
+        ByteOrderMark = 1,
+        Directive = 2,
+        DocumentStart = 3,
+        DocumentEnd = 4,
+        DocumentEndMarker = 5,
+        MappingStart = 6,
+        MappingEnd = 7,
+        SequenceStart = 8,
+        SequenceEnd = 9,
+        Scalar = 10,
+        Alias = 11,
+    }
+
+    public sealed class Utf8YamlWriter : System.IDisposable
+    {
+        public long BytesCommitted { get => throw null; }
+        public int BytesPending { get => throw null; }
+        public int CurrentDepth { get => throw null; }
+        public Meziantou.Framework.Yaml.Utf8YamlWriterOptions Options { get => throw null; }
+        public Utf8YamlWriter(System.Buffers.IBufferWriter<byte> bufferWriter, Meziantou.Framework.Yaml.Utf8YamlWriterOptions options = default) { }
+        public Utf8YamlWriter(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Utf8YamlWriterOptions options = default) { }
+        public void Dispose() { }
+        public void Flush() { }
+        public void WriteAliasValue(System.ReadOnlySpan<char> anchorName) { }
+        public void WriteAnchor(System.ReadOnlySpan<char> name) { }
+        public void WriteBooleanValue(bool value) { }
+        public void WriteComment(System.ReadOnlySpan<char> text) { }
+        public void WriteEndDocument() { }
+        public void WriteEndMapping() { }
+        public void WriteEndSequence() { }
+        public void WriteNullValue() { }
+        public void WriteNumberValue(decimal value) { }
+        public void WriteNumberValue(double value) { }
+        public void WriteNumberValue(float value) { }
+        public void WriteNumberValue(int value) { }
+        public void WriteNumberValue(long value) { }
+        public void WriteNumberValue(uint value) { }
+        public void WriteNumberValue(ulong value) { }
+        public void WritePropertyName(System.ReadOnlySpan<byte> utf8Name) { }
+        public void WritePropertyName(System.ReadOnlySpan<char> name) { }
+        public void WriteStartDocument() { }
+        public void WriteStartMapping(Meziantou.Framework.Yaml.YamlStyle style = Meziantou.Framework.Yaml.YamlStyle.Any) { }
+        public void WriteStartSequence(Meziantou.Framework.Yaml.YamlStyle style = Meziantou.Framework.Yaml.YamlStyle.Any) { }
+        public void WriteStringValue(System.ReadOnlySpan<byte> utf8Value, Meziantou.Framework.Yaml.ScalarStyle style = Meziantou.Framework.Yaml.ScalarStyle.Any) { }
+        public void WriteStringValue(System.ReadOnlySpan<char> value, Meziantou.Framework.Yaml.ScalarStyle style = Meziantou.Framework.Yaml.ScalarStyle.Any) { }
+        public void WriteTag(System.ReadOnlySpan<char> tag) { }
+        public void WriteTagDirective(System.ReadOnlySpan<char> handle, System.ReadOnlySpan<char> prefix) { }
+    }
+
+    public struct Utf8YamlWriterOptions
+    {
+        public int IndentSize { readonly get => throw null; set { } }
+        public int MaxDepth { readonly get => throw null; set { } }
+    }
+
     public class Version
     {
         public int Major { get => throw null; }
@@ -235,6 +358,88 @@ namespace Meziantou.Framework.Yaml
         public Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling UnknownDerivedTypeHandling { get => throw null; init { } }
     }
 
+    public sealed class YamlReadOnlyDocument : System.IDisposable
+    {
+        public int DocumentCount { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode Root { get => throw null; }
+        public System.ReadOnlyMemory<byte> Utf8Text { get => throw null; }
+        public void Dispose() { }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode GetDocumentRoot(int index) => throw null;
+        public static Meziantou.Framework.Yaml.YamlReadOnlyDocument Parse(System.IO.Stream utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
+        public static Meziantou.Framework.Yaml.YamlReadOnlyDocument Parse(System.ReadOnlyMemory<byte> utf8Yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
+        public static Meziantou.Framework.Yaml.YamlReadOnlyDocument Parse(string yaml, Meziantou.Framework.Yaml.Utf8YamlReaderOptions options = default) => throw null;
+        public void WriteTo(Meziantou.Framework.Yaml.Utf8YamlWriter writer) { }
+    }
+
+    public readonly struct YamlReadOnlyNode : System.IEquatable<Meziantou.Framework.Yaml.YamlReadOnlyNode>
+    {
+        public string? Anchor { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
+        public bool IsFlow { get => throw null; }
+        public bool IsNull { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode this[int index] { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode this[string key] { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNodeKind Kind { get => throw null; }
+        public Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
+        public string? Tag { get => throw null; }
+        public int Utf8Length { get => throw null; }
+        public int Utf8Offset { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode.MappingEnumerator EnumerateMapping() => throw null;
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode.SequenceEnumerator EnumerateSequence() => throw null;
+        public bool Equals(Meziantou.Framework.Yaml.YamlReadOnlyNode other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public int GetLength() => throw null;
+        public string GetRawText() => throw null;
+        public System.ReadOnlySpan<byte> GetRawUtf8Text() => throw null;
+        public string GetString() => throw null;
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode ResolveAlias() => throw null;
+        public override string ToString() => throw null;
+        public bool TryGetBoolean(out bool value) => throw null;
+        public bool TryGetDouble(out double value) => throw null;
+        public bool TryGetInt64(out long value) => throw null;
+        public bool TryGetProperty(System.ReadOnlySpan<byte> utf8Key, out Meziantou.Framework.Yaml.YamlReadOnlyNode value) => throw null;
+        public bool TryGetProperty(System.ReadOnlySpan<char> key, out Meziantou.Framework.Yaml.YamlReadOnlyNode value) => throw null;
+        public bool TryGetProperty(string key, out Meziantou.Framework.Yaml.YamlReadOnlyNode value) => throw null;
+        public bool ValueEquals(System.ReadOnlySpan<byte> utf8Text) => throw null;
+        public bool ValueEquals(System.ReadOnlySpan<char> text) => throw null;
+        public bool ValueEquals(string text) => throw null;
+        public void WriteTo(Meziantou.Framework.Yaml.Utf8YamlWriter writer) { }
+        public static bool operator ==(Meziantou.Framework.Yaml.YamlReadOnlyNode left, Meziantou.Framework.Yaml.YamlReadOnlyNode right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Yaml.YamlReadOnlyNode left, Meziantou.Framework.Yaml.YamlReadOnlyNode right) => throw null;
+        public struct MappingEnumerator : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode>>, System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode>>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public readonly Meziantou.Framework.Yaml.YamlReadOnlyNode.MappingEnumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode, Meziantou.Framework.Yaml.YamlReadOnlyNode>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<Meziantou.Framework.Yaml.YamlReadOnlyNode,Meziantou.Framework.Yaml.YamlReadOnlyNode>>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+        }
+        public struct SequenceEnumerator : System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.YamlReadOnlyNode>, System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.YamlReadOnlyNode>, System.Collections.IEnumerable, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly Meziantou.Framework.Yaml.YamlReadOnlyNode Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public readonly Meziantou.Framework.Yaml.YamlReadOnlyNode.SequenceEnumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<Meziantou.Framework.Yaml.YamlReadOnlyNode> System.Collections.Generic.IEnumerable<Meziantou.Framework.Yaml.YamlReadOnlyNode>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            public bool MoveNext() => throw null;
+            public void Reset() { }
+        }
+    }
+
+    public enum YamlReadOnlyNodeKind
+    {
+        Scalar = 0,
+        Mapping = 1,
+        Sequence = 2,
+        Alias = 3,
+    }
+
     public enum YamlReferenceHandling
     {
         None = 0,
@@ -269,11 +474,14 @@ namespace Meziantou.Framework.Yaml
         public static bool IsReflectionEnabledByDefault { get => throw null; }
         public static object? Deserialize(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
         public static object? Deserialize(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
+        public static object? Deserialize(System.ReadOnlySpan<byte> utf8Yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
         public static object? Deserialize(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo typeInfo) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static object? Deserialize(System.IO.Stream utf8Stream, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static object? Deserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static object? Deserialize(System.ReadOnlySpan<byte> utf8Yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static object? Deserialize(System.ReadOnlySpan<byte> utf8Yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static object? Deserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static T? Deserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
@@ -282,6 +490,9 @@ namespace Meziantou.Framework.Yaml
         public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static T? Deserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
+        public static T? Deserialize<T>(System.ReadOnlySpan<byte> utf8Yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
+        public static T? Deserialize<T>(System.ReadOnlySpan<byte> utf8Yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static T? Deserialize<T>(System.ReadOnlySpan<byte> utf8Yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
         public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context) => throw null;
         public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static T? Deserialize<T>(string yaml, Meziantou.Framework.Yaml.YamlTypeInfo<T> typeInfo) => throw null;
@@ -311,12 +522,16 @@ namespace Meziantou.Framework.Yaml
         public static bool TryDeserialize(System.IO.Stream utf8Stream, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
         public static bool TryDeserialize(System.IO.TextReader reader, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize(System.ReadOnlySpan<byte> utf8Yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
+        public static bool TryDeserialize(System.ReadOnlySpan<byte> utf8Yaml, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize(string yaml, System.Type returnType, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out object? value) => throw null;
         public static bool TryDeserialize(string yaml, System.Type returnType, out object? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
         public static bool TryDeserialize<T>(System.IO.Stream utf8Stream, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize<T>(System.IO.TextReader reader, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
         public static bool TryDeserialize<T>(System.IO.TextReader reader, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
+        public static bool TryDeserialize<T>(System.ReadOnlySpan<byte> utf8Yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
+        public static bool TryDeserialize<T>(System.ReadOnlySpan<byte> utf8Yaml, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public static bool TryDeserialize<T>(string yaml, Meziantou.Framework.Yaml.Serialization.YamlSerializerContext context, out T? value) => throw null;
         public static bool TryDeserialize<T>(string yaml, out T? value, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
     }
@@ -666,6 +881,8 @@ namespace Meziantou.Framework.Yaml.Model
         public static Meziantou.Framework.Yaml.Model.YamlStream Load(System.IO.TextReader stream, Meziantou.Framework.Yaml.YamlSerializerOptions? options) => throw null;
         public bool Remove(Meziantou.Framework.Yaml.Model.YamlDocument item) => throw null;
         public void RemoveAt(int index) { }
+        public string ToStringPreservingFormatting() => throw null;
+        public void WritePreservingFormatting(System.IO.TextWriter writer) { }
     }
 
     public class YamlValue : Meziantou.Framework.Yaml.Model.YamlElement
@@ -883,6 +1100,13 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
     }
 
+    public readonly struct YamlLocation
+    {
+        public Meziantou.Framework.Yaml.Mark End { get => throw null; }
+        public Meziantou.Framework.Yaml.Mark Start { get => throw null; }
+        public YamlLocation(Meziantou.Framework.Yaml.Mark start, Meziantou.Framework.Yaml.Mark end) { }
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Class | System.AttributeTargets.Struct | System.AttributeTargets.Property | System.AttributeTargets.Field | System.AttributeTargets.Interface, AllowMultiple = false)]
     public sealed class YamlNamingPolicyAttribute : Meziantou.Framework.Yaml.Serialization.YamlAttribute
     {
@@ -931,6 +1155,7 @@ namespace Meziantou.Framework.Yaml.Serialization
     {
         public string? Alias { get => throw null; }
         public string? Anchor { get => throw null; }
+        public Meziantou.Framework.Yaml.Serialization.YamlLocation CurrentLocation { get => throw null; }
         public Meziantou.Framework.Yaml.Mark End { get => throw null; }
         public bool IsCurrentNodeDerivedTypeResolved { get => throw null; }
         public Meziantou.Framework.Yaml.ScalarStyle ScalarStyle { get => throw null; }
@@ -946,9 +1171,12 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static Meziantou.Framework.Yaml.Serialization.YamlReader Create(string yaml, Meziantou.Framework.Yaml.YamlSerializerOptions? options = null) => throw null;
         public Meziantou.Framework.Yaml.Serialization.YamlReader CreateReader(string yaml) => throw null;
         public string GetScalarValue() => throw null;
+        public string GetScalarValue(System.ReadOnlySpan<string> knownValues) => throw null;
         public void MarkCurrentNodeDerivedTypeResolved() { }
         public bool Read() => throw null;
         public void RegisterAnchor(string anchor, object value) { }
+        public System.Collections.Generic.HashSet<string> RentKeySet(System.Collections.Generic.IEqualityComparer<string> comparer) => throw null;
+        public void ReturnKeySet(System.Collections.Generic.HashSet<string>? set) { }
         public void Skip() { }
         public bool TryReadAlias(out object? value) => throw null;
         public bool TryReplayMappingAlias() => throw null;
@@ -977,6 +1205,8 @@ namespace Meziantou.Framework.Yaml.Serialization
         public static bool TryParseBool(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out bool result) => throw null;
         public static bool TryParseBool(System.ReadOnlySpan<char> value, out bool result) => throw null;
         public static bool TryParseCultureInfo(string? value, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out System.Globalization.CultureInfo? result) => throw null;
+        public static bool TryParseDateTime(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out System.DateTime result) => throw null;
+        public static bool TryParseDateTimeOffset(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out System.DateTimeOffset result) => throw null;
         public static bool TryParseDecimal(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out decimal result) => throw null;
         public static bool TryParseDecimal(System.ReadOnlySpan<char> value, out decimal result) => throw null;
         public static bool TryParseDouble(Meziantou.Framework.Yaml.Serialization.YamlReader reader, out double result) => throw null;

@@ -57,11 +57,42 @@ public abstract class YamlNode
 
             var clone = (YamlElement)anchored.DeepClone();
             clone.Anchor = null;
+            clone.AliasStart = alias.Start;
+            clone.AliasEnd = alias.End;
+            clone.AliasTarget = anchored;
+            if (context.TrackSource)
+            {
+                YamlSourceEditor.Track(clone);
+            }
+
             return clone;
         }
 
         return null;
     }
+
+    /// <summary>Gets or sets a value indicating whether the node was loaded from a text that keeps its changes, see <see cref="YamlStream.ToStringPreservingFormatting"/>.</summary>
+    internal bool IsTracked { get; set; }
+
+    /// <summary>Gets or sets the state of the node before its first change, or <see langword="null"/> while it is unchanged.</summary>
+    internal YamlNodeSnapshot? Snapshot { get; set; }
+
+    /// <summary>Records the state of the node before its first change.</summary>
+    internal void OnChanging()
+    {
+        if (IsTracked && Snapshot is null)
+        {
+            Snapshot = YamlSourceEditor.CaptureCurrent(this);
+        }
+    }
+
+    /// <summary>Gets or sets the location of the alias this node was copied from when it was loaded.</summary>
+    internal Mark? AliasStart { get; set; }
+
+    internal Mark? AliasEnd { get; set; }
+
+    /// <summary>Gets or sets the anchored node this node was copied from when it was loaded.</summary>
+    internal YamlNode? AliasTarget { get; set; }
 
     private static void RegisterAnchor(YamlElement element, YamlModelLoadContext? context, Mark start, Mark end)
     {
@@ -69,6 +100,8 @@ public abstract class YamlNode
         {
             return;
         }
+
+        element.IsTracked = context.TrackSource;
 
         var anchor = element.Anchor;
         if (!string.IsNullOrEmpty(anchor))

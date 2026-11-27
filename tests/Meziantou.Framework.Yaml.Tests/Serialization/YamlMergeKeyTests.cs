@@ -499,6 +499,52 @@ public sealed class YamlMergeKeyTests
     }
 
     [Theory]
+    [InlineData(YamlDuplicateKeyHandling.Error)]
+    [InlineData(YamlDuplicateKeyHandling.FirstWins)]
+    [InlineData(YamlDuplicateKeyHandling.LastWins)]
+    public void Deserialize_ExplicitKeysBeforeAndBetweenMergeKeysWin(YamlDuplicateKeyHandling duplicateKeyHandling)
+    {
+        var options = new YamlSerializerOptions { DuplicateKeyHandling = duplicateKeyHandling };
+        const string Yaml = "A: 5\n<<: { A: 1 }\nB: 6\n<<: { A: 2, B: 3 }\n";
+
+        var payload = YamlSerializer.Deserialize<MergePayload>(Yaml, options);
+        var record = YamlSerializer.Deserialize<MergeRecord>(Yaml, options);
+        var dictionary = YamlSerializer.Deserialize<Dictionary<string, int>>(Yaml, options);
+        var untyped = YamlSerializer.Deserialize<Dictionary<string, object?>>(Yaml, options);
+
+        Assert.NotNull(payload);
+        Assert.Equal((5, 6), (payload.A, payload.B));
+        Assert.NotNull(record);
+        Assert.Equal((5, 6), (record.A, record.B));
+        Assert.NotNull(dictionary);
+        Assert.Equal((5, 6), (dictionary["A"], dictionary["B"]));
+        Assert.NotNull(untyped);
+        Assert.HasCount(2, untyped);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Deserialize_ExplicitKeysBeforeAndBetweenMergeKeysWin_WithEitherSerializer(bool useSourceGeneration)
+    {
+        const string Yaml = "A: 5\n<<: { A: 1 }\nB: 6\n<<: { A: 2, B: 3 }\n";
+
+        var payload = Deserialize<MergePayload>(Yaml, useSourceGeneration);
+        var record = Deserialize<MergeRecord>(Yaml, useSourceGeneration);
+        var dictionary = Deserialize<Dictionary<string, string>>(Yaml, useSourceGeneration);
+        var holder = Deserialize<MergeDictionaryHolder>("Values:\n  A: x\n  <<: { A: y }\n  B: z\n  <<: { A: v, B: w, C: u }\n", useSourceGeneration);
+
+        Assert.NotNull(payload);
+        Assert.Equal((5, 6), (payload.A, payload.B));
+        Assert.NotNull(record);
+        Assert.Equal((5, 6), (record.A, record.B));
+        Assert.NotNull(dictionary);
+        Assert.Equal(("5", "6"), (dictionary["A"], dictionary["B"]));
+        Assert.NotNull(holder?.Values);
+        Assert.Equal(("x", "z", "u"), (holder.Values["A"], holder.Values["B"], holder.Values["C"]));
+    }
+
+    [Theory]
     [InlineData(false, "'<<': hello\n")]
     [InlineData(false, "\"<<\": hello\n")]
     [InlineData(false, "!!str << : hello\n")]

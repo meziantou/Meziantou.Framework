@@ -140,9 +140,54 @@ Assert.Equal("""
 - [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) is also a list: [Insert](cref:Meziantou.Framework.Yaml.Model.YamlMapping.Insert) adds an entry at a given position.
 - [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo) writes to a `TextWriter`, or to an [emitter](07-ParserAndEmitter.md). `ToString` returns the YAML of a
   node, trimmed.
-- The model keeps neither the comments nor the exact layout of the text: the output is written again from the nodes.
-  To change a file while keeping them, use the [syntax tree](06-SyntaxTree.md#edit-a-file-without-changing-its-layout).
+- [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo) writes the nodes again, without the comments and the layout of the text. To keep them, see
+  [Keep the formatting](#keep-the-formatting).
 - [DeepClone](cref:Meziantou.Framework.Yaml.Model.YamlNode.DeepClone) copies a node and all its children.
+
+## Keep the formatting
+
+A stream loaded from a text remembers it. [ToStringPreservingFormatting](cref:Meziantou.Framework.Yaml.Model.YamlStream.ToStringPreservingFormatting) and
+[WritePreservingFormatting](cref:Meziantou.Framework.Yaml.Model.YamlStream.WritePreservingFormatting) write that text with only the nodes that changed rewritten: the comments, the
+blank lines, the quotes and the indentation of the rest are copied as they were.
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Model/YamlStreamPreservingFormattingTests.cs;region=YamlStream_PreservingFormatting;format=md-fenced-code-block;dedent=true -->
+```csharp
+var stream = YamlStream.Load(new StringReader("""
+    # Deployment settings
+    image: nginx:1.25   # pinned version
+    replicas: 2
+    env:
+      LEVEL: info
+    """));
+
+var root = (YamlMapping)stream[0].Contents!;
+root["image"] = new YamlValue("nginx:1.27");
+((YamlMapping)root["env"]!).Add(new YamlValue("MODE"), new YamlValue("fast"));
+
+// The comments and the formatting of the nodes that did not change are kept
+Assert.Equal("""
+    # Deployment settings
+    image: nginx:1.27   # pinned version
+    replicas: 2
+    env:
+      LEVEL: info
+      MODE: fast
+    """, stream.ToStringPreservingFormatting());
+```
+<!-- endref -->
+
+- A changed scalar replaces the text of the scalar; the comment after it stays.
+- An entry added to a block mapping, or an item added to a block sequence, is written on new lines at the indentation
+  of the others. A removed entry or item removes its lines.
+- A change the text cannot take in place, such as entries in a new order or a change in a flow collection, rewrites the
+  smallest node that contains it, in the style of [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo).
+- The model copies the node of an anchor for each of its aliases. When a copy or the anchored node changes, the alias
+  is replaced by the content of the copy.
+- A stream that was not loaded from a text, or whose list of documents changed, is written like
+  [WriteTo](cref:Meziantou.Framework.Yaml.Model.YamlNode.WriteTo).
+
+The [syntax tree](06-SyntaxTree.md#edit-a-file-without-changing-its-layout) is the other way to edit a file without
+changing its layout: it gives the tokens and the trivia, and you replace text yourself.
 
 ## Create a document
 

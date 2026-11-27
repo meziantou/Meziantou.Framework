@@ -55,7 +55,7 @@ public class YamlDocument : YamlNode
 
         var documentEnd = eventReader.Expect<DocumentEnd>();
 
-        return new YamlDocument(documentStart, documentEnd, contents);
+        return new YamlDocument(documentStart, documentEnd, contents) { IsTracked = context.TrackSource };
     }
 
     /// <summary>Gets document Start.</summary>
@@ -65,6 +65,7 @@ public class YamlDocument : YamlNode
         [MemberNotNull(nameof(_documentStart))]
         set
         {
+            OnChanging();
             _documentStart = value;
         }
     }
@@ -86,6 +87,7 @@ public class YamlDocument : YamlNode
         get { return _contents; }
         set
         {
+            OnChanging();
             _contents = value;
         }
     }

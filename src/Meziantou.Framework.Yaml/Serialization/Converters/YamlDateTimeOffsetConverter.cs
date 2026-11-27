@@ -11,8 +11,7 @@ internal sealed class YamlDateTimeOffsetConverter : YamlConverter<DateTimeOffset
             throw YamlThrowHelper.ThrowExpectedScalar(reader);
         }
 
-        var text = reader.ScalarValue;
-        if (!DateTimeOffset.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
+        if (!YamlScalar.TryParseDateTimeOffset(reader, out var result))
         {
             throw YamlThrowHelper.ThrowInvalidDateTimeOffsetScalar(reader);
         }

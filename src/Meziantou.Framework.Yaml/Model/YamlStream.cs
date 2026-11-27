@@ -47,8 +47,41 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     {
         ArgumentNullException.ThrowIfNull(stream);
         var effectiveOptions = options ?? YamlSerializerOptions.Default;
-        var parser = Parser.CreateParser(stream, effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
-        return Load(new EventReader(parser), effectiveOptions);
+
+        // The text is kept, so that the stream can be written back with only the nodes that changed rewritten
+        var text = stream.ReadToEnd();
+        var parser = Parser.CreateParser(new StringReader(text), effectiveOptions.EffectiveMaxDepth, effectiveOptions.SourceName);
+        var result = Load(new EventReader(parser), effectiveOptions, trackSource: true);
+        result.SourceText = text;
+        return result;
+    }
+
+    /// <summary>Gets the text the stream was loaded from, if any.</summary>
+    internal string? SourceText { get; private set; }
+
+    /// <summary>
+    /// Writes the stream as the text it was loaded from, in which only the nodes that changed since are rewritten. The
+    /// rest of the text, comments, blank lines and formatting included, is copied byte for byte.
+    /// </summary>
+    /// <remarks>
+    /// A changed scalar replaces the text of the scalar. An entry added to or removed from a block mapping or sequence
+    /// adds or removes its lines. Other changes, such as reordered entries or a changed flow collection, rewrite the
+    /// smallest node that contains them. A stream that was not loaded from a text is written like <see cref="YamlNode.WriteTo(TextWriter, bool)"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="writer"/> is <see langword="null"/>.</exception>
+    public void WritePreservingFormatting(TextWriter writer)
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.Write(ToStringPreservingFormatting());
+    }
+
+    /// <summary>
+    /// Returns the stream as the text it was loaded from, in which only the nodes that changed since are rewritten. See
+    /// <see cref="WritePreservingFormatting(TextWriter)"/>.
+    /// </summary>
+    public string ToStringPreservingFormatting()
+    {
+        return YamlSourceEditor.Render(this);
     }
 
     /// <summary>Loads data.</summary>
@@ -64,10 +97,16 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     /// </param>
     public static YamlStream Load(EventReader eventReader, YamlSerializerOptions? options)
     {
+        return Load(eventReader, options, trackSource: false);
+    }
+
+    private static YamlStream Load(EventReader eventReader, YamlSerializerOptions? options, bool trackSource)
+    {
         ArgumentNullException.ThrowIfNull(eventReader);
 
         // One context for the whole stream so alias expansion is bounded across every document, not per document.
         var context = YamlDocument.CreateContext(options);
+        context.TrackSource = trackSource;
 
         var streamStart = eventReader.Expect<StreamStart>();
 
@@ -77,7 +116,7 @@ public class YamlStream : YamlNode, IList<YamlDocument>
 
         var streamEnd = eventReader.Expect<StreamEnd>();
 
-        return new YamlStream(streamStart, streamEnd, documents);
+        return new YamlStream(streamStart, streamEnd, documents) { IsTracked = trackSource };
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -94,12 +133,14 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     /// <summary>Adds an item.</summary>
     public void Add(YamlDocument item)
     {
+        OnChanging();
         _documents.Add(item);
     }
 
     /// <summary>Removes all elements from the collection.</summary>
     public void Clear()
     {
+        OnChanging();
         _documents.Clear();
     }
 
@@ -118,6 +159,7 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     /// <summary>Removes an item.</summary>
     public bool Remove(YamlDocument item)
     {
+        OnChanging();
         var index = IndexOf(item);
         if (index >= 0)
         {
@@ -143,12 +185,14 @@ public class YamlStream : YamlNode, IList<YamlDocument>
     /// <summary>Inserts an item at the specified index.</summary>
     public void Insert(int index, YamlDocument item)
     {
+        OnChanging();
         _documents.Insert(index, item);
     }
 
     /// <summary>Removes at.</summary>
     public void RemoveAt(int index)
     {
+        OnChanging();
         _documents.RemoveAt(index);
     }
 
@@ -158,6 +202,7 @@ public class YamlStream : YamlNode, IList<YamlDocument>
         get { return _documents[index]; }
         set
         {
+            OnChanging();
             _documents[index] = value;
         }
     }

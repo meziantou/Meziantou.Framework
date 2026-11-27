@@ -47,8 +47,10 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
         var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var dict = new Dictionary<string, object?>(comparer);
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
+        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
+        // a set of their own when the mapping has a merge key.
+        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        HashSet<string>? explicitKeys = null;
         if (reader.ReferenceReader is not null && anchor is not null)
         {
             reader.ReferenceReader.Register(anchor, dict);
@@ -67,6 +69,7 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
 
             if (isMergeKey)
             {
+                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
                 ReadAndApplyMerge(reader, dict, explicitKeys);
                 continue;
             }
@@ -89,8 +92,8 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             dict[key] = value;
         }
 
-        reader.ReturnKeySet(seenKeys);
-        reader.ReturnKeySet(explicitKeys);
+        reader.ReturnPropertyNameKeySet(seenKeys);
+        reader.ReturnPropertyNameKeySet(explicitKeys);
 
         reader.Read();
         return dict;
@@ -207,8 +210,10 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
 
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
+        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
+        // a set of their own when the mapping has a merge key.
+        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        HashSet<string>? explicitKeys = null;
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
         {
             reader.ReferenceReader.Register(reader.Anchor, dictionary);
@@ -228,6 +233,7 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
 
             if (isMergeKey)
             {
+                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
                 ReadAndApplyMerge(reader, dictionary, explicitKeys);
                 continue;
             }
@@ -250,8 +256,8 @@ internal sealed class YamlDictionaryObjectConverter : YamlConverter<Dictionary<s
             dictionary[key] = value;
         }
 
-        reader.ReturnKeySet(seenKeys);
-        reader.ReturnKeySet(explicitKeys);
+        reader.ReturnPropertyNameKeySet(seenKeys);
+        reader.ReturnPropertyNameKeySet(explicitKeys);
 
         reader.Read();
         return dictionary;

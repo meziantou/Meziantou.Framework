@@ -254,9 +254,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
-        var mappingStart = reader.Start;
+        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
+        // a set of their own when the mapping has a merge key.
+        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        HashSet<string>? explicitKeys = null;
+        var mappingLocation = reader.CurrentLocation;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
         reader.Read();
@@ -267,15 +269,29 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
-            var isMergeKey = YamlMergeKey.IsMergeKey(reader);
-            var key = reader.ScalarValue ?? string.Empty;
+            var keyLocation = reader.CurrentLocation;
+
+            // A key that names a member is matched from its bytes: the name of the member is the same string, so the key
+            // is neither decoded nor allocated. "<<" may be the merge key, which the other path recognizes.
+            bool isMergeKey;
+            string key;
+            if (contract.TryGetMemberFromUtf8(reader, out var matchedMember))
+            {
+                isMergeKey = false;
+                key = matchedMember.Name;
+            }
+            else
+            {
+                isMergeKey = YamlMergeKey.IsMergeKey(reader);
+                key = reader.ScalarValue ?? string.Empty;
+            }
+
             reader.Read();
 
             if (isMergeKey)
             {
-                ReadAndApplyMergeToInstance(reader, instance!, contract, explicitKeys!, requiredSeen);
+                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
+                ReadAndApplyMergeToInstance(reader, instance!, contract, explicitKeys, requiredSeen);
                 continue;
             }
 
@@ -286,7 +302,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             var wasSeen = seenKeys is not null && !seenKeys.Add(key);
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, $"Duplicate mapping key '{key}'.");
             }
 
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
@@ -295,7 +311,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
-            if (!contract.TryGetMember(key, out var member))
+            var member = matchedMember;
+            if (member is null && !contract.TryGetMember(key, out member))
             {
                 if (contract.ExtensionData is null)
                 {
@@ -303,7 +320,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                ReadExtensionData(reader, instance!, contract.ExtensionData, key, keyStart, keyEnd);
+                ReadExtensionData(reader, instance!, contract.ExtensionData, key, keyLocation);
                 continue;
             }
 
@@ -318,11 +335,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
-            ReadAndApplyMemberValue(reader, instance!, contract, member, key, keyStart, keyEnd);
+            ReadAndApplyMemberValue(reader, instance!, contract, member, key, keyLocation);
         }
 
-        reader.ReturnKeySet(seenKeys);
-        reader.ReturnKeySet(explicitKeys);
+        reader.ReturnPropertyNameKeySet(seenKeys);
+        reader.ReturnPropertyNameKeySet(explicitKeys);
 
         if (requiredSeen is not null)
         {
@@ -338,7 +355,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (missing is not null)
             {
-                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingStart, typeof(T), missing);
+                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingLocation.Start, typeof(T), missing);
             }
         }
 
@@ -387,9 +404,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
-        var mappingStart = reader.Start;
+        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
+        // a set of their own when the mapping has a merge key.
+        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        HashSet<string>? explicitKeys = null;
+        var mappingLocation = reader.CurrentLocation;
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
         reader.Read();
@@ -400,15 +419,15 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
+            var keyLocation = reader.CurrentLocation;
             var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
             if (isMergeKey)
             {
-                ReadAndApplyMergeToPopulatedInstance(reader, instance, contract, explicitKeys!, requiredSeen);
+                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
+                ReadAndApplyMergeToPopulatedInstance(reader, instance, contract, explicitKeys, requiredSeen);
                 continue;
             }
 
@@ -419,7 +438,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             var wasSeen = seenKeys is not null && !seenKeys.Add(key);
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, $"Duplicate mapping key '{key}'.");
             }
 
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
@@ -436,7 +455,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyLocation);
                 continue;
             }
 
@@ -451,11 +470,11 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 continue;
             }
 
-            ReadAndApplyMemberValue(reader, instance, contract, member, key, keyStart, keyEnd);
+            ReadAndApplyMemberValue(reader, instance, contract, member, key, keyLocation);
         }
 
-        reader.ReturnKeySet(seenKeys);
-        reader.ReturnKeySet(explicitKeys);
+        reader.ReturnPropertyNameKeySet(seenKeys);
+        reader.ReturnPropertyNameKeySet(explicitKeys);
 
         if (requiredSeen is not null)
         {
@@ -471,7 +490,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (missing is not null)
             {
-                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingStart, instance.GetType(), missing);
+                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingLocation.Start, instance.GetType(), missing);
             }
         }
 
@@ -498,15 +517,14 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     {
         var constructor = contract.Constructor ?? throw new InvalidOperationException("Constructor model was not available.");
 
-        var mappingStart = reader.Start;
+        var mappingLocation = reader.CurrentLocation;
         var mappingAnchor = reader.Anchor;
         var options = reader.Options;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
-
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins
-            ? null
-            : reader.RentKeySet();
+        // The keys of the mapping, for its duplicates and its merge keys. The keys that a merge key must not replace only get
+        // a set of their own when the mapping has a merge key.
+        HashSet<string>? seenKeys = mergeEnabled || options.DuplicateKeyHandling != YamlDuplicateKeyHandling.LastWins ? reader.RentPropertyNameKeySet() : null;
+        HashSet<string>? explicitKeys = null;
 
         var requiredSeen = contract.RequiredMembers.Length == 0 ? null : new bool[contract.RequiredMembers.Length];
 
@@ -524,15 +542,15 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
+            var keyLocation = reader.CurrentLocation;
             var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
 
             if (isMergeKey)
             {
-                ReadAndApplyMergeToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys!, requiredSeen);
+                explicitKeys ??= reader.CopyPropertyNameKeySet(seenKeys!);
+                ReadAndApplyMergeToConstructorBuffers(reader, contract, constructor, args, paramSeen, memberValues, extensionEntries, explicitKeys, requiredSeen);
                 continue;
             }
 
@@ -541,7 +559,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             var wasSeen = seenKeys is not null && !seenKeys.Add(key);
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.Error)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, $"Duplicate mapping key '{key}'.");
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, $"Duplicate mapping key '{key}'.");
             }
 
             if (wasSeen && options.DuplicateKeyHandling == YamlDuplicateKeyHandling.FirstWins)
@@ -573,7 +591,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 }
                 catch (Exception exception)
                 {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                    throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
                 }
 
                 ThrowIfNullForNonNullableConstructorParameter(reader, contract, constructor, parameterIndex, value);
@@ -589,7 +607,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     if (contract.ExtensionData is not null)
                     {
                         var extValue = ReadExtensionDataValue(reader, contract.ExtensionData);
-                        extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyStart, keyEnd));
+                        extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyLocation));
                     }
                     else
                     {
@@ -599,24 +617,24 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                var value = ReadBufferedMemberValue(reader, member, keyStart, keyEnd);
+                var value = ReadBufferedMemberValue(reader, member, keyLocation);
                 ThrowIfNullForNonNullableMember(reader, contract, member, value);
-                memberValues[member] = new BufferedMemberAssignment(member, value, keyStart, keyEnd);
+                memberValues[member] = new BufferedMemberAssignment(member, value, keyLocation);
                 continue;
             }
 
             if (contract.ExtensionData is not null)
             {
                 var extValue = ReadExtensionDataValue(reader, contract.ExtensionData);
-                extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyStart, keyEnd));
+                extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyLocation));
                 continue;
             }
 
             SkipOrThrowUnmappedMember(reader, contract, key);
         }
 
-        reader.ReturnKeySet(seenKeys);
-        reader.ReturnKeySet(explicitKeys);
+        reader.ReturnPropertyNameKeySet(seenKeys);
+        reader.ReturnPropertyNameKeySet(explicitKeys);
 
         // Ensure all constructor parameters are satisfied before constructing the instance.
         for (var i = 0; i < constructor.ParameterCount; i++)
@@ -634,7 +652,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (reader.Options.RespectRequiredConstructorParameters)
             {
-                throw YamlThrowHelper.ThrowMissingRequiredConstructorParameter(reader, mappingStart, typeof(T), constructor.GetParameterName(i));
+                throw YamlThrowHelper.ThrowMissingRequiredConstructorParameter(reader, mappingLocation.Start, typeof(T), constructor.GetParameterName(i));
             }
 
             args[i] = null;
@@ -653,7 +671,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
         catch (Exception exception)
         {
-            throw new YamlException(reader.SourceName, mappingStart, reader.End, exception.Message, exception);
+            throw new YamlException(reader.SourceName, mappingLocation.Start, reader.End, exception.Message, exception);
         }
 
         if (reader.ReferenceReader is not null && mappingAnchor is not null)
@@ -727,7 +745,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
             if (missing is not null)
             {
-                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingStart, typeof(T), missing);
+                throw YamlThrowHelper.ThrowMissingRequiredMembers(reader, mappingLocation.Start, typeof(T), missing);
             }
         }
 
@@ -761,7 +779,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
            !type.IsDefined(typeof(YamlConverterAttribute), inherit: false) &&
            !readerWriter.TryGetCustomConverter(type, out _);
 
-    private static object? ReadBufferedMemberValue(YamlReader reader, Member member, Mark keyStart, Mark keyEnd)
+    private static object? ReadBufferedMemberValue(YamlReader reader, Member member, YamlLocation keyLocation)
     {
         if (member.ReadsNullScalarAsNull && reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader))
         {
@@ -780,7 +798,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
         catch (Exception exception)
         {
-            throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+            throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
         }
     }
 
@@ -854,8 +872,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
+            var keyLocation = reader.CurrentLocation;
             var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
@@ -887,13 +904,13 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                ReadAndApplyMemberValue(reader, instance, contract, member, key, keyStart, keyEnd);
+                ReadAndApplyMemberValue(reader, instance, contract, member, key, keyLocation);
                 continue;
             }
 
             if (contract.ExtensionData is not null)
             {
-                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyLocation);
                 continue;
             }
 
@@ -963,8 +980,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
+            var keyLocation = reader.CurrentLocation;
             var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
@@ -996,13 +1012,13 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                ReadAndApplyMemberValue(reader, instance, contract, member, key, keyStart, keyEnd);
+                ReadAndApplyMemberValue(reader, instance, contract, member, key, keyLocation);
                 continue;
             }
 
             if (contract.ExtensionData is not null)
             {
-                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyLocation);
                 continue;
             }
 
@@ -1012,7 +1028,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         reader.Read();
     }
 
-    private static void ReadAndApplyMemberValue(YamlReader reader, object instance, Contract contract, Member member, string key, Mark keyStart, Mark keyEnd)
+    private static void ReadAndApplyMemberValue(YamlReader reader, object instance, Contract contract, Member member, string key, YamlLocation keyLocation)
     {
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(instance);
@@ -1021,6 +1037,15 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         var effectiveHandling = member.GetEffectiveObjectCreationHandling(contract.PreferredObjectCreationHandling);
         var preferPopulate = effectiveHandling == YamlObjectCreationHandling.Populate;
+
+        // A member that is assigned, and that a null scalar does not set to null, such as a number: the checks below only
+        // lead to its typed setter
+        if (!preferPopulate && member.CanWrite && !member.ReadsNullScalarAsNull &&
+            member.GetTypedSetter(member.Converter ??= reader.GetConverter(member.MemberType), contract.DeclaringType) is { } directSetter)
+        {
+            directSetter.ReadAndSet(reader, instance, keyLocation);
+            return;
+        }
 
         // A null scalar replaces the value: there is nothing to populate.
         var isNullScalar = reader.TokenType == YamlTokenType.Scalar && YamlScalar.IsNull(reader);
@@ -1035,7 +1060,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             {
                 if (contract.ExtensionData is not null)
                 {
-                    ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
+                    ReadExtensionData(reader, instance, contract.ExtensionData, key, keyLocation);
                 }
                 else
                 {
@@ -1059,7 +1084,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 }
                 catch (Exception exception)
                 {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                    throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
                 }
 
                 return;
@@ -1090,7 +1115,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             }
             catch (Exception exception)
             {
-                throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
             }
 
             if (currentValue is not null)
@@ -1106,7 +1131,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 }
                 catch (Exception exception)
                 {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                    throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
                 }
 
                 if (member.CanWrite)
@@ -1122,7 +1147,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     }
                     catch (Exception exception)
                     {
-                        throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                        throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
                     }
                 }
 
@@ -1134,13 +1159,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         {
             if (contract.ExtensionData is not null)
             {
-                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyStart, keyEnd);
+                ReadExtensionData(reader, instance, contract.ExtensionData, key, keyLocation);
             }
             else
             {
                 reader.Skip();
             }
 
+            return;
+        }
+
+        // The value is read by the typed converter and assigned without being boxed
+        if (member.GetTypedSetter(converter, contract.DeclaringType) is { } typedSetter)
+        {
+            typedSetter.ReadAndSet(reader, instance, keyLocation);
             return;
         }
 
@@ -1155,7 +1187,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
         catch (Exception exception)
         {
-            throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+            throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
         }
 
         ThrowIfNullForNonNullableMember(reader, contract, member, value);
@@ -1169,7 +1201,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
         catch (Exception exception)
         {
-            throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+            throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
         }
     }
 
@@ -1251,8 +1283,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 throw YamlThrowHelper.ThrowExpectedScalarKey(reader);
             }
 
-            var keyStart = reader.Start;
-            var keyEnd = reader.End;
+            var keyLocation = reader.CurrentLocation;
             var isMergeKey = YamlMergeKey.IsMergeKey(reader);
             var key = reader.ScalarValue ?? string.Empty;
             reader.Read();
@@ -1294,7 +1325,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                 }
                 catch (Exception exception)
                 {
-                    throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+                    throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
                 }
 
                 ThrowIfNullForNonNullableConstructorParameter(reader, contract, constructor, parameterIndex, value);
@@ -1310,7 +1341,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     if (contract.ExtensionData is not null)
                     {
                         var extValue = ReadExtensionDataValue(reader, contract.ExtensionData);
-                        extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyStart, keyEnd));
+                        extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyLocation));
                     }
                     else
                     {
@@ -1320,16 +1351,16 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     continue;
                 }
 
-                var value = ReadBufferedMemberValue(reader, member, keyStart, keyEnd);
+                var value = ReadBufferedMemberValue(reader, member, keyLocation);
                 ThrowIfNullForNonNullableMember(reader, contract, member, value);
-                memberValues[member] = new BufferedMemberAssignment(member, value, keyStart, keyEnd);
+                memberValues[member] = new BufferedMemberAssignment(member, value, keyLocation);
                 continue;
             }
 
             if (contract.ExtensionData is not null)
             {
                 var extValue = ReadExtensionDataValue(reader, contract.ExtensionData);
-                extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyStart, keyEnd));
+                extensionEntries!.Add(new BufferedExtensionEntry(key, extValue, keyLocation));
                 continue;
             }
 
@@ -1562,6 +1593,10 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
     private sealed class Contract
     {
         private readonly Dictionary<string, Member> _membersByName;
+
+        // Matches the keys from their characters, when the names are compared ordinally: the key is then the name
+        private readonly Dictionary<string, Member>.AlternateLookup<ReadOnlySpan<char>> _membersByChars;
+        private readonly bool _canMatchUtf8Keys;
         private readonly Func<YamlReaderWriterBase, ConstructorResolution> _resolveConstructor;
         private ConstructorResolution? _constructorResolution;
 
@@ -1582,6 +1617,9 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             MembersDeclaration = membersDeclaration;
             MembersSorted = membersSorted;
             _membersByName = membersByName;
+            _canMatchUtf8Keys = ReferenceEquals(membersByName.Comparer, StringComparer.Ordinal)
+                ? membersByName.TryGetAlternateLookup(out _membersByChars)
+                : false;
             RequiredMembers = requiredMembers;
             ExtensionData = extensionData;
             Polymorphism = polymorphism;
@@ -1879,7 +1917,8 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
                     var parameters = selectedConstructor.GetParameters();
                     if (parameters.Length == 0)
                     {
-                        createInstance = () =>
+                        var compiledConstructor = type.IsAbstract || type.IsInterface ? null : YamlMemberAccessors.CreateConstructor(selectedConstructor);
+                        createInstance = compiledConstructor ?? (() =>
                         {
                             if (type.IsAbstract || type.IsInterface)
                             {
@@ -1888,7 +1927,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
                             return selectedConstructor.Invoke(null)
                                    ?? throw new NotSupportedException($"Type '{type}' could not be instantiated.");
-                        };
+                        });
                     }
                     else
                     {
@@ -1904,6 +1943,20 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         }
 
         public bool TryGetMember(string name, out Member member) => _membersByName.TryGetValue(name, out member!);
+
+        /// <summary>Finds the member that the current scalar names, from its bytes, when it is not "&lt;&lt;".</summary>
+        public bool TryGetMemberFromUtf8(YamlReader reader, [NotNullWhen(true)] out Member? member)
+        {
+            member = null;
+            if (!_canMatchUtf8Keys || !reader.TryGetRawUtf8Scalar(out var utf8) || utf8.Length > 128 || utf8.SequenceEqual("<<"u8))
+                return false;
+
+            Span<char> chars = stackalloc char[128];
+            if (System.Text.Unicode.Utf8.ToUtf16(utf8, chars, out _, out var length, replaceInvalidSequences: false) is not System.Buffers.OperationStatus.Done)
+                return false;
+
+            return _membersByChars.TryGetValue(chars[..length], out member);
+        }
 
         /// <summary>Selects the deserialization constructor, which <see cref="CreateInstance"/> and <see cref="Constructor"/> use.</summary>
         /// <remarks>
@@ -2555,6 +2608,16 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         private readonly PropertyInfo? _property;
         private readonly FieldInfo? _field;
 
+        // Compiled on first use: reflection is used when they cannot be compiled
+        private Func<object, object?>? _getter;
+        private Action<object, object?>? _setter;
+        private bool _getterResolved;
+        private bool _setterResolved;
+
+        // The typed read and assignment of the value, for the converter it was compiled for
+        private YamlTypedMemberSetter? _typedSetter;
+        private YamlConverter? _typedSetterConverter;
+
         public Member(
             string name,
             int order,
@@ -2683,6 +2746,17 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
         public object? GetValue(object instance)
         {
+            if (!_getterResolved)
+            {
+                _getter = YamlMemberAccessors.CreateGetter((MemberInfo?)_property ?? _field!);
+                _getterResolved = true;
+            }
+
+            if (_getter is not null)
+            {
+                return _getter(instance);
+            }
+
             if (_property is not null)
             {
                 return _property.GetValue(instance);
@@ -2691,8 +2765,32 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
             return _field!.GetValue(instance);
         }
 
+        /// <summary>Gets the typed read and assignment of the value with <paramref name="converter"/>, or <see langword="null"/> when it cannot be compiled.</summary>
+        public YamlTypedMemberSetter? GetTypedSetter(YamlConverter converter, Type declaringType)
+        {
+            if (!ReferenceEquals(_typedSetterConverter, converter))
+            {
+                _typedSetter = YamlTypedMemberSetter.Create(converter, (MemberInfo?)_property ?? _field!, MemberType, declaringType, Name, DisallowNullOnDeserialize);
+                _typedSetterConverter = converter;
+            }
+
+            return _typedSetter;
+        }
+
         public void SetValue(object instance, object? value)
         {
+            if (!_setterResolved)
+            {
+                _setter = YamlMemberAccessors.CreateSetter((MemberInfo?)_property ?? _field!);
+                _setterResolved = true;
+            }
+
+            if (_setter is not null)
+            {
+                _setter(instance, value);
+                return;
+            }
+
             if (_property is not null)
             {
                 _property.SetValue(instance, value);
@@ -2752,43 +2850,45 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
 
     private readonly struct BufferedMemberAssignment
     {
-        public BufferedMemberAssignment(Member member, object? value, Mark keyStart, Mark keyEnd)
+        public BufferedMemberAssignment(Member member, object? value, YamlLocation keyLocation)
         {
             Member = member;
             Value = value;
-            KeyStart = keyStart;
-            KeyEnd = keyEnd;
+            KeyLocation = keyLocation;
         }
 
         public Member Member { get; }
 
         public object? Value { get; }
 
-        public Mark KeyStart { get; }
+        public YamlLocation KeyLocation { get; }
 
-        public Mark KeyEnd { get; }
+        public Mark KeyStart => KeyLocation.Start;
+
+        public Mark KeyEnd => KeyLocation.End;
     }
 
     private readonly struct BufferedExtensionEntry
     {
-        public BufferedExtensionEntry(string key, object? value, Mark keyStart, Mark keyEnd)
+        public BufferedExtensionEntry(string key, object? value, YamlLocation keyLocation)
         {
             Key = key;
             Value = value;
-            KeyStart = keyStart;
-            KeyEnd = keyEnd;
+            KeyLocation = keyLocation;
         }
 
         public string Key { get; }
 
         public object? Value { get; }
 
-        public Mark KeyStart { get; }
+        public YamlLocation KeyLocation { get; }
 
-        public Mark KeyEnd { get; }
+        public Mark KeyStart => KeyLocation.Start;
+
+        public Mark KeyEnd => KeyLocation.End;
     }
 
-    private static void ReadExtensionData(YamlReader reader, object instance, ExtensionDataInfo extensionData, string key, Mark keyStart, Mark keyEnd)
+    private static void ReadExtensionData(YamlReader reader, object instance, ExtensionDataInfo extensionData, string key, YamlLocation keyLocation)
     {
         ArgumentNullException.ThrowIfNull(reader);
         ArgumentNullException.ThrowIfNull(instance);
@@ -2807,7 +2907,7 @@ internal sealed class YamlObjectConverter<T> : YamlConverter<T?>, IYamlUnionCase
         catch (Exception exception)
         {
             // The failure is reported at the key, whether it is declared by the mapping or provided by a merge.
-            throw new YamlException(reader.SourceName, keyStart, keyEnd, exception.Message, exception);
+            throw new YamlException(reader.SourceName, keyLocation.Start, keyLocation.End, exception.Message, exception);
         }
     }
 

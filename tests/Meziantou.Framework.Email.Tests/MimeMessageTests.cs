@@ -255,6 +255,38 @@ public sealed class MimeMessageTests
         Assert.True(depth <= 10);
     }
 
+    [Theory]
+    [InlineData("X-A: 1\r\nBcc")]
+    [InlineData("X-A\nBcc")]
+    [InlineData("X-A\rBcc")]
+    [InlineData("X A")]
+    [InlineData("X:A")]
+    [InlineData("X-\u00E9")]
+    [InlineData("X-\u007F")]
+    public void Header_InvalidName_Throws(string name)
+    {
+        Assert.Throws<ArgumentException>(() => MimeHeader.Create(name, "evil@example.com"));
+        Assert.Throws<ArgumentException>(() => MimeHeader.CreateRaw(name, "evil@example.com"));
+
+        var message = new MimeMessage();
+        Assert.Throws<ArgumentException>(() => message.Headers.Add(name, "evil@example.com"));
+        Assert.Throws<ArgumentException>(() => message.Headers.Set(name, "evil@example.com"));
+        Assert.Empty(message.Headers);
+    }
+
+    [Fact]
+    public void Header_ValidName_RoundTrips()
+    {
+        var message = new MimeMessage();
+        message.Headers.Add("X-Custom!#$%&'*+-.^_`|~", "value");
+        using var stream = new MemoryStream();
+        message.WriteTo(stream);
+
+        var loaded = MimeMessage.Load(stream.ToArray());
+        Assert.Equal("value", loaded.Headers["X-Custom!#$%&'*+-.^_`|~"]);
+        Assert.Null(loaded.Headers.Find("Bcc"));
+    }
+
     private static void DescribeExpected(XElement element, string directory, List<string> result, string indent)
     {
         switch (element.Name.LocalName)

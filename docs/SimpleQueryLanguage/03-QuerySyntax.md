@@ -18,6 +18,11 @@ This page describes what users can type. Share it with them, or summarize it nex
 | `key:low..high` | A range. Both bounds are included. |
 | `key:low..*` and `key:*..high` | A range open on one side: the same as `key>=low` and `key<=high`. |
 
+A date without a time, such as `2026-01-31`, is the whole day: `created:2026-01-31` matches every instant of that day,
+`created:2026-01-01..2026-01-31` includes January 31, `created<=2026-01-31` is before February 1, and
+`created>2026-01-31` starts on February 1. A value with a time, such as `2026-01-31T10:00`, is an instant. See
+[Values and dates](06-ValuesAndDates.md#days).
+
 What each key means, and which operators it accepts, depends on the handler the application registered for it. A key
 the application does not know is searched as free text, `key:value` included, unless the application handles unknown
 keys.

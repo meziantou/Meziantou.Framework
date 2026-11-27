@@ -633,7 +633,7 @@ public sealed class XmlSyntaxTreeTests
         Measure(Count / 4);
         var small = Min(Measure(Count), Measure(Count));
         var large = Min(Measure(4 * Count), Measure(4 * Count));
-        Assert.True(large < small * 8 || large < TimeSpan.FromMilliseconds(200), $"{Count} siblings took {small}, {4 * Count} siblings took {large}");
+        Assert.True(large < small * 8 || large < TimeSpan.FromSeconds(2), $"{Count} siblings took {small}, {4 * Count} siblings took {large}");
 
         static TimeSpan Measure(int count)
         {

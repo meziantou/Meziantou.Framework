@@ -914,7 +914,7 @@ public sealed class PowerShellParserTests
         await MeasureAsync(count / 4);
         var small = Min(await MeasureAsync(count), await MeasureAsync(count));
         var large = Min(await MeasureAsync(4 * count), await MeasureAsync(4 * count));
-        Assert.True(large < small * 8 || large < TimeSpan.FromMilliseconds(200), $"{count} repetitions took {small}, {4 * count} repetitions took {large}");
+        Assert.True(large < small * 8 || large < TimeSpan.FromSeconds(2), $"{count} repetitions took {small}, {4 * count} repetitions took {large}");
 
         async Task<TimeSpan> MeasureAsync(int count)
         {

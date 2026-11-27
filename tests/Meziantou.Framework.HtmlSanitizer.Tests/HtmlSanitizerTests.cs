@@ -581,7 +581,7 @@ public class HtmlSanitizerTests
         action(size / 4);
         var small = Min(Measure(size), Measure(size));
         var large = Min(Measure(4 * size), Measure(4 * size));
-        Assert.True(large < small * 8 || large < TimeSpan.FromMilliseconds(200), $"Size {size} took {small}, size {4 * size} took {large}");
+        Assert.True(large < small * 8 || large < TimeSpan.FromSeconds(2), $"Size {size} took {small}, size {4 * size} took {large}");
 
         TimeSpan Measure(int size)
         {

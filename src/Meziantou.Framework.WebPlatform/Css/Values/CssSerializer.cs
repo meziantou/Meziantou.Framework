@@ -424,7 +424,7 @@ internal static partial class CssSerializer
             s_percentagesAreLengths = percentagesAreLengths;
         }
 
-        var result = builder.ToString().Trim();
+        var result = TrimWhitespace(builder.ToString());
         return property is null ? result : SerializeFontValue(property.Name, result) ?? result;
     }
 
@@ -454,7 +454,7 @@ internal static partial class CssSerializer
 
             var builder = new StringBuilder();
             SerializeList(builder, entry, keywords, zeroIsLength: false);
-            families.Add(builder.ToString().Trim());
+            families.Add(TrimWhitespace(builder.ToString()));
         }
 
         return string.Join(", ", families);
@@ -606,6 +606,43 @@ internal static partial class CssSerializer
         return result;
     }
 
+    /// <summary>
+    /// Removes the whitespace around a serialization, except a whitespace escaped by the backslash before it: the identifier
+    /// <c>a </c> is serialized as <c>a\ </c>, and a <c>\</c> delimiter as a backslash followed by a newline
+    /// (https://drafts.csswg.org/css-syntax-3/#serialization). Without that whitespace, the backslash would escape the
+    /// character that follows the serialization, such as the <c>)</c> of the function that contains it.
+    /// </summary>
+    internal static string TrimWhitespace(string value)
+    {
+        var start = 0;
+        while (start < value.Length && IsWhitespace(value[start]))
+        {
+            start++;
+        }
+
+        var end = value.Length;
+        while (end > start && IsWhitespace(value[end - 1]) && !IsEscaped(value, end - 1))
+        {
+            end--;
+        }
+
+        return start == 0 && end == value.Length ? value : value[start..end];
+
+        static bool IsWhitespace(char c) => c is ' ' or '\t' or '\n' or '\r' or '\f';
+
+        // Whether the character follows an odd number of backslashes
+        static bool IsEscaped(string value, int index)
+        {
+            var backslashes = 0;
+            while (index - backslashes > 0 && value[index - backslashes - 1] == '\\')
+            {
+                backslashes++;
+            }
+
+            return backslashes % 2 == 1;
+        }
+    }
+
     private static void TrimEnd(StringBuilder builder)
     {
         while (builder.Length > 0 && builder[^1] == ' ')
@@ -623,7 +660,7 @@ internal static partial class CssSerializer
                 builder.Append(InfraAscii.ToAsciiLowercase(function.Name)).Append('(');
                 var inner = new StringBuilder();
                 SerializeList(inner, function.Value, keywords, zeroIsLength: false);
-                builder.Append(inner.ToString().Trim()).Append(')');
+                builder.Append(TrimWhitespace(inner.ToString())).Append(')');
                 return;
             }
 
@@ -696,7 +733,7 @@ internal static partial class CssSerializer
                 builder.Append(SerializeIdentifier(GetCanonicalFunctionName(name))).Append('(');
                 var inner = new StringBuilder();
                 SerializeList(inner, arguments, keywords, zeroIsLength: false);
-                builder.Append(inner.ToString().Trim()).Append(')');
+                builder.Append(TrimWhitespace(inner.ToString())).Append(')');
                 return;
             }
 
@@ -711,7 +748,7 @@ internal static partial class CssSerializer
 
                 var inner = new StringBuilder();
                 SerializeList(inner, block.Value, keywords, zeroIsLength);
-                builder.Append(open).Append(inner.ToString().Trim()).Append(close);
+                builder.Append(open).Append(TrimWhitespace(inner.ToString())).Append(close);
                 return;
             }
 
@@ -773,6 +810,10 @@ internal static partial class CssSerializer
                         return;
                     case CssTokenType.AtKeyword:
                         builder.Append('@').Append(SerializeIdentifier(token.Value));
+                        return;
+                    case CssTokenType.Delim when token.Value is "\\":
+                        // A \ delimiter is followed by a newline, so that it does not escape the next character (https://drafts.csswg.org/css-syntax-3/#serialization)
+                        builder.Append("\\\n");
                         return;
                     case CssTokenType.Delim:
                         builder.Append(token.Value);

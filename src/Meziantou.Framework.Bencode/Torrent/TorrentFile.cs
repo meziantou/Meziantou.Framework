@@ -63,19 +63,18 @@ public sealed class TorrentFile
     /// <summary>The keys of the root dictionary this model does not represent. They are written back as they are.</summary>
     public IDictionary<BencodeString, BencodeValue> AdditionalKeys { get; } = new Dictionary<BencodeString, BencodeValue>();
 
-    private TorrentInfo _info = new();
+    // The bytes the 'info' dictionary was parsed from, the encoding of its text, and the model they give, which is
+    // created on first use to detect whether the content of Info changed since the torrent was parsed
     private ReadOnlyMemory<byte> _infoBytes;
+    private Encoding? _infoEncoding;
+    private TorrentInfo? _parsedInfo;
 
-    /// <summary>The metainfo dictionary. Replacing it discards the parsed bytes, so the info-hash is recomputed from the model.</summary>
-    public TorrentInfo Info
-    {
-        get => _info;
-        set
-        {
-            _info = value;
-            _infoBytes = default;
-        }
-    }
+    /// <summary>The metainfo dictionary.</summary>
+    /// <remarks>
+    /// While its content is the one the torrent was parsed from, the info-hash and the written torrent use the bytes the 'info'
+    /// dictionary was parsed from. Once it changes, they use the canonical encoding of the model.
+    /// </remarks>
+    public TorrentInfo Info { get; set; } = new();
 
     public static TorrentFile Parse(ReadOnlySpan<byte> data)
     {
@@ -144,29 +143,40 @@ public sealed class TorrentFile
         await stream.WriteAsync(data.AsMemory(), cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Computes the BitTorrent v1 info-hash.</summary>
-    /// <remarks>For a parsed torrent this hashes the exact bytes the 'info' dictionary was read from, so keys this model does not represent still contribute to the hash.</remarks>
+    /// <summary>Computes the BitTorrent v1 info-hash: the SHA-1 of the 'info' dictionary, as the torrent is written.</summary>
+    /// <remarks>For a parsed torrent whose <see cref="Info"/> did not change, this hashes the exact bytes the 'info' dictionary was read from, so keys this model does not represent still contribute to the hash.</remarks>
     [SuppressMessage("Security", "CA5350:Do Not Use Weak Cryptographic Algorithms", Justification = "BitTorrent v1 info-hash requires SHA-1.")]
     public byte[] GetInfoHashSha1()
     {
-        return SHA1.HashData(GetInfoBytes().Span);
+        return SHA1.HashData(GetInfoBytes(TorrentField.ResolveEncoding(Encoding)).Span);
     }
 
-    /// <summary>Computes the SHA-256 of the 'info' dictionary, which is the BitTorrent v2 info-hash.</summary>
-    /// <remarks>For a parsed torrent this hashes the exact bytes the 'info' dictionary was read from, so keys this model does not represent still contribute to the hash.</remarks>
+    /// <summary>Computes the SHA-256 of the 'info' dictionary, as the torrent is written, which is the BitTorrent v2 info-hash.</summary>
+    /// <remarks>For a parsed torrent whose <see cref="Info"/> did not change, this hashes the exact bytes the 'info' dictionary was read from, so keys this model does not represent still contribute to the hash.</remarks>
     public byte[] GetInfoHashSha256()
     {
-        return SHA256.HashData(GetInfoBytes().Span);
+        return SHA256.HashData(GetInfoBytes(TorrentField.ResolveEncoding(Encoding)).Span);
     }
 
-    /// <summary>Returns the bytes to hash: the ones the torrent was parsed from when available, otherwise a canonical encoding of the model.</summary>
+    /// <summary>Returns the bytes of the 'info' dictionary, which are both hashed and written.</summary>
     /// <remarks>
     /// Re-encoding a parsed torrent can change the bytes: the keys may not have been sorted, and an explicit 'private 0'
-    /// is not written. Any change changes the hash, which is the torrent's identity.
+    /// is not written. Any change changes the hash, which is the torrent's identity, so the parsed bytes are kept while
+    /// the content of the model is the one they hold. Otherwise, the model is encoded canonically.
     /// </remarks>
-    private ReadOnlyMemory<byte> GetInfoBytes()
+    private ReadOnlyMemory<byte> GetInfoBytes(Encoding? encoding)
     {
-        return _infoBytes.IsEmpty ? Info.ToBencodeDictionary(TorrentField.ResolveEncoding(Encoding)).ToUtf8ByteArray(canonical: true) : _infoBytes;
+        if (Info is null)
+            throw new FormatException("Torrent file must contain a non-null info object.");
+
+        if (!_infoBytes.IsEmpty && Equals(encoding, _infoEncoding))
+        {
+            _parsedInfo ??= TorrentInfo.Parse((BencodeDictionary)BencodeDocument.Parse(_infoBytes.Span).Root, _infoEncoding);
+            if (Info.HasSameContent(_parsedInfo))
+                return _infoBytes;
+        }
+
+        return Info.ToBencodeDictionary(encoding).ToUtf8ByteArray(canonical: true);
     }
 
     /// <summary>Reads the root dictionary, keeping a copy of the bytes of the 'info' dictionary to compute the info-hash.</summary>
@@ -246,6 +256,7 @@ public sealed class TorrentFile
         {
             Encoding = encodingName,
             Info = TorrentInfo.Parse(infoDictionary, encoding),
+            _infoEncoding = encoding,
         };
 
         if (dictionary.TryGetValue(AnnounceKey, out var announceValue))
@@ -380,13 +391,11 @@ public sealed class TorrentFile
 
     private BencodeDictionary ToBencodeDictionary()
     {
-        if (Info is null)
-            throw new FormatException("Torrent file must contain a non-null info object.");
-
+        // The 'info' dictionary is written as the bytes it is hashed from, whatever the order of the keys of the root
         var encoding = TorrentField.ResolveEncoding(Encoding);
         var dictionary = new BencodeDictionary
         {
-            { InfoKey, Info.ToBencodeDictionary(encoding) },
+            { InfoKey, new BencodeEncodedValue(GetInfoBytes(encoding), BencodeValueKind.Dictionary) },
         };
 
         if (Announce is not null)

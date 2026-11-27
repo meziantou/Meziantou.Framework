@@ -248,6 +248,86 @@ public sealed class TorrentInfo
         return dictionary;
     }
 
+    /// <summary>Compares the content of the model, including the nested files and the additional keys, so an edit made in place is detected.</summary>
+    internal bool HasSameContent(TorrentInfo other)
+    {
+        return string.Equals(Name, other.Name, StringComparison.Ordinal)
+            && PieceLength == other.PieceLength
+            && Pieces.Span.SequenceEqual(other.Pieces.Span)
+            && IsPrivate == other.IsPrivate
+            && Length == other.Length
+            && string.Equals(Source, other.Source, StringComparison.Ordinal)
+            && string.Equals(Md5Sum, other.Md5Sum, StringComparison.Ordinal)
+            && MetaVersion == other.MetaVersion
+            && HaveSameItems(Files, other.Files, HaveSameContent)
+            && HaveSameItems(FileTree, other.FileTree, HaveSameContent)
+            && HaveSameValues(AdditionalKeys, other.AdditionalKeys);
+    }
+
+    private static bool HaveSameContent(TorrentInfoFile? left, TorrentInfoFile? right)
+    {
+        if (left is null || right is null)
+            return ReferenceEquals(left, right);
+
+        return left.Length == right.Length
+            && string.Equals(left.Md5Sum, right.Md5Sum, StringComparison.Ordinal)
+            && HaveSameItems(left.Path, right.Path, (a, b) => string.Equals(a, b, StringComparison.Ordinal))
+            && HaveSameValues(left.AdditionalKeys, right.AdditionalKeys);
+    }
+
+    private static bool HaveSameContent(TorrentFileTreeEntry? left, TorrentFileTreeEntry? right)
+    {
+        if (left is null || right is null)
+            return ReferenceEquals(left, right);
+
+        return left.Length == right.Length
+            && left.PiecesRoot.Span.SequenceEqual(right.PiecesRoot.Span)
+            && HaveSameItems(left.Path, right.Path, (a, b) => string.Equals(a, b, StringComparison.Ordinal))
+            && HaveSameValues(left.AdditionalKeys, right.AdditionalKeys);
+    }
+
+    private static bool HaveSameItems<T>(IReadOnlyList<T>? left, IReadOnlyList<T>? right, Func<T, T, bool> equals)
+    {
+        if (left is null || right is null)
+            return ReferenceEquals(left, right);
+
+        if (left.Count != right.Count)
+            return false;
+
+        for (var i = 0; i < left.Count; i++)
+        {
+            if (!equals(left[i], right[i]))
+                return false;
+        }
+
+        return true;
+    }
+
+    private static bool HaveSameValues(IDictionary<BencodeString, BencodeValue> left, IDictionary<BencodeString, BencodeValue> right)
+    {
+        if (left.Count != right.Count)
+            return false;
+
+        foreach (var (key, value) in left)
+        {
+            if (!right.TryGetValue(key, out var otherValue))
+                return false;
+
+            // The values are mutable, such as a dictionary or a list, so they are compared by their encoding
+            if (value is null || otherValue is null)
+            {
+                if (!ReferenceEquals(value, otherValue))
+                    return false;
+            }
+            else if (!value.ToUtf8ByteArray(canonical: false).AsSpan().SequenceEqual(otherValue.ToUtf8ByteArray(canonical: false)))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>Flattens the 'file tree': a dictionary whose keys are path segments, and whose files are a dictionary with a single empty key.</summary>
     private static void ReadFileTree(BencodeDictionary directory, List<string> path, List<TorrentFileTreeEntry> entries, Encoding? encoding)
     {

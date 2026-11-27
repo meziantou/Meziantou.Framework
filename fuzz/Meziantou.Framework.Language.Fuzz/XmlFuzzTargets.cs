@@ -103,6 +103,14 @@ internal static class XmlFuzzTargets
 
         var twice = Formatter.Format(formatted);
         FuzzAssert.Equal(formattedText, twice.ToFullString(), "Formatting the formatted document changes it");
+
+        // The elements deeper than MaxDepth keep their whitespace, which a second pass keeps too
+        var shallowOptions = new XmlFormattingOptions { MaxDepth = 2 };
+        var shallow = Formatter.Format(tree.GetRoot(), shallowOptions);
+        var shallowText = shallow.ToFullString();
+        var shallowDiagnostics = ((XmlSyntaxTree)shallow.SyntaxTree!).GetDiagnostics().Where(diagnostic => !IsKnownDivergence(diagnostic)).ToList();
+        FuzzAssert.True(shallowDiagnostics.Count == 0, $"The document formatted with MaxDepth = 2 {FuzzAssert.Format(shallowText)} has diagnostics: {Describe(shallowDiagnostics)}");
+        FuzzAssert.Equal(shallowText, Formatter.Format(shallow, shallowOptions).ToFullString(), "Formatting the document formatted with MaxDepth = 2 changes it");
     }
 
     /// <summary>A document System.Xml reads produces no diagnostic, and a document without diagnostics is one System.Xml reads.</summary>

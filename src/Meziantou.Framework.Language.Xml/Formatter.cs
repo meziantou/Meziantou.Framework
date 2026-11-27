@@ -300,36 +300,44 @@ public static class Formatter
             return result;
         }
 
-        /// <summary>Lays out the content of an element that starts on its own line.</summary>
-        private void LayOutElement(XElement element, int depth)
+        /// <summary>Lays out the content of an element that starts on its own line, and of its descendants.</summary>
+        /// <param name="depth">The indentation level of <paramref name="root"/>, which is its depth minus one.</param>
+        private void LayOutElement(XElement root, int depth)
         {
-            if (singleLineElements is not null && IsSingleLine(element))
-                return;
-
-            if (options.AttributeWrapping)
+            // A stack rather than recursion, so a deep document cannot overflow the call stack.
+            var pending = new Stack<(XElement Element, int Depth)>();
+            pending.Push((root, depth));
+            while (pending.TryPop(out var item))
             {
-                _attributeIndentations[element] = GetIndentation(depth + 1);
-            }
+                (var element, depth) = item;
+                if (depth >= options.MaxDepth || (singleLineElements is not null && IsSingleLine(element)))
+                    continue;
 
-            if (!HasElementOnlyContent(element) || string.Equals((string?)element.Attribute(XmlSpaceName), "preserve", StringComparison.Ordinal))
-                return;
-
-            var children = GetNonWhitespaceNodes(element);
-            var childIndentation = options.NewLine + GetIndentation(depth + 1);
-            var content = new List<XNode>(children.Count * 2 + 1);
-            foreach (var child in children)
-            {
-                content.Add(new XText(childIndentation));
-                content.Add(child);
-            }
-
-            content.Add(new XText(options.NewLine + GetIndentation(depth)));
-            element.ReplaceNodes(content);
-            foreach (var child in children)
-            {
-                if (child is XElement childElement)
+                if (options.AttributeWrapping)
                 {
-                    LayOutElement(childElement, depth + 1);
+                    _attributeIndentations[element] = GetIndentation(depth + 1);
+                }
+
+                if (!HasElementOnlyContent(element) || string.Equals((string?)element.Attribute(XmlSpaceName), "preserve", StringComparison.Ordinal))
+                    continue;
+
+                var children = GetNonWhitespaceNodes(element);
+                var childIndentation = options.NewLine + GetIndentation(depth + 1);
+                var content = new List<XNode>(children.Count * 2 + 1);
+                foreach (var child in children)
+                {
+                    content.Add(new XText(childIndentation));
+                    content.Add(child);
+                }
+
+                content.Add(new XText(options.NewLine + GetIndentation(depth)));
+                element.ReplaceNodes(content);
+                foreach (var child in children)
+                {
+                    if (child is XElement childElement)
+                    {
+                        pending.Push((childElement, depth + 1));
+                    }
                 }
             }
         }

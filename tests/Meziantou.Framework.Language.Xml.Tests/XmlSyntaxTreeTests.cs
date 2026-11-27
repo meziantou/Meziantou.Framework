@@ -641,6 +641,55 @@ public sealed class XmlSyntaxTreeTests
         Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(15), $"Formatting took {stopwatch.Elapsed}");
     }
 
+    [Fact]
+    public void Formatter_FormatsDeepNestingUpToTheMaxDepth()
+    {
+        const int Depth = 20_000;
+        const int MaxDepth = 64;
+        var text = string.Concat(Enumerable.Repeat("<a>", Depth)) + string.Concat(Enumerable.Repeat("</a>", Depth));
+        var expected = new StringBuilder("<a>");
+        for (var depth = 2; depth <= MaxDepth + 1; depth++)
+        {
+            expected.Append('\n').Append(' ', 2 * (depth - 1)).Append("<a>");
+        }
+
+        expected.Append(text, 3 * (MaxDepth + 1), text.Length - (3 * (MaxDepth + 1)) - (4 * MaxDepth));
+        for (var depth = MaxDepth; depth >= 1; depth--)
+        {
+            expected.Append('\n').Append(' ', 2 * (depth - 1)).Append("</a>");
+        }
+
+        var formatted = Formatter.Format(XmlSyntaxTree.ParseText(text)).ToFullString();
+
+        Assert.Equal(expected.ToString(), formatted);
+    }
+
+    [Fact]
+    public void Formatter_MaxDepth_KeepsTheContentOfDeeperElements()
+    {
+        #region XmlFormattingOptions_MaxDepth
+        var tree = XmlSyntaxTree.ParseText("<root><a><b><c/></b></a><d>  <e/></d></root>");
+        var formatted = Formatter.Format(tree.GetRoot(), new XmlFormattingOptions { MaxDepth = 2 });
+        Assert.Equal("<root>\n  <a>\n    <b><c /></b>\n  </a>\n  <d>\n    <e />\n  </d>\n</root>", formatted.ToFullString());
+        #endregion
+    }
+
+    [Fact]
+    public void Formatter_MaxDepth_KeepsTheWhitespaceOfDeeperElements()
+    {
+        var formatted = FormatText("<root><a>\n<b/>  <c/></a></root>", new XmlFormattingOptions { MaxDepth = 1, AttributeWrapping = true });
+
+        Assert.Equal("<root>\n  <a>\n<b />  <c /></a>\n</root>", formatted);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void XmlFormattingOptions_MaxDepth_RejectsValuesLessThanOne(int value)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new XmlFormattingOptions { MaxDepth = value });
+    }
+
     private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();
 
     [Fact]

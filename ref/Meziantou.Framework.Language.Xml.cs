@@ -309,6 +309,7 @@ namespace Meziantou.Framework.Language.Xml
         public bool AttributeWrapping { get => throw null; init { } }
         public static Meziantou.Framework.Language.Xml.XmlFormattingOptions Default { get => throw null; }
         public int IndentationSize { get => throw null; init { } }
+        public int MaxDepth { get => throw null; init { } }
         public string NewLine { get => throw null; init { } }
         public bool PreserveSingleLineElements { get => throw null; init { } }
         public bool SpaceAroundEquals { get => throw null; init { } }

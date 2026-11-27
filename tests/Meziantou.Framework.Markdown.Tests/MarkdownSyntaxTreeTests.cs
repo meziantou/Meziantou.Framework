@@ -1981,16 +1981,30 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("| a |\n|-", "{.c}", "-|\n")]
     public void ManyAttributesInAPipeTableRowAreLinear(string prefix, string repeated, string suffix)
     {
-        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
-        var text = prefix + string.Concat(Enumerable.Repeat(repeated, 200_000)) + suffix;
+        // Compare two sizes instead of using a fixed time limit, which depends on the speed of the machine.
+        // Four times the input is about four times slower when linear, and sixteen times when quadratic.
+        // The fastest of two runs of each size reduces the noise of a busy machine.
+        Measure(10_000);
+        var small = Min(Measure(50_000), Measure(50_000));
+        var large = Min(Measure(200_000), Measure(200_000));
+        Assert.True(large < small * 8, $"50,000 repetitions took {small}, 200,000 repetitions took {large}");
 
-        var stopwatch = Stopwatch.StartNew();
-        var tree = MarkdownSyntaxTree.ParseText(text, options);
-        var html = MarkdownHtmlRenderer.ToHtml(tree);
+        static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
 
-        Assert.StartsWith("<table", html, StringComparison.Ordinal);
-        Assert.Equal(text, tree.GetRoot().ToFullString());
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Parsing and rendering took {stopwatch.Elapsed}");
+        TimeSpan Measure(int count)
+        {
+            var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
+            var text = prefix + string.Concat(Enumerable.Repeat(repeated, count)) + suffix;
+
+            var stopwatch = Stopwatch.StartNew();
+            var tree = MarkdownSyntaxTree.ParseText(text, options);
+            var html = MarkdownHtmlRenderer.ToHtml(tree);
+            var elapsed = stopwatch.Elapsed;
+
+            Assert.StartsWith("<table", html, StringComparison.Ordinal);
+            Assert.Equal(text, tree.GetRoot().ToFullString());
+            return elapsed;
+        }
     }
 
     [Fact]

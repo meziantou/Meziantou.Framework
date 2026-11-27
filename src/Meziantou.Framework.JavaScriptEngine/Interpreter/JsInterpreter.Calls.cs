@@ -352,6 +352,13 @@ internal static partial class JsInterpreter
 
     private static void AppendSpread(JsArray array, JsValue iterable)
     {
+        // No code can run while the elements are read: they are appended at once
+        if (IteratorOperations.IsPackedArrayIteration(iterable, out var source))
+        {
+            array.PushDenseElements(source, (int)source.Length);
+            return;
+        }
+
         var record = IteratorOperations.GetIterator(iterable);
         while (IteratorOperations.IteratorStepValue(record, out var value))
         {
@@ -735,10 +742,4 @@ internal static partial class JsInterpreter
 internal sealed class PrivateNameCell(PrivateName name) : JsCell(JsValueKind.Undefined)
 {
     public PrivateName Name { get; } = name;
-}
-
-/// <summary>An iterator record stored in a register or on the stack.</summary>
-internal sealed class IteratorRecordCell(IteratorRecord record) : JsCell(JsValueKind.Undefined)
-{
-    public IteratorRecord Record { get; } = record;
 }

@@ -7,6 +7,9 @@ namespace Meziantou.AspNetCore.Testing.Internals;
 internal sealed class LocatorEvaluator
 {
     private readonly Dictionary<Element, string> _texts = [];
+    private readonly Dictionary<Element, (int Start, int Length)> _textRanges = [];
+    private char[] _textBuffer = [];
+    private int _textLength;
     private Dictionary<Element, List<HtmlLabelElement>>? _labels;
     private Dictionary<Element, int>? _documentOrder;
 
@@ -78,45 +81,76 @@ internal sealed class LocatorEvaluator
         if (_texts.TryGetValue(element, out var text))
             return text;
 
-        if (element is HtmlInputElement { Type: "button" or "submit" or "reset" } button)
-        {
-            text = button.Value;
-        }
-        else if (IsSkippedForText(element))
-        {
-            text = "";
-        }
-        else
-        {
-            var builder = new StringBuilder();
-            AppendChildrenText(element, builder);
-            if (element.ShadowRoot is { } shadowRoot)
-            {
-                AppendChildrenText(shadowRoot, builder);
-            }
-
-            text = builder.ToString();
-        }
+        // One text child (<span>Name</span>): its text is the text of the element, without a copy
+        text = element is not HtmlInputElement && !IsSkippedForText(element) && element.ShadowRoot is null && element.FirstChild is Text { NextSibling: null } textNode
+            ? textNode.Data
+            : GetTextSpan(element).ToString();
 
         _texts.Add(element, text);
         return text;
+    }
 
-        void AppendChildrenText(Node parent, StringBuilder builder)
+    /// <summary>
+    /// Gets the text of an element (see <see cref="GetText"/>) without creating a string. The texts of an element and of its
+    /// descendants are appended once to a buffer: the text of an element is a range of the buffer, as the text of a parent is
+    /// the concatenation of the texts of its children. The span is valid until the next call.
+    /// </summary>
+    public ReadOnlySpan<char> GetTextSpan(Element element)
+    {
+        if (!_textRanges.TryGetValue(element, out var range))
         {
-            for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
-            {
-                switch (child)
-                {
-                    case Text textNode:
-                        builder.Append(textNode.Data);
-                        break;
+            AppendText(element);
+            range = _textRanges[element];
+        }
 
-                    case Element childElement:
-                        builder.Append(GetText(childElement));
-                        break;
-                }
+        return _textBuffer.AsSpan(range.Start, range.Length);
+    }
+
+    private void AppendText(Element element)
+    {
+        var start = _textLength;
+        if (element is HtmlInputElement { Type: "button" or "submit" or "reset" } button)
+        {
+            AppendToTextBuffer(button.Value);
+        }
+        else if (!IsSkippedForText(element))
+        {
+            AppendChildrenText(element);
+            if (element.ShadowRoot is { } shadowRoot)
+            {
+                AppendChildrenText(shadowRoot);
             }
         }
+
+        _textRanges[element] = (start, _textLength - start);
+    }
+
+    private void AppendChildrenText(Node parent)
+    {
+        for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
+        {
+            switch (child)
+            {
+                case Text textNode:
+                    AppendToTextBuffer(textNode.Data);
+                    break;
+
+                case Element childElement:
+                    AppendText(childElement);
+                    break;
+            }
+        }
+    }
+
+    private void AppendToTextBuffer(string value)
+    {
+        if (_textBuffer.Length - _textLength < value.Length)
+        {
+            Array.Resize(ref _textBuffer, Math.Max(_textBuffer.Length * 2, Math.Max(_textLength + value.Length, 256)));
+        }
+
+        value.CopyTo(_textBuffer.AsSpan(_textLength));
+        _textLength += value.Length;
     }
 
     public static bool IsSkippedForText(Element element) => element.LocalName is "script" or "style" or "noscript" or "template";
@@ -126,6 +160,17 @@ internal sealed class LocatorEvaluator
     /// <c>aria-label</c> attribute, else the <c>label</c> elements of a form control.
     /// </summary>
     public IEnumerable<string> GetLabels(Element element)
+    {
+        // Most elements have no label: they are rejected without creating an enumerator
+        if (!element.HasAttribute("aria-labelledby") && !element.HasAttribute("aria-label") && !IsLabelableControl(element))
+            return [];
+
+        return GetLabelsCore(element);
+    }
+
+    private static bool IsLabelableControl(Element element) => element is HtmlButtonElement or HtmlMeterElement or HtmlOutputElement or HtmlProgressElement or HtmlSelectElement or HtmlTextAreaElement or HtmlInputElement { Type: not "hidden" };
+
+    private IEnumerable<string> GetLabelsCore(Element element)
     {
         if (element.GetAttribute("aria-labelledby") is { } labelledBy)
         {
@@ -157,7 +202,7 @@ internal sealed class LocatorEvaluator
             yield break;
         }
 
-        if (element is HtmlButtonElement or HtmlMeterElement or HtmlOutputElement or HtmlProgressElement or HtmlSelectElement or HtmlTextAreaElement or HtmlInputElement { Type: not "hidden" })
+        if (IsLabelableControl(element))
         {
             _labels ??= GetLabelsByControl(Page.Document);
             if (_labels.TryGetValue(element, out var labels))
@@ -174,7 +219,7 @@ internal sealed class LocatorEvaluator
             var result = new Dictionary<Element, List<HtmlLabelElement>>();
             foreach (var element in elements)
             {
-                if (element is HtmlLabelElement { Control: { } control } label)
+                if (element is HtmlLabelElement label && GetControl(label) is { } control)
                 {
                     if (!result.TryGetValue(control, out var list))
                     {
@@ -187,6 +232,39 @@ internal sealed class LocatorEvaluator
             }
 
             return result;
+        }
+
+        // HtmlLabelElement.Control searches the tree of the label for the element of its "for" attribute: the identifiers of
+        // the tree are indexed instead (GetElementById), so finding the controls of all the labels is not quadratic
+        static HtmlElement? GetControl(HtmlLabelElement label)
+        {
+            if (label.HtmlFor is not { Length: > 0 } id)
+                return label.Control;
+
+            Element? element;
+            switch (label.GetRootNode())
+            {
+                case Document document:
+                    element = document.GetElementById(id);
+                    break;
+
+                case DocumentFragment fragment:
+                    element = fragment.GetElementById(id);
+                    break;
+
+                default:
+                    return label.Control;
+            }
+
+            return element switch
+            {
+                null => null,
+                HtmlInputElement input => input.Type == "hidden" ? null : input,
+                HtmlButtonElement or HtmlMeterElement or HtmlOutputElement or HtmlProgressElement or HtmlSelectElement or HtmlTextAreaElement => (HtmlElement)element,
+
+                // Whether the other elements are labelable is known to WebPlatform only (form-associated custom elements)
+                _ => label.Control,
+            };
         }
     }
 

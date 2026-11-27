@@ -8,29 +8,122 @@ namespace Meziantou.Framework.PublicApiGenerator;
 /// </summary>
 internal static class DocumentationIdBuilder
 {
+    // Documentation IDs are computed for every symbol of an assembly, so they are written to a single reused builder
+    [ThreadStatic]
+    private static StringBuilder? s_cachedBuilder;
+
     public static string GetDocumentationId(PublicApiSymbol symbol)
     {
-        return symbol switch
+        var sb = s_cachedBuilder ?? new StringBuilder(128);
+        s_cachedBuilder = null;
+        sb.Clear();
+        switch (symbol)
         {
-            PublicApiType type => "T:" + GetTypeDefinitionName(type),
-            PublicApiField field => "F:" + GetContainerName(field) + "." + EscapeMemberName(field.Name),
-            PublicApiEvent @event => "E:" + GetContainerName(@event) + "." + EscapeMemberName(@event.Name),
-            PublicApiProperty property => "P:" + GetContainerName(property) + "." + EscapeMemberName(property.Name) + GetParameterList(property.Parameters),
-            PublicApiMethod method => GetMethodDocumentationId(
-                GetContainerName(method),
-                method.Name,
-                method.GenericParameters.Length,
-                [.. method.Parameters.Select(GetParameterTypeName)],
-                method.MethodKind == PublicApiMethodKind.Conversion ? GetTypeName(method.ReturnType) : null),
-            _ => throw new ArgumentOutOfRangeException(nameof(symbol)),
-        };
+            case PublicApiType type:
+                sb.Append("T:");
+                AppendTypeDefinitionName(sb, type);
+                break;
+
+            case PublicApiField field:
+                sb.Append("F:");
+                AppendMemberName(sb, field);
+                break;
+
+            case PublicApiEvent @event:
+                sb.Append("E:");
+                AppendMemberName(sb, @event);
+                break;
+
+            case PublicApiProperty property:
+                sb.Append("P:");
+                AppendMemberName(sb, property);
+                AppendParameterList(sb, property.Parameters);
+                break;
+
+            case PublicApiMethod method:
+                sb.Append("M:");
+                AppendMemberName(sb, method);
+                if (method.GenericParameters.Length > 0)
+                {
+                    sb.Append("``");
+                    sb.Append(method.GenericParameters.Length.ToString(CultureInfo.InvariantCulture));
+                }
+
+                AppendParameterList(sb, method.Parameters);
+                if (method.MethodKind == PublicApiMethodKind.Conversion)
+                {
+                    sb.Append('~');
+                    AppendTypeName(sb, method.ReturnType);
+                }
+
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(symbol));
+        }
+
+        var result = sb.ToString();
+        s_cachedBuilder = sb;
+        return result;
     }
 
     // The members of a C# 14 extension block are declared by the compiler-generated grouping type nested in the static class
-    private static string GetContainerName(PublicApiMember member)
+    private static void AppendMemberName(StringBuilder sb, PublicApiMember member)
     {
-        var name = GetTypeDefinitionName(member.DeclaringType!);
-        return member.ExtensionBlock is { } block ? name + "." + block.GroupingTypeMetadataName : name;
+        AppendTypeDefinitionName(sb, member.DeclaringType!);
+        if (member.ExtensionBlock is { } block)
+        {
+            sb.Append('.');
+            sb.Append(block.GroupingTypeMetadataName);
+        }
+
+        sb.Append('.');
+        AppendEscapedMemberName(sb, member.Name);
+    }
+
+    private static void AppendParameterList(StringBuilder sb, ImmutableArray<PublicApiParameter> parameters)
+    {
+        if (parameters.IsEmpty)
+            return;
+
+        sb.Append('(');
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append(',');
+            }
+
+            AppendTypeName(sb, parameters[i].Type);
+            if (parameters[i].RefKind != PublicApiRefKind.None)
+            {
+                sb.Append('@');
+            }
+        }
+
+        sb.Append(')');
+    }
+
+    // Same as EscapeMemberName
+    private static void AppendEscapedMemberName(StringBuilder sb, string name)
+    {
+        var value = name.AsSpan();
+        var aliasSeparatorIndex = value.IndexOf("::", StringComparison.Ordinal);
+        if (aliasSeparatorIndex >= 0)
+        {
+            value = value[(aliasSeparatorIndex + 2)..];
+        }
+
+        foreach (var c in value)
+        {
+            sb.Append(c switch
+            {
+                '.' => '#',
+                '<' => '{',
+                '>' => '}',
+                _ => c,
+            });
+        }
     }
 
     public static string GetMethodDocumentationId(string declaringTypeName, string name, int genericParameterCount, ImmutableArray<string> parameterTypes, string? conversionReturnType)
@@ -97,6 +190,50 @@ internal static class DocumentationIdBuilder
         return type.Namespace.Length == 0 ? type.MetadataName : type.Namespace + "." + type.MetadataName;
     }
 
+    private static void AppendTypeDefinitionName(StringBuilder sb, PublicApiType type)
+    {
+        if (type.DeclaringType is not null)
+        {
+            AppendTypeDefinitionName(sb, type.DeclaringType);
+            sb.Append('.');
+        }
+        else if (type.Namespace.Length > 0)
+        {
+            sb.Append(type.Namespace);
+            sb.Append('.');
+        }
+
+        sb.Append(type.MetadataName);
+    }
+
+    private static void AppendTypeDefinitionName(StringBuilder sb, PublicApiNamedTypeReference type)
+    {
+        if (type.ContainingType is not null)
+        {
+            AppendTypeDefinitionName(sb, type.ContainingType);
+            sb.Append('.');
+        }
+        else if (type.Namespace.Length > 0)
+        {
+            sb.Append(type.Namespace);
+            sb.Append('.');
+        }
+
+        sb.Append(type.MetadataName);
+    }
+
+    // Same as type.GetAllTypeArguments().Any(), without allocating an enumerator
+    private static bool HasTypeArguments(PublicApiNamedTypeReference type)
+    {
+        for (var current = type; current is not null; current = current.ContainingType)
+        {
+            if (!current.TypeArguments.IsEmpty)
+                return true;
+        }
+
+        return false;
+    }
+
     // The name of a type used in a signature (e.g. "System.Collections.Generic.List{System.String}")
     public static string GetTypeName(PublicApiTypeReference type)
     {
@@ -116,9 +253,9 @@ internal static class DocumentationIdBuilder
         switch (type)
         {
             case PublicApiNamedTypeReference named:
-                if (!named.GetAllTypeArguments().Any())
+                if (!HasTypeArguments(named))
                 {
-                    sb.Append(GetTypeDefinitionName(named));
+                    AppendTypeDefinitionName(sb, named);
                     return;
                 }
 

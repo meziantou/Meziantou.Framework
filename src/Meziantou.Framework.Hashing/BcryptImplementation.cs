@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework.Hashing;
@@ -159,8 +160,9 @@ internal sealed class BcryptImplementation
         51, 52, 53, -1, -1, -1, -1, -1,
     ];
 
-    private uint[] _p = [];
-    private uint[] _s = [];
+    // The subkeys P (18 words) and the four S-boxes (4 x 256 words) of Blowfish
+    private BlowfishSubkeys _p;
+    private BlowfishSBoxes _s;
 
     public static string GenerateSalt(int workFactor, char revision)
     {
@@ -435,34 +437,46 @@ internal sealed class BcryptImplementation
         return value >= 0 && value % 4 == 0;
     }
 
-    private void Encipher(Span<uint> blockArray, int offset)
+    // The function F of Blowfish: ((S0[a] + S1[b]) ^ S2[c]) + S3[d], where a, b, c and d are the bytes of x from the most
+    // significant one. The S-boxes have a constant length of 256 and the indices are lower than 256, so the JIT removes the
+    // bounds checks; a shift and a mask is a single instruction on Arm64 (ubfx), unlike a shift and a cast to byte.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint F(ReadOnlySpan<uint> s0, ReadOnlySpan<uint> s1, ReadOnlySpan<uint> s2, ReadOnlySpan<uint> s3, uint x)
     {
-        var block = blockArray[offset];
-        var right = blockArray[offset + 1];
+        return unchecked(((s0[(int)(x >> 24)] + s1[(int)((x >> 16) & 0xFF)]) ^ s2[(int)((x >> 8) & 0xFF)]) + s3[(int)(x & 0xFF)]);
+    }
 
-        block ^= _p[0];
+    // Encrypts the 64-bit block (left, right) with the 16 rounds of Blowfish, unrolled
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Encipher(ReadOnlySpan<uint> p, ReadOnlySpan<uint> s, ref uint left, ref uint right)
+    {
+        p = p[..(BlowfishNumRounds + 2)];
+        var s0 = s.Slice(0, 256);
+        var s1 = s.Slice(256, 256);
+        var s2 = s.Slice(512, 256);
+        var s3 = s.Slice(768, 256);
 
-        unchecked
-        {
-            uint round;
-            for (round = 0; round <= BlowfishNumRounds - 2;)
-            {
-                var value = _s[(block >> 24) & 0xff];
-                value += _s[0x100 | ((block >> 16) & 0xff)];
-                value ^= _s[0x200 | ((block >> 8) & 0xff)];
-                value += _s[0x300 | (block & 0xff)];
-                right ^= value ^ _p[++round];
-
-                value = _s[(right >> 24) & 0xff];
-                value += _s[0x100 | ((right >> 16) & 0xff)];
-                value ^= _s[0x200 | ((right >> 8) & 0xff)];
-                value += _s[0x300 | (right & 0xff)];
-                block ^= value ^ _p[++round];
-            }
-
-            blockArray[offset] = right ^ _p[BlowfishNumRounds + 1];
-            blockArray[offset + 1] = block;
-        }
+        // The subkey is XORed before F, which is the critical path: r ^ p[i] is computed while F waits for its loads
+        var l = left ^ p[0];
+        var r = right;
+        r = r ^ p[1] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[2] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[3] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[4] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[5] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[6] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[7] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[8] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[9] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[10] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[11] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[12] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[13] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[14] ^ F(s0, s1, s2, s3, r);
+        r = r ^ p[15] ^ F(s0, s1, s2, s3, l);
+        l = l ^ p[16] ^ F(s0, s1, s2, s3, r);
+        left = r ^ p[BlowfishNumRounds + 1];
+        right = l;
     }
 
     private static uint StreamToWord(ReadOnlySpan<byte> data, ref int offset)
@@ -483,67 +497,84 @@ internal sealed class BcryptImplementation
         return word;
     }
 
+    // The words that the key schedule XORs into P: the key read as a cyclic stream of big-endian words from its start. They
+    // are the same at every expansion, so they are computed once.
+    private static void GetKeyWords(ReadOnlySpan<byte> keyBytes, Span<uint> words)
+    {
+        var offset = 0;
+        for (var i = 0; i < words.Length; i++)
+        {
+            words[i] = StreamToWord(keyBytes, ref offset);
+        }
+    }
+
     private void InitializeKey()
     {
-        _p = new uint[POrig.Length];
-        _s = new uint[SOrig.Length];
-
-        Array.Copy(POrig, _p, POrig.Length);
-        Array.Copy(SOrig, _s, SOrig.Length);
+        POrig.CopyTo((Span<uint>)_p);
+        SOrig.CopyTo((Span<uint>)_s);
     }
 
-    private void Key(ReadOnlySpan<byte> keyBytes)
+    // The key schedule of Blowfish: P is XORed with the words of the key, then P and the S-boxes are replaced by the
+    // successive encryptions of a block that starts at zero
+    private void Key(ReadOnlySpan<uint> keyWords)
     {
-        var keyOffset = 0;
-        var block = new uint[] { 0, 0 };
-
-        for (var i = 0; i < _p.Length; i++)
+        Span<uint> p = _p;
+        Span<uint> s = _s;
+        for (var i = 0; i < p.Length; i++)
         {
-            _p[i] ^= StreamToWord(keyBytes, ref keyOffset);
+            p[i] ^= keyWords[i];
         }
 
-        for (var i = 0; i < _p.Length; i += 2)
+        uint left = 0;
+        uint right = 0;
+        for (var i = 0; i < p.Length; i += 2)
         {
-            Encipher(block, 0);
-            _p[i] = block[0];
-            _p[i + 1] = block[1];
+            Encipher(p, s, ref left, ref right);
+            p[i] = left;
+            p[i + 1] = right;
         }
 
-        for (var i = 0; i < _s.Length; i += 2)
+        for (var i = 0; i < s.Length; i += 2)
         {
-            Encipher(block, 0);
-            _s[i] = block[0];
-            _s[i + 1] = block[1];
+            Encipher(p, s, ref left, ref right);
+            s[i] = left;
+            s[i + 1] = right;
         }
     }
 
-    private void EksKey(ReadOnlySpan<byte> saltBytes, ReadOnlySpan<byte> inputBytes)
+    // The expensive key schedule of bcrypt: like Key, but the block is XORed with the next words of the salt before each
+    // encryption. The salt is 16 bytes, so its stream of words repeats every 4 words.
+    private void EksKey(ReadOnlySpan<uint> saltWords, ReadOnlySpan<uint> inputWords)
     {
-        var inputOffset = 0;
-        var saltOffset = 0;
-        var block = new uint[] { 0, 0 };
-
-        for (var i = 0; i < _p.Length; i++)
+        Span<uint> p = _p;
+        Span<uint> s = _s;
+        saltWords = saltWords[..4];
+        for (var i = 0; i < p.Length; i++)
         {
-            _p[i] ^= StreamToWord(inputBytes, ref inputOffset);
+            p[i] ^= inputWords[i];
         }
 
-        for (var i = 0; i < _p.Length; i += 2)
+        uint left = 0;
+        uint right = 0;
+        var saltIndex = 0;
+        for (var i = 0; i < p.Length; i += 2)
         {
-            block[0] ^= StreamToWord(saltBytes, ref saltOffset);
-            block[1] ^= StreamToWord(saltBytes, ref saltOffset);
-            Encipher(block, 0);
-            _p[i] = block[0];
-            _p[i + 1] = block[1];
+            left ^= saltWords[saltIndex];
+            right ^= saltWords[saltIndex + 1];
+            saltIndex ^= 2;
+            Encipher(p, s, ref left, ref right);
+            p[i] = left;
+            p[i + 1] = right;
         }
 
-        for (var i = 0; i < _s.Length; i += 2)
+        for (var i = 0; i < s.Length; i += 2)
         {
-            block[0] ^= StreamToWord(saltBytes, ref saltOffset);
-            block[1] ^= StreamToWord(saltBytes, ref saltOffset);
-            Encipher(block, 0);
-            _s[i] = block[0];
-            _s[i + 1] = block[1];
+            left ^= saltWords[saltIndex];
+            right ^= saltWords[saltIndex + 1];
+            saltIndex ^= 2;
+            Encipher(p, s, ref left, ref right);
+            s[i] = left;
+            s[i + 1] = right;
         }
     }
 
@@ -557,23 +588,28 @@ internal sealed class BcryptImplementation
 
         var rounds = 1u << workFactor;
 
-        var cdata = new uint[BfCryptCiphertext.Length];
-        Array.Copy(BfCryptCiphertext, cdata, BfCryptCiphertext.Length);
+        Span<uint> cdata = stackalloc uint[BfCryptCiphertext.Length];
+        BfCryptCiphertext.CopyTo(cdata);
+
+        Span<uint> inputWords = stackalloc uint[BlowfishNumRounds + 2];
+        Span<uint> saltWords = stackalloc uint[BlowfishNumRounds + 2];
+        GetKeyWords(inputBytes, inputWords);
+        GetKeyWords(saltBytes, saltWords);
 
         InitializeKey();
-        EksKey(saltBytes, inputBytes);
+        EksKey(saltWords, inputWords);
 
         for (var i = 0u; i < rounds; i++)
         {
-            Key(inputBytes);
-            Key(saltBytes);
+            Key(inputWords);
+            Key(saltWords);
         }
 
         for (var i = 0; i < 64; i++)
         {
-            for (var j = 0; j < (cdata.Length >> 1); j++)
+            for (var j = 0; j < cdata.Length; j += 2)
             {
-                Encipher(cdata, j << 1);
+                Encipher(_p, _s, ref cdata[j], ref cdata[j + 1]);
             }
         }
 
@@ -587,5 +623,17 @@ internal sealed class BcryptImplementation
         }
 
         return result;
+    }
+
+    [InlineArray(BlowfishNumRounds + 2)]
+    private struct BlowfishSubkeys
+    {
+        private uint _element0;
+    }
+
+    [InlineArray(4 * 256)]
+    private struct BlowfishSBoxes
+    {
+        private uint _element0;
     }
 }

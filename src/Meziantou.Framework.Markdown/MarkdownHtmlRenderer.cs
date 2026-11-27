@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
+using GreenNode = Meziantou.Framework.Language.InternalSyntax.GreenNode;
 using GreenToken = Meziantou.Framework.Language.InternalSyntax.SyntaxToken;
 
 namespace Meziantou.Framework.Markdown;
@@ -228,6 +229,9 @@ public static class MarkdownHtmlRenderer
         private MarkdownFootnotes? _footnotes;
         private MarkdownParagraphSyntax? _backLinksParagraph;
         private string? _backLinks;
+
+        // The plain text of a child of the description of an image, before it is escaped
+        private StringBuilder? _altText;
 
         public override string ToString() => _output.ToString();
 
@@ -2236,7 +2240,7 @@ public static class MarkdownHtmlRenderer
                     Markup.Append('"');
                     AppendAttributes(image, renderedAttributes: string.IsNullOrEmpty(title) ? ImageAttributes : ImageAttributesWithTitle);
                     Markup.Append(" alt=\"");
-                    WriteAltText(image.Text);
+                    WriteAltText(image);
                     Markup.Append('"');
                     AppendTitle(title);
                     Markup.Append(" />");
@@ -2412,49 +2416,94 @@ public static class MarkdownHtmlRenderer
         {
             foreach (var child in children)
             {
-                if (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.SmartyPantToken)
-                {
-                    WriteToken(child.AsToken());
-                    continue;
-                }
-
-                if (child.AsNode() is MarkdownRawHtmlSyntax html)
-                {
-                    // As Markdig, plain text has no HTML, even in the text of an image
-                    if (!PlainText)
-                    {
-                        AppendEscaped(html.Html);
-                    }
-
-                    continue;
-                }
-
-                if (child.AsNode() is { } node && node.DescendantNodesAndTokens().Any(descendant => descendant.RawKind is (int)SyntaxKind.SmartyPantToken or (int)SyntaxKind.RawHtml))
-                {
-                    switch (node)
-                    {
-                        case MarkdownEmphasisSyntax emphasis:
-                            WriteAltText(emphasis.Inlines);
-                            continue;
-                        case MarkdownStrikethroughSyntax strikethrough:
-                            WriteAltText(strikethrough.Inlines);
-                            continue;
-                        case MarkdownEmphasisExtraSyntax extra:
-                            WriteAltText(extra.Inlines);
-                            continue;
-                        case MarkdownExtensionInlineSyntax extension:
-                            WriteAltText(extension.Inlines);
-                            continue;
-                        case MarkdownLinkSyntax link:
-                            WriteAltText(link.Text);
-                            continue;
-                    }
-                }
-
-                var text = new StringBuilder();
-                ((MarkdownSyntaxNode)(child.Parent ?? throw new InvalidOperationException())).AppendPlainText([child], text);
-                AppendEscaped(text.ToString());
+                WriteAltText(child);
             }
+        }
+
+        // The text of a link or an image, between its brackets, as MarkdownLinkSyntax.Text has it: its children are enumerated
+        // without allocating
+        private void WriteAltText(MarkdownLinkSyntax link)
+        {
+            var end = link.CloseIndex;
+            var index = 0;
+            foreach (var child in link.ChildNodesAndTokens())
+            {
+                if (index >= end)
+                {
+                    break;
+                }
+
+                if (index++ > 0)
+                {
+                    WriteAltText(child);
+                }
+            }
+        }
+
+        private void WriteAltText(SyntaxNodeOrToken child)
+        {
+            if (child.IsToken && child.AsToken().RawKind == (int)SyntaxKind.SmartyPantToken)
+            {
+                WriteToken(child.AsToken());
+                return;
+            }
+
+            if (child.AsNode() is MarkdownRawHtmlSyntax html)
+            {
+                // As Markdig, plain text has no HTML, even in the text of an image
+                if (!PlainText)
+                {
+                    AppendEscaped(html.Html);
+                }
+
+                return;
+            }
+
+            if (child.AsNode() is { } node && HasSmartyPantOrRawHtml(node.Green))
+            {
+                switch (node)
+                {
+                    case MarkdownEmphasisSyntax emphasis:
+                        WriteAltText(emphasis.Inlines);
+                        return;
+                    case MarkdownStrikethroughSyntax strikethrough:
+                        WriteAltText(strikethrough.Inlines);
+                        return;
+                    case MarkdownEmphasisExtraSyntax extra:
+                        WriteAltText(extra.Inlines);
+                        return;
+                    case MarkdownExtensionInlineSyntax extension:
+                        WriteAltText(extension.Inlines);
+                        return;
+                    case MarkdownLinkSyntax link:
+                        WriteAltText(link);
+                        return;
+                }
+            }
+
+            // The builder is reused from one child to the next: the text is escaped once it is complete
+            var text = _altText ??= new StringBuilder();
+            text.Clear();
+            ((MarkdownSyntaxNode)(child.Parent ?? throw new InvalidOperationException())).AppendPlainText(child, text);
+            foreach (var chunk in text.GetChunks())
+            {
+                AppendEscaped(chunk.Span);
+            }
+        }
+
+        // Whether a node or a token below the node is a character of SmartyPants or raw HTML. The green tree is read, which creates no
+        // red node or token. The depth of the tree is bounded by the maximum nesting depth of the parser.
+        private static bool HasSmartyPantOrRawHtml(GreenNode node)
+        {
+            for (var i = 0; i < node.SlotCount; i++)
+            {
+                if (node.GetSlot(i) is { } child && (child.RawKind is (int)SyntaxKind.SmartyPantToken or (int)SyntaxKind.RawHtml || (!child.IsToken && HasSmartyPantOrRawHtml(child))))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         // A frozen dictionary, such as the default one, looks the extension up without allocating it

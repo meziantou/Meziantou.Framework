@@ -44,8 +44,10 @@ window is the global object of its own realm. A worker gets its own engine, with
 callback...): `Timeout` (10 seconds by default), `MemoryLimit` (256 MB allocated by default), `MaxStatements`,
 `RecursionLimit` (512 calls by default; null is the limit of the engine, 10,000 calls) and `RegexTimeout`.
 `TimeProvider` is the clock of `Date`, and `ConfigureEngine` sets the other options of the engine (e.g. the time zone and
-the default locale of `Intl`). The scripts only see the DOM and the JavaScript built-ins: the engine has no access to
-.NET types.
+the default locale of `Intl`). `ScriptCache` reuses the parsed classic scripts across the documents and the engines
+(`JavaScriptScriptCache.Shared`, bounded to 8 million characters of source text, by default; null disables it): a page
+loaded again is not parsed again, and its hot functions are not compiled again. The scripts only see the DOM and the
+JavaScript built-ins: the engine has no access to .NET types.
 
 A subclass can add its own functions to the global objects in `OnRealmCreated`:
 

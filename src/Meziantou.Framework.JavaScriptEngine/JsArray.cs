@@ -107,6 +107,28 @@ public sealed class JsArray : JsObject
         _length++;
     }
 
+    /// <summary>
+    /// Appends the elements [0, count) of an array, which are all own data properties (no hole, see
+    /// <see cref="JsObject.IsDensePacked(long)"/>), as <see cref="Push"/> does for each of them.
+    /// </summary>
+    internal void PushDenseElements(JsArray source, int count)
+    {
+        JsEngine.CountCurrentWork(count);
+        if (_length == 0 && !HasAnyDenseElement() && HasOnlyDenseElements)
+        {
+            // A fresh array: a copy of the storage of the source
+            InitializeDenseElements(source, 0, count);
+            _length = (uint)count;
+            return;
+        }
+
+        for (var i = 0u; i < (uint)count; i++)
+        {
+            source.TryGetDenseElement(i, out var value);
+            Push(value);
+        }
+    }
+
     internal override bool GetOwnProperty(in PropertyKey key, out PropertyDescriptor descriptor)
     {
         if (key == LengthKey)

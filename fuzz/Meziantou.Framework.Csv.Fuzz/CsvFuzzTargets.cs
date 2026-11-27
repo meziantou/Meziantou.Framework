@@ -690,7 +690,8 @@ public static partial class CsvFuzzTargets
 
     /// <summary>
     /// <c>records</c>: the records are separated by <c>FF</c>; each gives the values of the members of <see cref="FuzzRecord"/>. The serializer writes
-    /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8.
+    /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8. The UTF-8
+    /// bytes returned by <see cref="CsvSerializer.SerializeToUtf8Bytes{T}(IEnumerable{T}, CsvTypeInfo{T})"/> are the bytes written to a stream.
     /// </summary>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The fuzz targets compare the reflection-based serializer with the generated one.")]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The fuzz targets compare the reflection-based serializer with the generated one.")]
@@ -715,6 +716,12 @@ public static partial class CsvFuzzTargets
         using var stream = new MemoryStream();
         CsvSerializer.Serialize(stream, records, typeInfo);
         FuzzAssert.Equal(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text)), Encoding.UTF8.GetString(stream.ToArray()), "The UTF-8 data is not the UTF-16 text");
+
+        // Without a target, the bytes are kept in chunks, of growing sizes with a small buffer, before the array is created
+        var utf8 = stream.ToArray();
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records, typeInfo)), "The UTF-8 bytes are not the data written to a stream");
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records)), "The generated metadata and the reflection write different UTF-8 bytes");
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records, SmallBufferSerializerOptions)), "The UTF-8 bytes written in chunks are not the bytes written in one buffer");
         stream.Position = 0;
         var utf8Expected = string.Join('\n', records.Select(record => Describe(record, utf8: true)));
         FuzzAssert.Equal(utf8Expected, string.Join('\n', CsvSerializer.Deserialize(stream, typeInfo).Select(record => Describe(record, utf8: true))), "The records read back from UTF-8 are not the records written");
@@ -931,7 +938,8 @@ public static partial class CsvFuzzTargets
     /// The fast parser of <see cref="double"/>, <see cref="float"/> and <see cref="Half"/> values accepts a subset of what the BCL accepts with the
     /// invariant culture, and gives the same values, with the same sign, in UTF-16 and in UTF-8. The data is read as text, and its first bytes as the
     /// bits of a value, written as the BCL writes it, so that the values around the limits of the fast path are covered. The fast formatter of
-    /// <see cref="double"/> values writes the text of the BCL for this value, and for the value rounded to a few decimals.
+    /// <see cref="double"/> values writes the text of the BCL for this value, and for the value rounded to a few decimals, and the formatter of
+    /// <see cref="float"/> values for the float of the first 4 bytes.
     /// </summary>
     private static void ParseFloatingPoint(ReadOnlySpan<byte> data)
     {
@@ -948,6 +956,7 @@ public static partial class CsvFuzzTargets
             var single = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data));
             CheckFloatingPoint<float>(single.ToString("R", CultureInfo.InvariantCulture));
             CheckFloatingPoint<float>(single.ToString("F" + decimals, CultureInfo.InvariantCulture));
+            CheckFormat(single);
 
             var half = BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(data));
             CheckFloatingPoint<Half>(half.ToString("R", CultureInfo.InvariantCulture));
@@ -967,6 +976,24 @@ public static partial class CsvFuzzTargets
         Span<byte> bytes = stackalloc byte[64];
         var handled = Internals.InvariantFloatingPoint.TryFormat(value, chars, out var written, out var tooSmall);
         FuzzAssert.Equal(handled, Internals.InvariantFloatingPoint.TryFormat(value, bytes, out var bytesWritten, out _), "The UTF-16 and UTF-8 formatters disagree on " + value.ToString("R", CultureInfo.InvariantCulture));
+        if (handled)
+        {
+            // .NET 10 writes 2^-25 with 16 digits that do not parse back to it: the fast path writes the 17 digits of .NET 11
+            var expected = Math.Abs(value) == Math.ScaleB(1, -25) ? value.ToString("G17", CultureInfo.InvariantCulture) : value.ToString(CultureInfo.InvariantCulture);
+            FuzzAssert.False(tooSmall, "The destination is too small for " + expected);
+            FuzzAssert.Equal(expected, chars[..written].ToString(), "The text is not the text of the BCL");
+            FuzzAssert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]), "The UTF-8 text is not the text of the BCL");
+        }
+    }
+
+    // The fast formatter of floats writes the text of the BCL, in UTF-16 and UTF-8, when it handles a value: the zeros and every normal value
+    private static void CheckFormat(float value)
+    {
+        Span<char> chars = stackalloc char[64];
+        Span<byte> bytes = stackalloc byte[64];
+        var handled = Internals.InvariantFloatingPoint.TryFormat(value, chars, out var written, out var tooSmall);
+        FuzzAssert.Equal(handled, Internals.InvariantFloatingPoint.TryFormat(value, bytes, out var bytesWritten, out _), "The UTF-16 and UTF-8 formatters disagree on " + value.ToString("R", CultureInfo.InvariantCulture));
+        FuzzAssert.Equal(float.IsNormal(value) || value == 0, handled, "The formatter of floats does not handle " + value.ToString("R", CultureInfo.InvariantCulture));
         if (handled)
         {
             var expected = value.ToString(CultureInfo.InvariantCulture);
@@ -1008,6 +1035,31 @@ public static partial class CsvFuzzTargets
         for (var i = 0; i < values.Length; i++)
         {
             yield return FuzzSeed.FromText("floating-point-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
+        }
+
+        // The bits of the values of the unit tests of the formatter: few decimals, the shortest number, and the limits of the fast path
+        double[] formatted =
+        [
+            0.1, 0.30000000000000004, -12.3, 1e-4, 9.9e-5, 999999999.9, 1e9, 123456789012345.6, 1234.5678901234567, 0.00010000000000000002,
+            0.0001220703125, 1099511627776.0, 999999999999999.875, 1e15, 4503599627370497.0, double.MaxValue, double.NaN,
+            1e16, 1e17, 99999999999999984.0, 1.2345678901234568e17, 1e23, 1e-5, 1.2345e-7, 2.9802322387695312E-08, 1e-48, 1e80, 0.0, -0.0,
+            BitConverter.Int64BitsToDouble(0x35F0000000000000), BitConverter.Int64BitsToDouble(0x50AFFFFFFFFFFFFF),
+        ];
+        for (var i = 0; i < formatted.Length; i++)
+        {
+            var bits = new byte[8];
+            BinaryPrimitives.WriteInt64LittleEndian(bits, BitConverter.DoubleToInt64Bits(formatted[i]));
+            yield return new FuzzSeed("floating-point-bits-" + i.ToString(CultureInfo.InvariantCulture), bits);
+        }
+
+        // The bits of floats in the first 4 bytes, and of a double whose low half is 0 after them: with and without an exponent, the smallest
+        // normal value, and the values that are left to the BCL
+        float[] singles = [0.1f, 1f / 3, -12.3f, 1e-4f, 9.9e-5f, 1e8f, 1e9f, 16777216f, float.MaxValue, 1.17549435e-38f, 1e-40f, float.NaN, -0f];
+        for (var i = 0; i < singles.Length; i++)
+        {
+            var bits = new byte[8];
+            BinaryPrimitives.WriteInt32LittleEndian(bits, BitConverter.SingleToInt32Bits(singles[i]));
+            yield return new FuzzSeed("floating-point-single-bits-" + i.ToString(CultureInfo.InvariantCulture), bits);
         }
     }
 

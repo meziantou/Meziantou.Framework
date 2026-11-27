@@ -20,7 +20,7 @@ description: What the library and the tool do not do, and how to work around it.
   for NuGet, npm, Docker images, GitHub Actions and the .NET SDK only. See
   [What can be updated](09-CommandLineTool.md#what-can-be-updated).
 - **Lock files are not updated by the library.** Their entries are not updatable. The command-line tool can regenerate
-  the NuGet and npm lock files. See [Lock files](09-CommandLineTool.md#lock-files).
+  the NuGet, npm and GitHub Actions lock files. See [Lock files](09-CommandLineTool.md#lock-files).
 - **The command-line tool only uses the built-in scanners.** To scan your own formats, call the library from your own
   program.
 - **Updates are not transactional.** Each update writes its file on its own. When an update fails, the previous ones

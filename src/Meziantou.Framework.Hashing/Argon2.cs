@@ -2,6 +2,9 @@ using System.Buffers.Binary;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework.Hashing;
@@ -100,7 +103,7 @@ public static class Argon2
         var instance = new Instance(type, version, parallelism, passes, segmentLength, laneLength, blockCount);
         try
         {
-            var hasher = new Blake2b(Blake2b.MaxHashSize);
+            var hasher = new Blake2bHasher(Blake2b.MaxHashSize);
 
             // https://www.rfc-editor.org/rfc/rfc9106#section-3.2 step 1: H_0
             Span<byte> h0 = stackalloc byte[Blake2b.MaxHashSize + 8];
@@ -110,10 +113,10 @@ public static class Argon2
             hasher.AppendUInt32LittleEndian((uint)passes);
             hasher.AppendUInt32LittleEndian((uint)version);
             hasher.AppendUInt32LittleEndian((uint)type);
-            AppendWithLength(hasher, password);
-            AppendWithLength(hasher, salt);
-            AppendWithLength(hasher, secret);
-            AppendWithLength(hasher, associatedData);
+            AppendWithLength(ref hasher, password);
+            AppendWithLength(ref hasher, salt);
+            AppendWithLength(ref hasher, secret);
+            AppendWithLength(ref hasher, associatedData);
             hasher.GetHashAndReset(h0[..Blake2b.MaxHashSize]);
 
             // Steps 3 and 4: B[i][0] = H'^(1024)(H_0 || LE32(0) || LE32(i)) and B[i][1] = H'^(1024)(H_0 || LE32(1) || LE32(i))
@@ -124,7 +127,7 @@ public static class Argon2
                 {
                     BinaryPrimitives.WriteUInt32LittleEndian(h0[Blake2b.MaxHashSize..], (uint)column);
                     BinaryPrimitives.WriteUInt32LittleEndian(h0[(Blake2b.MaxHashSize + 4)..], (uint)lane);
-                    VariableLengthHash(hasher, h0, blockBytes);
+                    VariableLengthHash(ref hasher, h0, blockBytes);
                     LoadBlock(blockBytes, instance.GetBlock((lane * laneLength) + column));
                 }
             }
@@ -153,7 +156,7 @@ public static class Argon2
             StoreBlock(final, blockBytes);
 
             // Step 8: Tag = H'^T(C)
-            VariableLengthHash(hasher, blockBytes, destination);
+            VariableLengthHash(ref hasher, blockBytes, destination);
             CryptographicOperations.ZeroMemory(blockBytes);
         }
         finally
@@ -162,14 +165,14 @@ public static class Argon2
         }
     }
 
-    private static void AppendWithLength(Blake2b hasher, ReadOnlySpan<byte> value)
+    private static void AppendWithLength(ref Blake2bHasher hasher, ReadOnlySpan<byte> value)
     {
         hasher.AppendUInt32LittleEndian((uint)value.Length);
         hasher.AppendData(value);
     }
 
     /// <summary>The variable-length hash function H' (RFC 9106 section 3.3); the length T is the length of <paramref name="output"/>.</summary>
-    private static void VariableLengthHash(Blake2b hasher, ReadOnlySpan<byte> input, Span<byte> output)
+    private static void VariableLengthHash(ref Blake2bHasher hasher, ReadOnlySpan<byte> input, Span<byte> output)
     {
         var length = output.Length;
         if (length <= Blake2b.MaxHashSize)
@@ -241,6 +244,178 @@ public static class Argon2
     /// <summary>The compression function G (RFC 9106 section 3.5): next = G(previous, reference), XOR next when <paramref name="withXor"/> is set.</summary>
     /// <remarks><paramref name="next"/> may be the same block as <paramref name="reference"/>.</remarks>
     private static void FillBlock(ReadOnlySpan<ulong> previous, ReadOnlySpan<ulong> reference, Span<ulong> next, bool withXor, Span<ulong> r, Span<ulong> z)
+    {
+        if (IsVector128Supported)
+        {
+            FillBlockVector128(previous, reference, next, withXor, r);
+        }
+        else
+        {
+            FillBlockScalar(previous, reference, next, withXor, r, z);
+        }
+    }
+
+    // The vector path needs the multiplication of the low 32-bit halves of the 64-bit lanes (pmuludq, umull)
+    internal static bool IsVector128Supported => Vector128.IsHardwareAccelerated && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported);
+
+    /// <summary>
+    /// <see cref="FillBlock"/> on vectors of two 64-bit words, as the optimized implementation of the reference: a row or a
+    /// column of the block is 8 vectors (A0, A1, B0, B1, C0, C1, D0, D1), the permutation P computes GB on the columns of the
+    /// 4x4 matrix of words two at a time, then on its diagonals once the vectors are rotated.
+    /// </summary>
+    internal static void FillBlockVector128(ReadOnlySpan<ulong> previous, ReadOnlySpan<ulong> reference, Span<ulong> next, bool withXor, Span<ulong> r)
+    {
+        var previousVectors = unsafe(MemoryMarshal.Cast<ulong, Vector128<ulong>>(previous))[..(QWordsInBlock / 2)];
+        var referenceVectors = unsafe(MemoryMarshal.Cast<ulong, Vector128<ulong>>(reference))[..(QWordsInBlock / 2)];
+        var nextVectors = unsafe(MemoryMarshal.Cast<ulong, Vector128<ulong>>(next))[..(QWordsInBlock / 2)];
+        var state = unsafe(MemoryMarshal.Cast<ulong, Vector128<ulong>>(r))[..(QWordsInBlock / 2)];
+
+        // R = X XOR Y in the state; next receives R (XOR its previous content), to which P(R) is XORed at the end
+        for (var i = 0; i < state.Length; i++)
+        {
+            var value = referenceVectors[i] ^ previousVectors[i];
+            state[i] = value;
+            nextVectors[i] = withXor ? value ^ nextVectors[i] : value;
+        }
+
+        // The rows: 16 consecutive 64-bit words, 8 consecutive vectors
+        for (var i = 0; i < 8; i++)
+        {
+            var row = state.Slice(i * 8, 8);
+            Permute(ref row[0], ref row[1], ref row[2], ref row[3], ref row[4], ref row[5], ref row[6], ref row[7]);
+        }
+
+        // The columns: 8 pairs of 64-bit words, 16 words apart: 8 vectors, 8 vectors apart
+        for (var i = 0; i < 8; i++)
+        {
+            var column = state.Slice(i, 57);
+            Permute(ref column[0], ref column[8], ref column[16], ref column[24], ref column[32], ref column[40], ref column[48], ref column[56]);
+        }
+
+        for (var i = 0; i < state.Length; i++)
+        {
+            nextVectors[i] ^= state[i];
+        }
+    }
+
+    // The permutation P on the vectors (v0, v1), (v2, v3), ..., (v14, v15)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Permute(
+        ref Vector128<ulong> a0Ref, ref Vector128<ulong> a1Ref, ref Vector128<ulong> b0Ref, ref Vector128<ulong> b1Ref,
+        ref Vector128<ulong> c0Ref, ref Vector128<ulong> c1Ref, ref Vector128<ulong> d0Ref, ref Vector128<ulong> d1Ref)
+    {
+        var a0 = a0Ref;
+        var a1 = a1Ref;
+        var b0 = b0Ref;
+        var b1 = b1Ref;
+        var c0 = c0Ref;
+        var c1 = c1Ref;
+        var d0 = d0Ref;
+        var d1 = d1Ref;
+
+        // The columns (v0, v4, v8, v12), (v1, v5, v9, v13), (v2, v6, v10, v14) and (v3, v7, v11, v15)
+        Mix(ref a0, ref b0, ref c0, ref d0);
+        Mix(ref a1, ref b1, ref c1, ref d1);
+
+        // The diagonals (v0, v5, v10, v15), (v1, v6, v11, v12), (v2, v7, v8, v13) and (v3, v4, v9, v14): b becomes
+        // (v5, v6), (v7, v4), c becomes (v10, v11), (v8, v9) and d becomes (v15, v12), (v13, v14)
+        var b0Diagonal = Concatenate(b0, b1);
+        var b1Diagonal = Concatenate(b1, b0);
+        var d0Diagonal = Concatenate(d1, d0);
+        var d1Diagonal = Concatenate(d0, d1);
+        Mix(ref a0, ref b0Diagonal, ref c1, ref d0Diagonal);
+        Mix(ref a1, ref b1Diagonal, ref c0, ref d1Diagonal);
+
+        a0Ref = a0;
+        a1Ref = a1;
+        b0Ref = Concatenate(b1Diagonal, b0Diagonal);
+        b1Ref = Concatenate(b0Diagonal, b1Diagonal);
+        c0Ref = c0;
+        c1Ref = c1;
+        d0Ref = Concatenate(d0Diagonal, d1Diagonal);
+        d1Ref = Concatenate(d1Diagonal, d0Diagonal);
+    }
+
+    // GB on two lanes
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Mix(ref Vector128<ulong> a, ref Vector128<ulong> b, ref Vector128<ulong> c, ref Vector128<ulong> d)
+    {
+        a = BlaMka(a, b);
+        d = RotateRight32(d ^ a);
+        c = BlaMka(c, d);
+        b = RotateRight24(b ^ c);
+        a = BlaMka(a, b);
+        d = RotateRight16(d ^ a);
+        c = BlaMka(c, d);
+        b = RotateRight63(b ^ c);
+    }
+
+    // x + y + 2 * trunc(x) * trunc(y), trunc being the low 32 bits
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> BlaMka(Vector128<ulong> x, Vector128<ulong> y)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // Two multiply-accumulates (umlal) instead of a multiplication and two additions
+            var xLow = AdvSimd.ExtractNarrowingLower(x);
+            var yLow = AdvSimd.ExtractNarrowingLower(y);
+            return AdvSimd.MultiplyWideningLowerAndAdd(AdvSimd.MultiplyWideningLowerAndAdd(x + y, xLow, yLow), xLow, yLow);
+        }
+
+        var product = Sse2.Multiply(x.AsUInt32(), y.AsUInt32());
+        return x + y + product + product;
+    }
+
+    // The high word of x, then the low word of y
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> Concatenate(Vector128<ulong> x, Vector128<ulong> y)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.ExtractVector128(x, y, 1);
+
+        return Sse2.Shuffle(x.AsDouble(), y.AsDouble(), 0b01).AsUInt64();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> RotateRight32(Vector128<ulong> value)
+    {
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.ReverseElement32(value);
+
+        return Sse2.Shuffle(value.AsUInt32(), 0b10_11_00_01).AsUInt64();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> RotateRight24(Vector128<ulong> value)
+    {
+        if (AdvSimd.Arm64.IsSupported || Ssse3.IsSupported)
+            return Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)3, 4, 5, 6, 7, 0, 1, 2, 11, 12, 13, 14, 15, 8, 9, 10)).AsUInt64();
+
+        return Vector128.ShiftRightLogical(value, 24) | Vector128.ShiftLeft(value, 40);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> RotateRight16(Vector128<ulong> value)
+    {
+        if (AdvSimd.Arm64.IsSupported || Ssse3.IsSupported)
+            return Vector128.Shuffle(value.AsByte(), Vector128.Create((byte)2, 3, 4, 5, 6, 7, 0, 1, 10, 11, 12, 13, 14, 15, 8, 9)).AsUInt64();
+
+        return Vector128.ShiftRightLogical(value, 16) | Vector128.ShiftLeft(value, 48);
+    }
+
+    // A rotation to the right by 63 bits is a rotation to the left by 1 bit
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<ulong> RotateRight63(Vector128<ulong> value)
+    {
+        // Arm64: the top bit shifted right and inserted into the low bit of the value shifted left (shl, sri)
+        if (AdvSimd.Arm64.IsSupported)
+            return AdvSimd.ShiftRightAndInsert(AdvSimd.ShiftLeftLogical(value, 1), value, 63);
+
+        return Vector128.ShiftRightLogical(value, 63) ^ (value + value);
+    }
+
+    /// <summary><see cref="FillBlock"/> on 64-bit words, the reference of the vector path.</summary>
+    internal static void FillBlockScalar(ReadOnlySpan<ulong> previous, ReadOnlySpan<ulong> reference, Span<ulong> next, bool withXor, Span<ulong> r, Span<ulong> z)
     {
         // R = X XOR Y; the result is P(R) XOR R (XOR the previous content of the block for the passes after the first one)
         Xor(reference, previous, r);

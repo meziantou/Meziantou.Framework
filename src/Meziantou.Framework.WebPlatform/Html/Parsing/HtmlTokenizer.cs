@@ -190,15 +190,26 @@ internal sealed class HtmlTokenizer
 
     // Current comment, DOCTYPE, processing instruction token
     private readonly InputTextBuilder _commentData = new();
-    private readonly StringBuilder _doctypeName = new();
-    private readonly StringBuilder _doctypePublicId = new();
-    private readonly StringBuilder _doctypeSystemId = new();
+    private StringBuilder? _doctypeName;
+    private StringBuilder? _doctypePublicId;
+    private StringBuilder? _doctypeSystemId;
     private bool _doctypeNameMissing;
     private bool _doctypePublicIdMissing;
     private bool _doctypeSystemIdMissing;
     private bool _forceQuirks;
     private readonly StringBuilder _temporaryBuffer = new();
-    private readonly StringBuilder _piData = new();
+    private StringBuilder? _piData;
+
+    // The buffers of the rare tokens are created when they are first used: most fragments have none, and the fragment
+    // parser creates a tokenizer for each call
+    private StringBuilder DoctypeNameBuffer => _doctypeName ??= new();
+
+    private StringBuilder DoctypePublicIdBuffer => _doctypePublicId ??= new();
+
+    private StringBuilder DoctypeSystemIdBuffer => _doctypeSystemId ??= new();
+
+    private StringBuilder PiDataBuffer => _piData ??= new();
+
     private string _piTarget = "";
     private long _characterReferenceCode;
 
@@ -744,9 +755,9 @@ internal sealed class HtmlTokenizer
 
     private void EmitDoctype()
     {
-        _pendingDoctypeName = _doctypeNameMissing ? null : _doctypeName.ToString();
-        _pendingDoctypePublicId = _doctypePublicIdMissing ? null : _doctypePublicId.ToString();
-        _pendingDoctypeSystemId = _doctypeSystemIdMissing ? null : _doctypeSystemId.ToString();
+        _pendingDoctypeName = _doctypeNameMissing ? null : DoctypeNameBuffer.ToString();
+        _pendingDoctypePublicId = _doctypePublicIdMissing ? null : DoctypePublicIdBuffer.ToString();
+        _pendingDoctypeSystemId = _doctypeSystemIdMissing ? null : DoctypeSystemIdBuffer.ToString();
         _pendingDoctypeForceQuirks = _forceQuirks;
         _pendingTokenType = HtmlTokenType.Doctype;
     }
@@ -754,7 +765,7 @@ internal sealed class HtmlTokenizer
     private void EmitProcessingInstruction()
     {
         _pendingPiTarget = _piTarget;
-        _pendingPiData = _piData.ToString();
+        _pendingPiData = PiDataBuffer.ToString();
         _pendingTokenType = HtmlTokenType.ProcessingInstruction;
     }
 
@@ -880,9 +891,9 @@ internal sealed class HtmlTokenizer
 
     private void CreateDoctypeToken()
     {
-        _doctypeName.Clear();
-        _doctypePublicId.Clear();
-        _doctypeSystemId.Clear();
+        DoctypeNameBuffer.Clear();
+        DoctypePublicIdBuffer.Clear();
+        DoctypeSystemIdBuffer.Clear();
         _doctypeNameMissing = true;
         _doctypePublicIdMissing = true;
         _doctypeSystemIdMissing = true;
@@ -2220,7 +2231,7 @@ internal sealed class HtmlTokenizer
                         ReportError("unexpected-null-character");
                         CreateDoctypeToken();
                         _doctypeNameMissing = false;
-                        _doctypeName.Append('\U0000FFFD');
+                        DoctypeNameBuffer.Append('\U0000FFFD');
                         _state = TokenizerState.DoctypeName;
                         break;
                     case '>':
@@ -2240,7 +2251,7 @@ internal sealed class HtmlTokenizer
                     default:
                         CreateDoctypeToken();
                         _doctypeNameMissing = false;
-                        _doctypeName.Append(ToAsciiLower((char)c));
+                        DoctypeNameBuffer.Append(ToAsciiLower((char)c));
                         _state = TokenizerState.DoctypeName;
                         break;
                 }
@@ -2262,7 +2273,7 @@ internal sealed class HtmlTokenizer
                         break;
                     case '\0':
                         ReportError("unexpected-null-character");
-                        _doctypeName.Append('\U0000FFFD');
+                        DoctypeNameBuffer.Append('\U0000FFFD');
                         break;
                     case Eof:
                         ReportError("eof-in-doctype");
@@ -2271,7 +2282,7 @@ internal sealed class HtmlTokenizer
                         EmitEndOfFileAfterPendingToken();
                         break;
                     default:
-                        _doctypeName.Append(ToAsciiLower((char)c));
+                        DoctypeNameBuffer.Append(ToAsciiLower((char)c));
                         break;
                 }
 
@@ -2568,7 +2579,7 @@ internal sealed class HtmlTokenizer
                     else
                     {
                         _piTarget = target;
-                        _piData.Clear();
+                        PiDataBuffer.Clear();
                         Reconsume(TokenizerState.AfterProcessingInstructionTarget);
                     }
                 }
@@ -2621,10 +2632,10 @@ internal sealed class HtmlTokenizer
                     case '\0':
                         // As in the comment states, U+0000 NULL is replaced with U+FFFD
                         ReportError("unexpected-null-character");
-                        _piData.Append('�');
+                        PiDataBuffer.Append('�');
                         break;
                     default:
-                        _piData.Append((char)c);
+                        PiDataBuffer.Append((char)c);
                         break;
                 }
 
@@ -2645,7 +2656,7 @@ internal sealed class HtmlTokenizer
                         EmitEndOfFile();
                         break;
                     default:
-                        _piData.Append('?');
+                        PiDataBuffer.Append('?');
                         Reconsume(TokenizerState.ProcessingInstructionData);
                         break;
                 }
@@ -2911,19 +2922,19 @@ internal sealed class HtmlTokenizer
         if (isPublic)
         {
             _doctypePublicIdMissing = false;
-            _doctypePublicId.Clear();
+            DoctypePublicIdBuffer.Clear();
         }
         else
         {
             _doctypeSystemIdMissing = false;
-            _doctypeSystemId.Clear();
+            DoctypeSystemIdBuffer.Clear();
         }
     }
 
     private void DoctypeIdentifierQuoted(bool isPublic, char quote)
     {
         var c = Consume();
-        var identifier = isPublic ? _doctypePublicId : _doctypeSystemId;
+        var identifier = isPublic ? DoctypePublicIdBuffer : DoctypeSystemIdBuffer;
         if (c == quote)
         {
             _state = isPublic ? TokenizerState.AfterDoctypePublicIdentifier : TokenizerState.AfterDoctypeSystemIdentifier;

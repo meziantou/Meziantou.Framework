@@ -7,12 +7,12 @@ internal sealed class TextStep(TextMatcher text) : SearchStep
 {
     protected override bool IsMatch(LocatorEvaluator evaluator, Element element)
     {
-        if (LocatorEvaluator.IsSkippedForText(element) || IsInHead(element) || !text.IsMatch(evaluator.GetText(element)))
+        if (LocatorEvaluator.IsSkippedForText(element) || IsInHead(element) || !text.IsMatch(evaluator, element))
             return false;
 
         foreach (var child in ComposedTree.GetChildElements(element))
         {
-            if (!LocatorEvaluator.IsSkippedForText(child) && text.IsMatch(evaluator.GetText(child)))
+            if (!LocatorEvaluator.IsSkippedForText(child) && text.IsMatch(evaluator, child))
                 return false;
         }
 

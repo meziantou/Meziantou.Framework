@@ -26,6 +26,18 @@ public sealed class PdfTextExtractionTests
     [InlineData("BT /F1 12 Tf 72 720 Td (No font) Tj /Missing 12 Tf (x) Tj ET", "No font")]
     [InlineData("/Form Do", "In a form")]
     [InlineData("BI /W 1 /H 1 /CS /G /BPC 8 ID \u00FF EI BT /F1 12 Tf 72 720 Td (After image) Tj ET", "After image")]
+    [InlineData("BT /F1 12 Tf 72 720 Td [(A) [(B)] (C)] TJ ET", "AC")]
+    [InlineData("BT /F1 12 Tf 72 720 Td [(A) foo true null /N (B)] TJ ET", "AB")]
+    [InlineData("BT /F1 12 Tf 72 720 Td [<41> -2000 <4243>] TJ ET", "A BC")]
+    [InlineData("BT /F1 12 Tf 72 720 Td [(A) ) >> { } << /K 1 >> (B)] TJ ET", "AB")]
+    [InlineData("BT /F1 12 Tf 72 720 Td (Before) Tj [(A) (B) ET", "Before")]
+    [InlineData("BT /F1 12 Tf 72 720 Td [(A) endobj (B)] TJ (C) Tj ET", "C")]
+    [InlineData("BT /F1 12 Tf 72 720 Td (A) (B) Tj ET", "B")]
+    [InlineData("BT /F#31 12 Tf 72 720 Td (Escaped) Tj ET", "Escaped")]
+    [InlineData("BT /F1 12 Tf 14 TL 72 720 Td (Hello) Tj 1 2 (World) \" ET", "Hello\nWorld")]
+    [InlineData("BT /F1 12 Tf 72 720 Td (\\101\\102\\\r\nC) Tj ET", "ABC")]
+    [InlineData("BT /F1 12 Tf 72 720 Td true Tc (A) Tj null 0 Td (B) Tj ET", "AB")]
+    [InlineData("BT /F1 true Tf 72 720 Td (A) Tj ET", "A")]
     public void Extract(string content, string expected)
     {
         var file = new HandWrittenPdf()
@@ -550,6 +562,21 @@ public sealed class PdfTextExtractionTests
         Assert.Equal([Alef + Bet, Gimel + Dalet], layout.Lines[0].Words.Select(word => word.Text));
         Assert.Equal([Alef, Bet, Gimel, Dalet], layout.Lines[0].Glyphs.Where(glyph => glyph.Text != " ").Select(glyph => glyph.Text));
         Assert.Equal(["Next", "line"], layout.Lines[1].Words.Select(word => word.Text));
+    }
+
+    [Fact]
+    public void TextArraysPlaceTheGlyphsWithTheirAdjustments()
+    {
+        var layout = ExtractWithHelvetica("BT /F1 10 Tf 72 700 Td [(A) -500 (B) 250.5 (C)] TJ 2 Tz [(D) -1e3 (E)] TJ ET");
+
+        var glyphs = layout.Lines.Single().Glyphs;
+        Assert.Equal(["A", "B", "C", "D", "E"], glyphs.Select(glyph => glyph.Text));
+        Assert.Equal(72, glyphs[0].Origin.X, 6);
+        Assert.Equal(83.67, glyphs[1].Origin.X, 6);
+        Assert.Equal(87.835, glyphs[2].Origin.X, 6);
+        Assert.Equal(87.835 + 7.22, glyphs[3].Origin.X, 6);
+        Assert.Equal(87.835 + 7.22 + 0.1444, glyphs[4].Origin.X, 6);
+        Assert.Equal(700, glyphs[4].Origin.Y, 6);
     }
 
     private static PdfTextLayout ExtractWithHelvetica(string content, PdfTextExtractionOptions? options = null, int rotate = 0) => OpenWithHelvetica(content, rotate).ExtractTextLayout(options);

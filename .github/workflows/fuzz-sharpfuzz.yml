@@ -16,7 +16,10 @@ on:
         default: all
         options:
           - all
+          - aspnetcore-authentication-httpbasic
           - aspnetcore-testing
+          - ansi-formatting
+          - assertions
           - atlassian-data-format
           - avatar
           - barcodes
@@ -59,6 +62,7 @@ on:
           - scheduling
           - simple-query-language
           - syntax-highlighting
+          - tagged-values
           - tds-server
           - text-diff
           - toml
@@ -69,6 +73,7 @@ on:
           - wasm-engine
           - webplatform-devtools
           - webplatform
+          - webtransport
           - yaml
       duration_seconds:
         description: Time budget of each target, in seconds
@@ -110,7 +115,10 @@ env:
   # with the fewest, and gets an option of the component input (Meziantou.Framework.Fuzzing.Tests checks both).
   FUZZ_PROJECTS: |
     [
+      { "project": "Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz", "component": "aspnetcore-authentication-httpbasic", "day": 6 },
       { "project": "Meziantou.AspNetCore.Testing.Fuzz",            "component": "aspnetcore-testing",    "day": 4 },
+      { "project": "Meziantou.Framework.AnsiFormatting.Fuzz",       "component": "ansi-formatting",       "day": 0 },
+      { "project": "Meziantou.Framework.Assertions.Fuzz",          "component": "assertions",            "day": 1 },
       { "project": "Meziantou.Framework.AtlassianDataFormat.Fuzz", "component": "atlassian-data-format", "day": 4 },
       { "project": "Meziantou.Framework.Avatar.Fuzz",              "component": "avatar",                "day": 2 },
       { "project": "Meziantou.Framework.Barcodes.Fuzz",            "component": "barcodes",              "day": 5 },
@@ -153,6 +161,7 @@ env:
       { "project": "Meziantou.Framework.Scheduling.Fuzz",          "component": "scheduling",            "day": 3 },
       { "project": "Meziantou.Framework.SimpleQueryLanguage.Fuzz", "component": "simple-query-language", "day": 1 },
       { "project": "Meziantou.Framework.SyntaxHighlighting.Fuzz",  "component": "syntax-highlighting",   "day": 3 },
+      { "project": "Meziantou.Framework.TaggedValues.Analyzer.Fuzz", "component": "tagged-values",       "day": 3 },
       { "project": "Meziantou.Framework.TdsServer.Fuzz",           "component": "tds-server",            "day": 4 },
       { "project": "Meziantou.Framework.TextDiff.Fuzz",            "component": "text-diff",             "day": 0 },
       { "project": "Meziantou.Framework.Toml.Fuzz",                "component": "toml",                  "day": 4 },
@@ -163,6 +172,7 @@ env:
       { "project": "Meziantou.Framework.WasmEngine.Fuzz",          "component": "wasm-engine",           "day": 6 },
       { "project": "Meziantou.Framework.WebPlatform.DevTools.Fuzz", "component": "webplatform-devtools",  "day": 3 },
       { "project": "Meziantou.Framework.WebPlatform.Fuzz",         "component": "webplatform",           "day": 5 },
+      { "project": "Meziantou.Framework.WebTransport.Fuzz",        "component": "webtransport",          "day": 5 },
       { "project": "Meziantou.Framework.Yaml.Fuzz",                "component": "yaml",                  "day": 6 }
     ]
 
@@ -212,7 +222,7 @@ jobs:
           - { runner: ubuntu-26.04-arm, arch: arm64 }
         fuzz: ${{ fromJSON(needs.select.outputs.projects) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Install SharpFuzz and libfuzzer-dotnet
@@ -261,7 +271,7 @@ jobs:
       - name: Save corpus
         # Not when the restore failed: the next campaign would restore a corpus that started from the seeds only
         if: always() && steps.restore-corpus.outcome == 'success'
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: fuzz-corpus-${{ matrix.fuzz.project }}-${{ matrix.platform.arch }}
           path: artifacts/fuzz-corpus
@@ -271,7 +281,7 @@ jobs:
           retention-days: 1
           # A re-run of the job
           overwrite: true
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: fuzz-results-${{ matrix.fuzz.project }}-${{ matrix.platform.arch }}
@@ -302,13 +312,13 @@ jobs:
       group: fuzz-corpus-${{ github.ref }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Restore the corpus of the previous run
         run: ./eng/restore-fuzz-corpus.ps1 -Path artifacts/fuzz-corpus-all
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Download the corpus of this run
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: actions/download-artifact@v8.0.2
         with:
           # A job that failed before fuzzing, without a corpus to restore, uploads none
           pattern: fuzz-corpus-*
@@ -326,7 +336,7 @@ jobs:
             "- ``$name``: $(@(Get-ChildItem $corpus -File -Recurse).Count) inputs" >> $env:GITHUB_STEP_SUMMARY
           }
       - name: Save corpus
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: fuzz-corpus
           path: artifacts/fuzz-corpus-all
@@ -350,9 +360,9 @@ jobs:
       matrix:
         fuzz: ${{ fromJSON(needs.select.outputs.projects) }}
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Download fuzz results
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: actions/download-artifact@v8.0.2
         with:
           # A pattern: one artifact per architecture, and a job that failed before uploading its results leaves none
           pattern: fuzz-results-${{ matrix.fuzz.project }}*

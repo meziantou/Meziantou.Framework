@@ -25,7 +25,9 @@ actions used by the workflows and the actions these actions use:
 - The `commit`, `ref`, `hostname`, `owner_id` and `repo_id` values of the entry are in [Dependency.Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) under the
   `commit`, `ref`, `hostname`, `ownerId` and `repoId` keys. `commit` is the resolved commit as written (`sha1-...` or
   `sha256-...`), and `ref` is the tag or the branch this commit was resolved from.
-- The entries are not updatable, as they record the commit and the identity of the repository.
+- The entries are not updatable, as they record the commit and the identity of the repository. The command-line tool
+  regenerates the lock file with `gh actions-lock` after it updates the workflows. See
+  [GitHub Actions lock file](../09-CommandLineTool.md#github-actions-lock-file).
 
 ## Azure Pipelines
 

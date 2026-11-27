@@ -177,8 +177,8 @@ internal sealed class ShapefileShapeReader
         return parts.Count switch
         {
             0 => null,
-            1 => new GeoLineString(parts[0]),
-            _ => new GeoMultiLineString(parts.Select(part => new GeoLineString(part))),
+            1 => GeoLineString.FromOwnedArray(parts[0]),
+            _ => new GeoMultiLineString(parts.Select(GeoLineString.FromOwnedArray)),
         };
     }
 
@@ -277,7 +277,8 @@ internal sealed class ShapefileShapeReader
             var end = i + 1 < partCount ? starts[i + 1] : pointCount;
             if (end > starts[i])
             {
-                parts.Add(positions[starts[i]..end]);
+                // A single part is all the positions: no copy
+                parts.Add(starts[i] == 0 && end == pointCount ? positions : positions[starts[i]..end]);
                 if (hasPartTypes)
                 {
                     partTypesList.Add(partTypes[i]);

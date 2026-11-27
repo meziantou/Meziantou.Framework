@@ -186,6 +186,10 @@ public sealed partial class ElementInternals
         else
         {
             InternalContentAttributeMap[name] = value;
+            if (name == "aria-owns")
+            {
+                Target.NodeDocument.HasAriaOwns = true;
+            }
         }
 
         // Changing the content attribute clears the explicitly set elements

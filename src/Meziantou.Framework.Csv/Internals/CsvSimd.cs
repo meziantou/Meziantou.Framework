@@ -252,29 +252,39 @@ internal static class CsvSimd
         return AdvSimd.ExtractNarrowingSaturateUpper(lower, unsafe(Vector128.LoadUnsafe(ref chars, offset + 8)));
     }
 
+    // The line terminators are found with one table lookup per vector: TBL gives the element of the table at the index of each byte, and 0 for the
+    // bytes from 16. The masks of the separators and of the quotes share their last pairwise addition, and the mask of the special characters is
+    // combined from the three masks
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void MatchArm64(Vector128<byte> value0, Vector128<byte> value1, Vector128<byte> value2, Vector128<byte> value3, byte separator, byte quote, out ulong separators, out ulong quotes, out ulong specials)
     {
         var separatorVector = Vector128.Create(separator);
         var quoteVector = Vector128.Create(quote);
-        var cr = Vector128.Create((byte)'\r');
-        var lf = Vector128.Create((byte)'\n');
+        var lineTerminatorTable = Vector128.Create((byte)0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0, 0, 0xFF, 0, 0);
 
-        var separators0 = Vector128.Equals(value0, separatorVector);
-        var separators1 = Vector128.Equals(value1, separatorVector);
-        var separators2 = Vector128.Equals(value2, separatorVector);
-        var separators3 = Vector128.Equals(value3, separatorVector);
-        var quotes0 = Vector128.Equals(value0, quoteVector);
-        var quotes1 = Vector128.Equals(value1, quoteVector);
-        var quotes2 = Vector128.Equals(value2, quoteVector);
-        var quotes3 = Vector128.Equals(value3, quoteVector);
-        separators = ToMaskArm64(separators0, separators1, separators2, separators3);
-        quotes = ToMaskArm64(quotes0, quotes1, quotes2, quotes3);
-        specials = ToMaskArm64(
-            separators0 | quotes0 | Vector128.Equals(value0, cr) | Vector128.Equals(value0, lf),
-            separators1 | quotes1 | Vector128.Equals(value1, cr) | Vector128.Equals(value1, lf),
-            separators2 | quotes2 | Vector128.Equals(value2, cr) | Vector128.Equals(value2, lf),
-            separators3 | quotes3 | Vector128.Equals(value3, cr) | Vector128.Equals(value3, lf));
+        var separatorSums = SumBitsArm64(Vector128.Equals(value0, separatorVector), Vector128.Equals(value1, separatorVector), Vector128.Equals(value2, separatorVector), Vector128.Equals(value3, separatorVector));
+        var quoteSums = SumBitsArm64(Vector128.Equals(value0, quoteVector), Vector128.Equals(value1, quoteVector), Vector128.Equals(value2, quoteVector), Vector128.Equals(value3, quoteVector));
+        var lineTerminatorSums = SumBitsArm64(
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value0),
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value1),
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value2),
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value3));
+
+        var separatorsAndQuotes = AdvSimd.Arm64.AddPairwise(separatorSums, quoteSums).AsUInt64();
+        separators = separatorsAndQuotes.GetElement(0);
+        quotes = separatorsAndQuotes.GetElement(1);
+        specials = separators | quotes | AdvSimd.Arm64.AddPairwise(lineTerminatorSums, lineTerminatorSums).AsUInt64().ToScalar();
+    }
+
+    // Arm64 has no movemask instruction: each element keeps the bit of its position in its byte, and two pairwise additions gather the bytes of the
+    // four vectors, so that the byte i of the result has the bits of the elements 4i to 4i + 3. A third pairwise addition gives the 64-bit mask
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> SumBitsArm64(Vector128<byte> matches0, Vector128<byte> matches1, Vector128<byte> matches2, Vector128<byte> matches3)
+    {
+        var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+        var sum01 = AdvSimd.Arm64.AddPairwise(matches0 & weights, matches1 & weights);
+        var sum23 = AdvSimd.Arm64.AddPairwise(matches2 & weights, matches3 & weights);
+        return AdvSimd.Arm64.AddPairwise(sum01, sum23);
     }
 
     /// <summary>Gets a value indicating whether the bytes of a block are ASCII.</summary>
@@ -320,18 +330,6 @@ internal static class CsvSimd
         value ^= value << 16;
         value ^= value << 32;
         return value;
-    }
-
-    // Arm64 has no movemask instruction: each element keeps the bit of its position in its byte, and three pairwise additions gather the bytes of
-    // the four vectors into the 64-bit mask
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ulong ToMaskArm64(Vector128<byte> matches0, Vector128<byte> matches1, Vector128<byte> matches2, Vector128<byte> matches3)
-    {
-        var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
-        var sum01 = AdvSimd.Arm64.AddPairwise(matches0 & weights, matches1 & weights);
-        var sum23 = AdvSimd.Arm64.AddPairwise(matches2 & weights, matches3 & weights);
-        var sum = AdvSimd.Arm64.AddPairwise(sum01, sum23);
-        return AdvSimd.Arm64.AddPairwise(sum, sum).AsUInt64().ToScalar();
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

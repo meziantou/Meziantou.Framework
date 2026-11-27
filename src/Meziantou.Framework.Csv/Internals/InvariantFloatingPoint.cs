@@ -44,8 +44,8 @@ internal static class InvariantFloatingPoint
 
     /// <summary>Gets the 128 most significant bits of 5^q, for q from <see cref="MinPowerOfFive"/> to <see cref="MaxPowerOfFive"/>, the high half first.</summary>
     /// <remarks>
-    /// These are the values of <c>power_of_five_128</c> of fast_float: truncated for a positive q, and rounded up for a negative q, whose 5^q is the
-    /// reciprocal of an integer. The tests compute them again.
+    /// These are the values of <c>power_of_five_128</c> of fast_float: truncated, except from 5^-27 to 5^-1, which are rounded up. The tests compute
+    /// them again.
     /// </remarks>
     internal static ReadOnlySpan<ulong> PowersOfFive =>
     [
@@ -178,6 +178,51 @@ internal static class InvariantFloatingPoint
         0xF8EBAD2B84E0D58B, 0xD2E0898765A7DEB2, // 5^62
         0x9B934C3B330C8577, 0x63CC55F49F88EB2F, // 5^63
         0xC2781F49FFCFA6D5, 0x3CBF6B71C76B25FB, // 5^64
+    ];
+
+    private const ulong Mask63 = (1UL << 63) - 1;
+
+    /// <summary>Gets g of Schubfach for 10^e, e from <see cref="MinPowerOfFive"/> to <see cref="MaxPowerOfFive"/>: g1 then g0, the high and low 63 bits of g.</summary>
+    /// <remarks>
+    /// g is floor(10^e × 2^(125 - floor(log2(10^e)))) + 1: the 126 most significant bits of 10^e, plus one. They are the bits of 5^e, the 128 bits x of
+    /// <see cref="PowersOfFive"/> without the 2 lowest ones, as floor(floor(x) / 4) is floor(x / 4). The entries of the table are floor(x), except
+    /// those from 5^-27 to 5^-1, which fast_float rounds up: as x is not an integer there, they are floor(x) + 1. The tests compute them again.
+    /// </remarks>
+    internal static ReadOnlySpan<ulong> ShortestPowersOfTen => ShortestPowersOfTenTable;
+
+    private static readonly ulong[] ShortestPowersOfTenTable = CreateShortestPowersOfTen();
+
+    private static ulong[] CreateShortestPowersOfTen()
+    {
+        var result = new ulong[2 * (MaxPowerOfFive - MinPowerOfFive + 1)];
+        var powers = PowersOfFive;
+        for (var index = 0; index < result.Length; index += 2)
+        {
+            var power = new UInt128(powers[index], powers[index + 1]);
+            var e = (index / 2) + MinPowerOfFive;
+            if (e is >= -27 and < 0)
+            {
+                power--;
+            }
+
+            var g = (power >> 2) + 1;
+            result[index] = (ulong)(g >> 63);
+            result[index + 1] = (ulong)g & Mask63;
+        }
+
+        return result;
+    }
+
+    // The biased exponents of the doubles whose k of Schubfach, about log10(2^q), is from -MaxPowerOfFive to -MinPowerOfFive: from about 7e-49 to 5e80.
+    // The smallest k is the one of the value below a power of two, whose interval is narrower, log10(3/4 × 2^q).
+    internal const int MinShortestDoubleExponent = 863;
+    internal const int MaxShortestDoubleExponent = 1290;
+
+    private static ReadOnlySpan<ulong> UInt64PowersOf10 =>
+    [
+        1, 10, 100, 1_000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000, 1_000_000_000, 10_000_000_000, 100_000_000_000, 1_000_000_000_000,
+        10_000_000_000_000, 100_000_000_000_000, 1_000_000_000_000_000, 10_000_000_000_000_000, 100_000_000_000_000_000,
+        1_000_000_000_000_000_000, 10_000_000_000_000_000_000,
     ];
 
     /// <summary>Gets a value indicating whether <typeparamref name="T"/> has a fast path.</summary>
@@ -338,26 +383,139 @@ internal static class InvariantFloatingPoint
         return true;
     }
 
-    /// <summary>Formats a <see cref="double"/> with few decimals, such as <c>-12.3</c>, as <c>value.ToString(CultureInfo.InvariantCulture)</c> does.</summary>
+    /// <summary>Formats a <see cref="double"/>, such as <c>-12.3</c>, <c>0.30000000000000004</c> or <c>1.5E-07</c>, as <c>value.ToString(CultureInfo.InvariantCulture)</c> does.</summary>
     /// <returns><see langword="true"/> when the value is handled, written or with <paramref name="tooSmall"/> set; <see langword="false"/> to use the BCL.</returns>
     /// <remarks>
     /// <para>
-    /// The BCL writes the shortest decimal number that parses back to the value, about 45 ns for a value with few decimals. That number has the
-    /// fewest decimals: it is found with a few multiplications and divisions, whose results are exact or correctly rounded (see
-    /// <see cref="TryParse{TChar, T}"/>).
+    /// The BCL writes the shortest decimal number that parses back to the value, the nearest one to the value when several have the fewest digits
+    /// (the even one on a tie), about 45 ns for a value with few decimals and 55 ns for the round-trip format of most results of computations. It
+    /// writes an exponent when the first digit is below 10^-4, or at 10^17 or above.
     /// </para>
     /// <para>
-    /// The values from 10^-4 to 10^9, which the BCL writes without an exponent, are handled when their shortest number has at most 9 decimals and
-    /// fits in 2^53 once scaled. The others, such as the round-trip format of most results of computations (<c>0.30000000000000004</c>), are
-    /// rejected after one multiplication, and left to the BCL.
+    /// A value from 10^-4 to 10^9 whose shortest number has at most 9 decimals and fits in 2^53 once scaled is found with a few multiplications and
+    /// divisions, whose results are exact or correctly rounded (see <see cref="TryParse{TChar, T}"/>). The other values are rejected after at most one
+    /// multiplication, and their shortest number is computed with the algorithm of Schubfach (see <see cref="GetShortestDigits(double, out int)"/>),
+    /// from about 7e-49 to 5e80. The zeros are handled too. The other values, such as subnormal values and <c>NaN</c>, are left to the BCL.
     /// </para>
     /// </remarks>
     public static bool TryFormat<TChar>(double value, Span<TChar> destination, out int written, out bool tooSmall)
         where TChar : unmanaged, IBinaryInteger<TChar>
     {
+        // Each path has its own variables: GetShortestDigits writes the exponent through a reference, which keeps it in memory, and the loop of
+        // TryGetFewDecimals would then count in memory too if they shared it
+        var magnitude = Math.Abs(value);
+        if (TryGetFewDecimals(magnitude, out var digits, out var decimals))
+        {
+            WriteFixed(digits, decimals, value < 0, destination, out written, out tooSmall);
+            return true;
+        }
+
+        // The BCL writes the values from 10^-4 to 10^17 without an exponent. Their shortest numbers are in the same range: 10^-4 and 10^17 parse back
+        // to the limits, so a number that parses back to a value inside is inside too.
+        if (magnitude >= 1e-4 && magnitude < 1e17)
+        {
+            var shortestDigits = GetShortestDigits(magnitude, out var exponent);
+            var shortestDecimals = -exponent;
+            if (shortestDecimals < 0)
+            {
+                shortestDigits *= UInt64PowersOf10[exponent];
+                shortestDecimals = 0;
+            }
+
+            WriteFixed(shortestDigits, shortestDecimals, value < 0, destination, out written, out tooSmall);
+            return true;
+        }
+
+        return TryFormatWithExponent(value, destination, out written, out tooSmall);
+    }
+
+    // Formats the values that the BCL writes with an exponent, and the zeros
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool TryFormatWithExponent<TChar>(double value, Span<TChar> destination, out int written, out bool tooSmall)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        var magnitude = Math.Abs(value);
+        var biasedExponent = (int)(BitConverter.DoubleToUInt64Bits(magnitude) >> 52);
+        if ((uint)(biasedExponent - MinShortestDoubleExponent) > MaxShortestDoubleExponent - MinShortestDoubleExponent)
+            return TryFormatZero(value == 0, double.IsNegative(value), destination, out written, out tooSmall);
+
+        var digits = GetShortestDigits(magnitude, out var exponent);
+        WriteScientific(digits, exponent, value < 0, destination, out written, out tooSmall);
+        return true;
+    }
+
+    /// <summary>Formats a <see cref="float"/>, such as <c>-12.3</c>, <c>0.33333334</c> or <c>1.5E+09</c>, as <c>value.ToString(CultureInfo.InvariantCulture)</c> does.</summary>
+    /// <returns><see langword="true"/> when the value is handled, written or with <paramref name="tooSmall"/> set; <see langword="false"/> to use the BCL.</returns>
+    /// <remarks>
+    /// The BCL writes the shortest number that parses back to the value, as for a <see cref="double"/>, with an exponent when the first digit is below
+    /// 10^-4, or at 10^9 or above. The zeros and the normal values are handled, with the algorithm of Schubfach (see
+    /// <see cref="GetShortestDigits(uint, int, out int)"/>). The subnormal values, the infinities and <c>NaN</c> are left to the BCL.
+    /// </remarks>
+    public static bool TryFormat<TChar>(float value, Span<TChar> destination, out int written, out bool tooSmall)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        var bits = BitConverter.SingleToUInt32Bits(value);
+        var biasedExponent = (int)((bits >> 23) & 0xFF);
+        if ((uint)(biasedExponent - 1) >= 254)
+            return TryFormatZero(value == 0, float.IsNegative(value), destination, out written, out tooSmall);
+
+        // As for a double, the values written without an exponent are those from 10^-4 to 10^9, and 10^9 is a float
+        var digits = GetShortestDigits(bits & ((1U << 23) - 1), biasedExponent, out var exponent);
+        var magnitude = Math.Abs(value);
+        if (magnitude >= 1e-4f && magnitude < 1e9f)
+        {
+            ulong fixedDigits = digits;
+            var decimals = -exponent;
+            if (decimals < 0)
+            {
+                fixedDigits *= UInt64PowersOf10[exponent];
+                decimals = 0;
+            }
+
+            WriteFixed(fixedDigits, decimals, value < 0, destination, out written, out tooSmall);
+        }
+        else
+        {
+            WriteScientific(digits, exponent, value < 0, destination, out written, out tooSmall);
+        }
+
+        return true;
+    }
+
+    // Writes 0 or -0 for a zero, which has no shortest digits, or returns false to leave the value to the BCL
+    private static bool TryFormatZero<TChar>(bool isZero, bool negative, Span<TChar> destination, out int written, out bool tooSmall)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
         written = 0;
         tooSmall = false;
-        var magnitude = Math.Abs(value);
+        if (!isZero)
+            return false;
+
+        var length = negative ? 2 : 1;
+        if (destination.Length < length)
+        {
+            tooSmall = true;
+            return true;
+        }
+
+        if (negative)
+        {
+            destination[0] = TChar.CreateTruncating('-');
+        }
+
+        destination[length - 1] = TChar.CreateTruncating('0');
+        written = length;
+        return true;
+    }
+
+    // Gets the shortest number of a value from 10^-4 to 10^9 when it has at most 9 decimals, as digits × 10^-decimals
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static bool TryGetFewDecimals(double magnitude, out ulong digits, out int decimals)
+    {
+        digits = 0;
+        decimals = 0;
+
+        // NaN is rejected too
         if (!(magnitude >= 1e-4 && magnitude < 1e9))
             return false;
 
@@ -369,20 +527,244 @@ internal static class InvariantFloatingPoint
         if (Math.Abs(scaled - Math.Round(scaled, MidpointRounding.ToEven)) > scaled * 3e-16)
             return false;
 
-        for (var decimals = 0; decimals <= maxDecimals; decimals++)
+        for (var count = 0; count <= maxDecimals; count++)
         {
             // The digits of the number, as an integer, are the scaled value rounded, or one of its neighbors when the product is not exact
-            var power = DoublePowersOf10[decimals];
-            var digits = Math.Round(magnitude * power, MidpointRounding.ToEven);
-            if (digits / power != magnitude)
-                continue;
-
-            WriteFixed((ulong)digits, decimals, value < 0, destination, out written, out tooSmall);
-            return true;
+            var power = DoublePowersOf10[count];
+            var rounded = Math.Round(magnitude * power, MidpointRounding.ToEven);
+            if (rounded / power == magnitude)
+            {
+                digits = (ulong)rounded;
+                decimals = count;
+                return true;
+            }
         }
 
         return false;
     }
+
+    /// <summary>Gets the shortest number that rounds to a normal positive value: the returned digits × 10^<paramref name="exponent"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// This is the algorithm of Giulietti ("The Schubfach way to render doubles", 2020), also used by <c>Double.toString</c> in Java. The value is
+    /// c × 2^q. Its rounding interval, the numbers that parse back to it, goes from the middle between the value and the previous double to the
+    /// middle between the value and the next one, both included when c is even, as IEEE rounds to even. k is the largest integer such that 10^k is
+    /// at most the width of the interval: the interval contains at least one multiple of 10^k, and at most one multiple of 10^(k+1).
+    /// </para>
+    /// <para>
+    /// The value and the bounds of the interval are multiplied by 10^-k, with 126 bits of it (g), and rounded to odd: their integer parts are exact,
+    /// and the last bit tells whether a fraction remains. When a multiple of 10^(k+1) is in the interval, it is the shortest number. Otherwise, the
+    /// shortest numbers are the one or two multiples of 10^k in the interval, and the nearest one to the value is kept, the even one on a tie.
+    /// </para>
+    /// <para>
+    /// 10^-k is 5^-k × 2^-k, so g is computed from <see cref="PowersOfFive"/> (see <see cref="ShortestPowersOfTen"/>): the biased exponent of the
+    /// value must be from <see cref="MinShortestDoubleExponent"/> to <see cref="MaxShortestDoubleExponent"/>.
+    /// </para>
+    /// </remarks>
+    private static ulong GetShortestDigits(double magnitude, out int exponent)
+    {
+        var bits = BitConverter.DoubleToUInt64Bits(magnitude);
+        var fraction = bits & ((1UL << 52) - 1);
+        var q = (int)(bits >> 52) - 1075;
+        var c = fraction | (1UL << 52);
+
+        // The bounds are 4 × c ± 2 in units of 2^(q-2), except below a power of two, where the previous double is twice as near. The interval is
+        // also narrower there, and k is floor(log10(3/4 × 2^q)) instead of floor(log10(2^q)). Both are computed with fixed-point logarithms.
+        var exclusiveBounds = c & 1;
+        var cb = c << 2;
+        var cbr = cb + 2;
+        ulong cbl;
+        int k;
+        if (fraction != 0)
+        {
+            cbl = cb - 2;
+            k = (int)((q * 661_971_961_083L) >> 41);
+        }
+        else
+        {
+            cbl = cb - 1;
+            k = (int)(((q * 661_971_961_083L) - 274_743_187_321L) >> 41);
+        }
+
+        exponent = k;
+
+        // h aligns the products on the units of 10^k, with 2 more bits: floor(log2(10^-k)) is (-k × 217706) >> 16
+        var h = q + ((-k * 217_706) >> 16) + 2;
+        var powers = ShortestPowersOfTen;
+        var index = 2 * (-k - MinPowerOfFive);
+        var g1 = powers[index];
+        var g0 = powers[index + 1];
+        var vb = MultiplyRoundToOdd(g1, g0, cb << h);
+        var vbl = MultiplyRoundToOdd(g1, g0, cbl << h);
+        var vbr = MultiplyRoundToOdd(g1, g0, cbr << h);
+
+        // s is floor(value × 10^-k). A multiple of 10^(k+1) in the interval is the shortest number.
+        var s = vb >> 2;
+        if (s >= 100)
+        {
+            var sp10 = s / 10 * 10;
+            var tp10 = sp10 + 10;
+            var spIn = vbl + exclusiveBounds <= sp10 << 2;
+            var tpIn = (tp10 << 2) + exclusiveBounds <= vbr;
+            if (spIn != tpIn)
+                return spIn ? sp10 : tp10;
+        }
+
+        // Otherwise s or s + 1, the nearest one when both are in the interval, the even one on a tie
+        var t = s + 1;
+        var sIn = vbl + exclusiveBounds <= s << 2;
+        var tIn = (t << 2) + exclusiveBounds <= vbr;
+        if (sIn != tIn)
+            return sIn ? s : t;
+
+        var distance = (long)vb - (long)((s + t) << 1);
+        return distance < 0 || (distance == 0 && (s & 1) == 0) ? s : t;
+    }
+
+    // floor(g × cp / 2^127) with the lowest bit set when the result is not exact, g being g1 × 2^63 + g0
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static ulong MultiplyRoundToOdd(ulong g1, ulong g0, ulong cp)
+    {
+        var x1 = Math.BigMul(g0, cp, out _);
+        var y1 = Math.BigMul(g1, cp, out var y0);
+        var z = (y0 >> 1) + x1;
+        var vbp = y1 + (z >> 63);
+        return vbp | (((z & Mask63) + Mask63) >> 63);
+    }
+
+    /// <summary>Gets the shortest number that rounds to a normal positive <see cref="float"/>: the returned digits × 10^<paramref name="exponent"/>.</summary>
+    /// <remarks>
+    /// This is <see cref="GetShortestDigits(double, out int)"/> for the 24 bits of c of a float, as in <c>Float.toString</c> of Java: g is rounded
+    /// up to its 63 most significant bits, g1 + 1, and the products have 32 bits. Every normal float has its k in the table: from -45 to 31.
+    /// </remarks>
+    private static uint GetShortestDigits(uint fraction, int biasedExponent, out int exponent)
+    {
+        var q = biasedExponent - 150;
+        var c = fraction | (1U << 23);
+
+        // As for a double, except for the smallest normal value: the previous value is a subnormal one, as near as the next one
+        var exclusiveBounds = c & 1;
+        var cb = (ulong)c << 2;
+        var cbr = cb + 2;
+        ulong cbl;
+        int k;
+        if (fraction != 0 || biasedExponent == 1)
+        {
+            cbl = cb - 2;
+            k = (int)((q * 661_971_961_083L) >> 41);
+        }
+        else
+        {
+            cbl = cb - 1;
+            k = (int)(((q * 661_971_961_083L) - 274_743_187_321L) >> 41);
+        }
+
+        exponent = k;
+
+        // The products are aligned on the units of 10^k with 2 more bits, in the high 32 bits of the 64 bits that are kept
+        var h = q + ((-k * 217_706) >> 16) + 33;
+        var g = ShortestPowersOfTen[2 * (-k - MinPowerOfFive)] + 1;
+        var vb = MultiplyRoundToOdd(g, cb << h);
+        var vbl = MultiplyRoundToOdd(g, cbl << h);
+        var vbr = MultiplyRoundToOdd(g, cbr << h);
+
+        var s = vb >> 2;
+        if (s >= 100)
+        {
+            var sp10 = s / 10 * 10;
+            var tp10 = sp10 + 10;
+            var spIn = vbl + exclusiveBounds <= sp10 << 2;
+            var tpIn = (tp10 << 2) + exclusiveBounds <= vbr;
+            if (spIn != tpIn)
+                return spIn ? sp10 : tp10;
+        }
+
+        var t = s + 1;
+        var sIn = vbl + exclusiveBounds <= s << 2;
+        var tIn = (t << 2) + exclusiveBounds <= vbr;
+        if (sIn != tIn)
+            return sIn ? s : t;
+
+        var distance = (int)vb - (int)((s + t) << 1);
+        return distance < 0 || (distance == 0 && (s & 1) == 0) ? s : t;
+    }
+
+    // floor(g × cp / 2^95) with the lowest bit set when the result is not exact, g being below 2^63
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static uint MultiplyRoundToOdd(ulong g, ulong cp)
+    {
+        const ulong Mask32 = (1UL << 32) - 1;
+        var x1 = Math.BigMul(g, cp, out _);
+        return (uint)((x1 >> 31) | (((x1 & Mask32) + Mask32) >> 32));
+    }
+
+    // The number of digits of a value from 1 to 10^19: log10 is about log2 × 1233 / 2^12, and it is one less when the value is below its power of ten
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int CountDigits(ulong value)
+    {
+        var log10 = ((BitOperations.Log2(value) + 1) * 1233) >> 12;
+        return log10 + 1 - (value < UInt64PowersOf10[log10] ? 1 : 0);
+    }
+
+    // Writes digits × 10^exponent as d.dddE+XX, without the trailing zeros, with at least 2 digits of exponent
+    private static void WriteScientific<TChar>(ulong digits, int exponent, bool negative, Span<TChar> destination, out int written, out bool tooSmall)
+        where TChar : unmanaged, IBinaryInteger<TChar>
+    {
+        var count = CountDigits(digits);
+        var firstExponent = exponent + count - 1;
+        while (digits % 10 == 0)
+        {
+            digits /= 10;
+            count--;
+        }
+
+        // At most 17 digits, the dot, the sign, and E with a sign and 3 digits
+        Span<TChar> buffer = unsafe(stackalloc TChar[32]);
+        var position = buffer.Length;
+        var pairs = TwoDigits;
+        var absoluteExponent = (uint)Math.Abs(firstExponent);
+        if (absoluteExponent >= 100)
+        {
+            (absoluteExponent, var last) = Math.DivRem(absoluteExponent, 10);
+            buffer[--position] = TChar.CreateTruncating('0' + (int)last);
+        }
+
+        buffer[--position] = TChar.CreateTruncating(pairs[(2 * (int)absoluteExponent) + 1]);
+        buffer[--position] = TChar.CreateTruncating(pairs[2 * (int)absoluteExponent]);
+        buffer[--position] = TChar.CreateTruncating(firstExponent < 0 ? '-' : '+');
+        buffer[--position] = TChar.CreateTruncating('E');
+
+        var remaining = count - 1;
+        for (; remaining >= 2; remaining -= 2)
+        {
+            (digits, var pair) = Math.DivRem(digits, 100);
+            buffer[--position] = TChar.CreateTruncating(pairs[(2 * (int)pair) + 1]);
+            buffer[--position] = TChar.CreateTruncating(pairs[2 * (int)pair]);
+        }
+
+        if (remaining > 0)
+        {
+            (digits, var digit) = Math.DivRem(digits, 10);
+            buffer[--position] = TChar.CreateTruncating('0' + (int)digit);
+        }
+
+        if (count > 1)
+        {
+            buffer[--position] = TChar.CreateTruncating('.');
+        }
+
+        buffer[--position] = TChar.CreateTruncating('0' + (int)digits);
+        if (negative)
+        {
+            buffer[--position] = TChar.CreateTruncating('-');
+        }
+
+        var text = buffer[position..];
+        tooSmall = !text.TryCopyTo(destination);
+        written = tooSmall ? 0 : text.Length;
+    }
+
+    private static ReadOnlySpan<byte> TwoDigits => "00010203040506070809101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899"u8;
 
     // Writes digits × 10^-decimals with an optional minus sign, without the trailing zeros of the decimals
     private static void WriteFixed<TChar>(ulong digits, int decimals, bool negative, Span<TChar> destination, out int written, out bool tooSmall)
@@ -394,11 +776,20 @@ internal static class InvariantFloatingPoint
             decimals--;
         }
 
-        // The text is written from the end: the decimals, the dot, then the integer part, at least one digit. 16 digits, the dot, a zero and the sign
-        // fit in 32 elements.
+        // The text is written from the end: the decimals, the dot, then the integer part, at least one digit. The digits are at most 17, plus the
+        // zeros after the dot of a value below 10^-1, up to 20 decimals: with the dot, a zero and the sign, they fit in 32 elements.
         Span<TChar> buffer = unsafe(stackalloc TChar[32]);
         var position = buffer.Length;
-        for (var i = 0; i < decimals; i++)
+        var pairs = TwoDigits;
+        var remaining = decimals;
+        for (; remaining >= 2; remaining -= 2)
+        {
+            (digits, var pair) = Math.DivRem(digits, 100);
+            buffer[--position] = TChar.CreateTruncating(pairs[(2 * (int)pair) + 1]);
+            buffer[--position] = TChar.CreateTruncating(pairs[2 * (int)pair]);
+        }
+
+        if (remaining > 0)
         {
             (digits, var digit) = Math.DivRem(digits, 10);
             buffer[--position] = TChar.CreateTruncating('0' + (int)digit);
@@ -409,12 +800,19 @@ internal static class InvariantFloatingPoint
             buffer[--position] = TChar.CreateTruncating('.');
         }
 
-        do
+        // The integer part has at least one digit
+        var integerEnd = position;
+        while (digits >= 10)
         {
-            (digits, var digit) = Math.DivRem(digits, 10);
-            buffer[--position] = TChar.CreateTruncating('0' + (int)digit);
+            (digits, var pair) = Math.DivRem(digits, 100);
+            buffer[--position] = TChar.CreateTruncating(pairs[(2 * (int)pair) + 1]);
+            buffer[--position] = TChar.CreateTruncating(pairs[2 * (int)pair]);
         }
-        while (digits != 0);
+
+        if (digits != 0 || position == integerEnd)
+        {
+            buffer[--position] = TChar.CreateTruncating('0' + (int)digits);
+        }
 
         if (negative)
         {

@@ -20,6 +20,8 @@ internal static class Binding_CaptureController<TAdapter, TValue> where TAdapter
         DefineMembers = DefineMembers,
     };
 
+    private static TValue Get_oncapturedmousechange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "capturedmousechange");
+    private static void Set_oncapturedmousechange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "capturedmousechange", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Op_setFocusBehavior(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.CaptureController>(t, Binding);
@@ -29,6 +31,7 @@ internal static class Binding_CaptureController<TAdapter, TValue> where TAdapter
     }
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
+        r.DefineAttribute(instanceTarget, "oncapturedmousechange", Get_oncapturedmousechange, Set_oncapturedmousechange);
         r.DefineOperation(instanceTarget, "setFocusBehavior", 1, Op_setFocusBehavior);
     }
 

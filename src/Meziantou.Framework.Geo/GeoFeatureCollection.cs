@@ -30,7 +30,7 @@ public sealed class GeoFeatureCollection : Collection<GeoFeature>
 
     /// <summary>Gets the smallest box that contains the geometries of the features.</summary>
     /// <returns>The box, or <see langword="null"/> when no feature has a position.</returns>
-    public GeoBounds? GetBounds() => GeoBounds.FromPositions(this.Where(feature => feature.Geometry is not null).SelectMany(feature => feature.Geometry!.GetPositions()));
+    public GeoBounds? GetBounds() => GeoPositionSpans.GetBounds(this);
 
     /// <summary>Gets the smallest box that contains the geometries of the features, whose edges are drawn as an edge type says.</summary>
     /// <param name="edgeType">How the edges are drawn. See <see cref="GeoGeometry.GetBounds(GeoEdgeType)"/>.</param>

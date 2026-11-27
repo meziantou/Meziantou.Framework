@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Text;
@@ -141,10 +142,42 @@ public sealed class PdfObjectTests
     [InlineData(2.0000005, "2.000001")]
     [InlineData(-2.0000005, "-2.000001")]
     [InlineData(0.1, "0.1")]
+    [InlineData(0.000001, "0.000001")]
+    [InlineData(-0.000001, "-0.000001")]
+    [InlineData(1073741823.999999, "1073741823.999999")]
+    [InlineData(1073741824.5, "1073741824.5")]
+    [InlineData(-1073741823.25, "-1073741823.25")]
+    [InlineData(10.05, "10.05")]
+    [InlineData(595.276, "595.276")]
     public void NumbersAreWrittenWithoutExponent(double value, string expected) => Assert.Equal(expected, PdfNumberFormatter.Format(value));
 
     [Fact]
     public void NegativeZeroIsWrittenAsZero() => Assert.Equal("0", PdfNumberFormatter.Format(-0.0));
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void NumbersAreWrittenWithTheDigitsOfTheGeneralFormat()
+    {
+        // The values below 2^30 are written from their number of millionths: the digits must be those of "F6"
+        var random = new Random(42);
+        Span<byte> actual = stackalloc byte[PdfNumberFormatter.MaxLength];
+        Span<byte> expected = stackalloc byte[PdfNumberFormatter.MaxLength];
+        for (var i = 0; i < 200_000; i++)
+        {
+            var scale = Math.Pow(10, random.Next(-8, 11));
+            var value = (random.NextDouble() - 0.5) * scale;
+            if (i % 4 == 0)
+            {
+                // Values at a midpoint, or next to one, of the sixth decimal
+                value = Math.Round(value, 6, MidpointRounding.AwayFromZero) + ((random.Next(3) - 1) * 0.0000005);
+            }
+
+            var length = PdfNumberFormatter.Format(value, actual);
+            var rounded = Math.Round(value, PdfNumberFormatter.MaxDecimals, MidpointRounding.AwayFromZero);
+            var expectedText = rounded == 0 ? "0" : Encoding.ASCII.GetString(expected[..PdfNumberFormatter.FormatRounded(rounded, expected)]);
+            Assert.Equal(expectedText, Encoding.ASCII.GetString(actual[..length]));
+        }
+    }
 
     [Fact]
     public void NamesAreComparedByTheirBytes()

@@ -112,6 +112,32 @@ public sealed class LegacyCollectionTests
             Assert.Equal("a", children.NamedItem("a")!.Id);
             Assert.False(names.IsSupportedPropertyName("e"));
         }
+
+        // The changes of the other attributes keep the map, the changes of the id and name attributes update it (a name
+        // attribute in a namespace is not a name of the element)
+        for (var i = 0; i < 5; i++)
+        {
+            children[1].SetAttribute("class", "c" + i);
+            Assert.Same(children[1], children.NamedItem("a"));
+        }
+
+        children[1].Id = "g";
+        first.SetAttributeNS("urn:other", "name", "h");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Null(children.NamedItem("a"));
+            Assert.Same(children[1], children.NamedItem("g"));
+            Assert.Null(children.NamedItem("h"));
+            Assert.False(names.IsSupportedPropertyName("h"));
+        }
+
+        first.RemoveAttributeNS("urn:other", "name");
+        first.SetAttribute("name", "h");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(first, children.NamedItem("h"));
+            Assert.True(names.IsSupportedPropertyName("h"));
+        }
     }
 
     [Fact]

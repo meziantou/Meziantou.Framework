@@ -9,21 +9,14 @@ description: "The results of the web-platform-tests of webmidi, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 0 | 1 | 0 | 0% |
+| [Stable](#stable-tests) | 1 | 1 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **0** | **1** | **0** | **0%** |
-
-## Failure reasons
-
-The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
-
-- **REQUIRES**: 1
-  - `hardware`: 1
+| **All** | **1** | **1** | **0** | **100%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`idlharness.https.window.js`](https://wpt.fyi/results/webmidi/idlharness.https.window.js) | Fail | 12 / 89 | REQUIRES(hardware) | Web MIDI API |
+| [`idlharness.https.window.js`](https://wpt.fyi/results/webmidi/idlharness.https.window.js) | Pass | 127 / 127 |  |  |

@@ -52,6 +52,19 @@ internal sealed class PageArea : FlowArea
         }
     }
 
+    public override (double Height, bool NewPage) PeekBreaks(int count)
+    {
+        if (count <= 0)
+            return (Available, false);
+
+        // The next columns of the page start at the top of the columns; those of the next pages at the top of the page
+        var index = _columnIndex + count;
+        if (index < _columnCount)
+            return (_columnTop - Bottom, false);
+
+        return (_options.PageSize.Height - _options.MarginTop - Bottom, index % _columnCount == 0);
+    }
+
     public void NewPage()
     {
         Pages.Add([]);

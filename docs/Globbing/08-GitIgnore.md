@@ -201,7 +201,8 @@ ignored directory.
 
 ## Performance
 
-Matching a path only evaluates the patterns that can match its name: the entries that are a name (`node_modules`,
-`bin/`) or an extension (`*.log`) are looked up directly, and the other entries are evaluated one by one. When an
-enumeration goes through a directory, the directory is evaluated once for all its entries, instead of evaluating
-every parent directory again for each path.
+Matching a path only evaluates the patterns that can match its name. The entries whose last segment matches a few
+names (`node_modules`, `bin/`, `[Dd]ebug/`), a few extensions (`*.log`, `*.[Cc]ache`, `*.sln.docstates`) or the names
+that start with a few characters (`_ReSharper*/`, `[Tt]est[Rr]esult*/`) are looked up directly, and the other entries,
+such as `*~` or `packages/*`, are evaluated one by one. When an enumeration goes through a directory, the directory is
+evaluated once for all its entries, instead of evaluating every parent directory again for each path.

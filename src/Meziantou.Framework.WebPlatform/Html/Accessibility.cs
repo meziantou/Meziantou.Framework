@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Meziantou.Framework.WebPlatform.Css.Cascade;
 using Meziantou.Framework.WebPlatform.Dom;
@@ -1039,12 +1040,26 @@ internal static partial class Accessibility
     /// </summary>
     private sealed class AriaOwns
     {
+        /// <summary>The relocations of a tree without aria-owns, shared: nothing is added to it.</summary>
+        private static readonly AriaOwns Empty = new();
+
         private readonly Dictionary<Element, Element> _owners = [];
         private readonly Dictionary<Element, List<Element>> _owned = [];
 
         public bool HasOwnedElements => _owners.Count > 0;
 
         public static AriaOwns Compute(Element element)
+        {
+            // The nodes of a tree share their node document: the tree has no aria-owns when the document never had one
+            if (!element.NodeDocument.HasAriaOwns)
+                return Empty;
+
+            return ComputeFromTree(element);
+        }
+
+        // Not inlined: the walk has its own profile (dynamic PGO), which the calls that return Empty do not mark as cold
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static AriaOwns ComputeFromTree(Element element)
         {
             var result = new AriaOwns();
             var stack = new Stack<Node>();

@@ -270,16 +270,21 @@ public sealed partial class MediaDevices : EventTarget
             cameras.RemoveRange(1, cameras.Count - 1);
         }
 
-        // The audio outputs are exposed with the microphones (https://w3c.github.io/mediacapture-output/#privacy-obtaining-consent)
+        // The audio outputs are exposed with the microphones, and once the user chose them with selectAudioOutput()
+        // (https://w3c.github.io/mediacapture-output/#privacy-obtaining-consent)
         var others = new List<MediaDeviceInfo>();
-        if (CanExposeMicrophoneInfo && PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.SpeakerSelection))
+        if (PermissionsPolicyAlgorithms.IsAllowedToUse(document, PolicyControlledFeature.SpeakerSelection))
         {
             var outputs = devices.Where(d => d.Kind == MediaDeviceKind.AudioOutput).ToList();
-            if (outputs.Count > 0)
+            if (CanExposeMicrophoneInfo && outputs.Count > 0)
             {
                 var defaultOutput = CreateDeviceInfo(outputs[0]);
                 others.Add(new MediaDeviceInfo(MediaDeviceKind.AudioOutput, "default", defaultOutput.Label, defaultOutput.GroupId));
                 others.AddRange(outputs.Select(CreateDeviceInfo));
+            }
+            else
+            {
+                others.AddRange(outputs.Select(CreateDeviceInfo).Where(info => _explicitlyGrantedAudioOutputDevices.Contains(info.DeviceId)));
             }
         }
 

@@ -1,3 +1,4 @@
+using System.Buffers;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Infra;
@@ -5,36 +6,22 @@ namespace Meziantou.Framework.WebPlatform.Infra;
 /// <summary>Name validation (https://dom.spec.whatwg.org/#namespaces) and the XML Name production (https://www.w3.org/TR/xml/#NT-Name).</summary>
 internal static class XmlNames
 {
-    private static bool IsAsciiWhitespaceOrNull(char c) => c is '\t' or '\n' or '\f' or '\r' or ' ' or '\0';
+    // The characters that the names cannot contain: ASCII whitespace, NULL and the characters listed by the validation algorithms
+    // (the valid element local names that start with an ASCII letter exclude the same characters as the namespace prefixes)
+    private static readonly SearchValues<char> InvalidNamespacePrefixChars = SearchValues.Create("\t\n\f\r \0/>");
+    private static readonly SearchValues<char> InvalidAttributeLocalNameChars = SearchValues.Create("\t\n\f\r \0/=>");
+    private static readonly SearchValues<char> InvalidDoctypeNameChars = SearchValues.Create("\t\n\f\r \0>");
 
     /// <summary>https://dom.spec.whatwg.org/#valid-namespace-prefix</summary>
     public static bool IsValidNamespacePrefix(ReadOnlySpan<char> value)
     {
-        if (value.IsEmpty)
-            return false;
-
-        foreach (var c in value)
-        {
-            if (IsAsciiWhitespaceOrNull(c) || c is '/' or '>')
-                return false;
-        }
-
-        return true;
+        return !value.IsEmpty && !value.ContainsAny(InvalidNamespacePrefixChars);
     }
 
     /// <summary>https://dom.spec.whatwg.org/#valid-attribute-local-name</summary>
     public static bool IsValidAttributeLocalName(ReadOnlySpan<char> value)
     {
-        if (value.IsEmpty)
-            return false;
-
-        foreach (var c in value)
-        {
-            if (IsAsciiWhitespaceOrNull(c) || c is '/' or '=' or '>')
-                return false;
-        }
-
-        return true;
+        return !value.IsEmpty && !value.ContainsAny(InvalidAttributeLocalNameChars);
     }
 
     /// <summary>https://dom.spec.whatwg.org/#valid-element-local-name</summary>
@@ -44,15 +31,7 @@ internal static class XmlNames
             return false;
 
         if (char.IsAsciiLetter(value[0]))
-        {
-            foreach (var c in value)
-            {
-                if (IsAsciiWhitespaceOrNull(c) || c is '/' or '>')
-                    return false;
-            }
-
-            return true;
-        }
+            return !value.ContainsAny(InvalidNamespacePrefixChars);
 
         // Code points in the range U+0080 to U+10FFFF include surrogate pairs and lone surrogates (JavaScript strings)
         if (!(value[0] is ':' or '_' || value[0] >= 0x80))
@@ -70,13 +49,7 @@ internal static class XmlNames
     /// <summary>https://dom.spec.whatwg.org/#valid-doctype-name</summary>
     public static bool IsValidDoctypeName(ReadOnlySpan<char> value)
     {
-        foreach (var c in value)
-        {
-            if (IsAsciiWhitespaceOrNull(c) || c == '>')
-                return false;
-        }
-
-        return true;
+        return !value.ContainsAny(InvalidDoctypeNameChars);
     }
 
     /// <summary>https://dom.spec.whatwg.org/#validate-and-extract</summary>

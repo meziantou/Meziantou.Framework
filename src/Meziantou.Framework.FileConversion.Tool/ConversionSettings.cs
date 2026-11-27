@@ -57,6 +57,13 @@ internal sealed class ConversionSettings
 
     public int? GifMaxColors { get; init; }
 
+    // SVG input
+    /// <summary>Gets the width of the images of the SVG documents, in pixels, or null for the size of the document.</summary>
+    public int? SvgWidth { get; init; }
+
+    /// <summary>Gets the height of the images of the SVG documents, in pixels, or null for the size of the document.</summary>
+    public int? SvgHeight { get; init; }
+
     // PDF input
     public double Dpi { get; init; } = 150;
 

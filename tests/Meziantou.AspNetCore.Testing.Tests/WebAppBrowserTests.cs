@@ -713,7 +713,8 @@ public sealed class WebAppBrowserTests
         // The wwwroot folder of the published application (dotnet publish)
         var wwwroot = typeof(WebAppBrowserTests).Assembly.GetCustomAttributes<AssemblyMetadataAttribute>().Single(a => a.Key == "WasmAppPath").Value!;
 
-        // The runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine. The runtime can be shared between the tests
+        // The runtime of .NET runs in the page, on Meziantou.Framework.WasmEngine. Share the runtime between the tests (a
+        // static field): it keeps the compiled modules, so the next tests do not compile the runtime of .NET again
         using var wasmRuntime = new WasmWebAssemblyRuntime();
 
         // The fallback file serves the routes of the application (/accounts/42), as MapFallbackToFile does

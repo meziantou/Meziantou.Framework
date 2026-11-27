@@ -1049,6 +1049,30 @@ public sealed class FetchTests : IDisposable
     }
 
     [Fact]
+    public void EarlyHints_ConnectionAllowlistOfTheEarlyHintsResponse()
+    {
+        var loader = new StubLoader();
+        loader.Responses["https://cdn.example/allowed.js"] = new DocumentResource(""u8.ToArray()) { Headers = [new("Content-Type", "text/javascript")] };
+        loader.Responses["https://other.example/blocked.js"] = new DocumentResource(""u8.ToArray()) { Headers = [new("Content-Type", "text/javascript")] };
+        loader.Handler = request =>
+        {
+            if (request.Url != "https://example.com/page")
+                return null;
+
+            // The allowlist of the 103 response applies to its preloads, the final response has none
+            request.ReportInterimResponse(103, [new("Link", "<https://cdn.example/allowed.js>; rel=preload; as=script, <https://other.example/blocked.js>; rel=preload; as=script"), new("Connection-Allowlist", "(response-origin \"https://cdn.example/*\")")]);
+            return new DocumentResource("<p>page</p>"u8.ToArray()) { Headers = [new("Content-Type", "text/html")] };
+        };
+        var context = _contexts.Create(new BrowsingContextOptions { DocumentLoader = loader, ScriptEngine = _engine });
+
+        context.Navigate("https://example.com/page");
+        _contexts.EventLoop.RunUntilIdle();
+
+        Assert.Single(loader.Requests, request => request.Url == "https://cdn.example/allowed.js");
+        Assert.DoesNotContain(loader.Requests, request => request.Url == "https://other.example/blocked.js");
+    }
+
+    [Fact]
     public async Task HttpDocumentLoader_StreamsTheBodyOfFetch()
     {
         using var handler = new StubHandler(_ => new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new System.Net.Http.StringContent("body") });

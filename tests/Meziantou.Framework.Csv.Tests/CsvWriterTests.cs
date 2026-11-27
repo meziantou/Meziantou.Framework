@@ -579,6 +579,57 @@ public class CsvWriterTests
         Assert.Equal("\"1,5\",2.5\n", output.ToString());
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void WriteFloatingPointNumbers(bool utf8)
+    {
+        // Doubles and floats are written with the text of ToString with the invariant culture, with an exponent when it writes one
+        const string Expected = "0.30000000000000004,1.5E-07,1E+17,10000000000000000,-0,0.1,0.33333334,1.5E+09,-0\n";
+        var options = new CsvWriterOptions { NewLine = "\n" };
+        string text;
+        if (utf8)
+        {
+            var buffer = new ArrayBufferWriter<byte>();
+            using (var writer = Utf8CsvWriter.Create(buffer, options))
+            {
+                writer.WriteField(0.30000000000000004);
+                writer.WriteField(1.5e-7);
+                writer.WriteField(1e17);
+                writer.WriteField(1e16);
+                writer.WriteField(-0.0);
+                writer.WriteField(0.1f);
+                writer.WriteField(1f / 3);
+                writer.WriteField(1.5e9f);
+                writer.WriteField(-0f);
+                writer.EndRow();
+            }
+
+            text = Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+        else
+        {
+            var builder = new StringBuilder();
+            using (var writer = CsvWriter.Create(builder, options))
+            {
+                writer.WriteField(0.30000000000000004);
+                writer.WriteField(1.5e-7);
+                writer.WriteField(1e17);
+                writer.WriteField(1e16);
+                writer.WriteField(-0.0);
+                writer.WriteField(0.1f);
+                writer.WriteField(1f / 3);
+                writer.WriteField(1.5e9f);
+                writer.WriteField(-0f);
+                writer.EndRow();
+            }
+
+            text = builder.ToString();
+        }
+
+        Assert.Equal(Expected, text);
+    }
+
     [Fact]
     public void FlushWritesToTarget()
     {

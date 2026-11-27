@@ -52,23 +52,31 @@ public sealed partial class HtmlSanitizer
 
     private static readonly string[] DefaultValidAttrs = [.. DefaultUriAttrs, .. DefaultSrcsetAttrs, .. DefaultHtmlAttrs];
 
+    // The sets are used through their concrete type: no interface dispatch, and no boxed enumerator for the prefixes
+    private readonly HashSet<string> _validElements = ToHashSet(DefaultValidElements);
+    private readonly HashSet<string> _validAttributes = ToHashSet(DefaultValidAttrs);
+    private readonly HashSet<string> _validAttributePrefixes = ToHashSet(DescriptiveHtmlAttributes.Prefixes);
+    private readonly HashSet<string> _blockedElements = ToHashSet(DefaultBlockedElements);
+    private readonly HashSet<string> _uriAttributes = ToHashSet(DefaultUriAttrs);
+    private readonly HashSet<string> _srcsetAttributes = ToHashSet(DefaultSrcsetAttrs);
+
     /// <summary>Gets the set of HTML elements that are allowed in sanitized output. Elements not in this set are unwrapped: the tag is dropped but its content is kept, unless the element is in the BlockedElements set.</summary>
-    public ISet<string> ValidElements { get; } = ToHashSet(DefaultValidElements);
+    public ISet<string> ValidElements => _validElements;
 
     /// <summary>Gets the set of HTML attributes that are allowed in sanitized output. Attributes not in this set will be removed from elements.</summary>
-    public ISet<string> ValidAttributes { get; } = ToHashSet(DefaultValidAttrs);
+    public ISet<string> ValidAttributes => _validAttributes;
 
     /// <summary>Gets the set of prefixes of the HTML attributes that are allowed in sanitized output, in addition to the attributes of <see cref="ValidAttributes"/>. By default, it contains <c>aria-</c>.</summary>
-    public ISet<string> ValidAttributePrefixes { get; } = ToHashSet(DescriptiveHtmlAttributes.Prefixes);
+    public ISet<string> ValidAttributePrefixes => _validAttributePrefixes;
 
     /// <summary>Gets the set of HTML elements that will be completely removed from the output, including their content. By default includes script and style elements.</summary>
-    public ISet<string> BlockedElements { get; } = ToHashSet(DefaultBlockedElements);
+    public ISet<string> BlockedElements => _blockedElements;
 
     /// <summary>Gets the set of attribute names that contain URLs and should be validated for safety. Unsafe URLs will be replaced with empty strings.</summary>
-    public ISet<string> UriAttributes { get; } = ToHashSet(DefaultUriAttrs);
+    public ISet<string> UriAttributes => _uriAttributes;
 
     /// <summary>Gets the set of attribute names that contain srcset values (responsive image sources) and should be validated for safety.</summary>
-    public ISet<string> SrcsetAttributes { get; } = ToHashSet(DefaultSrcsetAttrs);
+    public ISet<string> SrcsetAttributes => _srcsetAttributes;
 
     /// <summary>Gets or sets a value indicating whether HTML comments are kept in the sanitized output. Comments are removed by default because downlevel-hidden conditional comments (<c>&lt;!--[if IE]&gt;&lt;script&gt;…&lt;/script&gt;&lt;![endif]--&gt;</c>) are executed by legacy browsers.</summary>
     public bool AllowComments { get; set; }
@@ -109,14 +117,14 @@ public sealed partial class HtmlSanitizer
 
     // Only the elements of the HTML namespace are kept: the SVG and MathML elements are parsed with other rules (foreign
     // content), so they would not be read back as the same elements once moved or serialized.
-    private bool IsValidElement(Element element) => element.NamespaceUri == HtmlNamespace && ValidElements.Contains(element.LocalName);
+    private bool IsValidElement(Element element) => element.NamespaceUri == HtmlNamespace && _validElements.Contains(element.LocalName);
 
     private bool IsValidAttribute(string attributeName)
     {
-        if (ValidAttributes.Contains(attributeName))
+        if (_validAttributes.Contains(attributeName))
             return true;
 
-        foreach (var prefix in ValidAttributePrefixes)
+        foreach (var prefix in _validAttributePrefixes)
         {
             if (attributeName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 return true;
@@ -139,9 +147,12 @@ public sealed partial class HtmlSanitizer
             throw new ArgumentException($"The fragment is longer than {MaxInputLength.ToString(CultureInfo.InvariantCulture)} characters (see {nameof(MaxInputLength)})", nameof(html));
 
         // The fragment is parsed as the content of a body element, the way a browser parses the markup inserted in a page
-        // that is not in quirks mode (where a table start tag does not close a p element)
-        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
-        var body = document.Body!;
+        // that is not in quirks mode (where a table start tag does not close a p element). The mode of a document created
+        // by createHTMLDocument is no-quirks. The body element is not inserted in the document: it is only the context of
+        // the parser and the parent of the sanitized nodes, which are serialized the same way, and inserting the nodes in a
+        // document runs the steps of the connected elements for nothing.
+        var document = new Document().Implementation.CreateHtmlDocument();
+        var body = document.CreateElement("body");
         DocumentFragment fragment;
         try
         {
@@ -179,7 +190,7 @@ public sealed partial class HtmlSanitizer
                     // serialized verbatim, so neither keeping it nor promoting it to the parent can be made safe.
                     // This is checked before ValidElements on purpose: adding such an element to the allow list
                     // would otherwise write its content straight through without ever sanitizing it.
-                    case Element element when BlockedElements.Contains(element.LocalName) || HasRawTextContent(element):
+                    case Element element when _blockedElements.Contains(element.LocalName) || HasRawTextContent(element):
                         element.Remove();
                         break;
 
@@ -193,7 +204,8 @@ public sealed partial class HtmlSanitizer
                         break;
 
                     case Element element:
-                        if (SanitizeAttributes(element))
+                        // GetAttributeNames allocates an array, even when there are no attributes
+                        if (element.HasAttributes() && SanitizeAttributes(element))
                         {
                             element = RecreateWithoutIsValue(element);
                         }
@@ -266,35 +278,45 @@ public sealed partial class HtmlSanitizer
     // Returns whether the "is" attribute was removed
     private bool SanitizeAttributes(Element element)
     {
+        // The attributes are read by name: Element.Attributes would create an Attr node for each of them. The element is
+        // an element of the HTML namespace created by the parser, whose attributes have no namespace, no prefix and a
+        // name in lowercase, and are never duplicated (the parser drops the duplicates of a start tag), so a name finds
+        // the attribute it comes from.
         var removedIsAttribute = false;
-        var attributes = element.Attributes;
-        for (var i = attributes.Count - 1; i >= 0; i--)
+        var names = element.GetAttributeNames();
+        for (var i = names.Count - 1; i >= 0; i--)
         {
             // The values are decoded by the parser and encoded again by the serializer, so they are validated as the
             // browser reads them: an entity cannot mask the scheme of a URL
-            var attribute = attributes[i];
-            if (!IsValidAttribute(attribute.Name))
+            var name = names[i];
+            if (!IsValidAttribute(name))
             {
-                removedIsAttribute |= attribute.NamespaceUri is null && attribute.LocalName == "is";
-                element.RemoveAttributeNode(attribute);
+                removedIsAttribute |= name is "is";
+                element.RemoveAttribute(name);
                 continue;
             }
 
-            if (attribute.Value.Contains('\r', StringComparison.Ordinal))
+            var value = element.GetAttribute(name)!;
+            if (value.Contains('\r', StringComparison.Ordinal))
             {
-                attribute.Value = NormalizeNewLines(attribute.Value);
+                value = NormalizeNewLines(value);
+                SetAttributeValue(element, name, value);
             }
 
             // An attribute can be in both sets: a value that is a safe URL can still be an unsafe srcset value
             // ("https://a 1x, javascript:alert(1) 2x"), so it must pass both validations
-            if ((UriAttributes.Contains(attribute.Name) && !UrlSanitizer.IsSafeUrl(attribute.Value)) ||
-                (SrcsetAttributes.Contains(attribute.Name) && !UrlSanitizer.IsSafeSrcset(attribute.Value)))
+            if ((_uriAttributes.Contains(name) && !UrlSanitizer.IsSafeUrl(value)) ||
+                (_srcsetAttributes.Contains(name) && !UrlSanitizer.IsSafeSrcset(value)))
             {
-                attribute.Value = "";
+                SetAttributeValue(element, name, "");
             }
         }
 
         return removedIsAttribute;
+
+        // Setting the value of the node rather than calling SetAttribute: the parser accepts attribute names that
+        // SetAttribute rejects
+        static void SetAttributeValue(Element element, string name, string value) => element.GetAttributeNode(name)!.Value = value;
     }
 
     // The parser gives an element the "is" value of its start tag (customized built-in elements), and the serializer

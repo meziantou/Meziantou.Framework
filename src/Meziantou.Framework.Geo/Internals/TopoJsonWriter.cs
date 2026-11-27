@@ -28,7 +28,7 @@ internal sealed class TopoJsonWriter
     public TopoJsonWriter(List<KeyValuePair<string, GeoFeatureCollection>> objects, int? quantization)
     {
         _objects = objects;
-        _bounds = GeoBounds.FromPositions(objects.SelectMany(item => item.Value).Where(feature => feature.Geometry is not null).SelectMany(feature => feature.Geometry!.GetPositions()));
+        _bounds = GeoPositionSpans.GetBounds(objects.SelectMany(item => item.Value));
         if (quantization is { } n && _bounds is { } bounds)
         {
             _quantized = true;

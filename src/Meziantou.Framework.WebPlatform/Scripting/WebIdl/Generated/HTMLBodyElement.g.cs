@@ -67,6 +67,10 @@ internal static class Binding_HTMLBodyElement<TAdapter, TValue> where TAdapter :
     private static void Set_onunhandledrejection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "unhandledrejection", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onunload(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "unload");
     private static void Set_onunload(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "unload", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_ongamepadconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepadconnected");
+    private static void Set_ongamepadconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepadconnected", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_ongamepaddisconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepaddisconnected");
+    private static void Set_ongamepaddisconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepaddisconnected", v, isOnBeforeUnloadEventHandler: false);
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "text", Get_text, Set_text);
@@ -93,5 +97,7 @@ internal static class Binding_HTMLBodyElement<TAdapter, TValue> where TAdapter :
         r.DefineAttribute(instanceTarget, "onstorage", Get_onstorage, Set_onstorage);
         r.DefineAttribute(instanceTarget, "onunhandledrejection", Get_onunhandledrejection, Set_onunhandledrejection);
         r.DefineAttribute(instanceTarget, "onunload", Get_onunload, Set_onunload);
+        r.DefineAttribute(instanceTarget, "ongamepadconnected", Get_ongamepadconnected, Set_ongamepadconnected);
+        r.DefineAttribute(instanceTarget, "ongamepaddisconnected", Get_ongamepaddisconnected, Set_ongamepaddisconnected);
     }
 }

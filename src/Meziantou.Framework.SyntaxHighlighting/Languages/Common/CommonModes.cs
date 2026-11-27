@@ -13,6 +13,20 @@ internal static class CommonModes
     public const string ReStartersRe = @"!|!=|!==|%|%=|&|&&|&=|\*|\*=|\+|\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\?|\[|\{|\(|\^|\^=|\||\|=|\|\||~";
 
     /// <summary>
+    /// A <c>TODO:</c>-like marker in a comment, with the spaces before it (highlight.js's
+    /// <c>[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)</c>, the spaces going to the comment).
+    /// </summary>
+    /// <remarks>Declared before the comment modes below, whose initializers use it.</remarks>
+    public static Mode DocTag { get; } = new()
+    {
+        Scope = "doctag",
+        Begin = "(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
+        BeginPreceding = PrecedingCharacters.Spaces,
+        End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
+        ExcludeBegin = true,
+    };
+
+    /// <summary>
     /// <c>^\s*</c>, restricted to the first line of a run of blank lines.
     /// </summary>
     /// <remarks>
@@ -108,13 +122,7 @@ internal static class CommonModes
         var contains = new List<Mode>();
         if (extraContains is not null)
             contains.AddRange(extraContains);
-        contains.Add(new Mode
-        {
-            Scope = "doctag",
-            Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)",
-            End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):",
-            ExcludeBegin = true,
-        });
+        contains.Add(DocTag);
 
         return new Mode
         {

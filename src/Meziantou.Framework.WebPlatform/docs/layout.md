@@ -3332,7 +3332,8 @@ page box and the fragment of its page area) and `Paint()` their display lists (s
   the initial containing block of the first page, as in Blink.
   A page whose content before the break continues in it does not start a segment (`ContinuesBeforeBreak`: a parallel flow of
   the strip that ends before the break, such as the cells of a table row whose lines do not fill the pages, ends in the page
-  or after it; the breaks of the strip are then at the same position, and the next page starts the content after it).
+  or after it; the breaks of the strip are then at the same position, and the next page starts the content after it; also a
+  parallel flow nested in such an item, such as the paragraph of a grid in a grid item, which may end after the item).
   A segment also starts inside the content that the break slices (`BreakAnchor.SliceOffset`, see above for the items of a row): a
   monolithic block-level box of that block flow (a replaced element, a box with size containment, not a multi-column
   container), or a line box of a block container (its line boxes are laid out from its start, as at a break between line

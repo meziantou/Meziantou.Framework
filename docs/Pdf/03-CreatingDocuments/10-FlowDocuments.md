@@ -57,7 +57,10 @@ var document = flow.Build();
   line between its characters. A line feed breaks the line.
 - A paragraph whose first strong character is right to left (Hebrew, Arabic) is aligned to the right, and an
   embedded font shapes its text.
-- A table row stays on one page, with the rows its cells span.
+- A table row moves to the next page or column, with the rows its cells span, when it does not fit the rest of the
+  current one. A row taller than a page or a column is split between pages and columns, as browsers do: the content
+  of its cells continues in the next column, below the header rows on a new page, and each part of a cell is drawn
+  with its borders, background and padding.
 - The table of contents needs the pages of the headings: `Build` lays the document out again until they are stable.
 
 ## Pages and styles

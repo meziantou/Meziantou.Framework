@@ -31,6 +31,9 @@ public abstract class BoundQuery
 
         try
         {
+            if (TryCreateDisjunctiveNormalFormWithoutDistribution(syntax) is { } disjunctiveNormalForm)
+                return disjunctiveNormalForm;
+
             var result = CreateInternal(syntax);
             EnsureDisjunctiveNormalFormSizeIsSupported(result);
 
@@ -49,11 +52,171 @@ public abstract class BoundQuery
     private static void EnsureDisjunctiveNormalFormSizeIsSupported(BoundQuery node)
     {
         var (disjunctions, terms) = MeasureDisjunctiveNormalForm(node, isNegated: false);
+        EnsureDisjunctiveNormalFormSizeIsSupported(disjunctions, terms);
+    }
+
+    private static void EnsureDisjunctiveNormalFormSizeIsSupported(long disjunctions, long terms)
+    {
         if (disjunctions > MaxDisjunctions)
             throw new QueryTooComplexException($"The query expands to more than {MaxDisjunctions} disjunctions. Reduce the number of OR groups combined with AND.");
 
         if (terms > MaxTerms)
             throw new QueryTooComplexException($"The query expands to more than {MaxTerms} terms. Reduce the number of terms combined with OR groups.");
+    }
+
+    /// <summary>
+    /// Creates the disjunctive normal form of a query that is already an OR of ANDs of terms, once negations are moved onto
+    /// the terms, such as <c>a b OR -(c OR d)</c>. Most queries have this shape. They need no distribution, so the terms are
+    /// read from the syntax tree into arrays of the right size, instead of binding the tree and walking it twice. The result
+    /// is the one of <see cref="ToDisjunctiveNormalForm"/>, in the same order. Returns <see langword="null"/> for any other query.
+    /// </summary>
+    /// <remarks>
+    /// Chains are walked with a loop down their left operands, as the parser builds them as left-leaning trees as deep as
+    /// their term count, and the right operands are filled first, from the end of the arrays.
+    /// </remarks>
+    private static BoundQuery[][]? TryCreateDisjunctiveNormalFormWithoutDistribution(QuerySyntax syntax)
+    {
+        var (disjunctionCount, termCount) = MeasureDisjunctions(syntax, isNegated: false);
+        if (disjunctionCount < 0)
+            return null;
+
+        EnsureDisjunctiveNormalFormSizeIsSupported(disjunctionCount, termCount);
+
+        var disjunctions = new BoundQuery[disjunctionCount][];
+        var index = disjunctions.Length;
+        FillDisjunctions(syntax, isNegated: false, disjunctions, ref index);
+        Debug.Assert(index is 0);
+        return disjunctions;
+
+        // Returns -1 disjunctions when a conjunction holds an OR, as it needs a distribution
+        static (int Disjunctions, long Terms) MeasureDisjunctions(QuerySyntax node, bool isNegated)
+        {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
+            var (disjunctions, terms) = (0, 0L);
+            while (true)
+            {
+                node = SkipParenthesesAndNegations(node, ref isNegated);
+                if (!TryGetChainOperands(node, isNegated, out var left, out var right, out var isAnd) || isAnd)
+                {
+                    var conjunctionTerms = CountConjunctionTerms(node, isNegated);
+                    return conjunctionTerms < 0 ? (-1, -1) : (disjunctions + 1, terms + conjunctionTerms);
+                }
+
+                var (rightDisjunctions, rightTerms) = MeasureDisjunctions(right, isNegated);
+                if (rightDisjunctions < 0)
+                    return (-1, -1);
+
+                (disjunctions, terms) = (disjunctions + rightDisjunctions, terms + rightTerms);
+                node = left;
+            }
+        }
+
+        // Returns -1 when the conjunction holds an OR
+        static int CountConjunctionTerms(QuerySyntax node, bool isNegated)
+        {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
+            var count = 0;
+            while (true)
+            {
+                node = SkipParenthesesAndNegations(node, ref isNegated);
+                if (!TryGetChainOperands(node, isNegated, out var left, out var right, out var isAnd))
+                    return count + 1;
+
+                if (!isAnd)
+                    return -1;
+
+                var rightCount = CountConjunctionTerms(right, isNegated);
+                if (rightCount < 0)
+                    return -1;
+
+                count += rightCount;
+                node = left;
+            }
+        }
+
+        static void FillDisjunctions(QuerySyntax node, bool isNegated, BoundQuery[][] disjunctions, ref int index)
+        {
+            while (true)
+            {
+                node = SkipParenthesesAndNegations(node, ref isNegated);
+                if (!TryGetChainOperands(node, isNegated, out var left, out var right, out var isAnd) || isAnd)
+                {
+                    var terms = new BoundQuery[CountConjunctionTerms(node, isNegated)];
+                    var termIndex = terms.Length;
+                    FillConjunction(node, isNegated, terms, ref termIndex);
+                    Debug.Assert(termIndex is 0);
+                    disjunctions[--index] = terms;
+                    return;
+                }
+
+                FillDisjunctions(right, isNegated, disjunctions, ref index);
+                node = left;
+            }
+        }
+
+        static void FillConjunction(QuerySyntax node, bool isNegated, BoundQuery[] terms, ref int index)
+        {
+            while (true)
+            {
+                node = SkipParenthesesAndNegations(node, ref isNegated);
+                if (!TryGetChainOperands(node, isNegated, out var left, out var right, out _))
+                {
+                    terms[--index] = node switch
+                    {
+                        TextQuerySyntax textQuery => CreateTextExpression(textQuery, isNegated),
+                        KeyValueQuerySyntax keyValueQuery => CreateKeyValueExpression(keyValueQuery, isNegated),
+                        _ => throw new ArgumentOutOfRangeException(nameof(node), $"Unexpected node {node.Kind}"),
+                    };
+
+                    return;
+                }
+
+                FillConjunction(right, isNegated, terms, ref index);
+                node = left;
+            }
+        }
+
+        static QuerySyntax SkipParenthesesAndNegations(QuerySyntax node, ref bool isNegated)
+        {
+            while (true)
+            {
+                switch (node)
+                {
+                    case ParenthesizedQuerySyntax parenthesizedQuery:
+                        node = parenthesizedQuery.Query;
+                        break;
+
+                    case NegatedQuerySyntax negatedQuery:
+                        node = negatedQuery.Query;
+                        isNegated = !isNegated;
+                        break;
+
+                    default:
+                        return node;
+                }
+            }
+        }
+
+        // Negation swaps AND and OR
+        static bool TryGetChainOperands(QuerySyntax node, bool isNegated, [NotNullWhen(true)] out QuerySyntax? left, [NotNullWhen(true)] out QuerySyntax? right, out bool isAnd)
+        {
+            switch (node)
+            {
+                case AndQuerySyntax andQuery:
+                    (left, right, isAnd) = (andQuery.Left, andQuery.Right, !isNegated);
+                    return true;
+
+                case OrQuerySyntax orQuery:
+                    (left, right, isAnd) = (orQuery.Left, orQuery.Right, isNegated);
+                    return true;
+
+                default:
+                    (left, right, isAnd) = (null, null, false);
+                    return false;
+            }
+        }
     }
 
     private static (int Disjunctions, int Terms) MeasureDisjunctiveNormalForm(BoundQuery node, bool isNegated)
@@ -114,14 +277,14 @@ public abstract class BoundQuery
         };
     }
 
-    private static BoundTextQuery CreateTextExpression(TextQuerySyntax node)
+    private static BoundTextQuery CreateTextExpression(TextQuerySyntax node, bool isNegated = false)
     {
         Debug.Assert(node.TextToken.Value is not null);
 
-        return new BoundTextQuery(isNegated: false, node.TextToken.Value);
+        return new BoundTextQuery(isNegated, node.TextToken.Value);
     }
 
-    private static BoundKeyValueQuery CreateKeyValueExpression(KeyValueQuerySyntax node)
+    private static BoundKeyValueQuery CreateKeyValueExpression(KeyValueQuerySyntax node, bool isNegated = false)
     {
         Debug.Assert(node.KeyToken.Value is not null);
         Debug.Assert(node.ValueToken.Value is not null);
@@ -140,7 +303,7 @@ public abstract class BoundQuery
             _ => throw new InvalidOperationException(),
         };
 
-        return new BoundKeyValueQuery(isNegated: false, key, value, op);
+        return new BoundKeyValueQuery(isNegated, key, value, op);
     }
 
     /// <summary>

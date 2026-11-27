@@ -7,11 +7,14 @@ public sealed class GeoMultiLineString : GeoGeometry
     /// <param name="lineStrings">The lines.</param>
     public GeoMultiLineString(IEnumerable<GeoLineString> lineStrings)
     {
-        LineStrings = ToArray(lineStrings, nameof(lineStrings));
+        LineStringArray = ToArray(lineStrings, nameof(lineStrings));
     }
 
     /// <summary>Gets the lines.</summary>
-    public IReadOnlyList<GeoLineString> LineStrings { get; }
+    public IReadOnlyList<GeoLineString> LineStrings => LineStringArray;
+
+    /// <summary>Gets the array that <see cref="LineStrings"/> returns, so that the operations read it without interface calls.</summary>
+    internal GeoLineString[] LineStringArray { get; }
 
     /// <inheritdoc />
     public override GeoGeometryType Type => GeoGeometryType.MultiLineString;

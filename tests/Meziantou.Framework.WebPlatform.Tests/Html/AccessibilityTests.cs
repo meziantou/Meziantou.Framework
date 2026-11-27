@@ -138,6 +138,52 @@ public sealed class AccessibilityTests : IDisposable
     public void ComputedName(string html, string expected) => Assert.Equal(expected, Get(html).ComputedName);
 
     [Fact]
+    public void ComputedName_AriaOwnsSetAfterAComputation()
+    {
+        var target = Get("<h2 id=target>Save <span id=moved>now</span></h2><div id=owner></div>");
+        Assert.Equal("Save now", target.ComputedName);
+
+        target.OwnerDocument!.GetElementById("owner")!.SetAttribute("aria-owns", "moved");
+        Assert.Equal("Save", target.ComputedName);
+    }
+
+    [Fact]
+    public void ComputedName_AriaOwnsOfAnAdoptedElement()
+    {
+        var target = Get("<h2 id=target>Save <span id=moved>now</span></h2>");
+        Assert.Equal("Save now", target.ComputedName);
+
+        var owner = target.OwnerDocument!.Implementation.CreateHtmlDocument().CreateElement("div");
+        owner.SetAttribute("aria-owns", "moved");
+        target.OwnerDocument.Body!.AppendChild(owner);
+        Assert.Equal("Save", target.ComputedName);
+    }
+
+    [Fact]
+    public void ComputedName_AriaOwnsElementsOfElementInternals()
+    {
+        var target = Get("<h2 id=target>Save <span id=moved>now</span></h2><x-owner></x-owner>");
+        Assert.Equal("Save now", target.ComputedName);
+
+        var document = target.OwnerDocument!;
+        document.DefaultView!.CustomElements.Define("x-owner", new CustomElementConstructor(element => new InternalsElement(element)));
+        var owner = (InternalsElement)((HtmlElement)document.QuerySelector("x-owner")!).CustomElement!;
+        owner.Internals.AriaOwnsElements = [document.GetElementById("moved")!];
+        Assert.Equal("Save", target.ComputedName);
+    }
+
+    private sealed class InternalsElement : CustomElement
+    {
+        public InternalsElement(HtmlElement element)
+            : base(element)
+        {
+            Internals = element.AttachInternals();
+        }
+
+        public ElementInternals Internals { get; }
+    }
+
+    [Fact]
     public void Documentation_ComputedRoleAndName()
     {
         #region WebPlatform_Accessibility

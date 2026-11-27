@@ -9,26 +9,25 @@ description: "The results of the web-platform-tests of gamepad, and why the test
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 1 | 6 | 0 | 17% |
+| [Stable](#stable-tests) | 4 | 6 | 0 | 67% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
 | Crash tests | 0 | 0 | 0 | – |
-| **All** | **1** | **6** | **0** | **17%** |
+| **All** | **4** | **6** | **0** | **67%** |
 
 ## Failure reasons
 
 The tests that do not pass (failing or disabled), by kind of reason. A test with several reasons counts once per kind.
 
-- **REQUIRES**: 5
-  - `hardware`: 5
+- **TEST BUG**: 2
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`gamepad-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/gamepad/gamepad-default-permissions-policy.https.sub.html) | Timeout | 0 / 3 | REQUIRES(hardware) | Gamepad API |
+| [`gamepad-default-permissions-policy.https.sub.html`](https://wpt.fyi/results/gamepad/gamepad-default-permissions-policy.https.sub.html) | Timeout | 0 / 3 | TEST BUG | the frame (`permissions-policy-gamepad.html`) posts `{ enabled }` without the `type: 'availability-result'` that `test_feature_availability()` of `/permissions-policy/resources/permissions-policy.js` waits for: the tests time out in every browser |
 | [`gamepad-permissions-policy-event-listener.html`](https://wpt.fyi/results/gamepad/gamepad-permissions-policy-event-listener.html) | Pass | 1 / 1 |  |  |
-| [`gamepad-supported-by-permissions-policy.html`](https://wpt.fyi/results/gamepad/gamepad-supported-by-permissions-policy.html) | Fail | 0 / 1 | REQUIRES(hardware) | Gamepad API |
-| [`idlharness-extensions.https.window.js`](https://wpt.fyi/results/gamepad/idlharness-extensions.https.window.js) | Fail | 0 / 1 | REQUIRES(hardware) | Gamepad API |
-| [`idlharness.window.js`](https://wpt.fyi/results/gamepad/idlharness.window.js) | Fail | 34 / 85 | REQUIRES(hardware) | Gamepad API |
-| [`not-fully-active.html`](https://wpt.fyi/results/gamepad/not-fully-active.html) | Fail | 0 / 1 | REQUIRES(hardware) | Gamepad API |
+| [`gamepad-supported-by-permissions-policy.html`](https://wpt.fyi/results/gamepad/gamepad-supported-by-permissions-policy.html) | Pass | 1 / 1 |  |  |
+| [`idlharness-extensions.https.window.js`](https://wpt.fyi/results/gamepad/idlharness-extensions.https.window.js) | Fail | 0 / 1 | TEST BUG | `/interfaces/gamepad-extensions.idl` was removed from web-platform-tests: `idl_test()` fails to fetch it |
+| [`idlharness.window.js`](https://wpt.fyi/results/gamepad/idlharness.window.js) | Pass | 85 / 85 |  |  |
+| [`not-fully-active.html`](https://wpt.fyi/results/gamepad/not-fully-active.html) | Pass | 1 / 1 |  |  |

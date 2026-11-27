@@ -29,16 +29,20 @@ internal sealed class TagResolver
     private readonly AnalyzerConfigOptionsProvider _optionsProvider;
     private readonly ConcurrentDictionary<ISymbol, TagInfo> _declaredTags = new(SymbolEqualityComparer.Default);
     private readonly ConcurrentDictionary<ISymbol, TagInfo> _localTags = new(SymbolEqualityComparer.Default);
+    private readonly ConcurrentDictionary<ISymbol, TagInfo> _localCommentTags = new(SymbolEqualityComparer.Default);
+    private readonly ConcurrentDictionary<SyntaxTree, int[]> _valueTagKeywordPositions = new();
     private readonly ConditionalWeakTable<IOperation, OperationTagCache> _operationTags = new();
     private readonly ConcurrentDictionary<SyntaxTree, bool> _conventionsEnabled = new();
     private readonly ConcurrentDictionary<SyntaxTree, bool> _strictModeEnabled = new();
     private readonly Lazy<ExternalTags> _externalTags;
+    private readonly Func<ISymbol, TagInfo> _computeDeclaredTags;
 
     public TagResolver(Compilation compilation, AnalyzerConfigOptionsProvider optionsProvider)
     {
         _compilation = compilation;
         _optionsProvider = optionsProvider;
         _externalTags = new(LoadExternalTags);
+        _computeDeclaredTags = ComputeDeclaredTags;
         KnownTypes = new KnownTypes(compilation);
     }
 
@@ -114,29 +118,31 @@ internal sealed class TagResolver
     /// </summary>
     public TagInfo GetDeclaredTags(ISymbol symbol)
     {
-        symbol = symbol.OriginalDefinition;
-        return _declaredTags.GetOrAdd(symbol, symbol =>
-        {
-            // The implicit 'value' parameter of a setter has the tags of its property
-            if (symbol is IParameterSymbol { ContainingSymbol: IMethodSymbol { MethodKind: MethodKind.PropertySet, AssociatedSymbol: IPropertySymbol property } setter } parameter &&
-                parameter.Ordinal == setter.Parameters.Length - 1)
-            {
-                return GetDeclaredTags(property);
-            }
+        // The factory is created once: a lambda that calls instance methods would allocate a delegate on every call
+        return _declaredTags.GetOrAdd(symbol.OriginalDefinition, _computeDeclaredTags);
+    }
 
-            var tags = GetExplicitAndInheritedTags(symbol);
+    private TagInfo ComputeDeclaredTags(ISymbol symbol)
+    {
+        // The implicit 'value' parameter of a setter has the tags of its property
+        if (symbol is IParameterSymbol { ContainingSymbol: IMethodSymbol { MethodKind: MethodKind.PropertySet, AssociatedSymbol: IPropertySymbol property } setter } parameter &&
+            parameter.Ordinal == setter.Parameters.Length - 1)
+        {
+            return GetDeclaredTags(property);
+        }
+
+        var tags = GetExplicitAndInheritedTags(symbol);
+        if (!tags.IsEmpty)
+            return tags;
+
+        if (symbol is IPropertySymbol recordProperty)
+        {
+            tags = GetRecordPrimaryConstructorParameterTags(recordProperty);
             if (!tags.IsEmpty)
                 return tags;
+        }
 
-            if (symbol is IPropertySymbol recordProperty)
-            {
-                tags = GetRecordPrimaryConstructorParameterTags(recordProperty);
-                if (!tags.IsEmpty)
-                    return tags;
-            }
-
-            return GetConventionTagsWithOverriddenMembers(symbol);
-        });
+        return GetConventionTagsWithOverriddenMembers(symbol);
     }
 
     /// <summary>
@@ -302,8 +308,8 @@ internal sealed class TagResolver
             return TagInfo.None;
 
         // The options of a referenced project are not known, so only the declarations of the compilation follow the convention,
-        // whether the project is referenced as an assembly or as a compilation
-        if (symbol.DeclaringSyntaxReferences.IsEmpty || !_compilation.ContainsSyntaxTree(symbol.DeclaringSyntaxReferences[0].SyntaxTree) || !AreConventionsEnabled(symbol.DeclaringSyntaxReferences[0].SyntaxTree))
+        // whether the project is referenced as an assembly or as a compilation. DeclaringSyntaxReferences creates an array on each call.
+        if (symbol.DeclaringSyntaxReferences is not [var reference, ..] || !_compilation.ContainsSyntaxTree(reference.SyntaxTree) || !AreConventionsEnabled(reference.SyntaxTree))
             return TagInfo.None;
 
         var (type, containingType) = symbol switch
@@ -379,7 +385,7 @@ internal sealed class TagResolver
 
     private bool IsConventionType(INamedTypeSymbol type)
     {
-        return !type.DeclaringSyntaxReferences.IsEmpty && _compilation.ContainsSyntaxTree(type.DeclaringSyntaxReferences[0].SyntaxTree) && AreConventionsEnabled(type.DeclaringSyntaxReferences[0].SyntaxTree);
+        return type.DeclaringSyntaxReferences is [var reference, ..] && _compilation.ContainsSyntaxTree(reference.SyntaxTree) && AreConventionsEnabled(reference.SyntaxTree);
     }
 
     /// <summary>
@@ -388,8 +394,8 @@ internal sealed class TagResolver
     public static bool IsRecordPrimaryConstructorProperty(ISymbol symbol)
     {
         return symbol is IPropertySymbol { ContainingType.IsRecord: true } property &&
-            property.DeclaringSyntaxReferences.Length > 0 &&
-            property.DeclaringSyntaxReferences[0].GetSyntax() is ParameterSyntax;
+            property.DeclaringSyntaxReferences is [var reference, ..] &&
+            reference.GetSyntax() is ParameterSyntax;
     }
 
     private static TagInfo ReadAttribute(AttributeData attribute, TypedConstant tagsArgument)
@@ -441,7 +447,7 @@ internal sealed class TagResolver
     /// <summary>
     /// Returns the members a field, property, method or parameter overrides or implements.
     /// </summary>
-    public static IEnumerable<ISymbol> GetOverriddenOrImplementedSymbols(ISymbol symbol)
+    public static ISymbol[] GetOverriddenOrImplementedSymbols(ISymbol symbol)
     {
         switch (symbol)
         {
@@ -452,23 +458,47 @@ internal sealed class TagResolver
                 return GetOverriddenAndImplementedMembers(method, method.OverriddenMethod, method.ExplicitInterfaceImplementations);
 
             case IParameterSymbol { ContainingSymbol: IMethodSymbol containingMethod } parameter:
-                return GetOverriddenOrImplementedSymbols(containingMethod)
-                    .OfType<IMethodSymbol>()
-                    .Where(baseMethod => parameter.Ordinal < baseMethod.Parameters.Length)
-                    .Select(baseMethod => (ISymbol)baseMethod.Parameters[parameter.Ordinal])
-                    .ToArray();
+                return GetBaseParameters<IMethodSymbol>(GetOverriddenOrImplementedSymbols(containingMethod), parameter.Ordinal);
 
             // The parameter of an indexer
             case IParameterSymbol { ContainingSymbol: IPropertySymbol containingProperty } parameter:
-                return GetOverriddenOrImplementedSymbols(containingProperty)
-                    .OfType<IPropertySymbol>()
-                    .Where(baseProperty => parameter.Ordinal < baseProperty.Parameters.Length)
-                    .Select(baseProperty => (ISymbol)baseProperty.Parameters[parameter.Ordinal])
-                    .ToArray();
+                return GetBaseParameters<IPropertySymbol>(GetOverriddenOrImplementedSymbols(containingProperty), parameter.Ordinal);
 
             default:
                 return [];
         }
+    }
+
+    /// <summary>
+    /// Returns the parameter at <paramref name="ordinal"/> of each base member of type <typeparamref name="TMember"/> that has one.
+    /// </summary>
+    private static ISymbol[] GetBaseParameters<TMember>(ISymbol[] baseMembers, int ordinal)
+        where TMember : ISymbol
+    {
+        if (baseMembers.Length is 0)
+            return [];
+
+        List<ISymbol>? result = null;
+        foreach (var baseMember in baseMembers)
+        {
+            if (baseMember is not TMember)
+                continue;
+
+            var parameters = baseMember switch
+            {
+                IMethodSymbol method => method.Parameters,
+                IPropertySymbol property => property.Parameters,
+                _ => [],
+            };
+
+            if (ordinal < parameters.Length)
+            {
+                result ??= [];
+                result.Add(parameters[ordinal]);
+            }
+        }
+
+        return result?.ToArray() ?? [];
     }
 
     /// <summary>
@@ -512,12 +542,18 @@ internal sealed class TagResolver
     /// </summary>
     public static IEnumerable<ISymbol> GetInterfaceMembersImplementedThroughReceiver(ISymbol member, ITypeSymbol? receiverType)
     {
+        // Most members are accessed through their declaring type: return before allocating the iterator
         if (receiverType is not INamedTypeSymbol namedReceiverType || member.ContainingType is null || member.IsStatic ||
             SymbolEqualityComparer.Default.Equals(namedReceiverType.OriginalDefinition, member.ContainingType.OriginalDefinition))
         {
-            yield break;
+            return [];
         }
 
+        return GetInterfaceMembersImplementedThroughReceiver(member, namedReceiverType);
+    }
+
+    private static IEnumerable<ISymbol> GetInterfaceMembersImplementedThroughReceiver(ISymbol member, INamedTypeSymbol namedReceiverType)
+    {
         foreach (var @interface in namedReceiverType.AllInterfaces)
         {
             if (member.ContainingType.AllInterfaces.Contains(@interface, SymbolEqualityComparer.Default))
@@ -543,9 +579,10 @@ internal sealed class TagResolver
         {
             foreach (var parameter in constructor.Parameters)
             {
-                var isPrimaryConstructorParameter = propertySyntax is null
-                    ? parameter.Name == property.Name && SymbolEqualityComparer.Default.Equals(parameter.Type, property.Type)
-                    : parameter.DeclaringSyntaxReferences.Any(reference => reference.SyntaxTree == propertySyntax.SyntaxTree && reference.Span == propertySyntax.Span);
+                // The parameter that declares a property has its name, so the name is compared first: the declarations of a parameter create an array on each call
+                var isPrimaryConstructorParameter = parameter.Name == property.Name && (propertySyntax is null
+                    ? SymbolEqualityComparer.Default.Equals(parameter.Type, property.Type)
+                    : IsDeclaredBy(parameter, propertySyntax));
 
                 if (isPrimaryConstructorParameter)
                 {
@@ -557,6 +594,17 @@ internal sealed class TagResolver
         }
 
         return TagInfo.None;
+
+        static bool IsDeclaredBy(IParameterSymbol parameter, SyntaxReference declaration)
+        {
+            foreach (var reference in parameter.DeclaringSyntaxReferences)
+            {
+                if (reference.SyntaxTree == declaration.SyntaxTree && reference.Span == declaration.Span)
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     private ExternalTags LoadExternalTags()
@@ -758,7 +806,61 @@ internal sealed class TagResolver
 
     public TagInfo GetLocalCommentTags(ILocalSymbol local)
     {
-        foreach (var reference in local.DeclaringSyntaxReferences)
+        if (_localCommentTags.TryGetValue(local, out var cached))
+            return cached;
+
+        // Reading the comments of a declaration walks its tokens, while most declarations have no value tag comment
+        var references = local.DeclaringSyntaxReferences;
+        var hasComment = false;
+        foreach (var reference in references)
+        {
+            var declaration = reference.GetSyntax();
+            hasComment |= ContainsValueTagKeyword(reference.SyntaxTree, declaration.FirstAncestorOrSelf<StatementSyntax>() ?? declaration.SyntaxTree.GetRoot());
+        }
+
+        var tags = hasComment ? ReadLocalCommentTags(local, references) : TagInfo.None;
+        _localCommentTags.TryAdd(local, tags);
+        return tags;
+    }
+
+    /// <summary>
+    /// Returns the positions of the <c>ValueTag</c> keyword in the text of the tree, in ascending order. A value tag comment contains the keyword.
+    /// </summary>
+    public int[] GetValueTagKeywordPositions(SyntaxTree tree)
+    {
+        if (_valueTagKeywordPositions.TryGetValue(tree, out var positions))
+            return positions;
+
+        positions = ValueTagComment.FindKeyword(tree.GetText());
+        _valueTagKeywordPositions.TryAdd(tree, positions);
+        return positions;
+    }
+
+    /// <summary>
+    /// Returns whether the full span of <paramref name="node"/>, which includes its comments, contains the <c>ValueTag</c> keyword.
+    /// </summary>
+    /// <remarks>
+    /// The comments that can tag a local are in the statement that declares it: before its first token, between its tokens, or after the name of the variable.
+    /// </remarks>
+    private bool ContainsValueTagKeyword(SyntaxTree tree, SyntaxNode node)
+    {
+        var positions = GetValueTagKeywordPositions(tree);
+        if (positions.Length is 0)
+            return false;
+
+        var span = node.FullSpan;
+        var index = Array.BinarySearch(positions, span.Start);
+        if (index < 0)
+        {
+            index = ~index;
+        }
+
+        return index < positions.Length && positions[index] < span.End;
+    }
+
+    private TagInfo ReadLocalCommentTags(ILocalSymbol local, ImmutableArray<SyntaxReference> references)
+    {
+        foreach (var reference in references)
         {
             foreach (var trivia in GetLocalCommentTrivia(reference.GetSyntax()))
             {
@@ -768,7 +870,7 @@ internal sealed class TagResolver
         }
 
         // Comments in the type arguments of the declared type, e.g. Dictionary</* ValueTag=OrderId */ Guid, Guid> map
-        foreach (var reference in local.DeclaringSyntaxReferences)
+        foreach (var reference in references)
         {
             var typeSyntax = GetLocalDeclarationType(reference.GetSyntax());
             if (typeSyntax is not null)
@@ -1554,7 +1656,8 @@ internal sealed class TagResolver
 
     private TagInfo GetObjectCreationTypeArgumentTags(IObjectCreationOperation objectCreation)
     {
-        return objectCreation.Syntax is ObjectCreationExpressionSyntax objectCreationSyntax
+        // The comments of the type arguments are in the full span of the type
+        return objectCreation.Syntax is ObjectCreationExpressionSyntax objectCreationSyntax && ContainsValueTagKeyword(objectCreationSyntax.SyntaxTree, objectCreationSyntax.Type)
             ? TypeArgumentComments.GetTags(objectCreationSyntax.Type, objectCreation.Type, KnownTypes)
             : TagInfo.None;
     }

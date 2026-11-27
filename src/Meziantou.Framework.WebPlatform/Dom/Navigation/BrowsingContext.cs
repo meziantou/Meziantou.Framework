@@ -420,6 +420,7 @@ public sealed partial class BrowsingContext : IDisposable
     {
         ClientWindowLeft = Math.Max(0, x);
         ClientWindowTop = Math.Max(0, y);
+        OnClientWindowChanged();
     }
 
     /// <summary>
@@ -442,6 +443,7 @@ public sealed partial class BrowsingContext : IDisposable
         }
 
         EventLoop.RequestRenderingOpportunity(Document);
+        OnClientWindowChanged();
     }
 
     /// <summary>
@@ -462,11 +464,56 @@ public sealed partial class BrowsingContext : IDisposable
     /// </summary>
     internal void EnterFullscreen(FullscreenOptions options)
     {
-        if (_isFullscreen || IsDestroyed)
+        if (IsDestroyed)
             return;
 
+        // https://w3c.github.io/window-management/#api-element-requestfullscreen-method-definition-changes: the client window
+        // moves to the target screen, whose size is the size of the viewport, also when it is already fullscreen
+        var target = WindowScreens.GetTargetScreen(Document, options.Screen);
+        if (_isFullscreen)
+        {
+            if (target is { } targetScreen)
+            {
+                PlaceClientWindow(targetScreen.Left, targetScreen.Top);
+                SetFullscreenViewportSize(Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options) ?? new FullscreenViewportSize(targetScreen.Width, targetScreen.Height));
+                OnClientWindowChanged();
+            }
+
+            return;
+        }
+
         _isFullscreen = true;
-        SetFullscreenViewportSize(Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options));
+        _clientWindowPositionBeforeFullscreen = (ClientWindowLeft, ClientWindowTop);
+        if (target is { } screen)
+        {
+            PlaceClientWindow(screen.Left, screen.Top);
+        }
+
+        var size = Options.EnterFullscreen?.Invoke(CallbackContext.For(this), options);
+        SetFullscreenViewportSize(size ?? (target is { } fullscreenScreen ? new FullscreenViewportSize(fullscreenScreen.Width, fullscreenScreen.Height) : null));
+        OnClientWindowChanged();
+    }
+
+    /// <summary>The position of the client window before it was moved to the screen of a fullscreen request.</summary>
+    private (int Left, int Top)? _clientWindowPositionBeforeFullscreen;
+
+    /// <summary>Places the client window at a position of the virtual screen arrangement (a screen, whose coordinates may be negative).</summary>
+    private void PlaceClientWindow(int left, int top)
+    {
+        ClientWindowLeft = left;
+        ClientWindowTop = top;
+    }
+
+    /// <summary>The client window moved or was resized: the windows of the browsing context compare their current screen with the one they observed.</summary>
+    internal void OnClientWindowChanged()
+    {
+        if (IsDestroyed)
+            return;
+
+        foreach (var navigable in GetInclusiveDescendantNavigables())
+        {
+            navigable.Document.RelevantWindow?.ScreensStateOrNull?.QueueUpdate();
+        }
     }
 
     /// <summary>https://fullscreen.spec.whatwg.org/#exit-fullscreen: "resize doc's viewport to its "normal" dimensions".</summary>
@@ -485,7 +532,14 @@ public sealed partial class BrowsingContext : IDisposable
             ScreenOrientationModel.FullyUnlock(Document);
         }
 
+        if (_clientWindowPositionBeforeFullscreen is { } position)
+        {
+            PlaceClientWindow(position.Left, position.Top);
+            _clientWindowPositionBeforeFullscreen = null;
+        }
+
         SetFullscreenViewportSize(null);
+        OnClientWindowChanged();
     }
 
     private ViewportOptions? _viewport;
@@ -526,6 +580,7 @@ public sealed partial class BrowsingContext : IDisposable
                 }
 
                 EventLoop.RequestRenderingOpportunity(Document);
+                OnClientWindowChanged();
             }
         }
     }
@@ -2030,6 +2085,7 @@ public sealed partial class BrowsingContext : IDisposable
 
         parameters.RequiredContentSecurityPolicy = requiredPolicy;
         parameters.RequiredDocumentPolicy = GetRequiredDocumentPolicy();
+        parameters.RequiredConnectionAllowlist = GetRequiredConnectionAllowlist();
 
         DocumentResource resource;
         if (srcdoc is null && IsNavigationRequestBlockedByContentSecurityPolicy(url, sourceDocument, isFormSubmission))
@@ -2193,6 +2249,12 @@ public sealed partial class BrowsingContext : IDisposable
             if (requiredPolicy is not null)
             {
                 request.HeaderList.Add(new("Sec-Required-CSP", requiredPolicy));
+            }
+
+            // https://w3c.github.io/connection-allowlists/#sec-required-connection-allowlist
+            if (parameters.RequiredConnectionAllowlist is { } requiredConnectionAllowlist)
+            {
+                request.HeaderList.Add(new("Sec-Required-Connection-Allowlist", requiredConnectionAllowlist));
             }
 
             // https://wicg.github.io/document-policy/#algo-set-sec-required-document-policy-header
@@ -3064,6 +3126,18 @@ public sealed partial class BrowsingContext : IDisposable
             document.RequiredContentSecurityPolicy = requiredPolicy;
         }
 
+        // https://w3c.github.io/connection-allowlists/#html-integration ("create a policy container from a fetch response"):
+        // the connection allowlists of the response, and the allowlist the container requires (the ones of an inherited policy
+        // container are set above)
+        if (parameters.PolicyContainer is null && !parameters.IsNetworkError)
+        {
+            document.ConnectionAllowlists = ConnectionAllowlist.ApplyRequired(ConnectionAllowlist.FromHeaders(parameters.Headers, document.UrlRecord), parameters.RequiredConnectionAllowlist, document.UrlRecord);
+            if (parameters.RequiredConnectionAllowlist is not null && ConnectionAllowlist.Parse(parameters.RequiredConnectionAllowlist, document.UrlRecord, ConnectionAllowlistDisposition.Enforce) is not null)
+            {
+                document.RequiredConnectionAllowlist = parameters.RequiredConnectionAllowlist;
+            }
+        }
+
         // https://w3c.github.io/webappsec-subresource-integrity/#parse-integrity-policy-headers: the integrity policies of the
         // policy container of the document (the ones of an inherited policy container are set above)
         if (parameters.PolicyContainer is null && !parameters.IsNetworkError)
@@ -3719,6 +3793,7 @@ public sealed partial class BrowsingContext : IDisposable
             WebLocks.OnEnvironmentDiscarded(oldWindow);
             oldWindow.ReleaseFileSystemResources();
             WebSocket.MakeDisappear(oldWindow);
+            WebTransportHostSession.MakeDisappear(oldWindow, cleanUpScriptObjects: true);
             EventSource.ForciblyClose(oldWindow);
             IdbFactory.CloseConnections(oldWindow);
         }
@@ -3747,6 +3822,20 @@ public sealed partial class BrowsingContext : IDisposable
             }
 
             PressureObserverRegistry.OnUnloaded(window);
+
+            // The sessions of the USB devices of the window end
+            window.CloseUsbDevices();
+
+            // The serial ports, the HID devices and the MIDI ports of the window are closed
+            window.CloseSerialPorts();
+            window.CloseHidDevices();
+            window.CloseMidiPorts();
+
+            // The other side of the presentation connections of the window is told that the document went away
+            window.ClosePresentationConnections();
+
+            // The Bluetooth devices of the window are disconnected
+            window.CloseBluetoothDevices();
         }
 
         // The sensor objects are disconnected from the sensors of the device
@@ -3845,6 +3934,10 @@ public sealed partial class BrowsingContext : IDisposable
         {
             BroadcastChannel.RemoveChannels(documentWindow);
             WebSocket.MakeDisappear(documentWindow);
+
+            // The unloading of the document cleaned up the WebTransport objects; a document destroyed without being
+            // unloaded (its browsing context is disposed) may not run scripts anymore
+            WebTransportHostSession.MakeDisappear(documentWindow, cleanUpScriptObjects: false);
             EventSource.ForciblyClose(documentWindow);
             IdbFactory.CloseConnections(documentWindow);
         }
@@ -4471,6 +4564,12 @@ public sealed partial class BrowsingContext : IDisposable
         /// the serialized policy that the document must enforce, or null.
         /// </summary>
         public string? RequiredContentSecurityPolicy { get; set; }
+
+        /// <summary>
+        /// The required connection allowlist of the navigation params (https://w3c.github.io/connection-allowlists/#navigation-params-required-connection-allowlist):
+        /// the serialized allowlist that the document must enforce, or null.
+        /// </summary>
+        public string? RequiredConnectionAllowlist { get; set; }
 
         /// <summary>The required document policy of the navigable (https://wicg.github.io/document-policy/#required-document-policy), for the <c>Sec-Required-Document-Policy</c> header.</summary>
         public DocumentPolicyRecord RequiredDocumentPolicy { get; set; } = DocumentPolicyRecord.Empty;

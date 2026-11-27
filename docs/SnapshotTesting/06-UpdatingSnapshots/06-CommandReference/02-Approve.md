@@ -17,9 +17,9 @@ Approve snapshots by renaming \*.actual.\* files to \*.verified.\*
 
 ## Options
 
-| Option | Description |
-| --- | --- |
-| `--interactive` | Prompt for each snapshot to approve or reject |
-| `--folder <folder>` | Folder to process. Uses current directory when not set. |
-| `--recurse` | Allow recursive search for \_\_snapshots\_\_ folders |
-| `-?`, `-h`, `--help` | Show help and usage information |
+| Option | Description | Default |
+| --- | --- | --- |
+| `--interactive` | Prompt for each snapshot to approve or reject |  |
+| `--folder <folder>` | Folder to process. Uses current directory when not set. |  |
+| `--recurse` | Allow recursive search for \_\_snapshots\_\_ folders | `true` |
+| `-?`, `-h`, `--help` | Show help and usage information |  |

@@ -247,6 +247,53 @@ internal static class PropertyOperations
         return true;
     }
 
+    /// <summary>
+    /// EnumerableOwnProperties(O, kind) in a new array, when no code can run: an ordinary object whose own properties are
+    /// all in its shape (<see cref="JsObject.GetOrdinaryShapeForEnumeration"/>) and, for the values, are all data
+    /// properties. The keys are the strings cached by the shape. Null when the general algorithm must be used.
+    /// </summary>
+    public static JsArray? TryCreateEnumerableOwnPropertiesArray(JsRealm realm, JsObject obj, EnumerableOwnPropertiesKind kind)
+    {
+        if (obj.GetOrdinaryShapeForEnumeration() is not { } shape || shape.Count > Shape.MaxPropertyCount)
+            return null;
+
+        var count = shape.Count;
+        if (kind != EnumerableOwnPropertiesKind.Key)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                if ((shape.GetFlags(i) & (PropertyFlags.Accessor | PropertyFlags.Lazy)) != 0)
+                    return null;
+            }
+        }
+
+        JsEngine.CountCurrentWork(count);
+        var buffer = new ShapePropertyValues();
+        Span<JsValue> values = buffer;
+        var length = 0;
+        for (var i = 0; i < count; i++)
+        {
+            if (shape.GetKey(i).IsSymbol || (shape.GetFlags(i) & PropertyFlags.Enumerable) == 0)
+                continue;
+
+            values[length++] = kind switch
+            {
+                EnumerableOwnPropertiesKind.Key => new JsValue(shape.GetKeyString(i)),
+                EnumerableOwnPropertiesKind.Value => obj.GetValueForCache(i, inTable: false),
+                _ => JsArray.Create(JsEngine.Current!.CurrentRealm!, [new JsValue(shape.GetKeyString(i)), obj.GetValueForCache(i, inTable: false)]),
+            };
+        }
+
+        return JsArray.Create(realm, values[..length]);
+    }
+
+    /// <summary>A buffer of the values of the properties of a shape (at most <see cref="Shape.MaxPropertyCount"/>).</summary>
+    [System.Runtime.CompilerServices.InlineArray(Shape.MaxPropertyCount)]
+    private struct ShapePropertyValues
+    {
+        private JsValue _value;
+    }
+
     /// <summary>EnumerableOwnProperties(O, kind): the keys, values or [key, value] entries of the enumerable own string-keyed properties.</summary>
     public static List<JsValue> EnumerableOwnProperties(JsObject obj, EnumerableOwnPropertiesKind kind)
     {

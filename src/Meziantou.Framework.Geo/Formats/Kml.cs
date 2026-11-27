@@ -707,7 +707,7 @@ public static class Kml
     // Without an altitude mode, KML clamps the geometries to the ground and ignores their altitudes
     private static void WriteAltitudeMode(XmlWriter writer, GeoGeometry geometry)
     {
-        if (geometry.GetPositions().Any(position => position.Altitude is not null))
+        if (GeoPositionSpans.GetDimensions(geometry).HasAltitude)
         {
             writer.WriteElementString("altitudeMode", Namespace, "absolute");
         }

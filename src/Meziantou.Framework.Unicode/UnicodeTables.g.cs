@@ -387,9 +387,9 @@ internal static class UnicodeTables
         get => UnicodeResources.GetSpan(Data + 118246, 624);
     }
 
-    /// <summary>Determines whether a code point can be in SpecialCasingMappings: it is in one of the blocks of 256 code points that have an entry, and is not below the first entry.</summary>
+    /// <summary>Determines whether a code point can be in SpecialCasingMappings: it is in one of the blocks of 256 code points that have many entries, or it is an entry of another block.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static bool MayHaveSpecialCasing(int codePoint) => codePoint >= 0xDF && (codePoint >> 8) is 0x0 or 0x1 or 0x3 or 0x5 or 0x1E or 0x1F or 0xFB or 0x1DF;
+    internal static bool MayHaveSpecialCasing(int codePoint) => (codePoint >> 8) is 0x1E or 0x1F or 0xFB || codePoint is 0xDF or 0x130 or 0x149 or 0x1F0 or 0x390 or 0x3B0 or 0x587 or 0x1DF95;
 
     // The code points of the full case mappings, 3 bytes each, little-endian: the lowercase, the titlecase then the uppercase mapping of each entry of SpecialCasingMappings.
     internal static ReadOnlySpan<byte> SpecialCasingPool

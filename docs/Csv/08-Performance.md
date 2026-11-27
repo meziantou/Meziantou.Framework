@@ -48,8 +48,12 @@ With [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict), an invalid 
 
 - **Write formattable values directly.** [WriteField](cref:Meziantou.Framework.Csv.CsvWriter.WriteField) formats numbers and dates into the buffer of the writer, without a string.
   Decimals in the default format of the invariant culture are written by a faster path than `decimal.TryFormat`, which writes the same text.
-  So are doubles with up to 9 decimals from 0.0001 to 10^9, such as `-12.3`, about four times as fast as `double.TryFormat`; the serializer
-  writes them the same way.
+  So are doubles and floats in the default format of the invariant culture, with or without an exponent: doubles with up to 9 decimals,
+  such as `-12.3`, about four times as fast as `double.TryFormat`, the others, such as `0.30000000000000004` or `1.5E-07`, two and a half
+  to three times as fast, and floats, such as `0.33333334`, about four times as fast as `float.TryFormat`. The doubles from about 1e-48 to 1e80 and every
+  float except the subnormal values take this path: the others, and `NaN` and the infinities, are written by the BCL. On .NET 10, the BCL
+  writes 2^-25 as `2.980232238769531E-08`, which does not parse back to it: the writer writes `2.9802322387695312E-08`, as .NET 11 does.
+  The serializer writes them the same way.
   Integers and decimals in the default format of the invariant culture, and dates in the round-trip format (`O`), are not
   searched for characters that need quotes.
 - **Write UTF-8 with [Utf8CsvWriter](cref:Meziantou.Framework.Csv.Utf8CsvWriter)** when the output is a file, a stream or a network response.

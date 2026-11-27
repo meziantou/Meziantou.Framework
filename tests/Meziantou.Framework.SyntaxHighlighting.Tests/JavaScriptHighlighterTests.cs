@@ -3348,4 +3348,38 @@ const el = <div>hello</div>;
 <span class="hljs-keyword">const</span> el = <span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span>&gt;</span>hello<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span></span>;
 """);
     }
+
+    [Fact]
+    public void TaggedTemplate_CssHtmlGql()
+    {
+        AssertHighlighter("javascript",
+"""
+const a = css`.x { color: red; }`;
+const b = styled.css`p { margin: 0 }`;
+const c = html`<div class="${a}">x</div>`;
+const d = gql`query { user { id } }`;
+css`a { }`;
+""",
+"""
+<span class="hljs-keyword">const</span> a = css`<span class="language-css"><span class="hljs-selector-class">.x</span> { <span class="hljs-attribute">color</span>: red; }`</span>;
+<span class="hljs-keyword">const</span> b = styled.css`<span class="language-css"><span class="hljs-selector-tag">p</span> { <span class="hljs-attribute">margin</span>: <span class="hljs-number">0</span> }`</span>;
+<span class="hljs-keyword">const</span> c = html`<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">class</span>=<span class="hljs-string">&quot;</span></span></span><span class="hljs-subst">${a}</span><span class="language-xml"><span class="hljs-tag"><span class="hljs-string">&quot;</span>&gt;</span>x<span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>`</span>;
+<span class="hljs-keyword">const</span> d = gql`<span class="language-graphql"><span class="hljs-keyword">query</span> <span class="hljs-punctuation">{</span> user <span class="hljs-punctuation">{</span> id <span class="hljs-punctuation">}</span> <span class="hljs-punctuation">}</span>`</span>;
+css`<span class="language-css"><span class="hljs-selector-tag">a</span> { }`</span>;
+""");
+    }
+
+    [Fact]
+    public void TaggedTemplate_AtStartOfInput()
+    {
+        AssertHighlighter("javascript",
+"""
+css`a { color: red; }`;
+const q = gql`{ id }`;
+""",
+"""
+css`<span class="language-css"><span class="hljs-selector-tag">a</span> { <span class="hljs-attribute">color</span>: red; }`</span>;
+<span class="hljs-keyword">const</span> q = gql`<span class="language-graphql"><span class="hljs-punctuation">{</span> id <span class="hljs-punctuation">}</span>`</span>;
+""");
+    }
 }

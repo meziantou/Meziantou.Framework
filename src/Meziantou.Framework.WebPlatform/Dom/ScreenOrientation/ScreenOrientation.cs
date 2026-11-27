@@ -421,7 +421,7 @@ public sealed class ScreenOrientation : EventTarget
 }
 
 // The Screen Orientation API (https://w3c.github.io/screen-orientation/#extensions-to-the-screen-interface)
-public sealed partial class Screen
+public partial class Screen
 {
     private ScreenOrientation? _orientation;
 

@@ -11,6 +11,8 @@ public class ConverterBenchmark
     private CsvConverterContext _context = null!;
     private double[] _doubles = [];
     private double[] _shortDoubles = [];
+    private double[] _exponentDoubles = [];
+    private float[] _singles = [];
     private readonly char[] _buffer = new char[64];
 
     [GlobalSetup]
@@ -38,6 +40,10 @@ public class ConverterBenchmark
         _context = new CsvConverterContext(CsvSerializerOptions.Default);
         _doubles = [.. _columns[2].Select(value => double.Parse(value, CultureInfo.InvariantCulture))];
         _shortDoubles = [.. _columns[3].Select(value => double.Parse(value, CultureInfo.InvariantCulture))];
+
+        // The same values from 10^-9 to 10^-6 and from 10^20 to 10^23, which are written with an exponent
+        _exponentDoubles = [.. _doubles.Select((value, index) => value * (index % 2 == 0 ? 1e-9 : 1e20))];
+        _singles = [.. _doubles.Select(value => (float)value)];
     }
 
     [Benchmark]
@@ -72,9 +78,17 @@ public class ConverterBenchmark
     [Benchmark]
     public long FormatDoubleShort() => Format(_shortDoubles);
 
-    private long Format(double[] values)
+    /// <summary>Formats the round-trip doubles of the Value column, scaled so that they are written with an exponent.</summary>
+    [Benchmark]
+    public long FormatDoubleExponent() => Format(_exponentDoubles);
+
+    /// <summary>Formats the values of the Value column as floats, in their round-trip format of up to 9 digits.</summary>
+    [Benchmark]
+    public long FormatSingle() => Format(_singles);
+
+    private long Format<T>(T[] values)
     {
-        var converter = CsvMetadataServices.GetConverter<double>(CsvSerializerOptions.Default);
+        var converter = CsvMetadataServices.GetConverter<T>(CsvSerializerOptions.Default);
         long sum = 0;
         foreach (var value in values)
         {

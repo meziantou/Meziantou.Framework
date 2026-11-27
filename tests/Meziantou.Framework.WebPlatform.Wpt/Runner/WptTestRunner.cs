@@ -75,6 +75,9 @@ internal sealed partial class WptTestRunner
     [SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time", Justification = "The generated code of LibraryImport is unsafe code, which the memory-safety rules of the project reject; the function has no marshalling")]
     private static safe extern uint TimeBeginPeriod(uint period);
 
+    /// <summary>The WebUSB Testing API of the runner (Runner/webusb-test.js), defined in the realms of the WebUSB tests.</summary>
+    private static readonly Lazy<string> WebUsbTestScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "webusb-test.js")));
+
     /// <summary>The testdriver vendor implementation of the runner (Runner/testdriver-vendor.js).</summary>
     private static readonly Lazy<string> TestDriverVendorScript = new(() => WptFiles.ReadAllText(Path.Combine(WptPaths.Root, "tests", "Meziantou.Framework.WebPlatform.Wpt", "Runner", "testdriver-vendor.js")));
 
@@ -142,6 +145,15 @@ internal sealed partial class WptTestRunner
     /// <summary>The posture of the device, overridden by test_driver.set_device_posture().</summary>
     private readonly DevicePostureProvider _devicePosture = new();
 
+    /// <summary>The fake USB devices of the WebUSB Testing API (navigator.usb.test).</summary>
+    private readonly WptUsbProvider _usb = new();
+
+    /// <summary>The contacts of the Contact Picker tests, set by WebContactsTest.setSelectedContacts().</summary>
+    private readonly WptContactsProvider _contacts = new();
+
+    /// <summary>The simulated Bluetooth adapter of the bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth).</summary>
+    private readonly WptBluetoothProvider _bluetooth = new();
+
     /// <summary>The virtual authenticators of test_driver.add_virtual_authenticator() (https://w3c.github.io/webauthn/#sctn-automation-virtual-authenticators).</summary>
     private readonly VirtualAuthenticatorEnvironment _authenticators = new();
 
@@ -154,6 +166,9 @@ internal sealed partial class WptTestRunner
 
     /// <summary>The WebSocket server of wptserve (its connections are in-memory pipes).</summary>
     private readonly WptWebSocketServer _webSocketServer;
+
+    /// <summary>The WebTransport server of wptserve (its sessions are in memory).</summary>
+    private readonly WptWebTransportServer _webTransportServer;
 
     /// <summary>Gets the stash of the WPT server.</summary>
     internal WptStash Stash => _stash;
@@ -198,6 +213,7 @@ internal sealed partial class WptTestRunner
             BlockThirdPartyCookies = BlocksThirdPartyCookies(test.Id),
         };
         _webSocketServer = new WptWebSocketServer(this);
+        _webTransportServer = new WptWebTransportServer(QueueTask, _stash, Log);
     }
 
     /// <summary>Gets the cookie store of the browser (the cookies of the test driver).</summary>
@@ -254,6 +270,11 @@ internal sealed partial class WptTestRunner
                 _permissionStore.SetState(name, PermissionState.Granted);
             }
 
+            // The midi permission is granted by default: the tests that do not set it expect the access (the report-only mode of
+            // the permissions policy, the prerendering restrictions), as Chromium gives it without asking for the messages
+            // that are not system exclusive messages
+            _permissionStore.SetState("midi", PermissionState.Granted);
+
             // The test page is loaded in a top-level browsing context. The documents of its iframes and the scripts are the files of the test suite.
             browsingContext = new BrowsingContext(new BrowsingContextOptions
             {
@@ -301,6 +322,21 @@ internal sealed partial class WptTestRunner
                 // The virtual pressure sources and the posture override of the test driver
                 ComputePressure = new ComputePressureOptions { Provider = _pressureSources },
                 DevicePosture = new DevicePostureOptions { Provider = _devicePosture },
+
+                // The fake devices of the WebUSB Testing API (navigator.usb.test of Runner/webusb-test.js)
+                Usb = new UsbOptions { Provider = _usb },
+
+                // The simulated Bluetooth adapter of test_driver.bidi.bluetooth
+                Bluetooth = new BluetoothOptions { Provider = _bluetooth },
+
+                // Two screens side by side for the tests of the Window Management API (the other tests have one screen, the
+                // size of the viewport)
+                Screens = _test.RelativePath.StartsWith("window-management/", StringComparison.Ordinal) ? new ScreenOptions { Provider = CreateWindowManagementScreens() } : null,
+
+                // A MIDI output that loops back to a MIDI input for the Web MIDI tests, and the contacts of the WebContactsTest
+                // class for the Contact Picker tests
+                Midi = _test.RelativePath.StartsWith("webmidi/", StringComparison.Ordinal) ? new WebMidiOptions { Provider = WptMidi.CreateProvider() } : null,
+                Contacts = _test.RelativePath.StartsWith("contacts/", StringComparison.Ordinal) ? new ContactsOptions { Provider = _contacts } : null,
 
                 // The virtual authenticators of test_driver.add_virtual_authenticator()
                 WebAuthentication = new WebAuthenticationOptions { Authenticators = _authenticators },
@@ -458,6 +494,15 @@ internal sealed partial class WptTestRunner
 
     private static readonly ViewportOptions DefaultViewport = new() { SmoothUserScrolling = true };
 
+    /// <summary>The screens of the Window Management tests: a primary internal screen with a taskbar, and an external screen on its right.</summary>
+    private static ScreenProvider CreateWindowManagementScreens()
+    {
+        var provider = new ScreenProvider();
+        provider.AddScreen(new DeviceScreen(0, 0, 1920, 1080) { AvailHeight = 1040, IsPrimary = true, IsInternal = true, Label = "Built-in display" });
+        provider.AddScreen(new DeviceScreen(1920, 0, 1280, 1024) { DevicePixelRatio = 2, Label = "External display" });
+        return provider;
+    }
+
     /// <summary>
     /// The HTTPS upgrades of the tests of the https-upgrades directory (https://github.com/whatwg/fetch/pull/1655), as
     /// Chromium runs them: the WPT server serves HTTPS on the https ports only, so the tests navigate to the http: URL of an
@@ -546,6 +591,9 @@ internal sealed partial class WptTestRunner
 
             return runner._webSocketServer.ConnectAsync(request, cancellationToken);
         }
+
+        /// <summary>The WebTransport sessions are established by the emulated WebTransport server of wptserve (see <see cref="WptWebTransportServer"/>).</summary>
+        public override ValueTask<WebTransportConnection?> ConnectWebTransportAsync(WebTransportConnectionRequest request, CancellationToken cancellationToken) => runner._webTransportServer.ConnectAsync(request, cancellationToken);
 
         /// <summary>Loads the resource of <paramref name="url"/>: the URL of the request, or the location of a redirect.</summary>
         private ValueTask<DocumentResource?> Load(string url, DocumentRequest request, int redirectCount = 0)
@@ -1827,6 +1875,26 @@ internal sealed partial class WptTestRunner
             DefineTestUtils(realm);
         }
 
+        // The WebUSB Testing API, in the windows and the workers of the WebUSB tests (the polyfill of Chromium needs MojoJS)
+        if (_test.RelativePath.StartsWith("webusb/", StringComparison.Ordinal))
+        {
+            _usb.DefineTestApi(realm, WebUsbTestScript.Value);
+        }
+
+        // The WebContactsTest class of the Contact Picker tests (the mock of Chromium needs MojoJS)
+        if (_test.RelativePath.StartsWith("contacts/", StringComparison.Ordinal) && realm.Window is not null)
+        {
+            _contacts.DefineTestApi(realm);
+        }
+
+        // The legacy Web Bluetooth Testing API of Chromium (navigator.bluetooth.test, on MojoJS), which bluetooth_test() of
+        // /bluetooth/resources/bluetooth-test.js requires: the permissions policy tests only check, after the test, that the
+        // fake responses were consumed (there is none, they do not simulate devices)
+        if (_test.RelativePath.StartsWith("permissions-policy/", StringComparison.Ordinal) && _test.RelativePath.Contains("bluetooth", StringComparison.Ordinal))
+        {
+            realm.EvaluateBuiltIn("if (self.navigator && navigator.bluetooth) Object.defineProperty(navigator.bluetooth, 'test', { value: { allResponsesConsumed: () => Promise.resolve(true) }, writable: true, enumerable: false, configurable: true });");
+        }
+
         // The tests of the workers communicate with the test page by messages (fetch_tests_from_worker)
         if (realm.Window is null)
             return;
@@ -1848,6 +1916,9 @@ internal sealed partial class WptTestRunner
 
             return adapter.Undefined;
         });
+        // The bluetooth module of WebDriver BiDi (test_driver.bidi.bluetooth): __wpt_bluetooth and __wpt_bluetooth_dispatcher
+        _bluetooth.DefineTestApi(realm, QueueTask);
+
         Define("__wpt_bidi_log_dispatcher", 1, (_, args) =>
         {
             // The function of testdriver-vendor.js that emits the WebDriver BiDi log.entryAdded events of the realm
@@ -2692,11 +2763,12 @@ internal sealed partial class WptTestRunner
                     continue;
             }
 
-            // The handlers of the WebSocket server run on the thread pool: the clock is not advanced while a connection is busy
-            // (a handler is about to respond, or the library is processing a message). The task queue is checked afterwards: a
-            // connection that becomes idle has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch of a
-            // payment method manifest)
-            if (_webSocketServer.IsBusy || eventLoop.HasPendingUserAgentWork)
+            // The handlers of the WebSocket and WebTransport servers run on the thread pool: the clock is not advanced while a
+            // connection is busy (a handler is about to respond, or the library is processing a message) or a callback of a
+            // WebTransport handler is queued or running. The task queue is checked afterwards: a connection that becomes idle
+            // has queued its tasks. Nor is it advanced while the user agent does work that the page waits for (e.g. the fetch
+            // of a payment method manifest)
+            if (_webSocketServer.IsBusy || _webTransportServer.IsBusy || eventLoop.HasPendingUserAgentWork)
             {
                 workerWait.SpinOnce();
                 continue;

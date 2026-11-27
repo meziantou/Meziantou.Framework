@@ -101,8 +101,20 @@ internal sealed class InlineParser
     private int _markdigAutolinkSearchEnd;
     private int _markdigAutolinkCandidate;
 
-    // The nodes of the inlines, reused from one leaf block to the next
+    // The nodes of the inlines, reused from one leaf block to the next. A leaf block rarely has more than a few hundred inlines,
+    // which are new nodes of each parse. The inlines of a pipe table of Markdig are those of its whole paragraph, and a paragraph
+    // can have thousands, which would be garbage after each parse: the nodes after the first ones are reused from one parse to the
+    // next on a thread. They are not used for every node: writing a node that a collection made old costs more than writing a new
+    // one. A parse takes them from its thread, so that a parse in a parse, such as the one of a cell of a grid table, has nodes
+    // of its own, and gives them back once its tree is built. The nodes only refer to one another.
+    private const int UnpooledNodeCount = 256;
+    private const int MaximumPooledNodeCount = 16384;
+
+    [ThreadStatic]
+    private static List<InlineNode>? s_pooledNodes;
+
     private readonly List<InlineNode> _nodes = [];
+    private List<InlineNode>? _pooledNodes;
     private int _usedNodes;
     private Delimiter? _delimiters;
     private Bracket? _brackets;
@@ -4287,14 +4299,49 @@ internal sealed class InlineParser
         result.EndNode(index);
     }
 
-    private InlineNode NewNode(SyntaxKind kind, int start, int end)
+    /// <summary>Gives the reused nodes of the parser to the next parse of the thread. The parser does not parse anything after.</summary>
+    public void ReleaseNodes()
     {
-        if (_usedNodes == _nodes.Count)
+        if (_pooledNodes is { } nodes && nodes.Count <= MaximumPooledNodeCount && (s_pooledNodes is null || s_pooledNodes.Count < nodes.Count))
         {
-            _nodes.Add(new InlineNode());
+            s_pooledNodes = nodes;
         }
 
-        return _nodes[_usedNodes++].Reset(kind, start, end);
+        _pooledNodes = null;
+    }
+
+    private InlineNode NewNode(SyntaxKind kind, int start, int end)
+    {
+        if (_usedNodes < UnpooledNodeCount)
+        {
+            if (_usedNodes == _nodes.Count)
+            {
+                _nodes.Add(new InlineNode());
+            }
+
+            return _nodes[_usedNodes++].Reset(kind, start, end);
+        }
+
+        return NewPooledNode(kind, start, end);
+    }
+
+    private InlineNode NewPooledNode(SyntaxKind kind, int start, int end)
+    {
+        if (_pooledNodes is not { } nodes)
+        {
+            nodes = s_pooledNodes ?? [];
+            s_pooledNodes = null;
+            _pooledNodes = nodes;
+        }
+
+        var index = _usedNodes - UnpooledNodeCount;
+        if (index == nodes.Count)
+        {
+            nodes.Add(new InlineNode());
+        }
+
+        _usedNodes++;
+        return nodes[index].Reset(kind, start, end);
     }
 
     // Adds the tokens of a range of the subject, split at the line breaks

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Geo.Internals;
@@ -134,16 +135,8 @@ internal static class PolygonCombiner
         if (!Sweep(CollectionsMarshal.AsSpan(segments), reach: 2, ref collector, cancellationToken))
             return false;
 
-        cuts.Sort((a, b) =>
-        {
-            if (a.Segment != b.Segment)
-                return a.Segment.CompareTo(b.Segment);
-
-            if (a.Position != b.Position)
-                return a.Position.CompareTo(b.Position);
-
-            return a.X != b.X ? a.X.CompareTo(b.X) : a.Y.CompareTo(b.Y);
-        });
+        // Two cuts that compare equal are the same: the order is the same whatever the sort, which compares without a delegate call
+        cuts.Sort();
         return true;
     }
 
@@ -152,16 +145,15 @@ internal static class PolygonCombiner
     private static bool Sweep<TVisitor>(ReadOnlySpan<Segment> span, long reach, ref TVisitor visitor, CancellationToken cancellationToken)
         where TVisitor : struct, IPairVisitor
     {
-        // The segments from the left: one only meets those that start before it ends
-        var order = new int[span.Length];
-        var starts = new long[span.Length];
+        // The segments from the left: one only meets those that start before it ends. The keys are sorted by their
+        // comparison, without a delegate call for each one; the index breaks the ties, so the order is the same as before.
+        var order = new SweepKey[span.Length];
         for (var i = 0; i < order.Length; i++)
         {
-            order[i] = i;
-            starts[i] = Math.Min(span[i].X0, span[i].X1);
+            order[i] = new SweepKey(Math.Min(span[i].X0, span[i].X1), i);
         }
 
-        Array.Sort(order, (a, b) => starts[a] != starts[b] ? starts[a].CompareTo(starts[b]) : a.CompareTo(b));
+        Array.Sort(order);
         for (var i = 0; i < order.Length; i++)
         {
             if ((i & 63) == 0)
@@ -169,17 +161,19 @@ internal static class PolygonCombiner
                 cancellationToken.ThrowIfCancellationRequested();
             }
 
-            ref readonly var s = ref span[order[i]];
+            var first = order[i].Index;
+            ref readonly var s = ref span[first];
             var right = Math.Max(s.X0, s.X1) + reach;
             var top = Math.Min(s.Y0, s.Y1) - reach;
             var bottom = Math.Max(s.Y0, s.Y1) + reach;
-            for (var j = i + 1; j < order.Length && starts[order[j]] <= right; j++)
+            for (var j = i + 1; j < order.Length && order[j].Start <= right; j++)
             {
-                ref readonly var t = ref span[order[j]];
+                var second = order[j].Index;
+                ref readonly var t = ref span[second];
                 if (Math.Min(t.Y0, t.Y1) > bottom || Math.Max(t.Y0, t.Y1) < top)
                     continue;
 
-                if (!visitor.Visit(order[i], s, order[j], t))
+                if (!visitor.Visit(first, s, second, t))
                     return false;
             }
         }
@@ -516,16 +510,9 @@ internal static class PolygonCombiner
         }
 
         var result = edges.ToArray();
-        Array.Sort(result, (a, b) =>
-        {
-            if (a.LowY != b.LowY)
-                return a.LowY.CompareTo(b.LowY);
 
-            if (a.LowX != b.LowX)
-                return a.LowX.CompareTo(b.LowX);
-
-            return a.HighY != b.HighY ? a.HighY.CompareTo(b.HighY) : a.HighX.CompareTo(b.HighX);
-        });
+        // The keys of the edges are distinct: the order is the same whatever the sort, which compares without a delegate call
+        Array.Sort(result);
         return result;
     }
 
@@ -572,6 +559,7 @@ internal static class PolygonCombiner
                 following++;
             }
 
+            var inserted = 0;
             for (; next < edges.Length && edges[next].LowY == y; next++)
             {
                 if (edges[next].HighY == y)
@@ -598,15 +586,24 @@ internal static class PolygonCombiner
                 }
 
                 active.Insert(low, next);
+                inserted++;
             }
 
+            // The edges only meet at their ends: the points on the left of an edge are in the same area all along it, so
+            // its winding numbers are those of the row it starts on. Only the edges that start on this row get theirs, and
+            // the edges on the right of the last of them are not visited.
             var first = 0;
             var second = 0;
-            foreach (var index in active)
+            for (var i = 0; inserted > 0; i++)
             {
-                ref var edge = ref edges[index];
-                edge.WindingFirst = first;
-                edge.WindingSecond = second;
+                ref var edge = ref edges[active[i]];
+                if (edge.LowY == y)
+                {
+                    edge.WindingFirst = first;
+                    edge.WindingSecond = second;
+                    inserted--;
+                }
+
                 first += edge.First;
                 second += edge.Second;
             }
@@ -664,12 +661,16 @@ internal static class PolygonCombiner
         }
 
         var directed = CollectionsMarshal.AsSpan(boundary);
-        var leaving = new Dictionary<(long X, long Y), List<int>>(directed.Length);
-        for (var i = 0; i < directed.Length; i++)
+
+        // The edges that leave each vertex, in the order of their indexes: the first one in the dictionary, then each one
+        // links to the next one, so that a vertex does not need a list of its own
+        var firstLeaving = new Dictionary<(long X, long Y), int>(directed.Length);
+        var nextLeaving = new int[directed.Length];
+        for (var i = directed.Length - 1; i >= 0; i--)
         {
-            ref var list = ref CollectionsMarshal.GetValueRefOrAddDefault(leaving, (directed[i].FromX, directed[i].FromY), out _);
-            list ??= [];
-            list.Add(i);
+            ref var first = ref CollectionsMarshal.GetValueRefOrAddDefault(firstLeaving, (directed[i].FromX, directed[i].FromY), out var exists);
+            nextLeaving[i] = exists ? first : -1;
+            first = i;
         }
 
         var used = new bool[directed.Length];
@@ -687,17 +688,17 @@ internal static class PolygonCombiner
                 ref readonly var edge = ref directed[current];
                 used[current] = true;
                 contour.Add((edge.FromX, edge.FromY));
-                if (!leaving.TryGetValue((edge.ToX, edge.ToY), out var candidates))
+                if (!firstLeaving.TryGetValue((edge.ToX, edge.ToY), out var firstCandidate))
                     break;
 
-                var next = PickNext(directed, candidates, edge);
+                var next = PickNext(directed, firstCandidate, nextLeaving, edge);
                 if (used[next])
                     break;
 
                 current = next;
             }
 
-            contours.Add(GetContour(contour, leaving));
+            contours.Add(GetContour(contour, firstLeaving, nextLeaving));
         }
     }
 
@@ -705,20 +706,21 @@ internal static class PolygonCombiner
     /// Picks the edge that continues a contour at the vertex an edge ends at: the first one found by turning from that
     /// edge around the vertex, through the area that is kept.
     /// </summary>
-    private static int PickNext(ReadOnlySpan<Directed> directed, List<int> candidates, in Directed arriving)
+    private static int PickNext(ReadOnlySpan<Directed> directed, int firstCandidate, int[] nextLeaving, in Directed arriving)
     {
-        var best = candidates[0];
-        if (candidates.Count == 1)
+        var best = firstCandidate;
+        var candidate = nextLeaving[firstCandidate];
+        if (candidate < 0)
             return best;
 
         // The direction back along the edge the contour arrives by
         var backX = arriving.FromX - arriving.ToX;
         var backY = arriving.FromY - arriving.ToY;
-        for (var i = 1; i < candidates.Count; i++)
+        for (; candidate >= 0; candidate = nextLeaving[candidate])
         {
-            if (IsBefore(directed[candidates[i]], directed[best], backX, backY))
+            if (IsBefore(directed[candidate], directed[best], backX, backY))
             {
-                best = candidates[i];
+                best = candidate;
             }
         }
 
@@ -772,7 +774,7 @@ internal static class PolygonCombiner
     /// Gets the vertices of a contour, from its bottom-left vertex, without the vertices that are on the segment between
     /// their neighbors, unless another contour touches it there.
     /// </summary>
-    private static (long X, long Y)[] GetContour(List<(long X, long Y)> contour, Dictionary<(long X, long Y), List<int>> leaving)
+    private static (long X, long Y)[] GetContour(List<(long X, long Y)> contour, Dictionary<(long X, long Y), int> firstLeaving, int[] nextLeaving)
     {
         // The contour starts at the same vertex whatever the edge it was followed from. It can go through that vertex
         // more than once: it then starts where the vertex that follows is the first one.
@@ -796,7 +798,7 @@ internal static class PolygonCombiner
             var next = contour[(i + 1) % count];
             var cross = ((Int128)(point.X - previous.X) * (next.Y - point.Y)) - ((Int128)(point.Y - previous.Y) * (next.X - point.X));
             var dot = ((Int128)(point.X - previous.X) * (next.X - point.X)) + ((Int128)(point.Y - previous.Y) * (next.Y - point.Y));
-            if (cross == 0 && dot > 0 && leaving[point].Count == 1)
+            if (cross == 0 && dot > 0 && nextLeaving[firstLeaving[point]] < 0)
                 continue;
 
             result.Add(point);
@@ -817,9 +819,31 @@ internal static class PolygonCombiner
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct Segment(long X0, long Y0, long X1, long Y1, byte Source);
 
+    /// <summary>A segment in the order of the sweep: from the left of its bounds, then by index.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    [SuppressMessage("Design", "MA0097:A class that implements IComparable<T> or IComparable should override comparison operators", Justification = "Only sorted by Array.Sort, which compares by IComparable<T> without a delegate")]
+    private readonly record struct SweepKey(long Start, int Index) : IComparable<SweepKey>
+    {
+        public int CompareTo(SweepKey other) => Start != other.Start ? Start.CompareTo(other.Start) : Index.CompareTo(other.Index);
+    }
+
     /// <summary>A point a segment is cut at, and its position along the segment.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct Cut(int Segment, Int128 Position, long X, long Y);
+    [SuppressMessage("Design", "MA0097:A class that implements IComparable<T> or IComparable should override comparison operators", Justification = "Only sorted by Array.Sort, which compares by IComparable<T> without a delegate")]
+    private readonly record struct Cut(int Segment, Int128 Position, long X, long Y) : IComparable<Cut>
+    {
+        /// <summary>Compares by segment, by position along it, then by coordinates.</summary>
+        public int CompareTo(Cut other)
+        {
+            if (Segment != other.Segment)
+                return Segment.CompareTo(other.Segment);
+
+            if (Position != other.Position)
+                return Position.CompareTo(other.Position);
+
+            return X != other.X ? X.CompareTo(other.X) : Y.CompareTo(other.Y);
+        }
+    }
 
     /// <summary>A position along a segment, a fraction whose denominator is positive, and whether it is excluded: a bound of the positions within a square.</summary>
     [StructLayout(LayoutKind.Auto)]
@@ -880,7 +904,9 @@ internal static class PolygonCombiner
     private readonly record struct Directed(long FromX, long FromY, long ToX, long ToY);
 
     [StructLayout(LayoutKind.Auto)]
-    private struct Edge
+    [SuppressMessage("Design", "MA0097:A class that implements IComparable<T> or IComparable should override comparison operators", Justification = "Only sorted by Array.Sort, which compares by IComparable<T> without a delegate")]
+    [SuppressMessage("Design", "MA0096:A class that implements IComparable<T> should also implement IEquatable<T>", Justification = "Only sorted by Array.Sort, never compared for equality")]
+    private struct Edge : IComparable<Edge>
     {
         public long LowX;
         public long LowY;
@@ -894,6 +920,18 @@ internal static class PolygonCombiner
         /// <summary>The winding number, around the first path, of the points on the left of the edge (under it when it is horizontal).</summary>
         public int WindingFirst;
         public int WindingSecond;
+
+        /// <summary>Compares from the top-left end, then by the other end.</summary>
+        public readonly int CompareTo(Edge other)
+        {
+            if (LowY != other.LowY)
+                return LowY.CompareTo(other.LowY);
+
+            if (LowX != other.LowX)
+                return LowX.CompareTo(other.LowX);
+
+            return HighY != other.HighY ? HighY.CompareTo(other.HighY) : HighX.CompareTo(other.HighX);
+        }
     }
 
     /// <summary>Adds the segments of a ring, on the grid. A ring that does not end where it starts is closed.</summary>

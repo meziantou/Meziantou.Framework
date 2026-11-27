@@ -308,6 +308,10 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
     private static void Set_onunhandledrejection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "unhandledrejection", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_onunload(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "unload");
     private static void Set_onunload(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "unload", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_ongamepadconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepadconnected");
+    private static void Set_ongamepadconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepadconnected", v, isOnBeforeUnloadEventHandler: false);
+    private static TValue Get_ongamepaddisconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepaddisconnected");
+    private static void Set_ongamepaddisconnected(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "gamepaddisconnected", v, isOnBeforeUnloadEventHandler: false);
     private static TValue Get_origin(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromString(o.Origin); }
     private static TValue Get_isSecureContext(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromBoolean(o.IsSecureContext); }
     private static TValue Get_crossOriginIsolated(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding); return r.FromBoolean(o.CrossOriginIsolated); }
@@ -557,6 +561,33 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
         var result = o.GetSelection(); return r.Wrap(result);
+    }
+    private static TValue Op_getScreenDetails(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.GetScreenDetails(); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+    }
+    private static TValue Op_minimize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.Minimize(); return r.ToPromise(result);
+    }
+    private static TValue Op_maximize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.Maximize(); return r.ToPromise(result);
+    }
+    private static TValue Op_restore(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        var result = o.Restore(); return r.ToPromise(result);
+    }
+    private static TValue Op_setResizable(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        if (a.Length < 1) throw r.NotEnoughArguments("setResizable", 1, a.Length);
+        var a0 = r.ToBoolean(a[0]);
+        var result = o.SetResizable(a0); return r.ToPromise(result);
     }
     private static TValue Op_reportError(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
@@ -848,6 +879,8 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineAttribute(instanceTarget, "onstorage", Get_onstorage, Set_onstorage);
         r.DefineAttribute(instanceTarget, "onunhandledrejection", Get_onunhandledrejection, Set_onunhandledrejection);
         r.DefineAttribute(instanceTarget, "onunload", Get_onunload, Set_onunload);
+        r.DefineAttribute(instanceTarget, "ongamepadconnected", Get_ongamepadconnected, Set_ongamepadconnected);
+        r.DefineAttribute(instanceTarget, "ongamepaddisconnected", Get_ongamepaddisconnected, Set_ongamepaddisconnected);
         r.DefineReplaceableAttribute(instanceTarget, "origin", Get_origin);
         r.DefineAttribute(instanceTarget, "isSecureContext", Get_isSecureContext, null);
         r.DefineAttribute(instanceTarget, "crossOriginIsolated", Get_crossOriginIsolated, null);
@@ -883,6 +916,11 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineOperation(instanceTarget, "requestIdleCallback", 1, Op_requestIdleCallback);
         r.DefineOperation(instanceTarget, "cancelIdleCallback", 1, Op_cancelIdleCallback);
         r.DefineOperation(instanceTarget, "getSelection", 0, Op_getSelection);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "getScreenDetails", 0, Op_getScreenDetails, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "minimize", 0, Op_minimize, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "maximize", 0, Op_maximize, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "restore", 0, Op_restore, returnsPromise: true);
+        if (r.IsSecureContext) r.DefineOperation(instanceTarget, "setResizable", 1, Op_setResizable, returnsPromise: true);
         r.DefineOperation(instanceTarget, "reportError", 1, Op_reportError);
         r.DefineOperation(instanceTarget, "btoa", 1, Op_btoa);
         r.DefineOperation(instanceTarget, "atob", 1, Op_atob);

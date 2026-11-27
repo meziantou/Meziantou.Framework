@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using Meziantou.Framework.JavaScriptEngine;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.JavaScript;
@@ -324,6 +326,130 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
     }
 
     [Fact]
+    public void ScriptCache_ScriptsAreParsedOncePerProcess()
+    {
+        const string DocumentUrl = "https://script-cache.example/";
+        const string Html = """
+            <button onclick="document.title += ' click'"></button>
+            <script>
+              document.title = 'loaded';
+              null.x;
+            </script>
+            <script>document.querySelector('button').click();</script>
+            """;
+        var cache = new JavaScriptScriptCache();
+        var parsed = new ConcurrentQueue<string>();
+        using var listener = new ActivityListener
+        {
+            ShouldListenTo = source => source.Name == JsEngineTelemetry.ActivitySourceName,
+            Sample = (ref ActivityCreationOptions<ActivityContext> _) => ActivitySamplingResult.AllDataAndRecorded,
+            ActivityStopped = activity =>
+            {
+                if (activity.OperationName == "js.parse" && Equals(activity.GetTagItem("js.source.url"), DocumentUrl))
+                {
+                    parsed.Enqueue(activity.OperationName);
+                }
+            },
+        };
+        ActivitySource.AddActivityListener(listener);
+
+        for (var i = 0; i < 2; i++)
+        {
+            // Each document has its own engine, as in ScriptBenchmarks
+            using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { ScriptCache = cache });
+            var context = _contexts.Create(new BrowsingContextOptions { ScriptEngine = engine, UnhandledScriptError = (_, error) => _errors.Add(error) });
+            var document = context.Navigate(DocumentUrl, _ => Html);
+            context.EventLoop.RunUntilIdle();
+
+            Assert.Equal("loaded click", document.Title);
+        }
+
+        // The two inline scripts and the event handler are parsed for the first document only
+        Assert.Equal(3, parsed.Count);
+        Assert.Equal(3, cache.Count);
+
+        // The errors of the cached scripts are located in their document
+        Assert.Equal(2, _errors.Count);
+        Assert.All(_errors, error => Assert.Equal(("TypeError", DocumentUrl, 4), (TestScriptEngines.GetErrorName(error), error.Filename, error.LineNumber)));
+    }
+
+    [Fact]
+    public void ScriptCache_SameScriptTwiceInARealm_TaggedTemplatesAreNewSites()
+    {
+        var document = Load("""
+            <script>
+              function tag(strings) { return strings; }
+              var sites = [];
+              for (let i = 0; i < 3; i++) {
+                const script = document.createElement('script');
+                script.textContent = 'sites.push(tag`x`)';
+                document.documentElement.append(script);
+              }
+
+              document.title = String(sites.length) + ' ' + (sites[0] === sites[1]) + ' ' + (sites[1] === sites[2]);
+            </script>
+            """);
+        Assert.Equal("3 false false", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void ScriptCache_SharedByTheEngines()
+    {
+        #region WebPlatformJavaScript_ScriptCache
+        // The engines that share a cache parse each script once: the default cache is JavaScriptScriptCache.Shared
+        var cache = new JavaScriptScriptCache(capacity: 1_000_000); // characters of source text
+        for (var i = 0; i < 3; i++)
+        {
+            using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { ScriptCache = cache });
+            using var context = new BrowsingContext(new BrowsingContextOptions { ScriptEngine = engine });
+            var document = context.Navigate("https://example.com/", _ => "<script>document.title = 'loaded'</script>");
+            context.EventLoop.RunUntilIdle();
+            Assert.Equal("loaded", document.Title);
+        }
+
+        Assert.Equal(1, cache.Count);
+        #endregion
+    }
+
+    [Fact]
+    public void ScriptCache_Null_ScriptsRun()
+    {
+        using var engine = new JavaScriptScriptEngine(new JavaScriptScriptEngineOptions { ScriptCache = null });
+        var document = Load("<script>document.title = 'loaded'</script>", engine);
+        Assert.Equal("loaded", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void ScriptCache_Capacity_RemovesTheLeastRecentlyUsedScripts()
+    {
+        var cache = new JavaScriptScriptCache(capacity: 100);
+        var a = new string('a', 40);
+        var b = new string('b', 40);
+        var c = new string('c', 40);
+        cache.Add(a, url: null, 0, 0, -1, JsPreparedScript.Parse(a));
+        cache.Add(b, url: null, 0, 0, -1, JsPreparedScript.Parse(b));
+        Assert.True(cache.TryGet(a, url: null, 0, 0, -1, out _));
+        cache.Add(c, url: null, 0, 0, -1, JsPreparedScript.Parse(c));
+
+        Assert.Equal(2, cache.Count);
+        Assert.Equal(80, cache.Size);
+        Assert.True(cache.TryGet(a, url: null, 0, 0, -1, out _));
+        Assert.False(cache.TryGet(b, url: null, 0, 0, -1, out _));
+        Assert.True(cache.TryGet(c, url: null, 0, 0, -1, out _));
+
+        // The position is part of the key, and a script larger than the capacity is not cached
+        Assert.False(cache.TryGet(a, url: null, 1, 0, -1, out _));
+        cache.Add(new string('d', 101), url: null, 0, 0, -1, JsPreparedScript.Parse("d"));
+        Assert.Equal(2, cache.Count);
+
+        cache.Clear();
+        Assert.Equal(0, cache.Count);
+        Assert.Equal(0, cache.Size);
+    }
+
+    [Fact]
     public void Microtasks_RunAfterTheScript()
     {
         var document = Load("""
@@ -500,6 +626,50 @@ public sealed class JavaScriptScriptEngineTests : IDisposable
             </script>
             """);
         Assert.Equal("a b,replaced,true,true,input,post,true", document.Title);
+        Assert.Empty(_errors);
+    }
+
+    [Fact]
+    public void Bindings_FrozenArraysOfSharedValues_DoNotKeepTheEngineAlive()
+    {
+        var engine = LoadPageThatReadsSharedFrozenArrays();
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.False(engine.TryGetTarget(out _));
+    }
+
+    // The values of the arrays outlive the page: the brands of ClientHintsOptions.Default and a static attribute
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+    private static WeakReference<JavaScriptScriptEngine> LoadPageThatReadsSharedFrozenArrays()
+    {
+        using var contexts = new BrowsingContextScope();
+        var engine = new JavaScriptScriptEngine();
+        var context = contexts.Create(new BrowsingContextOptions { ScriptEngine = engine });
+        var document = context.Navigate("https://example.com/", _ => """
+            <script>
+              const brands = navigator.userAgentData.brands;
+              const entryTypes = PerformanceObserver.supportedEntryTypes;
+              document.title = [brands === navigator.userAgentData.brands, Object.isFrozen(brands), entryTypes === PerformanceObserver.supportedEntryTypes].join();
+            </script>
+            """);
+        contexts.EventLoop.RunUntilIdle();
+        Assert.Equal("true,true,true", document.Title);
+
+        engine.Dispose();
+        return new WeakReference<JavaScriptScriptEngine>(engine);
+    }
+
+    [Fact]
+    public void Bindings_FrozenArray_IsTheSameObjectAfterAGarbageCollectionWhileTheScriptHoldsIt()
+    {
+        var document = Load("<script>var brands = navigator.userAgentData.brands; var languages = navigator.languages;</script>");
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.True(_engine.Evaluate(document.DefaultView!, "brands === navigator.userAgentData.brands && languages === navigator.languages").AsBoolean());
         Assert.Empty(_errors);
     }
 

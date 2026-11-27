@@ -97,6 +97,7 @@ public sealed class CsvWriter : IDisposable, IAsyncDisposable
     /// <param name="encoding">The encoding of the file, or <see langword="null"/> for UTF-8 without a byte order mark.</param>
     /// <param name="options">The options, or <see langword="null"/> to use <see cref="CsvWriterOptions.Default"/>.</param>
     /// <returns>The new writer. Dispose it to flush the data and close the file.</returns>
+    /// <remarks>To write a UTF-8 file without encoding UTF-16 text first, use <see cref="Utf8CsvWriter.CreateToFile(string, CsvWriterOptions?)"/>.</remarks>
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The writer owns the stream, and the method disposes it when it throws")]
     public static CsvWriter CreateToFile(string path, Encoding? encoding = null, CsvWriterOptions? options = null)
     {

@@ -71,6 +71,26 @@ Assert.Equal(["Alice", "Bob"], names);
 accepts an `IAsyncEnumerable<T>`. The overloads that take a `Stream` read and write UTF-8 without converting the data to
 UTF-16.
 
+[SerializeToUtf8Bytes](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.SerializeToUtf8Bytes) returns the UTF-8 data as a `byte[]`, without a byte order mark. It formats
+the values directly to UTF-8, without creating a string first, and its result can be passed to [Deserialize](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.Deserialize):
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_SerializeToUtf8Bytes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var people = new List<Person>
+{
+    new() { Name = "Alice", Age = 30 },
+    new() { Name = "Bob", Age = 25 },
+};
+
+// The values are written as UTF-8 bytes, without creating a string first
+byte[] utf8Csv = CsvSerializer.SerializeToUtf8Bytes(people);
+Assert.Equal("Name,Age,BirthDate\r\nAlice,30,\r\nBob,25,\r\n"u8.ToArray(), utf8Csv);
+
+var result = CsvSerializer.Deserialize<Person>(utf8Csv);
+Assert.Equal("Bob", result[1].Name);
+```
+<!-- endref -->
+
 ## Records and constructors
 
 The serializer creates the instances with the public parameterless constructor, or with the public constructor when

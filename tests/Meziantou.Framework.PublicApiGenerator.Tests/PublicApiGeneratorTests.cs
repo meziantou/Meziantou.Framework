@@ -2817,6 +2817,78 @@ public sealed class PublicApiGeneratorTests
         Assert.Equal([first, expected], files.Select(file => file.RelativePath));
     }
 
+    [Theory]
+    [InlineData("System.Collections.Generic", "Generic.List<T> a;", "global::Generic.List<T> a;")]
+    [InlineData("System.Collections.Generic", "Generic.A x = Generic.B;", "global::Generic.A x = global::Generic.B;")]
+    [InlineData("System.Collections.Generic", "global::Generic.A a;", "global::Generic.A a;")]
+    [InlineData("System.Collections.Generic", "MyGeneric.A a; System.Generic.B b; _Generic.C c; Generic1.D d; Generic e;", "MyGeneric.A a; System.Generic.B b; _Generic.C c; Generic1.D d; Generic e;")]
+    [InlineData("System.Collections.Generic", "string a = \"Generic.A\"; char b = '\\''; Generic.C c;", "string a = \"Generic.A\"; char b = '\\''; global::Generic.C c;")]
+    [InlineData("System.Collections.Generic", "string a = \"\\\" Generic.A\"; Generic.B b;", "string a = \"\\\" Generic.A\"; global::Generic.B b;")]
+    [InlineData("System", "System.IDisposable", "global::System.IDisposable")]
+    public void QualifyConflictingNamespaceReferences(string namespaceName, string source, string expected)
+    {
+        var conflictingNamespaceReference = PublicApiEmitter.GetConflictingNamespaceReference(namespaceName);
+
+        Assert.Equal(expected, PublicApiEmitter.QualifyConflictingNamespaceReferences(source, conflictingNamespaceReference!));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Demo.")]
+    public void GetConflictingNamespaceReference_NoLastSegment(string namespaceName)
+    {
+        Assert.Null(PublicApiEmitter.GetConflictingNamespaceReference(namespaceName));
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("a", "    a\n")]
+    [InlineData("a\n", "    a\n")]
+    [InlineData("a\r\n\r\nb", "    a\n\n    b\n")]
+    [InlineData("a\rb\n\nc\r", "    a\n    b\n\n    c\n")]
+    [InlineData("\n", "\n")]
+    public void AppendIndented_SplitsLinesLikeStringReader(string text, string expected)
+    {
+        var sb = new StringBuilder();
+        PublicApiEmitter.AppendIndented(sb, text, indentationLevel: 1);
+
+        Assert.Equal(expected.ReplaceLineEndings(Environment.NewLine), sb.ToString());
+    }
+
+    [Fact]
+    public void DeclarationWriter_TextOnly_GivesTheTextOfTheSegments()
+    {
+        static void Write(DeclarationWriter writer)
+        {
+            writer.Keyword("public");
+            writer.Space();
+            writer.Text("A");
+            writer.WriteLine();
+            var nested = writer.CreateWriter();
+            nested.Indentation = 1;
+            nested.Punctuation("{");
+            nested.WriteLine();
+            nested.WriteLine();
+            nested.Text("x\ny");
+            nested.WriteLine();
+            writer.Indentation = 1;
+            writer.Write(nested);
+            writer.Write(new DeclarationWriter("\n"));
+        }
+
+        var segments = new DeclarationWriter("\n");
+        var text = new DeclarationWriter("\n", textOnly: true);
+        Write(segments);
+        Write(text);
+
+        Assert.Equal("public A\n        {\n\n        x\ny\n", segments.GetText());
+        Assert.Equal(segments.GetText(), text.GetText());
+        Assert.Equal(segments.EndsWith('\n'), text.EndsWith('\n'));
+        Assert.Equal(segments.ContainsText('{'), text.ContainsText('{'));
+        Assert.Throws<InvalidOperationException>(() => segments.Write(text));
+        Assert.Throws<InvalidOperationException>(() => text.ToDeclaration());
+    }
+
     [Fact]
     public async Task GenerateToDirectory_DeleteUnexpectedFiles()
     {

@@ -129,6 +129,13 @@ public partial class Document : Node
     /// </summary>
     internal bool HasNamedItemCandidates { get; set; }
 
+    /// <summary>
+    /// Whether an aria-owns attribute was ever set on an element of the document, or on the <see cref="ElementInternals"/> of
+    /// a custom element: the relocations of aria-owns (https://w3c.github.io/aria/#aria-owns) of a document without them are
+    /// empty, without walking its tree for each element whose accessibility properties are computed.
+    /// </summary>
+    internal bool HasAriaOwns { get; set; }
+
     /// <summary>The named elements of the document tree by name, created on the first property access once the document has candidate elements.</summary>
     internal DocumentNamedItemMap? NamedItemMap { get; set; }
 
@@ -261,6 +268,14 @@ public partial class Document : Node
     /// changes): used to invalidate the caches that only depend on the structure of the trees (e.g. getElementsByTagName()).
     /// </summary>
     internal int TreeVersion { get; private set; }
+
+    /// <summary>
+    /// Incremented when an <c>id</c> or a <c>name</c> attribute of an element of the document changes: with the elements of a
+    /// collection, it invalidates its named properties (see <see cref="HtmlCollection"/>), which only depend on these attributes.
+    /// </summary>
+    internal int IdOrNameAttributeVersion { get; private set; }
+
+    internal void OnIdOrNameAttributeChanged() => IdOrNameAttributeVersion++;
 
     /// <summary>Increments <see cref="TreeVersion"/> and <see cref="DomVersion"/>, when a node is inserted in or removed from a parent.</summary>
     internal void IncrementTreeVersion(Node parent, Node child, bool removed)
@@ -789,7 +804,24 @@ public partial class Document : Node
             HasNamedItemCandidates = true;
         }
 
-        var nodes = node.ShadowIncludingInclusiveDescendants().ToList();
+        if (oldDocument.HasAriaOwns)
+        {
+            HasAriaOwns = true;
+        }
+
+        // The fragment parser adopts the children of its root one by one, before their own children are inserted: no list is
+        // allocated for a leaf node
+        List<Node>? nodes = null;
+        if (node.FirstChild is not null || node is Element { AttachedShadowRoot: not null })
+        {
+            nodes = [];
+            foreach (var descendant in node.WalkShadowIncludingInclusiveDescendants())
+            {
+                nodes.Add(descendant);
+            }
+        }
+
+        var count = nodes?.Count ?? 1;
         var hasRegistries = oldDocument.CustomElementRegistryStorage is not null || CustomElementRegistryStorage is not null;
         var oldRealmWindow = oldDocument.RealmWindow;
         if (ReferenceEquals(oldRealmWindow, RealmWindow))
@@ -797,8 +829,10 @@ public partial class Document : Node
             oldRealmWindow = null;
         }
 
-        foreach (var inclusiveDescendant in nodes)
+        for (var i = 0; i < count; i++)
         {
+            var inclusiveDescendant = nodes is null ? node : nodes[i];
+
             // The node keeps the realm where it was created
             if (oldRealmWindow is not null)
             {
@@ -844,8 +878,9 @@ public partial class Document : Node
             }
         }
 
-        foreach (var inclusiveDescendant in nodes)
+        for (var i = 0; i < count; i++)
         {
+            var inclusiveDescendant = nodes is null ? node : nodes[i];
             if (inclusiveDescendant is Element { IsCustom: true } customElement)
             {
                 CustomElementReactions.EnqueueCallbackReaction(customElement, CustomElementCallbackKind.Adopted, [oldDocument, this]);

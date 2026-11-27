@@ -70,6 +70,27 @@ public sealed class HardeningTests
         Assert.InRange(pretty.Length, Depth * 11, Depth * 11 * 30);
     }
 
+    [Theory]
+    [InlineData("", "a\0", "a")]
+    [InlineData("", "a</x>", "a")]
+    [InlineData("<svg>", "a\0", "a�")]
+    public void Html_TextOfManyCharacterTokens_IsAppendedInLinearTime(string prefix, string unit, string text)
+    {
+        // Each NULL character and each ignored tag ends a character token: the characters of the next token are appended to the
+        // same text node (copying its data for each token took minutes)
+        const int Count = 200_000;
+        var html = prefix + string.Concat(Enumerable.Repeat(unit, Count));
+        var expected = string.Concat(Enumerable.Repeat(text, Count));
+
+        var fragment = new HtmlDocumentParser().ParseFragment(html, HtmlDocumentParser.ParseDocument("").Body!);
+        var fragmentParent = prefix.Length == 0 ? fragment : fragment.FirstChild!;
+        Assert.Equal(expected, Assert.IsType<Text>(Assert.Single(fragmentParent.ChildNodes)).Data);
+
+        var body = HtmlDocumentParser.ParseDocument(html).Body!;
+        var documentParent = prefix.Length == 0 ? body : body.FirstChild!;
+        Assert.Equal(expected, Assert.IsType<Text>(Assert.Single(documentParent.ChildNodes)).Data);
+    }
+
     [Fact]
     public void Html_ManyOptions_AreParsed()
     {

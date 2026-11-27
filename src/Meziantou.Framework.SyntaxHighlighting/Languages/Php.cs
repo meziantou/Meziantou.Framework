@@ -26,7 +26,7 @@ internal static class Php
         var classStaticMember = new Mode { BeginParts = [ClassNameStartRe + "(\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$])", "::(?=(?!class\\b))"], BeginScope = new Dictionary<int, string> { [1] = "title.class" } };
         var classClassKeyword = new Mode { BeginParts = [ClassNameStartRe + "(\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$])", "::", "class"], BeginScope = new Dictionary<int, string> { [1] = "title.class", [3] = "variable.language" } };
         var blockComment = new Mode { Scope = "comment", Begin = "/\\*", End = "\\*/" };
-        var blockCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var blockCommentDocTag = CommonModes.DocTag;
         var blockCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var stringWrapper = new Mode { Scope = "string" };
         var doubleQuotedString = new Mode { Scope = "string", Begin = "\"", End = "\"" };
@@ -48,14 +48,14 @@ internal static class Php
         var pascalCaseName = new Mode { Match = ClassNameStartRe + "(\\\\?[A-Z][a-z0-9_\\x7f-\\xff]+|\\\\?[A-Z]+(?=[A-Z][a-z0-9_\\x7f-\\xff])){1,}(?![A-Za-z0-9])(?![$])" };
         var upperCaseName = new Mode { Match = "[A-Z]+(?![A-Za-z0-9])(?![$])" };
         var hashComment = new Mode { Scope = "comment", Begin = "#", End = "$" };
-        var hashCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var hashCommentDocTag = CommonModes.DocTag;
         var hashCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var lineComment = new Mode { Scope = "comment", Begin = "//", End = "$" };
-        var lineCommentDocTag = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var lineCommentDocTag = CommonModes.DocTag;
         var lineCommentSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var phpDocComment = new Mode { Scope = "comment", Begin = "/\\*", End = "\\*/" };
         var phpDocAnnotation = new Mode { Scope = "doctag", Match = "@[A-Za-z]+" };
-        var phpDocDocTagMarker = new Mode { Scope = "doctag", Begin = "[ ]*(?=(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):)", End = "(TODO|FIXME|NOTE|BUG|OPTIMIZE|HACK|XXX):", ExcludeBegin = true };
+        var phpDocDocTagMarker = CommonModes.DocTag;
         var phpDocSentence = new Mode { Begin = "[ ]+((?:I|a|is|so|us|to|at|if|in|it|on|[A-Za-z]+['](d|ve|re|ll|t|s|n)|[A-Za-z]+[-][a-z]+|[A-Za-z][a-z]{2,})[.]?[:]?([.][ ]|[ ])){3}" };
         var haltCompiler = new Mode { Match = "__halt_compiler\\(\\);", Keywords = Keywords.FromWords(["__halt_compiler"]) };
         var afterHaltComment = new Mode { Scope = "comment", End = "\\b\\B" };

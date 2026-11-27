@@ -137,9 +137,13 @@ public sealed class WebIdlAgent<TAdapter, TValue>
     [field: UnconditionalSuppressMessage("Trimming", "IL2091", Justification = CachesNeverCreateValues)]
     internal ConditionalWeakTable<Delegate, TValue> DelegateFunctions { get; } = [];
 
-    [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = CachesNeverCreateValues)]
-    [field: UnconditionalSuppressMessage("Trimming", "IL2091", Justification = CachesNeverCreateValues)]
-    internal ConditionalWeakTable<object, TValue> FrozenArrays { get; } = [];
+    /// <summary>
+    /// The frozen arrays of the .NET values (see <see cref="WebIdlRealm{TAdapter, TValue}.FromFrozenArray{T}"/>). The arrays are
+    /// weak references: a value can outlive the agent (a static list, <c>ClientHintsOptions.Default.Brands</c>,
+    /// <c>Array.Empty</c>...), and an array that the table kept alive would keep the agent alive with the table. A frozen array
+    /// has no expando, so a script can only compare it with a reference it holds, which keeps it alive.
+    /// </summary>
+    internal ConditionalWeakTable<object, WeakReference<TValue>> FrozenArrays { get; } = [];
 
     internal ConditionalWeakTable<TValue, JsCustomElementConstructor<TAdapter, TValue>> CustomElementConstructors { get; } = [];
 

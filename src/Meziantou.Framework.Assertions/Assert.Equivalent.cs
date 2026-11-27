@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -137,7 +138,7 @@ public partial class Assert
             return new StructuralTypeInfo(type, StructuralTypeKind.MultiDimensionalArray);
 
         if (typeof(System.Collections.IEnumerable).IsAssignableFrom(type))
-            return new StructuralTypeInfo(type, StructuralTypeKind.Enumerable) { CollectionKind = GetStructuralCollectionKind(type) };
+            return new StructuralTypeInfo(type, StructuralTypeKind.Enumerable) { CollectionKind = GetStructuralCollectionKind(type), LeafSequenceKind = GetLeafSequenceKind(type) };
 
         return new StructuralTypeInfo(type, StructuralTypeKind.Object)
         {
@@ -517,8 +518,13 @@ public partial class Assert
     /// </summary>
     private sealed class StructuralComparer(StructuralComparisonOptions options, bool reportDifference)
     {
-        private readonly HashSet<StructuralReferencePair> _visited = [];
+        /// <summary>Number of visited pairs searched linearly before they are indexed in <see cref="_visited"/>.</summary>
+        private const int MaxLinearlySearchedVisitedPairs = 8;
+
+        // _visitedAdditions holds the visited pairs in the order they were visited, which is what a candidate comparison
+        // rolls back. Most comparisons visit a few objects, so the pairs are only indexed once there are enough of them.
         private readonly List<StructuralReferencePair> _visitedAdditions = [];
+        private HashSet<StructuralReferencePair>? _visited;
         private readonly StructuralPath _path = new();
         private int _suppressedReportingCount = reportDifference ? 0 : 1;
 
@@ -533,6 +539,11 @@ public partial class Assert
 
             if (expected is null || actual is null)
                 return Fail(expected, actual, (expected ?? actual) is StructuralThrownValue ? StructuralMemberThrewReason : StructuralValuesDifferReason);
+
+            // Strings are the most common leaves. Comparing them as the leaf comparison below does skips looking up the
+            // information of their type.
+            if (expected is string expectedString && actual is string actualString)
+                return string.Equals(expectedString, actualString, options.StringComparison) || Fail(expected, actual, StructuralValuesDifferReason);
 
             var expectedInfo = GetStructuralTypeInfo(expected.GetType());
             var actualInfo = GetStructuralTypeInfo(actual.GetType());
@@ -553,11 +564,8 @@ public partial class Assert
 
             if (!expectedInfo.Type.IsValueType && !actualInfo.Type.IsValueType)
             {
-                var pair = new StructuralReferencePair(expected, actual);
-                if (!_visited.Add(pair))
+                if (!TryVisit(new StructuralReferencePair(expected, actual)))
                     return true;
-
-                _visitedAdditions.Add(pair);
             }
 
             if (expectedInfo.GetSequenceItems is not null)
@@ -638,11 +646,38 @@ public partial class Assert
 
             for (var index = _visitedAdditions.Count - 1; index >= visitedAdditionsCount; index--)
             {
-                _visited.Remove(_visitedAdditions[index]);
+                _visited?.Remove(_visitedAdditions[index]);
                 _visitedAdditions.RemoveAt(index);
             }
 
             return result;
+        }
+
+        /// <summary>Records that the pair is being compared, and returns <see langword="false"/> when it already was.</summary>
+        private bool TryVisit(StructuralReferencePair pair)
+        {
+            if (_visited is null)
+            {
+                foreach (var visitedPair in CollectionsMarshal.AsSpan(_visitedAdditions))
+                {
+                    if (visitedPair.Equals(pair))
+                        return false;
+                }
+
+                if (_visitedAdditions.Count < MaxLinearlySearchedVisitedPairs)
+                {
+                    _visitedAdditions.Add(pair);
+                    return true;
+                }
+
+                _visited = [.. _visitedAdditions];
+            }
+
+            if (!_visited.Add(pair))
+                return false;
+
+            _visitedAdditions.Add(pair);
+            return true;
         }
 
         private bool CompareThrownValues(object expected, object actual)
@@ -751,6 +786,11 @@ public partial class Assert
             // A set has no meaningful order, so comparing it by position against anything would depend on its internal layout.
             if (options.IgnoreCollectionOrder || expectedInfo.CollectionKind is StructuralCollectionKind.Set || actualInfo.CollectionKind is StructuralCollectionKind.Set)
                 return CompareUnordered([.. EnumerateObjects(expected)], [.. EnumerateObjects(actual)], expectedLengths: null, actualLengths: null);
+
+            // Arrays and lists of leaf values are compared without boxing their items. Only a positive result is trusted:
+            // the walk below finds the difference to report.
+            if (LeafSequencesEqual(expected, expectedInfo.LeafSequenceKind, actual, actualInfo.LeafSequenceKind, options.StringComparison))
+                return true;
 
             return CompareOrdered(expected, actual, lengths: null);
         }
@@ -1273,6 +1313,9 @@ public partial class Assert
         public bool IsKeyValuePair { get; init; }
         public StructuralCollectionKind CollectionKind { get; init; }
         public Func<object, System.Collections.IEnumerable>? GetSequenceItems { get; init; }
+
+        /// <summary>Gets whether the type is an array or a list of leaf values that can be compared without boxing them.</summary>
+        public LeafSequenceKind LeafSequenceKind { get; init; } = LeafSequenceKind.None;
 
         /// <summary>Gets the members, created on first use as only walked types need them. A race creates identical sets.</summary>
         public StructuralMemberSet MemberSet => _memberSet ??= new StructuralMemberSet(Type);

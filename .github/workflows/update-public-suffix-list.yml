@@ -24,7 +24,7 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       # Meziantou.Framework.Uri and Meziantou.Framework.WebPlatform are both generated from

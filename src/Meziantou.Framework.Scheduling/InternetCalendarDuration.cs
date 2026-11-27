@@ -39,7 +39,7 @@ internal sealed class InternetCalendarDuration
             index++;
         }
 
-        if (index >= value.Length || char.ToUpperInvariant(value[index]) is not 'P')
+        if (index >= value.Length || ToUpperAscii(value[index]) is not 'P')
             return Fail(value, out error);
 
         index++;
@@ -48,7 +48,7 @@ internal sealed class InternetCalendarDuration
         var hasDate = false;
         if (TryReadNumber(value, ref index, out var number))
         {
-            switch (index < value.Length ? char.ToUpperInvariant(value[index]) : '\0')
+            switch (index < value.Length ? ToUpperAscii(value[index]) : '\0')
             {
                 case 'W':
                     // dur-week has no time part.
@@ -75,7 +75,7 @@ internal sealed class InternetCalendarDuration
 
         if (index < value.Length)
         {
-            if (char.ToUpperInvariant(value[index]) is not 'T')
+            if (ToUpperAscii(value[index]) is not 'T')
                 return Fail(value, out error);
 
             index++;
@@ -89,7 +89,7 @@ internal sealed class InternetCalendarDuration
                 if (!TryReadNumber(value, ref index, out number) || index >= value.Length)
                     return Fail(value, out error);
 
-                var (unit, factor) = char.ToUpperInvariant(value[index]) switch
+                var (unit, factor) = ToUpperAscii(value[index]) switch
                 {
                     'H' => (1, 3600L),
                     'M' => (2, 60L),
@@ -180,6 +180,9 @@ internal sealed class InternetCalendarDuration
 
         return index > start;
     }
+
+    // The letters of a duration are ASCII: char.ToUpperInvariant would also map other letters to them, such as 'ſ' (U+017F) to 'S'.
+    private static char ToUpperAscii(char c) => char.IsAsciiLetterLower(c) ? (char)(c - ('a' - 'A')) : c;
 
     private static bool Fail(string value, out string? error)
     {

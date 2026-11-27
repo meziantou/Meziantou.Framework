@@ -5,11 +5,13 @@ using Meziantou.Framework.Email.Storage;
 using Meziantou.Framework.FileConversionTool.Archives;
 using Meziantou.Framework.FileConversionTool.Epub;
 using Meziantou.Framework.FileConversionTool.Inputs;
+using Meziantou.Framework.FileConversionTool.Layout;
 using Meziantou.Framework.FileConversionTool.Mobi;
 using Meziantou.Framework.FileConversionTool.Outputs;
 using Meziantou.Framework.FileConversionTool.Tests;
 using Meziantou.Framework.Fuzzing;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.WebPlatform.Dom;
 using ZipArchive = System.IO.Compression.ZipArchive;
 using ZipArchiveMode = System.IO.Compression.ZipArchiveMode;
 
@@ -17,7 +19,7 @@ namespace Meziantou.Framework.FileConversionTool.Fuzz;
 
 /// <summary>
 /// The inputs the tool reads besides the image, PDF and archive files (fuzzed in their own projects): the output name
-/// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the URLs of the local files of HTML documents, the EPUB packages, the MOBI and KF8 books and their fonts, the pages of the comic book archives and the copy of the entries of an
+/// templates, the page ranges, the PDF permissions, the conversions between Markdown and HTML, the URLs of the local files of HTML documents, the rendering of the SVG documents, the EPUB packages, the MOBI and KF8 books and their fonts, the pages of the comic book archives and the copy of the entries of an
 /// archive to another format, the detection of the email formats and the conversions between the email message formats.
 /// </summary>
 public static class FileConversionFuzzTargets
@@ -72,6 +74,13 @@ public static class FileConversionFuzzTargets
     ];
 
     private static readonly string[] ArchiveTokens = ["PK\u0003\u0004", "PK\u0001\u0002", "PK\u0005\u0006", "7z\u00bc\u00af\u0027\u001c", "Rar!\u001a\u0007\u0001\u0000", "Rar!\u001a\u0007\u0000", "ustar", "ustar\u000000", "\u001f\u008b", "BZh9", "\u00fd7zXZ\u0000", "LZIP", ".png", ".jpg", "/", "__MACOSX/", "ComicInfo.xml"];
+    private static readonly string[] SvgTokens =
+    [
+        "<?xml version=\"1.0\"?>", "<!DOCTYPE svg>", "<svg", "</svg>", " xmlns=\"http://www.w3.org/2000/svg\"", " xmlns:xlink=\"http://www.w3.org/1999/xlink\"", " width=\"", " height=\"", " viewBox=\"", "\"",
+        "0 0 10 5", "100%", "auto", "px", "em", "in", "mm", "-1", "1e9", "<rect", "<circle", "<text", "<image", " href=\"", "data:image/svg+xml,", " fill=\"red\"", " style=\"", "transform: scale(100)",
+        "<style>", "</style>", "<g>", "</g>", "<use", "<filter", "/>", ">", "\u001f\u008b",
+    ];
+
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
@@ -91,8 +100,9 @@ public static class FileConversionFuzzTargets
         new("file-conversion-mobi-font", MobiFontTarget) { Seeds = GetMobiFontSeeds, Dictionary = ["FONT", "OTTO", "wOFF", "wOF2", "\u0000\u0001\u0000\u0000", "x\u009c"] },
         new("file-conversion-mobi-html", MobiHtmlTarget) { Seeds = GetMobiHtmlSeeds, Dictionary = MobiHtmlTokens },
         new("file-conversion-palmdoc", PalmDoc) { Seeds = GetMobiHtmlSeeds, Dictionary = MobiHtmlTokens },
-        new("file-conversion-detect-format", DetectFormat) { Seeds = GetDetectFormatSeeds, Dictionary = [.. ArchiveTokens, .. EmailTokens, "%PDF-", "mimetypeapplication/epub+zip", "\u0089PNG", "GIF89a", "RIFF", "WEBP", "BOOKMOBI"] },
+        new("file-conversion-detect-format", DetectFormat) { Seeds = GetDetectFormatSeeds, Dictionary = [.. ArchiveTokens, .. EmailTokens, "<svg", "<?xml", "<!DOCTYPE svg", "%PDF-", "mimetypeapplication/epub+zip", "\u0089PNG", "GIF89a", "RIFF", "WEBP", "BOOKMOBI"] },
         new("file-conversion-email-message", EmailMessage) { Seeds = GetEmailSeeds, Dictionary = EmailTokens },
+        new("file-conversion-svg", SvgTarget) { Seeds = GetSvgSeeds, Dictionary = SvgTokens },
     ];
 
     private static void OutputTemplate(ReadOnlySpan<byte> data)
@@ -423,6 +433,10 @@ public static class FileConversionFuzzTargets
         }
 
         FuzzAssert.Equal(MobiBook.HasSignature(data), format == FileFormat.Mobi, "A file is detected as a MOBI book without its signature, or the reverse");
+        if (format == FileFormat.Svg)
+        {
+            FuzzAssert.True(data.IndexOf("<svg"u8) >= 0 || Encoding.ASCII.GetString(data).Contains("<!DOCTYPE svg", StringComparison.OrdinalIgnoreCase), "A file without an svg element is detected as an SVG document");
+        }
 
         // The extension of a comic book archive makes an archive a comic book archive, whatever its container
         stream.Position = 0;
@@ -431,6 +445,40 @@ public static class FileConversionFuzzTargets
         {
             FuzzAssert.Equal(format.ArchiveType, comicFormat.ArchiveType, "The container of a comic book archive is not the one of the archive");
         }
+    }
+
+    /// <summary>
+    /// Renders an SVG document (or a gzip-compressed one) to an image that fits in 32x32 pixels: the image has the size of the
+    /// document scaled to fit, whatever the document paints out of its box.
+    /// </summary>
+    private static void SvgTarget(ReadOnlySpan<byte> data)
+    {
+        const int Size = 32;
+        byte[] content;
+        try
+        {
+            content = SvgInputDocument.ReadContent(data.ToArray());
+        }
+        catch (InvalidDataException)
+        {
+            // A gzip stream that is not valid
+            return;
+        }
+
+        ConversionPage page;
+        try
+        {
+            page = SvgRenderer.RenderToImage(new InMemorySvgLoader(content), InMemorySvgLoader.Url, "drawing.svg", pageNumber: 1, imageWidth: Size, imageHeight: Size, CancellationToken.None);
+        }
+        catch (ConversionException)
+        {
+            // Not an SVG document, or a document with an empty size
+            return;
+        }
+
+        using var image = page.RenderImage(CancellationToken.None);
+        FuzzAssert.True(image.Size.Width is >= 1 and <= Size && image.Size.Height is >= 1 and <= Size, "The image of an SVG document does not fit in --svg-width and --svg-height");
+        FuzzAssert.True(image.Size.Width == Size || image.Size.Height == Size, "The image of an SVG document is not scaled to fit --svg-width and --svg-height");
     }
 
     /// <summary>
@@ -851,7 +899,38 @@ public static class FileConversionFuzzTargets
         }
     }
 
-    private static IEnumerable<FuzzSeed> GetDetectFormatSeeds() => GetArchiveSeeds().Concat(GetMobiSeeds()).Concat(GetKf8Seeds()).Concat(GetEmailSeeds()).Append(new FuzzSeed("pst", TestFiles.CreatePst())).Append(new FuzzSeed("mbox", TestFiles.CreateMbox("First", "Second")));
+    private static IEnumerable<FuzzSeed> GetSvgSeeds()
+    {
+        // The documents of the unit tests
+        string[] documents =
+        [
+            """<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20"><rect width="20" height="20" fill="red"/><circle cx="30" cy="10" r="10" fill="blue"/></svg>""",
+            """<?xml version="1.0" encoding="UTF-8"?>""" + "\n" + """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 5"><rect width="5" height="5" fill="#00ff00"/></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 64 32"><rect width="100%" height="100%" fill="red"/></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" height="10" viewBox="0,0,10,5"><rect width="100%" height="100%" fill="red"/></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" width="2em" height="1in"/>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200"><rect width="200" height="200" fill="red"/><text x="250" y="100">Hello</text></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="10" height="10"><image width="10" height="10" xlink:href="images/pixel.png"/></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" width="20" height="10" style="transform: scale(100)"><rect width="20" height="10"/></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg" width="0" height="10"></svg>""",
+            """<svg xmlns="http://www.w3.org/2000/svg"><rect""",
+            """<svg width="10" height="10"></svg>""",
+        ];
+        for (var i = 0; i < documents.Length; i++)
+        {
+            yield return new FuzzSeed($"svg-{i}", Encoding.UTF8.GetBytes(documents[i]));
+        }
+
+        using var compressed = new MemoryStream();
+        using (var gzip = new System.IO.Compression.GZipStream(compressed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true))
+        {
+            gzip.Write(Encoding.UTF8.GetBytes(documents[0]));
+        }
+
+        yield return new FuzzSeed("svgz", compressed.ToArray());
+    }
+
+    private static IEnumerable<FuzzSeed> GetDetectFormatSeeds() => GetArchiveSeeds().Concat(GetSvgSeeds()).Concat(GetMobiSeeds()).Concat(GetKf8Seeds()).Concat(GetEmailSeeds()).Append(new FuzzSeed("pst", TestFiles.CreatePst())).Append(new FuzzSeed("mbox", TestFiles.CreateMbox("First", "Second")));
 
     private static IEnumerable<FuzzSeed> GetArchiveSeeds()
     {
@@ -864,5 +943,14 @@ public static class FileConversionFuzzTargets
         yield return new FuzzSeed("tar-gz", TestFiles.CreateTar(gzip: true, ("a.txt", "A"u8.ToArray()), ("b/c.txt", "C"u8.ToArray())));
         yield return new FuzzSeed("png", TestFiles.CreateImage(1, 1, ImageFormat.Png));
         yield return new FuzzSeed("pdf", TestFiles.CreatePdf(1));
+    }
+
+    /// <summary>Serves an SVG document, and nothing else: the resources it references are network errors.</summary>
+    private sealed class InMemorySvgLoader(byte[] content) : DocumentLoader
+    {
+        public const string Url = "https://local.invalid/drawing.svg";
+
+        public override ValueTask<DocumentResource?> LoadAsync(DocumentRequest request, CancellationToken cancellationToken)
+            => ValueTask.FromResult(request.Url == Url ? new DocumentResource(content) { Headers = [new("Content-Type", "image/svg+xml")] } : null);
     }
 }

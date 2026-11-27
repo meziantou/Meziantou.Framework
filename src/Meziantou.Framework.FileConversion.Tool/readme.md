@@ -1,11 +1,12 @@
 # Meziantou.Framework.FileConversion.Tool
 
 `Meziantou.Framework.FileConversion.Tool` converts files from one format to another: images (PNG, JPEG, WebP, AVIF,
-HEIC, JPEG XL, TIFF, GIF...), PDF documents, EPUB and Kindle (MOBI, AZW3) books, Markdown and HTML documents, comic book archives (CBZ, CBR, CB7, CBT), archives (zip,
+HEIC, JPEG XL, TIFF, GIF...), SVG drawings, PDF documents, EPUB and Kindle (MOBI, AZW3) books, Markdown and HTML documents, comic book archives (CBZ, CBR, CB7, CBT), archives (zip,
 7z, RAR, tar, .tar.gz, .tar.bz2, .tar.xz...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, OFT, EMLX,
 winmail.dat).
 
 - an image to another image format
+- an SVG drawing to an image, or to a PDF document whose drawing stays vector graphics
 - a PDF document to one image per page, and images to a PDF document
 - an EPUB or Kindle book (MOBI, AZW3) to a PDF document, a comic book archive or images
 - a comic book archive to a PDF document, images or another comic book archive, and images to a comic book archive
@@ -30,6 +31,13 @@ Convert an image, next to the input file:
 
 ```bash
 Meziantou.Framework.FileConversion.Tool photo.png --output-format jpg --jpeg-quality 85
+```
+
+Render an SVG drawing to a PNG image 512 pixels wide, or to a vector PDF document:
+
+```bash
+Meziantou.Framework.FileConversion.Tool logo.svg --output-format png --svg-width 512
+Meziantou.Framework.FileConversion.Tool logo.svg --output-format pdf
 ```
 
 Convert the pages of a PDF document to images, named with a template:
@@ -96,7 +104,7 @@ Meziantou.Framework.FileConversion.Tool --list-formats
 
 ```
 Description:
-  Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)
+  Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, SVG, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)
 
 Usage:
   Meziantou.Framework.FileConversion.Tool [<inputs>...] [options]
@@ -116,6 +124,8 @@ Options:
   --max-width <max-width>                                                                                                     Shrink the images to this width, in pixels, keeping their aspect ratio
   --max-height <max-height>                                                                                                   Shrink the images to this height, in pixels, keeping their aspect ratio
   --dpi <dpi>                                                                                                                 The resolution of the images of the PDF, EPUB and MOBI pages, in dots per inch [default: 150]
+  --svg-width <svg-width>                                                                                                     The width of the images of the SVG documents, in pixels. With only --svg-width, the height keeps the aspect ratio. Default: the width of the document, one pixel per CSS pixel
+  --svg-height <svg-height>                                                                                                   The height of the images of the SVG documents, in pixels. With --svg-width too, the image fits in both, keeping the aspect ratio. Default: the height of the document
   --background <background>                                                                                                   The color the transparent pixels are composited over in JPEG output, in hexadecimal notation [default: #ffffff]
   --jpeg-quality <jpeg-quality>                                                                                               The quality of the JPEG images, from 1 to 100. Default: 90
   --webp-quality <webp-quality>                                                                                               The quality of the lossy WebP images, from 0 to 100
@@ -130,7 +140,7 @@ Options:
   --tiff-compression <CcittGroup3|CcittGroup4|CcittModifiedHuffman|Deflate|Jpeg|Lzw|None|PackBits>                            The compression of the TIFF images
   --gif-max-colors <gif-max-colors>                                                                                           The maximum number of colors of the GIF images, from 2 to 256
   --pdf-password <pdf-password>                                                                                               The password of the encrypted PDF inputs
-  --pdf-render-annotations                                                                                                    Render the annotations of the PDF pages (form fields, stamps, comments) in the images. Use '--pdf-render-annotations false' to leave them out. Default: true
+  --pdf-render-annotations                                                                                                    Render the annotations of the PDF pages (form fields, stamps, comments) in the images. Use '--pdf-render-annotations false' to leave them out [default: true]
   --page-size <page-size>                                                                                                     The size of the pages of the images in a PDF output: 'fit' (the size of each image), A3, A4, A5, Letter, Legal, or a size such as 210x297mm, 8.5x11in or 595x842pt [default: fit]
   --page-margin <page-margin>                                                                                                 The margin around the images in a PDF output, in millimeters [default: 0]
   --page-orientation <Auto|Landscape|Portrait>                                                                                The orientation of the pages of a fixed --page-size. Auto turns the page of a landscape image [default: Auto]
@@ -167,7 +177,7 @@ Options:
   --zip-password <zip-password>                                                                                               Encrypt the entries of a zip output with this password
   --zip-encryption <Aes128|Aes192|Aes256|ZipCrypto>                                                                           The encryption of the entries of a zip output, with --zip-password. ZipCrypto is weak, but older tools read only this one [default: Aes256]
   --7z-compression-method <BZip2|Copy|Deflate|Lzma|Lzma2|Ppmd>                                                                The compression method of a 7z output. Default: Lzma2
-  --7z-solid                                                                                                                  Compress the files of a 7z output together, which makes it smaller. Use '--7z-solid false' to compress each file on its own. Default: true
+  --7z-solid                                                                                                                  Compress the files of a 7z output together, which makes it smaller. Use '--7z-solid false' to compress each file on its own [default: true]
   --7z-password <7z-password>                                                                                                 Encrypt the content of a 7z output with this password (AES-256)
   --7z-encrypt-headers                                                                                                        Also encrypt the names of the files of a 7z output, with --7z-password
   --mbox-format <Mboxcl|Mboxcl2|Mboxo|Mboxrd>                                                                                 The variant of the mbox files of an mbox input or output: how the lines of the messages that start with 'From ' are escaped. Mboxrd is the format of most mail tools [default: Mboxrd]

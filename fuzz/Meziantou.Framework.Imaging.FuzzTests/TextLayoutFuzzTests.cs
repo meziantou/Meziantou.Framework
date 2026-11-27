@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -10,7 +11,8 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// spaces, line breaks, soft hyphens, joiners, directional controls, lone surrogates) with random styles and options,
 /// laid out with the fonts of the corpus and drawn. The fonts are valid: nothing may throw. The lines of a layout follow
 /// each other and cover the text, or the layout says it is truncated; a wrapped line fits its width unless nothing can
-/// be broken; every measure is a finite number; the path of a layout has the bounds of what it measures. The budget is
+/// be broken; every measure is a finite number; the path of a layout has the bounds of what it measures. Shaping
+/// the parts of a text cut into lines again gives the layout keeping the glyphs of the parts gives. The budget is
 /// set by <see cref="FuzzSettings"/>.
 /// </summary>
 public sealed class TextLayoutFuzzTests
@@ -162,7 +164,7 @@ public sealed class TextLayoutFuzzTests
                 var layout = TextLayout.Create(rich, options);
                 wrapped += layout.LineCount > 1 ? 1 : 0;
                 truncated += layout.IsTruncated ? 1 : 0;
-                if (Check(rich, options, layout) is { } defect)
+                if ((Check(rich, options, layout) ?? CheckShapedGlyphs(rich, options)) is { } defect)
                 {
                     failures.Add($"iteration {iteration}: {defect}\n    text: {Escape(rich.Text)}\n    options: MaxWidth={options.MaxWidth} MaxHeight={options.MaxHeight} MaxLines={options.MaxLines} {options.Wrapping} {options.WordBreak} {options.LineBreak} {options.OverflowWrap} {options.Hyphenation} {options.Alignment} {options.Direction} {options.Trimming} {options.LineBreakStrategy}");
                     continue;
@@ -221,6 +223,24 @@ public sealed class TextLayoutFuzzTests
             Assert.True(wrapped > executed / 4, "Too few layouts have several lines.");
             Assert.True(truncated > 0, "No layout is truncated.");
         }
+    }
+
+    /// <summary>
+    /// Checks that keeping the glyphs of the parts of the text cut where shaping does not depend on the text on the other
+    /// side gives the layout shaping each part again gives.
+    /// </summary>
+    private static string? CheckShapedGlyphs(RichText text, TextLayoutOptions options)
+    {
+        var spans = text.SpanList.ToArray();
+        var kept = TextLayoutEngine.Create(text.Text, spans, options, 1, options.MaxWidth, options.MaxHeight);
+        var shaped = TextLayoutEngine.Create(text.Text, spans, options, 1, options.MaxWidth, options.MaxHeight, reusesShapedGlyphs: false);
+        return !kept.Lines.SequenceEqual(shaped.Lines) ? "keeping the glyphs of the parts of the text gives other lines than shaping them again"
+            : !kept.Glyphs.SequenceEqual(shaped.Glyphs) ? "keeping the glyphs of the parts of the text gives other glyphs than shaping them again"
+            : !kept.Positions.SequenceEqual(shaped.Positions) || !kept.Anchors.SequenceEqual(shaped.Anchors) ? "keeping the glyphs of the parts of the text gives other positions than shaping them again"
+            : !kept.Runs.SequenceEqual(shaped.Runs) || !kept.Decorations.SequenceEqual(shaped.Decorations) || !kept.Backgrounds.SequenceEqual(shaped.Backgrounds) ? "keeping the glyphs of the parts of the text gives other runs or decorations than shaping them again"
+            : !kept.HitBoxes.SequenceEqual(shaped.HitBoxes) || !kept.CharacterBoundaries.SequenceEqual(shaped.CharacterBoundaries) ? "keeping the glyphs of the parts of the text gives other hit boxes than shaping them again"
+            : kept.Width != shaped.Width || kept.Height != shaped.Height || kept.IsTruncated != shaped.IsTruncated || kept.HasMissingGlyphs != shaped.HasMissingGlyphs ? "keeping the glyphs of the parts of the text gives another size than shaping them again"
+            : null;
     }
 
     /// <summary>Checks what a layout says about itself.</summary>

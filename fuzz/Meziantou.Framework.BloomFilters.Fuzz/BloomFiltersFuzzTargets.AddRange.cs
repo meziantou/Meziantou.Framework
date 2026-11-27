@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.BloomFilters.Fuzz;
@@ -6,8 +7,9 @@ namespace Meziantou.Framework.BloomFilters.Fuzz;
 /// <summary>
 /// <c>bloomfilter-addrange</c>: the batched methods of the classic and counting XXHash filters (<c>AddRange</c>,
 /// <c>RemoveRange</c>) hash several values at once, with vector or scalar code depending on the hardware. They are
-/// compared with the methods that hash one value at a time (<c>Add</c>, <c>Remove</c>), which call
-/// <see cref="System.IO.Hashing"/>: both must set the same bits and counters.
+/// compared with the methods that hash one value at a time (<c>Add</c>, <c>Remove</c>), which use an inline version of
+/// the hash, and these are compared with the overloads that hash the bytes of the value with
+/// <see cref="System.IO.Hashing"/>: all of them must set the same bits and counters.
 /// </summary>
 /// <remarks>
 /// The input starts with two option bytes: the first selects the filter (classic or counting, XXHash32, XXHash64 or
@@ -74,20 +76,24 @@ public static partial class BloomFiltersFuzzTargets
     }
 
     /// <summary>
-    /// AddRange over the whole batch and over two parts set the same bits as Add, and every value is then reported as
-    /// possibly present.
+    /// Add sets the same bits as Add of the bytes of the value, AddRange over the whole batch and over two parts set the
+    /// same bits as Add, and every value is then reported as possibly present.
     /// </summary>
     private static void Check<TFilter, T>(Func<TFilter> create, T[] values, byte split, Action<TFilter, T> add, RangeAction<TFilter, T> addRange, Func<TFilter, T, bool> mayContain)
-        where TFilter : BloomFilter
+        where TFilter : BloomFilter, IBloomFilter
+        where T : unmanaged
     {
         var expected = create();
+        var reference = create();
         foreach (var value in values)
         {
             add(expected, value);
+            reference.Add(GetBytes(value));
         }
 
         var expectedBytes = Save(expected.Save);
         var name = typeof(TFilter).Name;
+        FuzzAssert.True(expectedBytes.AsSpan().SequenceEqual(Save(reference.Save)), $"{name}: Add of {values.Length} values differs from Add of their bytes");
 
         var actual = create();
         addRange(actual, values);
@@ -106,18 +112,23 @@ public static partial class BloomFiltersFuzzTargets
     }
 
     /// <summary>
-    /// AddRange sets the same counters as Add, then RemoveRange over two parts sets the same counters as Remove.
+    /// Add sets the same counters as Add of the bytes of the value, and AddRange the same counters as Add; then Remove
+    /// sets the same counters as Remove of the bytes, and RemoveRange over two parts the same counters as Remove.
     /// </summary>
     private static void CheckCounting<TFilter, T>(Func<TFilter> create, T[] values, byte split, Action<TFilter, T> add, RangeAction<TFilter, T> addRange, Action<TFilter, T> remove, RangeAction<TFilter, T> removeRange, Func<TFilter, T, bool> mayContain)
-        where TFilter : CountingBloomFilter
+        where TFilter : CountingBloomFilter, ICountingBloomFilter
+        where T : unmanaged
     {
         var expected = create();
+        var reference = create();
         foreach (var value in values)
         {
             add(expected, value);
+            reference.Add(GetBytes(value));
         }
 
         var name = typeof(TFilter).Name;
+        FuzzAssert.True(Save(expected.Save).AsSpan().SequenceEqual(Save(reference.Save)), $"{name}: Add of {values.Length} values differs from Add of their bytes");
         var actual = create();
         addRange(actual, values);
         FuzzAssert.True(Save(expected.Save).AsSpan().SequenceEqual(Save(actual.Save)), $"{name}: AddRange of {values.Length} values differs from Add");
@@ -131,10 +142,19 @@ public static partial class BloomFiltersFuzzTargets
         foreach (var value in values.AsSpan(index))
         {
             remove(expected, value);
+            reference.Remove(GetBytes(value));
         }
 
+        FuzzAssert.True(Save(expected.Save).AsSpan().SequenceEqual(Save(reference.Save)), $"{name}: Remove of {values.Length - index} values differs from Remove of their bytes");
         removeRange(actual, values.AsSpan(index));
         FuzzAssert.True(Save(expected.Save).AsSpan().SequenceEqual(Save(actual.Save)), $"{name}: RemoveRange of {values.Length - index} values differs from Remove");
+    }
+
+    // The bytes of the value in memory, which the integer overloads hash
+    private static byte[] GetBytes<T>(T value)
+        where T : unmanaged
+    {
+        return unsafe(MemoryMarshal.AsBytes(new ReadOnlySpan<T>(ref value)).ToArray());
     }
 
     private static int GetSplitIndex(int length, byte split) => (int)((long)length * split / byte.MaxValue);

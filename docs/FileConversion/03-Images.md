@@ -1,6 +1,6 @@
 ---
 title: Images
-description: Convert images to another format, set the quality of each format, and shrink large images.
+description: Convert images to another format, render SVG drawings, set the quality of each format, and shrink large images.
 ---
 
 ## Convert an image
@@ -14,6 +14,33 @@ Meziantou.Framework.FileConversion.Tool icon.png --output icon.webp --webp-lossl
 ```
 
 A multi-page TIFF file gives one image per page: see [Output file names](06-OutputNames.md).
+
+## Render SVG drawings
+
+The tool reads SVG drawings (`.svg`, and `.svgz` compressed with gzip), and renders them with the
+[WebPlatform](../WebPlatform/01-Introduction.md) engine, as a browser shows the file. An SVG drawing gives an image of
+any output format, or a PDF document whose drawing stays vector graphics, so its text can be selected:
+
+```bash
+Meziantou.Framework.FileConversion.Tool logo.svg --output-format png
+Meziantou.Framework.FileConversion.Tool "icons/*.svg" --output "png/{name}.png" --svg-width 64
+Meziantou.Framework.FileConversion.Tool diagram.svg --output-format pdf
+```
+
+The image has the size of the drawing, one pixel per CSS pixel: the `width` and `height` of its root `svg` element. When
+one of them is missing or is a percentage, it follows the aspect ratio of the `viewBox`; when both are, the image has the
+size of the `viewBox`. A drawing with neither is 300x150 pixels. The parts the drawing does not paint are transparent,
+or `--background` in a JPEG image.
+
+| Option | Description |
+| --- | --- |
+| `--svg-width` | The width of the image, in pixels. The height keeps the aspect ratio |
+| `--svg-height` | The height of the image, in pixels. With `--svg-width`, the image fits in both, keeping the aspect ratio |
+
+The drawing loads the images, style sheets and fonts of its folder and subfolders, and nothing from the network.
+Scripts do not run. A file without the `.svg` extension is read as SVG when it starts with `<svg`, or with an XML
+declaration followed by `<svg`. The PDF page has the size of the drawing (a CSS pixel is 0.75 point): `--svg-width` and
+`--svg-height` only apply to images.
 
 ## Set the quality
 

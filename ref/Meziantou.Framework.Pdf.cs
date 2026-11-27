@@ -4,6 +4,7 @@
 //   Meziantou.Framework.Fonts
 //   Meziantou.Framework.Imaging
 //   Meziantou.Framework.Unicode
+//   System.Formats.Asn1 (net10.0)
 //   System.Security.Cryptography.Pkcs
 #nullable enable
 

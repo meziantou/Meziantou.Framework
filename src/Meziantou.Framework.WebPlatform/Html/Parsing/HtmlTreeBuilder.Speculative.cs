@@ -39,7 +39,11 @@ internal sealed partial class HtmlTreeBuilder
             _pendingTableCharactersContainNonWhitespace = _pendingTableCharactersContainNonWhitespace,
         };
 
-        parser._pendingTableCharacters.Append(_pendingTableCharacters);
+        if (_pendingTableCharacters is not null)
+        {
+            parser.PendingTableCharacters.Append(_pendingTableCharacters);
+        }
+
         parser._templateModes.AddRange(_templateModes);
 
         var copies = new Dictionary<Node, Node?>(ReferenceEqualityComparer.Instance) { [_document] = speculativeDocument };

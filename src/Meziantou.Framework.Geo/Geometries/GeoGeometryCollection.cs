@@ -7,11 +7,14 @@ public sealed class GeoGeometryCollection : GeoGeometry
     /// <param name="geometries">The geometries.</param>
     public GeoGeometryCollection(IEnumerable<GeoGeometry> geometries)
     {
-        Geometries = ToArray(geometries, nameof(geometries));
+        GeometryArray = ToArray(geometries, nameof(geometries));
     }
 
     /// <summary>Gets the geometries.</summary>
-    public IReadOnlyList<GeoGeometry> Geometries { get; }
+    public IReadOnlyList<GeoGeometry> Geometries => GeometryArray;
+
+    /// <summary>Gets the array that <see cref="Geometries"/> returns, so that the operations read it without interface calls.</summary>
+    internal GeoGeometry[] GeometryArray { get; }
 
     /// <inheritdoc />
     public override GeoGeometryType Type => GeoGeometryType.GeometryCollection;

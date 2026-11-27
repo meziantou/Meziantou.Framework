@@ -1,12 +1,12 @@
 namespace Meziantou.Framework.JavaScriptEngine;
 
-/// <summary>An Iterator Record (https://tc39.es/ecma262/#sec-iterator-records).</summary>
+/// <summary>An Iterator Record (https://tc39.es/ecma262/#sec-iterator-records); a cell, so that it is stored in a register or on the stack.</summary>
 /// <remarks>
 /// The iteration of an array whose iteration is not observable (<see cref="Intrinsics.IsArrayIterationIntact"/>) does not
 /// create the array iterator: the record reads the elements itself. The iterator object is created when it is needed
 /// (<see cref="Iterator"/>), at the position of the iteration.
 /// </remarks>
-internal sealed class IteratorRecord
+internal sealed class IteratorRecord : JsCell
 {
     private JsObject? _iterator;
     private JsValue _nextMethod;
@@ -17,6 +17,7 @@ internal sealed class IteratorRecord
     private long _index;
 
     public IteratorRecord(JsObject iterator, JsValue nextMethod)
+        : base(JsValueKind.Undefined)
     {
         _iterator = iterator;
         _nextMethod = nextMethod;
@@ -24,6 +25,7 @@ internal sealed class IteratorRecord
 
     /// <summary>Creates the record of the iteration of an array by %Array.prototype.values% of a realm (no iterator object yet).</summary>
     public IteratorRecord(JsArray array, JsRealm realm)
+        : base(JsValueKind.Undefined)
     {
         _array = array;
         _realm = realm;

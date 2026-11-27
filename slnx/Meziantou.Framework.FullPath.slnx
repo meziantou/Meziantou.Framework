@@ -1,6 +1,9 @@
 <Solution>
   <Folder Name="/fuzz/">
+    <Project Path="../fuzz/Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz/Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.AspNetCore.Testing.Fuzz/Meziantou.AspNetCore.Testing.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.AnsiFormatting.Fuzz/Meziantou.Framework.AnsiFormatting.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.Assertions.Fuzz/Meziantou.Framework.Assertions.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz/Meziantou.Framework.AtlassianDataFormat.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Avatar.Fuzz/Meziantou.Framework.Avatar.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Barcodes.Fuzz/Meziantou.Framework.Barcodes.Fuzz.csproj" />
@@ -46,6 +49,7 @@
     <Project Path="../fuzz/Meziantou.Framework.Scheduling.Fuzz/Meziantou.Framework.Scheduling.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz/Meziantou.Framework.SimpleQueryLanguage.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz/Meziantou.Framework.SyntaxHighlighting.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz/Meziantou.Framework.TaggedValues.Analyzer.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.TdsServer.Fuzz/Meziantou.Framework.TdsServer.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.TextDiff.Fuzz/Meziantou.Framework.TextDiff.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Toml.Fuzz/Meziantou.Framework.Toml.Fuzz.csproj" />
@@ -56,10 +60,16 @@
     <Project Path="../fuzz/Meziantou.Framework.WasmEngine.Fuzz/Meziantou.Framework.WasmEngine.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz/Meziantou.Framework.WebPlatform.DevTools.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.WebPlatform.Fuzz/Meziantou.Framework.WebPlatform.Fuzz.csproj" />
+    <Project Path="../fuzz/Meziantou.Framework.WebTransport.Fuzz/Meziantou.Framework.WebTransport.Fuzz.csproj" />
     <Project Path="../fuzz/Meziantou.Framework.Yaml.Fuzz/Meziantou.Framework.Yaml.Fuzz.csproj" />
   </Folder>
   <Folder Name="/src/">
+    <Project Path="../src/Meziantou.AspNetCore.Authentication.HttpBasic/Meziantou.AspNetCore.Authentication.HttpBasic.csproj" />
     <Project Path="../src/Meziantou.AspNetCore.Testing/Meziantou.AspNetCore.Testing.csproj" />
+    <Project Path="../src/Meziantou.Framework.AnsiFormatting/Meziantou.Framework.AnsiFormatting.csproj" />
+    <Project Path="../src/Meziantou.Framework.Assertions.Analyzer/Meziantou.Framework.Assertions.Analyzer.csproj" />
+    <Project Path="../src/Meziantou.Framework.Assertions.CodeFix/Meziantou.Framework.Assertions.CodeFix.csproj" />
+    <Project Path="../src/Meziantou.Framework.Assertions/Meziantou.Framework.Assertions.csproj" />
     <Project Path="../src/Meziantou.Framework.AtlassianDataFormat/Meziantou.Framework.AtlassianDataFormat.csproj" />
     <Project Path="../src/Meziantou.Framework.Avatar/Meziantou.Framework.Avatar.csproj" />
     <Project Path="../src/Meziantou.Framework.Barcodes/Meziantou.Framework.Barcodes.csproj" />
@@ -116,6 +126,7 @@
     <Project Path="../src/Meziantou.Framework.Markdown/Meziantou.Framework.Markdown.csproj" />
     <Project Path="../src/Meziantou.Framework.MediaTags/Meziantou.Framework.MediaTags.csproj" />
     <Project Path="../src/Meziantou.Framework.Mermaid/Meziantou.Framework.Mermaid.csproj" />
+    <Project Path="../src/Meziantou.Framework.MsQuic/Meziantou.Framework.MsQuic.csproj" />
     <Project Path="../src/Meziantou.Framework.NtpClient/Meziantou.Framework.NtpClient.csproj" />
     <Project Path="../src/Meziantou.Framework.NtpServer/Meziantou.Framework.NtpServer.csproj" />
     <Project Path="../src/Meziantou.Framework.Pdf.JavaScript/Meziantou.Framework.Pdf.JavaScript.csproj" />
@@ -128,6 +139,7 @@
     <Project Path="../src/Meziantou.Framework.Scheduling/Meziantou.Framework.Scheduling.csproj" />
     <Project Path="../src/Meziantou.Framework.SimpleQueryLanguage/Meziantou.Framework.SimpleQueryLanguage.csproj" />
     <Project Path="../src/Meziantou.Framework.SyntaxHighlighting/Meziantou.Framework.SyntaxHighlighting.csproj" />
+    <Project Path="../src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj" />
     <Project Path="../src/Meziantou.Framework.TdsServer/Meziantou.Framework.TdsServer.csproj" />
     <Project Path="../src/Meziantou.Framework.TemporaryDirectory/Meziantou.Framework.TemporaryDirectory.csproj" />
     <Project Path="../src/Meziantou.Framework.TextDiff/Meziantou.Framework.TextDiff.csproj" />
@@ -148,6 +160,7 @@
     <Project Path="../src/Meziantou.Framework.WebPlatform.PdfRendering/Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform.Wasm/Meziantou.Framework.WebPlatform.Wasm.csproj" />
     <Project Path="../src/Meziantou.Framework.WebPlatform/Meziantou.Framework.WebPlatform.csproj" />
+    <Project Path="../src/Meziantou.Framework.WebTransport/Meziantou.Framework.WebTransport.csproj" />
     <Project Path="../src/Meziantou.Framework.Win32.Jobs/Meziantou.Framework.Win32.Jobs.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml.SourceGenerator/Meziantou.Framework.Yaml.SourceGenerator.csproj" />
     <Project Path="../src/Meziantou.Framework.Yaml/Meziantou.Framework.Yaml.csproj" />

@@ -154,7 +154,7 @@ internal sealed class IdMap
         var resolved = false;
         for (var current = node; current is not null; current = current.GetNextInTreeOrder(node))
         {
-            if (current is not Element { IdValue: { } id } element)
+            if (current.AsElement is not { IdValue: { } id } element)
             {
                 if (ReferenceEquals(current, node) && current.FirstChild is null)
                     return;

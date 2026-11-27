@@ -11,7 +11,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// resources, and their timing is reported to its performance timeline with the <c>early-hints</c> initiator type.
 /// </summary>
 /// <remarks>
-/// As in Chromium, the requests are checked by the content security policies of the <c>103</c> response and use its referrer
+/// As in Chromium, the requests are checked by the content security policies and the connection allowlists of the <c>103</c>
+/// response and use its referrer
 /// policy; the preloads are discarded when the navigation is redirected to another origin, when the document has another origin
 /// (e.g. an error document) or another embedder policy than the <c>103</c> response. The links that have a <c>media</c>
 /// attribute are ignored (there is no document to evaluate it), the <c>imagesrcset</c> attribute is ignored, and the module
@@ -44,6 +45,7 @@ internal sealed class EarlyHintPreloads
 
         // The early policy container: the content security policies and the referrer policy of the 103 response
         var policies = ContentSecurityPolicy.ParseResponsePolicies(headers);
+        var connectionAllowlists = ConnectionAllowlist.FromHeaders(headers, responseUrl);
         var referrerPolicy = ReferrerPolicies.ParseHeader(headers);
         foreach (var (name, value) in headers)
         {
@@ -56,6 +58,11 @@ internal sealed class EarlyHintPreloads
                     continue;
 
                 if (ContentSecurityPolicy.ShouldBlockRequest(policies, origin, request.Url, request.Destination, nonce: request.Nonce))
+                    continue;
+
+                // https://w3c.github.io/connection-allowlists/#html-integration: the connection allowlists of the early policy
+                // container (the violations are not reported: there is no environment yet)
+                if (ConnectionAllowlist.IsBlocked(connectionAllowlists, request.Url))
                     continue;
 
                 request.KeepaliveBrowsingContext = browsingContext;

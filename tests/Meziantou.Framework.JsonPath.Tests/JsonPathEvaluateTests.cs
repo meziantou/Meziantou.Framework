@@ -194,6 +194,10 @@ public sealed class JsonPathEvaluateTests
     [InlineData("$[*].wanted")]
     [InlineData("$[?count($[*]) > 0]")]
     [InlineData("$[?count($) > 0]")]
+    [InlineData("$[?@.wanted]")]
+    [InlineData("$[?count(@.wanted) == 1]")]
+    [InlineData("$[?value(@.wanted) == 1]")]
+    [InlineData("$[?length($[0]) == 1]")]
     public void EvaluationOptions_IntermediateLimits(string query)
     {
         var path = JsonPath.Parse(query);
@@ -249,6 +253,9 @@ public sealed class JsonPathEvaluateTests
     [InlineData("$[?count(@.a[*]) == 2]", "[{\"a\":[1,2]},{\"a\":[1]}]", 1)]
     [InlineData("$[?count(@.a[0,0]) == 2]", "[{\"a\":[1]},{\"a\":[]}]", 1)]
     [InlineData("$[?count(@.a[*].x) == 2]", "[{\"a\":[{\"x\":1},{\"x\":2}]},{\"a\":[{}]}]", 1)]
+    [InlineData("$[?count(@.a) == 1]", "[{\"a\":null},{\"b\":1},{\"a\":[]}]", 2)]
+    [InlineData("$[?count(@.a[1].b) == 0]", "[{\"a\":[1,{\"b\":1}]},{\"a\":[1]},{\"a\":[1,{}]}]", 2)]
+    [InlineData("$[?count(@.a[-1]) == 1]", "[{\"a\":[1]},{\"a\":[]},{\"a\":{\"-1\":1}}]", 1)]
     public void Count_RelativeQueriesAndDuplicates(string query, string json, int count)
     {
         Assert.HasCount(count, JsonPath.Parse(query).Evaluate(JsonNode.Parse(json)));
@@ -1070,6 +1077,91 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(expected, string.Join(' ', path.Evaluate(ref reader).Select(match => match.Path + "=" + (match.Value?.ToJsonString() ?? "null"))));
         Assert.True(reader.IsFinalBlock);
         Assert.False(reader.Read());
+    }
+
+    [Theory]
+    [InlineData("$[?@ == 'fiction']", """["fiction","fic\u0074ion","fictio","fictions","Fiction",1,null,["fiction"]]""", "$[0] $[1]")]
+    [InlineData("$[?@ != 'fiction']", """["fiction","fic\u0074ion","fictio","fictions"]""", "$[2] $[3]")]
+    [InlineData("$[?'fiction' == @]", """["fiction","fic\u0074ion","fictio"]""", "$[0] $[1]")]
+    [InlineData("$[?@ == 'é😀']", """["é😀","\u00e9\ud83d\ude00","e😀","é"]""", "$[0] $[1]")]
+    [InlineData("$[?@ == '']", """["","\u0000",""]""", "$[0] $[2]")]
+    [InlineData("""$[?@ == "a'b"]""", """["a'b","a'bc","a\u0027b"]""", "$[0] $[2]")]
+    [InlineData("$[?@.a == 'x' || @.a == 'y']", """[{"a":"x"},{"a":"y"},{"a":"z"},{"b":"x"}]""", "$[0] $[1]")]
+    public void Evaluate_StringEquality(string query, string json, string expected)
+    {
+        var path = JsonPath.Parse(query);
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(JsonNode.Parse(json)).Select(match => match.Path)));
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(document).Select(match => match.Path)));
+        Assert.Equal(expected, string.Join(' ', path.Evaluate(JsonNode.Parse(json), JsonNodeNavigator.Instance).Select(match => match.Path)));
+    }
+
+    [Fact]
+    public void Evaluate_StringEqualityInvalidUtf8()
+    {
+        byte[] json = [(byte)'[', (byte)'"', 0xFF, (byte)'"', (byte)',', (byte)'"', (byte)'a', (byte)'"', (byte)']'];
+        using var document = JsonDocument.Parse(json);
+        var exception = Record.Exception(() => document.RootElement[0].GetString());
+        if (exception is null)
+        {
+            Assert.Equal("$[1]", Assert.Single(JsonPath.Parse("$[?@ == 'a']").Evaluate(document)).Path);
+        }
+        else
+        {
+            Assert.Throws(exception.GetType(), () => JsonPath.Parse("$[?@ == 'a']").Evaluate(document));
+        }
+    }
+
+    [Fact]
+    public void Evaluate_NormalizedPathEscapesNames()
+    {
+        var names = new List<string> { "", "a", "it's", "back\\slash", "é", "😀", "\u007f", "a'\\b\u0001\u001f'" };
+        for (var c = 0; c < 0x20; c++)
+        {
+            names.Add(((char)c).ToString());
+            names.Add("x" + (char)c + "y");
+        }
+
+        var root = new JsonObject();
+        var expected = new List<string>();
+        foreach (var name in names)
+        {
+            root[name] = new JsonArray([.. Enumerable.Range(0, 12).Select(i => (JsonNode?)i)]);
+            for (var i = 0; i < 12; i++)
+            {
+                expected.Add("$['" + Escape(name) + "'][" + i.ToString(CultureInfo.InvariantCulture) + "]");
+            }
+        }
+
+        var path = JsonPath.Parse("$.*.*");
+        Assert.Equal(expected, path.Evaluate(root).Select(match => match.Path));
+        using var document = JsonDocument.Parse(root.ToJsonString());
+        Assert.Equal(expected, path.Evaluate(document).Select(match => match.Path));
+
+        var array = new JsonArray([.. Enumerable.Range(0, 1001).Select(i => (JsonNode?)i)]);
+        Assert.Equal(["$[1000]", "$[999]", "$[100]", "$[99]", "$[10]", "$[9]", "$[0]"], JsonPath.Parse("$[1000,999,100,99,10,9,0]").Evaluate(array).Select(match => match.Path));
+
+        static string Escape(string name)
+        {
+            var result = new StringBuilder();
+            foreach (var c in name)
+            {
+                result.Append(c switch
+                {
+                    '\'' => "\\'",
+                    '\\' => "\\\\",
+                    '\b' => "\\b",
+                    '\f' => "\\f",
+                    '\n' => "\\n",
+                    '\r' => "\\r",
+                    '\t' => "\\t",
+                    < '\x20' => "\\u00" + ((int)c).ToString("x2", CultureInfo.InvariantCulture),
+                    _ => c.ToString(),
+                });
+            }
+
+            return result.ToString();
+        }
     }
 
     [Fact]

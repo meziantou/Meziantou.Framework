@@ -75,7 +75,7 @@ jobs:
             command: dotnet run eng/wasmengine/fetch-tests.cs -- --publish
             lock: eng/wasmengine/corpus.mirror.json
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
       - name: Check the token
@@ -100,7 +100,7 @@ jobs:
           New-Item -ItemType Directory -Force (Split-Path $env:PATCH) | Out-Null
           git diff --output=$env:PATCH -- $env:LOCK_FILE
           git diff --stat -- $env:LOCK_FILE
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: lock-file-${{ matrix.id }}
           path: ${{ runner.temp }}/lock-files/${{ matrix.id }}.patch
@@ -116,8 +116,8 @@ jobs:
       contents: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8.0.2
         with:
           pattern: lock-file-*
           merge-multiple: true

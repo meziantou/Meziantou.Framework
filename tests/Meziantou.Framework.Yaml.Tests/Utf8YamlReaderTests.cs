@@ -228,6 +228,21 @@ public sealed class Utf8YamlReaderTests
     }
 
     [Fact]
+    public void Read_EmptyBlockThatIsNotTheFinalOne_ReadsNoToken()
+    {
+        var reader = new Utf8YamlReader([], isFinalBlock: false, new Utf8YamlReaderState(new Utf8YamlReaderOptions()));
+
+        Assert.False(reader.Read());
+    }
+
+    [Fact]
+    public void Load_TextWithALoneHighSurrogate_ReportsAnInvalidSequence()
+    {
+        // The encoder keeps the high surrogate for the next block, so the first block has no byte
+        Assert.Throws<SyntaxErrorException>(() => Meziantou.Framework.Yaml.Nodes.YamlStream.Load(new StringReader("\uDAEB")));
+    }
+
+    [Fact]
     public void ReadmeExample_PartialBuffers()
     {
         #region Utf8YamlReader_PartialBuffers

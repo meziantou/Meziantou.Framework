@@ -123,6 +123,25 @@ public sealed class YamlStreamPreservingFormattingTests
         AssertSameData(stream, result);
     }
 
+    [Theory]
+    [InlineData("? d\n: 23\nk: |+\n  x\n\n ")]
+    [InlineData("? d\n: 23\nk: |+\n  x\n\n  \n")]
+    [InlineData("? d\n: 23\nk: |+\n\n ")]
+    [InlineData("? d\n: 23\nstrip: >-\n\nclip: >\n:keep: |+\n\n ")]
+    [InlineData("? d\n: 23\nfoo: |\n   x\n   ")]
+    [InlineData("? d\n: 23\nfoo: |\n   x\n   \n  \nb: 2\n")]
+    [InlineData("? d\n: 23\nfoo: |+\n   x\n  \n ")]
+    public void RewrittenMapping_KeepsTheEmptyLinesOfABlockScalar(string yaml)
+    {
+        // The explicit key cannot be edited in place: the mapping is written again, with its block scalar at another
+        // indentation. The lines of spaces after it are empty lines of the scalar.
+        var stream = Load(yaml);
+        Root(stream)["d"] = new YamlValue("changed");
+        var result = stream.ToStringPreservingFormatting();
+
+        AssertSameData(stream, result);
+    }
+
     [Fact]
     public void ChangedAliasCopy_ReplacesTheAlias()
     {

@@ -141,7 +141,7 @@ public ref struct Utf8YamlReader
         {
             // A carriage return at the end may be the first half of CR LF
             var last = utf8Yaml.LastIndexOfAny(LineBreaks);
-            if (last == utf8Yaml.Length - 1 && utf8Yaml[last] == '\r')
+            if (last >= 0 && last == utf8Yaml.Length - 1 && utf8Yaml[last] == '\r')
             {
                 last = utf8Yaml[..last].LastIndexOfAny(LineBreaks);
             }

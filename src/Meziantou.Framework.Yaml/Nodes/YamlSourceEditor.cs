@@ -166,23 +166,62 @@ internal static class YamlSourceEditor
         var crlf = source.Contains("\r\n", StringComparison.Ordinal);
         var builder = new StringBuilder(source.Length);
         var position = 0;
-        foreach (var edit in edits)
+        for (var i = 0; i < edits.Count; i++)
         {
+            var edit = edits[i];
             builder.Append(source, position, edit.Start - position);
             var text = edit.Text;
 
             // A replaced text that ends with a line break, such as a kept block scalar, is replaced by a text that ends with one
-            if (text.Length > 0 && edit.End > edit.Start && source[edit.End - 1] is '\n' or '\r')
+            if (text.Length > 0 && edit.End > edit.Start && EndsLine(source.AsSpan(edit.Start, edit.End - edit.Start)))
             {
                 text += "\n";
             }
 
             builder.Append(crlf ? text.Replace("\n", "\r\n", StringComparison.Ordinal) : text);
             position = edit.End;
+
+            // The lines of spaces after a text of several lines, which can end with a block scalar, are empty lines. They keep
+            // their line breaks without their spaces: a block scalar written again with a smaller indentation would read the
+            // spaces as its content.
+            if (text.Contains('\n', StringComparison.Ordinal))
+            {
+                var limit = i + 1 < edits.Count ? edits[i + 1].Start : source.Length;
+                position = AppendEmptyLines(builder, source, position, limit);
+            }
         }
 
         builder.Append(source, position, source.Length - position);
         return builder.ToString();
+
+        // Appends the line breaks of the lines that have only spaces, and returns the start of the first other line
+        static int AppendEmptyLines(StringBuilder builder, string source, int position, int limit)
+        {
+            while (position < limit)
+            {
+                var end = position;
+                while (end < limit && source[end] is ' ' or '\t')
+                {
+                    end++;
+                }
+
+                if (end == limit && limit == source.Length)
+                    return end;
+
+                if (end == limit || source[end] is not ('\r' or '\n'))
+                    return position;
+
+                var lineEnd = source[end] == '\r' && end + 1 < limit && source[end + 1] == '\n' ? end + 2 : end + 1;
+                builder.Append(source, end, lineEnd - end);
+                position = lineEnd;
+            }
+
+            return position;
+        }
+
+        // The text ends with a line break, or with a last line of spaces after one: a kept block scalar at the end of the
+        // input can end with such a line, which is one of its empty lines
+        static bool EndsLine(ReadOnlySpan<char> text) => text.TrimEnd(" \t") is [.., '\n' or '\r'];
     }
 
     private static bool AddDocumentEdits(YamlStreamDocument document, string source, List<Edit> edits)

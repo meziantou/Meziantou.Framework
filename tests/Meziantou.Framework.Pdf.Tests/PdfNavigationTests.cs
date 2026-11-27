@@ -917,6 +917,23 @@ public sealed class PdfNavigationTests
     }
 
     [Fact]
+    public void APageListedInTheAnnotationsOfAPageIsNotAnAnnotation()
+    {
+        // The first page lists itself and the second page as annotations, as a widget would be: flattening keeps the pages
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 100 100] >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Subtype /Widget /FT /Btn /Rect [0 0 10 10] /Annots [3 0 R 4 0 R 5 0 R] >>")
+            .Add(4, "<< /Type /Page /Parent 2 0 R /Subtype /Square /Rect [0 0 10 10] >>")
+            .Add(5, "<< /Type /Annot /Subtype /Square /Rect [0 0 10 10] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.IsType<PdfSquareAnnotation>(Assert.Single(document.Pages[0].Annotations));
+        Assert.Equal(1, document.FlattenAnnotations(new PdfAnnotationFlattenOptions { Filter = _ => true }));
+        Assert.Equal(2, PdfDocument.Open(document.ToByteArray()).Pages.Count);
+    }
+
+    [Fact]
     public void FlatteningAppliesTheOpacityToTheWholeAppearance()
     {
         var document = new PdfDocument();

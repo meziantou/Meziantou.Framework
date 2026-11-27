@@ -1060,6 +1060,99 @@ public sealed class FunctionalTests
         Assert.Null(LinkHeader.TryGetNextPageUri(response, new Uri("https://registry-1.docker.io/v2/library/nginx/tags/list")));
     }
 
+    [Fact]
+    public async Task GitHubActionsLockFile_LockedWorkflowsOfUpdatedRepository()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/ci.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/checkout@v5
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/release.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/setup-dotnet@v5
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/actions/build/action.yml"), """
+            runs:
+              using: composite
+              steps:
+                - uses: actions/cache@v4
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/actions.lock"), """
+            version: v0.0.3
+            workflows:
+              .github/workflows/release.yml:
+                - actions/setup-dotnet@v5
+              .github/workflows/ci.yml:
+                - actions/checkout@v5
+              --relock: []
+              ../outside.yml: []
+              .github/workflows/readme.md: []
+            dependencies:
+              actions/checkout@v5:
+                ref: v5.0.0
+                commit: sha1-0000000000000000000000000000000000000000
+            """, XunitCancellationToken);
+
+        var dependencies = await ScanDependencies(tempDir);
+        var workflowDependency = Assert.Single(dependencies, static dep => dep.Name is "actions/checkout" && dep.VersionLocation!.IsUpdatable);
+        var actionDependency = Assert.Single(dependencies, static dep => dep.Name is "actions/cache");
+
+        var update = Assert.Single(GitHubActionsUpdater.GetLockFileUpdates([workflowDependency, actionDependency]));
+        Assert.Equal(tempDir.FullPath / ".github" / "workflows" / "actions.lock", update.LockFile);
+        Assert.Equal(tempDir.FullPath, update.RepositoryRoot);
+        Assert.Equal(new[] { ".github/workflows/ci.yml", ".github/workflows/release.yml" }, update.Workflows);
+    }
+
+    [Fact]
+    public async Task GitHubActionsLockFile_NotOnboarded()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/ci.yml"), """
+            jobs:
+              test:
+                steps:
+                  - uses: actions/checkout@v5
+            """, XunitCancellationToken);
+
+        var dependencies = await ScanDependencies(tempDir);
+        Assert.Empty(GitHubActionsUpdater.GetLockFileUpdates(dependencies));
+
+        // A lock file without workflows, or that is not valid YAML, has nothing to update
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/actions.lock"), "version: v0.0.3\nworkflows: {}\n", XunitCancellationToken);
+        Assert.Empty(GitHubActionsUpdater.GetLockFileUpdates(dependencies));
+
+        await File.WriteAllTextAsync(tempDir.FullPath / ".github" / "workflows" / "actions.lock", "workflows: [", XunitCancellationToken);
+        Assert.Empty(GitHubActionsUpdater.GetLockFileUpdates(dependencies));
+    }
+
+    [Fact]
+    public async Task GitHubActionsLockFile_IgnoresOtherDependencyTypes()
+    {
+        await using var tempDir = TemporaryDirectory.Create();
+
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/ci.yml"), """
+            jobs:
+              test:
+                container: node:22
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(tempDir.CreateEmptyFile(".github/workflows/actions.lock"), """
+            version: v0.0.3
+            workflows:
+              .github/workflows/ci.yml: []
+            """, XunitCancellationToken);
+
+        var dependencies = await ScanDependencies(tempDir);
+        Assert.Contains(dependencies, static dep => dep.Type is DependencyType.DockerImage);
+        Assert.Empty(GitHubActionsUpdater.GetLockFileUpdates(dependencies));
+    }
+
     private static async Task<IReadOnlyList<Dependency>> ScanDependencies(TemporaryDirectory temporaryDirectory)
     {
         var deps = (await DependencyScanner.ScanDirectoryAsync(temporaryDirectory.FullPath, options: null, XunitCancellationToken)).ToList();

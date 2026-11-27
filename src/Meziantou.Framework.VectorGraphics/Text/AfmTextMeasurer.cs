@@ -45,16 +45,26 @@ public sealed class AfmTextMeasurer : ITextMeasurer
     public TextMetrics Measure(string text, SceneFont font)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var metrics = (font.IsBold, font.Italic) switch
-        {
-            (true, true) => _boldItalic,
-            (true, false) => _bold,
-            (false, true) => _italic,
-            _ => _regular,
-        };
+        var metrics = GetMetrics(font);
         var scale = font.Size / 1000;
         return new TextMetrics(metrics.MeasureUnits(text) * scale, metrics.Ascender * scale, metrics.Descender * scale);
     }
+
+    // Measures a part of a text as Measure does, without making a string of it when it is ASCII: TextFitting measures the lines it tries
+    internal TextMetrics Measure(ReadOnlySpan<char> text, SceneFont font)
+    {
+        var metrics = GetMetrics(font);
+        var scale = font.Size / 1000;
+        return new TextMetrics(metrics.MeasureUnits(text) * scale, metrics.Ascender * scale, metrics.Descender * scale);
+    }
+
+    private FontMetrics GetMetrics(SceneFont font) => (font.IsBold, font.Italic) switch
+    {
+        (true, true) => _boldItalic,
+        (true, false) => _bold,
+        (false, true) => _italic,
+        _ => _regular,
+    };
 
     private sealed class FontMetrics
     {
@@ -126,6 +136,14 @@ public sealed class AfmTextMeasurer : ITextMeasurer
 
         public double Descender { get; }
 
+        public double MeasureUnits(ReadOnlySpan<char> text)
+        {
+            if (_asciiKerning is not null && Ascii.IsValid(text))
+                return MeasureAsciiUnits(text, _asciiKerning);
+
+            return MeasureUnits(text.ToString());
+        }
+
         public double MeasureUnits(string text)
         {
             if (_asciiKerning is not null && Ascii.IsValid(text))
@@ -164,7 +182,7 @@ public sealed class AfmTextMeasurer : ITextMeasurer
         }
 
         // MeasureUnits for an ASCII text: each character is a grapheme cluster, except CR LF, whose characters have no width
-        private double MeasureAsciiUnits(string text, float[] kerning)
+        private double MeasureAsciiUnits(ReadOnlySpan<char> text, float[] kerning)
         {
             var width = 0.0;
             var previous = -1;

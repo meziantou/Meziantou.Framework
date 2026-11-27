@@ -1,10 +1,17 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.WebPlatform;
 
 /// <summary>
 /// Indicates that a member maps a WebIDL member (attribute, operation, constructor, constant, getter/setter or enum value).
 /// A member can map several WebIDL members, for instance an indexer that implements both an indexed and a named getter.
 /// </summary>
+/// <remarks>
+/// The attribute is only emitted when <c>WEBPLATFORM_IDL_METADATA</c> is defined: the build that SpecGen and the IDL coverage
+/// tests reference by reflection defines it (<c>WebPlatformIdlMetadata=true</c>), the published assembly does not carry it.
+/// </remarks>
 [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Constructor | AttributeTargets.Field | AttributeTargets.Event, Inherited = false, AllowMultiple = true)]
+[Conditional("WEBPLATFORM_IDL_METADATA")]
 public sealed class IdlMemberAttribute : Attribute
 {
     /// <summary>Creates an attribute with the WebIDL name of the member and the URL of its specification.</summary>

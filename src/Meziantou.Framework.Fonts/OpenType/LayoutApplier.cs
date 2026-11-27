@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Fonts;
 
 /// <summary>
@@ -64,6 +66,15 @@ internal sealed partial class LayoutApplier
     private bool _ignoresContext;
     private int _nesting;
 
+    // The positions of the glyphs of the sequence a rule or a ligature matches, one slice per level of nesting (a lookup a
+    // rule applies has its own), kept from a glyph to the next: a stackalloc would clear them each time a subtable is
+    // tried. The slices of the levels that are used are allocated, two to start with.
+    private int[] _positions = [];
+
+    // The glyphs of the buffer, or more, while the lookups of the applier are the only changes to them (see TrackGlyphs).
+    private GlyphDigest _glyphs;
+    private bool _tracksGlyphs;
+
     public LayoutApplier(GlyphBuffer buffer, FontFace face)
     {
         _buffer = buffer;
@@ -86,6 +97,7 @@ internal sealed partial class LayoutApplier
         _digests = null;
         _coverage = null;
         _nesting = 0;
+        _tracksGlyphs = false;
     }
 
     /// <summary>Starts applying the lookups of a table.</summary>
@@ -105,7 +117,28 @@ internal sealed partial class LayoutApplier
         _isRightToLeft = isRightToLeft;
         _isVertical = isVertical;
         _nesting = 0;
+        _tracksGlyphs = false;
     }
+
+    /// <summary>
+    /// Starts keeping a digest of the glyphs of the buffer, until <see cref="StopTrackingGlyphs"/>: a lookup whose digest
+    /// has none of them is passed over, rather than tried at each glyph to find that it applies at none. In between, the
+    /// glyphs must change only by the lookups of the applier (<see cref="ApplyLookup"/>), whose substitutions add their
+    /// glyphs to the digest.
+    /// </summary>
+    public void TrackGlyphs()
+    {
+        _glyphs = default;
+        foreach (ref readonly var info in _buffer.Info)
+        {
+            _glyphs.Add(info.Glyph);
+        }
+
+        _tracksGlyphs = true;
+    }
+
+    /// <summary>Stops keeping the digest of the glyphs of the buffer: something else than the lookups may change them.</summary>
+    public void StopTrackingGlyphs() => _tracksGlyphs = false;
 
     /// <summary>
     /// Gives each glyph its class. The GDEF table has it; a font without glyph classes is given the obvious ones: the
@@ -153,10 +186,17 @@ internal sealed partial class LayoutApplier
 
         // A glyph none of the first coverage tables of the subtables has is passed over: every subtable would look it
         // up and do nothing else. The checks of the glyph that can read the GDEF table come first, as they did.
-        GlyphDigest[]? subtableDigests = null;
+        SubtableDigests? subtableDigests = null;
         var digest = _digests?.Get(index, out subtableDigests) ?? GlyphDigest.All;
 
-        if (!_isPositioning && GetEffectiveType(data, lookup) == SubstitutionReverseChain)
+        var isReverse = !_isPositioning && GetEffectiveType(data, lookup) == SubstitutionReverseChain;
+
+        // No glyph of the buffer is one the lookup may apply at. A lookup that reads the mark glyph sets of the GDEF table
+        // to skip glyphs is still walked: a malformed set fails where it is read.
+        if (_tracksGlyphs && !_glyphs.Intersects(digest) && ((_flag & LayoutLookup.UseMarkFilteringSet) == 0 || _gdef is null))
+            return;
+
+        if (isReverse)
         {
             // The one lookup type that goes from the end of the text to its start, one glyph at a time.
             for (var i = _buffer.Length - 1; i >= 0; i--)
@@ -173,15 +213,25 @@ internal sealed partial class LayoutApplier
             return;
         }
 
+        // The glyphs are read again after each subtable that applies: it may have replaced, inserted or removed some.
+        var glyphs = _buffer.Info;
         var current = 0;
-        while (current < _buffer.Length)
+        while (current < glyphs.Length)
         {
-            ref var info = ref _buffer.Info[current];
+            ref var info = ref glyphs[current];
+            if ((info.Mask & mask) == 0 || IsSkipped(info) || !digest.MayContain(info.Glyph))
+            {
+                current++;
+                continue;
+            }
+
             _syllable = isPerSyllable ? info.Syllable : -1;
-            if ((info.Mask & mask) == 0 || IsSkipped(info) || !digest.MayContain(info.Glyph) || !ApplySubtables(lookup, ref current, subtableDigests))
+            if (!ApplySubtables(lookup, ref current, subtableDigests))
             {
                 current++;
             }
+
+            glyphs = _buffer.Info;
         }
     }
 
@@ -202,6 +252,7 @@ internal sealed partial class LayoutApplier
         if (lookup.SubtableCount == 0 || glyphs.IsEmpty)
             return false;
 
+        _tracksGlyphs = false;
         _buffer.Clear();
         _buffer.StartShaping();
         foreach (var glyph in glyphs)
@@ -256,27 +307,51 @@ internal sealed partial class LayoutApplier
     /// <param name="lookup">The lookup.</param>
     /// <param name="index">The glyph; when a subtable applies, the glyph the lookup continues at.</param>
     /// <param name="digests">The glyphs each subtable may apply at, or <see langword="null"/> to try each one.</param>
-    private bool ApplySubtables(in LayoutLookup lookup, ref int index, GlyphDigest[]? digests = null)
+    private bool ApplySubtables(in LayoutLookup lookup, ref int index, SubtableDigests? digests = null)
     {
         var data = _data.Span;
 
         // A subtable that does not cover the glyph would look it up and do nothing else.
         var glyph = digests is not null && (uint)index < (uint)_buffer.Length ? _buffer.Info[index].Glyph : -1;
+        if (glyph >= 0 && digests!.IsIndexed)
+        {
+            // The subtables whose digests may contain the glyph, in order, without testing the digest of each one.
+            for (var word = 0; word < digests.WordCount; word++)
+            {
+                var candidates = digests.GetCandidates(word, glyph);
+                while (candidates != 0)
+                {
+                    var i = (word << 6) + BitOperations.TrailingZeroCount(candidates);
+                    candidates &= candidates - 1;
+                    if (ApplySubtable(data, lookup, i, ref index))
+                        return true;
+                }
+            }
+
+            return false;
+        }
+
         for (var i = 0; i < lookup.SubtableCount; i++)
         {
-            if (glyph >= 0 && !digests![i].MayContain(glyph))
+            if (glyph >= 0 && !digests!.MayContain(i, glyph))
                 continue;
 
-            var start = index;
-            if (Apply(data, lookup.Type, LayoutTable.GetSubtable(data, lookup, i), ref index))
-            {
-                // A lookup that applies always moves on, even when it changed nothing after its first glyph.
-                index = Math.Max(index, _isPositioning ? start + 1 : start);
+            if (ApplySubtable(data, lookup, i, ref index))
                 return true;
-            }
         }
 
         return false;
+    }
+
+    private bool ApplySubtable(ReadOnlySpan<byte> data, in LayoutLookup lookup, int subtable, ref int index)
+    {
+        var start = index;
+        if (!Apply(data, lookup.Type, LayoutTable.GetSubtable(data, lookup, subtable), ref index))
+            return false;
+
+        // A lookup that applies always moves on, even when it changed nothing after its first glyph.
+        index = Math.Max(index, _isPositioning ? start + 1 : start);
+        return true;
     }
 
     private bool Apply(ReadOnlySpan<byte> data, int type, int subtable, ref int index)
@@ -345,7 +420,7 @@ internal sealed partial class LayoutApplier
         // A lookup a rule applies is work the text did not ask for: it is what the budget bounds. A lookup with a
         // great number of subtables costs more than one.
         _buffer.Charge(1 + (lookup.SubtableCount >> 6));
-        GlyphDigest[]? subtableDigests = null;
+        SubtableDigests? subtableDigests = null;
         if (_digests is not null && (uint)position < (uint)_buffer.Length && !_digests.Get(lookupIndex, out subtableDigests).MayContain(_buffer.Info[position].Glyph))
             return;
 
@@ -363,6 +438,19 @@ internal sealed partial class LayoutApplier
             _flag = flag;
             _markSet = markSet;
         }
+    }
+
+    /// <summary>Gets the storage of the positions of a sequence for the lookups of the current level of nesting.</summary>
+    private Span<int> GetPositions()
+    {
+        var start = _nesting * MaxSequenceLength;
+        if (start + MaxSequenceLength > _positions.Length)
+        {
+            // The slices of the outer levels stay in the array they were taken from, which they keep alive.
+            _positions = new int[Math.Max(start + MaxSequenceLength, 2 * MaxSequenceLength)];
+        }
+
+        return _positions.AsSpan(start, MaxSequenceLength);
     }
 
     /// <summary>Determines whether the lookup being applied ignores a glyph.</summary>
@@ -450,6 +538,7 @@ internal sealed partial class LayoutApplier
     private void SetGlyph(ref GlyphInfo info, int glyph, int history, int impliedClass)
     {
         info.Glyph = glyph;
+        _glyphs.Add(glyph);
         info.Flags |= GlyphInfo.Substituted;
         var kept = (info.Props & (GlyphInfo.Ligated | GlyphInfo.Multiplied | GlyphInfo.LigatureWithComponents)) | history;
 

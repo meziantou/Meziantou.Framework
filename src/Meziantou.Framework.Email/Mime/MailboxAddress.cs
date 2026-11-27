@@ -125,7 +125,8 @@ public sealed class MailboxAddress : IEquatable<MailboxAddress>
     {
         // An address cannot contain angle brackets or line breaks: they are removed
         var address = GetWritableAddress();
-        var needsAngleBrackets = address.AsSpan().IndexOfAny(" \t,;:()\"[]") >= 0;
+        // The reader removes the whitespace of a bare address: char.IsWhiteSpace, such as U+00A0 or U+2003, not only the spaces and tabs
+        var needsAngleBrackets = address.AsSpan().IndexOfAny(",;:()\"[]") >= 0 || address.Any(char.IsWhiteSpace);
         if (Name is null)
         {
             return needsAngleBrackets ? "<" + address + ">" : address;
@@ -146,7 +147,16 @@ public sealed class MailboxAddress : IEquatable<MailboxAddress>
             address = string.Concat(address.Where(c => c is not ('<' or '>' or '\r' or '\n')));
         }
 
-        return address.Trim();
+        // In angle brackets, an address that starts with @ and contains a colon is read as an obsolete route followed by the
+        // address after the last colon (<@a,@b:local@domain>): only that part can be written
+        address = address.Trim();
+        var colon = address.LastIndexOf(':', StringComparison.Ordinal);
+        if (colon >= 0 && address.StartsWith('@', StringComparison.Ordinal))
+        {
+            address = address[(colon + 1)..].Trim();
+        }
+
+        return address;
     }
 
     /// <summary>Returns the display name and the address.</summary>

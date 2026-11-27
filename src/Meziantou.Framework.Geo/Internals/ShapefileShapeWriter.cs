@@ -101,8 +101,9 @@ internal sealed class ShapefileShapeWriter
 
             family = geometryFamily;
             multiPoint |= geometry is GeoMultiPoint;
-            hasZ |= geometry.GetPositions().Any(position => position.Altitude is not null);
-            hasM |= geometry.GetPositions().Any(position => position.Measure is not null);
+            var (geometryHasZ, geometryHasM) = GeoPositionSpans.GetDimensions(geometry);
+            hasZ |= geometryHasZ;
+            hasM |= geometryHasM;
         }
 
         // The Z shapes hold the M values too, so the M shapes are for the measures without altitudes
@@ -356,36 +357,45 @@ internal sealed class ShapefileShapeWriter
             count += parts[i].Length;
         }
 
-        GeoPosition[] points = [.. parts.SelectMany(part => part)];
+        // The positions of the parts, one after the other, copied at their starts
+        var points = new GeoPosition[count];
+        for (var i = 0; i < parts.Count; i++)
+        {
+            parts[i].CopyTo(points, starts[i]);
+        }
+
         return new Shape(starts, points, GeoBounds.FromPositions(points)!.Value);
     }
 
     // The exterior ring is clockwise and the holes counterclockwise; each ring ends with its first position
     private static void AddPolygon(List<GeoPosition[]> parts, GeoPolygon polygon)
     {
-        if (polygon.Rings.Count is 0 || polygon.Rings[0].Count is 0)
+        var rings = polygon.RingArrays;
+        if (rings.Length is 0 || rings[0].Length is 0)
             return;
 
-        for (var i = 0; i < polygon.Rings.Count; i++)
+        for (var i = 0; i < rings.Length; i++)
         {
-            var ring = polygon.Rings[i];
-            if (ring.Count is 0)
+            var ring = rings[i];
+            if (ring.Length is 0)
                 continue;
 
-            var positions = new List<GeoPosition>(ring.Count + 1);
-            positions.AddRange(ring);
-            if (positions[0].Longitude != positions[^1].Longitude || positions[0].Latitude != positions[^1].Latitude || positions.Count is 1)
+            // The ring is copied once, in an array that has room for its first position at its end when it is not closed
+            var isOpen = ring[0].Longitude != ring[^1].Longitude || ring[0].Latitude != ring[^1].Latitude || ring.Length is 1;
+            var positions = new GeoPosition[isOpen ? ring.Length + 1 : ring.Length];
+            ring.CopyTo(positions, 0);
+            if (isOpen)
             {
-                positions.Add(positions[0]);
+                positions[^1] = positions[0];
             }
 
             var orientation = ShapefileRings.GetOrientation(positions);
             if ((i is 0 && orientation > 0) || (i > 0 && orientation < 0))
             {
-                positions.Reverse();
+                Array.Reverse(positions);
             }
 
-            parts.Add([.. positions]);
+            parts.Add(positions);
         }
     }
 

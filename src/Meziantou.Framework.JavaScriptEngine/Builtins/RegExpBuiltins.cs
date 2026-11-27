@@ -22,6 +22,15 @@ internal static class RegExpBuiltins
     private static readonly PropertyKey ConstructorKey = new("constructor");
     private static readonly PropertyKey ZeroKey = new(0u);
 
+    /// <summary>
+    /// The accessors of %RegExp.prototype% that ToString(Get(R, "flags")) runs for a RegExp instance: "flags", then the
+    /// flags that its getter reads, in its order (which is the order of the bits of <see cref="RegExpFlags"/>).
+    /// </summary>
+    internal static readonly PropertyKey[] FlagAccessorKeys = ["flags", "hasIndices", "global", "ignoreCase", "multiline", "dotAll", "unicode", "unicodeSets", "sticky"];
+
+    // The values of get RegExp.prototype.flags, by value of the 8 flags (created on first use)
+    private static readonly string?[] FlagsStrings = new string?[256];
+
     private static readonly BuiltinMethodTable PrototypeMethods =
     [
         new(WellKnownSymbols.Match, 1, SymbolMatch),
@@ -40,7 +49,7 @@ internal static class RegExpBuiltins
         new("toString", 0, ToString),
     ];
 
-    public static (JsFunction Constructor, JsObject Prototype, JsFunction Exec, JsObject IteratorPrototype) Initialize(Intrinsics intrinsics)
+    public static (JsFunction Constructor, JsObject Prototype, JsFunction Exec, JsObject IteratorPrototype, AccessorPair[] FlagAccessors) Initialize(Intrinsics intrinsics)
     {
         var realm = intrinsics.Realm;
         var prototype = new JsObject(intrinsics.ObjectPrototype);
@@ -53,20 +62,20 @@ internal static class RegExpBuiltins
         DefineLegacyAccessors(realm, constructor);
 
         var exec = realm.DefineEagerMethod(prototype, "exec", 1, Exec);
-        realm.DefineAccessor(prototype, "dotAll", (f, t, _, _) => HasFlag(f, t, 's'), setter: null);
-        realm.DefineAccessor(prototype, "flags", GetFlags, setter: null);
-        realm.DefineAccessor(prototype, "global", (f, t, _, _) => HasFlag(f, t, 'g'), setter: null);
-        realm.DefineAccessor(prototype, "hasIndices", (f, t, _, _) => HasFlag(f, t, 'd'), setter: null);
-        realm.DefineAccessor(prototype, "ignoreCase", (f, t, _, _) => HasFlag(f, t, 'i'), setter: null);
+        var dotAll = realm.DefineAccessor(prototype, "dotAll", (f, t, _, _) => HasFlag(f, t, 's'), setter: null);
+        var flags = realm.DefineAccessor(prototype, "flags", GetFlags, setter: null);
+        var global = realm.DefineAccessor(prototype, "global", (f, t, _, _) => HasFlag(f, t, 'g'), setter: null);
+        var hasIndices = realm.DefineAccessor(prototype, "hasIndices", (f, t, _, _) => HasFlag(f, t, 'd'), setter: null);
+        var ignoreCase = realm.DefineAccessor(prototype, "ignoreCase", (f, t, _, _) => HasFlag(f, t, 'i'), setter: null);
         realm.DefineMethods(prototype, PrototypeMethods);
-        realm.DefineAccessor(prototype, "multiline", (f, t, _, _) => HasFlag(f, t, 'm'), setter: null);
+        var multiline = realm.DefineAccessor(prototype, "multiline", (f, t, _, _) => HasFlag(f, t, 'm'), setter: null);
         realm.DefineMethods(prototype, PrototypeMethods2);
         realm.DefineAccessor(prototype, "source", GetSource, setter: null);
         realm.DefineMethod(prototype, WellKnownSymbols.Split, 2, SymbolSplit);
-        realm.DefineAccessor(prototype, "sticky", (f, t, _, _) => HasFlag(f, t, 'y'), setter: null);
+        var sticky = realm.DefineAccessor(prototype, "sticky", (f, t, _, _) => HasFlag(f, t, 'y'), setter: null);
         realm.DefineMethods(prototype, PrototypeMethods3);
-        realm.DefineAccessor(prototype, "unicode", (f, t, _, _) => HasFlag(f, t, 'u'), setter: null);
-        realm.DefineAccessor(prototype, "unicodeSets", (f, t, _, _) => HasFlag(f, t, 'v'), setter: null);
+        var unicode = realm.DefineAccessor(prototype, "unicode", (f, t, _, _) => HasFlag(f, t, 'u'), setter: null);
+        var unicodeSets = realm.DefineAccessor(prototype, "unicodeSets", (f, t, _, _) => HasFlag(f, t, 'v'), setter: null);
         realm.DefineMethod(prototype, "compile", 2, Compile);
 
         var iteratorPrototype = new JsObject(intrinsics.IteratorPrototype);
@@ -74,18 +83,82 @@ internal static class RegExpBuiltins
         iteratorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "RegExp String Iterator", PropertyFlags.Configurable);
 
         intrinsics.AddGlobal("RegExp", constructor);
-        return (constructor, prototype, exec, iteratorPrototype);
+
+        // In the order of FlagAccessorKeys
+        AccessorPair[] flagAccessors = [flags, hasIndices, global, ignoreCase, multiline, dotAll, unicode, unicodeSets, sticky];
+        return (constructor, prototype, exec, iteratorPrototype, flagAccessors);
+    }
+
+    /// <summary>
+    /// ToString(Get(R, "flags")). The flags of a RegExp instance are read from the object when the getters would return
+    /// them without running other code (see <see cref="TryGetIntactFlags"/>).
+    /// </summary>
+    private static string GetFlagsString(JsObject regexp)
+    {
+        if (TryGetIntactFlags(regexp, out var flags))
+            return FlagsStrings[(int)flags] ??= ToFlagsString(flags);
+
+        return JsOperations.ToString(regexp.Get(FlagsKey));
+    }
+
+    /// <summary>
+    /// Gets the flags of a RegExp instance whose "flags" property is read by the built-in getters: it has no own property
+    /// but lastIndex, its prototype is %RegExp.prototype% of its realm, and the accessors of the flags of this prototype are
+    /// the built-in ones (<see cref="Intrinsics.IsRegExpFlagsIntact"/>).
+    /// </summary>
+    private static bool TryGetIntactFlags(JsObject regexp, out RegExpFlags flags)
+    {
+        if (regexp is JsRegExpObject { Matcher: not null } candidate && candidate.GetOwnPropertyCount() == 1)
+        {
+            var intrinsics = candidate.Realm.Intrinsics;
+            if (ReferenceEquals(candidate.PrototypeSlot, intrinsics.RegExpPrototype) && intrinsics.IsRegExpFlagsIntact())
+            {
+                flags = candidate.RecordFlags;
+                return true;
+            }
+        }
+
+        flags = default;
+        return false;
+    }
+
+    /// <summary>Formats the flags as get RegExp.prototype.flags does: "dgimsuvy" order.</summary>
+    private static string ToFlagsString(RegExpFlags flags)
+    {
+        Span<char> result = stackalloc char[8];
+        var length = 0;
+        foreach (var flag in "dgimsuvy")
+        {
+            if ((flags & RegExpFlagsExtensions.FromChar(flag)) != 0)
+            {
+                result[length++] = flag;
+            }
+        }
+
+        return new string(result[..length]);
     }
 
     // ------------------------------------------------------------------------------------------------------------------
     // Creation (https://tc39.es/ecma262/#sec-abstract-operations-for-regexp-creation)
     // ------------------------------------------------------------------------------------------------------------------
 
-    /// <summary>RegExpCreate(P, F) in a realm: used for the regular expression literals (each evaluation creates an object).</summary>
-    public static JsRegExpObject RegExpCreate(JsRealm realm, string pattern, string flags)
+    /// <summary>RegExpCreate(P, F) in a realm for a regular expression literal (each evaluation creates an object).</summary>
+    public static JsRegExpObject RegExpCreate(JsRealm realm, Compiler.RegExpLiteralSite site)
     {
-        var obj = new JsRegExpObject(realm.Intrinsics.RegExpPrototype, realm, legacyFeaturesEnabled: true);
-        return Initialize(obj, pattern, flags);
+        JsRegExpObject obj;
+        var program = site.Program;
+        if (program is null)
+        {
+            obj = new JsRegExpObject(realm.Intrinsics.RegExpPrototype, realm, legacyFeaturesEnabled: true);
+            Initialize(obj, site.Pattern, site.Flags);
+            site.Program = obj.Matcher;
+            return obj;
+        }
+
+        // The pattern was compiled by a previous evaluation. The lastIndex of the new object is writable: Set(obj, "lastIndex", 0) only stores the value.
+        obj = new JsRegExpObject(realm.Intrinsics.RegExpPrototype, realm, legacyFeaturesEnabled: true, lastIndex: 0);
+        obj.Initialize(site.Pattern, site.Flags, site.ParsedFlags, program);
+        return obj;
     }
 
     /// <summary>RegExpCreate(P, F) in the current realm.</summary>
@@ -570,6 +643,9 @@ internal static class RegExpBuiltins
         if (thisValue.Cell is not JsObject regexp)
             return ThrowHelper.ThrowTypeError<JsValue>("RegExp.prototype.flags getter called on a non-object");
 
+        if (TryGetIntactFlags(regexp, out var intactFlags))
+            return FlagsStrings[(int)intactFlags] ??= ToFlagsString(intactFlags);
+
         Span<char> result = stackalloc char[8];
         var length = 0;
         foreach (var (name, flag) in (ReadOnlySpan<(string, char)>)[("hasIndices", 'd'), ("global", 'g'), ("ignoreCase", 'i'), ("multiline", 'm'), ("dotAll", 's'), ("unicode", 'u'), ("unicodeSets", 'v'), ("sticky", 'y')])
@@ -702,7 +778,7 @@ internal static class RegExpBuiltins
             return ThrowHelper.ThrowTypeError<JsValue>("RegExp.prototype.toString called on a non-object");
 
         var pattern = JsOperations.ToString(regexp.Get(SourceKey));
-        var flags = JsOperations.ToString(regexp.Get(FlagsKey));
+        var flags = GetFlagsString(regexp);
         return "/" + pattern + "/" + flags;
     }
 
@@ -738,7 +814,7 @@ internal static class RegExpBuiltins
             return ThrowHelper.ThrowTypeError<JsValue>("RegExp.prototype[Symbol.match] called on a non-object");
 
         var input = JsOperations.ToString(arguments.Length > 0 ? arguments[0] : default);
-        var flags = JsOperations.ToString(regexp.Get(FlagsKey));
+        var flags = GetFlagsString(regexp);
         if (!flags.Contains('g', StringComparison.Ordinal))
             return RegExpExec(regexp, input);
 
@@ -780,7 +856,7 @@ internal static class RegExpBuiltins
         var input = JsOperations.ToString(arguments.Length > 0 ? arguments[0] : default);
         var intrinsics = function.Realm.Intrinsics;
         var constructor = ObjectOperations.SpeciesConstructor(regexp, intrinsics.RegExp);
-        var flags = JsOperations.ToString(regexp.Get(FlagsKey));
+        var flags = GetFlagsString(regexp);
         var matcher = JsOperations.Construct(constructor, [regexp, flags]).AsObject();
         var lastIndex = JsOperations.ToLength(regexp.Get(LastIndexKey));
         matcher.Set(LastIndexKey, lastIndex, throwOnFailure: true);
@@ -839,7 +915,7 @@ internal static class RegExpBuiltins
             replaceTemplate = JsOperations.ToString(replaceValue);
         }
 
-        var flags = JsOperations.ToString(regexp.Get(FlagsKey));
+        var flags = GetFlagsString(regexp);
         var global = flags.Contains('g', StringComparison.Ordinal);
         var fullUnicode = flags.Contains('u', StringComparison.Ordinal) || flags.Contains('v', StringComparison.Ordinal);
         if (global)
@@ -867,6 +943,10 @@ internal static class RegExpBuiltins
                 regexp.Set(LastIndexKey, AdvanceStringIndex(input, thisIndex, fullUnicode), throwOnFailure: true);
             }
         }
+
+        // Nothing is replaced: the result is the input
+        if (results.Count == 0)
+            return input;
 
         var builder = new StringBuilder();
         var nextSourcePosition = 0;
@@ -1111,7 +1191,7 @@ internal static class RegExpBuiltins
         var limit = arguments.Length > 1 ? arguments[1] : default;
         var realm = function.Realm;
         var constructor = ObjectOperations.SpeciesConstructor(regexp, realm.Intrinsics.RegExp);
-        var flags = JsOperations.ToString(regexp.Get(FlagsKey));
+        var flags = GetFlagsString(regexp);
         var unicodeMatching = flags.Contains('u', StringComparison.Ordinal) || flags.Contains('v', StringComparison.Ordinal);
         var newFlags = flags.Contains('y', StringComparison.Ordinal) ? flags : flags + "y";
         var splitter = JsOperations.Construct(constructor, [regexp, newFlags]).AsObject();

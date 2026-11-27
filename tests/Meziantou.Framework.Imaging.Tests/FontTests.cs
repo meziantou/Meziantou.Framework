@@ -2073,6 +2073,15 @@ public sealed class FontTests
         Assert.False(face.TryGetGlyphBounds(FontSamples.SpaceGlyph, scratch, out _));
         Assert.False(face.TryGetGlyphBounds(face.GlyphCount, scratch, out _));
 
+        // A declared box whose sides are swapped has them put back in order.
+        var swapped = new FontBuilder { CmapFormats = FontCmapFormats.Format4 };
+        swapped.AddGlyph(FontGlyph.Empty(500));
+        var glyph = FontGlyph.Polygons(500, [(10, 20), (40, 20), (40, 60)]);
+        glyph.BoundsOverride = new FontBounds(40, 60, 10, 20);
+        swapped.AddGlyph(glyph, 'a');
+        Assert.True(FontTestSupport.Load(swapped).Face.TryGetGlyphBounds(1, scratch, out bounds));
+        Assert.Equal(new GlyphBox(10, 20, 40, 60), bounds);
+
         // A CFF outline has no declared box: the box of its points, rounded outward.
         var cff = new FontCffWriter();
         cff.CharStrings.Add(new FontCharstring().Op(FontCharstring.RMoveTo, 10, 20).Op(FontCharstring.RLineTo, 30, 0).Op(FontCharstring.RLineTo, 0, 40).Op(FontCharstring.EndChar).ToArray());

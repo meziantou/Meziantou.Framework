@@ -12,7 +12,11 @@ namespace Meziantou.Framework.Yaml.Serialization;
 /// </remarks>
 public sealed class YamlReader : YamlReaderWriterBase
 {
+    // A set that grew this large is not kept: clearing it costs as much as its capacity, and most mappings are small.
+    private const int MaxPooledKeySetCount = 64;
+
     private readonly YamlReaderState _state;
+    private Stack<HashSet<string>>? _keySets;
 
     internal YamlReader(YamlReaderState state, YamlSerializerOptions options)
         : base(options)
@@ -72,6 +76,26 @@ public sealed class YamlReader : YamlReaderWriterBase
         ArgumentNullException.ThrowIfNull(options);
         var parser = Parser.CreateParser(new StringReader(yaml), options.EffectiveMaxDepth, sourceName);
         return new YamlReader(new YamlReaderState(parser, referenceReader, sourceName, options.AllowAnchors, options.AllowAliases, IsJsonSchemaStrict(options)), options);
+    }
+
+    /// <summary>
+    /// Gets an empty set of mapping keys that compares them with <see cref="YamlReaderWriterBase.PropertyNameComparer"/>.
+    /// Give it back with <see cref="ReturnKeySet"/> once the mapping is read, so the next mapping reuses it.
+    /// </summary>
+    internal HashSet<string> RentKeySet()
+    {
+        return _keySets is not null && _keySets.TryPop(out var set) ? set : new HashSet<string>(PropertyNameComparer);
+    }
+
+    /// <summary>Gives back a set obtained from <see cref="RentKeySet"/>. The set must not be used afterward.</summary>
+    internal void ReturnKeySet(HashSet<string>? set)
+    {
+        if (set is null || set.Count > MaxPooledKeySetCount)
+            return;
+
+        set.Clear();
+        _keySets ??= new Stack<HashSet<string>>();
+        _keySets.Push(set);
     }
 
     /// <summary>Gets the current token type.</summary>

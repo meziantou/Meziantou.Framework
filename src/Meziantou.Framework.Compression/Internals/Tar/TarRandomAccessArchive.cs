@@ -28,6 +28,23 @@ internal sealed class TarRandomAccessArchive : Archive
                 {
                     throw new InvalidDataException("The tar archive is corrupted.", ex);
                 }
+                catch (ObjectDisposedException)
+                {
+                    throw;
+                }
+                catch (InvalidOperationException ex)
+                {
+                    // An extended attributes header larger than allowed, or a time (mtime, atime, ctime) out of the range of a date (fuzz regressions)
+                    throw new InvalidDataException("The tar archive is corrupted.", ex);
+                }
+                catch (OverflowException ex)
+                {
+                    throw new InvalidDataException("The tar archive is corrupted.", ex);
+                }
+                catch (ArgumentOutOfRangeException ex)
+                {
+                    throw new InvalidDataException("The tar archive is corrupted.", ex);
+                }
 
                 if (entry is null)
                     break;
@@ -64,6 +81,9 @@ internal sealed class TarRandomAccessArchive : Archive
             throw new InvalidDataException("The tar archive is truncated.");
 
         var offset = stream.Position - 1;
+        if (data.Length > stream.Length - offset)
+            throw new InvalidDataException("The tar archive is truncated.");
+
         data.Position = 0;
         stream.Position = position;
         return offset;

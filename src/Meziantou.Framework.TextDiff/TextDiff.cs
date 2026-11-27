@@ -48,14 +48,8 @@ public static class TextDiff
         return options;
     }
 
-    /// <summary>Chunks both texts and diffs them, for the features built on top of a diff.</summary>
-    internal static (string[] OldChunks, string[] NewChunks, DiffComputationResult Diff) ComputeChunkDiff(string oldText, string newText, TextDiffOptions options, IEqualityComparer<string> comparer, DiffBudget budget)
-    {
-        var oldChunks = ToArray(options.Chunker.Chunk(oldText));
-        var newChunks = ToArray(options.Chunker.Chunk(newText));
-        var diff = DiffAlgorithmDispatcher.Compute(options.Algorithm, oldChunks, newChunks, comparer, budget);
-        return (oldChunks, newChunks, diff);
-    }
+    /// <summary>Chunks a text, for the features built on top of a diff.</summary>
+    internal static string[] Chunk(string text, TextDiffOptions options) => ToArray(options.Chunker.Chunk(text));
 
     internal static IEqualityComparer<string> CreateComparer(TextDiffOptions options) => BuildComparer(options);
 
@@ -124,7 +118,7 @@ public static class TextDiff
         var rightModified = diff.RightModified;
         var leftLength = leftModified.Length;
         var rightLength = rightModified.Length;
-        var entries = new List<TextDiffEntry>(leftLength + rightLength);
+        var entries = new List<TextDiffEntry>(GetEntryCount(leftModified, rightModified));
         var hasDifferences = false;
 
         var lineLeft = 0;
@@ -164,6 +158,15 @@ public static class TextDiff
         return new TextDiffResult(entries, hasDifferences);
     }
 
+    // An unchanged chunk of one side and its counterpart of the other side give a single entry. Sizing the list for
+    // both sides doubled the size of the list of a diff with few changes, an array of the large object heap for a
+    // few thousand chunks.
+    private static int GetEntryCount(bool[] leftModified, bool[] rightModified)
+    {
+        var unchanged = Math.Min(leftModified.AsSpan().Count(false), rightModified.AsSpan().Count(false));
+        return leftModified.Length + rightModified.Length - unchanged;
+    }
+
     private static TextDiffHierarchyResult ComputeHierarchyDiffCore(
         string oldText,
         string newText,
@@ -194,7 +197,7 @@ public static class TextDiff
         var rightModified = diff.RightModified;
         var leftLength = leftModified.Length;
         var rightLength = rightModified.Length;
-        var entries = new List<TextDiffHierarchyEntry>(leftLength + rightLength);
+        var entries = new List<TextDiffHierarchyEntry>(GetEntryCount(leftModified, rightModified));
         var hasDifferences = false;
         var hasInnerLevel = chunkerIndex + 1 < chunkers.Length;
 

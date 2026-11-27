@@ -57,6 +57,9 @@ internal sealed class ContextLoader(BrowserContextHost context, DocumentLoader? 
 
     public override ValueTask<DocumentResource?> ConnectWebSocketAsync(DocumentRequest request, CancellationToken cancellationToken) => Load(request, isWebSocket: true, cancellationToken);
 
+    // The WebTransport sessions are not reported to the client of the DevTools protocol
+    public override ValueTask<WebTransportConnection?> ConnectWebTransportAsync(WebTransportConnectionRequest request, CancellationToken cancellationToken) => innerLoader?.ConnectWebTransportAsync(request, cancellationToken) ?? ValueTask.FromResult<WebTransportConnection?>(null);
+
     private ValueTask<DocumentResource?> Load(DocumentRequest request, bool isWebSocket, CancellationToken cancellationToken)
     {
         // The requests of a page that waits for the client (a popup the client has not set up yet) wait until it runs. A

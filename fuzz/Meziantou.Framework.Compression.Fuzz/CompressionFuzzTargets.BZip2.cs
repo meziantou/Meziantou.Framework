@@ -49,7 +49,8 @@ public static partial class CompressionFuzzTargets
 
     /// <summary>
     /// <c>options, data</c>: the encoder compresses the data with blocks of <c>1 + options % 9</c> hundreds of kB (randomized
-    /// when bit 4 of <c>options</c> is set), and the decoder returns the data.
+    /// when bit 4 of <c>options</c> is set), and the decoder returns the data. The encoder writes the same data whether the
+    /// input is written at once or in 2 parts.
     /// </summary>
     private static void BZip2RoundTripTarget(ReadOnlySpan<byte> data)
     {
@@ -62,6 +63,14 @@ public static partial class CompressionFuzzTargets
             encoder.Write(data[..half]);
             encoder.Write(data[half..]);
         }
+
+        using var compressedAtOnce = new MemoryStream();
+        using (var encoder = new BZip2EncoderStream(compressedAtOnce, 1 + (options % 9), leaveOpen: true, randomize: (options & 0x10) is not 0))
+        {
+            encoder.Write(data);
+        }
+
+        FuzzAssert.True(compressed.GetBuffer().AsSpan(0, (int)compressed.Length).SequenceEqual(compressedAtOnce.GetBuffer().AsSpan(0, (int)compressedAtOnce.Length)), "The bzip2 encoder does not write the same data when the input is written in 2 parts");
 
         compressed.Position = 0;
         using var decoder = new BZip2Stream(compressed, CompressionMode.Decompress);
@@ -103,8 +112,14 @@ public static partial class CompressionFuzzTargets
         byte[]? reference;
         try
         {
+            // DeflateStream rejects the incomplete Huffman codes that the decoder accepts, which ReadAll reports as an error
+            // (fuzz regression: an incomplete code of the literals and lengths)
             using var deflate = new DeflateStream(new MemoryStream(bytes), CompressionMode.Decompress);
-            reference = ReadAll(deflate, 81920, MaxDecodedLength + 1, out _);
+            reference = ReadAll(deflate, 81920, MaxDecodedLength + 1, out var referenceError);
+            if (referenceError is not null)
+            {
+                reference = null;
+            }
         }
         catch (InvalidDataException)
         {

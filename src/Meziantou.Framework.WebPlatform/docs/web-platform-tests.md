@@ -204,6 +204,16 @@
   (bytes are waiting to be read, a side has read bytes and has not asked for more, or the server sent a Close frame and
   the connection is not closed yet); `time.sleep()` uses the virtual clock. The handlers of `msg_channel_wsh.py` and
   `stash_responder_blocking_wsh.py` are not ported.
+- The WebTransport server of wptserve (aioquic) is emulated by `Runner/WptWebTransportServer.cs`: the sessions of
+  `DocumentLoader.ConnectWebTransportAsync` to the `webtransport-h3` port (`11000`) are in memory. The path of the URL
+  selects the handler of `webtransport/handlers`, whose callbacks (`connect_received`, `session_established`,
+  `stream_data_received`, `stream_reset`, `datagram_received`, `session_closed`) are ported to .NET in
+  `Runner/WptWebTransportHandlers.cs` with the session API of wptserve (`create_bidirectional_stream()`,
+  `send_stream_data()`, `stop_stream()`, `reset_stream()`, `send_datagram()`, `close()`, the stash...). The handlers use
+  the HTTP/3 error codes and the browser the WebTransport codes (draft-ietf-webtrans-http3, section 4.4). The callbacks
+  run one at a time on the thread pool, and the runner does not advance the virtual clock while one is queued or running;
+  the operations of the browser complete in tasks of the event loop. A session with `serverCertificateHashes` is
+  rejected: the certificate of the runner matches no hash.
 - The hosts of the configuration of wptserve (`web-platform.test`, its subdomains `www`, `www1`... and their products of
   two labels such as `www2.www`, and `not-web-platform.test` and its subdomains, on any port) serve the files of the test suite, so that the tests can create cross-origin
   iframes. The tests whose file name or variant (`?wpt_flags=https`) has the `https` flag are loaded from
@@ -425,6 +435,11 @@ properties (`*-valid.html`, `*-invalid.html`), their computed values (`*-compute
 `HtmlSemantics` group only runs the files at the root of `html/semantics` (`interfaces.html`,
 `rellist-feature-detection.html`): its subdirectories are run by their own groups. The tests run
 in parallel with the server garbage collector (the workstation GC pauses all the tests when one of them collects).
+The project file sets the other runtime settings of the run (no concurrent GC, no dynamic PGO, no call counting delay
+of the tiered compilation), and the external `.js` scripts whose URL has no query are parsed once for the whole run
+(e.g. `testharness.js` and the index tables of the `encoding/legacy-mb-*` tests): a script parsed again by each test
+would compile its hot functions to IL again. The parse is reused only when the source text is the one first cached for
+the URL: the other scripts (inline scripts, URLs with a query, a URL whose content changed) are parsed each time.
 
 ## CSS directories
 

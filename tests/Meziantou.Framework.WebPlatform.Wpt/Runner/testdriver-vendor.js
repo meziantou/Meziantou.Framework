@@ -185,6 +185,62 @@
     return () => { logListeners.delete(listener); };
   };
 
+  // The bluetooth module of WebDriver BiDi (https://webbluetoothcg.github.io/web-bluetooth/#automated-testing): the simulated
+  // adapter of the runner (see WptBluetooth.cs). The parameters are JSON without the context (the simulation is the one of the
+  // test); as WebDriver commands, the commands run after the tasks that are already queued. The events are emitted from a
+  // task while there is a subscription, as the events of a WebDriver BiDi connection.
+  const bluetooth = (command, params) => {
+    const { context, ...rest } = params || {};
+    return new Promise((resolve, reject) => __wpt_bluetooth(command, JSON.stringify(rest), () => resolve(), (message) => reject(new Error(message))));
+  };
+
+  for (const [name, command] of [
+    ['handle_request_device_prompt', 'handleRequestDevicePrompt'],
+    ['simulate_adapter', 'simulateAdapter'],
+    ['disable_simulation', 'disableSimulation'],
+    ['simulate_preconnected_peripheral', 'simulatePreconnectedPeripheral'],
+    ['simulate_gatt_connection_response', 'simulateGattConnectionResponse'],
+    ['simulate_gatt_disconnection', 'simulateGattDisconnection'],
+    ['simulate_gatt_mtu_change', 'simulateGattMtuChange'],
+    ['simulate_service', 'simulateService'],
+    ['simulate_characteristic', 'simulateCharacteristic'],
+    ['simulate_characteristic_response', 'simulateCharacteristicResponse'],
+    ['simulate_descriptor', 'simulateDescriptor'],
+    ['simulate_descriptor_response', 'simulateDescriptorResponse'],
+  ]) {
+    internal.bidi.bluetooth[name] = (params) => bluetooth(command, params);
+  }
+
+  const bluetoothEvents = new Map();
+  for (const name of ['request_device_prompt_updated', 'gatt_connection_attempted', 'characteristic_event_generated', 'descriptor_event_generated']) {
+    const state = { subscriptions: 0, listeners: new Set() };
+    bluetoothEvents.set(name, state);
+    internal.bidi.bluetooth[name] = {
+      subscribe: async function () {
+        state.subscriptions++;
+        let subscribed = true;
+        return async () => {
+          if (subscribed) {
+            subscribed = false;
+            state.subscriptions--;
+          }
+        };
+      },
+      on: function (callback) {
+        const listener = (event) => callback(event);
+        state.listeners.add(listener);
+        return () => { state.listeners.delete(listener); };
+      },
+    };
+  }
+
+  __wpt_bluetooth_dispatcher(function (name, json) {
+    const state = bluetoothEvents.get(name);
+    if (!state || state.subscriptions === 0) return;
+    const event = JSON.parse(json);
+    for (const listener of [...state.listeners]) listener(event);
+  });
+
   // speculation.prefetchStatusUpdated is not emitted: reject the subscription with the error of the browsers that do not
   // implement the BiDi subscriptions, so the helpers of speculation-rules/prefetch/resources/utils.sub.js fall back to
   // their fixed timeout

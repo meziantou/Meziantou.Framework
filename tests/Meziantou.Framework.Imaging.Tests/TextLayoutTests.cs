@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging.CorpusGenerator.Common;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.Typography;
 
@@ -67,6 +68,115 @@ public sealed class TextLayoutTests
         {
             Assert.True(layout.LineCount > 1);
             Assert.Equal(length, layout.Lines.Sum(line => line.Length));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void KeepingTheGlyphsOfThePartsOfACutTextGivesTheLayoutShapingThemAgainGives()
+    {
+        // A line break cuts the text, and the layout keeps the glyphs of each part where shaping does not depend on the
+        // text on the other side. Shaping each part again must give the same layout, whatever the script, the box and
+        // the options.
+        var fonts = FixtureRoot.GetDirectory() / "fonts";
+        var latin = "The quick brown fox jumps over the lazy dog. A file of affine flowers: office, waffle, \"Avatar\", To, Wa, 1/2 and 3/4. ";
+        var scripts = new (string Font, string Text)[]
+        {
+            ("noto-sans/NotoSans-Regular.subset.ttf", latin),
+            ("noto-naskh-arabic/NotoNaskhArabic-Regular.subset.ttf", "\u0628\u0633\u0645 \u0627\u0644\u0644\u0647 \u0627\u0644\u0631\u062D\u0645\u0646 \u0627\u0644\u0631\u062D\u064A\u0645. \u0627\u0644\u0633\u0644\u0627\u0645 \u0639\u0644\u064A\u0643\u0645 \u0648\u0631\u062D\u0645\u0629 \u0627\u0644\u0644\u0647 123. "),
+            ("noto-sans-devanagari/NotoSansDevanagari-Regular.ttf", "\u092F\u0942\u0928\u093F\u0915\u094B\u0921 \u092A\u094D\u0930\u0924\u094D\u092F\u0947\u0915 \u0905\u0915\u094D\u0937\u0930 \u0915\u0947 \u0932\u093F\u090F \u090F\u0915 \u0935\u093F\u0936\u0947\u0937 \u0938\u0902\u0916\u094D\u092F\u093E \u092A\u094D\u0930\u0926\u093E\u0928 \u0915\u0930\u0924\u093E \u0939\u0948\u0964 "),
+            ("noto-serif-tibetan/NotoSerifTibetan-Regular.ttf", "\u0F56\u0F7C\u0F51\u0F0B\u0F66\u0F90\u0F51\u0F0B\u0F53\u0F72\u0F0B\u0F56\u0F7C\u0F51\u0F0B\u0F62\u0F72\u0F42\u0F66\u0F0B\u0F40\u0FB1\u0F72\u0F0B\u0F66\u0F90\u0F51\u0F0B\u0F61\u0F72\u0F42\u0F0B\u0F61\u0F72\u0F53\u0F0D \u0F66\u0F92\u0FB2\u0F74\u0F56\u0F0B\u0F58\u0F50\u0F60\u0F0B\u0F51\u0F44\u0F0B\u0F62\u0F92\u0FB1\u0F74\u0F51\u0F0B\u0F66\u0FA1\u0F7A\u0F0B\u0F66\u0FA3\u0F0B\u0F5A\u0F7C\u0F42\u0F66\u0F0B\u0F61\u0F7C\u0F51\u0F0D "),
+            ("noto-sans-thai/NotoSansThai-Regular.ttf", "\u0E20\u0E32\u0E29\u0E32\u0E44\u0E17\u0E22\u0E40\u0E1B\u0E47\u0E19\u0E20\u0E32\u0E29\u0E32\u0E17\u0E35\u0E48\u0E21\u0E35\u0E27\u0E23\u0E23\u0E13\u0E22\u0E38\u0E01\u0E15\u0E4C \u0E01\u0E33\u0E25\u0E31\u0E07\u0E43\u0E08 \u0E19\u0E49\u0E33\u0E41\u0E02\u0E47\u0E07 "),
+            ("noto-sans-hebrew/NotoSansHebrew-Regular.ttf", "\u05E9\u05B8\u05C1\u05DC\u05D5\u05B9\u05DD \u05E2\u05D5\u05B9\u05DC\u05B8\u05DD 2024 \u05D1\u05BC\u05B0\u05E8\u05B5\u05D0\u05E9\u05B4\u05C1\u05D9\u05EA \u05D1\u05BC\u05B8\u05E8\u05B8\u05D0 abc. "),
+            ("noto-sans-myanmar/NotoSansMyanmar-Regular.ttf", "\u1019\u103C\u1014\u103A\u1019\u102C\u1018\u102C\u101E\u102C \u1000\u103B\u1031\u1038\u1007\u1030\u1038\u1010\u1004\u103A\u1015\u102B\u1010\u101A\u103A\u104B "),
+            ("noto-sans-khmer/NotoSansKhmer-Regular.ttf", "\u1797\u17B6\u179F\u17B6\u1781\u17D2\u1798\u17C2\u179A \u179F\u17BC\u1798\u17A2\u179A\u1782\u17BB\u178E\u17D4 "),
+        };
+
+        var hyphenator = Hyphenator.Parse("a1 e1 i1 o1 u1 1th 1ff", options: new HyphenatorOptions { LeftHyphenMin = 2, RightHyphenMin = 2 });
+        var random = new Random(2611);
+        foreach (var (file, sentence) in scripts)
+        {
+            var font = Font.Load(fonts / file);
+            var text = string.Concat(Enumerable.Repeat(sentence, 6));
+            var plain = new TextStyle(font, 16);
+            var variants = new TextStyle[]
+            {
+                plain,
+                new(font, 14) { LetterSpacing = 1.5, WordSpacing = 2, Synthesis = FontSynthesis.Bold | FontSynthesis.Oblique, Hyphenator = hyphenator },
+                new(font, 18) { Decorations = TextDecorations.Underline },
+            };
+
+            for (var iteration = 0; iteration < 24; iteration++)
+            {
+                var style = variants[iteration % variants.Length];
+
+                // A vertical layout wraps its lines at the height of its box.
+                var length = random.Next(4) switch
+                {
+                    0 => 60,
+                    1 => random.Next(80, 200),
+                    2 => random.Next(200, 500),
+                    _ => 480,
+                };
+                var isVertical = random.Next(6) == 0;
+                var options = new TextLayoutOptions
+                {
+                    MaxWidth = isVertical ? double.PositiveInfinity : length,
+                    MaxHeight = isVertical ? length : double.PositiveInfinity,
+                    Alignment = random.Next(2) == 0 ? TextAlignment.Justify : TextAlignment.Start,
+                    LineBreakStrategy = random.Next(3) == 0 ? TextLineBreakStrategy.Optimal : TextLineBreakStrategy.Greedy,
+                    Hyphenation = random.Next(2) == 0 ? TextHyphenation.Automatic : TextHyphenation.Manual,
+                    Trimming = random.Next(4) == 0 ? TextTrimming.Character : TextTrimming.None,
+                    MaxLines = random.Next(4) == 0 ? 3 : int.MaxValue,
+                    FirstLineIndent = random.Next(3) == 0 ? -20 : 0,
+                    WritingMode = isVertical ? TextWritingMode.VerticalRightToLeft : TextWritingMode.Horizontal,
+                };
+
+                // Some words of a rich text have another style: their items are shaped apart.
+                TextSpan[] spans;
+                if (iteration % 4 == 3)
+                {
+                    var builder = new RichTextBuilder();
+                    var words = text.Split(' ');
+                    for (var i = 0; i < words.Length; i++)
+                    {
+                        builder.Append(i == 0 ? words[i] : " " + words[i], i % 7 == 6 ? variants[1] : i % 5 == 4 ? variants[2] : plain);
+                    }
+
+                    spans = builder.Build().SpanList.ToArray();
+                }
+                else
+                {
+                    spans = [new TextSpan(0, text.Length, style)];
+                }
+
+                var kept = TextLayoutEngine.Create(text, spans, options, 1, options.MaxWidth, options.MaxHeight);
+                var shaped = TextLayoutEngine.Create(text, spans, options, 1, options.MaxWidth, options.MaxHeight, reusesShapedGlyphs: false);
+                AssertSameLayout(shaped, kept);
+            }
+        }
+
+        static void AssertSameLayout(TextLayoutData expected, TextLayoutData actual)
+        {
+            Assert.NotEmpty(expected.Lines);
+            Assert.Equal(expected.Lines, actual.Lines);
+            Assert.Equal(expected.Glyphs, actual.Glyphs);
+            Assert.Equal(expected.Positions, actual.Positions);
+            Assert.Equal(expected.Anchors, actual.Anchors);
+            Assert.Equal(expected.Runs, actual.Runs);
+            Assert.Equal(expected.Fonts, actual.Fonts);
+            Assert.Equal(expected.Brushes, actual.Brushes);
+            Assert.Equal(expected.Decorations, actual.Decorations);
+            Assert.Equal(expected.Backgrounds, actual.Backgrounds);
+            Assert.Equal(expected.HitBoxes, actual.HitBoxes);
+            Assert.Equal(expected.HitBoxStarts, actual.HitBoxStarts);
+            Assert.Equal(expected.CharacterBoundaries, actual.CharacterBoundaries);
+            Assert.Equal(expected.Width, actual.Width);
+            Assert.Equal(expected.Height, actual.Height);
+            Assert.Equal(expected.IsTruncated, actual.IsTruncated);
+            Assert.Equal(expected.HasMissingGlyphs, actual.HasMissingGlyphs);
+            Assert.Equal(expected.Vertical?.Lines, actual.Vertical?.Lines);
+            Assert.Equal(expected.Vertical?.LineRights, actual.Vertical?.LineRights);
         }
     }
 

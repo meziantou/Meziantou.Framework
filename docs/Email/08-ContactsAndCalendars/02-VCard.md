@@ -27,7 +27,9 @@ Assert.Contains("EMAIL;PREF=1;TYPE=internet,work:mary@example.com", text, String
   with their groups and their parameters, and are written back.
 - The reader decodes the texts (`\n`, `\,`, `\;`), the quoted-printable values of vCard 2.1 in their charset, the
   folded lines, the photos in base64 (`ENCODING=b`, `ENCODING=BASE64`, `data:` URIs) and the escapes of the parameters
-  ([RFC 6868]). A file is read in UTF-8, or in Latin-1 when its bytes are not UTF-8.
+  ([RFC 6868]). A `=` at the end of a line continues the value on the next line only when its encoding is
+  quoted-printable (`ENCODING=QUOTED-PRINTABLE` or `QUOTED-PRINTABLE`); in the other values, it is a character.
+  A file is read in UTF-8, or in Latin-1 when its bytes are not UTF-8.
 - [ToString](cref:Meziantou.Framework.Email.Contacts.VCard.ToString) writes a card in any version: the types as `TEL;WORK;VOICE`
   in 2.1, `TYPE=work,voice` in 3.0 and 4.0 (with `PREF=1` in 4.0), the values that are not ASCII in quoted-printable in
   2.1, and the lines folded at 75 bytes. A card without a formatted name gets one from its other names, since vCard 3.0

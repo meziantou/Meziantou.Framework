@@ -1585,6 +1585,38 @@ public sealed class AssertEqualTests
     }
 
     [Fact]
+    public void NonGenericArraysOfSimpleValues()
+    {
+        AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { 1, 2 }, (System.Collections.IEnumerable)new[] { 1, 2 });
+        AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { 0.0, double.NaN }, (System.Collections.IEnumerable)new[] { -0.0, double.NaN });
+        AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { 1, 2 }, (System.Collections.IEnumerable)new long[] { 1, 2 });
+        AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { "a", null }, (System.Collections.IEnumerable)new List<string?> { "a", null });
+        AssertionsAssert.Equal((object)new[] { 1.5m, 2m }, (object)new[] { 1.50m, 2.0m });
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { -1 }, (System.Collections.IEnumerable)new[] { uint.MaxValue }));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { "a" }, (System.Collections.IEnumerable)new[] { "A" }));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { "a", null }, (System.Collections.IEnumerable)new[] { "a", "b" }));
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal((System.Collections.IEnumerable)new[] { 1, 2, 3 }, (System.Collections.IEnumerable)new[] { 1, 2, 4 }), """
+            Assert.Equal() assertion failed: Item at index 2 differs.
+            Expected expression: (System.Collections.IEnumerable)new[] { 1, 2, 3 }
+            Actual expression:   (System.Collections.IEnumerable)new[] { 1, 2, 4 }
+            Index of first difference: 2
+            Expected: [1, 2, 3̲]
+            Actual:   [1, 2, 4̲]
+            """);
+    }
+
+    [Fact]
+    public void NotEqual_ValueTypesWithContent()
+    {
+        AssertionsAssert.NotEqual(1, 2);
+        AssertionsAssert.NotEqual(DateTime.MinValue, DateTime.MaxValue);
+        AssertionsAssert.NotEqual((int?)1, (int?)2);
+        AssertionsAssert.NotEqual((1, new[] { 1 }), (1, new[] { 2 }));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual((1, new[] { 1 }), (1, new[] { 1 })));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(new KeyValuePair<int, int[]>(1, [1]), new KeyValuePair<int, int[]>(1, [1])));
+    }
+
+    [Fact]
     public void NullLists_AreEqual()
     {
         List<int>? expected = null;

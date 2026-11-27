@@ -1120,9 +1120,7 @@ internal static partial class JsInterpreter
         var values = frame.Values;
         var code = frame.Code.Code;
         var pc = frame.Pc + 1;
-        var pattern = frame.Code.Constants[code[pc++]].AsString();
-        var flags = frame.Code.Constants[code[pc++]].AsString();
-        values[sp++] = CreateRegExp(frame.Realm, pattern, flags);
+        values[sp++] = RegExpBuiltins.RegExpCreate(frame.Realm, (RegExpLiteralSite)frame.Code.Objects[code[pc++]]);
         frame.Pc = pc;
         return sp;
     }
@@ -1131,7 +1129,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp - 1] = new JsValue(new IteratorRecordCell(IteratorOperations.GetIterator(values[sp - 1])));
+        values[sp - 1] = new JsValue(IteratorOperations.GetIterator(values[sp - 1]));
         frame.Pc = pc;
         return sp;
     }
@@ -1140,7 +1138,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp - 1] = new JsValue(new IteratorRecordCell(GetAsyncIterator(frame.Realm, values[sp - 1])));
+        values[sp - 1] = new JsValue(GetAsyncIterator(frame.Realm, values[sp - 1]));
         frame.Pc = pc;
         return sp;
     }
@@ -1151,7 +1149,7 @@ internal static partial class JsInterpreter
         var code = frame.Code.Code;
         var pc = frame.Pc + 1;
         var target = code[pc++];
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         frame.Sp = sp;
         if (IteratorOperations.IteratorStepValue(record, out var value))
         {
@@ -1171,7 +1169,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         if (record.Done)
         {
             values[sp - 1] = default;
@@ -1188,7 +1186,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         var array = new JsArray(frame.Realm.Intrinsics.ArrayPrototype);
         while (!record.Done && IteratorOperations.IteratorStepValue(record, out var value))
         {
@@ -1204,7 +1202,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         values[sp - 1] = JsOperations.Call(record.NextMethod, record.Iterator, []);
         frame.Pc = pc;
         return sp;
@@ -1217,7 +1215,7 @@ internal static partial class JsInterpreter
         var pc = frame.Pc + 1;
         var target = code[pc++];
         var result = values[--sp];
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         if (result.Cell is not JsObject resultObject)
         {
             record.Done = true;
@@ -1242,7 +1240,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        var record = ((IteratorRecordCell)values[--sp].Cell!).Record;
+        var record = (IteratorRecord)values[--sp].Cell!;
         frame.Sp = sp;
         if (!record.Done)
         {
@@ -1258,7 +1256,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        var record = ((IteratorRecordCell)values[--sp].Cell!).Record;
+        var record = (IteratorRecord)values[--sp].Cell!;
         frame.Sp = sp;
         if (!record.Done)
         {
@@ -1274,7 +1272,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         if (record.Done)
         {
             values[sp - 1] = default;
@@ -1306,7 +1304,7 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp - 1] = JsValue.FromBoolean(((IteratorRecordCell)values[sp - 1].Cell!).Record.Done);
+        values[sp - 1] = JsValue.FromBoolean(((IteratorRecord)values[sp - 1].Cell!).Done);
         frame.Pc = pc;
         return sp;
     }
@@ -1319,7 +1317,7 @@ internal static partial class JsInterpreter
         var isAsync = code[pc++] != 0;
         var kind = (int)values[--sp].NumberValue;
         var received = values[--sp];
-        var record = ((IteratorRecordCell)values[sp - 1].Cell!).Record;
+        var record = (IteratorRecord)values[sp - 1].Cell!;
         frame.Sp = sp;
         values[sp - 1] = DelegateStep(record, received, kind, isAsync);
         frame.Pc = pc;

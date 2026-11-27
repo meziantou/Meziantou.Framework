@@ -1,0 +1,17 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <!-- MsQuic is a native library that sends UDP datagrams: it cannot run in the browser -->
+    <IsBrowserCompatible>false</IsBrowserCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Version>1.0.0</Version>
+    <Description>A .NET binding of MsQuic, the QUIC implementation of System.Net.Quic, that also exposes QUIC datagrams (RFC 9221), stream priorities, connection statistics and the congestion control algorithm</Description>
+    <PackageTags>quic, msquic, datagram, rfc9221, networking</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.MsQuic.Tests" />
+  </ItemGroup>
+
+</Project>

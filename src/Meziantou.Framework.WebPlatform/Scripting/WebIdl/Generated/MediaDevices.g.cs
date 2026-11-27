@@ -27,6 +27,12 @@ internal static class Binding_MediaDevices<TAdapter, TValue> where TAdapter : st
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MediaDevices>(t, Binding);
         var result = o.EnumerateDevices(); return r.ToPromise(result, static (r, value) => r.FromSequence(value, static (r, e) => r.Wrap(e)));
     }
+    private static TValue Op_selectAudioOutput(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MediaDevices>(t, Binding);
+        var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.AudioOutputOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AudioOutputOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_AudioOutputOptions(r, a[0]);
+        var result = o.SelectAudioOutput(a0); return r.ToPromise(result, static (r, value) => r.Wrap(value));
+    }
     private static TValue Op_setCaptureHandleConfig(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.MediaDevices>(t, Binding);
@@ -55,6 +61,7 @@ internal static class Binding_MediaDevices<TAdapter, TValue> where TAdapter : st
         r.DefineAttribute(instanceTarget, "ondevicechange", Get_ondevicechange, Set_ondevicechange);
         r.DefineAttribute(instanceTarget, "defaultSemantics", Get_defaultSemantics, null);
         r.DefineOperation(instanceTarget, "enumerateDevices", 0, Op_enumerateDevices, returnsPromise: true);
+        r.DefineOperation(instanceTarget, "selectAudioOutput", 0, Op_selectAudioOutput, returnsPromise: true);
         r.DefineOperation(instanceTarget, "setCaptureHandleConfig", 0, Op_setCaptureHandleConfig);
         r.DefineOperation(instanceTarget, "getSupportedConstraints", 0, Op_getSupportedConstraints);
         r.DefineOperation(instanceTarget, "getUserMedia", 0, Op_getUserMedia, returnsPromise: true);

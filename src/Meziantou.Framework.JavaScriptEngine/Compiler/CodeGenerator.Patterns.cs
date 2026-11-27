@@ -257,7 +257,7 @@ internal sealed partial class CodeGenerator
         var handler = _builder.DefineLabel();
         _builder.SetLabelDepth(handler, depth + 1);
         _builder.MarkLabel(handler);
-        _builder.AddHandler(regionStart, regionEnd, handler, depth, environment);
+        _builder.AddHandler(regionStart, regionEnd, handler, depth, environment, rethrows: true);
         _builder.Emit(OpCode.LoadLocal, iterator);
         _builder.Emit(OpCode.IteratorCloseOnThrow);
         _builder.Emit(OpCode.Throw);

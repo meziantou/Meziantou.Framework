@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Diagnostics;
 using System.Text;
 using System.Runtime.CompilerServices;
@@ -7,7 +8,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>https://dom.spec.whatwg.org/#interface-node</summary>
 /// <seealso href="https://dom.spec.whatwg.org/#node"/>
 [IdlInterface("Node", "https://dom.spec.whatwg.org/#node")]
-public abstract partial class Node : EventTarget
+public abstract partial class Node : EventTarget, Scripting.IScriptWrapperHolder
 {
     /// <summary>The node type of an element.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-node-element_node"/>
@@ -106,6 +107,9 @@ public abstract partial class Node : EventTarget
     [IdlMember("DOCUMENT_POSITION_IMPLEMENTATION_SPECIFIC", "https://dom.spec.whatwg.org/#dom-node-document_position_implementation_specific")]
     public const ushort DocumentPositionImplementationSpecific = 0x20;
 
+    // First: the collector marks the fields of an object from the first, so the wrapper of a node is marked before its
+    // siblings (otherwise the wrappers of a long list of siblings stay on the mark stack, which overflows)
+    private Scripting.ScriptWrapperSlot? _scriptWrapper;
     private Document _nodeDocument;
     private Node? _parent;
     private Node? _previousSibling;
@@ -118,11 +122,30 @@ public abstract partial class Node : EventTarget
     /// <summary>Whether the root of the connected node is a shadow root (maintained with the connected flag).</summary>
     private bool _isInShadowTree;
 
+    /// <summary>Whether the node is an <see cref="Element"/>: see <see cref="IsElement"/>.</summary>
+    private readonly bool _isElement;
+
     private protected Node(Document? nodeDocument)
     {
         // A Document is its own node document; it passes null here and sets it in its constructor.
         _nodeDocument = nodeDocument!;
     }
+
+    private protected Node(Document nodeDocument, bool isElement)
+    {
+        _nodeDocument = nodeDocument;
+        _isElement = isElement;
+    }
+
+    /// <summary>
+    /// Gets whether the node is an <see cref="Element"/>. Testing the flag is cheaper than a type test (<c>node is Element</c>),
+    /// which calls a runtime helper that walks the base types, as <see cref="Element"/> is not sealed: use it on the hot paths.
+    /// </summary>
+    internal bool IsElement => _isElement;
+
+    /// <summary>Gets the node as an <see cref="Element"/>, or null when it is not an element (see <see cref="IsElement"/>).</summary>
+    /// <remarks>The cast is not checked: the flag is readonly and only the constructor of <see cref="Element"/> sets it.</remarks>
+    internal Element? AsElement => _isElement ? unsafe(Unsafe.As<Element>(this)) : null;
 
     /// <summary>The node document (https://dom.spec.whatwg.org/#concept-node-document).</summary>
     internal Document NodeDocument
@@ -159,6 +182,16 @@ public abstract partial class Node : EventTarget
     /// <summary>Records the realm where the node was created, before it is adopted by a document of another realm.</summary>
     internal void KeepCreationRealm(Window window) => CreationRealms.TryAdd(this, window);
 
+    /// <inheritdoc/>
+    Scripting.ScriptWrapperSlot? Scripting.IScriptWrapperHolder.ScriptWrapper
+    {
+        get => _scriptWrapper;
+        set => _scriptWrapper = value;
+    }
+
+    /// <inheritdoc/>
+    Window? Scripting.IScriptWrapperHolder.ScriptWrapperWindow => NodeDocument.RealmWindow;
+
     /// <summary>Gets the name of the node, which depends on its type.</summary>
     /// <seealso href="https://dom.spec.whatwg.org/#dom-node-nodename"/>
     [IdlMember("nodeName", "https://dom.spec.whatwg.org/#dom-node-nodename")]
@@ -180,7 +213,7 @@ public abstract partial class Node : EventTarget
     /// <summary>Sets the connected flag of the shadow-including inclusive descendants (maintained on insertion and removal).</summary>
     internal void SetConnected(bool connected)
     {
-        if (_firstChild is null && this is not Element { AttachedShadowRoot: not null })
+        if (_firstChild is null && AsElement is not { AttachedShadowRoot: not null })
         {
             _isConnected = connected;
             _isInShadowTree = connected && IsInShadowTreeOfParent(this);
@@ -301,16 +334,48 @@ public abstract partial class Node : EventTarget
         if (_firstChild is Text onlyText && onlyText._nextSibling is null)
             return onlyText.Data;
 
-        var builder = new StringBuilder();
-        for (var node = _firstChild; node is not null; node = node.GetNextInTreeOrder(this))
+        // The data is copied into a string of its final length, as a StringBuilder copies it twice: the data of the text
+        // nodes is collected first. (the elements, most of the descendants, are not tested for the Text type: see IsElement)
+        var parts = ArrayPool<string>.Shared.Rent(16);
+        var count = 0;
+        var length = 0;
+        try
         {
-            if (node is Text text)
+            for (var node = _firstChild; node is not null; node = node.GetNextInTreeOrder(this))
             {
-                builder.Append(text.Data);
-            }
-        }
+                if (node is { IsElement: false } and Text text && text.Data is { Length: > 0 } data)
+                {
+                    if (count == parts.Length)
+                    {
+                        var larger = ArrayPool<string>.Shared.Rent(count * 2);
+                        parts.AsSpan(0, count).CopyTo(larger);
+                        ArrayPool<string>.Shared.Return(parts, clearArray: true);
+                        parts = larger;
+                    }
 
-        return builder.ToString();
+                    parts[count++] = data;
+                    length = checked(length + data.Length);
+                }
+            }
+
+            return count switch
+            {
+                0 => "",
+                1 => parts[0],
+                _ => string.Create(length, (parts, count), static (span, state) =>
+                {
+                    foreach (var part in state.parts.AsSpan(0, state.count))
+                    {
+                        part.CopyTo(span);
+                        span = span[part.Length..];
+                    }
+                }),
+            };
+        }
+        finally
+        {
+            ArrayPool<string>.Shared.Return(parts, clearArray: true);
+        }
     }
 
     /// <summary>https://dom.spec.whatwg.org/#concept-child-text-content</summary>
@@ -774,7 +839,7 @@ public abstract partial class Node : EventTarget
     {
         // A node without children is only an inclusive ancestor of itself, and is only the host of a fragment when it is a
         // shadow host or a template. This avoids walking the ancestors of other (quadratic when parsing deep documents).
-        if (_firstChild is null && this is not Element { AttachedShadowRoot: not null })
+        if (_firstChild is null && AsElement is not { AttachedShadowRoot: not null })
         {
             if (this is not HtmlTemplateElement template)
                 return ReferenceEquals(this, other);

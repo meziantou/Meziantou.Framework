@@ -9,7 +9,7 @@ namespace Meziantou.Framework.VectorGraphics.Fuzz;
 /// <summary>
 /// A color parses back from its notation. Wrapping a text keeps its characters in order, and gives lines that fit the
 /// width unless they hold a single grapheme cluster. The SVG of any scene is a well-formed XML document whose root is
-/// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic. The
+/// <c>svg</c>, whatever the texts, tooltips, hyperlinks and data attributes hold, and the output is deterministic and the same written to a writer. The
 /// shapes of <see cref="PathBuilder"/> have the expected commands and stay in their bounds, and moving a path or
 /// combining transforms agrees with moving or transforming the points; converting a path to cubic curves keeps its ends
 /// and its shape. A font file loads or throws a
@@ -318,7 +318,7 @@ public static partial class VectorGraphicsFuzzTargets
 
         scene.Title = count % 2 == 0 ? FuzzText.Decode(data) : null;
         var svg = SvgSceneRenderer.Render(scene, new SvgRenderOptions { IdPrefix = "p" + count.ToString(CultureInfo.InvariantCulture) });
-        FuzzAssert.Equal(svg, SvgSceneRenderer.Render(scene, new SvgRenderOptions { IdPrefix = "p" + count.ToString(CultureInfo.InvariantCulture) }), "Rendering the scene twice gives different outputs");
+        FuzzAssert.Equal(svg, RenderToWriter(scene, new SvgRenderOptions { IdPrefix = "p" + count.ToString(CultureInfo.InvariantCulture) }), "Rendering the scene to a writer gives another output than rendering it to a string");
 
         var document = new XmlDocument { XmlResolver = null };
         try
@@ -621,5 +621,13 @@ public static partial class VectorGraphicsFuzzTargets
         {
             yield return new FuzzSeed("curves-" + i.ToString(CultureInfo.InvariantCulture), seeds[i]);
         }
+    }
+
+    // The SVG written to a writer, which receives it by blocks: it is the string SvgSceneRenderer.Render returns
+    private static string RenderToWriter(Scene scene, SvgRenderOptions options)
+    {
+        using var writer = new StringWriter(CultureInfo.InvariantCulture);
+        SvgSceneRenderer.Render(scene, writer, options);
+        return writer.ToString();
     }
 }

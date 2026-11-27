@@ -9,14 +9,17 @@ internal sealed class JsRegExpObject : JsObject
 {
     public static readonly PropertyKey LastIndexKey = new("lastIndex");
 
-    public JsRegExpObject(JsObject prototype, JsRealm realm, bool legacyFeaturesEnabled)
+    public JsRegExpObject(JsObject prototype, JsRealm realm, bool legacyFeaturesEnabled, JsValue lastIndex = default)
         : base(prototype, ObjectClass.RegExp)
     {
         Realm = realm;
         LegacyFeaturesEnabled = legacyFeaturesEnabled;
 
-        // RegExpAlloc: lastIndex is writable, not enumerable, not configurable
-        SetOwnSlot(LastIndexKey, JsValue.Undefined, PropertyFlags.Writable);
+        // RegExpAlloc: lastIndex is writable, not enumerable, not configurable. The object gets the shape at once, without a transition.
+        var shape = realm.Engine.RegExpShape;
+        var slots = new JsValue[shape.GetSlotsLength(0)];
+        slots[0] = lastIndex;
+        InitializeProperties(shape, slots);
     }
 
     /// <summary>Gets the realm the object was created in ([[Realm]]).</summary>

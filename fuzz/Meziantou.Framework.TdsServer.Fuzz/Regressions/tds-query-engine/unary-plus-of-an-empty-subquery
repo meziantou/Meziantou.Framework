@@ -1,0 +1,3 @@
+SELECT Id
+FROM customers
+WHERE Id <> +(SELECT o.Id FROM orders o WHERE o.Id = 42)

@@ -10,10 +10,16 @@ public sealed class CsvHeader
     private readonly IEqualityComparer<string> _comparer;
     private readonly Dictionary<string, int>? _indices;
 
+    // The instance of the name last found for each column, and the column after the last one found: see TryGetIndex. A header can be read by several
+    // threads: each write is atomic, and a name found by reference is always the name of its column.
+    private readonly string?[] _foundNames;
+    private int _nextIndex;
+
     internal CsvHeader(string[] columnNames, IEqualityComparer<string> comparer)
     {
         _columnNames = columnNames;
         _comparer = comparer;
+        _foundNames = new string?[columnNames.Length];
         if (columnNames.Length > MaxLinearSearchColumnCount)
         {
             _indices = new Dictionary<string, int>(columnNames.Length, comparer);
@@ -43,8 +49,46 @@ public sealed class CsvHeader
     public bool TryGetIndex(string columnName, out int index)
     {
         ArgumentNullException.ThrowIfNull(columnName);
+
+        // Most callers read the columns in the same order for each record, with the same instances of the names: the column after the last one
+        // found is checked first, by reference. A name that is the instance of a name found for a column is equal to its name with any comparer.
+        var foundNames = _foundNames;
+        var next = _nextIndex;
+        if ((uint)next < (uint)foundNames.Length && ReferenceEquals(foundNames[next], columnName))
+        {
+            index = next;
+            _nextIndex = next + 1 == foundNames.Length ? 0 : next + 1;
+            return true;
+        }
+
+        if (!TryFindIndex(columnName, out index))
+            return false;
+
+        // A reference is stored only when it changes: storing it costs more than comparing it
+        if (!ReferenceEquals(foundNames[index], columnName))
+        {
+            foundNames[index] = columnName;
+        }
+
+        _nextIndex = index + 1 == foundNames.Length ? 0 : index + 1;
+        return true;
+    }
+
+    private bool TryFindIndex(string columnName, out int index)
+    {
         if (_indices is not null)
             return _indices.TryGetValue(columnName, out index);
+
+        // The columns read in another order: the names found are compared by reference before the names of the columns
+        var foundNames = _foundNames;
+        for (var i = 0; i < foundNames.Length; i++)
+        {
+            if (ReferenceEquals(foundNames[i], columnName))
+            {
+                index = i;
+                return true;
+            }
+        }
 
         // The first column with the name, as with the dictionary
         var columnNames = _columnNames;

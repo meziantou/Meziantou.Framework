@@ -91,6 +91,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-cookies", Cookies) { Seeds = () => GetSeeds("cookies") },
         new("webplatform-inflate", Inflate) { Seeds = GetInflateSeeds },
         new("webplatform-wasm", Wasm) { Seeds = () => GetSeeds("wasm") },
+        new("webplatform-wasm-module-cache", WasmModuleCacheTarget) { Seeds = GetWasmModuleCacheSeeds, Dictionary = WasmModuleCacheTokens },
         new("webplatform-encoding-sniff", EncodingSniff) { Seeds = GetEncodingSniffSeeds },
         new("webplatform-webvtt", WebVttFile) { Seeds = () => GetSeeds("webvtt").Select((seed, index) => seed with { Data = (byte[])[(byte)index, .. seed.Data.Span] }) },
         new("webplatform-audio", Audio) { Seeds = GetAudioSeeds },
@@ -115,6 +116,7 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-media-codec-string", data => MediaCodecStringTarget(FuzzText.Decode(data))) { Seeds = GetMediaCodecStringSeeds, Dictionary = MediaCodecStringTokens },
         new("webplatform-webm-writer", WebMWriterTarget) { Seeds = GetWebMWriterSeeds },
         new("webplatform-integrity", data => Integrity(FuzzText.Decode(data))) { Seeds = GetIntegritySeeds, Dictionary = IntegrityTokens },
+        new("webplatform-connection-allowlist", data => ConnectionAllowlistHeader(FuzzText.Decode(data))) { Seeds = GetConnectionAllowlistSeeds, Dictionary = ConnectionAllowlistTokens },
         new("webplatform-http-cache", data => CacheFreshness(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache"), Dictionary = HttpCacheTokens },
         new("webplatform-http-cache-ranges", data => CacheRanges(FuzzText.Decode(data))) { Seeds = () => GetSeeds("http-cache-ranges"), Dictionary = HttpCacheRangeTokens },
         new("webplatform-image-metadata", ImageMetadataTarget) { Seeds = GetImageMetadataSeeds, Dictionary = ImageMetadataTokens },
@@ -142,6 +144,14 @@ public static partial class WebPlatformFuzzTargets
         new("webplatform-hsts-preload", data => HstsPreloadTarget(FuzzText.Decode(data))) { Seeds = GetHstsPreloadSeeds, Dictionary = HstsPreloadTokens },
         new("webplatform-media-content-type", data => MediaContentTypeTarget(FuzzText.Decode(data))) { Seeds = GetMediaContentTypeSeeds, Dictionary = MediaContentTypeTokens },
         new("webplatform-pi-attributes", data => ProcessingInstructionAttributes(FuzzText.Decode(data))) { Seeds = GetProcessingInstructionAttributesSeeds, Dictionary = ProcessingInstructionAttributesTokens },
+        new("webplatform-ndef-message", NdefMessageTarget) { Seeds = GetNdefMessageSeeds, Dictionary = NdefMessageTokens },
+        new("webplatform-webusb", WebUsb) { Seeds = GetWebUsbSeeds },
+        new("webplatform-bluetooth-uuid", data => BluetoothUuidTarget(FuzzText.Decode(data))) { Seeds = GetBluetoothUuidSeeds, Dictionary = BluetoothUuidTokens },
+        new("webplatform-bluetooth-request-device", BluetoothRequestDeviceTarget) { Seeds = GetBluetoothRequestDeviceSeeds, Dictionary = BluetoothRequestDeviceTokens },
+        new("webplatform-screen-details", ScreenDetailsTarget) { Seeds = GetScreenDetailsSeeds },
+        new("webplatform-hid-report-descriptor", HidReportDescriptorTarget) { Seeds = GetHidReportDescriptorSeeds },
+        new("webplatform-midi-messages", MidiMessagesTarget) { Seeds = GetMidiMessagesSeeds },
+        new("webplatform-accessibility", data => AccessibilityProperties(FuzzText.Decode(data.Length > AccessibilityMaxLength ? data[..AccessibilityMaxLength] : data))) { Seeds = GetAccessibilitySeeds, Dictionary = AccessibilityTokens },
     ];
 
     /// <summary>

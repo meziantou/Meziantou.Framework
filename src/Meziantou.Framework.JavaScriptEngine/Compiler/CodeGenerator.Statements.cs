@@ -906,7 +906,7 @@ internal sealed partial class CodeGenerator
         // The exception handler: close the iterator and rethrow
         _builder.SetLabelDepth(handlerLabel, depth + 1);
         _builder.MarkLabel(handlerLabel);
-        _builder.AddHandler(regionStart, regionEnd, handlerLabel, depth, environment);
+        _builder.AddHandler(regionStart, regionEnd, handlerLabel, depth, environment, rethrows: true);
         _scope = outerScope;
         _builder.Emit(OpCode.LoadLocal, iterator);
         if (forOf.IsAwait)

@@ -20,6 +20,15 @@ internal sealed class MarkdownNode : GreenNode
     {
     }
 
+    /// <summary>Creates a node whose rare kinds below it the caller found while it made the children, which are not read again.</summary>
+    /// <param name="kind">The kind of the node.</param>
+    /// <param name="children">The children.</param>
+    /// <param name="rareKinds">The kinds of the nodes below the node: for each child that is a node, its <see cref="GetRareKindsOfNode"/>.</param>
+    public MarkdownNode(SyntaxKind kind, ReadOnlySpan<GreenNode?> children, MarkdownRareKinds rareKinds)
+        : this(kind, Green.SyntaxList.ListNode(children), diagnostics: null, annotations: null, rareKinds)
+    {
+    }
+
     private MarkdownNode(SyntaxKind kind, GreenNode? children, SyntaxDiagnosticInfo[]? diagnostics, SyntaxAnnotation[]? annotations, MarkdownRareKinds rareKinds)
         : base((int)kind, diagnostics, annotations)
     {
@@ -50,12 +59,7 @@ internal sealed class MarkdownNode : GreenNode
         switch (node)
         {
             case MarkdownNode markdownNode:
-                return markdownNode.RareKinds | (SyntaxKind)node.RawKind switch
-                {
-                    SyntaxKind.GenericAttributes => MarkdownRareKinds.GenericAttributes,
-                    SyntaxKind.GridTable => MarkdownRareKinds.GridTable,
-                    _ => MarkdownRareKinds.None,
-                };
+                return GetRareKindsOfNode(markdownNode);
 
             case { IsList: true }:
                 var kinds = MarkdownRareKinds.None;
@@ -70,6 +74,14 @@ internal sealed class MarkdownNode : GreenNode
                 return MarkdownRareKinds.None;
         }
     }
+
+    /// <summary>Gets the rare kinds that a node gives to its parent: the ones below it, and its own kind.</summary>
+    public static MarkdownRareKinds GetRareKindsOfNode(MarkdownNode node) => node.RareKinds | (SyntaxKind)node.RawKind switch
+    {
+        SyntaxKind.GenericAttributes => MarkdownRareKinds.GenericAttributes,
+        SyntaxKind.GridTable => MarkdownRareKinds.GridTable,
+        _ => MarkdownRareKinds.None,
+    };
 
     public override string KindText => ((SyntaxKind)RawKind).ToString();
 

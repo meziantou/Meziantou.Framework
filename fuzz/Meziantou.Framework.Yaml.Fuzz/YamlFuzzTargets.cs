@@ -60,6 +60,15 @@ public static class YamlFuzzTargets
         // A capacity smaller than most tokens exercises the refills of the streaming buffer
         var actual = ReadEvents(new Parser<LookAheadBuffer>(new LookAheadBuffer(new StringReader(yaml), capacity: 12)));
         FuzzAssert.Equal(expected, actual, "The string and streaming buffers produce different events");
+
+        // The parser reads a StreamReader by blocks. A stream that returns a few bytes per read makes it refill its
+        // buffer at every position. The byte order mark is kept as a character, like the string parser sees it.
+        if (Utf8.IsValid(data))
+        {
+            var encoding = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true);
+            using var reader = new StreamReader(new TrickleStream(data.ToArray()), encoding, detectEncodingFromByteOrderMarks: false, bufferSize: 16);
+            FuzzAssert.Equal(expected, ReadEvents(Yaml.Parser.CreateParser(reader)), "The string and StreamReader buffers produce different events");
+        }
     }
 
     private static void SyntaxTree(ReadOnlySpan<byte> data)
@@ -467,7 +476,7 @@ public static class YamlFuzzTargets
             while (parser.MoveNext())
             {
                 var current = parser.Current!;
-                events.Add($"{current} [{current.Start.Index}..{current.End.Index}]");
+                events.Add($"{current} [{FormatMark(current.Start)}..{FormatMark(current.End)}]");
             }
         }
         catch (YamlException ex)
@@ -478,6 +487,8 @@ public static class YamlFuzzTargets
 
         return new ParserResult(string.Join('\n', events), Error: null);
     }
+
+    private static string FormatMark(Mark mark) => string.Create(CultureInfo.InvariantCulture, $"{mark.Index}:{mark.Line}:{mark.Column}");
 
     private static IEnumerable<FuzzSeed> GetSeeds()
     {
@@ -631,4 +642,38 @@ public static class YamlFuzzTargets
     private sealed record ParserResult(string Events, string? Error);
 
     private sealed record DeserializeResult(object? Value, string? Error);
+
+    /// <summary>A read-only stream that returns between 1 and 3 bytes per read.</summary>
+    private sealed class TrickleStream(byte[] data) : Stream
+    {
+        private int _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var length = Math.Min(Math.Min(buffer.Length, 1 + (_position % 3)), data.Length - _position);
+            data.AsSpan(_position, length).CopyTo(buffer);
+            _position += length;
+            return length;
+        }
+
+        public override void Flush() => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 }

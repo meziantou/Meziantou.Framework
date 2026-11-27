@@ -300,6 +300,22 @@ public sealed class RegExpBuiltinsTests
     }
 
     [Theory]
+    [InlineData("'aa'.replace(/a/g, 'b') + 'xyz'.replace(/a/g, 'b')", "bbxyz")]
+    [InlineData("const re = /a/g; Object.defineProperty(re, 'flags', { value: '' }); 'aa'.replace(re, 'b')", "ba")]
+    [InlineData("const re = /a/g; re.global = 1; Object.defineProperty(re, 'global', { value: false }); 'aa'.replace(re, 'b')", "ba")]
+    [InlineData("const re = /a/g; Object.setPrototypeOf(re, Object.create(RegExp.prototype, { flags: { value: '' } })); 'aa'.replace(re, 'b')", "ba")]
+    [InlineData("Object.defineProperty(RegExp.prototype, 'global', { get() { return false; } }); 'aa'.replace(/a/g, 'b') + /a/g.flags", "ba")]
+    [InlineData("const first = 'aa'.replace(/a/g, 'b'); Object.defineProperty(RegExp.prototype, 'global', { get() { return false; } }); first + 'aa'.replace(/a/g, 'b')", "bbba")]
+    [InlineData("const first = /a/gy.flags; delete RegExp.prototype.sticky; first + ',' + /a/gy.flags + ',' + 'a-a'.split(/-/y).length", "gy,g,2")]
+    [InlineData("const first = /a/gi.flags; Object.defineProperty(RegExp.prototype, 'flags', { get() { return ''; } }); first + 'aa'.replace(/a/g, 'b')", "giba")]
+    [InlineData("const first = [...'a1b2'.matchAll(/\\d/g)].length; Object.defineProperty(RegExp.prototype, 'unicode', { get() { throw new Error('read'); } }); try { 'a'.match(/a/g); } catch (e) { first + e.message; }", "2read")]
+    public void Flags_GettersAreObservable(string script, string expected)
+    {
+        using var context = new Context();
+        Assert.Equal(expected, JsOperations.ToString(context.Realm.Execute(script)));
+    }
+
+    [Theory]
     [InlineData("a,b,,c", ",", "", new[] { "a", "b", "", "c" })]
     [InlineData("a1b2c", "(\\d)", "", new[] { "a", "1", "b", "2", "c" })]
     [InlineData("abc", "", "", new[] { "a", "b", "c" })]
@@ -464,10 +480,40 @@ public sealed class RegExpBuiltinsTests
     public void RegExpCreate_LiteralsCreateNewObjects()
     {
         using var context = new Context();
-        var a = RegExpBuiltins.RegExpCreate(context.Realm, "a+", "g");
-        var b = RegExpBuiltins.RegExpCreate(context.Realm, "a+", "g");
+        var site = new Compiler.RegExpLiteralSite("a+", "g");
+        var a = RegExpBuiltins.RegExpCreate(context.Realm, site);
+        a.Set(JsRegExpObject.LastIndexKey, 5, throwOnFailure: true);
+        var b = RegExpBuiltins.RegExpCreate(context.Realm, site);
         Assert.NotSame(a, b);
+        Assert.Same(a.Matcher, site.Program);
+        Assert.Same(a.Matcher, b.Matcher);
+        Assert.Equal(0, b.Get(JsRegExpObject.LastIndexKey).AsNumber());
         Assert.Equal("/a+/g", JsOperations.ToString(Context.Invoke(a, "toString")));
+        Assert.Equal("/a+/g", JsOperations.ToString(Context.Invoke(b, "toString")));
+    }
+
+    [Fact]
+    public void Literal_EachEvaluationCreatesAnObject()
+    {
+        using var context = new Context();
+        Assert.Equal("true,0,0,true,g,true", JsOperations.ToString(context.Realm.Execute("""
+            const results = [];
+            for (let i = 0; i < 3; i++) {
+              const r = /a/g;
+              r.lastIndex = 1;
+              r.extra = i;
+              results.push(r);
+            }
+            const fresh = (() => /a/g)();
+            [
+              results[0] !== results[1],
+              fresh.lastIndex,
+              Object.keys(fresh).length,
+              Object.getOwnPropertyDescriptor(fresh, 'lastIndex').writable && !Object.getOwnPropertyDescriptor(fresh, 'lastIndex').enumerable && !Object.getOwnPropertyDescriptor(fresh, 'lastIndex').configurable,
+              fresh.flags,
+              results[2].extra === 2 && results[0].test('ba') && results[0].lastIndex === 2,
+            ].join()
+            """)));
     }
 
     [Fact]

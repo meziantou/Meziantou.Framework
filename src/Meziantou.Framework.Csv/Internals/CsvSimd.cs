@@ -30,8 +30,9 @@ internal static class CsvSimd
         _ => throw new ArgumentOutOfRangeException(nameof(vectorSize)),
     };
 
+    /// <summary>Gets the masks of the separators, of the quotes, and of all the special characters of a block.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void GetMasks<T>(ref T start, int vectorSize, byte separator, byte quote, out ulong separators, out ulong specials)
+    public static void GetMasks<T>(ref T start, int vectorSize, byte separator, byte quote, out ulong separators, out ulong quotes, out ulong specials)
         where T : unmanaged
     {
         if (typeof(T) == typeof(byte))
@@ -45,19 +46,19 @@ internal static class CsvSimd
                         unsafe(Vector128.LoadUnsafe(ref bytes, 16)),
                         unsafe(Vector128.LoadUnsafe(ref bytes, 32)),
                         unsafe(Vector128.LoadUnsafe(ref bytes, 48)),
-                        separator, quote, out separators, out specials);
+                        separator, quote, out separators, out quotes, out specials);
                     return;
 
                 case 64:
-                    Match(unsafe(Vector512.LoadUnsafe(ref bytes)), separator, quote, out separators, out specials);
+                    Match(unsafe(Vector512.LoadUnsafe(ref bytes)), separator, quote, out separators, out quotes, out specials);
                     return;
 
                 case 32:
-                    Match(unsafe(Vector256.LoadUnsafe(ref bytes)), separator, quote, out separators, out specials);
+                    Match(unsafe(Vector256.LoadUnsafe(ref bytes)), separator, quote, out separators, out quotes, out specials);
                     return;
 
                 default:
-                    Match(unsafe(Vector128.LoadUnsafe(ref bytes)), separator, quote, out separators, out specials);
+                    Match(unsafe(Vector128.LoadUnsafe(ref bytes)), separator, quote, out separators, out quotes, out specials);
                     return;
             }
         }
@@ -71,7 +72,7 @@ internal static class CsvSimd
                     NarrowArm64(ref chars, 16),
                     NarrowArm64(ref chars, 32),
                     NarrowArm64(ref chars, 48),
-                    separator, quote, out separators, out specials);
+                    separator, quote, out separators, out quotes, out specials);
                 return;
 
             case 64:
@@ -80,13 +81,13 @@ internal static class CsvSimd
                     {
                         // The pack orders the 128-bit lanes of the two vectors alternately: the permutation restores the order of the elements
                         var packed = Avx512BW.PackUnsignedSaturate(unsafe(Vector512.LoadUnsafe(ref chars)).AsInt16(), unsafe(Vector512.LoadUnsafe(ref chars, 32)).AsInt16());
-                        Match(Avx512F.PermuteVar8x64(packed.AsInt64(), Vector512.Create(0L, 2, 4, 6, 1, 3, 5, 7)).AsByte(), separator, quote, out separators, out specials);
+                        Match(Avx512F.PermuteVar8x64(packed.AsInt64(), Vector512.Create(0L, 2, 4, 6, 1, 3, 5, 7)).AsByte(), separator, quote, out separators, out quotes, out specials);
                         return;
                     }
 
                     var max = Vector512.Create((ushort)0xFF);
                     var value = Vector512.Narrow(Vector512.Min(unsafe(Vector512.LoadUnsafe(ref chars)), max), Vector512.Min(unsafe(Vector512.LoadUnsafe(ref chars, 32)), max));
-                    Match(value, separator, quote, out separators, out specials);
+                    Match(value, separator, quote, out separators, out quotes, out specials);
                     return;
                 }
 
@@ -95,13 +96,13 @@ internal static class CsvSimd
                     if (Avx2.IsSupported)
                     {
                         var packed = Avx2.PackUnsignedSaturate(unsafe(Vector256.LoadUnsafe(ref chars)).AsInt16(), unsafe(Vector256.LoadUnsafe(ref chars, 16)).AsInt16());
-                        Match(Avx2.Permute4x64(packed.AsInt64(), 0b11_01_10_00).AsByte(), separator, quote, out separators, out specials);
+                        Match(Avx2.Permute4x64(packed.AsInt64(), 0b11_01_10_00).AsByte(), separator, quote, out separators, out quotes, out specials);
                         return;
                     }
 
                     var max = Vector256.Create((ushort)0xFF);
                     var value = Vector256.Narrow(Vector256.Min(unsafe(Vector256.LoadUnsafe(ref chars)), max), Vector256.Min(unsafe(Vector256.LoadUnsafe(ref chars, 16)), max));
-                    Match(value, separator, quote, out separators, out specials);
+                    Match(value, separator, quote, out separators, out quotes, out specials);
                     return;
                 }
 
@@ -109,13 +110,13 @@ internal static class CsvSimd
                 {
                     if (Sse2.IsSupported)
                     {
-                        Match(Sse2.PackUnsignedSaturate(unsafe(Vector128.LoadUnsafe(ref chars)).AsInt16(), unsafe(Vector128.LoadUnsafe(ref chars, 8)).AsInt16()), separator, quote, out separators, out specials);
+                        Match(Sse2.PackUnsignedSaturate(unsafe(Vector128.LoadUnsafe(ref chars)).AsInt16(), unsafe(Vector128.LoadUnsafe(ref chars, 8)).AsInt16()), separator, quote, out separators, out quotes, out specials);
                         return;
                     }
 
                     var max = Vector128.Create((ushort)0xFF);
                     var value = Vector128.Narrow(Vector128.Min(unsafe(Vector128.LoadUnsafe(ref chars)), max), Vector128.Min(unsafe(Vector128.LoadUnsafe(ref chars, 8)), max));
-                    Match(value, separator, quote, out separators, out specials);
+                    Match(value, separator, quote, out separators, out quotes, out specials);
                     return;
                 }
         }
@@ -251,64 +252,112 @@ internal static class CsvSimd
         return AdvSimd.ExtractNarrowingSaturateUpper(lower, unsafe(Vector128.LoadUnsafe(ref chars, offset + 8)));
     }
 
+    // The line terminators are found with one table lookup per vector: TBL gives the element of the table at the index of each byte, and 0 for the
+    // bytes from 16. The masks of the separators and of the quotes share their last pairwise addition, and the mask of the special characters is
+    // combined from the three masks
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void MatchArm64(Vector128<byte> value0, Vector128<byte> value1, Vector128<byte> value2, Vector128<byte> value3, byte separator, byte quote, out ulong separators, out ulong specials)
+    private static void MatchArm64(Vector128<byte> value0, Vector128<byte> value1, Vector128<byte> value2, Vector128<byte> value3, byte separator, byte quote, out ulong separators, out ulong quotes, out ulong specials)
     {
         var separatorVector = Vector128.Create(separator);
         var quoteVector = Vector128.Create(quote);
-        var cr = Vector128.Create((byte)'\r');
-        var lf = Vector128.Create((byte)'\n');
+        var lineTerminatorTable = Vector128.Create((byte)0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF, 0, 0, 0xFF, 0, 0);
 
-        var separators0 = Vector128.Equals(value0, separatorVector);
-        var separators1 = Vector128.Equals(value1, separatorVector);
-        var separators2 = Vector128.Equals(value2, separatorVector);
-        var separators3 = Vector128.Equals(value3, separatorVector);
-        separators = ToMaskArm64(separators0, separators1, separators2, separators3);
-        specials = ToMaskArm64(
-            separators0 | Vector128.Equals(value0, quoteVector) | Vector128.Equals(value0, cr) | Vector128.Equals(value0, lf),
-            separators1 | Vector128.Equals(value1, quoteVector) | Vector128.Equals(value1, cr) | Vector128.Equals(value1, lf),
-            separators2 | Vector128.Equals(value2, quoteVector) | Vector128.Equals(value2, cr) | Vector128.Equals(value2, lf),
-            separators3 | Vector128.Equals(value3, quoteVector) | Vector128.Equals(value3, cr) | Vector128.Equals(value3, lf));
+        var separatorSums = SumBitsArm64(Vector128.Equals(value0, separatorVector), Vector128.Equals(value1, separatorVector), Vector128.Equals(value2, separatorVector), Vector128.Equals(value3, separatorVector));
+        var quoteSums = SumBitsArm64(Vector128.Equals(value0, quoteVector), Vector128.Equals(value1, quoteVector), Vector128.Equals(value2, quoteVector), Vector128.Equals(value3, quoteVector));
+        var lineTerminatorSums = SumBitsArm64(
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value0),
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value1),
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value2),
+            AdvSimd.Arm64.VectorTableLookup(lineTerminatorTable, value3));
+
+        var separatorsAndQuotes = AdvSimd.Arm64.AddPairwise(separatorSums, quoteSums).AsUInt64();
+        separators = separatorsAndQuotes.GetElement(0);
+        quotes = separatorsAndQuotes.GetElement(1);
+        specials = separators | quotes | AdvSimd.Arm64.AddPairwise(lineTerminatorSums, lineTerminatorSums).AsUInt64().ToScalar();
     }
 
-    // Arm64 has no movemask instruction: each element keeps the bit of its position in its byte, and three pairwise additions gather the bytes of
-    // the four vectors into the 64-bit mask
+    // Arm64 has no movemask instruction: each element keeps the bit of its position in its byte, and two pairwise additions gather the bytes of the
+    // four vectors, so that the byte i of the result has the bits of the elements 4i to 4i + 3. A third pairwise addition gives the 64-bit mask
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static ulong ToMaskArm64(Vector128<byte> matches0, Vector128<byte> matches1, Vector128<byte> matches2, Vector128<byte> matches3)
+    private static Vector128<byte> SumBitsArm64(Vector128<byte> matches0, Vector128<byte> matches1, Vector128<byte> matches2, Vector128<byte> matches3)
     {
         var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
         var sum01 = AdvSimd.Arm64.AddPairwise(matches0 & weights, matches1 & weights);
         var sum23 = AdvSimd.Arm64.AddPairwise(matches2 & weights, matches3 & weights);
-        var sum = AdvSimd.Arm64.AddPairwise(sum01, sum23);
-        return AdvSimd.Arm64.AddPairwise(sum, sum).AsUInt64().ToScalar();
+        return AdvSimd.Arm64.AddPairwise(sum01, sum23);
+    }
+
+    /// <summary>Gets a value indicating whether the bytes of a block are ASCII.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsAscii(ref byte start, int vectorSize)
+    {
+        var nonAscii = Vector128.Create((byte)0x80);
+        switch (vectorSize)
+        {
+            case 64 when Vector512.IsHardwareAccelerated:
+                return (unsafe(Vector512.LoadUnsafe(ref start)) & Vector512.Create((byte)0x80)) == Vector512<byte>.Zero;
+
+            case 64:
+                return ((unsafe(Vector128.LoadUnsafe(ref start)) | unsafe(Vector128.LoadUnsafe(ref start, 16)) | unsafe(Vector128.LoadUnsafe(ref start, 32)) | unsafe(Vector128.LoadUnsafe(ref start, 48))) & nonAscii) == Vector128<byte>.Zero;
+
+            case 32:
+                return ((unsafe(Vector128.LoadUnsafe(ref start)) | unsafe(Vector128.LoadUnsafe(ref start, 16))) & nonAscii) == Vector128<byte>.Zero;
+
+            default:
+                return (unsafe(Vector128.LoadUnsafe(ref start)) & nonAscii) == Vector128<byte>.Zero;
+        }
+    }
+
+    /// <summary>Gets, for each bit of <paramref name="value"/>, the XOR of this bit and of the bits below it.</summary>
+    /// <remarks>
+    /// With the mask of the quotes of a block, the bits that are set are the elements after an odd number of quotes: the elements of the quoted
+    /// values, with their opening quote and without their closing quote. This is the carry-less multiplication of the value by a value with all its
+    /// bits set: one instruction when the CPU has one.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong PrefixXor(ulong value)
+    {
+        if (Pclmulqdq.IsSupported)
+            return Pclmulqdq.CarrylessMultiply(Vector128.CreateScalar(value), Vector128.CreateScalar(ulong.MaxValue), 0).ToScalar();
+
+        if (System.Runtime.Intrinsics.Arm.Aes.IsSupported)
+            return System.Runtime.Intrinsics.Arm.Aes.PolynomialMultiplyWideningLower(Vector64.CreateScalar(value), Vector64.CreateScalar(ulong.MaxValue)).ToScalar();
+
+        value ^= value << 1;
+        value ^= value << 2;
+        value ^= value << 4;
+        value ^= value << 8;
+        value ^= value << 16;
+        value ^= value << 32;
+        return value;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Match(Vector512<byte> value, byte separator, byte quote, out ulong separators, out ulong specials)
+    private static void Match(Vector512<byte> value, byte separator, byte quote, out ulong separators, out ulong quotes, out ulong specials)
     {
         // The masks are combined after the extraction: combining the comparisons first is slower with AVX-512, where they are mask registers
         separators = Vector512.Equals(value, Vector512.Create(separator)).ExtractMostSignificantBits();
-        var quotes = Vector512.Equals(value, Vector512.Create(quote)).ExtractMostSignificantBits();
+        quotes = Vector512.Equals(value, Vector512.Create(quote)).ExtractMostSignificantBits();
         var lineTerminators = (Vector512.Equals(value, Vector512.Create((byte)'\r')) | Vector512.Equals(value, Vector512.Create((byte)'\n'))).ExtractMostSignificantBits();
         specials = separators | quotes | lineTerminators;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Match(Vector256<byte> value, byte separator, byte quote, out ulong separators, out ulong specials)
+    private static void Match(Vector256<byte> value, byte separator, byte quote, out ulong separators, out ulong quotes, out ulong specials)
     {
         // The masks are combined after the extraction: combining the comparisons first is slower with AVX-512, where they are mask registers
         separators = Vector256.Equals(value, Vector256.Create(separator)).ExtractMostSignificantBits();
-        var quotes = Vector256.Equals(value, Vector256.Create(quote)).ExtractMostSignificantBits();
+        quotes = Vector256.Equals(value, Vector256.Create(quote)).ExtractMostSignificantBits();
         var lineTerminators = (Vector256.Equals(value, Vector256.Create((byte)'\r')) | Vector256.Equals(value, Vector256.Create((byte)'\n'))).ExtractMostSignificantBits();
         specials = separators | quotes | lineTerminators;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void Match(Vector128<byte> value, byte separator, byte quote, out ulong separators, out ulong specials)
+    private static void Match(Vector128<byte> value, byte separator, byte quote, out ulong separators, out ulong quotes, out ulong specials)
     {
         // The masks are combined after the extraction: combining the comparisons first is slower with AVX-512, where they are mask registers
         separators = Vector128.Equals(value, Vector128.Create(separator)).ExtractMostSignificantBits();
-        var quotes = Vector128.Equals(value, Vector128.Create(quote)).ExtractMostSignificantBits();
+        quotes = Vector128.Equals(value, Vector128.Create(quote)).ExtractMostSignificantBits();
         var lineTerminators = (Vector128.Equals(value, Vector128.Create((byte)'\r')) | Vector128.Equals(value, Vector128.Create((byte)'\n'))).ExtractMostSignificantBits();
         specials = separators | quotes | lineTerminators;
     }

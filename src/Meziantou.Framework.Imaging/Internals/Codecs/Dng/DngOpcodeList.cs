@@ -157,11 +157,12 @@ internal sealed class DngOpcodeList
             if (values == DngSampleValues.StoredFloats)
                 continue;
 
-            // The values are clipped to the logical range of the list after each opcode, and stored integers stay integers
+            // The values are clipped to the logical range of the list after each opcode, and stored integers stay integers. A
+            // value the opcode cannot compute (its parameters overflow, as a polynomial whose huge terms cancel out) is 0
             var samples = image.Samples;
             for (var i = 0; i < samples.Length; i++)
             {
-                var value = Math.Clamp(samples[i], 0f, 1f);
+                var value = float.IsNaN(samples[i]) ? 0f : Math.Clamp(samples[i], 0f, 1f);
                 samples[i] = values == DngSampleValues.StoredIntegers ? (float)(Math.Round(value * 65535.0, MidpointRounding.AwayFromZero) / 65535.0) : value;
             }
         }
@@ -272,7 +273,8 @@ internal sealed class DngOpcodeList
         /// <summary>Checks that a count of elements of <paramref name="size"/> bytes fits in the remaining parameters.</summary>
         public void EnsureCount(long count, int size)
         {
-            if (count < 0 || count * size > Remaining)
+            // Divided rather than multiplied: a count read from the file times the size can overflow (fuzz regression)
+            if (count < 0 || count > Remaining / size)
                 throw Invalid(string.Create(CultureInfo.InvariantCulture, $"declares {count} values, more than its parameters hold"));
         }
 
@@ -591,7 +593,9 @@ internal sealed class DngOpcodeList
             if (pointsV < 1 || pointsH < 1 || mapPlanes < 1 || !(spacingV > 0) || !(spacingH > 0))
                 throw reader.Invalid("declares an empty gain map or a spacing that is not positive");
 
-            var count = (long)pointsV * pointsH * mapPlanes;
+            // The product of the three counts can be larger than a long: it is then more than the parameters hold
+            var points = (long)pointsV * pointsH;
+            var count = points > long.MaxValue / mapPlanes ? long.MaxValue : points * mapPlanes;
             reader.EnsureCount(count, 4);
             var gains = new float[count];
             for (var i = 0; i < gains.Length; i++)

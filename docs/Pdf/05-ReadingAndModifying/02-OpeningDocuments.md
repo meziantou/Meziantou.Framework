@@ -102,7 +102,8 @@ var text = document.Pages[0].ExtractText();
   cross-reference sections; the first page of a linearized file comes with the first requests
   ([Linearize](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Linearize) writes such files).
 - [PrefetchPageAsync](cref:Meziantou.Framework.Pdf.PdfDocument.PrefetchPageAsync) downloads what a page needs: its content, fonts, images and annotations. Without it, an
-  object read for the first time is downloaded synchronously, which the browser does not support.
+  object read for the first time is downloaded synchronously, which the browser does not support. An object that
+  cannot be read is skipped: reading the page reports the error only if the page needs it.
 - A server that does not support range requests sends the whole file, which is read from memory.
 - A damaged file is repaired by scanning it, which downloads it whole: set
   [AllowFullDownload](cref:Meziantou.Framework.Pdf.PdfReadOptions.AllowFullDownload) to `false` to refuse such files instead.
@@ -135,6 +136,8 @@ the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is t
   the file defines one generation of it only; when it defines several, the reference is the null object.
 - The bytes of a stream whose length is right, such as an uncompressed embedded PDF document, are not taken for objects
   of the file.
+- The data of a stream whose length is wrong ends at its `endstream` keyword, or at the `endobj` keyword of its object
+  when that comes first: an incremental update appended to the file does not change the data of the streams before it.
 - The objects are not read while the file is repaired, except the object streams, the trailers and the catalogs: the
   others are read when they are first used, as in a file that is not damaged.
 - A damaged compressed stream gives the data before the damage. A stream that cannot be decoded at all throws when its

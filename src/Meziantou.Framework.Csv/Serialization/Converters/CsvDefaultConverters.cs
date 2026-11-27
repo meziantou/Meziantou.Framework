@@ -21,9 +21,9 @@ internal static class CsvDefaultConverters
     private static readonly Utf8SpanParsableCsvConverter<UInt128> UInt128 = new();
     private static readonly Utf8SpanParsableCsvConverter<nint> IntPtr = new();
     private static readonly Utf8SpanParsableCsvConverter<nuint> UIntPtr = new();
-    private static readonly Utf8SpanParsableCsvConverter<Half> Half = new();
-    private static readonly Utf8SpanParsableCsvConverter<float> Single = new();
-    private static readonly Utf8SpanParsableCsvConverter<double> Double = new();
+    private static readonly FloatingPointCsvConverter<Half> Half = new();
+    private static readonly FloatingPointCsvConverter<float> Single = new();
+    private static readonly FloatingPointCsvConverter<double> Double = new();
     private static readonly DecimalCsvConverter Decimal = new();
     private static readonly SpanParsableCsvConverter<BigInteger> BigInteger = new();
     private static readonly Utf8SpanParsableCsvConverter<Guid> Guid = new();

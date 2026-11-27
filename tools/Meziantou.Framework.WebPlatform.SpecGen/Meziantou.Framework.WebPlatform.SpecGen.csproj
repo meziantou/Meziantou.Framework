@@ -7,7 +7,7 @@
     <NoWarn>$(NoWarn);CA1303;CA1515;CA2007;CA1031;MA0011;CA1305</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <!-- The bindings generator reflects on the .NET members annotated with [IdlMember] -->
-    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" />
+    <!-- The bindings generator reflects on the .NET members annotated with [IdlMember]: only the build with WebPlatformIdlMetadata=true emits these attributes -->
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform\Meziantou.Framework.WebPlatform.csproj" AdditionalProperties="WebPlatformIdlMetadata=true" />
   </ItemGroup>
 </Project>

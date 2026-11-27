@@ -63,12 +63,12 @@ jobs:
       MEZIANTOU_FRAMEWORK_IMAGING_FUZZ_SHARD: ${{ matrix.shard.shard }}
       MEZIANTOU_FRAMEWORK_IMAGING_TEST_PREVIEWS: false
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Fuzz
         run: ./eng/run-fuzz-tests.ps1 -Shard ${{ matrix.shard.id }} -Filter '${{ matrix.shard.filter }}'
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      - uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: fuzz-results-Meziantou.Framework.Imaging.FuzzTests-${{ matrix.shard.id }}-${{ matrix.platform.arch }}
@@ -89,9 +89,9 @@ jobs:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Download fuzz results
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        uses: actions/download-artifact@v8.0.2
         with:
           # A pattern: one artifact per shard and architecture, and a job that failed before uploading its results
           # leaves none

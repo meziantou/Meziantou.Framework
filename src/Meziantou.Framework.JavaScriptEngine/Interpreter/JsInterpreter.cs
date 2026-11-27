@@ -24,7 +24,7 @@ internal static partial class JsInterpreter
             {
                 // A frame resumed by a rejected await: the exception is thrown at the await
                 entry.PendingThrow = false;
-                if (!HandleException(ref frame, entry, engine, entry.ResumeValue, isFaultingFrame: false))
+                if (!HandleException(ref frame, entry, engine, entry.ResumeValue, location: null, isFaultingFrame: false))
                     throw new JsException(entry.ResumeValue);
             }
 
@@ -42,7 +42,7 @@ internal static partial class JsInterpreter
 
                     return result;
                 }
-                catch (JsException ex) when (HandleException(ref frame, entry, engine, ex.Value, isFaultingFrame: true))
+                catch (JsException ex) when (HandleException(ref frame, entry, engine, ex.Value, ex.Location, isFaultingFrame: true))
                 {
                     // The exception is handled by a frame of the run (an exception filter: an exception that leaves the
                     // run is not caught and rethrown, which would nest the exception dispatch in each .NET level of a deep
@@ -71,7 +71,7 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>Finds the handler of an exception in the frames of the run; false when the exception leaves the entry frame.</summary>
-    private static bool HandleException(ref Frame frame, Frame entry, JsEngine engine, JsValue exception, bool isFaultingFrame)
+    private static bool HandleException(ref Frame frame, Frame entry, JsEngine engine, JsValue exception, JsSourceLocation? location, bool isFaultingFrame)
     {
         while (true)
         {
@@ -83,6 +83,10 @@ internal static partial class JsInterpreter
                     frame.Sp = frame.StackBase + handler.StackDepth;
                     frame.Values[frame.Sp++] = exception;
                     frame.Pc = handler.Target;
+
+                    // A handler that closes an iterator rethrows the exception where it was thrown (fuzz regression: an
+                    // error in the body of a for-of loop was located at the end of the body)
+                    frame.RethrowLocation = handler.Rethrows ? location : null;
 
                     // A handler is never in the strict code of a class definition (statements cannot be in it)
                     frame.IsStrict = frame.Code.IsStrict;
@@ -733,8 +737,9 @@ internal static partial class JsInterpreter
                     {
                         var exception = values[--sp];
                         frame.Sp = sp;
-                        var location = GetLocation(frame.Code, pc);
-                        if (!HandleException(ref current, entry, engine, exception, isFaultingFrame: true))
+                        var location = frame.RethrowLocation ?? GetLocation(frame.Code, pc);
+                        frame.RethrowLocation = null;
+                        if (!HandleException(ref current, entry, engine, exception, location, isFaultingFrame: true))
                             throw new JsException(exception, location);
 
                         frame = current;
@@ -1042,7 +1047,7 @@ internal static partial class JsInterpreter
             {
                 frame.Sp = sp;
                 var location = engine.GetCurrentLocation();
-                if (!HandleException(ref current, entry, engine, error, isFaultingFrame: true))
+                if (!HandleException(ref current, entry, engine, error, location, isFaultingFrame: true))
                     throw new JsException(error, location);
 
                 frame = current;

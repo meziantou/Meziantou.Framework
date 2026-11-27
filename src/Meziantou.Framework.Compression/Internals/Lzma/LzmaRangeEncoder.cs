@@ -64,19 +64,17 @@ internal sealed class LzmaRangeEncoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void EncodeBit(ushort[] probs, int index, uint bit)
     {
+        // Without branches, as the LZMA SDK does: the bits of the literals are hard to predict
         uint prob = probs[index];
         var bound = (_range >> NumBitModelTotalBits) * prob;
-        if (bit == 0)
-        {
-            _range = bound;
-            probs[index] = (ushort)(prob + ((BitModelTotal - prob) >> NumMoveBits));
-        }
-        else
-        {
-            _low += bound;
-            _range -= bound;
-            probs[index] = (ushort)(prob - (prob >> NumMoveBits));
-        }
+        var mask = 0 - bit; // All ones for a 1, zero for a 0
+        _low += bound & mask;
+        _range = (bound & ~mask) | ((_range - bound) & mask);
+
+        // A 0 moves the probability towards BitModelTotal, and a 1 towards 0: prob - (prob >> NumMoveBits) is
+        // prob + ((31 - prob) >> NumMoveBits) with an arithmetic shift
+        var target = ((1u << NumMoveBits) - 1) + (~mask & (BitModelTotal - ((1u << NumMoveBits) - 1)));
+        probs[index] = (ushort)(prob + (uint)((int)(target - prob) >> NumMoveBits));
 
         if (_range < TopValue)
         {

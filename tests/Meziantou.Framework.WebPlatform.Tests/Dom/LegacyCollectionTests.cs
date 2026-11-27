@@ -67,6 +67,109 @@ public sealed class LegacyCollectionTests
     }
 
     [Fact]
+    public void HtmlCollection_NamedItems_FollowTheChanges()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div><p name=a></p><p id=a></p><p id=b name=c></p><svg name=d></svg></div>");
+        var div = document.QuerySelector("div")!;
+        var children = div.Children;
+        var names = (ISupportedPropertyNames)children;
+        var first = children[0];
+
+        // The first lookups scan the elements, the next ones use a map: each assertion runs both
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(first, children.NamedItem("a"));
+            Assert.Same(children[2], children.NamedItem("c"));
+            Assert.True(names.IsSupportedPropertyName("b"));
+            Assert.False(names.IsSupportedPropertyName("d"));
+            Assert.False(names.IsSupportedPropertyName(""));
+            Assert.Null(children.NamedItem(""));
+            Assert.Null(children.NamedItem("e"));
+        }
+
+        first.SetAttribute("name", "e");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(children[1], children.NamedItem("a"));
+            Assert.Same(first, children.NamedItem("e"));
+        }
+
+        children[2].Id = "f";
+        var span = document.CreateElement("span");
+        span.Id = "a";
+        div.InsertBefore(span, first);
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(span, children.NamedItem("a"));
+            Assert.False(names.IsSupportedPropertyName("b"));
+            Assert.True(names.IsSupportedPropertyName("f"));
+        }
+
+        span.Remove();
+        first.RemoveAttribute("name");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Equal("a", children.NamedItem("a")!.Id);
+            Assert.False(names.IsSupportedPropertyName("e"));
+        }
+
+        // The changes of the other attributes keep the map, the changes of the id and name attributes update it (a name
+        // attribute in a namespace is not a name of the element)
+        for (var i = 0; i < 5; i++)
+        {
+            children[1].SetAttribute("class", "c" + i);
+            Assert.Same(children[1], children.NamedItem("a"));
+        }
+
+        children[1].Id = "g";
+        first.SetAttributeNS("urn:other", "name", "h");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Null(children.NamedItem("a"));
+            Assert.Same(children[1], children.NamedItem("g"));
+            Assert.Null(children.NamedItem("h"));
+            Assert.False(names.IsSupportedPropertyName("h"));
+        }
+
+        first.RemoveAttributeNS("urn:other", "name");
+        first.SetAttribute("name", "h");
+        for (var i = 0; i < 5; i++)
+        {
+            Assert.Same(first, children.NamedItem("h"));
+            Assert.True(names.IsSupportedPropertyName("h"));
+        }
+    }
+
+    [Fact]
+    public void DomStringMap_NamedProperties()
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div data-cp=A1 data-foo-bar=1 data-=3 data-a-=4 data-x></div>");
+        var div = (HtmlElement)document.QuerySelector("div")!;
+        div.SetAttributeNS("urn:other", "data-ns", "5");
+        div.SetAttributeNS(@namespace: null, "data-up-Per", "6");
+        var dataset = div.Dataset;
+        Assert.Equal("A1", dataset["cp"]);
+        Assert.Equal("1", dataset["fooBar"]);
+        Assert.Equal("1", dataset["foo-bar"]);
+        Assert.Null(dataset["upPer"]);
+        Assert.Equal("3", dataset[""]);
+        Assert.Equal("4", dataset["a-"]);
+        Assert.Equal("", dataset["x"]);
+        Assert.Null(dataset["ns"]);
+        Assert.Null(dataset["c"]);
+        Assert.Null(dataset["cpx"]);
+        Assert.Null(dataset["fooBarX"]);
+        Assert.Null(dataset["foo"]);
+
+        var names = (ISupportedPropertyNames)dataset;
+        Assert.True(names.IsSupportedPropertyName("fooBar"));
+        Assert.True(names.IsSupportedPropertyName(""));
+        Assert.False(names.IsSupportedPropertyName("foo-bar"));
+        Assert.False(names.IsSupportedPropertyName("ns"));
+        Assert.Equal(["cp", "fooBar", "", "a-", "x"], dataset.Select(pair => pair.Key));
+    }
+
+    [Fact]
     public void DomStringList()
     {
         var list = new DomStringList(["a", "b"]);

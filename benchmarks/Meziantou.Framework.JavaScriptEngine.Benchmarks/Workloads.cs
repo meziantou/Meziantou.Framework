@@ -123,6 +123,18 @@ internal static class Workloads
               return s + Object.keys(items).length;
             }
             """,
+        // A reverse index built in a sparse array (consecutive runs of keys), read for the keys of a range, most of them
+        // missing (the encoders of the encoding tests of web-platform-tests)
+        ["SparseArrayLookups"] = """
+            const reverse = [];
+            for (let i = 0; i < 11000; i++) { reverse[0xAC00 + i] = i; }
+            for (let i = 0; i < 6000; i++) { reverse[0x4E00 + i * 3] = 11000 + i; }
+            function run() {
+              let s = 0;
+              for (let cp = 0x3000; cp < 0xD800; cp++) { s += reverse[cp] ?? 1; }
+              return s;
+            }
+            """,
         ["DictionarySlidingWindow"] = """
             function run() {
               const cache = {};
@@ -167,6 +179,22 @@ internal static class Workloads
               while ((match = re.exec(text)) !== null) { s += match[1].length; }
               return s + text.search(/id=6199\b/) + text.replace(/ok/g, 'OK').length;
             }
+            """,
+        ["LegacyDecoder"] = """
+            const streams = Array.from({ length: 200 }, (_, i) => (0x81 + (i % 100)).toString(16).toUpperCase() + ' ' + (0x41 + (i % 150)).toString(16).toUpperCase());
+            function decode(stream) {
+              stream = stream.replace(/%/g, ' ');
+              stream = stream.replace(/[\s]+/g, ' ').trim();
+              const bytes = stream.split(' ');
+              for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(bytes[i], 16);
+              let out = '';
+              while (bytes.length) out += String.fromCharCode(bytes.shift());
+              return out;
+            }
+            function run() { let n = 0; for (const s of streams) n += decode(s).length; return n; }
+            """,
+        ["RegExpLiteral"] = """
+            function run() { let n = 0; for (let i = 0; i < 20000; i++) { n += /[\s]+/g.lastIndex + /^[\w.+-]+@[\w-]+\.[\w.]+$/i.lastIndex + 1; } return n; }
             """,
         ["LoopCapture"] = """
             function run() { let sum = 0; for (let i = 0; i < 100000; i++) { if (i < 0) { let f = () => i; sum += f(); } else { sum += i; } } return sum; }

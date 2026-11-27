@@ -703,7 +703,9 @@ public sealed class PdfAnnotationCollection : IReadOnlyList<PdfAnnotation>
         {
             foreach (var item in array)
             {
-                if (PdfReference.ResolveIfReference(item) is PdfDictionary dictionary)
+                // A page of the document is not an annotation, even when its /Annots lists it: flattening or removing it
+                // would remove the page (fuzz regression: a page whose /Type is /Annot listed itself)
+                if (PdfReference.ResolveIfReference(item) is PdfDictionary dictionary && !ReferenceEquals(dictionary, _page.Dictionary) && !(item is PdfReference reference && _page.Document.Pages.Find(reference) is not null))
                 {
                     result.Add(PdfAnnotation.Create(_page, dictionary, item as PdfReference));
                 }

@@ -569,7 +569,10 @@ internal static class QRDecodeFuzzTargets
         if (barcode.Width > 400 || (barcode.Type is BarcodeType.Itf && barcode.Text.Length < 6))
             return;
 
-        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = 2 + (flags % 3), ModuleHeight = 40 });
+        // The reader needs the bars of the symbologies with a weak check (Code 39, ITF) to be at least 4% of the length of
+        // the barcode high: the bars are 6% of it (fuzz regression: 40 pixels of a Code 39 barcode of 1168 pixels)
+        var moduleWidth = 2 + (flags % 3);
+        using var image = barcode.ToImage(new BarcodeRenderOptions { ModuleWidth = moduleWidth, ModuleHeight = Math.Max(40, Math.Ceiling(barcode.Width * moduleWidth * 0.06)) });
         if ((flags & 0x30) is not 0)
         {
             image.Rotate((flags >> 4 & 3) switch { 1 => RotateMode.Rotate90, 2 => RotateMode.Rotate180, _ => RotateMode.Rotate270 });

@@ -10,6 +10,15 @@ internal abstract class LogicalNode
 {
     public LogicalContainer? Parent { get; set; }
 
+    /// <summary>
+    /// Gets or sets the index of the node in the children of its parent, when it was inserted or last found. Inserting or
+    /// removing a previous sibling makes it stale: check it before using it.
+    /// </summary>
+    public int IndexHint { get; set; }
+
+    /// <summary>Gets the number of DOM nodes of the node: 1 for an element or a DOM node, the DOM nodes of its children for a fragment.</summary>
+    public abstract int DomNodeCount { get; }
+
     public abstract void CollectDomNodes(List<Node> nodes);
 
     public abstract Node? GetFirstDomNode();

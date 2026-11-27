@@ -122,6 +122,8 @@ internal static class EventHandlerNames
         "blur",
         "error",
         "focus",
+        "gamepadconnected",
+        "gamepaddisconnected",
         "hashchange",
         "languagechange",
         "load",

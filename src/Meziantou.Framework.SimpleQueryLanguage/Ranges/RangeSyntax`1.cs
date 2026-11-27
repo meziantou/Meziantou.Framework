@@ -21,4 +21,10 @@ public abstract class RangeSyntax<T>
     /// <param name="comparer">The comparer to use for comparison, or null to use the default comparer.</param>
     /// <returns><see langword="true"/> if the value is within the range; otherwise, <see langword="false"/>.</returns>
     public abstract bool IsInRange(T value, IComparer<T>? comparer);
+
+    /// <summary>Compares with the comparer, or with the default comparer, called directly so the JIT can devirtualize and inline it.</summary>
+    private protected static int Compare(T x, T y, IComparer<T>? comparer)
+    {
+        return comparer is null ? Comparer<T>.Default.Compare(x, y) : comparer.Compare(x, y);
+    }
 }

@@ -5,7 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// as cloned by "clone a policy container": the policies that a document of a local scheme inherits from its initiator, its
 /// parent or its creator, and that the session history keeps for the URLs that require storing the policy container in
 /// history. It holds the CSP list (and its self-origin) and the Trusted Types directives of its policies, the integrity
-/// policies, and the referrer policy of the document, which a traversal restores from the session history; the referrer policy and the embedder policies
+/// policies, the connection allowlists, and the referrer policy of the document, which a traversal restores from the session history; the referrer policy and the embedder policies
 /// of the documents are still inherited by the other navigations separately (<see cref="Document.ReferrerPolicy"/>,
 /// <see cref="Document.EmbedderPolicy"/>). The other policies that are inherited with the policy container (e.g. the insecure
 /// requests policy) can be added to it.
@@ -43,8 +43,14 @@ internal sealed class PolicyContainer
     /// <summary>The report-only integrity policy of the policy container (https://w3c.github.io/webappsec-subresource-integrity/#policy-container-report-only-integrity-policy).</summary>
     public IntegrityPolicy ReportOnlyIntegrityPolicy { get; init; } = IntegrityPolicy.Empty;
 
+    /// <summary>The connection allowlists of the policy container (https://w3c.github.io/connection-allowlists/#policy-container-connection-allowlists).</summary>
+    public IReadOnlyList<ConnectionAllowlist> ConnectionAllowlists { get; init; } = [];
+
+    /// <summary>The required connection allowlist of the policy container (https://w3c.github.io/connection-allowlists/#policy-container-required-connection-allowlist), or null.</summary>
+    public string? RequiredConnectionAllowlist { get; init; }
+
     /// <summary>Whether the container holds no policy.</summary>
-    public bool IsEmpty => ContentSecurityPolicies is null && TrustedTypesDirectives is null && IntegrityPolicy.IsEmpty && ReportOnlyIntegrityPolicy.IsEmpty;
+    public bool IsEmpty => ContentSecurityPolicies is null && TrustedTypesDirectives is null && IntegrityPolicy.IsEmpty && ReportOnlyIntegrityPolicy.IsEmpty && ConnectionAllowlists.Count == 0 && RequiredConnectionAllowlist is null;
 
     /// <summary>
     /// https://html.spec.whatwg.org/multipage/browsers.html#clone-a-policy-container: a clone of the policy container of a
@@ -63,6 +69,8 @@ internal sealed class PolicyContainer
             ReferrerPolicy = document.ReferrerPolicy,
             IntegrityPolicy = document.IntegrityPolicy,
             ReportOnlyIntegrityPolicy = document.ReportOnlyIntegrityPolicy,
+            ConnectionAllowlists = document.ConnectionAllowlists,
+            RequiredConnectionAllowlist = document.RequiredConnectionAllowlist,
         };
     }
 

@@ -14,6 +14,8 @@ the `Meziantou.Framework.Csv` package: there is nothing else to install.
 - **You want errors when you build.** An invalid converter or a type without a usable constructor is a compiler error,
   not an exception the first time a file is read.
 - **Startup matters.** The members, the constructors and the converters are not discovered with reflection at runtime.
+- **Reading speed matters.** The generated code sets the members of each record directly, which is about 5 to 13% faster
+  than with reflection.
 
 ## Declare a context
 
@@ -56,6 +58,12 @@ fall back to reflection.
 The generated code reads and writes the same columns as reflection. It reaches the non-public members included with
 [CsvIncludeAttribute](cref:Meziantou.Framework.Csv.Serialization.CsvIncludeAttribute), the `init` accessors and the constructors of types with `required` members through `UnsafeAccessor`,
 which works with Native AOT.
+
+When it reads a file, the generated code also converts and sets each member of a record directly, without a virtual
+call: the compiler can inline the converter of each member. It does so when the columns of the members are in their
+declaration order, as in the files the serializer writes, and when no
+[DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler) is set. Otherwise, the members are set as with reflection. The records
+and the errors are the same in both cases.
 
 ## Native AOT and trimming
 

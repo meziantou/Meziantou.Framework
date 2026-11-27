@@ -2,15 +2,8 @@
   "contacts/contacts-select.https.window.js": {
     "total": 9,
     "failures": {
-      "Only one contact is returned if `multiple` is not set.": "FAIL",
-      "Supported contact properties are exposed.": "FAIL",
-      "Test contacts.select() throws an InvalidStateError in a sub-frame": "FAIL",
       "The Contact API can fail when the selector cannot be opened": "FAIL",
-      "The Contact API cannot be used again until the first operation is complete.": "FAIL",
-      "The Contact API correctly returns ContactInfo entries": "FAIL",
-      "The Contact API does not include fields that were not requested": "FAIL",
-      "The Contact API requires a user gesture": "FAIL",
-      "The Contact API requires valid properties to be provided": "FAIL"
+      "The Contact API cannot be used again until the first operation is complete.": "FAIL"
     }
   }
 }

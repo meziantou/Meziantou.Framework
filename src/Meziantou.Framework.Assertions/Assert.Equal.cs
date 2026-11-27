@@ -708,6 +708,11 @@ public partial class Assert
         if (!HaveSameArrayShape(expected, actual))
             throw new AssertionException(ErrorFormatter.Format(new ArrayDimensionsEqualAssertionError(expected, actual, message, actualExpression, expectedExpression)));
 
+        // Arrays of numbers and other simple values, and arrays and lists of strings, are compared without boxing their
+        // items. Only a positive result is trusted: the snapshots below locate the difference to report.
+        if (comparer is null && LeafSequencesEqual(expected, GetLeafSequenceKind(expected.GetType()), actual, GetLeafSequenceKind(actual.GetType()), StringComparison.Ordinal))
+            return;
+
         using var actualSnapshot = CollectionSnapshot.Create(actual);
         using var expectedSnapshot = CollectionSnapshot.Create(expected);
 

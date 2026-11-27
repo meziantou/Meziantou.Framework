@@ -43,7 +43,7 @@ public readonly ref struct Utf8CsvField
     public T Parse<T>()
         where T : IUtf8SpanParsable<T>
     {
-        if (T.TryParse(Utf8Span, GetFormatProvider(), out var result))
+        if (TryParse<T>(out var result))
             return result;
 
         throw CreateParseException(typeof(T));
@@ -56,7 +56,11 @@ public readonly ref struct Utf8CsvField
     public bool TryParse<T>([MaybeNullWhen(false)] out T result)
         where T : IUtf8SpanParsable<T>
     {
-        return T.TryParse(Utf8Span, GetFormatProvider(), out result);
+        var formatProvider = GetFormatProvider();
+        if (InvariantFloatingPoint.IsSupported<T>() && InvariantNumbers.IsInvariant(formatProvider) && InvariantFloatingPoint.TryParse(Utf8Span, out result))
+            return true;
+
+        return T.TryParse(Utf8Span, formatProvider, out result);
     }
 
     /// <summary>Decodes the value to UTF-16 and parses it with <see cref="CsvReaderOptions.FormatProvider"/>.</summary>

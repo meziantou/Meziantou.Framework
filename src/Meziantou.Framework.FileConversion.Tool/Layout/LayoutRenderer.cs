@@ -88,14 +88,14 @@ internal static class LayoutRenderer
         parent.AppendChild(style);
     }
 
-    private sealed class PrintedPdfPage(int pageNumber, PdfPage page, ConversionSettings settings) : ConversionPage(pageNumber)
+    internal sealed class PrintedPdfPage(int pageNumber, PdfPage page, ConversionSettings settings) : ConversionPage(pageNumber)
     {
         public override PdfPage? GetPdfPage() => page;
 
         public override Image RenderImage(CancellationToken cancellationToken) => PdfRenderer.RenderPage(page, new PdfRenderOptions { Dpi = settings.Dpi }, cancellationToken);
     }
 
-    private sealed class RenderedImagePage(int pageNumber, Image image) : ConversionPage(pageNumber)
+    internal sealed class RenderedImagePage(int pageNumber, Image image) : ConversionPage(pageNumber)
     {
         private Image? _image = image;
 

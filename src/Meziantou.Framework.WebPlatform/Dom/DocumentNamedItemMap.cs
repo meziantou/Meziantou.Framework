@@ -168,7 +168,7 @@ internal sealed class DocumentNamedItemMap
 
         for (var current = node; current is not null; current = current.GetNextInTreeOrder(node))
         {
-            if (current is Element element && IsCandidate(element))
+            if (current.AsElement is { } element && IsCandidate(element))
             {
                 map.Update(element, element.IdValue, element.GetAttributeValue("name"), add);
             }

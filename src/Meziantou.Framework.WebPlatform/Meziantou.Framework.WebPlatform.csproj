@@ -8,6 +8,8 @@
     <!-- Every public member is documented (CS1591). The parameters do not have to be documented (CS1573). -->
     <DisableDocumentationWarnings>false</DisableDocumentationWarnings>
     <NoWarn>$(NoWarn);CS1573</NoWarn>
+    <!-- The nullable attributes of the private members are not emitted: they make the assembly bigger, and no caller reads them -->
+    <Features>$(Features);nullablePublicOnly</Features>
     <Description>Spec-compliant HTML, XML, SVG and CSS parser exposing the browser DOM API (WHATWG DOM, HTML, URL, Encoding, Selectors, CSSOM, DOM XPath).</Description>
     <PackageTags>html;xml;svg;mathml;css;dom;parser;selectors;xpath;cssom;layout;web-platform</PackageTags>
   </PropertyGroup>
@@ -37,11 +39,8 @@
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.DevTools" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Scripting\WebIdl\Streams.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Streams.js" />
-    <EmbeddedResource Include="Scripting\WebIdl\Fetch.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Fetch.js" />
-    <EmbeddedResource Include="Scripting\WebIdl\WebCrypto.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.WebCrypto.js" />
-    <EmbeddedResource Include="Scripting\WebIdl\CacheStorage.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.CacheStorage.js" />
-    <EmbeddedResource Include="Scripting\WebIdl\Observable.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.Observable.js" />
+    <!-- The scripts of the WebIDL bindings; the build compresses them (WebIdlRealm.LoadEmbeddedScript reads them) -->
+    <EmbeddedResource Include="Scripting\WebIdl\*.js" LogicalName="Meziantou.Framework.WebPlatform.Scripting.WebIdl.%(Filename)%(Extension)" Compression="Deflate" />
     <!-- The bundled fonts (see Css/Fonts/Bundled/README.md); their licenses are distributed with the package. The build
          compresses the TrueType fonts; the WOFF2 fonts are compressed already -->
     <EmbeddedResource Include="Css\Fonts\Bundled\*.ttf" LogicalName="Meziantou.Framework.WebPlatform.Css.Fonts.Bundled.%(Filename)%(Extension)" Compression="Deflate" />
@@ -66,9 +65,24 @@
     <ProjectReference Include="..\Meziantou.Framework.Unicode\Meziantou.Framework.Unicode.csproj" />
     <!-- The word lists and the dictionary break engines of ICU (the lexical word breaking of the Southeast Asian scripts) -->
     <ProjectReference Include="..\Meziantou.Framework.Unicode.Dictionaries\Meziantou.Framework.Unicode.Dictionaries.csproj" />
+    <!-- The WebTransport sessions of HttpDocumentLoader (HTTP/3 over MsQuic) -->
+    <ProjectReference Include="..\Meziantou.Framework.WebTransport\Meziantou.Framework.WebTransport.csproj" />
   </ItemGroup>
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);MEZIANTOU_FRAMEWORK_WEBPLATFORM</DefineConstants>
+  </PropertyGroup>
+  <!--
+    [IdlInterface], [IdlMember] and [NotInIdl] are [Conditional("WEBPLATFORM_IDL_METADATA")], so the published assembly does
+    not carry them (about 1 MB). SpecGen and IdlCoverageTests read them by reflection: they reference the build that sets
+    WebPlatformIdlMetadata=true, which defines the symbol. This build has its own output directories, does not generate the
+    public API (ref/), and does not pass the property to the referenced projects, which are built only once.
+  -->
+  <PropertyGroup Condition="'$(WebPlatformIdlMetadata)' == 'true'">
+    <DefineConstants>$(DefineConstants);WEBPLATFORM_IDL_METADATA</DefineConstants>
+    <ArtifactsPivots>$(Configuration.ToLowerInvariant())_idlmetadata</ArtifactsPivots>
+    <ArtifactsPivots Condition="'$(TargetFramework)' != ''">$(ArtifactsPivots)_$(TargetFramework.ToLowerInvariant())</ArtifactsPivots>
+    <PublicApiGeneratorGenerateOnBuild>false</PublicApiGeneratorGenerateOnBuild>
+    <PublicApiGeneratorVerifyNoChangeOnBuild>false</PublicApiGeneratorVerifyNoChangeOnBuild>
   </PropertyGroup>
   <ItemGroup>
     <!-- The Zstandard decoder of Meziantou.Framework.Imaging (the "dcz" content coding of the compression dictionaries) -->
@@ -91,4 +105,13 @@
   <ItemGroup>
     <ProjectReference Include="..\..\tools\Meziantou.Framework.WebPlatform.Analyzers\Meziantou.Framework.WebPlatform.Analyzers.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" SetTargetFramework="TargetFramework=netstandard2.0" />
   </ItemGroup>
+  <!--
+    An item definition, not an Update: it also applies to the references that Directory.Build.targets adds after this file
+    (the analyzers), which would otherwise be built twice in the same directory
+  -->
+  <ItemDefinitionGroup Condition="'$(WebPlatformIdlMetadata)' == 'true'">
+    <ProjectReference>
+      <GlobalPropertiesToRemove>WebPlatformIdlMetadata</GlobalPropertiesToRemove>
+    </ProjectReference>
+  </ItemDefinitionGroup>
 </Project>

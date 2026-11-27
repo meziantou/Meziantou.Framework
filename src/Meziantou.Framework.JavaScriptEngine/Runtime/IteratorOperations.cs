@@ -24,15 +24,46 @@ internal static class IteratorOperations
         return new IteratorRecord(iteratorObject, next);
     }
 
+    /// <summary>
+    /// Gets whether the iteration of an array is not observable: an array of the current realm without own
+    /// %Symbol.iterator% property, in a realm whose array iteration is intact (<see cref="Intrinsics.IsArrayIterationIntact"/>).
+    /// The steps of the iteration then read the length and the elements of the array.
+    /// </summary>
+    public static bool HasIntrinsicIteration(JsArray array, [NotNullWhen(true)] out JsRealm? realm)
+    {
+        if (JsEngine.Current?.CurrentRealm is { } currentRealm && ReferenceEquals(array.PrototypeSlot, currentRealm.Intrinsics.ArrayPrototype)
+            && !array.TryFindOwnForCache(IteratorKey, out _, out _) && currentRealm.Intrinsics.IsArrayIterationIntact())
+        {
+            realm = currentRealm;
+            return true;
+        }
+
+        realm = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Gets whether the iteration of an array is not observable (<see cref="HasIntrinsicIteration"/>) and its elements
+    /// are all own data properties (no hole): the values of the iteration are the elements, read at once.
+    /// </summary>
+    public static bool IsPackedArrayIteration(JsValue value, [NotNullWhen(true)] out JsArray? array)
+    {
+        if (value.Cell is JsArray candidate && candidate.Length <= int.MaxValue && candidate.IsDensePacked(candidate.Length) && HasIntrinsicIteration(candidate, out _))
+        {
+            array = candidate;
+            return true;
+        }
+
+        array = null;
+        return false;
+    }
+
     /// <summary>GetIterator(obj, sync)</summary>
     public static IteratorRecord GetIterator(JsValue value)
     {
         // An array whose iteration is not observable: no iterator object (it is created if it is needed)
-        if (value.Cell is JsArray array && JsEngine.Current?.CurrentRealm is { } realm && ReferenceEquals(array.PrototypeSlot, realm.Intrinsics.ArrayPrototype)
-            && !array.TryFindOwnForCache(IteratorKey, out _, out _) && realm.Intrinsics.IsArrayIterationIntact())
-        {
+        if (value.Cell is JsArray array && HasIntrinsicIteration(array, out var realm))
             return new IteratorRecord(array, realm);
-        }
 
         var method = JsOperations.GetMethod(value, new PropertyKey(WellKnownSymbols.Iterator));
         if (method is null)

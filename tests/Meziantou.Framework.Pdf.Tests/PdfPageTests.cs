@@ -79,6 +79,37 @@ public sealed class PdfPageTests
     }
 
     [Fact]
+    public void PagesAreAddedNextToAPageOfANodeThatIsADirectObject()
+    {
+        // The second page is in a node held by a direct object, which cannot be its /Parent: the node is made indirect
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R << /Type /Pages /Kids [4 0 R] /Count 1 >>] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] >>")
+            .Add(4, "<< /Type /Page /MediaBox [0 0 200 200] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages.Duplicate(1);
+        document.Pages.Insert(1, new PdfSize(300, 300));
+        document.Pages.Move(0, 3);
+
+        Assert.Equal([300d, 200d, 200d, 100d], PdfDocument.Open(document.ToByteArray()).Pages.Select(page => page.MediaBox.Width));
+    }
+
+    [Fact]
+    public void PagesAreAddedToARootThatIsADirectObject()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages << /Type /Pages /Kids [3 0 R] /Count 1 >> >>")
+            .Add(3, "<< /Type /Page /MediaBox [0 0 100 100] >>");
+        var document = PdfDocument.Open(file.ToArray());
+
+        document.Pages.Insert(0, new PdfSize(200, 200));
+
+        Assert.Equal([200d, 100d], PdfDocument.Open(document.ToByteArray()).Pages.Select(page => page.MediaBox.Width));
+    }
+
+    [Fact]
     public void ANewPageOfAPlainTreeHasNoRotationNorCropBoxEntry()
     {
         var page = new PdfDocument().Pages.Add(PdfSize.A4);
@@ -157,6 +188,20 @@ public sealed class PdfPageTests
 
         Assert.Equal(2, page.UserUnit);
         Assert.Equal(new PdfSize(200, 100), page.DisplaySize);
+    }
+
+    [Fact]
+    public void AnEmptyBoxIsNotValid()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 0 200] >>")
+            .Add(4, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 50] /CropBox [10 10 10 40] >>");
+        var pages = PdfDocument.Open(file.ToArray()).Pages;
+
+        Assert.Equal(new PdfSize(612, 792), pages[0].DisplaySize);
+        Assert.Equal(new PdfSize(100, 50), pages[1].DisplaySize);
     }
 
     [Fact]
@@ -508,6 +553,29 @@ public sealed class PdfPageTests
         var read = PdfDocument.Open(target.ToByteArray());
         Assert.False(read.IsEncrypted);
         Assert.Equal("Secret", read.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void ImportFollowsTheIndirectObjectsThatAreReferences()
+    {
+        var source = PdfDocument.Open(new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Chain 4 0 R /Loop 6 0 R /Cycle 7 0 R >>")
+            .Add(4, "5 0 R")
+            .Add(5, "(end)")
+            .Add(6, "6 0 R")
+            .Add(7, "8 0 R")
+            .Add(8, "7 0 R")
+            .ToArray());
+
+        var target = new PdfDocument();
+        target.Pages.Add(source.Pages[0]);
+
+        var page = PdfDocument.Open(target.ToByteArray()).Pages[0].Dictionary;
+        Assert.Equal("end", page.GetText(PdfName.Create("Chain")));
+        Assert.Same(PdfNull.Instance, page[PdfName.Create("Loop")]);
+        Assert.Same(PdfNull.Instance, page[PdfName.Create("Cycle")]);
     }
 
     [Fact]

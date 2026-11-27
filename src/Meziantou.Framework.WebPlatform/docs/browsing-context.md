@@ -577,7 +577,18 @@ Media Capture and Streams (https://w3c.github.io/mediacapture-main/) is implemen
   silence, `contentHint`, `stats`), `MediaStreamTrackEvent`, `OverconstrainedError`; a stream assigned to `srcObject` is
   played live (no seeking, a playback rate of 1, `preload` is `none`) and ends when it becomes inactive.
 - **Screen capture**: `getDisplayMedia()` (user activation, `CaptureController`, the constraints of display surfaces);
-  `setCaptureHandleConfig()` and `CropTarget.fromElement()`, but no capture can be cropped.
+  `setCaptureHandleConfig()` and `CropTarget.fromElement()`, but no capture can be cropped. `CapturedMouseEvent` and
+  `CaptureController.oncapturedmousechange` (Captured Mouse Events) exist, but the library does not track the cursor over
+  the captured surfaces: it never fires the event.
+- **Audio output devices** (Audio Output Devices API): `navigator.mediaDevices.selectAudioOutput()` asks the user with
+  `MediaCaptureBackend.SelectAudioOutput` (transient activation, `speaker-selection` permission and permissions policy),
+  and `enumerateDevices()` then lists the chosen device; the outputs of a captured microphone are listed too.
+  `HTMLMediaElement.setSinkId()` and `sinkId` (secure contexts) accept these devices (`NotFoundError` for another one, set
+  by a task), and `AudioContext.setSinkId()` too. Both are delayed in a prerendering document until it is activated. The
+  audio of the media elements is not played, so the device changes nothing else.
+- **HTML Media Capture**: the `capture` attribute of the `input` elements is reflected by `capture` (`user`,
+  `environment`, or the empty string for a missing or invalid value). The files of a file input come from
+  `BrowsingContextOptions.ShowFilePicker`: the library does not capture them.
 - **From elements**: `canvas.captureStream()` (`CanvasCaptureMediaStreamTrack`), `video.captureStream()` and
   `audio.captureStream()` (the audio of the resources is not decoded), `ImageCapture` (`grabFrame()`, `takePhoto()` as
   PNG), and the Web Audio `MediaStream` nodes.
@@ -1501,6 +1512,31 @@ message, is an asynchronous operation of its event loop (`DomEventLoop.HasPendin
 document are closed with the `1001` code (going away) when the document is unloaded, and the WebSockets of a worker when
 the worker ends. The `WebSocketStream` proposal is not implemented, and neither are the WebSockets over HTTP/2.
 
+## WebTransport
+
+When a script engine is configured, the scripts of the secure contexts can open WebTransport sessions
+(https://w3c.github.io/webtransport/), in the windows and in the workers. The interfaces (`WebTransport`, its datagram
+and stream interfaces, `WebTransportSendGroup` and `WebTransportWriter`) are implemented in JavaScript in `Streams.js`,
+since the streams are `ReadableStream` and `WritableStream` objects; `WebTransportError` is the .NET class
+`WebTransportError`. The URL is an `https:` URL without fragment, parsed without base URL. The `connect-src` directive and
+the mixed content checks apply, then the session is established by `DocumentLoader.ConnectWebTransportAsync`, which gets a
+`WebTransportConnectionRequest` (the URL, the `origin` header followed by the headers of the `headers` option, lowercase
+and without the forbidden request headers, the protocols, the SHA-256 certificate hashes, the congestion control and the
+anticipated numbers of incoming streams) and returns a `WebTransportConnection`, or null when the session cannot be
+established (`ready` and `closed` are then rejected with a `WebTransportError` whose source is `session`). The default
+implementation returns null. The [HTTP loader](#http-loader) establishes the sessions over HTTP/3 with
+`Meziantou.Framework.WebTransport` (MsQuic), each with its own connection.
+
+The events of the session are delivered by tasks of the event loop of the global object. Opening a stream, writing,
+sending a datagram, closing the session and reading the statistics are asynchronous operations of the event loop
+(`DomEventLoop.HasPendingOperations`); waiting for the server (a read, an incoming stream, a datagram) is not. The
+protocol the server picks is ignored when the page did not offer it, and `responseHeaders` hides `wt-protocol` and the
+forbidden response headers. The sessions of a document end abruptly when the document is unloaded (as in Chromium, they
+do not prevent the back/forward cache: their `closed` promises are rejected with a `WebTransportError` whose source is
+`session`), and the sessions of a worker are closed when the worker ends. The keying material cannot be exported
+(`exportKeyingMaterial()` rejects with a `NotSupportedError`): MsQuic does not expose the TLS exporter. `atomicWrite()` writes the chunk as a whole, as `write()` does, and the send order is a priority of the
+stream (with the HTTP loader, the priority of MsQuic).
+
 ## Server-sent events
 
 When a script engine is configured, the scripts can receive the events of a server with `EventSource`
@@ -1729,6 +1765,42 @@ An `iframe` element can require the documents loaded into it to enforce a policy
   resource is fetched by the element).
 - The initial `about:blank` document of an `iframe` is not created by a navigation: it does not enforce the required
   policy of the `csp` attribute (Chromium applies its `sandbox` directive to it).
+
+### Connection Allowlists
+
+[Connection Allowlists](https://w3c.github.io/connection-allowlists/) (a draft community group report, implemented by
+Chromium) restrict the connections of a document or a worker to a list of URL patterns (`ConnectionAllowlist`):
+
+- The `Connection-Allowlist` (enforced) and `Connection-Allowlist-Report-Only` headers are structured field lists whose first
+  member is an inner list of URL pattern strings and `response-origin` tokens (the origin of the URL of the response). The
+  patterns are created without base URL: a relative pattern, or one that is not valid, is ignored. The `report-to`,
+  `redirects` and `webrtc` parameters are tokens (a string is ignored); `redirects` and `webrtc` are `block` by default, and
+  any other token allows them. The other members of the list are ignored.
+- The allowlists are in the policy container: a document of a local scheme and a worker whose URL is `about:`, `blob:` or
+  `data:` inherit them (and the required allowlist), the other workers get the ones of the response of their script.
+- `Fetching.IsBlocked` (main fetch step 7, run for each URL of a redirect chain) checks the allowlists of the client of the
+  request (the `PolicyClient` of the imports of a module worker): the local URLs are allowed, a redirected request is blocked
+  unless the allowlist has `redirects=allow` (the URLs of the redirects are then not checked), and the other URLs must match a
+  pattern. The violations are reported with the URL of the request (the first URL of its URL list). A speculative fetch of
+  the preload scanner is checked without reporting: it would open the connection the allowlist blocks. The navigations,
+  `window.open()`, the WebSockets, the WebTransport sessions, the preloads and prefetches and the speculation rules go
+  through it.
+- The preloads of a `103 Early Hints` response are checked by the enforced allowlists of the `103` response, without
+  reporting (there is no environment yet). `WindowClient.navigate()` and `Clients.openWindow()` reject with a `SecurityError`
+  when the allowlists of the service worker block the URL.
+- A report has the type `connection-allowlist`, and its body the `url` of the environment and the `connection` (both stripped
+  for use in reports), the patterns of the allowlist and its `disposition`. It is only generated when the allowlist has a
+  `report-to` endpoint; as in Chromium, the `ReportingObserver`s receive it (the specification does not say).
+- Embedded enforcement mirrors CSP Embedded Enforcement: the required allowlist of a navigation of a child navigable is the
+  `connectionallowlist` attribute of its `iframe` when it is valid (not empty, at most 4096 characters, a structured field
+  list whose first member is an inner list, at least as strict as the required allowlist of the container document, with
+  `response-origin` compared as a literal pattern), else the required allowlist of the container document. It is sent in the
+  `Sec-Required-Connection-Allowlist` header. The response is blocked (an error document) unless its URL has a local scheme,
+  its `Allow-Connection-Allowlist-From` header is `*` or the serialized origin of the request, or its `Connection-Allowlist`
+  header satisfies the requirement (its patterns are patterns of the required allowlist, and it blocks the redirects and WebRTC
+  when the requirement does). The document enforces the required allowlist unless one of its enforced allowlists satisfies it.
+- Not implemented: WebRTC (the `webrtc` parameter only matters to the embedded enforcement), the host checks of
+  the DNS prefetches and the preconnects (the library has none), and the remote validation of the WebAuthn RP IDs.
 
 ### Policy inheritance
 
@@ -3675,6 +3747,120 @@ flag of `WebPlatformFeatures` that hides it (see [Disabling features](#disabling
   `DevicePosture.Provider`. Setting its `Posture` runs the device posture change steps: the visible documents fire
   `change`, the hidden ones when they become visible, and the media query lists are evaluated again. All the documents of
   a browsing context tree have the posture of the provider. Without provider, the posture is `continuous`.
+- **Gamepad** ([Gamepad](https://w3c.github.io/gamepad/)): `navigator.getGamepads()`, `Gamepad`, `GamepadButton`,
+  `GamepadHapticActuator`, `GamepadEvent` and the `gamepadconnected` and `gamepaddisconnected` events, on the
+  `GamepadDevice` objects of `Gamepads.Provider` (the application gives the normalized values of the buttons and the axes:
+  the library does not map the raw inputs of the hardware). A window gets the devices once it calls `getGamepads()` or
+  listens to a gamepad event, as in Chromium; the gamepads are exposed by the first press of a button or move of an axis
+  (above 0.5) while the document is visible. `getGamepads()` returns snapshots (sharing the `vibrationActuator`), throws a
+  `SecurityError` when the `gamepad` permissions policy feature (default allowlist `*`) is not allowed, and returns an
+  empty list for a document that is not fully active. `playEffect()` validates the magnitudes, limits the delay plus the
+  duration to 5 seconds, preempts the playing effect, and calls `GamepadProvider.PlayEffect`; `reset()`, a hidden document
+  and the disconnection of the gamepad stop the effect. No touch surfaces (`touches` is empty), and the user activation
+  of the gamepads (tentative) is not implemented. A prerendering document gets no gamepad and no event, then a
+  `gamepadconnected` event for each connected gamepad when it is activated.
+- **WebUSB** ([WebUSB API](https://usb.spec.whatwg.org/)): `navigator.usb` (`getDevices()`, `requestDevice()` in the
+  windows, the `connect` and `disconnect` events), `USBDevice`, `USBConfiguration`, `USBInterface`, `USBAlternateInterface`,
+  `USBEndpoint` (and their constructors, which throw a `RangeError` for an unknown descriptor), the transfer results and
+  `USBConnectionEvent`, in the windows and the workers, on the `UsbHostDevice` objects of `Usb.Provider`. Each `USBDevice`
+  opens its own `UsbDeviceSession`, and runs the steps of the specification before calling it: the configuration, the
+  claimed interfaces and the alternate settings, the endpoints of the claimed interfaces (`IndexSizeError` above 15,
+  `NotFoundError`, `InvalidAccessError` for the wrong type), the protected classes (`SecurityError`, `usb-unrestricted` is
+  never enabled), the control transfer recipients, the 32 MiB limit of a transfer (`DataError`) and the packets of the
+  isochronous transfers (whose data views share the buffer of the result). As in Chromium: an operation fails with an
+  `InvalidStateError` while another one changes the state of the device (`open()`, `close()`, `selectConfiguration()`,
+  `reset()`) or of its interface (`claimInterface()`, `releaseInterface()`, `selectAlternateInterface()`); `close()` does
+  not abort the operations already sent; the control requests to the device do not need a configuration; the standard
+  requests are not restricted; the top-level origin must not be opaque. The permission storage is the provider
+  (`IsAllowed`, `Allow`, `Revoke`, `forget()`); the WebUSB blocklist is built in. A disconnection rejects the pending
+  operations with a `NotFoundError` and closes the device; the sessions end when their window is unloaded or their worker
+  terminated. `getDevices()` and `requestDevice()` are delayed in a prerendering document. Not implemented:
+  `USBPermissionResult` and the `usb` permission of the Permissions API.
+- **Web Bluetooth** ([Web Bluetooth](https://bluetooth.spec.whatwg.org/)): `navigator.bluetooth` (`getAvailability()`,
+  `getDevices()`, `requestDevice()` and the `availabilitychanged` event), `BluetoothDevice`, `BluetoothRemoteGATTServer`,
+  `BluetoothRemoteGATTService`, `BluetoothRemoteGATTCharacteristic`, `BluetoothCharacteristicProperties`,
+  `BluetoothRemoteGATTDescriptor`, `BluetoothUUID` (the GATT assigned numbers of the WebBluetoothCG registries) and
+  `ValueEvent`, on the `BluetoothHostDevice` objects of `Bluetooth.Provider` (the adapter, its state and the devices in
+  range). `requestDevice()` canonicalizes the filters (`TypeError`), checks the GATT and manufacturer data blocklists
+  (`SecurityError`), needs transient activation (not consumed) and asks `BluetoothProvider.RequestDevice`; the permission
+  storage is the provider (`Allow`, `Revoke`, `forget()`), with the allowed services of each device. The pages share the
+  connection of a device (`ConnectAsync`, released when no page uses it); a disconnection fires `gattserverdisconnected`
+  and invalidates the attributes, whose objects are created once per connection (`[[attributeInstanceMap]]`). The
+  operations run with the gatt-connection-checking wrapper, map the ATT errors of `BluetoothAttException`, and deliver
+  `characteristicvaluechanged` (before the promise of `readValue()`, and for the notifications) along the Bluetooth tree.
+  The checks and the error messages are the ones of Chromium; the top-level origin must not be opaque, and the methods
+  are delayed in a prerendering document. Not implemented: the advertisements (`watchAdvertisements()` rejects with a
+  `NotSupportedError`; `BluetoothAdvertisingEvent`, the data maps and the scanning API), `referringDevice` (always null),
+  `BluetoothPermissionResult` and the `bluetooth` permission of the Permissions API, and the service changed events.
+- **Window Management** ([Window Management](https://w3c.github.io/window-management/)): `window.getScreenDetails()`
+  (`ScreenDetails`, `ScreenDetailed`, the `screenschange` and `currentscreenchange` events), `screen.isExtended` and the
+  `change` event of `Screen` (which derives from `EventTarget`, as the specification requires), on the `DeviceScreen`
+  objects of `Screens.Provider` (one screen, the size of the viewport, without provider). The current screen has the
+  largest intersection with the client window; the screens are sorted by position. `getScreenDetails()` requests the
+  `window-management` permission and checks the permissions policy feature (default allowlist `self`), and rejects with
+  an `InvalidStateError` for a window without browsing context (as in Chromium, whose cached `ScreenDetails` then has no
+  screen). `requestFullscreen({ screen })` moves the client window to the screen and gives the viewport its size, also
+  while fullscreen; exiting fullscreen moves it back. `maximize()`, `minimize()`, `restore()` and `setResizable()` reject
+  with an `InvalidStateError` (no installed web application, as in Chromium). Not implemented: the `display-state` and
+  `resizable` media features, and the waiver of the transient activation of `window.open()` after a fullscreen request
+  on a screen (the popups do not need an activation).
+- **Web Serial** ([Web Serial API](https://serial.spec.whatwg.org/)): `navigator.serial` (`getPorts()`, `requestPort()` in the
+  windows), `SerialPort` (`open()`, `readable`, `writable`, `setSignals()`, `getSignals()`, `close()`, `forget()`, the
+  `connect` and `disconnect` events, which bubble to `navigator.serial`) in the windows and the dedicated workers, on the
+  `SerialHostPort` objects of `Serial.Provider`. The options are validated (as in Chromium, a buffer of at most 16 MiB);
+  `readable` is a readable byte stream whose pull reads the connection, `writable` writes the `BufferSource` chunks; the
+  errors of the port error the readable stream (`BreakError`, `BufferOverrunError`, `FramingError`, `ParityError`,
+  `UnknownError`; a disconnection is a fatal `NetworkError`). `close()` cancels and aborts the streams and fails when one
+  is locked (the port stays open, as in Chromium). The Bluetooth ports follow the Serial Port Profile and
+  `allowedBluetoothServiceClassIds` (the service classes of the base UUID are blocked). The permission storage is the
+  provider. A prerendering document gets the ports once it is activated.
+- **WebHID** ([WebHID](https://hid.spec.whatwg.org/)): `navigator.hid` (`getDevices()`, `requestDevice()` in the windows,
+  the `connect` and `disconnect` events), `HIDDevice` (`open()`, `close()`, `forget()`, `sendReport()`,
+  `sendFeatureReport()`, `receiveFeatureReport()`, the `inputreport` event), `HIDConnectionEvent` and
+  `HIDInputReportEvent`, in the windows and the workers (a service worker has no document: its requests fail), on the
+  `HidHostDevice` objects of `Hid.Provider`. The report descriptor is parsed into the collections (the algorithm of the
+  specification; the logical and physical limits are signed as in Chromium; at most 32 levels of collections and 256
+  strings per item); the report IDs are checked, the reports of the HID blocklist are blocked (`NotAllowedError`, no
+  input report), and `close()` and `forget()` reject the pending reports with an `AbortError`. A prerendering document
+  gets the devices once it is activated.
+- **Web MIDI** ([Web MIDI API](https://webaudio.github.io/web-midi-api/)): `navigator.requestMIDIAccess()` (the `midi`
+  permission and permissions policy feature; a prerendering document gets the access once it is activated), `MIDIAccess`
+  (`inputs`, `outputs`, `sysexEnabled`, the `statechange` event), `MIDIPort` (`state`, `connection`, `open()`, `close()`),
+  `MIDIInput` (the `midimessage` event; a listener opens the port), `MIDIOutput` (`send()`, `clear()`),
+  `MIDIMessageEvent` and `MIDIConnectionEvent`, on the `MidiHostInput` and `MidiHostOutput` ports of `Midi.Provider`. The
+  data of `send()` is validated (complete messages without running status; the System Real Time messages can appear
+  inside other messages, as in Chromium; the system exclusive messages need `sysex`); the bytes received by an input are
+  split into messages (the running status, the system exclusive messages split over several calls, and the System Real
+  Time messages, dispatched at once). An open port that is disconnected becomes `pending`, and is opened again when it is
+  connected again.
+- **Presentation API** ([Presentation API](https://w3c.github.io/presentation-api/)): `navigator.presentation`
+  (`defaultRequest`, `receiver`), `PresentationRequest` (the URLs, `start()`, `reconnect()`, `getAvailability()`, the
+  `connectionavailable` event), `PresentationAvailability`, `PresentationConnection` (`send()`, `close()`, `terminate()`,
+  `binaryType`, the `connect`, `close`, `terminate` and `message` events), the connection events, and the receiving side
+  (`PresentationReceiver`, `PresentationConnectionList`), on the displays of `Presentation.Provider` and the receiving
+  browsing contexts of `Presentation.Receiver`. The constructor keeps the potentially trustworthy `http` and `https` URLs
+  and checks the `allow-presentation` sandboxing flag; `start()` needs transient activation, and one start at a time in a
+  top-level browsing context; `reconnect()` searches the presentations of the windows that share the provider. The
+  connections of an unloaded window are closed with the `wentaway` reason on the other side.
+- **Contact Picker** ([Contact Picker API](https://w3c.github.io/contact-picker/)): `navigator.contacts`
+  (`getProperties()`, `select()`), `ContactAddress` and `ContactInfo`, on the contacts source of `Contacts.Provider`.
+  `select()` runs in the top-level window, consumes the transient activation, allows one picker at a time, and returns
+  the requested properties only (the other members of `ContactInfo` are not set); the country of the addresses is in
+  uppercase.
+- **Web NFC** ([Web NFC](https://w3c-cg.github.io/web-nfc/)): `NDEFMessage`, `NDEFRecord` and `NDEFReadingEvent` run the
+  steps that create the NDEF records: the record types (`empty`, `text`, `url`, `absolute-url`, `mime`, `unknown`,
+  `smart-poster`, the external types and the local types of nested messages), their payloads, the text encodings and the
+  language of the document, the smart poster rules (one `url` record, at most one `:t`, `:s` and `:act` record, a 4-byte
+  size and a 1-byte action, as in Chromium) and the limit of 32 nested messages. `toRecords()` returns the records of a
+  nested message; the NDEF messages are not serialized, so a record created from a nested message has no `data`, and a
+  payload given as bytes is not parsed (`toRecords()` returns null). `NDEFReader` has no NFC adapter: `scan()`,
+  `write()` and `makeReadOnly()` reject with an `InvalidStateError` outside the active document of a top-level browsing
+  context, with the abort reason of their signal, with a `NotAllowedError` when the `nfc` permission is not granted
+  (asked with `RequestPermission`), and else with a `NotSupportedError`. A prerendering document calls `scan()` and
+  `write()` once it is activated.
+- **CPU Performance** ([CPU Performance API](https://wicg.github.io/cpu-performance/)): `navigator.cpuPerformance` (secure
+  contexts) is the performance tier of the number of processors of the machine (1 for one processor, 2 up to 4, 3 up to
+  10, 4 above), without adjustment for the model of the CPU.
 - **Screen Orientation** ([Screen Orientation](https://w3c.github.io/screen-orientation/)): `screen.orientation` (`type`,
   `angle`, `change`), `lock()` and `unlock()`, on the `ScreenOrientationProvider` of `ScreenOrientation.Provider` (its
   natural orientation, the `DeviceOrientation` the user holds the device in, and `TryLock` to lock the screen of the
@@ -4308,6 +4494,7 @@ using var context = new BrowsingContext(new BrowsingContextOptions
 | Property | What is hidden when false |
 | --- | --- |
 | `WebSocketEnabled` | `WebSocket` |
+| `WebTransportEnabled` | `WebTransport` and its interfaces, `WebTransportError` |
 | `EventSourceEnabled` | `EventSource` |
 | `BeaconEnabled` | `navigator.sendBeacon()` |
 | `FetchLaterEnabled` | `fetchLater()`, `FetchLaterResult` (also hidden when `FetchEnabled` is false) |

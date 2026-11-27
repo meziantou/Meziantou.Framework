@@ -308,10 +308,8 @@ public class GlobParserTests
     }
 
     [Theory]
-    [InlineData("a/**/b")]
     [InlineData("a/**/b/c")]
     [InlineData("a/**/*")]
-    [InlineData("a/**/*.txt")]
     public void RecursiveWildcardIsNotOptimizedWhenLeadingDotsMustBeExcluded(string pattern)
     {
         // The optimized segments jump to the end of the path and skip the per-segment leading-dot checks, so they
@@ -324,13 +322,52 @@ public class GlobParserTests
     }
 
     [Theory]
+    [InlineData("a/**/b")]
+    [InlineData("a/**/*.txt")]
+    [InlineData("**/[Bb]in")]
+    public void TrailingRecursiveWildcardIsOptimizedWhenLeadingDotsMustBeExcluded(string pattern)
+    {
+        // A '**' followed by the last segment becomes a segment that matches the last segment of the path, and that
+        // rejects a path holding a segment that starts with a dot.
+        var segments = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None)._segments;
+
+        Assert.DoesNotContain(segments, item => item is RecursiveMatchAllSegment);
+    }
+
+    [Theory]
     [InlineData("a/**/b", "a/.hidden/b")]
     [InlineData("a/**/b/c", "a/.hidden/b/c")]
     [InlineData("a/**/*.txt", "a/.hidden/b.txt")]
+    [InlineData("**/*.txt", ".hidden/b.txt")]
+    [InlineData("**/*.txt", "a/b/.hidden/c/d.txt")]
+    [InlineData("**/*.txt", ".txt")]
+    [InlineData("**/*.txt", "a/.txt")]
+    [InlineData("**/b", ".hidden/b")]
+    [InlineData("**/b", "a/./b")]
+    [InlineData("**/[a-c]", "x/.y/b")]
+    [InlineData("**/*b*", "a/.b/cbc")]
+    [InlineData("**/*b*", "a/.cbc")]
     public void RecursiveWildcardDoesNotCrossADotSegmentWithoutMatchLeadingDot(string pattern, string path)
     {
         Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None).IsMatch(path));
         Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+
+        // The same path given as a directory and a file name
+        var separator = path.LastIndexOf('/', StringComparison.Ordinal);
+        if (separator >= 0)
+        {
+            Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None).IsMatch(path[..separator], path[(separator + 1)..]));
+        }
+    }
+
+    [Theory]
+    [InlineData("**/*.txt", "a/b.c/d.txt")]
+    [InlineData("**/*.txt", "a.b/c.txt")]
+    [InlineData("**/b", "a.x/b")]
+    [InlineData("**/*b*", "a/c.b")]
+    public void RecursiveWildcardCrossesASegmentHoldingADotWithoutMatchLeadingDot(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.None).IsMatch(path));
     }
 
     [Fact]

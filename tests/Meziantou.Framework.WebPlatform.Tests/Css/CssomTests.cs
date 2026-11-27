@@ -471,6 +471,7 @@ public sealed class CssomTests
     [InlineData("0a", "\\30 a")]
     [InlineData("-", "\\-")]
     [InlineData("a b", "a\\ b")]
+    [InlineData("a\u00BAb", "a\u00BAb")] // CSS.escape() keeps the characters of at least U+0080, even the ones that are not ident code points
     public void Escape(string value, string expected) => Assert.Equal(expected, WebPlatform.Css.Om.Css.Escape(value));
 
     [Fact]
@@ -524,6 +525,21 @@ public sealed class CssomTests
     {
         var element = CreateElement(style);
         Assert.Equal(expected, element.Style.CssText);
+    }
+
+    [Theory]
+    [InlineData("z-index: 123450000000000000000000001")] // A large integer is not written with an exponent: it would not be an <integer>
+    [InlineData("link-parameters: param(--a: ++1 -+1 .+1 +-.5)")] // A delimiter followed by a signed number written without its sign
+    [InlineData("link-parameters: param(--a: a.2 1px+5 1+2 #+3)")] // A name or a number followed by a number written with a leading digit
+    [InlineData("container-name: sid\\bar")] // A character that is not an ident code point, which an escape gives, written escaped
+    [InlineData("link-parameters: param(--a: 1000000000000000000000x 1000000000000000000000% 1000000000000000000000)")] // Large numbers of dimensions, percentages and integers
+    [InlineData("link-parameters: param(--a: 999999999999999918052x 999999999999999918052 1234567890123456.5)")] // Numbers just below 1e21, with more than 15 significant digits
+    public void Serialization_IsParsedAsTheSameValue(string style)
+    {
+        var element = CreateElement(style);
+        var serialized = element.Style.CssText;
+        Assert.NotEqual("", serialized);
+        Assert.Equal(serialized, CreateElement(serialized).Style.CssText);
     }
 
     [Fact]

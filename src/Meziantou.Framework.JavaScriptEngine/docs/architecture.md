@@ -293,9 +293,12 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
 - Shapes (`Runtime/Shape.cs`): the empty shapes are static (`Shape.EmptyOrdinary`, `EmptyArray`, `EmptyIndexedExotic`);
   the shapes with properties belong to an engine (`engine.ShapeRoots`) and are not thread-safe. The exotic objects whose
   named properties are not ordinary (proxies, typed arrays, namespaces, host objects that override their internal
-  methods) never get a shape. The new function objects and arguments objects get their final shape and slots at once
-  (`ClosureShapes`, `ArgumentsShapes`: the shapes the transitions of the engine give); the arguments are their dense
-  elements (`InitializeDenseElements`).
+  methods) never get a shape. The new function objects, arguments objects and RegExp objects get their final shape and
+  slots at once (`ClosureShapes`, `ArgumentsShapes`, `RegExpShape`: the shapes the transitions of the engine give); the
+  arguments are their dense elements (`InitializeDenseElements`).
+- Regular expression literals: each evaluation creates an object, but the site (`RegExpLiteralSite`, in the objects of the
+  code) keeps the program compiled by the first evaluation, so the next ones neither parse the flags nor look up the
+  process-wide `RegExpProgramCache`, and store `lastIndex` without a [[Set]].
 - [[Set]] of an ordinary object (`JsObject.OrdinarySet`) without the property walks its prototype chain once
   (`TryAddPropertyForSet`) and adds the property, instead of the steps of the spec that look up the key again (4 times on
   the receiver for a property table); a setter, a read-only property, a lazy property (its factory is host code, which
@@ -336,7 +339,9 @@ embedded CLDR data (`Intl/Data/`, `CldrData.Default`): never from the globalizat
   property before remembering it).
 - Property tables (`Runtime/PropertyTable.cs`): 32-byte entries, an open-addressing index above 8 properties, with the
   hash codes of the keys stored by position next to it (a probe compares the hashes first, and a removal or a growth of
-  the index does not hash the string keys again: a dictionary-like object that adds and deletes keys). An object
+  the index does not hash the string keys again: a dictionary-like object that adds and deletes keys). The bits of the
+  hash codes are mixed before they pick a slot: an array index is its own hash code, and the runs of consecutive indices
+  of a sparse array would otherwise fill runs of slots that the probe of a missing index walks through. An object
   with lazy properties (prototypes, global objects) uses a table, not a chain of shapes; a host can size it once with
   `JsObject.ReserveProperties` (and read the size of an object with `JsObject.OwnPropertyCount`, as the WebIDL bindings
   of WebPlatform do). A `BuiltinMethodTable` learns the number of properties of the objects that get its methods

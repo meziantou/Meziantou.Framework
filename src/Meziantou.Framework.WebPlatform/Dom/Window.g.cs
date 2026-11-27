@@ -1063,6 +1063,24 @@ public partial class Window
         set => SetEventHandler("unload", value);
     }
 
+    /// <summary>Gets or sets the event handler of the <c>gamepadconnected</c> event (the <c>ongamepadconnected</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepadconnected"/>
+    [IdlMember("ongamepadconnected", "https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepadconnected")]
+    public Action<Event>? OnGamepadConnected
+    {
+        get => GetEventHandler("gamepadconnected");
+        set => SetEventHandler("gamepadconnected", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>gamepaddisconnected</c> event (the <c>ongamepaddisconnected</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepaddisconnected"/>
+    [IdlMember("ongamepaddisconnected", "https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepaddisconnected")]
+    public Action<Event>? OnGamepadDisconnected
+    {
+        get => GetEventHandler("gamepaddisconnected");
+        set => SetEventHandler("gamepaddisconnected", value);
+    }
+
     /// <summary>Gets or sets the event handler of the <c>contentvisibilityautostatechange</c> event (the <c>oncontentvisibilityautostatechange</c> event handler attribute).</summary>
     /// <seealso href="https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change"/>
     [IdlMember("oncontentvisibilityautostatechange", "https://drafts.csswg.org/css-contain-2/#content-visibility-auto-state-change")]

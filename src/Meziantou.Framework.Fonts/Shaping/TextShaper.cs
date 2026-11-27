@@ -375,10 +375,23 @@ public static class TextShaper
         for (var stage = 0; stage <= shaperPlan.FinalStage; stage++)
         {
             var isStretchingStage = false;
+
+            // Only the lookups change the glyphs until the end of the stage: those that apply at none of them are passed over.
+            var tracksGlyphs = next < lookups.Count && lookups[next].Stage <= stage;
+            if (tracksGlyphs)
+            {
+                applier.TrackGlyphs();
+            }
+
             for (; next < lookups.Count && lookups[next].Stage <= stage; next++)
             {
                 applier.ApplyLookup(lookups[next].Index, lookups[next].Mask, lookups[next].Flags);
                 isStretchingStage |= lookups[next].Flags.HasFlag(ShaperFeatureFlags.Stretching);
+            }
+
+            if (tracksGlyphs)
+            {
+                applier.StopTrackingGlyphs();
             }
 
             // The parts of the stretching glyphs are the glyphs the stage of their feature made, before another stage
@@ -498,6 +511,9 @@ public static class TextShaper
             }
 
             applier.Begin(gpos, face.GposData, isPositioning: true, isRightToLeft, isVertical, digests);
+
+            // Positioning does not change the glyphs: the lookups that apply at none of them are passed over.
+            applier.TrackGlyphs();
             if (planned.PairKerning is not { } kerning || !kerning.TryApply(buffer, face, applier, digests, isRightToLeft))
             {
                 foreach (var lookup in positioningLookups)
@@ -505,6 +521,8 @@ public static class TextShaper
                     applier.ApplyLookup(lookup.Index, lookup.Mask, lookup.Flags & ~ShaperFeatureFlags.PerSyllable);
                 }
             }
+
+            applier.StopTrackingGlyphs();
         }
 
         // The kerning of a font of Apple Advanced Typography sees the glyphs in the order they are drawn.
@@ -1373,6 +1391,8 @@ public static class TextShaper
                 info[j].Mask |= FractionMask | DenominatorMask;
             }
 
+            // The digits are a numerator or a denominator because of what is on the other side of the slash.
+            buffer.MarkUnsafeToBreak(start, end);
             i = end - 1;
         }
     }

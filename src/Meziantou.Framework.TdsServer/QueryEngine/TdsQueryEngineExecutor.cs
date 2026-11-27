@@ -2100,11 +2100,19 @@ internal sealed partial class TdsQueryEngineExecutor
 
         if (targetType is not null && result.Type != targetType)
         {
-            result = ConvertExpression(result, targetType);
+            result = ConvertToTargetType(result, targetType);
         }
 
         return result;
     }
+
+    /// <summary>
+    /// Converts the value of an operator to the type its context expects. A value that can be NULL (a scalar subquery that
+    /// returns no row, a nullable column) keeps a nullable type, as a scalar subquery does: converting it to the non-nullable
+    /// type would read the value of NULL (fuzz regression: <c>WHERE Id &lt;&gt; +(SELECT ...)</c> with an empty subquery).
+    /// </summary>
+    private static Expression ConvertToTargetType(Expression value, Type targetType)
+        => ConvertExpression(value, IsNullableValueType(value.Type) ? MakeNullableType(targetType) : targetType);
 
     private Expression BuildUnaryScalar(SqlUnaryScalarExpression expression, IReadOnlyDictionary<string, AliasBinding> aliases, ParameterExpression parameter, IReadOnlyDictionary<string, TdsQueryParameter> parameters, IReadOnlyDictionary<string, TdsQueryRoot> cteRoots, QueryExecutionContext queryExecutionContext, Type? targetType)
     {
@@ -2119,7 +2127,7 @@ internal sealed partial class TdsQueryEngineExecutor
 
         if (targetType is not null && result.Type != targetType)
         {
-            result = ConvertExpression(result, targetType);
+            result = ConvertToTargetType(result, targetType);
         }
 
         return result;

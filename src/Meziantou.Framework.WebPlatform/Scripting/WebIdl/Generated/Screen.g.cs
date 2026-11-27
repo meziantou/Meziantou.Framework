@@ -11,6 +11,7 @@ internal static class Binding_Screen<TAdapter, TValue> where TAdapter : struct, 
     public static readonly global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBinding<TAdapter, TValue> Binding = new()
     {
         Name = "Screen",
+        ParentName = "EventTarget",
         ClrType = typeof(global::Meziantou.Framework.WebPlatform.Dom.Screen),
         Flags = global::Meziantou.Framework.WebPlatform.Scripting.InterfaceBindingFlags.None,
         Exposure = global::Meziantou.Framework.WebPlatform.Scripting.ExposureSet.Window,
@@ -25,6 +26,9 @@ internal static class Binding_Screen<TAdapter, TValue> where TAdapter : struct, 
     private static TValue Get_colorDepth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.FromNumber((double)o.ColorDepth); }
     private static TValue Get_pixelDepth(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.FromNumber((double)o.PixelDepth); }
     private static TValue Get_orientation(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.Wrap(o.Orientation); }
+    private static TValue Get_isExtended(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Screen>(t, Binding); return r.FromBoolean(o.IsExtended); }
+    private static TValue Get_onchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) => r.GetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "change");
+    private static void Set_onchange(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) => r.SetEventHandler(r.This<global::Meziantou.Framework.WebPlatform.Dom.EventTarget>(t, Binding), "change", v, isOnBeforeUnloadEventHandler: false);
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "availWidth", Get_availWidth, null);
@@ -34,5 +38,7 @@ internal static class Binding_Screen<TAdapter, TValue> where TAdapter : struct, 
         r.DefineAttribute(instanceTarget, "colorDepth", Get_colorDepth, null);
         r.DefineAttribute(instanceTarget, "pixelDepth", Get_pixelDepth, null);
         r.DefineAttribute(instanceTarget, "orientation", Get_orientation, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "isExtended", Get_isExtended, null);
+        if (r.IsSecureContext) r.DefineAttribute(instanceTarget, "onchange", Get_onchange, Set_onchange);
     }
 }

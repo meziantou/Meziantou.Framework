@@ -193,7 +193,7 @@ internal static class SelectorMatcher
             return null;
 
         var parent = node.ParentNode;
-        if (parent is Element element)
+        if (parent?.AsElement is { } element)
             return element;
 
         return parent is ShadowRoot shadowRoot && context.ShadowHost is { } host && ReferenceEquals(shadowRoot.Host, host) ? host : null;
@@ -298,7 +298,7 @@ internal static class SelectorMatcher
     {
         for (var sibling = node.PreviousSibling; sibling is not null; sibling = sibling.PreviousSibling)
         {
-            if (sibling is Element element)
+            if (sibling.AsElement is { } element)
                 return element;
         }
 
@@ -337,7 +337,7 @@ internal static class SelectorMatcher
 
     private static bool MatchesCompound(CompoundSelector compound, Node node, in SelectorContext context, bool ignorePseudoElements = false)
     {
-        if (node is not Element element)
+        if (node.AsElement is not { } element)
             return false;
 
         // The shadow host is featureless in the context of its shadow tree (https://drafts.csswg.org/css-scoping/#host-element-in-tree)
@@ -723,7 +723,7 @@ internal static class SelectorMatcher
             case PseudoClass.Empty:
                 for (var child = element.FirstChild; child is not null; child = child.NextSibling)
                 {
-                    if (child is Element || (child is Text text && text.Length > 0))
+                    if (child.IsElement || (child is Text text && text.Length > 0))
                         return false;
                 }
 
@@ -995,7 +995,7 @@ internal static class SelectorMatcher
     {
         for (var sibling = node.NextSibling; sibling is not null; sibling = sibling.NextSibling)
         {
-            if (sibling is Element element)
+            if (sibling.AsElement is { } element)
                 return element;
         }
 
@@ -1052,7 +1052,7 @@ internal static class SelectorMatcher
             var index = 0;
             for (var child = parent.FirstChild; child is not null; child = child.NextSibling)
             {
-                if (child is Element childElement)
+                if (child.AsElement is { } childElement)
                 {
                     childElement.ElementIndex = index++;
                     childElement.ElementIndexStamp = stamp;
@@ -1079,7 +1079,7 @@ internal static class SelectorMatcher
     {
         for (var child = parent.LastChild; child is not null; child = child.PreviousSibling)
         {
-            if (child is Element element)
+            if (child.AsElement is { } element)
                 return element;
         }
 
@@ -1114,7 +1114,7 @@ internal static class SelectorMatcher
                 {
                     for (var node = descendantsRoot.FirstChild; node is not null; node = node.GetNextInTreeOrder(descendantsRoot))
                     {
-                        if (node is Element candidate && MatchesFrom(selector, last, candidate, context, anchor))
+                        if (node.AsElement is { } candidate && MatchesFrom(selector, last, candidate, context, anchor))
                             return true;
                     }
                 }
@@ -1124,7 +1124,7 @@ internal static class SelectorMatcher
                 // The candidates are the following siblings of the anchor, and their descendants
                 for (var sibling = anchor.NextSibling; sibling is not null; sibling = sibling.NextSibling)
                 {
-                    if (sibling is not Element siblingElement)
+                    if (sibling.AsElement is not { } siblingElement)
                         continue;
 
                     if (MatchesFrom(selector, last, siblingElement, context, anchor))
@@ -1132,7 +1132,7 @@ internal static class SelectorMatcher
 
                     for (var node = siblingElement.FirstChild; node is not null; node = node.GetNextInTreeOrder(siblingElement))
                     {
-                        if (node is Element candidate && MatchesFrom(selector, last, candidate, context, anchor))
+                        if (node.AsElement is { } candidate && MatchesFrom(selector, last, candidate, context, anchor))
                             return true;
                     }
                 }
@@ -1174,7 +1174,7 @@ internal static class SelectorMatcher
     {
         for (var node = parent.FirstChild; node is not null; node = node.NextSibling)
         {
-            if (node is not Element candidate)
+            if (node.AsElement is not { } candidate)
                 continue;
 
             if (MatchesFrom(selector, last, candidate, context, anchor))

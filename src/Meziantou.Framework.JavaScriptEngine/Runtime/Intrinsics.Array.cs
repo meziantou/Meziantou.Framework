@@ -26,11 +26,53 @@ internal sealed partial class Intrinsics
     private int _arrayIteratorNextPosition;
     private bool _arrayIteratorNextInTable;
 
+    // The built-in accessor of %Array%[%Symbol.species%], and the state of IsArraySpeciesIntact (as IsArrayIterationIntact)
+    private AccessorPair _arraySpecies = null!;
+    private int _arraySpeciesEpoch = -1;
+    private bool _arraySpeciesShapeIntact;
+    private int _arrayConstructorPosition;
+    private bool _arrayConstructorInTable;
+    private int _arraySpeciesPosition;
+    private bool _arraySpeciesInTable;
+
     partial void InitializeArray()
     {
         ArrayIteratorPrototype = new JsObject(IteratorPrototype);
-        (ArrayConstructor, ArrayPrototypeValues, ArrayPrototypeToString) = ArrayBuiltins.Initialize(this);
+        (ArrayConstructor, ArrayPrototypeValues, ArrayPrototypeToString, _arraySpecies) = ArrayBuiltins.Initialize(this);
         ArrayIteratorNext = ArrayIteratorPrototype.Get(new PropertyKey("next"));
+    }
+
+    /// <summary>
+    /// Gets whether the species constructor of the arrays of the realm is %Array% without running code:
+    /// %Array.prototype%.constructor is a data property whose value is %Array%, and %Array%[%Symbol.species%] is the
+    /// built-in accessor (it returns this). The objects are flagged as dependencies of the inline caches: a change
+    /// invalidates the result.
+    /// </summary>
+    public bool IsArraySpeciesIntact()
+    {
+        var epoch = Realm.Engine.InlineCacheEpoch;
+        if (epoch != _arraySpeciesEpoch)
+        {
+            _arraySpeciesShapeIntact = ComputeArraySpeciesShape();
+            _arraySpeciesEpoch = epoch;
+        }
+
+        return _arraySpeciesShapeIntact
+            && ReferenceEquals(ArrayPrototype.GetValueForCache(_arrayConstructorPosition, _arrayConstructorInTable).Cell, ArrayConstructor)
+            && ReferenceEquals(ArrayConstructor.GetValueForCache(_arraySpeciesPosition, _arraySpeciesInTable).Cell, _arraySpecies);
+    }
+
+    /// <summary>Finds %Array.prototype%.constructor (a data property) and %Array%[%Symbol.species%] (an accessor).</summary>
+    private bool ComputeArraySpeciesShape()
+    {
+        ArrayPrototype.MarkInlineCacheHolder();
+        _arrayConstructorInTable = ArrayPrototype.Map is PropertyTable;
+        if (!ArrayPrototype.TryFindOwnForCache(ArrayOperations.ConstructorKey, out _arrayConstructorPosition, out var constructorFlags) || (constructorFlags & PropertyFlags.Accessor) != 0)
+            return false;
+
+        ArrayConstructor.MarkInlineCacheHolder();
+        _arraySpeciesInTable = ArrayConstructor.Map is PropertyTable;
+        return ArrayConstructor.TryFindOwnForCache(new PropertyKey(WellKnownSymbols.Species), out _arraySpeciesPosition, out var speciesFlags) && (speciesFlags & PropertyFlags.Accessor) != 0;
     }
 
     /// <summary>

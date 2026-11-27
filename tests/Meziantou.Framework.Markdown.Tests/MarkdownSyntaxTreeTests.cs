@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Markdown.Parsing;
 using Meziantou.Xunit;
 
@@ -1082,6 +1084,9 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a...b ...c d...\n", "<p>a...b ...c d&hellip;</p>\n")]
     [InlineData("a--b---c----d \\--- `--`\n", "<p>a&ndash;b&mdash;c&mdash;-d -&ndash; <code>--</code></p>\n")]
     [InlineData("*'a'* ![\"i\" <b>](u)\n", "<p><em>&lsquo;a&rsquo;</em> <img src=\"u\" alt=\"&ldquo;i&rdquo; &lt;b&gt;\" /></p>\n")]
+    [InlineData("![*\"i\"* and [<b>](v)](u)\n", "<p><img src=\"u\" alt=\"&ldquo;i&rdquo; and &lt;b&gt;\" /></p>\n")]
+    [InlineData("![a **'b'** c [d](e)](u)\n", "<p><img src=\"u\" alt=\"a &lsquo;b&rsquo; c d\" /></p>\n")]
+    [InlineData("![a ~~'b'~~ [\"c\" <i>](e)](u)\n", "<p><img src=\"u\" alt=\"a ~~&lsquo;b&rsquo;~~ &ldquo;c&rdquo; &lt;i&gt;\" /></p>\n")]
     [InlineData("l'ami 'x\n", "<p>l'ami 'x</p>\n")]
     public void RendersSmartyPants(string text, string expected)
     {
@@ -2085,6 +2090,25 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted)));
     }
 
+    [Theory]
+    [InlineData("[^]:|\n+-\n\t\tI) x", "[^]:|\n+-\n\t\tI) x")]
+    [InlineData("[^a]: *b*\nc\n", "[^a]: *b*\n    c\n")]
+    public void FormatterKeepsTheContentOfTheFootnotesThatAreNotReferredTo(string text, string expected)
+    {
+        // The HTML does not show these footnotes: their content is compared too, so a table of one does not become a paragraph
+        var options = new MarkdownParseOptions
+        {
+            Extensions = Enum.GetValues<MarkdownExtensions>().Aggregate(MarkdownExtensions.None, (all, extension) => all | extension),
+            PipeTableOptions = new MarkdownPipeTableOptions { RequireHeaderSeparator = false, UseHeaderForColumnCount = true },
+        };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(formatted, MarkdownFormatter.FormatText(MarkdownSyntaxTree.ParseText(formatted, options), options: null));
+    }
+
     [Fact]
     public void FormatterParsesTheFirstBlockOfTheItemsOfNestedLists()
     {
@@ -2103,6 +2127,48 @@ public sealed class MarkdownSyntaxTreeTests
 
         Assert.Equal(text, formatted);
         Assert.InRange(calls, 0, 500, "The formatter parses the trigger characters of the text a few times each");
+    }
+
+    [Theory]
+    [InlineData("| a | b |\n|-|-|\n| `x \\| y` | z |\n", MarkdownExtensions.GitHubFlavored, "| a        | b   |\n| -------- | --- |\n| `x \\| y` | z   |\n")]
+    [InlineData("| a {.c} | b |\n|-|-|\n| x | y |\n", MarkdownExtensions.Advanced, "| a {.c} | b |\n|-|-|\n| x | y |\n")]
+    [InlineData("| a | b |\n|-|-|\n| [x\ny](u) | z |\n", MarkdownExtensions.Advanced, "| a | b |\n|-|-|\n| [x\ny](u) | z |\n")]
+    [InlineData("Title {#id}\n===\n", MarkdownExtensions.Advanced, "Title {#id}\n===\n")]
+    [InlineData("# Title {#id}\n", MarkdownExtensions.Advanced, "# Title {#id}\n")]
+    [InlineData("Title\n===\n", MarkdownExtensions.Advanced, "# Title\n")]
+    public void FormatterKeepsTheTablesAndHeadingsWithAttributesOrLineBreaks(string text, MarkdownExtensions extensions, string expected)
+    {
+        var options = new MarkdownParseOptions { Extensions = extensions };
+        var tree = MarkdownSyntaxTree.ParseText(text, options);
+
+        var formatted = MarkdownFormatter.FormatText(tree, options: null);
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(MarkdownSyntaxTree.ParseText(formatted, options)));
+    }
+
+    [Fact]
+    public void ParsesTheSameWithTheNodesThatThePreviousParsesOfTheThreadReuse()
+    {
+        // The inlines of a pipe table of Markdig are those of its whole paragraph: the hundreds of rows need more nodes than a
+        // parse makes for itself, and the next parses of the thread reuse them
+        var table = new StringBuilder("| a | b |\n|-|-|\n");
+        for (var i = 0; i < 300; i++)
+        {
+            table.Append(CultureInfo.InvariantCulture, $"| *x{i}* [l](u{i}) | `c` **y** |\n");
+        }
+
+        var text = table.ToString();
+        var options = new MarkdownParseOptions { Extensions = MarkdownExtensions.Advanced };
+        string? expected = null;
+        var thread = new Thread(() => expected = MarkdownConverter.ToHtml(text, options));
+        thread.Start();
+        thread.Join();
+
+        Assert.Equal(expected, MarkdownConverter.ToHtml(text, options));
+        Assert.Equal("<p><em>a</em> b</p>\n", MarkdownConverter.ToHtml("*a* b\n", options));
+        Assert.Equal(expected, MarkdownConverter.ToHtml(text, options));
+        Assert.Equal(text, MarkdownSyntaxTree.ParseText(text, options).GetRoot().ToFullString());
     }
 
     [Fact]
@@ -2256,6 +2322,43 @@ public sealed class MarkdownSyntaxTreeTests
         Assert.Equal(expected, MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
         Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
         Assert.IsType<MarkdownHtmlBlockSyntax>(footnote.Blocks[^1]);
+    }
+
+    [Theory]
+    [InlineData("+-\na |\n-|", MarkdownExtensions.GridTables | MarkdownExtensions.PipeTables, "+-\na |\n-|\n")]
+    [InlineData("[^1]\n\n[^1]:+-\na |\n-|", MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables | MarkdownExtensions.PipeTables, "[^1]\n\n[^1]: +-\n    a |\n    -|\n")]
+    [InlineData("[^]:+-\na |\n-|", MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables | MarkdownExtensions.PipeTables, "[^]: +-\n    a |\n    -|\n")]
+    [InlineData("- y\n+-\r-|", MarkdownExtensions.GridTables | MarkdownExtensions.Tables, "- y\n+-\n-|\n")]
+    [InlineData("[^1]\n\n[^1]:- y\n+-\r-|", MarkdownExtensions.Footnotes | MarkdownExtensions.GridTables | MarkdownExtensions.Tables, "[^1]\n\n[^1]:\n    - y\n    +-\n    -|\n")]
+    public void FormatterKeepsTheTableAfterTheBlockBeforeIt(string text, MarkdownExtensions extensions, string expected)
+    {
+        // The aligned rows would be lazy lines of the list item, or make a grid table of the paragraph that starts with +: the rows
+        // are written as they are in the text
+        var tree = MarkdownSyntaxTree.ParseText(text, new MarkdownParseOptions { Extensions = extensions });
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal(expected, formatted.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
+        Assert.IsType<MarkdownTableSyntax>(GetLastBlock(formatted.GetRoot().Blocks[^1]));
+
+        static MarkdownBlockSyntax GetLastBlock(MarkdownBlockSyntax block) => block is MarkdownFootnoteDefinitionSyntax footnote ? footnote.Blocks[^1] : block;
+    }
+
+    [Theory]
+    [InlineData("- intro\n- Title\n  ===\n  | a |\n  | --- |\n", "- intro\n- # Title\n  | a   |\n  | --- |\n")]
+    [InlineData("- x\n-     code\n  | a |\n  | --- |\n", "- x\n- ```\n  code\n  ```\n  | a   |\n  | --- |\n")]
+    [InlineData("    code\n| a |\n| --- |\n", "```\ncode\n```\n| a   |\n| --- |\n")]
+    public void FormatterWritesTheTableAfterTheBlockAsItIsWritten(string text, string expected)
+    {
+        // The setext heading is written as an ATX heading and the indented code block as a fenced one: the table follows them
+        // without a blank line, which would make the list loose
+        var tree = MarkdownSyntaxTree.ParseText(text, MarkdownParseOptions.GitHubFlavored);
+        var formatted = MarkdownFormatter.Format(tree);
+
+        Assert.Equal(expected, formatted.GetRoot().ToFullString());
+        Assert.Equal(expected, MarkdownFormatter.FormatText(formatted, MarkdownFormattingOptions.Default));
+        Assert.Equal(MarkdownHtmlRenderer.ToHtml(tree), MarkdownHtmlRenderer.ToHtml(formatted));
     }
 
     [Theory]
@@ -3405,6 +3508,11 @@ public sealed class MarkdownSyntaxTreeTests
     [InlineData("a\u0085b", "a\u0085b")]
     [InlineData(" a ", " a ")]
     [InlineData("\na", " a")]
+    [InlineData("\v(b", "\v(b")]
+    [InlineData("\v&q@", "\v&q@")]
+    [InlineData("a\f", "a\f")]
+    [InlineData("\f \ta \v", "\f \ta \v")]
+    [InlineData(" \v ", " \v ")]
     public void TableCellIsParsedBackToTheText(string text, string expected)
     {
         foreach (var extensions in new[] { MarkdownExtensions.PipeTables, MarkdownExtensions.Tables })

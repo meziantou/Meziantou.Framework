@@ -505,6 +505,25 @@ public sealed class PagedMediaTests : IDisposable
     }
 
     [Theory]
+    [InlineData(400)]
+    [InlineData(200)]
+    public void Pages_EmptyColumnsBeforeAColumnSpannerWithoutBlockSizeAreInThePageOfTheSpanner(int firstPageWidth)
+    {
+        // The columns between two column spanners have no content with a block size and the second spanner has no block size:
+        // they end the first page with it, before the content that does not fit there (also when it continues on a page of
+        // another inline size)
+        var document = Parse($$"""
+            <style>@page { size: 400px 300px; margin: 0 } @page :first { size: {{firstPageWidth}}px 300px }</style>
+            <div style='columns: 2'><div style='column-span: all; height: 201px'></div><div id=e></div><div id=s style='column-span: all'></div><div id=a style='height: 100px; break-inside: avoid'></div><div style='height: 100px; break-inside: avoid'></div></div>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal([0], GetPageRects(pages, document.GetElementById("e")!).Select(rect => rect.Page));
+        Assert.Equal([0], GetPageRects(pages, document.GetElementById("s")!).Select(rect => rect.Page));
+        Assert.Equal([1], GetPageRects(pages, document.GetElementById("a")!).Select(rect => rect.Page));
+    }
+
+    [Theory]
     [InlineData("<table style='width: 100%; border-spacing: 0'>", "<tr id={0} style='height: 100px'><td></td></tr>", "</table>")]
     [InlineData("<div style='display: flex; flex-direction: column'>", "<div id={0} style='height: 100px'></div>", "</div>")]
     [InlineData("<div style='display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 100px'>", "<div id={0}></div><div></div>", "</div>")]
@@ -1364,6 +1383,32 @@ public sealed class PagedMediaTests : IDisposable
         var pages = session.GetPages();
         Assert.Equal((1, new PhysicalRect(0, 0, 100, 10)), GetPageRects(pages, document.GetElementById("a")!)[^1]);
         Assert.Equal([16, 1], pages.Select(page => CountWords(page.Content)));
+
+        static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
+    }
+
+    [Fact]
+    public void Pages_ParagraphOfANestedGridItemThatEndsAfterItsGridItemIsLaidOutBeforeAPageOfAnotherInlineSize()
+    {
+        // The grid is broken inside its rows (the first item avoids breaks), so it keeps the layout of the 400px wide strip of
+        // the first page in the 300px wide pages. In the pages of 25px (two lines and 5px), the paragraph of the nested grid of
+        // the last item (20 lines, 200px in the strip) ends two pages after the end of its grid item: the paragraph after the
+        // grid, which starts the page after the grid item, does not start a page laid out again in the inline size of the next
+        // pages (the last lines of the nested paragraph would be in no page). It keeps the layout of the strip
+        var document = Parse($$"""
+            <style>@page { size: 300px 25px; margin: 0 } @page :first { size: 400px 25px }</style>
+            <div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'>
+              <div style='height: 100px; break-inside: avoid'><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div></div><div style='height: 50px'></div></div></div>
+              <div><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div>{{Words(39)}}</div><div style='height: 50px'></div></div></div>
+              <div><div style='display: grid; grid-template-columns: 1fr 1fr; align-items: start'><div id=a>{{Words(39)}}</div><div style='height: 50px'></div></div></div>
+            </div>
+            <p id=b style='margin: 0'>{{Words(2)}}</p>
+            """);
+        using var session = document.BeginPrint(Options);
+        var pages = session.GetPages();
+        Assert.Equal(80, pages.Sum(page => CountWords(page.Content)));
+        Assert.Equal(17, GetPageRects(pages, document.GetElementById("a")!)[^1].Page);
+        Assert.Equal((16, new PhysicalRect(0, 0, 400, 10)), Assert.Single(GetPageRects(pages, document.GetElementById("b")!)));
 
         static string Words(int count) => string.Join(' ', Enumerable.Repeat("XXXX", count));
     }

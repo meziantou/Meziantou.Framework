@@ -20,7 +20,8 @@ internal static class FormatDetector
     /// <summary>Detects the format of the outer layer: an archive, a compressed stream, or nothing known.</summary>
     public static (ArchiveFormat Format, CompressionFormat Compression) DetectOuter(ReadOnlySpan<byte> header)
     {
-        if (header.StartsWith("PK\u0003\u0004"u8) || header.StartsWith("PK\u0005\u0006"u8) || header.StartsWith("PK\u0007\u0008"u8))
+        // (an empty archive starts with its end of central directory record, the zip64 one when it was written with zip64)
+        if (header.StartsWith("PK\u0003\u0004"u8) || header.StartsWith("PK\u0005\u0006"u8) || header.StartsWith("PK\u0006\u0006"u8) || header.StartsWith("PK\u0007\u0008"u8))
             return (ArchiveFormat.Zip, CompressionFormat.None);
 
         if (header.StartsWith((ReadOnlySpan<byte>)[0x37, 0x7A, 0xBC, 0xAF, 0x27, 0x1C]))

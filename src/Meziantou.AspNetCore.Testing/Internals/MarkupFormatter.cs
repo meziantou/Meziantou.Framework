@@ -34,14 +34,26 @@ internal static class MarkupFormatter
     {
         if (original is Element originalElement && clone is Element cloneElement)
         {
-            if (options.RemoveElementReferenceAttributes || options.RemoveScopedCssAttributes)
+            if ((options.RemoveElementReferenceAttributes || options.RemoveScopedCssAttributes) && cloneElement.HasAttributes())
             {
-                foreach (var attribute in cloneElement.Attributes.ToArray())
+                // The attributes are removed once they are all read: most elements have none to remove, so no copy is made
+                List<string>? removedAttributes = null;
+                var attributes = cloneElement.Attributes;
+                for (var i = 0; i < attributes.Count; i++)
                 {
-                    if ((options.RemoveElementReferenceAttributes && attribute.Name.StartsWith("_bl_", StringComparison.Ordinal))
-                        || (options.RemoveScopedCssAttributes && IsScopedCssAttribute(attribute.Name)))
+                    var name = attributes[i].Name;
+                    if ((options.RemoveElementReferenceAttributes && name.StartsWith("_bl_", StringComparison.Ordinal))
+                        || (options.RemoveScopedCssAttributes && IsScopedCssAttribute(name)))
                     {
-                        cloneElement.RemoveAttribute(attribute.Name);
+                        (removedAttributes ??= []).Add(name);
+                    }
+                }
+
+                if (removedAttributes is not null)
+                {
+                    foreach (var name in removedAttributes)
+                    {
+                        cloneElement.RemoveAttribute(name);
                     }
                 }
             }

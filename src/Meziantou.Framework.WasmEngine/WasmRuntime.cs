@@ -194,7 +194,10 @@ public sealed class WasmRuntime : IDisposable
     /// (<c>(component ...)</c>, https://github.com/WebAssembly/component-model/blob/main/design/mvp/Explainer.md) to its binary format.
     /// </summary>
     /// <param name="text">The text of the module or of the component.</param>
-    /// <returns>The binary of the module, or the binary of the component when the text is a component. It is not validated.</returns>
+    /// <returns>
+    /// The binary of the module, or the binary of the component when the text is a component. It is not validated: a module
+    /// in the binary form, <c>(module binary "...")</c>, gives its bytes as they are.
+    /// </returns>
     /// <exception cref="FormatException">The text is not valid.</exception>
     public static byte[] WatToWasm(string text)
     {

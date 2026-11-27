@@ -1,3 +1,5 @@
+using System.Buffers;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 
@@ -216,19 +218,26 @@ internal sealed class PdfObjectParser
 
         // The length is missing or wrong: the data ends at the "endstream" keyword, without the end of line before it. In a
         // recovered file, the data of the lexer ends at the next object, so that the search does not read the file again for
-        // each damaged object
+        // each damaged object. The data does not run past the endobj keyword of the object: a stream without its endstream
+        // keyword would otherwise end at the keyword of a later stream, such as one an incremental update appends, and its
+        // data would change with the bytes after the object
         var data = span[start..];
         var endstream = data.IndexOf("endstream"u8);
+        var endobj = (endstream >= 0 ? data[..endstream] : data).IndexOf("endobj"u8);
         int dataEnd;
-        if (endstream >= 0)
+        if (endobj >= 0)
+        {
+            dataEnd = start + endobj;
+            Lexer.Position = dataEnd;
+        }
+        else if (endstream >= 0)
         {
             dataEnd = start + endstream;
             Lexer.Position = dataEnd + "endstream".Length;
         }
         else
         {
-            var endobj = data.IndexOf("endobj"u8);
-            dataEnd = endobj >= 0 ? start + endobj : span.Length;
+            dataEnd = span.Length;
             Lexer.Position = dataEnd;
             Lexer.ReachedEnd = true;
         }
@@ -333,37 +342,81 @@ internal sealed class PdfObjectParser
 
     private PdfArray ParseArray(int depth)
     {
-        var items = new List<PdfObject>();
-        while (true)
+        // The items are collected on the stack, or in a rented array when there are many: the list of the array is
+        // allocated once, with the count of its items, instead of growing as they are parsed
+        var buffer = default(ArrayItemBuffer);
+        Span<PdfObject> items = buffer;
+        PdfObject[]? rented = null;
+        var count = 0;
+        try
         {
-            var token = Lexer.Next();
-            switch (token.Kind)
+            while (true)
             {
-                case PdfTokenKind.ArrayEnd:
-                    return PdfArray.Wrap(items);
-                case PdfTokenKind.EndOfInput when IsAtRecoveryBoundary():
+                var token = Lexer.Next();
+                switch (token.Kind)
+                {
+                    case PdfTokenKind.ArrayEnd:
+                        return CreateArray(items[..count]);
+                    case PdfTokenKind.EndOfInput when IsAtRecoveryBoundary():
+                        Note(PdfDiagnosticKind.UnclosedContainer, "An array is not closed: it ends with the object", token.Start);
+                        return CreateArray(items[..count]);
+                    case PdfTokenKind.EndOfInput:
+                        throw new InvalidPdfContentException($"The array that starts before offset {token.Start} is not closed");
+                    case PdfTokenKind.DictionaryEnd:
+                    case PdfTokenKind.Invalid:
+                    case PdfTokenKind.ProcedureStart:
+                    case PdfTokenKind.ProcedureEnd:
+                        continue;
+                }
+
+                var value = ParseValue(token, depth + 1);
+                if (value is null)
+                {
+                    // "endobj" or "stream" in an array: the array is not closed
                     Note(PdfDiagnosticKind.UnclosedContainer, "An array is not closed: it ends with the object", token.Start);
-                    return PdfArray.Wrap(items);
-                case PdfTokenKind.EndOfInput:
-                    throw new InvalidPdfContentException($"The array that starts before offset {token.Start} is not closed");
-                case PdfTokenKind.DictionaryEnd:
-                case PdfTokenKind.Invalid:
-                case PdfTokenKind.ProcedureStart:
-                case PdfTokenKind.ProcedureEnd:
-                    continue;
-            }
+                    Lexer.Position = token.Start;
+                    return CreateArray(items[..count]);
+                }
 
-            var value = ParseValue(token, depth + 1);
-            if (value is null)
-            {
-                // "endobj" or "stream" in an array: the array is not closed
-                Note(PdfDiagnosticKind.UnclosedContainer, "An array is not closed: it ends with the object", token.Start);
-                Lexer.Position = token.Start;
-                return PdfArray.Wrap(items);
-            }
+                if (count == items.Length)
+                {
+                    var larger = ArrayPool<PdfObject>.Shared.Rent(count * 2);
+                    items.CopyTo(larger);
+                    ReturnItems(rented, count);
+                    rented = larger;
+                    items = larger;
+                }
 
-            items.Add(value);
+                items[count++] = value;
+            }
         }
+        finally
+        {
+            ReturnItems(rented, count);
+        }
+
+        static PdfArray CreateArray(ReadOnlySpan<PdfObject> items)
+        {
+            var list = new List<PdfObject>(items.Length);
+            list.AddRange(items);
+            return PdfArray.Wrap(list);
+        }
+
+        static void ReturnItems(PdfObject[]? rented, int count)
+        {
+            if (rented is not null)
+            {
+                // The pool must not keep the objects alive
+                rented.AsSpan(0, count).Clear();
+                ArrayPool<PdfObject>.Shared.Return(rented);
+            }
+        }
+    }
+
+    [InlineArray(16)]
+    private struct ArrayItemBuffer
+    {
+        private PdfObject _item;
     }
 
     private PdfDictionary ParseDictionary(int depth)
@@ -437,7 +490,8 @@ internal sealed class PdfObjectParser
 
     private PdfName ParseName(PdfToken token) => NameCache is { } cache ? cache.Get(Lexer, token) : PdfName.FromBytes(Lexer.DecodeName(token));
 
-    private static bool IsStructureKeyword(ReadOnlySpan<byte> bytes)
+    /// <summary>Indicates whether a keyword ends an object: it ends a container that is not closed.</summary>
+    internal static bool IsStructureKeyword(ReadOnlySpan<byte> bytes)
     {
         return bytes.SequenceEqual("endobj"u8) || bytes.SequenceEqual("stream"u8) || bytes.SequenceEqual("endstream"u8) || bytes.SequenceEqual("obj"u8)
             || bytes.SequenceEqual("xref"u8) || bytes.SequenceEqual("trailer"u8) || bytes.SequenceEqual("startxref"u8);

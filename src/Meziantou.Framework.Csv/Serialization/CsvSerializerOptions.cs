@@ -34,6 +34,8 @@ public sealed class CsvSerializerOptions
         QuoteMode = options.QuoteMode;
         EscapeFormulas = options.EscapeFormulas;
         Strict = options.Strict;
+        BadDataHandler = options.BadDataHandler;
+        DeserializationErrorHandler = options.DeserializationErrorHandler;
         FormatProvider = options.FormatProvider;
         PropertyNamingPolicy = options.PropertyNamingPolicy;
         PropertyNameCaseInsensitive = options.PropertyNameCaseInsensitive;
@@ -44,6 +46,7 @@ public sealed class CsvSerializerOptions
         UnmappedColumnHandling = options.UnmappedColumnHandling;
         BufferSize = options.BufferSize;
         MaxRowLength = options.MaxRowLength;
+        MaxDegreeOfParallelism = options.MaxDegreeOfParallelism;
     }
 
     /// <summary>Gets the default options.</summary>
@@ -79,6 +82,44 @@ public sealed class CsvSerializerOptions
     /// <remarks>See <see cref="CsvReaderOptions.Strict"/>.</remarks>
     public bool Strict { get; init; }
 
+    /// <summary>Gets the method called for malformed data, which decides whether the serializer throws, accepts the data, or skips the record. Default is <see langword="null"/>.</summary>
+    /// <remarks>See <see cref="CsvReaderOptions.BadDataHandler"/>. To handle the values that cannot be converted, use <see cref="DeserializationErrorHandler"/>.</remarks>
+    public CsvBadDataHandler? BadDataHandler { get; init; }
+
+    /// <summary>Gets the method called when a record cannot be converted to an object, which decides whether the serializer throws, ignores the error, or skips the record. Default is <see langword="null"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// The handler is called for the errors that throw a <see cref="CsvException"/> without it (see <see cref="CsvDeserializationErrorKind"/>): a value that
+    /// cannot be converted, a missing value or column for a required member, and the missing and unmapped columns when <see cref="MissingColumnHandling"/>
+    /// or <see cref="UnmappedColumnHandling"/> is <c>Throw</c>. When it is <see langword="null"/>, the serializer throws.
+    /// </para>
+    /// <para>
+    /// A record can have several errors, reported one by one until the handler returns <see cref="CsvDeserializationErrorAction.SkipRecord"/>. The errors of
+    /// the header row are reported when the first record is read. The exceptions thrown by the members, the constructors and the callbacks of the type are not
+    /// reported. The handler may throw its own exception, which ends the reading.
+    /// </para>
+    /// <para>The handler is used by the reflection-based metadata and by the generated <see cref="CsvSerializerContext"/> alike.</para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs" ref:region="CsvSerializer_DeserializationErrorHandler" ref:dedent="true">
+    /// var errors = new List&lt;string&gt;();
+    /// var options = new CsvSerializerOptions
+    /// {
+    ///     DeserializationErrorHandler = context =&gt;
+    ///     {
+    ///         errors.Add($"line {context.LineNumber}: '{context.RawValue}' is not a valid {context.MemberName}");
+    ///         return CsvDeserializationErrorAction.SkipRecord; // or Ignore to keep the default value, or Throw
+    ///     },
+    /// };
+    ///
+    /// var products = CsvSerializer.Deserialize&lt;Product&gt;("Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99\n3,Screen,199", options);
+    ///
+    /// Assert.Equal(["Keyboard", "Screen"], products.Select(p =&gt; p.Name));
+    /// Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
+    /// </code>
+    /// </example>
+    public CsvDeserializationErrorHandler? DeserializationErrorHandler { get; init; }
+
     /// <summary>Gets the format provider used to parse and format values. Default is <see langword="null"/>, which means <see cref="CultureInfo.InvariantCulture"/>.</summary>
     public IFormatProvider? FormatProvider { get; init; }
 
@@ -109,6 +150,37 @@ public sealed class CsvSerializerOptions
     /// <summary>Gets the maximum length of a row read from a <see cref="TextReader"/> or a <see cref="Stream"/>. Default is 16777216.</summary>
     public int MaxRowLength { get; init; } = CsvReaderOptions.DefaultMaxRowLength;
 
+    /// <summary>Gets the maximum number of threads that convert the records to objects when reading data. Default is 1.</summary>
+    /// <value>1 to convert the records on the calling thread, a larger value to convert them on the thread pool, or -1 to use <see cref="Environment.ProcessorCount"/>.</value>
+    /// <remarks>
+    /// <para>
+    /// When larger than 1, the data is still split into records on the calling thread, and the records are converted to objects on the thread pool, in
+    /// batches of a few hundred records; the calling thread converts the next batch itself when no thread of the pool has started it. The objects are
+    /// returned in the order of the records, and the exceptions are the same as when reading the records one by one. The enumerable overloads read a
+    /// few batches ahead of the objects they return. The gain is largest when converting the values takes time, such as numbers and dates, and smallest
+    /// when strings are most of the values: the garbage collector limits their allocation, less so the server garbage collector. Splitting the data on
+    /// one thread limits the gain to a few times, whatever the number of processors.
+    /// </para>
+    /// <para>
+    /// The constructors, the setters, the converters and the callbacks of the records are called from several threads at the same time. The
+    /// <see cref="DeserializationErrorHandler"/> is not called by two threads at the same time, but it can be called for the records in another order, and
+    /// for records after the error that ends the reading. The <see cref="BadDataHandler"/> is called on the calling thread. The browser and WASI convert
+    /// the records on the calling thread.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is 0 or less than -1.</exception>
+    public int MaxDegreeOfParallelism
+    {
+        get;
+        init
+        {
+            if (value is 0 or < -1)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The maximum degree of parallelism must be -1 or a positive number.");
+
+            field = value;
+        }
+    } = 1;
+
     internal CsvReaderOptions ReaderOptions => _readerOptions ??= new CsvReaderOptions
     {
         Separator = Separator,
@@ -118,6 +190,7 @@ public sealed class CsvSerializerOptions
         CommentCharacter = CommentCharacter,
         SkipEmptyLines = true,
         Strict = Strict,
+        BadDataHandler = BadDataHandler,
         FormatProvider = FormatProvider,
         ColumnNameComparer = PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal,
         BufferSize = BufferSize,

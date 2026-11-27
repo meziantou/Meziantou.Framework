@@ -82,8 +82,9 @@ internal sealed class EventListenerEntry
 public partial class EventTarget
 {
     /// <summary>
-    /// The event listener list of an event target that is not a node, or the rare data of a node (see <see cref="Node.RareData"/>),
-    /// which holds the event listener list of the node: most nodes have no listeners, and the field is shared to keep them small.
+    /// The event listener list of an event target that is not a node (or its <see cref="EventTargetData"/> when it has a
+    /// relevant global object), or the rare data of a node (see <see cref="Node.RareData"/>), which holds the event listener
+    /// list of the node: most nodes have no listeners, and the field is shared to keep them small.
     /// </summary>
     private object? _listenersOrRareData;
 
@@ -98,12 +99,24 @@ public partial class EventTarget
     // (https://dom.spec.whatwg.org/#concept-event-listener-invoke) without copying it
     private EventListenerEntry[]? EventListeners
     {
-        get => _listenersOrRareData is NodeRareData rareData ? rareData.EventListeners : (EventListenerEntry[]?)_listenersOrRareData;
+        get => _listenersOrRareData switch
+        {
+            NodeRareData rareData => rareData.EventListeners,
+            EventTargetData data => data.Listeners,
+            var listeners => (EventListenerEntry[]?)listeners,
+        };
         set
         {
             if (this is not Node node)
             {
-                _listenersOrRareData = value;
+                if (_listenersOrRareData is EventTargetData data)
+                {
+                    data.Listeners = value;
+                }
+                else
+                {
+                    _listenersOrRareData = value;
+                }
             }
             else if (value is not null || node.RareDataOrNull is not null)
             {
@@ -120,21 +133,44 @@ public partial class EventTarget
         // The relevant global object of the event targets that are not nodes is the current global object, if any
         if (this is not Node && GlobalScope.Current is { } global)
         {
-            RelevantGlobals.AddOrUpdate(this, global);
+            _listenersOrRareData = new EventTargetData { Global = global };
         }
     }
-
-    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<EventTarget, GlobalScope> RelevantGlobals = [];
 
     /// <summary>
     /// The relevant global object (https://html.spec.whatwg.org/multipage/webappapis.html#concept-relevant-global): the window
     /// of the node document for nodes, or the current global object when the target was created (a window or the global
     /// object of a worker), if any.
     /// </summary>
-    internal virtual GlobalScope? RelevantGlobal => RelevantGlobals.TryGetValue(this, out var global) ? global : null;
+    internal virtual GlobalScope? RelevantGlobal => (_listenersOrRareData as EventTargetData)?.Global;
 
     /// <summary>Sets the relevant global object of an event target created for another global object (e.g. a transferred message port).</summary>
-    internal void SetRelevantGlobalCore(GlobalScope global) => RelevantGlobals.AddOrUpdate(this, global);
+    internal void SetRelevantGlobalCore(GlobalScope global)
+    {
+        // A node has the relevant global object of its node document (Node overrides RelevantGlobal)
+        if (this is Node)
+            return;
+
+        if (_listenersOrRareData is EventTargetData data)
+        {
+            data.Global = global;
+        }
+        else
+        {
+            _listenersOrRareData = new EventTargetData { Listeners = (EventListenerEntry[]?)_listenersOrRareData, Global = global };
+        }
+    }
+
+    /// <summary>
+    /// The event listener list and the relevant global object of an event target that is not a node: a field of the target
+    /// rather than an entry of a table, which would take a GC handle, allocated under a lock shared by all the threads.
+    /// </summary>
+    private sealed class EventTargetData
+    {
+        public EventListenerEntry[]? Listeners { get; set; }
+
+        public GlobalScope? Global { get; set; }
+    }
 
     /// <summary>The event listener list (https://dom.spec.whatwg.org/#eventtarget-event-listener-list). The array is never modified: adding or removing a listener replaces it.</summary>
     internal EventListenerEntry[] EventListenerList => EventListeners ?? [];

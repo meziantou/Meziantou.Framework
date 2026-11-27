@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -27,9 +28,46 @@ internal static class ArrayOperations
         return new JsArray(prototype, (uint)length);
     }
 
+    /// <summary>
+    /// Gets whether the species constructor of an object is %Array% of the current realm without running code: an array
+    /// of the current realm without own constructor property, whose realm has the built-in Array.prototype.constructor
+    /// and %Array%[%Symbol.species%]. ArraySpeciesCreate(originalArray, length) is then ArrayCreate(length): Construct(%Array%, « length »).
+    /// </summary>
+    public static bool HasIntrinsicSpecies(JsObject originalArray, [NotNullWhen(true)] out JsArray? array)
+    {
+        if (originalArray is JsArray candidate && JsEngine.Current?.CurrentRealm is { } realm && ReferenceEquals(candidate.PrototypeSlot, realm.Intrinsics.ArrayPrototype)
+            && !candidate.TryFindOwnForCache(ConstructorKey, out _, out _) && realm.Intrinsics.IsArraySpeciesIntact())
+        {
+            array = candidate;
+            return true;
+        }
+
+        array = null;
+        return false;
+    }
+
+    /// <summary>
+    /// ArraySpeciesCreate(obj, count), then the copy of the elements [start, start + count) of obj (Array.prototype.slice),
+    /// when no code can run: the species constructor is %Array% (see <see cref="HasIntrinsicSpecies"/>) and the elements
+    /// are own data properties (no hole). Null when the general algorithm must be used.
+    /// </summary>
+    public static JsArray? TryCopyDenseElements(JsObject obj, long start, long count)
+    {
+        if (count <= 0 || !HasIntrinsicSpecies(obj, out var source) || !source.IsDensePacked(start, count))
+            return null;
+
+        JsEngine.CountCurrentWork(count);
+        var result = new JsArray(source.PrototypeSlot, (uint)count);
+        result.InitializeDenseElements(source, (int)start, (int)count);
+        return result;
+    }
+
     /// <summary>ArraySpeciesCreate(originalArray, length)</summary>
     public static JsObject ArraySpeciesCreate(JsObject originalArray, double length)
     {
+        if (HasIntrinsicSpecies(originalArray, out var array))
+            return ArrayCreate(length, array.PrototypeSlot);
+
         if (!JsOperations.IsArray(originalArray))
             return ArrayCreate(length);
 

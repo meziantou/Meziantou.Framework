@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework;
@@ -6,10 +7,64 @@ internal static class DiffAlgorithmHelpers
 {
     private const int StackAllocationThreshold = 128;
 
-    internal static void ApplySubDiff(DiffComputationResult subDiff, bool[] leftModified, int leftOffset, bool[] rightModified, int rightOffset)
+    internal static int CommonPrefixLength(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer)
     {
-        Array.Copy(subDiff.LeftModified, 0, leftModified, leftOffset, subDiff.LeftLength);
-        Array.Copy(subDiff.RightModified, 0, rightModified, rightOffset, subDiff.RightLength);
+        var minLength = Math.Min(left.Length, right.Length);
+        var length = 0;
+        while (length < minLength && comparer.Equals(left[length], right[length]))
+        {
+            length++;
+        }
+
+        return length;
+    }
+
+    internal static int CommonSuffixLength(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer)
+    {
+        var minLength = Math.Min(left.Length, right.Length);
+        var length = 0;
+        while (length < minLength && comparer.Equals(left[^(length + 1)], right[^(length + 1)]))
+        {
+            length++;
+        }
+
+        return length;
+    }
+
+    /// <summary>
+    /// Gives each chunk a code from 1 to the returned number of distinct chunks, so that two chunks have the same code
+    /// when <paramref name="comparer"/> considers them equal. The algorithms compare codes instead of strings.
+    /// </summary>
+    internal static int ComputeCodes(ReadOnlySpan<string> left, ReadOnlySpan<string> right, IEqualityComparer<string> comparer, Span<int> leftCodes, Span<int> rightCodes)
+    {
+        // Most chunks of one side are found on the other side, so this rarely grows the dictionary. Sizing it for
+        // both sides allocated twice the entries needed in most diffs.
+        var codes = new Dictionary<string, int>(Math.Max(left.Length, right.Length), comparer);
+        AssignCodes(left, codes, leftCodes);
+        AssignCodes(right, codes, rightCodes);
+        return codes.Count;
+
+        static void AssignCodes(ReadOnlySpan<string> chunks, Dictionary<string, int> codes, Span<int> result)
+        {
+            for (var i = 0; i < chunks.Length; i++)
+            {
+                ref var code = ref CollectionsMarshal.GetValueRefOrAddDefault(codes, chunks[i], out var exists);
+                if (!exists)
+                {
+                    code = codes.Count;
+                }
+
+                result[i] = code;
+            }
+        }
+    }
+
+    internal static void Return<T>(T[]? array)
+    {
+        if (array is not null)
+        {
+            ArrayPool<T>.Shared.Return(array);
+        }
     }
 
     internal static int LowerBound(List<int> values, int value)

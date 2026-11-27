@@ -118,6 +118,13 @@ internal static class LinearDecoder
                 }
             }
 
+            // A symbology without check character can read the bars of a row of a GS1 DataBar Expanded Stacked symbol (a row of
+            // Codabar): the row, whose finder patterns are checked, is read instead
+            if (match is { Type: BarcodeType.Codabar or BarcodeType.Code39 or BarcodeType.Itf } && DataBarExpandedDecoder.TryReadRow(compensated ?? line, start) is not null)
+            {
+                match = null;
+            }
+
             if (match is not null)
             {
                 var (from, to) = GetRange(match.Start, match.End);
@@ -144,7 +151,7 @@ internal static class LinearDecoder
                 if (DataBarExpandedDecoder.TryReadRow(candidate, start) is { } row)
                 {
                     var (from, to) = GetRange(row.Start, row.End);
-                    expandedRows.Add((row, lineIndex, from, to));
+                    expandedRows.Add((row with { IsReversed = isReversed }, lineIndex, from, to));
                 }
             }
         }

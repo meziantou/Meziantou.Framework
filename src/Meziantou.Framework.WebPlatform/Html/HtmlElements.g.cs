@@ -586,6 +586,24 @@ public sealed partial class HtmlBodyElement : HtmlElement
         get => GetEventHandler("unload");
         set => SetEventHandler("unload", value);
     }
+
+    /// <summary>Gets or sets the event handler of the <c>gamepadconnected</c> event (the <c>ongamepadconnected</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepadconnected"/>
+    [IdlMember("ongamepadconnected", "https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepadconnected")]
+    public Action<Event>? OnGamepadConnected
+    {
+        get => GetEventHandler("gamepadconnected");
+        set => SetEventHandler("gamepadconnected", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>gamepaddisconnected</c> event (the <c>ongamepaddisconnected</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepaddisconnected"/>
+    [IdlMember("ongamepaddisconnected", "https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepaddisconnected")]
+    public Action<Event>? OnGamepadDisconnected
+    {
+        get => GetEventHandler("gamepaddisconnected");
+        set => SetEventHandler("gamepaddisconnected", value);
+    }
 }
 
 /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#htmlbuttonelement</summary>
@@ -2535,6 +2553,24 @@ public sealed partial class HtmlFrameSetElement : HtmlElement
     {
         get => GetEventHandler("unload");
         set => SetEventHandler("unload", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>gamepadconnected</c> event (the <c>ongamepadconnected</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepadconnected"/>
+    [IdlMember("ongamepadconnected", "https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepadconnected")]
+    public Action<Event>? OnGamepadConnected
+    {
+        get => GetEventHandler("gamepadconnected");
+        set => SetEventHandler("gamepadconnected", value);
+    }
+
+    /// <summary>Gets or sets the event handler of the <c>gamepaddisconnected</c> event (the <c>ongamepaddisconnected</c> event handler attribute).</summary>
+    /// <seealso href="https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepaddisconnected"/>
+    [IdlMember("ongamepaddisconnected", "https://w3c.github.io/gamepad/#dom-windoweventhandlers-ongamepaddisconnected")]
+    public Action<Event>? OnGamepadDisconnected
+    {
+        get => GetEventHandler("gamepaddisconnected");
+        set => SetEventHandler("gamepaddisconnected", value);
     }
 }
 

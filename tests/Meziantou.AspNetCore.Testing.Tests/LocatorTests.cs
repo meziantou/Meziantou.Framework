@@ -146,6 +146,53 @@ public sealed class LocatorTests
     }
 
     [Fact]
+    public async Task GetByText_CollapsesTheWhiteSpaceAndRemovesTheZeroWidthSpaces()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await RenderMarkupAsync(host, "<div><p id=\"ada\">\n  Ada\t\u00a0Love\u200blace  </p><p id=\"grace\">Grace\u3000\u2028Hopper</p><p id=\"alan\">Alan Turing</p><p id=\"zero\">\u200b</p><p id=\"empty\"></p></div>");
+
+        Assert.Equal("ada", page.GetByText("Ada Lovelace", exact: true).GetAttribute("id"));
+        Assert.Equal("ada", page.GetByText("  ada \n lovelace\u200b ").GetAttribute("id"));
+        Assert.Equal("ada", page.GetByText("Ada  Lovelace ", exact: true).GetAttribute("id"));
+        Assert.Equal(0, page.GetByText("ada lovelace", exact: true).Count);
+        Assert.Equal("grace", page.GetByText("Grace Hopper", exact: true).GetAttribute("id"));
+        Assert.Equal("alan", page.GetByText("Alan Turing", exact: true).GetAttribute("id"));
+        Assert.Equal("ada", page.GetByText(new Regex("^\n  Ada\t\u00a0Love\u200blace  $", RegexOptions.NonBacktracking)).GetAttribute("id"));
+        Assert.Equal(["ada", "grace", "alan", "zero", "empty"], page.Locator("p").Filter(new() { HasText = "" }).GetElements().Select(element => element.Id));
+        Assert.Equal(["ada"], page.Locator("p").Filter(new() { HasText = "A LOVE" }).GetElements().Select(element => element.Id));
+        Assert.Equal(["grace", "alan", "zero", "empty"], page.Locator("p").Filter(new() { HasNotText = "a l" }).GetElements().Select(element => element.Id));
+        Assert.Equal(["ada", "grace", "alan", "zero"], page.Locator("div").GetByText(new Regex(@"\S", RegexOptions.NonBacktracking)).GetElements().Select(element => element.Id));
+    }
+
+    [Fact]
+    public async Task GetByLabel_TheForAttributeTargetsTheFirstElementWithTheIdentifier()
+    {
+        await using var host = new ComponentTestHost();
+        var page = await RenderMarkupAsync(host, """
+            <label for="name">Name</label>
+            <input id="name" data-testid="first" /><input id="name" data-testid="second" />
+            <label for="secret">Secret</label><input id="secret" type="hidden" />
+            <label for="panel">Panel</label><div id="panel"></div>
+            <label for="missing">Missing</label>
+            <label for="">Empty <input data-testid="nested" /></label>
+            <label for="amount">Amount</label><output id="amount"></output>
+            <label for="notes">Notes</label><span id="notes"></span><textarea id="notes"></textarea>
+            <label for="size">Size</label><select id="size"><option>M</option></select>
+            <label>Color <input data-testid="color" /></label>
+            """);
+
+        Assert.Equal("first", page.GetByLabel("Name").GetAttribute("data-testid"));
+        Assert.Equal(0, page.GetByLabel("Secret").Count);
+        Assert.Equal(0, page.GetByLabel("Panel").Count);
+        Assert.Equal(0, page.GetByLabel("Missing").Count);
+        Assert.Equal(0, page.GetByLabel("Empty").Count);
+        Assert.Equal("amount", page.GetByLabel("Amount").GetAttribute("id"));
+        Assert.Equal(0, page.GetByLabel("Notes").Count);
+        Assert.Equal("size", page.GetByLabel("Size").GetAttribute("id"));
+        Assert.Equal("color", page.GetByLabel("Color").GetAttribute("data-testid"));
+    }
+
+    [Fact]
     public async Task GetByLabel_TheControlsNestedInTheLabelContributeTheirValue()
     {
         await using var host = new ComponentTestHost();
@@ -253,17 +300,19 @@ public sealed class LocatorTests
     public async Task Locator_FindsTheElementsOfOpenShadowRoots()
     {
         await using var host = new ComponentTestHost();
-        var page = await RenderMarkupAsync(host, "<div id=\"host\"></div><button>Outside</button>");
+        var page = await RenderMarkupAsync(host, "<div id=\"host\"></div><button>Outside</button><label for=\"city\">Town</label><input id=\"city\" class=\"outer-city\">");
         await host.InvokeAsync(() =>
         {
             var shadowRoot = page.Find("#host").AttachShadow(new ShadowRootInit { Mode = ShadowRootMode.Open });
-            shadowRoot.InnerHtml = "<label>Name <input></label><button class=\"inner\">Inside</button>";
+            shadowRoot.InnerHtml = "<label>Name <input></label><button class=\"inner\">Inside</button><label for=\"city\">City</label><input id=\"city\" class=\"inner-city\">";
         });
 
         Assert.Equal("Inside", page.Locator(".inner").TextContent);
         Assert.Equal("Inside", page.GetByRole("button", "Inside").TextContent);
         Assert.Equal("button", page.GetByText("Inside", exact: true).GetElement().LocalName);
         Assert.Equal("input", page.GetByLabel("Name").GetElement().LocalName);
+        Assert.Equal("inner-city", page.GetByLabel("City").GetAttribute("class"));
+        Assert.Equal("outer-city", page.GetByLabel("Town").GetAttribute("class"));
         Assert.Equal(2, page.GetByRole("button").Count);
         await page.GetByRole("button", "Inside").ClickAsync();
     }

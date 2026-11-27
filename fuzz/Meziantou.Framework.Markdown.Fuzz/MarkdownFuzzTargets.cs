@@ -160,7 +160,8 @@ public static class MarkdownFuzzTargets
         var formattedText = formatted.GetRoot().ToFullString();
         var html = MarkdownHtmlRenderer.ToHtml(tree).ReplaceLineEndings("\n");
         FuzzAssert.True(MarkdownHtmlRenderer.ToHtml(formatted).ReplaceLineEndings("\n") == html, $"The formatted text {FuzzAssert.Format(formattedText)} does not render as the text {FuzzAssert.Format(text)}");
-        FuzzAssert.True(MarkdownFormatter.FormatText(formatted, formattingOptions) == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it: {FuzzAssert.Format(text)}");
+        var formattedTwice = MarkdownFormatter.FormatText(formatted, formattingOptions);
+        FuzzAssert.True(formattedTwice == formattedText, $"Formatting the formatted text {FuzzAssert.Format(formattedText)} changes it to {FuzzAssert.Format(formattedTwice)}: {FuzzAssert.Format(text)}");
 
         // The formatter compares the HTML with its line endings as \n, without replacing them
         CheckEqualsIgnoringLineEndings(text, formattedText);
@@ -729,6 +730,12 @@ public static class MarkdownFuzzTargets
             return true;
 
         if (block is MarkdownDefinitionListSyntax or MarkdownGridTableSyntax || block.Ancestors().Any(ancestor => ancestor is MarkdownDefinitionItemSyntax or MarkdownFootnoteDefinitionSyntax))
+            return true;
+
+        // A definition list before one of the containers of the block places the lines after it too (fuzz regression: after
+        // a definition list, an item of a list less indented than the content of the item before it is nested in that item,
+        // where it is the next item of the list without definition lists)
+        if (block.Ancestors().OfType<MarkdownBlockSyntax>().Any(container => container.Parent is { } containerParent && containerParent.ChildNodes().OfType<MarkdownBlockSyntax>().TakeWhile(sibling => sibling != container).Any(sibling => sibling is MarkdownDefinitionListSyntax)))
             return true;
 
         var siblings = block.Parent!.ChildNodes().OfType<MarkdownBlockSyntax>().ToList();

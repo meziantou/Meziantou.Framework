@@ -6,7 +6,7 @@
 
   <ItemGroup>
     <!-- Used to cross-check that ParseNuGet agrees with the reference NuGet range parser -->
-    <PackageReference Include="NuGet.Versioning" Version="7.9.0" />
+    <PackageReference Include="NuGet.Versioning" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

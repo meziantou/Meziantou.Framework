@@ -34,6 +34,7 @@ internal abstract class InputDocument : IDisposable
         FileFormatKind.Epub => EpubInputDocument.Open(path, settings, outputFormat, cancellationToken),
         FileFormatKind.Mobi => MobiInputDocument.Open(path, settings, outputFormat, cancellationToken),
         FileFormatKind.Markdown or FileFormatKind.Html => HtmlInputDocument.Open(path, format, settings, outputFormat),
+        FileFormatKind.Svg => SvgInputDocument.Open(path, settings, outputFormat),
         _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format cannot be read"),
     };
 

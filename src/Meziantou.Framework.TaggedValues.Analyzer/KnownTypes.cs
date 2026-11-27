@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Roslyn;
 using Microsoft.CodeAnalysis;
@@ -15,9 +16,12 @@ internal sealed class KnownTypes
     private readonly INamedTypeSymbol? _asyncEnumerableType;
     private readonly INamedTypeSymbol[] _valueWrapperTypes;
     private readonly INamedTypeSymbol[] _elementWrapperTypes;
+    private readonly ConcurrentDictionary<INamedTypeSymbol, ITypeSymbol?> _elementTypes = new(SymbolEqualityComparer.IncludeNullability);
+    private readonly Func<INamedTypeSymbol, ITypeSymbol?> _getElementType;
 
     public KnownTypes(Compilation compilation)
     {
+        _getElementType = GetElementType;
         _guidType = compilation.GetBestTypeByMetadataName("System.Guid");
         _keyValuePairType = compilation.GetBestTypeByMetadataName("System.Collections.Generic.KeyValuePair`2");
         _expressionType = compilation.GetBestTypeByMetadataName("System.Linq.Expressions.Expression`1");
@@ -96,6 +100,13 @@ internal sealed class KnownTypes
             }
         }
 
+        // The interfaces of a constructed type are computed again for each instance of the type, e.g. each List<Guid> of the code, so the element type is cached
+        wrappedType = _elementTypes.GetOrAdd(type, _getElementType);
+        return wrappedType is not null;
+    }
+
+    private ITypeSymbol? GetElementType(INamedTypeSymbol type)
+    {
         ITypeSymbol? elementType = null;
         foreach (var @interface in type.AllInterfaces)
         {
@@ -103,14 +114,13 @@ internal sealed class KnownTypes
                 SymbolEqualityComparer.Default.Equals(@interface.OriginalDefinition, _asyncEnumerableType))
             {
                 if (elementType is not null && !SymbolEqualityComparer.Default.Equals(elementType, @interface.TypeArguments[0]))
-                    return false;
+                    return null;
 
                 elementType = @interface.TypeArguments[0];
             }
         }
 
-        wrappedType = elementType;
-        return wrappedType is not null;
+        return elementType;
     }
 
     /// <summary>

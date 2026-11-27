@@ -7,7 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>The custom data attributes of an element (https://html.spec.whatwg.org/multipage/dom.html#domstringmap).</summary>
 /// <seealso href="https://html.spec.whatwg.org/multipage/dom.html#domstringmap"/>
 [IdlInterface("DOMStringMap", "https://html.spec.whatwg.org/multipage/dom.html#domstringmap")]
-public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, ISupportedPropertyNames
+public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, ISupportedPropertyNames, Scripting.IScriptWrapperHolder
 {
     private readonly Element _element;
 
@@ -26,7 +26,8 @@ public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, IS
         get
         {
             ArgumentNullException.ThrowIfNull(name);
-            return _element.GetAttributeValue(ToAttributeName(name));
+            var index = FindAttribute(name);
+            return index < 0 ? null : _element.GetAttributeValue(index);
         }
         set
         {
@@ -81,7 +82,50 @@ public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, IS
                 return false;
         }
 
-        return _element.GetAttributeNS(@namespace: null, ToAttributeName(name)) is not null;
+        return FindAttribute(name) >= 0;
+    }
+
+    /// <summary>
+    /// Returns the index of the attribute that has no namespace and whose local name is <see cref="ToAttributeName"/> of the
+    /// name, or -1 (the name is compared without creating the attribute name).
+    /// </summary>
+    private int FindAttribute(string name)
+    {
+        for (var i = 0; i < _element.AttributeCount; i++)
+        {
+            if (_element.GetAttributeNamespace(i) is null && IsAttributeName(_element.GetAttributeLocalName(i), name))
+                return i;
+        }
+
+        return -1;
+    }
+
+    /// <summary>Returns whether the local name is <see cref="ToAttributeName"/> of the name.</summary>
+    private static bool IsAttributeName(string localName, string name)
+    {
+        if (!localName.StartsWith("data-", StringComparison.Ordinal))
+            return false;
+
+        var position = 5;
+        foreach (var c in name)
+        {
+            if (char.IsAsciiLetterUpper(c))
+            {
+                if (position + 1 >= localName.Length || localName[position] != '-' || localName[position + 1] != (char)(c + 0x20))
+                    return false;
+
+                position += 2;
+            }
+            else
+            {
+                if (position >= localName.Length || localName[position] != c)
+                    return false;
+
+                position++;
+            }
+        }
+
+        return position == localName.Length;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dom.html#concept-domstringmap-pairs</summary>
@@ -138,6 +182,12 @@ public sealed class DomStringMap : IEnumerable<KeyValuePair<string, string>>, IS
 
         return result.ToString();
     }
+
+    /// <inheritdoc/>
+    Scripting.ScriptWrapperSlot? Scripting.IScriptWrapperHolder.ScriptWrapper { get; set; }
+
+    /// <inheritdoc/>
+    Window? Scripting.IScriptWrapperHolder.ScriptWrapperWindow => _element.NodeDocument.RealmWindow;
 
     /// <inheritdoc/>
     [NotInIdl("Enumerates the name-value pairs")]

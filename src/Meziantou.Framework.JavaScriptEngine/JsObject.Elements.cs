@@ -448,7 +448,7 @@ public partial class JsObject
         return -1;
     }
 
-    /// <summary>Copies the first dense elements to <paramref name="destination"/>: they must not be holes (<see cref="IsDensePacked"/>).</summary>
+    /// <summary>Copies the first dense elements to <paramref name="destination"/>: they must not be holes (<see cref="IsDensePacked(long)"/>).</summary>
     internal void CopyPackedDenseElements(Span<JsValue> destination)
     {
         switch (_elementKind)
@@ -498,6 +498,77 @@ public partial class JsObject
         }
 
         return true;
+    }
+
+    /// <summary>Gets whether the elements [start, start + count) are all in the dense storage and none is a hole.</summary>
+    internal bool IsDensePacked(long start, long count)
+    {
+        if (start == 0)
+            return IsDensePacked(count);
+
+        if (start < 0 || count < 0 || start + count > DenseCapacity)
+            return false;
+
+        // The elements of an array are below its length: no hole when there are as many elements as the length
+        if (this is JsArray array && start + count <= array.Length && _denseCount == array.Length)
+            return true;
+
+        for (var i = (int)start; i < start + count; i++)
+        {
+            if (IsDenseHole(i))
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Stores a copy of the elements [start, start + count) of another object (none is a hole, see <see cref="IsDensePacked(long, long)"/>)
+    /// as the dense elements of an object that has none yet, in a storage of the same kind.
+    /// </summary>
+    internal void InitializeDenseElements(JsObject source, int start, int count)
+    {
+        if (count == 0)
+            return;
+
+        var length = count;
+        if (length is >= PooledStorageMinBytes / 16 and < PooledStorageMaxLength)
+        {
+            // The large storages have the sizes of the array pools (as TrySetElement)
+            length = (int)BitOperations.RoundUpToPowerOf2((uint)length);
+        }
+
+        start += source._elementStart;
+        switch (source._elementKind)
+        {
+            case ElementKind.Number:
+                {
+                    var numbers = AllocateStorage<double>(length, elementSize: 8);
+                    ((double[])source._elements!).AsSpan(start, count).CopyTo(numbers);
+                    _elements = numbers;
+                    break;
+                }
+
+            case ElementKind.Reference:
+                {
+                    var cells = AllocateStorage<CellSlot>(length, elementSize: 8);
+                    ((CellSlot[])source._elements!).AsSpan(start, count).CopyTo(cells);
+                    _elements = cells;
+                    break;
+                }
+
+            default:
+                {
+                    var mixed = AllocateStorage<JsValue>(length, elementSize: 16);
+                    ((JsValue[])source._elements!).AsSpan(start, count).CopyTo(mixed);
+                    _elements = mixed;
+                    break;
+                }
+        }
+
+        _elementKind = source._elementKind;
+        FillDenseHoles(count, StorageLength - count);
+        _denseCount = count;
     }
 
     /// <summary>Reverses the first elements of the dense storage.</summary>

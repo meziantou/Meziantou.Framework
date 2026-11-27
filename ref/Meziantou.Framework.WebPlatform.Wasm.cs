@@ -3,12 +3,15 @@
 // Assembly References:
 //   Meziantou.Framework.WasmEngine
 //   Meziantou.Framework.WebPlatform
+//   System.IO.Hashing
 #nullable enable
 
 namespace Meziantou.Framework.WebPlatform.Wasm
 {
     public sealed class WasmWebAssemblyRuntime : Meziantou.Framework.WebPlatform.WebAssembly.WebAssemblyRuntime, System.IDisposable
     {
+        public const long DefaultModuleCacheCapacity = 16777216L;
+        public long ModuleCacheCapacity { get => throw null; init { } }
         public Meziantou.Framework.WasmEngine.WasmRuntime Runtime { get => throw null; }
         public WasmWebAssemblyRuntime(Meziantou.Framework.WasmEngine.WasmRuntime runtime) { }
         public WasmWebAssemblyRuntime(Meziantou.Framework.WasmEngine.WasmRuntimeOptions? options = null) { }

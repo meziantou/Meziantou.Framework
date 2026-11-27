@@ -42,11 +42,11 @@ jobs:
             description: "Automated update of the pinned web-platform-tests to the latest release (`eng/webplatform/update-wpt.sh`). The expectations are rewritten from the new results and the ones of the tests removed upstream are deleted, so their diff lists the tests whose result changed and the tests that no longer exist."
             failure: The tests of Meziantou.Framework.WebPlatform fail, or a test that does not pass has no reason in `wpt-reasons.json`
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@v7.0.1
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Restore the external test suites
-        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        uses: actions/cache/restore@v6.1.0
         with:
           path: tests/Meziantou.Framework.WebPlatform.External
           key: webplatform-external-tests-${{ hashFiles('tests/Meziantou.Framework.WebPlatform.SpecData/versions.json', 'tests/Meziantou.Framework.WebPlatform.SpecData/sources.json') }}

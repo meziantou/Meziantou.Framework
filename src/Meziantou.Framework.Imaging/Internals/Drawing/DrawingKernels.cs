@@ -1043,12 +1043,14 @@ internal static class DrawingKernels
             return;
         }
 
-        // A short run is cheaper pixel by pixel than searched for runs
+        // A short run is cheaper pixel by pixel than searched for runs. The vector kernels of source-over write an opaque
+        // paint to the blocks covered entirely themselves: a row is then one call, not one per gap between the runs
         if (coverage.Length >= MinFullRunSearchLength)
         {
             if (source.Colors.IsEmpty)
             {
-                if (TryCompositeFullRuns(samples, channels, coverage, source))
+                var kernelsWriteFullBlocks = source.Mode == CompositeMode.SourceOver && !source.IsFullyCovered && IsCompositedByVectorKernels<TSample>(channels) && WritesFullBlocks(source);
+                if (!kernelsWriteFullBlocks && TryCompositeFullRuns(samples, channels, coverage, source))
                     return;
             }
             else if (source.Mode == CompositeMode.Source && channels == 4 && TryReplaceFullRuns(samples, coverage, source.Colors))
@@ -1277,7 +1279,7 @@ internal static class DrawingKernels
     private static void CompositeOver<TSample>(Span<TSample> samples, int channels, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
         where TSample : unmanaged, IBinaryInteger<TSample>, IMinMaxValue<TSample>
     {
-        if (typeof(TSample) == typeof(byte) && channels == 4 && coverage.Length >= 4 && Vector128.IsHardwareAccelerated)
+        if (IsCompositedByVectorKernels<TSample>(channels) && coverage.Length >= 4)
         {
             if (Vector512.IsHardwareAccelerated && Avx512BW.IsSupported && coverage.Length >= 16)
             {
@@ -1307,7 +1309,9 @@ internal static class DrawingKernels
     /// <summary>
     /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over: four pixels at a time
     /// when they are all opaque or all transparent, the others with <see cref="CompositeOverScalar"/>. The blocks of
-    /// four pixels without coverage are skipped, as the scalar path leaves such pixels as they are.
+    /// four pixels without coverage are skipped, as the scalar path leaves such pixels as they are; an opaque paint is
+    /// written to the blocks covered entirely (<see cref="FillFullBlocks"/>), and the last pixels are composited as the
+    /// last block of the run, whose other pixels get no coverage.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -1321,8 +1325,60 @@ internal static class DrawingKernels
     /// A transparent pixel gets the color of the paint and the alpha <c>(E + Q / 2) >> 16</c> (<c>E + Q / 2</c> is
     /// below 2^24), or stays as it is when that alpha is 0.
     /// </para>
+    /// <para>
+    /// The blocks that need a call (runs covered entirely, pixels neither all opaque nor all transparent) are handled
+    /// between two runs of <see cref="BlendBlocks8"/>, whose loop makes no call: the vectors it holds are not spilled
+    /// around one, which made the code depend on the layout the JIT chose. Its blocks without coverage are passed one by
+    /// one: a search call between the rows of a glyph mask and its next block cost more than the blocks.
+    /// </para>
     /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void CompositeOver8(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        // A short run, or one whose blocks all blend, is one call
+        var writesFullBlocks = WritesFullBlocks(source);
+        var end = BlendBlocks8(samples, coverage, source, 0, writesFullBlocks);
+        if (end < coverage.Length)
+        {
+            CompositeOver8Rest(samples, coverage, source, end, writesFullBlocks);
+        }
+    }
+
+    /// <summary>The blocks of <see cref="CompositeOver8"/> from the one BlendBlocks8 stopped at: covered entirely, or neither all opaque nor all transparent.</summary>
+    private static void CompositeOver8Rest(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, bool writesFullBlocks)
+    {
+        var i = start;
+        while (i + 4 <= coverage.Length)
+        {
+            var blockCoverage = Vector128.Create(coverage.Slice(i, 4));
+            if (writesFullBlocks && blockCoverage == Vector128.Create(CoverageRasterizer.FullCoverage))
+            {
+                i = FillFullBlocks(samples, coverage, i, 4, GetPaintPixel(source.Color));
+            }
+            else
+            {
+                // Pixels that are neither all opaque nor all transparent
+                CompositeOverScalarRange(samples, coverage, source, i, i + 4);
+                i += 4;
+            }
+
+            i = BlendBlocks8(samples, coverage, source, i, writesFullBlocks);
+        }
+
+        if (i < coverage.Length)
+        {
+            CompositeOverScalarRange(samples, coverage, source, i, coverage.Length);
+        }
+    }
+
+    /// <summary>
+    /// Composites the blocks of <see cref="CompositeOver8"/> from <paramref name="start"/> on, past those without coverage,
+    /// up to the first one covered entirely when <paramref name="stopsAtFullBlocks"/> or whose pixels are neither all
+    /// opaque nor all transparent; the last pixels of the run are composited as its last whole block.
+    /// </summary>
+    /// <returns>The first pixel of the block it stopped at, the length of the run once every pixel is composited, or the first of the last pixels when their block could not be composited.</returns>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BlendBlocks8(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, bool stopsAtFullBlocks)
     {
         const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
         var colors = source.Colors;
@@ -1338,37 +1394,44 @@ internal static class DrawingKernels
         var blue = Vector128.Create((uint)color.C2);
         var alpha = Vector128.Create((uint)color.Alpha);
 
-        // The pixels from 'pending' on are not composited yet
-        var pending = 0;
-        for (var i = 0; i + 4 <= coverage.Length; i += 4)
+        // The second coverage it stops at: zero again when it does not stop at full coverage
+        var stopCoverage = stopsAtFullBlocks ? Vector128.Create(CoverageRasterizer.FullCoverage) : Vector128<uint>.Zero;
+        var i = start;
+        while (i < coverage.Length)
         {
-            // Pixels without coverage stay as they are: the run of them is skipped up to the block of the next covered pixel
-            var blockCoverage = Vector128.Create(coverage.Slice(i, 4));
-            if (blockCoverage == Vector128<uint>.Zero)
+            var blockStart = i;
+            Vector128<uint> blockCoverage;
+            if (i + 4 <= coverage.Length)
             {
-                if (pending < i)
+                blockCoverage = Vector128.Create(coverage.Slice(i, 4));
+                if (blockCoverage == Vector128<uint>.Zero)
                 {
-                    CompositeOverScalarRange(samples, coverage, source, pending, i);
+                    // Pixels without coverage stay as they are
+                    i += 4;
+                    continue;
                 }
 
-                var next = coverage[(i + 4)..].IndexOfAnyExcept(0u);
-                i += (next < 0 ? coverage.Length - i - 4 : next) & ~3;
-                pending = i + 4;
-                continue;
+                if (blockCoverage == stopCoverage)
+                    break;
+            }
+            else
+            {
+                // The last pixels, fewer than a block, as the last block of the run: its pixels before them, composited
+                // already, get no coverage, which leaves a pixel as it is in every path
+                if (coverage.Length < 4)
+                    break;
+
+                blockStart = coverage.Length - 4;
+                blockCoverage = Vector128.Create(coverage.Slice(blockStart, 4)) & Vector128.GreaterThanOrEqual(Vector128<uint>.Indices, Vector128.Create((uint)(i - blockStart)));
             }
 
-            var block = samples.Slice(i * 4, 16);
+            var block = samples.Slice(blockStart * 4, 16);
             var pixels = Vector128.Create(block);
             if ((pixels | colorMask) == Vector128<byte>.AllBitsSet)
             {
-                if (pending < i)
-                {
-                    CompositeOverScalarRange(samples, coverage, source, pending, i);
-                }
-
                 if (!colors.IsEmpty)
                 {
-                    LoadPaint(colors.Slice(i * 4, 16), transpose, out red, out green, out blue, out alpha);
+                    LoadPaint(colors.Slice(blockStart * 4, 16), transpose, out red, out green, out blue, out alpha);
                 }
 
                 var effective = blockCoverage * alpha;
@@ -1381,18 +1444,12 @@ internal static class DrawingKernels
                 var b = Blend(blue, Vector128.WidenLower(high), effective, inverse, half, reciprocal);
                 var result = Vector128.Narrow(Vector128.Narrow(r, g), Vector128.Narrow(b, Vector128.WidenUpper(high)));
                 Vector128.Shuffle(result, transpose).CopyTo(block);
-                pending = i + 4;
             }
             else if (Vector128.AndNot(pixels, colorMask) == Vector128<byte>.Zero)
             {
-                if (pending < i)
-                {
-                    CompositeOverScalarRange(samples, coverage, source, pending, i);
-                }
-
                 if (!colors.IsEmpty)
                 {
-                    LoadPaint(colors.Slice(i * 4, 16), transpose, out red, out green, out blue, out alpha);
+                    LoadPaint(colors.Slice(blockStart * 4, 16), transpose, out red, out green, out blue, out alpha);
                 }
 
                 // The paint with the alpha of its coverage, where that alpha is not 0
@@ -1401,14 +1458,16 @@ internal static class DrawingKernels
                 var unchanged = Vector128.Equals(resultAlpha, Vector128<uint>.Zero);
                 var keep = Vector128.Shuffle(Vector128.Narrow(Vector128.Narrow(unchanged, unchanged), Vector128.Narrow(unchanged, unchanged)), transpose);
                 Vector128.ConditionalSelect(keep, pixels, painted).CopyTo(block);
-                pending = i + 4;
             }
+            else
+            {
+                break;
+            }
+
+            i = blockStart + 4;
         }
 
-        if (pending < coverage.Length)
-        {
-            CompositeOverScalarRange(samples, coverage, source, pending, coverage.Length);
-        }
+        return i;
 
         static Vector128<uint> Blend(Vector128<uint> paint, Vector128<uint> pixel, Vector128<uint> effective, Vector128<uint> inverse, Vector128<uint> half, Vector128<uint> reciprocal)
         {
@@ -1433,9 +1492,52 @@ internal static class DrawingKernels
     /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over, with the formulas of
     /// <see cref="CompositeOver8"/>, eight pixels at a time with AVX2 when they are all opaque or all transparent; the
     /// other pixels go through <see cref="CompositeOver8"/>. Each half of a vector holds four pixels, as a vector of
-    /// <see cref="CompositeOver8"/> does: the shuffles and the packs stay within the halves.
+    /// <see cref="CompositeOver8"/> does: the shuffles and the packs stay within the halves. The blocks are walked as in
+    /// <see cref="CompositeOver8"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void CompositeOver8Avx2(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        // A short run, or one whose blocks all blend, is one call
+        var writesFullBlocks = WritesFullBlocks(source);
+        var end = BlendBlocks8Avx2(samples, coverage, source, 0, writesFullBlocks);
+        if (end < coverage.Length)
+        {
+            CompositeOver8Avx2Rest(samples, coverage, source, end, writesFullBlocks);
+        }
+    }
+
+    /// <summary>The blocks of <see cref="CompositeOver8Avx2"/> from the one BlendBlocks8Avx2 stopped at: covered entirely, or neither all opaque nor all transparent.</summary>
+    private static void CompositeOver8Avx2Rest(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, bool writesFullBlocks)
+    {
+        var i = start;
+        while (i + 8 <= coverage.Length)
+        {
+            var blockCoverage = Vector256.Create(coverage.Slice(i, 8));
+            if (writesFullBlocks && blockCoverage == Vector256.Create(CoverageRasterizer.FullCoverage))
+            {
+                i = FillFullBlocks(samples, coverage, i, 8, GetPaintPixel(source.Color));
+            }
+            else
+            {
+                // Pixels that are neither all opaque nor all transparent
+                CompositeOver8Range(samples, coverage, source, i, i + 8);
+                i += 8;
+            }
+
+            i = BlendBlocks8Avx2(samples, coverage, source, i, writesFullBlocks);
+        }
+
+        if (i < coverage.Length)
+        {
+            CompositeOver8Range(samples, coverage, source, i, coverage.Length);
+        }
+    }
+
+    /// <summary>The blocks of <see cref="CompositeOver8Avx2"/>, as <see cref="BlendBlocks8"/> composites those of <see cref="CompositeOver8"/>.</summary>
+    /// <returns>The first pixel of the block it stopped at, the length of the run once every pixel is composited, or the first of the last pixels when their block could not be composited.</returns>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BlendBlocks8Avx2(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, bool stopsAtFullBlocks)
     {
         const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
         var colors = source.Colors;
@@ -1450,41 +1552,46 @@ internal static class DrawingKernels
         var green = Vector256.Create((uint)color.C1);
         var blue = Vector256.Create((uint)color.C2);
         var alpha = Vector256.Create((uint)color.Alpha);
-
-        // The pixels from 'pending' on are not composited yet
-        var pending = 0;
-        for (var i = 0; i + 8 <= coverage.Length; i += 8)
+        var stopCoverage = stopsAtFullBlocks ? Vector256.Create(CoverageRasterizer.FullCoverage) : Vector256<uint>.Zero;
+        var i = start;
+        while (i < coverage.Length)
         {
-            // Pixels without coverage stay as they are: the run of them is skipped up to the block of the next covered pixel
-            var blockCoverage = Vector256.Create(coverage.Slice(i, 8));
-            if (blockCoverage == Vector256<uint>.Zero)
+            var blockStart = i;
+            Vector256<uint> blockCoverage;
+            if (i + 8 <= coverage.Length)
             {
-                if (pending < i)
+                blockCoverage = Vector256.Create(coverage.Slice(i, 8));
+                if (blockCoverage == Vector256<uint>.Zero)
                 {
-                    CompositeOver8Range(samples, coverage, source, pending, i);
+                    // Pixels without coverage stay as they are
+                    i += 8;
+                    continue;
                 }
 
-                var next = coverage[(i + 8)..].IndexOfAnyExcept(0u);
-                i += (next < 0 ? coverage.Length - i - 8 : next) & ~7;
-                pending = i + 8;
-                continue;
+                if (blockCoverage == stopCoverage)
+                    break;
+            }
+            else
+            {
+                // The last pixels, fewer than a block, as the last block of the run: its pixels before them, composited
+                // already, get no coverage, which leaves a pixel as it is in every path
+                if (coverage.Length < 8)
+                    break;
+
+                blockStart = coverage.Length - 8;
+                blockCoverage = Vector256.Create(coverage.Slice(blockStart, 8)) & Vector256.GreaterThanOrEqual(Vector256<uint>.Indices, Vector256.Create((uint)(i - blockStart)));
             }
 
-            var block = samples.Slice(i * 4, 32);
+            var block = samples.Slice(blockStart * 4, 32);
             var pixels = Vector256.Create(block);
             var isOpaque = (pixels | colorMask) == Vector256<byte>.AllBitsSet;
             if (!isOpaque && Vector256.AndNot(pixels, colorMask) != Vector256<byte>.Zero)
-                continue;
-
-            if (pending < i)
-            {
-                CompositeOver8Range(samples, coverage, source, pending, i);
-            }
+                break;
 
             if (!colors.IsEmpty)
             {
                 // The paint of the eight pixels, four in each half, then as the pixels
-                var paint = Avx2.PackUnsignedSaturate(Vector256.Create(colors.Slice(i * 4, 16)).AsInt16(), Vector256.Create(colors.Slice((i * 4) + 16, 16)).AsInt16());
+                var paint = Avx2.PackUnsignedSaturate(Vector256.Create(colors.Slice(blockStart * 4, 16)).AsInt16(), Vector256.Create(colors.Slice((blockStart * 4) + 16, 16)).AsInt16());
                 Split(Avx2.Permute4x64(paint.AsUInt64(), 0b11_01_10_00).AsByte(), transpose, out red, out green, out blue, out alpha);
             }
 
@@ -1508,13 +1615,10 @@ internal static class DrawingKernels
                 Vector256.ConditionalSelect(keep, pixels, painted).CopyTo(block);
             }
 
-            pending = i + 8;
+            i = blockStart + 8;
         }
 
-        if (pending < coverage.Length)
-        {
-            CompositeOver8Range(samples, coverage, source, pending, coverage.Length);
-        }
+        return i;
 
         static Vector256<uint> Blend(Vector256<uint> paint, Vector256<uint> pixel, Vector256<uint> effective, Vector256<uint> inverse, Vector256<uint> half, Vector256<uint> reciprocal)
         {
@@ -1549,9 +1653,52 @@ internal static class DrawingKernels
     /// Composites a paint over pixels of four 8-bit samples (color then alpha) with source-over, with the formulas of
     /// <see cref="CompositeOver8"/>, sixteen pixels at a time with AVX-512 when they are all opaque or all transparent; the
     /// other pixels go through <see cref="CompositeOver8Avx2"/>. Each 128-bit lane of a vector holds four pixels, as a
-    /// vector of <see cref="CompositeOver8"/> does: the shuffles and the packs stay within the lanes.
+    /// vector of <see cref="CompositeOver8"/> does: the shuffles and the packs stay within the lanes. The blocks are
+    /// walked as in <see cref="CompositeOver8"/>.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void CompositeOver8Avx512(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source)
+    {
+        // A short run, or one whose blocks all blend, is one call
+        var writesFullBlocks = WritesFullBlocks(source);
+        var end = BlendBlocks8Avx512(samples, coverage, source, 0, writesFullBlocks);
+        if (end < coverage.Length)
+        {
+            CompositeOver8Avx512Rest(samples, coverage, source, end, writesFullBlocks);
+        }
+    }
+
+    /// <summary>The blocks of <see cref="CompositeOver8Avx512"/> from the one BlendBlocks8Avx512 stopped at: covered entirely, or neither all opaque nor all transparent.</summary>
+    private static void CompositeOver8Avx512Rest(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, bool writesFullBlocks)
+    {
+        var i = start;
+        while (i + 16 <= coverage.Length)
+        {
+            var blockCoverage = Vector512.Create(coverage.Slice(i, 16));
+            if (writesFullBlocks && blockCoverage == Vector512.Create(CoverageRasterizer.FullCoverage))
+            {
+                i = FillFullBlocks(samples, coverage, i, 16, GetPaintPixel(source.Color));
+            }
+            else
+            {
+                // Pixels that are neither all opaque nor all transparent
+                CompositeOver8Avx2Range(samples, coverage, source, i, i + 16);
+                i += 16;
+            }
+
+            i = BlendBlocks8Avx512(samples, coverage, source, i, writesFullBlocks);
+        }
+
+        if (i < coverage.Length)
+        {
+            CompositeOver8Avx2Range(samples, coverage, source, i, coverage.Length);
+        }
+    }
+
+    /// <summary>The blocks of <see cref="CompositeOver8Avx512"/>, as <see cref="BlendBlocks8"/> composites those of <see cref="CompositeOver8"/>.</summary>
+    /// <returns>The first pixel of the block it stopped at, the length of the run once every pixel is composited, or the first of the last pixels when their block could not be composited.</returns>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static int BlendBlocks8Avx512(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, bool stopsAtFullBlocks)
     {
         const uint Scale = byte.MaxValue * CoverageRasterizer.FullCoverage;
         var colors = source.Colors;
@@ -1567,41 +1714,46 @@ internal static class DrawingKernels
         var green = Vector512.Create((uint)color.C1);
         var blue = Vector512.Create((uint)color.C2);
         var alpha = Vector512.Create((uint)color.Alpha);
-
-        // The pixels from 'pending' on are not composited yet
-        var pending = 0;
-        for (var i = 0; i + 16 <= coverage.Length; i += 16)
+        var stopCoverage = stopsAtFullBlocks ? Vector512.Create(CoverageRasterizer.FullCoverage) : Vector512<uint>.Zero;
+        var i = start;
+        while (i < coverage.Length)
         {
-            // Pixels without coverage stay as they are: the run of them is skipped up to the block of the next covered pixel
-            var blockCoverage = Vector512.Create(coverage.Slice(i, 16));
-            if (blockCoverage == Vector512<uint>.Zero)
+            var blockStart = i;
+            Vector512<uint> blockCoverage;
+            if (i + 16 <= coverage.Length)
             {
-                if (pending < i)
+                blockCoverage = Vector512.Create(coverage.Slice(i, 16));
+                if (blockCoverage == Vector512<uint>.Zero)
                 {
-                    CompositeOver8Avx2Range(samples, coverage, source, pending, i);
+                    // Pixels without coverage stay as they are
+                    i += 16;
+                    continue;
                 }
 
-                var next = coverage[(i + 16)..].IndexOfAnyExcept(0u);
-                i += (next < 0 ? coverage.Length - i - 16 : next) & ~15;
-                pending = i + 16;
-                continue;
+                if (blockCoverage == stopCoverage)
+                    break;
+            }
+            else
+            {
+                // The last pixels, fewer than a block, as the last block of the run: its pixels before them, composited
+                // already, get no coverage, which leaves a pixel as it is in every path
+                if (coverage.Length < 16)
+                    break;
+
+                blockStart = coverage.Length - 16;
+                blockCoverage = Vector512.Create(coverage.Slice(blockStart, 16)) & Vector512.GreaterThanOrEqual(Vector512<uint>.Indices, Vector512.Create((uint)(i - blockStart)));
             }
 
-            var block = samples.Slice(i * 4, 64);
+            var block = samples.Slice(blockStart * 4, 64);
             var pixels = Vector512.Create(block);
             var isOpaque = (pixels | colorMask) == Vector512<byte>.AllBitsSet;
             if (!isOpaque && Vector512.AndNot(pixels, colorMask) != Vector512<byte>.Zero)
-                continue;
-
-            if (pending < i)
-            {
-                CompositeOver8Avx2Range(samples, coverage, source, pending, i);
-            }
+                break;
 
             if (!colors.IsEmpty)
             {
                 // The paint of the sixteen pixels, in the order of the pixels (its samples are 8-bit)
-                var paint = Vector512.Narrow(Vector512.Create(colors.Slice(i * 4, 32)), Vector512.Create(colors.Slice((i * 4) + 32, 32)));
+                var paint = Vector512.Narrow(Vector512.Create(colors.Slice(blockStart * 4, 32)), Vector512.Create(colors.Slice((blockStart * 4) + 32, 32)));
                 Split(paint, transpose, out red, out green, out blue, out alpha);
             }
 
@@ -1626,13 +1778,10 @@ internal static class DrawingKernels
                 Vector512.ConditionalSelect(keep, pixels, painted).CopyTo(block);
             }
 
-            pending = i + 16;
+            i = blockStart + 16;
         }
 
-        if (pending < coverage.Length)
-        {
-            CompositeOver8Avx2Range(samples, coverage, source, pending, coverage.Length);
-        }
+        return i;
 
         static Vector512<uint> Blend(Vector512<uint> paint, Vector512<uint> pixel, Vector512<uint> effective, Vector512<uint> inverse, Vector512<uint> half, Vector512<uint> reciprocal)
         {
@@ -1661,6 +1810,29 @@ internal static class DrawingKernels
             var high = Avx512BW.PackUnsignedSaturate(blue.AsInt32(), alpha.AsInt32()).AsInt16();
             return Avx512BW.Shuffle(Avx512BW.PackUnsignedSaturate(low, high), transpose);
         }
+    }
+
+    /// <summary>Gets a value indicating whether source-over goes through <see cref="CompositeOver8"/> and its wider kernels: 8-bit samples, color then alpha.</summary>
+    private static bool IsCompositedByVectorKernels<TSample>(int channels) => typeof(TSample) == typeof(byte) && channels == 4 && Vector128.IsHardwareAccelerated;
+
+    /// <summary>Gets a value indicating whether the kernels of <see cref="CompositeOver8"/> write a paint to the blocks covered entirely: a single opaque paint, whose result there is the paint, whatever the pixel was.</summary>
+    private static bool WritesFullBlocks(scoped in DrawingSource source) => source.Colors.IsEmpty && source.Color.Alpha == byte.MaxValue;
+
+    /// <summary>Gets the samples of an opaque 8-bit paint, as the four bytes of a pixel (color then alpha).</summary>
+    private static uint GetPaintPixel(DrawingColor color) => color.C0 | ((uint)color.C1 << 8) | ((uint)color.C2 << 16) | 0xFF000000u;
+
+    /// <summary>
+    /// Writes an opaque paint to the blocks of pixels covered entirely from the block at <paramref name="start"/>, which
+    /// is one: the coverages are searched, then the pixels written.
+    /// </summary>
+    /// <returns>The first pixel after the last block written.</returns>
+    private static int FillFullBlocks(Span<byte> samples, ReadOnlySpan<uint> coverage, int start, int blockLength, uint paint)
+    {
+        var length = coverage[start..].IndexOfAnyExcept(CoverageRasterizer.FullCoverage);
+        var end = start + ((length < 0 ? coverage.Length - start : length) & -blockLength);
+        var pixels = unsafe(MemoryMarshal.Cast<byte, uint>(samples[(start * 4)..(end * 4)]));
+        pixels.Fill(paint);
+        return end;
     }
 
     private static void CompositeOver8Avx2Range(Span<byte> samples, ReadOnlySpan<uint> coverage, scoped in DrawingSource source, int start, int end)

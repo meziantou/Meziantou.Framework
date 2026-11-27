@@ -1,0 +1,20 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(LatestTargetFramework)</TargetFramework>
+    <!-- EmptyAnalyzer measures the cost of the compiler alone; it runs in the benchmark process, not in a compiler -->
+    <NoWarn>$(NoWarn);RS1036;RS1041</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="5.9.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The package ships the netstandard2.0 build of the analyzer -->
+    <ProjectReference Include="../../src/Meziantou.Framework.TaggedValues.Analyzer/Meziantou.Framework.TaggedValues.Analyzer.csproj" SetTargetFramework="TargetFramework=netstandard2.0" />
+  </ItemGroup>
+
+</Project>

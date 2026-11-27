@@ -37,6 +37,23 @@ internal sealed class TarForwardReader : ArchiveReader
             {
                 throw new InvalidDataException("The tar archive is corrupted.", ex);
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                // An extended attributes header larger than allowed, or a time (mtime, atime, ctime) out of the range of a date (fuzz regressions)
+                throw new InvalidDataException("The tar archive is corrupted.", ex);
+            }
+            catch (OverflowException ex)
+            {
+                throw new InvalidDataException("The tar archive is corrupted.", ex);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new InvalidDataException("The tar archive is corrupted.", ex);
+            }
             catch (EndOfStreamException ex)
             {
                 throw new InvalidDataException("The tar archive is truncated.", ex);
@@ -66,6 +83,23 @@ internal sealed class TarForwardReader : ArchiveReader
             {
                 throw new InvalidDataException("The tar archive is corrupted.", ex);
             }
+            catch (ObjectDisposedException)
+            {
+                throw;
+            }
+            catch (InvalidOperationException ex)
+            {
+                // An extended attributes header larger than allowed, or a time (mtime, atime, ctime) out of the range of a date (fuzz regressions)
+                throw new InvalidDataException("The tar archive is corrupted.", ex);
+            }
+            catch (OverflowException ex)
+            {
+                throw new InvalidDataException("The tar archive is corrupted.", ex);
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                throw new InvalidDataException("The tar archive is corrupted.", ex);
+            }
             catch (EndOfStreamException ex)
             {
                 throw new InvalidDataException("The tar archive is truncated.", ex);
@@ -91,7 +125,8 @@ internal sealed class TarForwardReader : ArchiveReader
         if (entry.DataStream is not { } data)
             return TarEntryAdapter.EmptyStream();
 
-        return new NonClosingStream(data);
+        // The content stream of TarReader ends with the archive stream, without an error, when the archive is truncated
+        return new ChecksumVerifyingStream(new NonClosingStream(data), entry.Length, expectedCrc: null, encrypted: false);
     }
 
     protected override void Dispose(bool disposing)

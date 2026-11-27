@@ -387,6 +387,14 @@ internal static class Tokenizer
             return index >= 0;
         }
 
+        /// <summary>The match of a pattern that matches the empty string at every position (<see cref="CompiledMode.BeginMatchesEverywhere"/>).</summary>
+        private static bool MatchEmpty(int from, out int index, out int length)
+        {
+            index = from;
+            length = 0;
+            return true;
+        }
+
         private bool Scan(Regex regex, int from, out int index, out int length)
         {
             // EnumerateMatches does not allocate a Match; the few hits that need capture groups
@@ -414,8 +422,16 @@ internal static class Tokenizer
 
         private bool NextBegin(CompiledMode child, int from, out int index, out int length)
         {
+            if (child.BeginPreceding is { } preceding)
+                return NextMatchWithPrecedingCharacters(child, preceding, from, out index, out length);
+
             if (child.BeginGuard is null)
+            {
+                if (child.BeginMatchesEverywhere)
+                    return MatchEmpty(from, out index, out length);
+
                 return NextMatch(child.BeginRe!, child.BeginSlot, from, out index, out length);
+            }
 
             // For guarded modes (hljs's `on:begin` veto), walk forward through candidate matches until
             // one is accepted. The accepted candidate is what gets memoized, so each candidate is
@@ -447,6 +463,37 @@ internal static class Tokenizer
         }
 
         /// <summary>
+        /// The leftmost match of the begin pattern preceded by <see cref="CompiledMode.BeginPreceding"/>: the leftmost match of
+        /// the pattern, extended back over the accepted characters before it, but not before the scan start.
+        /// </summary>
+        /// <remarks>
+        /// See <see cref="PrecedingCharacters"/> for why it is the leftmost match of <c>[ ]*X</c> or <c>.?X</c>. It depends on
+        /// the scan start only as theirs does, so it can be memoized the same way.
+        /// </remarks>
+        private bool NextMatchWithPrecedingCharacters(CompiledMode child, PrecedingCharacters preceding, int from, out int index, out int length)
+        {
+            ref var entry = ref _scanCache[child.BeginSlot];
+            if (entry.TryGet(from, out index, out length))
+                return index >= 0;
+
+            if (Scan(child.BeginRe!, from, out index, out length))
+            {
+                var limit = Math.Max(from, index - preceding.MaxLength);
+                var start = index;
+                while (start > limit && preceding.Accepts(input[start - 1]))
+                {
+                    start--;
+                }
+
+                length += index - start;
+                index = start;
+            }
+
+            entry = new ScanEntry(from, index, length);
+            return index >= 0;
+        }
+
+        /// <summary>
         /// For modes with EndSameAsBegin, scan forward through end candidates and skip any whose
         /// capture doesn't match the value captured at begin time.
         /// </summary>
@@ -455,7 +502,12 @@ internal static class Tokenizer
             ref var frame = ref CollectionsMarshal.AsSpan(_stack)[depth];
             var mode = frame.Mode;
             if (!mode.EndSameAsBegin)
+            {
+                if (mode.EndMatchesEverywhere)
+                    return MatchEmpty(from, out index, out length);
+
                 return NextMatch(mode.EndRe!, mode.EndSlot, from, out index, out length);
+            }
 
             if (frame.EndCache.TryGet(from, out index, out length))
                 return index >= 0;

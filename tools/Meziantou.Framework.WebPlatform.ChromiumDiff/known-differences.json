@@ -58,7 +58,9 @@
       "plain-text-unsafe.dat#52",
       "plain-text-unsafe.dat#53",
       "seeds/3.html fragment(textarea)",
-      "seeds/3.html fragment(title)"
+      "seeds/3.html fragment(title)",
+      "seeds/4.html fragment(textarea)",
+      "seeds/4.html fragment(title)"
     ],
     "patterns": [
       {

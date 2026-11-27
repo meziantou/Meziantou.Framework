@@ -14,13 +14,13 @@ namespace Meziantou.Framework.Pdf.Fonts;
 internal sealed class StandardPdfFont : PdfFont
 {
     private readonly Lazy<AfmFontMetrics> _metrics;
-    private readonly Lazy<(Dictionary<int, byte> Codes, double[] Widths)> _encoding;
+    private readonly Lazy<FontEncoding> _encoding;
 
     public StandardPdfFont(string name)
     {
         PostScriptName = name;
         _metrics = new Lazy<AfmFontMetrics>(() => StandardFontMetrics.Get(name));
-        _encoding = new Lazy<(Dictionary<int, byte>, double[])>(CreateEncoding);
+        _encoding = new Lazy<FontEncoding>(CreateEncoding);
     }
 
     public override string PostScriptName { get; }
@@ -37,10 +37,10 @@ internal sealed class StandardPdfFont : PdfFont
     public override bool CanEncode(string text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        var codes = _encoding.Value.Codes;
+        var encoding = _encoding.Value;
         foreach (var rune in text.EnumerateRunes())
         {
-            if (!codes.ContainsKey(rune.Value))
+            if (!encoding.TryGetCode(rune.Value, out _))
                 return false;
         }
 
@@ -76,10 +76,10 @@ internal sealed class StandardPdfFont : PdfFont
 
     internal override void ValidateText(string text)
     {
-        var codes = _encoding.Value.Codes;
+        var encoding = _encoding.Value;
         foreach (var rune in text.EnumerateRunes())
         {
-            if (!codes.ContainsKey(rune.Value))
+            if (!encoding.TryGetCode(rune.Value, out _))
                 throw CreateMissingGlyphException(rune, nameof(text));
         }
     }
@@ -87,11 +87,11 @@ internal sealed class StandardPdfFont : PdfFont
     /// <summary>Encodes a text into a buffer at least as long as the text; returns the count of bytes.</summary>
     private int Encode(string text, Span<byte> destination)
     {
-        var codes = _encoding.Value.Codes;
+        var encoding = _encoding.Value;
         var length = 0;
         foreach (var rune in text.EnumerateRunes())
         {
-            if (!codes.TryGetValue(rune.Value, out var code))
+            if (!encoding.TryGetCode(rune.Value, out var code))
                 throw CreateMissingGlyphException(rune, nameof(text));
 
             destination[length++] = code;
@@ -104,14 +104,14 @@ internal sealed class StandardPdfFont : PdfFont
 
     private protected override double GetTextWidthInGlyphUnits(string text)
     {
-        var (codes, widths) = _encoding.Value;
+        var encoding = _encoding.Value;
         double width = 0;
         foreach (var rune in text.EnumerateRunes())
         {
-            if (!codes.TryGetValue(rune.Value, out var code))
+            if (!encoding.TryGetCode(rune.Value, out var code))
                 throw CreateMissingGlyphException(rune, nameof(text));
 
-            width += widths[code];
+            width += encoding.Widths[code];
         }
 
         return width;
@@ -138,7 +138,7 @@ internal sealed class StandardPdfFont : PdfFont
         return reference;
     }
 
-    private (Dictionary<int, byte> Codes, double[] Widths) CreateEncoding()
+    private FontEncoding CreateEncoding()
     {
         var metrics = _metrics.Value;
         var names = IsSymbolic ? (PostScriptName == "Symbol" ? FontEncodings.Symbol : FontEncodings.ZapfDingbats) : FontEncodings.WinAnsi;
@@ -166,6 +166,39 @@ internal sealed class StandardPdfFont : PdfFont
             codes.TryAdd(0xAD, 0xAD);
         }
 
-        return (codes, widths);
+        return new FontEncoding(codes, widths);
+    }
+
+    /// <summary>The codes of the characters, and the widths of the codes.</summary>
+    private sealed class FontEncoding
+    {
+        // The codes of the characters U+0000 to U+00FF, the characters of most texts, without a dictionary lookup: -1 when
+        // the font has no glyph for the character
+        private readonly short[] _latin1Codes = new short[256];
+        private readonly Dictionary<int, byte> _codes;
+
+        public FontEncoding(Dictionary<int, byte> codes, double[] widths)
+        {
+            _codes = codes;
+            Widths = widths;
+            for (var i = 0; i < _latin1Codes.Length; i++)
+            {
+                _latin1Codes[i] = codes.TryGetValue(i, out var code) ? code : (short)-1;
+            }
+        }
+
+        public double[] Widths { get; }
+
+        public bool TryGetCode(int character, out byte code)
+        {
+            if ((uint)character < (uint)_latin1Codes.Length)
+            {
+                var value = _latin1Codes[character];
+                code = (byte)value;
+                return value >= 0;
+            }
+
+            return _codes.TryGetValue(character, out code);
+        }
     }
 }

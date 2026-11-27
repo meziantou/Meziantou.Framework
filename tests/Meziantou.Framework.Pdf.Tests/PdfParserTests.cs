@@ -1,4 +1,6 @@
+using System.Globalization;
 using System.Text;
+using Meziantou.Framework.Pdf.Content;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Parsing;
 
@@ -123,6 +125,147 @@ public sealed class PdfParserTests
 
         Assert.Equal(text, Parse(text).ToString());
     }
+
+    [Theory]
+    [InlineData("1 2.5 -3 /N (s) <41> [1 (a)] << /K 1 >> true false null op", "i1 r2.5 i-3 /N (73) <41> [i1 (61)] <</K i1>> true false null op;")]
+    [InlineData("1 ] 2 >> 3 ) 4 > { 5 } m", "i1 i2 i3 i4 i5 m;")]
+    [InlineData("1 2 m 3 [1 2", "i1 i2 m;rest:i3")]
+    [InlineData("1 << /A 1", "rest:i1")]
+    [InlineData("1 m [1 [2]", "i1 m;")]
+    [InlineData("(a) [1", "rest:(61)")]
+    [InlineData("1 2 3", "rest:i1 i2 i3")]
+    [InlineData("[1 foo true 2] TJ", "[i1 null true i2] TJ;")]
+    [InlineData("[1 endobj 2] TJ", "[i1] endobj;i2 TJ;")]
+    [InlineData("[1 2 endobj", "[i1 i2] endobj;")]
+    [InlineData("[1 ) 2 >> 3 { } ] TJ", "[i1 i2 i3] TJ;")]
+    [InlineData("[[1] (a)] TJ", "[[i1] (61)] TJ;")]
+    [InlineData("[<< /A 1 >>] TJ", "[<</A i1>>] TJ;")]
+    [InlineData("[] [(a) <62> -12.5 /N] TJ", "[] [(61) <62> r-12.5 /N] TJ;")]
+    [InlineData("(a\\(b\\)\\n\\101\r\nc\\\r\nd) Tj", "(612862290A410A6364) Tj;")]
+    [InlineData("<4 1 4> <> <zz41> Tj", "<4140> <> <41> Tj;")]
+    [InlineData("/A#20B /#41 / /A#2 Tf", "/A B /A / /A#2 Tf;")]
+    [InlineData("BI /W 1 /H 1 ID \u0000\u00FF EI Q", "<</W i1 /H i1>> (00FF) BI;Q;")]
+    [InlineData("1 % comment ]\n2 m", "i1 i2 m;")]
+    [InlineData("--1 1.2.3 .5 - . -0.0 -0. 1e5 m", "i-1 r1.2 r0.5 i0 r0 r-0 r0 1e5;m;")]
+    [InlineData("1 \u00E9t\u00E9", "i1 \u00E9t\u00E9;")]
+    [InlineData("/P << /A [1 2] /B >> BDC", "/P <</A [i1 i2]>> BDC;")]
+    public void ContentStreamOperations(string content, string expected)
+    {
+        Assert.Equal(expected, ReadContent(content));
+    }
+
+    [Fact]
+    public void ContentStreamOperandsAreLimited()
+    {
+        var content = string.Concat(Enumerable.Repeat("1 ", 4100)) + "true [1] op";
+
+        var reader = new ContentStreamReader(Encoding.Latin1.GetBytes(content));
+        var operands = new List<PdfObject>();
+
+        Assert.True(reader.TryRead(operands, out var name));
+        Assert.Equal("op", name);
+        Assert.HasCount(4097, operands);
+        Assert.Same(PdfBoolean.True, operands[^1]);
+        Assert.False(reader.TryRead(operands, out _));
+    }
+
+    [Fact]
+    public void ContentStreamNestingDepthIsLimited()
+    {
+        var reader = new ContentStreamReader(Encoding.Latin1.GetBytes("1 m " + new string('[', 300) + new string(']', 300) + " TJ"));
+        var operands = new List<PdfObject>();
+
+        Assert.True(reader.TryRead(operands, out _));
+        Assert.Throws<PdfResourceLimitException>(() => reader.TryRead(operands, out _));
+    }
+
+    [Fact]
+    public void ContentStreamPositionIsAfterTheOperator()
+    {
+        var reader = new ContentStreamReader("1 2 m\n[(a)] TJ BT"u8.ToArray());
+        var operands = new List<PdfObject>();
+
+        Assert.True(reader.TryRead(operands, out _));
+        Assert.Equal(5, reader.Position);
+        Assert.True(reader.TryRead(operands, out _));
+        Assert.Equal(14, reader.Position);
+        Assert.True(reader.TryRead(operands, out _));
+        Assert.Equal(17, reader.Position);
+        Assert.False(reader.TryRead(operands, out _));
+    }
+
+    private static string ReadContent(string content)
+    {
+        // The operands as objects, and as tokens: each accessor of a token gives what its object has
+        var data = Encoding.Latin1.GetBytes(content);
+        var reader = new ContentStreamReader(data);
+        var tokenReader = new ContentStreamReader(data);
+        var operands = new List<PdfObject>();
+        var result = new StringBuilder();
+        while (true)
+        {
+            var read = reader.TryRead(operands, out var name);
+            Assert.Equal(read, tokenReader.TryRead(out var tokenName));
+            Assert.Equal(name, tokenName);
+            Assert.Equal(reader.Position, tokenReader.Position);
+            Assert.HasCount(tokenReader.Operands.Length, operands);
+            for (var i = 0; i < operands.Count; i++)
+            {
+                AssertSameOperand(tokenReader, tokenReader.Operands[i], operands[i]);
+            }
+
+            if (!read)
+                break;
+
+            foreach (var operand in operands)
+            {
+                result.Append(Describe(operand)).Append(' ');
+            }
+
+            result.Append(name).Append(';');
+        }
+
+        if (operands.Count > 0)
+        {
+            result.Append("rest:").AppendJoin(' ', operands.Select(Describe));
+        }
+
+        return result.ToString();
+    }
+
+    private static void AssertSameOperand(ContentStreamReader reader, ContentOperand operand, PdfObject expected)
+    {
+        Assert.Equal(Describe(expected), Describe(reader.GetObject(operand)));
+        Assert.Equal(expected is PdfNumber, operand.TryGetNumber(out var number));
+        Assert.Equal(expected is PdfNumber expectedNumber ? expectedNumber.DoubleValue : 0, number);
+        Assert.Equal(expected is PdfString, reader.TryGetString(operand, out var bytes));
+        Assert.Equal(expected is PdfString expectedString ? Convert.ToHexString(expectedString.Span) : "", Convert.ToHexString(bytes));
+        Assert.Equal(expected is PdfName, reader.TryGetName(operand, out var name));
+        Assert.Equal((expected as PdfName)?.Key, name?.Key);
+        Assert.Equal(expected is PdfArray, reader.TryGetArray(operand, out var array));
+        if (expected is PdfArray expectedArray)
+        {
+            Assert.Equal(expectedArray.Count, array.Count);
+            for (var i = 0; i < array.Count; i++)
+            {
+                AssertSameOperand(reader, array[i], expectedArray[i]);
+            }
+        }
+    }
+
+    private static string Describe(PdfObject value) => value switch
+    {
+        PdfInteger integer => "i" + integer.Value.ToString(CultureInfo.InvariantCulture),
+        PdfReal real => "r" + real.Value.ToString("R", CultureInfo.InvariantCulture),
+        PdfName name => "/" + name.Key,
+        PdfString { IsHexadecimal: true } text => "<" + Convert.ToHexString(text.Span) + ">",
+        PdfString text => "(" + Convert.ToHexString(text.Span) + ")",
+        PdfArray array => "[" + string.Join(' ', array.Select(Describe)) + "]",
+        PdfDictionary dictionary => "<<" + string.Join(' ', dictionary.Select(entry => "/" + entry.Key.Key + " " + Describe(entry.Value))) + ">>",
+        PdfBoolean boolean => boolean.Value ? "true" : "false",
+        PdfNull => "null",
+        _ => value.GetType().Name,
+    };
 
     private static PdfObject Parse(string text)
     {

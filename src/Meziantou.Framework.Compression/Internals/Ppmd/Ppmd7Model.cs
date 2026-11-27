@@ -35,10 +35,10 @@ internal sealed class Ppmd7Model
     private readonly uint[] _freeList = new uint[NumIndexes];
     private readonly PpmdSee[] _see = new PpmdSee[DummySeeIndex + 1];
     private readonly ushort[] _binSumm = new ushort[256 * 64]; // 128 rows are used, the others make every byte index valid
+    // 0xFF for the symbols that are not masked and 0 for the masked ones, so that the loops sum the frequencies of the symbols
+    // that are not masked without a branch (Freq & mask), as 7-Zip does
     private readonly byte[] _charMask = new byte[256];
-    private readonly uint[] _escapeStates = new uint[256];
     private readonly uint[] _successorStates = new uint[MaxOrder + 1];
-    private byte _maskStamp;
     private int _maxOrder;
     private uint _minContext;
     private uint _maxContext;
@@ -154,7 +154,7 @@ internal sealed class Ppmd7Model
             _prevSuccess = 0;
         }
 
-        var states = _escapeStates;
+        var charMask = _charMask;
         while (true)
         {
             uint numMasked = Ctx(_minContext).NumStats;
@@ -174,44 +174,37 @@ internal sealed class Ppmd7Model
             if (num is <= 0 or > 255)
                 return -2;
 
+            // The symbols of the child contexts are masked: the mask of a masked symbol is 0, so that its frequency is not added
+            var states = PpmdMemory.States(_memory, mc.Stats, mc.NumStats);
             uint hiCnt = 0;
-            var s = mc.Stats;
-            var i = 0;
-            do
+            foreach (ref readonly var state in states)
             {
-                ref var state = ref St(s);
-                if (!IsMasked(state.Symbol))
-                {
-                    hiCnt += state.Freq;
-                    states[i++] = s;
-                }
-
-                s += StateSize;
+                hiCnt += state.Freq & (uint)charMask[state.Symbol];
             }
-            while (i != num);
 
             ref var see = ref MakeEscFreq(numMasked, out var freqSum);
             freqSum += hiCnt;
             var count = rc.GetThreshold(freqSum);
             if (count < hiCnt)
             {
+                // The first state where the sum exceeds the count is not masked, as a masked state does not change the sum
                 var k = 0;
                 hiCnt = 0;
                 while (true)
                 {
-                    s = states[k];
-                    hiCnt += St(s).Freq;
+                    ref readonly var state = ref states[k];
+                    hiCnt += state.Freq & (uint)charMask[state.Symbol];
                     if (hiCnt > count)
                         break;
 
                     k++;
                 }
 
-                ref var state = ref St(s);
-                rc.Decode(hiCnt - state.Freq, state.Freq);
+                ref var found = ref states[k];
+                rc.Decode(hiCnt - found.Freq, found.Freq);
                 see.Update();
-                _foundState = s;
-                var symbol = state.Symbol;
+                _foundState = mc.Stats + ((uint)k * StateSize);
+                var symbol = found.Symbol;
                 Update2();
                 return symbol;
             }
@@ -221,9 +214,9 @@ internal sealed class Ppmd7Model
 
             rc.Decode(hiCnt, freqSum - hiCnt);
             see.Summ = (ushort)(see.Summ + freqSum);
-            for (var j = 0; j < i; j++)
+            foreach (ref readonly var state in states)
             {
-                Mask(St(states[j]).Symbol);
+                charMask[state.Symbol] = 0;
             }
         }
     }
@@ -307,45 +300,32 @@ internal sealed class Ppmd7Model
 
             ref var see = ref MakeEscFreq(numMasked, out var escFreq);
             mc = ref Ctx(_minContext);
-            var s = mc.Stats;
+            var states = PpmdMemory.States(_memory, mc.Stats, mc.NumStats);
+            var charMask = _charMask;
             uint sum = 0;
-            int i = mc.NumStats;
-            do
+            for (var i = 0; i < states.Length; i++)
             {
-                ref var state = ref St(s);
+                ref var state = ref states[i];
                 var current = state.Symbol;
                 if (current == symbol)
                 {
                     var low = sum;
-                    var s1 = s;
-                    do
+                    foreach (ref readonly var other in states[i..])
                     {
-                        ref var other = ref St(s);
-                        if (!IsMasked(other.Symbol))
-                        {
-                            sum += other.Freq;
-                        }
-
-                        s += StateSize;
+                        sum += other.Freq & (uint)charMask[other.Symbol];
                     }
-                    while (--i > 0);
 
-                    rc.Encode(low, St(s1).Freq, sum + escFreq);
+                    rc.Encode(low, state.Freq, sum + escFreq);
                     see.Update();
-                    _foundState = s1;
+                    _foundState = mc.Stats + ((uint)i * StateSize);
                     Update2();
                     return;
                 }
 
-                if (!IsMasked(current))
-                {
-                    sum += state.Freq;
-                    Mask(current);
-                }
-
-                s += StateSize;
+                // The mask of a masked symbol is 0: its frequency is not added
+                sum += state.Freq & (uint)charMask[current];
+                charMask[current] = 0;
             }
-            while (--i > 0);
 
             rc.Encode(sum, escFreq, sum + escFreq);
             see.Summ = (ushort)(see.Summ + sum + escFreq);
@@ -364,20 +344,10 @@ internal sealed class Ppmd7Model
     private ref Ppmd7Node Node(uint offset) => ref PpmdMemory.At<Ppmd7Node>(_memory, offset);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void ResetMask()
-    {
-        if (++_maskStamp == 0)
-        {
-            Array.Clear(_charMask);
-            _maskStamp = 1;
-        }
-    }
+    private void ResetMask() => _charMask.AsSpan().Fill(0xFF);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void Mask(byte symbol) => _charMask[symbol] = _maskStamp;
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private bool IsMasked(byte symbol) => _charMask[symbol] == _maskStamp;
+    private void Mask(byte symbol) => _charMask[symbol] = 0;
 
     private void MaskStates(uint stats, uint numStats)
     {

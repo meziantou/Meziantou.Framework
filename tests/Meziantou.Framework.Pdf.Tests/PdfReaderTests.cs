@@ -528,6 +528,37 @@ public sealed class PdfReaderTests
     }
 
     [Fact]
+    public void MissingEndstreamIsNotCompletedByAnIncrementalUpdate()
+    {
+        // The object 6 and the cross-reference stream have a wrong /Length and no endstream keyword: their data ends at
+        // their endobj keyword, not at the endstream keyword of the stream an update appends
+        var file = HandWrittenPdf.CreateSimple();
+        file.UseXrefStream = true;
+        file.Add(6, "<< /Length 2 >>\nstream\nabc");
+        var text = Encoding.Latin1.GetString(file.ToArray());
+        var xref = text.LastIndexOf("/Type /XRef", StringComparison.Ordinal);
+        var length = text.IndexOf("/Length ", xref, StringComparison.Ordinal) + "/Length ".Length;
+        var lengthEnd = text.IndexOf(">>", length, StringComparison.Ordinal);
+        var declaredLength = int.Parse(text[length..lengthEnd], System.Globalization.CultureInfo.InvariantCulture) + 3;
+        var endstream = text.IndexOf("\nendstream", lengthEnd, StringComparison.Ordinal);
+        text = text[..length] + declaredLength.ToString(System.Globalization.CultureInfo.InvariantCulture) + text[lengthEnd..endstream] + text[(endstream + "\nendstream".Length)..];
+        var original = Encoding.Latin1.GetBytes(text);
+        var updated = HandWrittenPdf.AppendUpdate(original, [(8, HandWrittenPdf.Stream("xyz"))], "<< /Size 9 /Root 1 0 R /Prev {prev} >>");
+
+        foreach (var data in (byte[][])[original, updated])
+        {
+            var document = PdfDocument.Open(data);
+
+            Assert.False(document.IsRepaired);
+            Assert.Equal("Hello", document.Pages[0].ExtractText());
+            Assert.True(document.Objects.TryGetReference(6, out var reference));
+            Assert.Equal("abc", Encoding.Latin1.GetString(Assert.IsType<PdfStream>(reference.Resolve()).GetDecodedData()));
+        }
+
+        Assert.Equal([original.Length, updated.Length], PdfDocument.Open(updated).Revisions.Select(revision => revision.Length));
+    }
+
+    [Fact]
     public void WrongDeclaredLengthStillEndsAtEndstream()
     {
         var file = HandWrittenPdf.CreateSimple();
@@ -1023,6 +1054,25 @@ public sealed class PdfReaderTests
         var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
 
         Assert.Single(document.Pages);
+    }
+
+    [Fact]
+    public async Task APrefetchSkipsTheObjectsThatCannotBeRead()
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Unused 4 0 R >>")
+            .Add(4, new string('[', 300) + new string(']', 300))
+            .ToArray();
+        using var handler = new RangeHandler(file);
+        using var client = new HttpClient(handler, disposeHandler: false);
+        var document = await PdfDocument.OpenAsync(client, new Uri("https://example.com/a.pdf"));
+
+        await document.PrefetchPageAsync(0);
+
+        Assert.Equal("", document.Pages[0].ExtractText());
+        Assert.Throws<PdfResourceLimitException>(() => document.Pages[0].Dictionary.GetResolved(PdfName.Create("Unused")));
     }
 
     [Fact]

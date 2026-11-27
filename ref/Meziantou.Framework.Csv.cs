@@ -4,6 +4,35 @@
 
 namespace Meziantou.Framework.Csv
 {
+    public enum CsvBadDataAction
+    {
+        Throw = 0,
+        Accept = 1,
+        Skip = 2,
+    }
+
+    public sealed class CsvBadDataContext
+    {
+        public int? ColumnIndex { get => throw null; }
+        public string? ColumnName { get => throw null; }
+        public Meziantou.Framework.Csv.CsvException Exception { get => throw null; }
+        public Meziantou.Framework.Csv.CsvBadDataKind Kind { get => throw null; }
+        public long LineNumber { get => throw null; }
+        public string Message { get => throw null; }
+        public long Position { get => throw null; }
+        public long? RowIndex { get => throw null; }
+    }
+
+    public delegate Meziantou.Framework.Csv.CsvBadDataAction CsvBadDataHandler(Meziantou.Framework.Csv.CsvBadDataContext context);
+
+    public enum CsvBadDataKind
+    {
+        QuoteInUnquotedValue = 0,
+        CharactersAfterClosingQuote = 1,
+        UnterminatedQuotedValue = 2,
+        ColumnCountMismatch = 3,
+    }
+
     public sealed class CsvException : System.Exception
     {
         public int? ColumnIndex { get => throw null; }
@@ -73,6 +102,7 @@ namespace Meziantou.Framework.Csv
     {
         public const char DefaultQuote = '"';
         public const char DefaultSeparator = ',';
+        public Meziantou.Framework.Csv.CsvBadDataHandler? BadDataHandler { get => throw null; init { } }
         public int BufferSize { get => throw null; init { } }
         public System.Collections.Generic.IEqualityComparer<string> ColumnNameComparer { get => throw null; init { } }
         public char? CommentCharacter { get => throw null; init { } }
@@ -291,6 +321,37 @@ namespace Meziantou.Framework.Csv.Serialization
         public abstract bool TryFormat(T value, System.Span<char> destination, out int charsWritten, Meziantou.Framework.Csv.Serialization.CsvConverterContext context);
     }
 
+    public enum CsvDeserializationErrorAction
+    {
+        Throw = 0,
+        Ignore = 1,
+        SkipRecord = 2,
+    }
+
+    public sealed class CsvDeserializationErrorContext
+    {
+        public int? ColumnIndex { get => throw null; }
+        public string? ColumnName { get => throw null; }
+        public Meziantou.Framework.Csv.CsvException Exception { get => throw null; }
+        public Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind Kind { get => throw null; }
+        public long? LineNumber { get => throw null; }
+        public string? MemberName { get => throw null; }
+        public long? Position { get => throw null; }
+        public string? RawValue { get => throw null; }
+        public long? RowIndex { get => throw null; }
+        public System.Type Type { get => throw null; }
+    }
+
+    public delegate Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction CsvDeserializationErrorHandler(Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext context);
+
+    public enum CsvDeserializationErrorKind
+    {
+        ConversionFailed = 0,
+        MissingRequiredValue = 1,
+        MissingColumn = 2,
+        UnmappedColumn = 3,
+    }
+
     [System.AttributeUsage(System.AttributeTargets.Property | System.AttributeTargets.Field, AllowMultiple = false)]
     public sealed class CsvFormatAttribute : Meziantou.Framework.Csv.Serialization.CsvAttribute
     {
@@ -439,6 +500,10 @@ namespace Meziantou.Framework.Csv.Serialization
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
         public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task SerializeAsync<T>(System.IO.TextWriter writer, System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        [System.Diagnostics.CodeAnalysis.RequiresDynamicCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCode("Reflection-based CSV serialization is not compatible with trimming and Native AOT. Use a generated CsvSerializerContext and the overloads that take a CsvTypeInfo.")]
+        public static byte[] SerializeToUtf8Bytes<T>(System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions? options = null) => throw null;
+        public static byte[] SerializeToUtf8Bytes<T>(System.Collections.Generic.IEnumerable<T> values, Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> typeInfo) => throw null;
     }
 
     public abstract class CsvSerializerContext : Meziantou.Framework.Csv.Serialization.ICsvTypeInfoResolver
@@ -451,14 +516,17 @@ namespace Meziantou.Framework.Csv.Serialization
 
     public sealed class CsvSerializerOptions
     {
+        public Meziantou.Framework.Csv.CsvBadDataHandler? BadDataHandler { get => throw null; init { } }
         public int BufferSize { get => throw null; init { } }
         public char? CommentCharacter { get => throw null; init { } }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.CsvConverter> Converters { get => throw null; init { } }
         public static Meziantou.Framework.Csv.Serialization.CsvSerializerOptions Default { get => throw null; }
+        public Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorHandler? DeserializationErrorHandler { get => throw null; init { } }
         public bool EscapeFormulas { get => throw null; init { } }
         public System.IFormatProvider? FormatProvider { get => throw null; init { } }
         public bool HasHeaderRow { get => throw null; init { } }
         public bool IncludeFields { get => throw null; init { } }
+        public int MaxDegreeOfParallelism { get => throw null; init { } }
         public int MaxRowLength { get => throw null; init { } }
         public Meziantou.Framework.Csv.Serialization.CsvMissingColumnHandling MissingColumnHandling { get => throw null; init { } }
         public string NewLine { get => throw null; init { } }
@@ -532,6 +600,13 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata
         public TValue GetValue<TValue>(int index) => throw null;
     }
 
+    public ref struct CsvMemberValues<T>
+    {
+        public bool TryRead<TValue>(int memberIndex, out TValue value) => throw null;
+    }
+
+    public delegate void CsvMembersReader<T>(ref T obj, ref Meziantou.Framework.Csv.Serialization.Metadata.CsvMemberValues<T> values);
+
     public static class CsvMetadataServices
     {
         public static Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo<T> CreateObjectInfo<T>(Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options, Meziantou.Framework.Csv.Serialization.Metadata.CsvObjectInfoValues<T> values) => throw null;
@@ -546,9 +621,11 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata
     public sealed class CsvObjectInfoValues<T>
     {
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvParameterInfoValues>? ConstructorParameters { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.Metadata.CsvMembersReader<T>? MembersReader { get => throw null; init { } }
         public System.Func<T>? ObjectCreator { get => throw null; init { } }
         public System.Func<Meziantou.Framework.Csv.Serialization.Metadata.CsvConstructorArguments, T>? ObjectWithParameterizedConstructorCreator { get => throw null; init { } }
         public required System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Csv.Serialization.Metadata.CsvPropertyInfo> Properties { get => throw null; init { } }
+        public Meziantou.Framework.Csv.Serialization.Metadata.Utf8CsvMembersReader<T>? Utf8MembersReader { get => throw null; init { } }
     }
 
     public sealed class CsvParameterInfoValues
@@ -611,4 +688,11 @@ namespace Meziantou.Framework.Csv.Serialization.Metadata
         [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("Trimming", "IL2060", Justification = "The constructor of the resolver requires unreferenced code.")]
         public Meziantou.Framework.Csv.Serialization.Metadata.CsvTypeInfo? GetTypeInfo(System.Type type, Meziantou.Framework.Csv.Serialization.CsvSerializerOptions options) => throw null;
     }
+
+    public ref struct Utf8CsvMemberValues<T>
+    {
+        public bool TryRead<TValue>(int memberIndex, out TValue value) => throw null;
+    }
+
+    public delegate void Utf8CsvMembersReader<T>(ref T obj, ref Meziantou.Framework.Csv.Serialization.Metadata.Utf8CsvMemberValues<T> values);
 }

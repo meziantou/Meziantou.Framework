@@ -26,7 +26,8 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-- [Text](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Text) is the text without the escape sequences.
+- [Text](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Text) is the text without the escape sequences. When there is nothing to remove, it is the same
+  string instance as the input.
 - [Runs](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Runs) is a list of [AnsiTextRun](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun). Each run has a [Start](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun.Start) (inclusive) and an [End](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun.End) (exclusive) index in [Text](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Text), and an
   [AnsiStyle](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle). The runs follow each other, without gap or overlap, and cover the whole text. A run starts each time the
   style changes; an empty text has no run.

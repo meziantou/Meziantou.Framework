@@ -82,6 +82,9 @@ dotnet run eng/javascriptengine/fetch-tests.cs npm-packages
 node tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/generate.js
 ```
 
+The `.npmrc` files set `min-release-age=7`: npm does not install a version published less than 7 days ago, so a
+version that is too new makes `npm install` fail.
+
 Renovate does not update `package.json` and `generator/package.json`: a new version of a package or of Chromium changes
 the expected results, which only Chromium can regenerate. Check the licenses of the new dependencies (`license` in
 `package-lock.json`).

@@ -1362,7 +1362,7 @@ internal sealed class FragmentationFlow
             if (child is BoxFragment { Box: var spannerBox } spanner && _spannerBoxes is not null && _spannerBoxes.Contains(spannerBox))
             {
                 var margin = _writingDirection.ToLogical(spanner.Margin);
-                Spanners.Add(new ColumnSpannerPlacement(spanner, top - margin.BlockStart, bottom + margin.BlockEnd));
+                Spanners.Add(new ColumnSpannerPlacement(spanner, top - margin.BlockStart, bottom + margin.BlockEnd, ++_root._sequence));
 
                 // The spanner is placed below the content that overflows the boxes before it (a parallel flow): the flow has no
                 // content there, and breaks anywhere
@@ -3057,7 +3057,11 @@ internal sealed class FloatPush
 /// <param name="Fragment">The fragment of the spanner, laid out in the inline size of the multi-column container.</param>
 /// <param name="MarginBoxStart">The block-start edge of its margin box in the strip.</param>
 /// <param name="MarginBoxEnd">The block-end edge of its margin box in the strip.</param>
-internal readonly record struct ColumnSpannerPlacement(BoxFragment Fragment, double MarginBoxStart, double MarginBoxEnd);
+/// <param name="Sequence">
+/// The order of the spanner in the content of the strip (see <see cref="FragmentationFlow.GetEmptyOrdinal"/>): a box without block
+/// size at its position is in the row of columns before it when its order is lower.
+/// </param>
+internal readonly record struct ColumnSpannerPlacement(BoxFragment Fragment, double MarginBoxStart, double MarginBoxEnd, int Sequence = 0);
 
 /// <summary>The kinds of boxes whose contents are parallel flows.</summary>
 internal enum ParallelStructureKind : byte

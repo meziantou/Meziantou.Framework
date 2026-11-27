@@ -26,10 +26,19 @@ namespace Meziantou.Framework.WebPlatform.Wasm;
 /// interrupted when the script engine interrupts the scripts (e.g. its timeout). The runtime emits the activities and the
 /// metrics of Meziantou.Framework.WasmEngine.
 /// </para>
+/// <para>
+/// The runtime keeps the modules it compiled, by the content of their binary (see <see cref="ModuleCacheCapacity"/>): the
+/// pages that share the runtime and load the same module (for instance the runtime of .NET of a Blazor WebAssembly
+/// application) do not compile it again, and the functions compiled to .NET code by a page run compiled in the others.
+/// </para>
 /// </remarks>
 public sealed class WasmWebAssemblyRuntime : WebAssemblyRuntime, IDisposable
 {
+    /// <summary>The default value of <see cref="ModuleCacheCapacity"/>: 16 MiB of binaries.</summary>
+    public const long DefaultModuleCacheCapacity = 16 * 1024 * 1024;
+
     private readonly bool _ownsRuntime;
+    private readonly WasmModuleCache _moduleCache = new(DefaultModuleCacheCapacity);
 
     /// <summary>Creates a runtime, and the <see cref="Engine.WasmRuntime"/> it uses.</summary>
     /// <param name="options">The options of the <see cref="Engine.WasmRuntime"/>, or null for the default options.</param>
@@ -54,6 +63,24 @@ public sealed class WasmWebAssemblyRuntime : WebAssemblyRuntime, IDisposable
     /// <summary>Gets the runtime of the engine that compiles and runs the modules.</summary>
     public Engine.WasmRuntime Runtime { get; }
 
+    /// <summary>
+    /// Gets the maximum total size of the binaries of the modules that the runtime keeps, in bytes. The default is
+    /// <see cref="DefaultModuleCacheCapacity"/>; 0 disables the cache. A module compiled again from the same bytes is the
+    /// compiled module of the cache, and the least recently used modules are removed when the total size exceeds the
+    /// capacity. The modules smaller than 1 KiB are not kept: they compile quickly. A compiled module uses more memory than
+    /// its binary: the runtime of .NET of a Blazor WebAssembly application (a 3 MB binary) uses about 170 MB once a page ran
+    /// it. Each compilation gives a new <c>WebAssembly.Module</c> object to the scripts.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public long ModuleCacheCapacity
+    {
+        get => _moduleCache.Capacity;
+        init => _moduleCache = new WasmModuleCache(value);
+    }
+
+    /// <summary>The modules compiled by the runtime.</summary>
+    internal WasmModuleCache ModuleCache => _moduleCache;
+
     /// <summary>The wrappers of the objects of the engine (the same wrapper for the same object, as the JavaScript objects of the addresses must be the same).</summary>
     internal ConditionalWeakTable<object, object> Wrappers { get; } = [];
 
@@ -63,7 +90,8 @@ public sealed class WasmWebAssemblyRuntime : WebAssemblyRuntime, IDisposable
     {
         try
         {
-            return new AdapterModule(this, Runtime.Compile(bytes), bytes);
+            // The engine module is shared; the module of the abstraction (and its JavaScript object) is new for each compilation
+            return new AdapterModule(this, _moduleCache.GetOrCompile(bytes, Runtime.Compile), bytes);
         }
         catch (Engine.WasmException ex)
         {
@@ -235,9 +263,10 @@ public sealed class WasmWebAssemblyRuntime : WebAssemblyRuntime, IDisposable
 
     internal static Engine.WasmTagType ToEngine(WasmTagType type) => type.Native as Engine.WasmTagType ?? new Engine.WasmTagType(ToEngine(type.Parameters));
 
-    /// <summary>Releases the <see cref="Engine.WasmRuntime"/> when the runtime created it. The stores and the modules must not be used afterwards.</summary>
+    /// <summary>Releases the compiled modules, and the <see cref="Engine.WasmRuntime"/> when the runtime created it. The stores and the modules must not be used afterwards.</summary>
     public void Dispose()
     {
+        _moduleCache.Clear();
         if (_ownsRuntime)
         {
             Runtime.Dispose();

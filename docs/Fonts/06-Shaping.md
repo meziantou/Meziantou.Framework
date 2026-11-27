@@ -41,12 +41,17 @@ For each glyph, the buffer has:
 
 - `Info[i].Glyph`, the glyph to draw, and `Info[i].Cluster`, the index of the first character of its cluster in the text.
   The glyphs that shaping ties together (a ligature, a letter and its marks) share a cluster: a caret, a selection or a
-  line break never separates them.
+  line break never separates them. A cluster always starts at a character of its own: when shaping moves a character
+  into the cluster before it (an Indic syllable that draws a joiner before its anusvara), the glyphs of the characters
+  that followed it in its cluster join that cluster too.
 - `Positions[i].XAdvance` and [YAdvance](cref:Meziantou.Framework.Fonts.GlyphPosition.YAdvance), how far the pen moves after the glyph, and [XOffset](cref:Meziantou.Framework.Fonts.GlyphPosition.XOffset) and [YOffset](cref:Meziantou.Framework.Fonts.GlyphPosition.YOffset), where the
   glyph is drawn from the pen. They are in font units.
 
 `Info[i].IsUnsafeToBreak` marks the glyphs before which the text cannot be broken without shaping both parts again:
-what the font did there depends on the characters on both sides, such as joined letters or a kerned pair.
+what the font did there depends on the characters on both sides, such as joined letters, a kerned pair, a mark placed
+on the glyph before it, the digits of a fraction or the forms of a syllable. Where a line can end before the first
+glyph of a cluster that is not marked, shaping the text before it and the text from it apart gives the same glyphs and
+positions: a layout can cut the glyphs there instead of shaping the two parts again.
 
 ## Draw the glyphs
 

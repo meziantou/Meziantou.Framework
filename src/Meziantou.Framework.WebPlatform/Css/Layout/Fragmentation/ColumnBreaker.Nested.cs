@@ -126,7 +126,11 @@ internal static partial class ColumnBreaker
             _nested.Fragmentainers.PortionStarts.Add(0);
             var (_, end, _, _) = GetSet(_set);
             var displayOffset = GetDisplayOffsetAt(_flow, position);
-            map.Add(position, 1, position - displayOffset, isBreak: true);
+
+            // (the boxes without block size at the end of the spanner before the position, before it in the content, are in the
+            // previous outer fragmentainer)
+            var sequence = _set > 0 && Math.Abs(_flow.Spanners[_set - 1].MarginBoxEnd - position) <= Epsilon ? _flow.Spanners[_set - 1].Sequence : 0;
+            map.Add(position, 1, position - displayOffset, isBreak: true, sequence);
             KeepFloatsBefore(_flow, position, 1);
             _columns = new FlowCursor(_flow, map, position, end, 1, _generation, canBreakBefore: false);
             _columns.SetOrigin(position - displayOffset);
@@ -282,7 +286,9 @@ internal static partial class ColumnBreaker
             var map = _nested.Map;
             if (_columns is null)
             {
-                map.Add(map.Count == 0 ? double.NegativeInfinity : start, _nested.Columns.Count, start, isBreak: true);
+                // (a box without block size at the end of the spanner before the row, before it in the content, is in the row before
+                // the spanner: e.g. the content of an empty row before a spanner without block size)
+                map.Add(map.Count == 0 ? double.NegativeInfinity : start, _nested.Columns.Count, start, isBreak: true, sequence: _set > 0 ? _flow.Spanners[_set - 1].Sequence : 0);
                 _columns = new FlowCursor(_flow, map, start, end, _nested.Columns.Count, _generation, canBreakBefore: false);
                 _rowConsumed = 0;
                 _nested.Fragmentainers.PortionStarts.Add(_nested.Columns.Count);

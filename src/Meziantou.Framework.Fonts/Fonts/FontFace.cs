@@ -736,8 +736,8 @@ public sealed class FontFace
 
     /// <summary>
     /// Gets the box of the outline of a glyph, in font units: the box the <c>glyf</c> table declares for the glyph in a
-    /// font with TrueType outlines that does not vary them, otherwise the box of the points of its outline, rounded
-    /// outward.
+    /// font with TrueType outlines that does not vary them (with its sides in order when the font swaps them),
+    /// otherwise the box of the points of its outline, rounded outward.
     /// </summary>
     /// <param name="glyphId">The glyph.</param>
     /// <param name="scratch">The working storage of the outline, when it has to be decoded.</param>
@@ -754,7 +754,8 @@ public sealed class FontFace
 
         if (Outlines == FontOutlineKind.TrueType && (_instance is null || _gvar is null))
         {
-            // The box the font declares for the glyph, at the start of its description
+            // The box the font declares for the glyph, at the start of its description. A box whose sides are not in
+            // order has them swapped, as HarfBuzz does: a box always has its minimum before its maximum.
             var bytes = Data.RawBytes.AsSpan();
             var loca = bytes.Slice(_locaOffset, _locaLength);
             long start = _hasLongLocations ? FontBinary.UInt32(loca, glyphId * 4) : FontBinary.UInt16(loca, glyphId * 2) * 2;
@@ -763,7 +764,11 @@ public sealed class FontFace
                 return false;
 
             var glyph = bytes.Slice(_glyfOffset + (int)start, 10);
-            bounds = new GlyphBox(FontBinary.Int16(glyph, 2), FontBinary.Int16(glyph, 4), FontBinary.Int16(glyph, 6), FontBinary.Int16(glyph, 8));
+            var xMin = FontBinary.Int16(glyph, 2);
+            var yMin = FontBinary.Int16(glyph, 4);
+            var xMax = FontBinary.Int16(glyph, 6);
+            var yMax = FontBinary.Int16(glyph, 8);
+            bounds = new GlyphBox(Math.Min(xMin, xMax), Math.Min(yMin, yMax), Math.Max(xMin, xMax), Math.Max(yMin, yMax));
             return true;
         }
 
@@ -1141,7 +1146,11 @@ public sealed class FontFace
         }
     }
 
-    /// <summary>Gets the box of the bitmap of a glyph of a font without outlines, in font units, from the largest strike that has it.</summary>
+    /// <summary>
+    /// Gets the box of the bitmap of a glyph of a font without outlines, in font units: the bitmap
+    /// <see cref="TryGetAnyBitmapGlyph"/> finds at the largest size, when it gives its size. The JPEG and TIFF images of
+    /// <c>sbix</c> do not, so their glyphs have no box.
+    /// </summary>
     private bool TryGetBitmapBounds(int glyphId, out GlyphBox bounds)
     {
         bounds = default;
@@ -1320,6 +1329,7 @@ public sealed class FontFace
     /// default. A value outside the range of its axis is brought to the nearest end.
     /// </param>
     /// <returns>The face of the instance; the face of the default instance when every axis is at its default.</returns>
+    /// <exception cref="InvalidFontException">A table that varies the font along its axes is malformed; not thrown for the default instance.</exception>
     public FontFace WithCoordinates(ReadOnlySpan<int> userCoordinates)
     {
         var root = _default;

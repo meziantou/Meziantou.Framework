@@ -282,10 +282,9 @@ internal static class YamlDictionaryConverterHelper
 
         var options = reader.Options;
         dictionary ??= createDictionary(options);
-        var comparer = options.PropertyNameCaseInsensitive ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
         var mergeEnabled = YamlMergeKey.IsEnabled(options);
-        HashSet<string>? explicitKeys = mergeEnabled ? new HashSet<string>(comparer) : null;
-        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : new HashSet<string>(comparer);
+        HashSet<string>? explicitKeys = mergeEnabled ? reader.RentKeySet() : null;
+        HashSet<string>? seenKeys = options.DuplicateKeyHandling == YamlDuplicateKeyHandling.LastWins ? null : reader.RentKeySet();
         if (reader.ReferenceReader is not null && reader.Anchor is not null)
         {
             reader.ReferenceReader.Register(reader.Anchor, dictionary);
@@ -327,6 +326,9 @@ internal static class YamlDictionaryConverterHelper
             var value = valueConverter.Read(reader, typeof(TValue));
             dictionary[key] = (TValue)value!;
         }
+
+        reader.ReturnKeySet(seenKeys);
+        reader.ReturnKeySet(explicitKeys);
 
         reader.Read();
         return dictionary;

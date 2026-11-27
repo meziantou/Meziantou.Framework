@@ -13,6 +13,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.AspNetCore.Authentication.HttpBasic.Fuzz" />
     <InternalsVisibleTo Include="Meziantou.AspNetCore.Authentication.HttpBasic.Tests" />
   </ItemGroup>
 

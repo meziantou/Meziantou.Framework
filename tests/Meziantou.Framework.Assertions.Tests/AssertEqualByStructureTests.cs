@@ -23,6 +23,41 @@ public sealed class AssertEqualByStructureTests
     }
 
     [Fact]
+    public void ArraysOfSimpleValues_Success()
+    {
+        AssertionsAssert.Equivalent(new[] { 1, 2, 3 }, new[] { 1, 2, 3 });
+        AssertionsAssert.Equivalent(new[] { 1, 2, 3 }, new List<int> { 1, 2, 3 });
+        AssertionsAssert.Equivalent(new[] { 1, 2 }, new uint[] { 1, 2 });
+        AssertionsAssert.Equivalent(Array.Empty<Guid>(), new List<Guid>());
+        AssertionsAssert.Equivalent(new[] { 1.5m }, new[] { 1.50m });
+        AssertionsAssert.Equivalent(new[] { 0.0, double.NaN }, new[] { -0.0, double.NaN });
+        AssertionsAssert.Equivalent(new[] { new DateTimeOffset(2024, 1, 1, 0, 0, 0, TimeSpan.Zero) }, new[] { new DateTimeOffset(2024, 1, 1, 1, 0, 0, TimeSpan.FromHours(1)) });
+        AssertionsAssert.Equivalent(new[] { DayOfWeek.Monday }, new[] { DayOfWeek.Monday });
+        AssertionsAssert.Equivalent(new[] { "a", null, "c" }, new List<string?> { "a", null, "c" });
+        AssertionsAssert.Equivalent(new[] { "a", "B" }, new[] { "A", "b" }, new EquivalentOptions { IgnoreStringCase = true });
+        AssertionsAssert.Equivalent(new { Values = new[] { 1, 2 }, Names = new List<string> { "a" } }, new { Values = new List<int> { 1, 2 }, Names = new[] { "a" } });
+    }
+
+    [Fact]
+    public void ArraysOfSimpleValues_Fails()
+    {
+        AssertionsAssert.NotEquivalent(new[] { -1 }, new[] { uint.MaxValue });
+        AssertionsAssert.NotEquivalent(new[] { 1, 2 }, new[] { 1, 2, 3 });
+        AssertionsAssert.NotEquivalent(new[] { DayOfWeek.Monday }, new[] { DayOfWeek.Tuesday });
+        AssertionsAssert.NotEquivalent(new[] { "a", null }, new[] { "a", "b" });
+        AssertionsAssert.NotEquivalent(new[] { "a" }, new List<string> { "A" });
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(new[] { 1, 2, 3 }, new List<int> { 1, 2, 4 }), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: new[] { 1, 2, 3 }
+            Actual expression:   new List<int> { 1, 2, 4 }
+            Path: $[2]
+            Reason: Values differ.
+            Expected: 3
+            Actual:   4
+            """);
+    }
+
+    [Fact]
     public void DifferentTypesWithSamePublicProperties_Success()
     {
         var expected = new ExpectedPerson { Name = "Alice", Age = 42 };
@@ -255,6 +290,38 @@ public sealed class AssertEqualByStructureTests
         actual.Next = actual;
 
         AssertionsAssert.Equivalent(expected, actual);
+    }
+
+    [Fact]
+    public void LongCycles()
+    {
+        AssertionsAssert.Equivalent(CreateRing(20), CreateRing(20));
+        AssertionsAssert.NotEquivalent(CreateRing(20), CreateRing(20, differentIndex: 15));
+        AssertionsAssert.Equivalent(new[] { CreateRing(12, "a"), CreateRing(12, "b") }, new[] { CreateRing(12, "b"), CreateRing(12, "a") }, new EquivalentOptions { IgnoreCollectionOrder = true });
+        AssertionsAssert.NotEquivalent(new[] { CreateRing(12, "a"), CreateRing(12, "b") }, new[] { CreateRing(12, "b"), CreateRing(12, "a", differentIndex: 10) }, new EquivalentOptions { IgnoreCollectionOrder = true });
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equivalent(CreateRing(12), CreateRing(12, differentIndex: 10)), """
+            Assert.Equivalent() assertion failed.
+            Expected expression: CreateRing(12)
+            Actual expression:   CreateRing(12, differentIndex: 10)
+            Path: $.Next.Next.Next.Next.Next.Next.Next.Next.Next.Next.Name
+            Reason: Values differ.
+            Expected: "node10"
+            Actual:   "different"
+            """);
+
+        static Node CreateRing(int count, string prefix = "node", int differentIndex = -1)
+        {
+            var first = new Node { Name = prefix + "0" };
+            var current = first;
+            for (var i = 1; i < count; i++)
+            {
+                current.Next = new Node { Name = i == differentIndex ? "different" : prefix + i.ToString(CultureInfo.InvariantCulture) };
+                current = current.Next;
+            }
+
+            current.Next = first;
+            return first;
+        }
     }
 
     [Fact]

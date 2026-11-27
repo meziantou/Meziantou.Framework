@@ -71,6 +71,26 @@ Assert.Equal(["Alice", "Bob"], names);
 accepts an `IAsyncEnumerable<T>`. The overloads that take a `Stream` read and write UTF-8 without converting the data to
 UTF-16.
 
+[SerializeToUtf8Bytes](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.SerializeToUtf8Bytes) returns the UTF-8 data as a `byte[]`, without a byte order mark. It formats
+the values directly to UTF-8, without creating a string first, and its result can be passed to [Deserialize](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.Deserialize):
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_SerializeToUtf8Bytes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var people = new List<Person>
+{
+    new() { Name = "Alice", Age = 30 },
+    new() { Name = "Bob", Age = 25 },
+};
+
+// The values are written as UTF-8 bytes, without creating a string first
+byte[] utf8Csv = CsvSerializer.SerializeToUtf8Bytes(people);
+Assert.Equal("Name,Age,BirthDate\r\nAlice,30,\r\nBob,25,\r\n"u8.ToArray(), utf8Csv);
+
+var result = CsvSerializer.Deserialize<Person>(utf8Csv);
+Assert.Equal("Bob", result[1].Name);
+```
+<!-- endref -->
+
 ## Records and constructors
 
 The serializer creates the instances with the public parameterless constructor, or with the public constructor when
@@ -244,7 +264,8 @@ Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Person>("Name,Countr
 <!-- endref -->
 
 A required member, declared with the `required` keyword or [CsvRequiredAttribute](cref:Meziantou.Framework.Csv.Serialization.CsvRequiredAttribute), throws when its column is missing from the
-header row, and when a record is too short to have a value for it.
+header row, and when a record is too short to have a value for it. A [deserialization error handler](#skip-or-ignore-errors) can
+ignore these errors instead.
 
 ## Errors
 
@@ -262,7 +283,112 @@ Assert.StartsWith("The value 'x' of the column 'Id' cannot be converted", except
 ```
 <!-- endref -->
 
+## Skip or ignore errors
+
+To log the invalid records of an import and keep reading, set [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler). The serializer calls it
+instead of throwing, with a [CsvDeserializationErrorContext](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext) that gives the kind of error, the member, the value, the position, and the
+exception it would throw:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_DeserializationErrorHandler;format=md-fenced-code-block;dedent=true -->
+```csharp
+var errors = new List<string>();
+var options = new CsvSerializerOptions
+{
+    DeserializationErrorHandler = context =>
+    {
+        errors.Add($"line {context.LineNumber}: '{context.RawValue}' is not a valid {context.MemberName}");
+        return CsvDeserializationErrorAction.SkipRecord; // or Ignore to keep the default value, or Throw
+    },
+};
+
+var products = CsvSerializer.Deserialize<Product>("Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99\n3,Screen,199", options);
+
+Assert.Equal(["Keyboard", "Screen"], products.Select(p => p.Name));
+Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
+```
+<!-- endref -->
+
+| Action | Effect |
+|---|---|
+| [CsvDeserializationErrorAction.Throw](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction.Throw) | Throws the [CsvException](cref:Meziantou.Framework.Csv.CsvException) of [Exception](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.Exception). |
+| [CsvDeserializationErrorAction.Ignore](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction.Ignore) | The member keeps its default value (a constructor parameter gets its default value), or the column is ignored. |
+| [CsvDeserializationErrorAction.SkipRecord](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorAction.SkipRecord) | The record is not returned, and the serializer continues with the next one. |
+
+[Kind](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.Kind) is one of the errors that throw without a handler:
+
+- [ConversionFailed](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.ConversionFailed): a value cannot be converted. [RawValue](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.RawValue) is the value, and the error of the converter is
+  the inner exception of [Exception](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorContext.Exception).
+- [MissingRequiredValue](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.MissingRequiredValue): a record is too short to have a value for a required member.
+- [MissingColumn](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.MissingColumn) and [UnmappedColumn](cref:Meziantou.Framework.Csv.Serialization.CsvDeserializationErrorKind.UnmappedColumn): the header row has no column for a required member, or the
+  columns do not match the members when [MissingColumnHandling](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.MissingColumnHandling) or [UnmappedColumnHandling](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.UnmappedColumnHandling) is `Throw`. These
+  errors of the header row are reported when the first record is read, and apply to every record: skipping is the
+  same as ignoring them.
+
+A record can have several errors, reported one by one until the handler skips it. The handler works with the
+reflection-based metadata and with a [generated context](07-SourceGeneration.md) alike. The exceptions of the members, the
+constructors and the callbacks of the type are not reported, and the handler does not change how they are thrown. For
+instance, when a setter throws an `ArgumentException`, a `FormatException`, an `OverflowException`, an
+`InvalidCastException` or a [CsvException](cref:Meziantou.Framework.Csv.CsvException), the serializer throws a new [CsvException](cref:Meziantou.Framework.Csv.CsvException) with that exception as the
+inner exception. The other exceptions, such as an `InvalidOperationException`, are not wrapped.
+
+[BadDataHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.BadDataHandler) handles the malformed data of the file, such as a quote in a value that is not quoted, as the
+[readers do](03-ReadingCsv.md#report-and-skip-bad-data). The serializer has no filter that skips records before they are
+converted: to skip records by their values, such as a total line at the end of a report, read them with
+[CsvReader](cref:Meziantou.Framework.Csv.CsvReader).
+
 ## Callbacks
 
 A type that implements [ICsvOnDeserializing](cref:Meziantou.Framework.Csv.Serialization.ICsvOnDeserializing), [ICsvOnDeserialized](cref:Meziantou.Framework.Csv.Serialization.ICsvOnDeserialized), [ICsvOnSerializing](cref:Meziantou.Framework.Csv.Serialization.ICsvOnSerializing) or [ICsvOnSerialized](cref:Meziantou.Framework.Csv.Serialization.ICsvOnSerialized) is notified before and
 after its members are read or written, for instance to validate a record.
+
+## Convert the records in parallel
+
+Most of the time spent reading typed records goes to converting the values: parsing numbers and dates, creating strings
+and objects. Set [MaxDegreeOfParallelism](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.MaxDegreeOfParallelism) to convert the records on the thread pool:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_ParallelModel;format=md-fenced-code-block;dedent=true -->
+```csharp
+public sealed class ParallelModel
+{
+    public int X { get; set; }
+
+    public double Y { get; set; }
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_Parallel;format=md-fenced-code-block;dedent=true -->
+```csharp
+var csv = "X,Y\n" + string.Concat(Enumerable.Range(0, 10_000).Select(i => FormattableString.Invariant($"{i},{i * 0.5}\n")));
+
+// The data is split into records on the calling thread, and the records are converted to objects on the thread pool
+var options = new CsvSerializerOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+var values = CsvSerializer.Deserialize<ParallelModel>(csv, options);
+
+Assert.HasCount(10_000, values);
+Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the records
+```
+<!-- endref -->
+
+- The data is still split into records on the calling thread: whether a line terminator ends a record depends on the
+  quotes before it, so the data cannot be split anywhere else. The records are grouped in batches of a few hundred, and
+  a task of the thread pool converts each batch, unless the calling thread takes the batch first because no task has
+  started it. A batch copies the records read from a stream or a text reader, but refers to the data when it is
+  already in memory (a string or a memory block).
+- The objects are returned in the order of the records, and the exceptions are the ones reading the records one by one
+  throws: the records before an error are returned first by [DeserializeEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeEnumerable) and
+  [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable), which read a few batches ahead of the objects they return.
+- `-1` uses every processor. The default, `1`, converts the records on the calling thread. The browser and WASI always do.
+- The constructors, the setters, the converters and the callbacks of the type run on several threads at the same time:
+  they must not change shared state without synchronization. The
+  [DeserializationErrorHandler](cref:Meziantou.Framework.Csv.Serialization.CsvSerializerOptions.DeserializationErrorHandler) is called by one thread at a time, but not in the
+  order of the records, and it can be called for records after the error that ends the reading.
+- The records are converted ahead of the objects returned. The token passed to
+  [DeserializeAsyncEnumerable](cref:Meziantou.Framework.Csv.Serialization.CsvSerializer.DeserializeAsyncEnumerable) is checked when the next object is requested, as
+  when converting the records one by one, but when the code of the type cancels it, the cancellation can stop the
+  enumeration before objects that were already converted are returned: fewer objects can be returned than with `1`.
+
+The gain is largest when the values take time to convert, such as numbers and dates. When most values are strings,
+allocating them is the limit and adding threads helps less, unless the application uses the server garbage collector.
+Splitting the data on one thread limits the gain to a few times, whatever the number of processors: measure with your
+data before choosing a value, and a few threads are often as fast as every processor.

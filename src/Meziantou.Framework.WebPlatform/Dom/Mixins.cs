@@ -270,7 +270,7 @@ public abstract partial class Node
     {
         for (var child = FirstChild; child is not null; child = child.NextSibling)
         {
-            if (child is Element element)
+            if (child.AsElement is { } element)
                 return element;
         }
 
@@ -281,7 +281,7 @@ public abstract partial class Node
     {
         for (var child = LastChild; child is not null; child = child.PreviousSibling)
         {
-            if (child is Element element)
+            if (child.AsElement is { } element)
                 return element;
         }
 
@@ -293,7 +293,7 @@ public abstract partial class Node
         var count = 0u;
         for (var child = FirstChild; child is not null; child = child.NextSibling)
         {
-            if (child is Element)
+            if (child.IsElement)
             {
                 count++;
             }
@@ -507,7 +507,7 @@ public abstract partial class Node
     {
         for (var node = PreviousSibling; node is not null; node = node.PreviousSibling)
         {
-            if (node is Element element)
+            if (node.AsElement is { } element)
                 return element;
         }
 
@@ -518,7 +518,7 @@ public abstract partial class Node
     {
         for (var node = NextSibling; node is not null; node = node.NextSibling)
         {
-            if (node is Element element)
+            if (node.AsElement is { } element)
                 return element;
         }
 
@@ -574,7 +574,7 @@ internal sealed class IdCache
             var map = new Dictionary<string, Element>(StringComparer.Ordinal);
             for (var node = root.FirstChild; node is not null; node = node.GetNextInTreeOrder(root))
             {
-                if (node is Element { IdValue: { } id } element)
+                if (node.AsElement is { IdValue: { } id } element)
                 {
                     map.TryAdd(id, element);
                 }
@@ -590,7 +590,7 @@ internal sealed class IdCache
     {
         for (var node = root.FirstChild; node is not null; node = node.GetNextInTreeOrder(root))
         {
-            if (node is Element element && element.IdValue == elementId)
+            if (node.AsElement is { } element && element.IdValue == elementId)
                 return element;
         }
 

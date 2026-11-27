@@ -131,8 +131,8 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
     /// <summary>
     /// Detects the format of a file from its content: an image format, PDF, EPUB, MOBI, or an archive (zip, 7z, RAR, tar...). An archive
     /// whose extension is the one of a comic book archive (<c>.cbz</c>, <c>.cbr</c>...) is a comic book archive, whatever its
-    /// container. A Markdown or HTML file is recognized by its extension, or an HTML file by its start (<c>&lt;!DOCTYPE html</c>,
-    /// <c>&lt;html</c>). An email file (PST, OST, mbox, EML, MSG, OFT, EMLX, TNEF) is detected by <see cref="EmailFormatDetector"/>. The extension
+    /// container. A Markdown, HTML or SVG file is recognized by its extension, or an HTML file by its start (<c>&lt;!DOCTYPE html</c>,
+    /// <c>&lt;html</c>) and an SVG file by its <c>&lt;svg</c> root. An email file (PST, OST, mbox, EML, MSG, OFT, EMLX, TNEF) is detected by <see cref="EmailFormatDetector"/>. The extension
     /// is used when the content is not recognized.
     /// </summary>
     internal static FileFormat? DetectFormat(Stream stream, string fileName)
@@ -145,7 +145,8 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         var extensionFormat = FileFormat.FromFileName(fileName);
 
         // The text formats have no signature, and their text can start like one ("BM" of BMP, "%PDF-" in a document about PDF)
-        if (extensionFormat?.Kind is FileFormatKind.Markdown or FileFormatKind.Html)
+        // An SVG document is text too, and an .svgz file is a gzip stream
+        if (extensionFormat?.Kind is FileFormatKind.Markdown or FileFormatKind.Html or FileFormatKind.Svg)
             return extensionFormat;
 
         // A MOBI book is a Palm database: its signature follows its name, which can start like another signature
@@ -210,7 +211,13 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
         if (emailFormat is not null)
             return emailFormat;
 
-        return extensionFormat ?? (IsHtml(prefix) ? FileFormat.Html : null);
+        if (extensionFormat is not null)
+            return extensionFormat;
+
+        if (IsHtml(prefix))
+            return FileFormat.Html;
+
+        return IsSvg(prefix) ? FileFormat.Svg : null;
     }
 
     /// <summary>Detects the format of a mailbox folder: a Maildir folder (with <c>cur</c>, <c>new</c> and <c>tmp</c>), else a folder of mbox files.</summary>
@@ -228,10 +235,25 @@ internal sealed class Converter(ConversionSettings settings, TextWriter output, 
 
         prefix = prefix.TrimStart(" \t\r\n"u8);
         return StartsWithIgnoreCase(prefix, "<!doctype html"u8) || StartsWithIgnoreCase(prefix, "<html"u8);
-
-        static bool StartsWithIgnoreCase(ReadOnlySpan<byte> value, ReadOnlySpan<byte> prefix)
-            => value.Length >= prefix.Length && Ascii.EqualsIgnoreCase(value[..prefix.Length], prefix);
     }
+
+    /// <summary>Gets a value indicating whether a file starts like an SVG document: <c>&lt;svg</c>, or an XML declaration or a <c>&lt;!DOCTYPE svg</c> followed by <c>&lt;svg</c> in the prefix.</summary>
+    private static bool IsSvg(ReadOnlySpan<byte> prefix)
+    {
+        if (prefix.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF]))
+        {
+            prefix = prefix[3..];
+        }
+
+        prefix = prefix.TrimStart(" \t\r\n"u8);
+        if (prefix.StartsWith("<svg"u8))
+            return true;
+
+        return (prefix.StartsWith("<?xml"u8) || StartsWithIgnoreCase(prefix, "<!doctype svg"u8)) && (prefix.IndexOf("<svg"u8) >= 0 || prefix.IndexOf("<!DOCTYPE svg"u8) >= 0);
+    }
+
+    private static bool StartsWithIgnoreCase(ReadOnlySpan<byte> value, ReadOnlySpan<byte> prefix)
+        => value.Length >= prefix.Length && Ascii.EqualsIgnoreCase(value[..prefix.Length], prefix);
 
     private FileFormat DetectInputFormat(FullPath path)
     {

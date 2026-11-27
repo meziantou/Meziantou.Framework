@@ -300,6 +300,8 @@ public class HtmlSanitizerTests
     [InlineData("<p is='x-foo' class='a'>x</p>", "<p class=\"a\">x</p>")]
     [InlineData("<p is>x<b is=x-foo>y</b></p>", "<p>x<b>y</b></p>")]
     [InlineData("<p hidden translate='no'><time datetime='2026-01-01'>x</time></p>", "<p hidden=\"\" translate=\"no\"><time datetime=\"2026-01-01\">x</time></p>")]
+    // Removed, normalized and emptied attributes of the same element
+    [InlineData("<a id='x' href='java&#13;script:alert(1)' onclick='y' title='a&#13;b' srcset='a.png 1x' is='x-foo'>x</a>", "<a href=\"\" title=\"a\nb\" srcset=\"a.png 1x\">x</a>")]
     public void Sanitize_Attributes(string html, string expectedResult)
     {
         var sanitizer = new HtmlSanitizer();

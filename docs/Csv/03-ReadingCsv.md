@@ -28,6 +28,9 @@ Assert.Equal(["Alice is 30 years old", "Bob is 25 years old"], lines);
 [ReadAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadAsync) reads the next record asynchronously, for readers over files and network streams. It only waits when the
 buffer of the reader has no complete record left. The reader can also be enumerated with `foreach`.
 
+To read UTF-8 data from a file, a `Stream` or bytes, prefer [Utf8CsvReader](cref:Meziantou.Framework.Csv.Utf8CsvReader): it has the same options and members, and it
+does not decode the values you do not read. See [UTF-8 data](#utf-8-data).
+
 ## Values are valid until the next record
 
 [Current](cref:Meziantou.Framework.Csv.CsvReader.Current) is a [CsvRecord](cref:Meziantou.Framework.Csv.CsvRecord), and each value is a [CsvField](cref:Meziantou.Framework.Csv.CsvField). Both are `ref struct` views of the buffer of the
@@ -161,7 +164,8 @@ Assert.Equal("London", reader.Current["City"].ToString());
 
 Empty values are kept: `a,b,` is a record of three values, the last one empty. A line terminator at the end of the data
 does not add a record. Set [ValidateColumnCount](cref:Meziantou.Framework.Csv.CsvReaderOptions.ValidateColumnCount) to throw a [CsvException](cref:Meziantou.Framework.Csv.CsvException) when a record does not have the number of
-columns of the header row, or of the first record without a header row.
+columns of the header row, or of the first record without a header row. A [bad data handler](#report-and-skip-bad-data)
+can accept or skip such a record instead.
 
 ## Comments and empty lines
 
@@ -271,6 +275,53 @@ Assert.Equal(1, exception.LineNumber);
 Assert.Equal(1, exception.ColumnIndex);
 ```
 <!-- endref -->
+
+## Report and skip bad data
+
+[Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) stops at the first error. To log the malformed records of an import and keep reading, set
+[BadDataHandler](cref:Meziantou.Framework.Csv.CsvReaderOptions.BadDataHandler). The reader calls it for each error, with a [CsvBadDataContext](cref:Meziantou.Framework.Csv.CsvBadDataContext) that gives the kind of error, the
+record, the line, the position and the column, and the handler returns what to do:
+
+<!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_BadDataHandler;format=md-fenced-code-block;dedent=true -->
+```csharp
+var errors = new List<string>();
+var options = new CsvReaderOptions
+{
+    BadDataHandler = context =>
+    {
+        errors.Add($"line {context.LineNumber}, column {context.ColumnName}: {context.Message}");
+        return CsvBadDataAction.Skip; // or Accept to read the value as is, or Throw
+    },
+};
+
+using var reader = CsvReader.CreateFromString("Name,Comment\nAlice,ok\nBob,\"quoted\" text\nCharlie,ok", options);
+var names = new List<string>();
+while (reader.Read())
+{
+    names.Add(reader.Current["Name"].ToString());
+}
+
+Assert.Equal(["Alice", "Charlie"], names);
+Assert.Equal(["line 3, column Comment: A quoted value is followed by characters that are not a separator."], errors);
+```
+<!-- endref -->
+
+| Action | Effect |
+|---|---|
+| [CsvBadDataAction.Throw](cref:Meziantou.Framework.Csv.CsvBadDataAction.Throw) | Throws the [CsvException](cref:Meziantou.Framework.Csv.CsvException) of strict mode, also available as [Exception](cref:Meziantou.Framework.Csv.CsvBadDataContext.Exception). |
+| [CsvBadDataAction.Accept](cref:Meziantou.Framework.Csv.CsvBadDataAction.Accept) | Reads the value as when [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) is `false`, and returns the record. |
+| [CsvBadDataAction.Skip](cref:Meziantou.Framework.Csv.CsvBadDataAction.Skip) | Does not return the record, and continues with the next one. |
+
+- The handler is called for the errors [Strict](cref:Meziantou.Framework.Csv.CsvReaderOptions.Strict) reports, whatever its value, and for a record with an unexpected number of
+  columns when [ValidateColumnCount](cref:Meziantou.Framework.Csv.CsvReaderOptions.ValidateColumnCount) is `true`. [Kind](cref:Meziantou.Framework.Csv.CsvBadDataContext.Kind) says which.
+- The errors are reported in the order of the data, before the record is returned. A record with several errors is
+  reported once per error, until the handler skips it.
+- A skipped record still counts in [RowIndex](cref:Meziantou.Framework.Csv.CsvReader.RowIndex). [LineNumber](cref:Meziantou.Framework.Csv.CsvReader.LineNumber) gives the line where the record starts. Skipping the header row makes the
+  next row the header row.
+- The handler must not call the reader. An exception it throws ends the reading.
+- A row longer than [MaxRowLength](cref:Meziantou.Framework.Csv.CsvReaderOptions.MaxRowLength) always throws, even when the handler has already been called for the quoting errors of that row.
+
+Without a handler, the reader reads the data as before: the handler costs nothing when it is not set.
 
 ## Spaces around values
 

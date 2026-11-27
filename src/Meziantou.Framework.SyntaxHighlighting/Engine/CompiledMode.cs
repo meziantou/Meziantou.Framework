@@ -16,6 +16,10 @@ internal sealed class CompiledMode
     public Regex? EndRe;
     public Regex? IllegalRe;
 
+    // Set when BeginRe or EndRe is `\B|\b`, which matches the empty string wherever the scan starts.
+    public bool BeginMatchesEverywhere;
+    public bool EndMatchesEverywhere;
+
     // Index of each regex in the per-run scan cache (see Tokenizer). Unique within one grammar.
     public int BeginSlot = -1;
     public int EndSlot = -1;
@@ -39,5 +43,6 @@ internal sealed class CompiledMode
     public bool EndSameAsBegin;
     public bool Skip;
     public string? BeginGuard;
+    public PrecedingCharacters? BeginPreceding;
     public string? EndScope;
 }

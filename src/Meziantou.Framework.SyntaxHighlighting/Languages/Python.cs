@@ -82,14 +82,20 @@ internal static class Python
 
         const string Prefix = "([uU]|[bB]|[rR]|[bB][rR]|[rR][bB])";
         const string FormattedPrefix = "([fF][rR]|[rR][fF]|[fF])";
+
+        // `Prefix?` then the quotes. The optional prefix gives the regex engine nothing to search for, so it would try the
+        // pattern at every position. The lookahead, which every match satisfies, limits it to the prefix letters and the
+        // quotes (twice as fast).
+        static string WithOptionalPrefix(string quotes) => "(?=[uUbBrR]{0,2}" + quotes + ")" + Prefix + "?" + quotes;
+
         var strings = new Mode
         {
             Scope = "string",
             Contains = [CommonModes.BackslashEscape],
             Variants =
             [
-                new Mode { Begin = Prefix + "?'''", End = "'''", Contains = [CommonModes.BackslashEscape, prompt] },
-                new Mode { Begin = Prefix + "?\"\"\"", End = "\"\"\"", Contains = [CommonModes.BackslashEscape, prompt] },
+                new Mode { Begin = WithOptionalPrefix("'''"), End = "'''", Contains = [CommonModes.BackslashEscape, prompt] },
+                new Mode { Begin = WithOptionalPrefix("\"\"\""), End = "\"\"\"", Contains = [CommonModes.BackslashEscape, prompt] },
                 new Mode { Begin = FormattedPrefix + "'''", End = "'''", Contains = [CommonModes.BackslashEscape, prompt, literalBracket, subst] },
                 new Mode { Begin = FormattedPrefix + "\"\"\"", End = "\"\"\"", Contains = [CommonModes.BackslashEscape, prompt, literalBracket, subst] },
                 new Mode { Begin = "([uU]|[rR])'", End = "'" },

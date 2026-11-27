@@ -73,6 +73,46 @@ public sealed class HttpBasicAuthenticationTests
         });
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsynchronousCredentialValidator_IsAwaited(bool valid)
+    {
+        var result = await AuthenticateWithoutServerAsync(
+            async (_, username, password) =>
+            {
+                await Task.Yield();
+                return valid ? CreatePrincipal(username) : null;
+            },
+            "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("custom:secret")));
+
+        Assert.Equal(valid, result.Succeeded);
+        Assert.Equal(valid ? "custom" : null, result.Principal?.Identity?.Name);
+        Assert.Equal(valid ? null : "Invalid username or password", result.Failure?.Message);
+    }
+
+    [Fact]
+    public async Task CredentialValidatorThrowingSynchronously_FaultsTheAuthentication()
+    {
+        var calls = 0;
+        await using var services = CreateServicesWithoutServer((_, _, _) =>
+        {
+            calls++;
+            throw new InvalidOperationException("validator failure");
+        });
+
+        await using var scope = services.CreateAsyncScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        context.Request.Headers.Authorization = "Basic " + Convert.ToBase64String(Encoding.UTF8.GetBytes("custom:secret"));
+
+        var first = await Assert.ThrowsAsync<InvalidOperationException>(() => context.AuthenticateAsync(HttpBasicAuthenticationDefaults.AuthenticationScheme));
+        var second = await Assert.ThrowsAsync<InvalidOperationException>(() => context.AuthenticateAsync(HttpBasicAuthenticationDefaults.AuthenticationScheme));
+
+        Assert.Equal("validator failure", first.Message);
+        Assert.Same(first, second);
+        Assert.Equal(1, calls);
+    }
+
     [Fact]
     public async Task InvalidPassword_ReturnsUnauthorizedAndChallengeHeader()
     {
@@ -701,15 +741,16 @@ public sealed class HttpBasicAuthenticationTests
     [Fact]
     public void DecodeCredentials_ClearsPooledBuffers_WhenDecodingSucceeds()
     {
-        var plaintext = new string('u', 300) + ":synthetic-pool-secret";
-        var encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(plaintext));
+        var username = new string('u', 300);
+        var encodedCredentials = Convert.ToBase64String(Encoding.UTF8.GetBytes(username + ":synthetic-pool-secret"));
         var bytePool = new RecordingArrayPool<byte>();
         var charPool = new RecordingArrayPool<char>();
 
-        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var credentials);
+        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var decodedUsername, out var decodedPassword);
 
         Assert.Equal(HttpBasicAuthenticationHandler.CredentialsDecodeResult.Success, result);
-        Assert.Equal(plaintext, credentials);
+        Assert.Equal(username, decodedUsername);
+        Assert.Equal("synthetic-pool-secret", decodedPassword);
         bytePool.AssertAllArraysReturnedCleared();
         charPool.AssertAllArraysReturnedCleared();
     }
@@ -721,10 +762,11 @@ public sealed class HttpBasicAuthenticationTests
         var bytePool = new RecordingArrayPool<byte>();
         var charPool = new RecordingArrayPool<char>();
 
-        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var credentials);
+        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var username, out var password);
 
         Assert.Equal(HttpBasicAuthenticationHandler.CredentialsDecodeResult.InvalidBase64, result);
-        Assert.Equal("", credentials);
+        Assert.Equal("", username);
+        Assert.Equal("", password);
         bytePool.AssertAllArraysReturnedCleared();
         Assert.Empty(charPool.Rented);
     }
@@ -737,12 +779,116 @@ public sealed class HttpBasicAuthenticationTests
         var bytePool = new RecordingArrayPool<byte>();
         var charPool = new RecordingArrayPool<char>();
 
-        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var credentials);
+        var result = HttpBasicAuthenticationHandler.DecodeCredentials(encodedCredentials, bytePool, charPool, out var username, out var password);
 
         Assert.Equal(HttpBasicAuthenticationHandler.CredentialsDecodeResult.InvalidEncoding, result);
-        Assert.Equal("", credentials);
+        Assert.Equal("", username);
+        Assert.Equal("", password);
         bytePool.AssertAllArraysReturnedCleared();
         charPool.AssertAllArraysReturnedCleared();
+    }
+
+    [Theory]
+    [InlineData("Basic dXNlcjpwYXNz")]
+    [InlineData("basic dXNlcjpwYXNz")]
+    [InlineData("BASIC dXNlcjpwYXNz")]
+    [InlineData("Basic   dXNlcjpwYXNz")]
+    [InlineData("Basic\tdXNlcjpwYXNz")]
+    [InlineData("Basic \t dXNlcjpwYXNz")]
+    [InlineData("Basic dXNlcjpwYXNz==")]
+    [InlineData("Basic ====")]
+    [InlineData("Basic +/+/")]
+    [InlineData("Basic a")]
+    [InlineData("Basic")]
+    [InlineData("Basic ")]
+    [InlineData("Basic \t")]
+    [InlineData("Basic dXNlcjpwYXNz ")]
+    [InlineData("Basic dXNlcjpwYXNz\t")]
+    [InlineData(" Basic dXNlcjpwYXNz")]
+    [InlineData("\tBasic dXNlcjpwYXNz")]
+    [InlineData(",Basic dXNlcjpwYXNz")]
+    [InlineData("Basic dXNlcjpwYXNz, Bearer token")]
+    [InlineData("Basic dXNlcjpwYXNz,")]
+    [InlineData("Basic dXNl cjpwYXNz")]
+    [InlineData("Basic \"dXNlcjpwYXNz\"")]
+    [InlineData("Basic \"dXNlcjpw")]
+    [InlineData("Basic a=b, c=d")]
+    [InlineData("Basic\r\n dXNlcjpwYXNz")]
+    [InlineData("Basic\r\ndXNlcjpwYXNz")]
+    [InlineData("Basic\u00A0dXNlcjpwYXNz")]
+    [InlineData("Basic dXNlcjpwYXNz\u00E9")]
+    [InlineData("Basic dXNl-cjpw_YXNz")]
+    [InlineData("BasicdXNlcjpwYXNz")]
+    [InlineData("Basic!dXNlcjpwYXNz")]
+    [InlineData("Basic, dXNlcjpwYXNz")]
+    [InlineData("Bas\u0131c dXNlcjpwYXNz")]
+    [InlineData("BAS\u0130C dXNlcjpwYXNz")]
+    [InlineData("Basi dXNlcjpwYXNz")]
+    [InlineData("Basics dXNlcjpwYXNz")]
+    [InlineData("Bas")]
+    [InlineData("Bearer dXNlcjpwYXNz")]
+    [InlineData("Negotiate dXNlcjpwYXNz")]
+    [InlineData("not-a-valid-header-value")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("1Basic dXNlcjpwYXNz")]
+    [InlineData("!Basic dXNlcjpwYXNz")]
+    public void ParseAuthorizationHeader_MatchesAuthenticationHeaderValue(string authorizationHeader)
+    {
+        AssertParseAuthorizationHeaderMatchesAuthenticationHeaderValue(new StringValues(authorizationHeader));
+    }
+
+    [Theory]
+    [InlineData("Basic dXNlcjpwYXNz", "Basic YWJj")]
+    [InlineData("Basic dXNlcjpwYXNz", "")]
+    [InlineData("Bearer token", "Basic YWJj")]
+    [InlineData("", "Basic YWJj")]
+    public void ParseAuthorizationHeader_MatchesAuthenticationHeaderValue_MultipleValues(string first, string second)
+    {
+        AssertParseAuthorizationHeaderMatchesAuthenticationHeaderValue(new StringValues([first, second]));
+        AssertParseAuthorizationHeaderMatchesAuthenticationHeaderValue(new StringValues([first]));
+        AssertParseAuthorizationHeaderMatchesAuthenticationHeaderValue(StringValues.Empty);
+    }
+
+    // The behavior before the fast path: every header was parsed with AuthenticationHeaderValue.
+    private static void AssertParseAuthorizationHeaderMatchesAuthenticationHeaderValue(StringValues authorizationHeaderValues)
+    {
+        var expectedResult = HttpBasicAuthenticationHandler.AuthorizationHeaderParseResult.NotBasic;
+        var expectedCredentials = "";
+        if (AuthenticationHeaderValue.TryParse(authorizationHeaderValues, out var headerValue) && string.Equals(headerValue.Scheme, HttpBasicAuthenticationDefaults.AuthenticationScheme, StringComparison.OrdinalIgnoreCase))
+        {
+            if (string.IsNullOrWhiteSpace(headerValue.Parameter))
+            {
+                expectedResult = HttpBasicAuthenticationHandler.AuthorizationHeaderParseResult.MissingCredentials;
+            }
+            else
+            {
+                expectedResult = HttpBasicAuthenticationHandler.AuthorizationHeaderParseResult.Basic;
+                expectedCredentials = headerValue.Parameter;
+            }
+        }
+
+        var result = HttpBasicAuthenticationHandler.ParseAuthorizationHeader(authorizationHeaderValues, out var encodedCredentials);
+
+        Assert.Equal(expectedResult, result);
+        Assert.Equal(expectedCredentials, encodedCredentials.ToString());
+    }
+
+    private static ServiceProvider CreateServicesWithoutServer(HttpBasicCredentialValidator validator)
+    {
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddAuthentication().AddHttpBasic(options => options.ValidateCredentials = validator);
+        return services.BuildServiceProvider();
+    }
+
+    private static async Task<AuthenticateResult> AuthenticateWithoutServerAsync(HttpBasicCredentialValidator validator, string authorizationHeader)
+    {
+        await using var services = CreateServicesWithoutServer(validator);
+        await using var scope = services.CreateAsyncScope();
+        var context = new DefaultHttpContext { RequestServices = scope.ServiceProvider };
+        context.Request.Headers.Authorization = authorizationHeader;
+        return await context.AuthenticateAsync(HttpBasicAuthenticationDefaults.AuthenticationScheme);
     }
 
     private static IdentityUser CreateIdentityUser(string id, string username, string password)

@@ -1,0 +1,30 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.SyntaxHighlighting/Meziantou.Framework.SyntaxHighlighting.csproj" />
+  </ItemGroup>
+
+  <!-- Real files of the repository, so the inputs look like the code people highlight. -->
+  <ItemGroup>
+    <EmbeddedResource Include="../../src/Meziantou.Framework.SyntaxHighlighting/Engine/Tokenizer.cs" LogicalName="csharp" />
+    <EmbeddedResource Include="../../src/Meziantou.Framework.WebPlatform/Scripting/WebIdl/CacheStorage.js" LogicalName="javascript" />
+    <EmbeddedResource Include="../../src/Meziantou.AspNetCore.Components.LogViewer/LogViewer.razor.css" LogicalName="css" />
+    <EmbeddedResource Include="../../src/Meziantou.AspNetCore.Components.LogViewer/LogViewer.razor" LogicalName="razor" />
+    <EmbeddedResource Include="../../tests/Meziantou.Framework.Imaging.Fixtures/manifest.schema.json" LogicalName="json" />
+    <EmbeddedResource Include="../../eng/PackageProjectUrls.props" LogicalName="xml" />
+    <EmbeddedResource Include="../../tools/Meziantou.Framework.Imaging.CorpusGenerator/truetype_hinting.py" LogicalName="python" />
+    <EmbeddedResource Include="../../.github/workflows/fuzz-sharpfuzz.yml" LogicalName="yaml" />
+    <EmbeddedResource Include="../../README.md" LogicalName="markdown" />
+    <EmbeddedResource Include="../../eng/run-fuzz-tests.ps1" LogicalName="powershell" />
+  </ItemGroup>
+
+</Project>

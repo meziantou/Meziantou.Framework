@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging;
 
 namespace Meziantou.Framework.WebPlatform.Imaging;
@@ -36,13 +39,34 @@ internal static class PixelConversions
     /// <summary>Converts 16-bit pixels to 8-bit RGBA bytes.</summary>
     public static void ToBytes(ReadOnlySpan<Rgba64> pixels, Span<byte> destination)
     {
-        for (var i = 0; i < pixels.Length; i++)
+        // The components are in the order of the bytes (R, G, B, A): each one becomes a byte
+        var components = unsafe(MemoryMarshal.Cast<Rgba64, ushort>(pixels));
+        destination = destination[..components.Length];
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
         {
-            var pixel = pixels[i];
-            destination[(i * 4) + 0] = ToByte(pixel.R);
-            destination[(i * 4) + 1] = ToByte(pixel.G);
-            destination[(i * 4) + 2] = ToByte(pixel.B);
-            destination[(i * 4) + 3] = ToByte(pixel.A);
+            // ToByte(v) is (v + 129) / 257 (the fractions that the integer division of ToByte drops do not reach the next
+            // integer), and that is ((v + 129) * 65281) >> 24 for every 16-bit value, without overflowing 32 bits
+            for (; i <= components.Length - (Vector128<ushort>.Count * 2); i += Vector128<ushort>.Count * 2)
+            {
+                var low = Vector128.Create(components.Slice(i, Vector128<ushort>.Count));
+                var high = Vector128.Create(components.Slice(i + Vector128<ushort>.Count, Vector128<ushort>.Count));
+                Vector128.Narrow(Convert(low), Convert(high)).CopyTo(destination[i..]);
+            }
+        }
+
+        for (; i < components.Length; i++)
+        {
+            destination[i] = ToByte(components[i]);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<ushort> Convert(Vector128<ushort> values)
+        {
+            var (lower, upper) = Vector128.Widen(values);
+            return Vector128.Narrow(
+                Vector128.ShiftRightLogical((lower + Vector128.Create(129u)) * Vector128.Create(65281u), 24),
+                Vector128.ShiftRightLogical((upper + Vector128.Create(129u)) * Vector128.Create(65281u), 24));
         }
     }
 

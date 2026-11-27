@@ -516,10 +516,16 @@ internal sealed partial class PublicApiMetadataReader
         if (parameterTypes.IsEmpty)
             return [];
 
-        var parametersBySequence = new Dictionary<int, ParameterHandle>();
+        // The parameter rows indexed by sequence number (0 is the return value). The first row of a sequence number wins.
+        var parametersBySequence = parameterTypes.Length < 16 ? stackalloc ParameterHandle[16] : new ParameterHandle[parameterTypes.Length + 1];
+        parametersBySequence.Clear();
         foreach (var parameterHandle in method.GetParameters())
         {
-            parametersBySequence.TryAdd(_metadataReader.GetParameter(parameterHandle).SequenceNumber, parameterHandle);
+            var sequenceNumber = _metadataReader.GetParameter(parameterHandle).SequenceNumber;
+            if (sequenceNumber > 0 && sequenceNumber <= parameterTypes.Length && parametersBySequence[sequenceNumber].IsNil)
+            {
+                parametersBySequence[sequenceNumber] = parameterHandle;
+            }
         }
 
         var result = ImmutableArray.CreateBuilder<PublicApiParameter>(parameterTypes.Length);
@@ -530,7 +536,8 @@ internal sealed partial class PublicApiMetadataReader
             var parameterAttributes = default(ParameterAttributes);
             var hasDefaultValue = false;
             object? defaultValue = null;
-            if (parametersBySequence.TryGetValue(i + 1, out var parameterHandle))
+            var parameterHandle = parametersBySequence[i + 1];
+            if (!parameterHandle.IsNil)
             {
                 var parameter = _metadataReader.GetParameter(parameterHandle);
                 name = parameter.Name.IsNil ? null : _metadataReader.GetString(parameter.Name);

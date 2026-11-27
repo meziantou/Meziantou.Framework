@@ -251,7 +251,9 @@ internal static class RenderFuzzTargets
             {
                 FuzzAssert.Equal(1, backdrop.Count, "The number of backdrops");
                 var rectangle = backdrop[0];
-                var expected = ((quietZone + backdropArea.Column) * moduleWidth, (quietZone + backdropArea.Row) * moduleWidth, backdropArea.ColumnCount * moduleWidth, backdropArea.RowCount * moduleWidth);
+                // Placed as the modules are: after the quiet zone, then the modules before it (fuzz regression: the
+                // product of their sum can differ by a rounding error)
+                var expected = ((quietZone * moduleWidth) + (backdropArea.Column * moduleWidth), (quietZone * moduleWidth) + (backdropArea.Row * moduleWidth), backdropArea.ColumnCount * moduleWidth, backdropArea.RowCount * moduleWidth);
                 FuzzAssert.Equal(expected, (rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height), "The backdrop is on the module boundaries of the cleared area");
                 FuzzAssert.True(rectangle.CornerRadius >= 0 && rectangle.CornerRadius <= Math.Min(rectangle.Width, rectangle.Height) / 2, $"The corner radius of the backdrop is {rectangle.CornerRadius}");
             }

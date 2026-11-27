@@ -13,6 +13,8 @@ internal sealed class CssStep(string selector) : LocatorStep
 
     public override List<Element> Apply(LocatorEvaluator evaluator, SearchScope initialScope, SearchScope scope, List<Element> elements)
     {
+        // The candidates are in document order, through the shadow roots
+        var candidates = LocatorEvaluator.GetCandidates(scope);
         var matches = new HashSet<Element>();
         foreach (var node in scope.Nodes)
         {
@@ -32,27 +34,25 @@ internal sealed class CssStep(string selector) : LocatorStep
             }
 
             // The selector is matched in each shadow root, whose :scope is the shadow root
-            var descendants = new List<Element>();
-            if (node is Element scopeElement)
+            if (node is Element { ShadowRoot: { } shadowRoot })
             {
-                descendants.Add(scopeElement);
+                AddMatches(shadowRoot, matches);
             }
+        }
 
-            ComposedTree.AddDescendants(node, descendants);
-            foreach (var descendant in descendants)
+        // The candidates are the descendants of the nodes of the scope, so they hold the other shadow roots to search
+        foreach (var candidate in candidates)
+        {
+            if (candidate.ShadowRoot is { } shadowRoot)
             {
-                if (descendant.ShadowRoot is { } shadowRoot)
-                {
-                    AddMatches(shadowRoot, matches);
-                }
+                AddMatches(shadowRoot, matches);
             }
         }
 
         if (matches.Count == 0)
             return [];
 
-        // The candidates are in document order, through the shadow roots
-        return [.. LocatorEvaluator.GetCandidates(scope).Where(matches.Contains)];
+        return [.. candidates.Where(matches.Contains)];
     }
 
     private void AddMatches(Node node, HashSet<Element> matches)

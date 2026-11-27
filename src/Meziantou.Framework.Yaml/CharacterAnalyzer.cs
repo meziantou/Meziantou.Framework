@@ -1,9 +1,37 @@
+using System.Buffers;
 using System.Diagnostics;
 
 namespace Meziantou.Framework.Yaml;
 
 internal static class CharacterAnalyzer
 {
+    // The printable ASCII characters other than space, which the scanner can consume in bulk without checking each
+    // character for surrogates, tabs, or non-printable characters. Each set leaves out the characters that may end
+    // the scalar or need an escape, so a run stops before them and the regular code handles them.
+    private const string PrintableNonSpaceAsciiCharacters = "!\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~";
+
+    internal static readonly SearchValues<char> BlockPlainScalarRunCharacters = SearchValues.Create(RemoveCharacters(PrintableNonSpaceAsciiCharacters, ":"));
+
+    internal static readonly SearchValues<char> FlowPlainScalarRunCharacters = SearchValues.Create(RemoveCharacters(PrintableNonSpaceAsciiCharacters, ":,[]{}"));
+
+    internal static readonly SearchValues<char> SingleQuotedScalarRunCharacters = SearchValues.Create(RemoveCharacters(PrintableNonSpaceAsciiCharacters, "'"));
+
+    internal static readonly SearchValues<char> DoubleQuotedScalarRunCharacters = SearchValues.Create(RemoveCharacters(PrintableNonSpaceAsciiCharacters, "\"\\"));
+
+    private static string RemoveCharacters(string value, string characters)
+    {
+        var result = new StringBuilder(value.Length);
+        foreach (var c in value)
+        {
+            if (!characters.Contains(c, StringComparison.Ordinal))
+            {
+                result.Append(c);
+            }
+        }
+
+        return result.ToString();
+    }
+
     /// <summary>
     /// Check if the character at the specified position can appear in an anchor name.
     /// </summary>

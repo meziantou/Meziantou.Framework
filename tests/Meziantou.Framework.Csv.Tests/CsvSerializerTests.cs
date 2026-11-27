@@ -1,6 +1,7 @@
 using System.Buffers;
 using System.Numerics;
 using System.Text;
+using Meziantou.Framework.Csv.Internals;
 using Meziantou.Framework.Csv.Serialization;
 using Meziantou.Framework.Csv.Serialization.Metadata;
 
@@ -27,6 +28,25 @@ public class CsvSerializerTests
         var result = CsvSerializer.Deserialize<Person>(csv);
         Assert.Equal("Bob, Jr.", result[1].Name);
         Assert.Null(result[1].BirthDate); // An empty value is null for a nullable type
+        #endregion
+    }
+
+    [Fact]
+    public void SerializeToUtf8Bytes()
+    {
+        #region CsvSerializer_SerializeToUtf8Bytes
+        var people = new List<Person>
+        {
+            new() { Name = "Alice", Age = 30 },
+            new() { Name = "Bob", Age = 25 },
+        };
+
+        // The values are written as UTF-8 bytes, without creating a string first
+        byte[] utf8Csv = CsvSerializer.SerializeToUtf8Bytes(people);
+        Assert.Equal("Name,Age,BirthDate\r\nAlice,30,\r\nBob,25,\r\n"u8.ToArray(), utf8Csv);
+
+        var result = CsvSerializer.Deserialize<Person>(utf8Csv);
+        Assert.Equal("Bob", result[1].Name);
         #endregion
     }
 
@@ -67,6 +87,43 @@ public class CsvSerializerTests
         Assert.Equal(expected, Describe(await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Person>(new StringReader(Csv)))));
 
         static string[] Describe(IEnumerable<Person> people) => [.. people.Select(p => $"{p.Name}|{p.Age.ToString(CultureInfo.InvariantCulture)}|{p.BirthDate?.ToString("O", CultureInfo.InvariantCulture)}")];
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(33)]
+    [InlineData(8_192)]
+    [InlineData(8_193)]
+    [InlineData(30_001)]
+    public async Task Deserialize_RecordCount(int count)
+    {
+        // The records are collected in segments, then copied to the list: the list has every record, in order, whatever the number of segments
+        var csv = string.Concat(Enumerable.Range(0, count).Select(i => i.ToString(CultureInfo.InvariantCulture) + "\n"));
+        var bytes = Encoding.UTF8.GetBytes(csv);
+        var options = new CsvSerializerOptions { HasHeaderRow = false };
+        var expected = Enumerable.Range(0, count).Select(i => (decimal)i).ToList();
+
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(csv, options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(bytes, options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(new StringReader(csv), options)));
+        Assert.Equal(expected, Values(CsvSerializer.Deserialize<DecimalModel>(new MemoryStream(bytes), options)));
+        Assert.Equal(expected, Values(await CsvSerializer.DeserializeAsync<DecimalModel>(new MemoryStream(bytes), options)));
+        Assert.Equal(expected, Values(await CsvSerializer.DeserializeAsync<DecimalModel>(new StringReader(csv), options)));
+
+        // A value type is collected in segments of its own size
+        var structs = CsvSerializer.Deserialize<StructModel>(csv, options);
+        Assert.HasCount(count, structs);
+        Assert.Equal(Enumerable.Range(0, count), structs.Select(item => item.X));
+
+        static List<decimal> Values(List<DecimalModel> models)
+        {
+            Assert.Equal(models.Count, models.Capacity);
+            return [.. models.Select(model => model.Value)];
+        }
     }
 
     [Fact]
@@ -122,6 +179,9 @@ public class CsvSerializerTests
         CsvSerializer.Serialize(buffer, people);
         Assert.Equal(Expected, Encoding.UTF8.GetString(buffer.WrittenSpan));
 
+        Assert.Equal(Expected, Encoding.UTF8.GetString(CsvSerializer.SerializeToUtf8Bytes(people)));
+        Assert.Empty(CsvSerializer.SerializeToUtf8Bytes(Array.Empty<Person>(), new CsvSerializerOptions { HasHeaderRow = false }));
+
         using var asyncWriter = new StringWriter();
         await CsvSerializer.SerializeAsync(asyncWriter, people);
         Assert.Equal(Expected, asyncWriter.ToString());
@@ -142,7 +202,7 @@ public class CsvSerializerTests
     [InlineData(100_000)]
     public void SerializeToString_LargeOutput(int count)
     {
-        // The text is kept in chunks of growing sizes: every size must give the same text as the other outputs
+        // The text and the bytes are kept in chunks of growing sizes: every size must give the same data as the other outputs
         var people = Enumerable.Range(0, count).Select(i => new Person { Name = "Person \"" + i.ToString(CultureInfo.InvariantCulture) + "\", " + new string('x', i % 50), Age = i }).ToArray();
         var options = new CsvSerializerOptions { BufferSize = 64 };
 
@@ -152,7 +212,33 @@ public class CsvSerializerTests
 
         Assert.Equal(expected, CsvSerializer.Serialize(people, options));
         Assert.Equal(expected, CsvSerializer.Serialize(people));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), CsvSerializer.SerializeToUtf8Bytes(people, options));
+        Assert.Equal(Encoding.UTF8.GetBytes(expected), CsvSerializer.SerializeToUtf8Bytes(people));
         Assert.HasCount(count, CsvSerializer.Deserialize<Person>(expected));
+    }
+
+    [Fact]
+    public void Utf8StringsOfAsciiAndOtherRecords()
+    {
+        // The strings of the records whose bytes are all ASCII are not validated, for the members and the constructor parameters: a character from
+        // U+0080 anywhere, in a record or in a record that shares a SIMD block with it, gives the strings of UTF-16 data
+        for (var length = 0; length < 140; length++)
+        {
+            var sb = new StringBuilder("Id,Name,Price\n");
+            for (var record = 0; record < 8; record++)
+            {
+                var name = new string('a', length) + (record % 4) switch { 1 => "é", 2 => "😀", 3 => "", _ => "b" };
+                sb.Append(record).Append(',').Append(record % 3 is 0 ? "\"" + name + "\"\"x\"" : name).Append(",1.5\n");
+            }
+
+            var text = sb.ToString();
+            var bytes = Encoding.UTF8.GetBytes(text);
+            Assert.Equal(CsvSerializer.Deserialize<Product>(text), CsvSerializer.Deserialize<Product>(bytes));
+
+            var expected = CsvSerializer.Deserialize<Person>(text.Replace("Id,", "Age,", StringComparison.Ordinal)).Select(person => person.Name);
+            var actual = CsvSerializer.Deserialize<Person>(Encoding.UTF8.GetBytes(text.Replace("Id,", "Age,", StringComparison.Ordinal))).Select(person => person.Name);
+            Assert.Equal(expected, actual);
+        }
     }
 
     [Fact]
@@ -281,6 +367,206 @@ public class CsvSerializerTests
         var options = new CsvSerializerOptions { HasHeaderRow = false, UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw };
         Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>("1,a,2,extra", options));
         Assert.Single(CsvSerializer.Deserialize<Product>("1,a,2", options));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler()
+    {
+        #region CsvSerializer_DeserializationErrorHandler
+        var errors = new List<string>();
+        var options = new CsvSerializerOptions
+        {
+            DeserializationErrorHandler = context =>
+            {
+                errors.Add($"line {context.LineNumber}: '{context.RawValue}' is not a valid {context.MemberName}");
+                return CsvDeserializationErrorAction.SkipRecord; // or Ignore to keep the default value, or Throw
+            },
+        };
+
+        var products = CsvSerializer.Deserialize<Product>("Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99\n3,Screen,199", options);
+
+        Assert.Equal(["Keyboard", "Screen"], products.Select(p => p.Name));
+        Assert.Equal(["line 3: 'x' is not a valid Id"], errors);
+        #endregion
+    }
+
+    [Fact]
+    public async Task DeserializationErrorHandler_AllInputs()
+    {
+        const string Csv = "Name,Age,BirthDate\nAlice,30,2000-01-02\nBob,x,\nCharlie,20,not a date\nDavid,40,\n";
+        var bytes = Encoding.UTF8.GetBytes(Csv);
+        foreach (var (action, expected) in new (CsvDeserializationErrorAction, string[])[]
+        {
+            (CsvDeserializationErrorAction.SkipRecord, ["Alice|30|2000-01-02", "David|40|"]),
+            (CsvDeserializationErrorAction.Ignore, ["Alice|30|2000-01-02", "Bob|0|", "Charlie|20|", "David|40|"]),
+        })
+        {
+            var errors = new List<string>();
+            var options = new CsvSerializerOptions
+            {
+                DeserializationErrorHandler = context =>
+                {
+                    errors.Add(string.Create(CultureInfo.InvariantCulture, $"{context.Kind} {context.RowIndex} {context.LineNumber} {context.ColumnIndex} {context.ColumnName} {context.MemberName} {context.RawValue} {context.Type.Name} {context.Exception.InnerException?.GetType().Name}"));
+                    return action;
+                },
+            };
+
+            string[] expectedErrors = ["ConversionFailed 1 3 1 Age Age x Person FormatException", "ConversionFailed 2 4 2 BirthDate BirthDate not a date Person FormatException"];
+            async Task Check(Func<Task<IEnumerable<Person>>> deserialize)
+            {
+                errors.Clear();
+                Assert.Equal(expected, Describe(await deserialize()));
+                Assert.Equal(expectedErrors, errors);
+            }
+
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(Csv, options)));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(bytes, options)));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(new StringReader(Csv), options)));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.Deserialize<Person>(new MemoryStream(bytes), options)));
+            await Check(async () => await CsvSerializer.DeserializeAsync<Person>(new MemoryStream(bytes), options));
+            await Check(async () => await CsvSerializer.DeserializeAsync<Person>(new StringReader(Csv), options));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.DeserializeEnumerable<Person>(new StringReader(Csv), options).ToList()));
+            await Check(() => Task.FromResult<IEnumerable<Person>>(CsvSerializer.DeserializeEnumerable<Person>(new MemoryStream(bytes), options).ToList()));
+            await Check(async () => await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Person>(new StringReader(Csv), options)));
+            await Check(async () => await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Person>(new MemoryStream(bytes), options)));
+        }
+
+        static string[] Describe(IEnumerable<Person> people) => [.. people.Select(p => $"{p.Name}|{p.Age.ToString(CultureInfo.InvariantCulture)}|{p.BirthDate?.ToString("O", CultureInfo.InvariantCulture)}")];
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_Throw()
+    {
+        const string Csv = "Id,Name,Price\n1,Keyboard,49.90\nx,Mouse,19.99";
+        var expected = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(Csv));
+        CsvDeserializationErrorContext? context = null;
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = c => { context = c; return CsvDeserializationErrorAction.Throw; } };
+        var exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(Csv, options));
+        Assert.Equal(expected.Message, exception.Message);
+        Assert.Same(context!.Exception, exception);
+        Assert.Equal(31, context.Position);
+        Assert.Equal(1, context.RowIndex);
+
+        Assert.Throws<InvalidOperationException>(() => CsvSerializer.Deserialize<Product>(Csv, new CsvSerializerOptions { DeserializationErrorHandler = _ => (CsvDeserializationErrorAction)42 }));
+        Assert.Throws<FormatException>(() => CsvSerializer.Deserialize<Product>(Csv, new CsvSerializerOptions { DeserializationErrorHandler = _ => throw new FormatException() }));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_ConstructorParameters()
+    {
+        // A parameter that cannot be converted gets its default value
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = _ => CsvDeserializationErrorAction.Ignore };
+        var model = Assert.Single(CsvSerializer.Deserialize<DefaultValuesModel>("A,B,C\n1,x,y", options));
+        Assert.Equal(1, model.A);
+        Assert.Equal(42, model.B);
+        Assert.Equal("y", model.C);
+
+        var products = CsvSerializer.Deserialize<Product>("Id,Name,Price\nx,a,1\n2,b,y", options);
+        Assert.Equal([new Product(0, "a", 1), new Product(2, "b", 0)], products);
+
+        options = new CsvSerializerOptions { DeserializationErrorHandler = _ => CsvDeserializationErrorAction.SkipRecord };
+        Assert.Empty(CsvSerializer.Deserialize<DefaultValuesModel>("A,B,C\n1,x,y", options));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_RequiredColumns()
+    {
+        var errors = new List<CsvDeserializationErrorContext>();
+        foreach (var action in (CsvDeserializationErrorAction[])[CsvDeserializationErrorAction.Ignore, CsvDeserializationErrorAction.SkipRecord])
+        {
+            // A column of the header row is not about a record: the records are returned, without the value of the column
+            errors.Clear();
+            var options = new CsvSerializerOptions { DeserializationErrorHandler = context => { errors.Add(context); return action; } };
+            var result = CsvSerializer.Deserialize<RequiredModel>("Optional,Value\nx,1\ny,2", options);
+            Assert.Equal([1, 2], result.Select(r => r.Value));
+            Assert.All(result, r => Assert.Equal(0, r.Attributed));
+            var error = Assert.Single(errors);
+            Assert.Equal(CsvDeserializationErrorKind.MissingColumn, error.Kind);
+            Assert.Equal("Attributed", error.MemberName);
+            Assert.Null(error.ColumnIndex);
+
+            // A record without a value for a required column
+            errors.Clear();
+            result = CsvSerializer.Deserialize<RequiredModel>("Optional,Value,Attributed\nx,1\ny,2,3", options);
+            Assert.Equal(action is CsvDeserializationErrorAction.Ignore ? ["x|1|0", "y|2|3"] : ["y|2|3"], result.Select(r => $"{r.Optional}|{r.Value}|{r.Attributed}"));
+            error = Assert.Single(errors);
+            Assert.Equal(CsvDeserializationErrorKind.MissingRequiredValue, error.Kind);
+            Assert.Equal("Attributed", error.MemberName);
+            Assert.Equal("Attributed", error.ColumnName);
+            Assert.Equal(2, error.ColumnIndex);
+            Assert.Equal(0, error.RowIndex);
+        }
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_MissingAndUnmappedColumns()
+    {
+        var errors = new List<CsvDeserializationErrorContext>();
+        var options = new CsvSerializerOptions
+        {
+            MissingColumnHandling = CsvMissingColumnHandling.Throw,
+            UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw,
+            DeserializationErrorHandler = context => { errors.Add(context); return CsvDeserializationErrorAction.SkipRecord; },
+        };
+
+        var people = CsvSerializer.Deserialize<Person>("Name,Country\nAlice,France\nBob,Spain", options);
+        Assert.Equal(["Alice", "Bob"], people.Select(p => p.Name));
+        Assert.Equal(["UnmappedColumn 1 Country ", "MissingColumn   Age", "MissingColumn   BirthDate"], errors.Select(e => $"{e.Kind} {e.ColumnIndex} {e.ColumnName} {e.MemberName}"));
+
+        // Without a header row, the columns after the last member are checked for each record
+        errors.Clear();
+        options = new CsvSerializerOptions { HasHeaderRow = false, UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw, DeserializationErrorHandler = context => { errors.Add(context); return context.RowIndex == 0 ? CsvDeserializationErrorAction.Ignore : CsvDeserializationErrorAction.SkipRecord; } };
+        var products = CsvSerializer.Deserialize<Product>("1,a,2,extra\n2,b,3,extra\n3,c,4", options);
+        Assert.Equal([1, 3], products.Select(p => p.Id));
+        Assert.Equal([0L, 1L], errors.Select(e => e.RowIndex!.Value));
+        Assert.All(errors, e => Assert.Equal(CsvDeserializationErrorKind.UnmappedColumn, e.Kind));
+        Assert.All(errors, e => Assert.Equal(3, e.ColumnIndex));
+
+        // Each extra column is reported: the handler can accept one and not the next
+        errors.Clear();
+        options = new CsvSerializerOptions { HasHeaderRow = false, UnmappedColumnHandling = CsvUnmappedColumnHandling.Throw, DeserializationErrorHandler = context => { errors.Add(context); return context.ColumnIndex == 3 ? CsvDeserializationErrorAction.Ignore : CsvDeserializationErrorAction.SkipRecord; } };
+        products = CsvSerializer.Deserialize<Product>("1,a,2,extra\n2,b,3,extra,extra\n3,c,4", options);
+        Assert.Equal([1, 3], products.Select(p => p.Id));
+        Assert.Equal(["0 3", "1 3", "1 4"], errors.Select(e => $"{e.RowIndex} {e.ColumnIndex}"));
+    }
+
+    [Fact]
+    public void DeserializationErrorHandler_SetterExceptionsAreNotReported()
+    {
+        var calls = 0;
+        var options = new CsvSerializerOptions { DeserializationErrorHandler = _ => { calls++; return CsvDeserializationErrorAction.Ignore; } };
+        var exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1", options));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        Assert.Equal(0L, exception.RowIndex);
+        Assert.Equal(0, calls);
+
+        // The same exception as without a handler
+        exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        exception = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<ValidatingSetterModel>("Value\n-1"u8.ToArray(), options));
+        Assert.IsType<ArgumentOutOfRangeException>(exception.InnerException);
+        Assert.Equal(0, calls);
+
+        // The conversion errors are still reported
+        var models = CsvSerializer.Deserialize<ValidatingSetterModel>("Value\nabc\n2", options);
+        Assert.Equal([0, 2], models.Select(m => m.Value));
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public void BadDataHandler_Serializer()
+    {
+        var errors = new List<CsvBadDataContext>();
+        var options = new CsvSerializerOptions { BadDataHandler = context => { errors.Add(context); return CsvBadDataAction.Skip; } };
+        var csv = "Id,Name,Price\n1,\"a\"b,2\n3,c,4";
+        Assert.Equal([new Product(3, "c", 4)], CsvSerializer.Deserialize<Product>(csv, options));
+        Assert.Equal([new Product(3, "c", 4)], CsvSerializer.Deserialize<Product>(Encoding.UTF8.GetBytes(csv), options));
+        Assert.HasCount(2, errors);
+        Assert.All(errors, e => Assert.Equal("Name", e.ColumnName));
+
+        // Accept is the same as non-strict mode
+        options = new CsvSerializerOptions { Strict = true, BadDataHandler = _ => CsvBadDataAction.Accept };
+        Assert.Equal(CsvSerializer.Deserialize<Product>(csv), CsvSerializer.Deserialize<Product>(csv, options));
     }
 
     [Fact]
@@ -491,6 +777,183 @@ public class CsvSerializerTests
         }
     }
 
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("0.0")]
+    [InlineData("-0.00")]
+    [InlineData("007")]
+    [InlineData("-007")]
+    [InlineData("1.5")]
+    [InlineData("-123.45")]
+    [InlineData("0.1")]
+    [InlineData("0.3")]
+    [InlineData("123456789")]
+    [InlineData("-123456789")]
+    [InlineData("999999999")]
+    [InlineData("1234567890")]
+    [InlineData("2147483647")]
+    [InlineData("-2147483648")]
+    [InlineData("2147483648")]
+    [InlineData("123456789012345678")]
+    [InlineData("-123456789012345678")]
+    [InlineData("999999999999999999")]
+    [InlineData("9223372036854775807")]
+    [InlineData("-9223372036854775808")]
+    [InlineData("9223372036854775808")]
+    [InlineData("999999999999999")]
+    [InlineData("9999999999999999")]
+    [InlineData("0.123456789012345")]
+    [InlineData("0.1234567890123456")]
+    [InlineData("12345678.9012345")]
+    [InlineData("9007199254740993")]
+    [InlineData("1.")]
+    [InlineData(".5")]
+    [InlineData("1..2")]
+    [InlineData("1.2.3")]
+    [InlineData("+1")]
+    [InlineData(" 1")]
+    [InlineData("1 ")]
+    [InlineData("1,000")]
+    [InlineData("1e3")]
+    [InlineData("NaN")]
+    [InlineData("-")]
+    [InlineData("--1")]
+    [InlineData("")]
+    public void PlainNumbers_MatchBcl(string value)
+    {
+        // The fast parsers accept a subset of what the BCL accepts, and give the same values, with the same sign for zero
+        var utf8 = Encoding.UTF8.GetBytes(value);
+        var invariant = CultureInfo.InvariantCulture;
+        AssertMatches<int>(value, utf8);
+        AssertMatches<long>(value, utf8);
+
+        // The doubles have their own converter: the fast parser of the integers rejects them, and the converter gives the value of the BCL
+        AssertMatches<double>(value, utf8);
+
+        // Other types and cultures go through the general parsers
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, short>(value, invariant, out _));
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, decimal>(value, invariant, out _));
+        Assert.False(Serialization.Converters.PlainNumberParser.TryParse<char, int>(value, (CultureInfo)invariant.Clone(), out _));
+
+        static void AssertMatches<T>(string value, byte[] utf8)
+            where T : ISpanParsable<T>, IUtf8SpanParsable<T>
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var parsed = Serialization.Converters.PlainNumberParser.TryParse<char, T>(value, invariant, out var result);
+            Assert.Equal(parsed, Serialization.Converters.PlainNumberParser.TryParse<byte, T>(utf8, invariant, out var utf8Result));
+            if (parsed)
+            {
+                var expected = T.Parse(value, invariant);
+                AssertSame(expected, result);
+                AssertSame(expected, utf8Result);
+            }
+
+            // The converters give the values and the errors of the BCL
+            var converter = CsvMetadataServices.GetConverter<T>(CsvSerializerOptions.Default);
+            var context = new CsvConverterContext(CsvSerializerOptions.Default);
+            if (T.TryParse(value, invariant, out var bcl))
+            {
+                AssertSame(bcl, converter.Read(value, context));
+                AssertSame(bcl, converter.Read(utf8, context));
+            }
+            else
+            {
+                Assert.ThrowsAny<Exception>(() => converter.Read(value, context));
+                Assert.ThrowsAny<Exception>(() => converter.Read(utf8, context));
+            }
+        }
+
+        static void AssertSame<T>(T expected, T actual)
+        {
+            // Compares the bits of the doubles, so that 0 and -0 are different
+            if (expected is double expectedDouble && actual is double actualDouble)
+            {
+                Assert.Equal(BitConverter.DoubleToInt64Bits(expectedDouble), BitConverter.DoubleToInt64Bits(actualDouble));
+            }
+            else
+            {
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(0x9E3779B97F4A7C15UL)]
+    public void PlainNumbers_MatchBcl_Random(ulong seed)
+    {
+        var values = CreateRandomNumbers(seed, 20_000);
+        var parsedCount = 0;
+        foreach (var value in values)
+        {
+            if (MatchesBcl(value))
+            {
+                parsedCount++;
+            }
+        }
+
+        // About a quarter of the values are integers of 18 digits or less, which take the fast path of long: the test checks it, not only the
+        // general parser. The other values are rejected and left to the general parser.
+        Assert.True(parsedCount > values.Count / 5, parsedCount.ToString(CultureInfo.InvariantCulture));
+
+        // Returns whether the fast parser of long accepts the value
+        static bool MatchesBcl(string value)
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var utf8 = Encoding.UTF8.GetBytes(value);
+            if (Serialization.Converters.PlainNumberParser.TryParse<char, int>(value, invariant, out var intResult))
+            {
+                Assert.Equal(int.Parse(value, invariant), intResult);
+                Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, int>(utf8, invariant, out var utf8IntResult));
+                Assert.Equal(intResult, utf8IntResult);
+            }
+
+            if (!Serialization.Converters.PlainNumberParser.TryParse<char, long>(value, invariant, out var longResult))
+                return false;
+
+            Assert.Equal(long.Parse(value, invariant), longResult);
+            Assert.True(Serialization.Converters.PlainNumberParser.TryParse<byte, long>(utf8, invariant, out var utf8LongResult));
+            Assert.Equal(longResult, utf8LongResult);
+            return true;
+        }
+    }
+
+    // Integers of 1 to 19 digits, decimals of up to 15 decimals, and doubles as the serializer writes them, with a deterministic xorshift generator
+    // (no warnings about Random). The seed is a parameter of the test, not a constant: the value content analysis of the security analyzers
+    // (CA3xxx, CA5xxx) computes the possible values of a variable, and from a constant seed, the values of each step of the generator in the loop
+    // grew until the compilation used more than 25 GB.
+    private static List<string> CreateRandomNumbers(ulong seed, int count)
+    {
+        var invariant = CultureInfo.InvariantCulture;
+        var state = seed;
+        var values = new List<string>();
+        for (var i = 0; i < count; i++)
+        {
+            var integer = Next(ref state) % (ulong)Math.Pow(10, Math.Min((int)(Next(ref state) % 19) + 1, 18));
+            var text = (Next(ref state) % 2 == 0 ? "-" : "") + integer.ToString(invariant);
+            values.Add(text);
+
+            var scale = (int)(Next(ref state) % 16);
+            if (scale > 0)
+            {
+                values.Add(text + "." + (Next(ref state) % (ulong)Math.Pow(10, scale)).ToString(invariant).PadLeft(scale, '0'));
+            }
+
+            values.Add(BitConverter.Int64BitsToDouble((long)(Next(ref state) >> 2) + 0x3000000000000000).ToString("R", invariant));
+            values.Add(Math.Round(BitConverter.UInt64BitsToDouble(0x3FF0000000000000 | (Next(ref state) >> 12)) * 1000, (int)(Next(ref state) % 6), MidpointRounding.ToEven).ToString(invariant));
+        }
+
+        return values;
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
     [Fact]
     public void Decimal_FormatMatchesBcl()
     {
@@ -533,6 +996,601 @@ public class CsvSerializerTests
         var models = values.Select(value => new DecimalModel { Value = value }).ToList();
         Assert.Equal(string.Concat(values.Select(value => value.ToString(CultureInfo.InvariantCulture) + "\r\n")), CsvSerializer.Serialize(models, new CsvSerializerOptions { HasHeaderRow = false }));
     }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("-0")]
+    [InlineData("+0")]
+    [InlineData("0.0")]
+    [InlineData("-0.000")]
+    [InlineData("1")]
+    [InlineData("-1")]
+    [InlineData("+1.5")]
+    [InlineData("1.50")]
+    [InlineData("-123.45")]
+    [InlineData("0.1")]
+    [InlineData("0.3")]
+    [InlineData("3.14159")]
+    [InlineData("1.")]
+    [InlineData(".5")]
+    [InlineData("-.5")]
+    [InlineData("1e3")]
+    [InlineData("1E3")]
+    [InlineData("1e+3")]
+    [InlineData("1.5e-3")]
+    [InlineData("1.e3")]
+    [InlineData(".5e1")]
+    [InlineData("1e0000")]
+    [InlineData("1e22")]
+    [InlineData("1e23")]
+    [InlineData("1e-22")]
+    [InlineData("1e-23")]
+    [InlineData("9007199254740992")]
+    [InlineData("9007199254740993")]
+    [InlineData("16777216")]
+    [InlineData("16777217")]
+    [InlineData("2048")]
+    [InlineData("2049")]
+    [InlineData("65504")]
+    [InlineData("65520")]
+    [InlineData("100000")]
+    [InlineData("0.00001")]
+    [InlineData("1234567890123456789")]
+    [InlineData("12345678901234567890")]
+    [InlineData("0.0000000000000000001")]
+    [InlineData("12345.678901234567")]
+    [InlineData("1.7976931348623157E+308")]
+    [InlineData("4.9406564584124654E-324")]
+    [InlineData("0.30000000000000004")]
+    [InlineData("9007199254740995")]
+    [InlineData("18014398509481986")]
+    [InlineData("18014398509481990")]
+    [InlineData("9007199254740993e5")]
+    [InlineData("9223372036854775807")]
+    [InlineData("18446744073709551615")]
+    [InlineData("1.0000000000000002")]
+    [InlineData("0.9999999999999999")]
+    [InlineData("2.2250738585072014E-308")]
+    [InlineData("1.2345678901234567E-48")]
+    [InlineData("1.2345678901234567E-49")]
+    [InlineData("1.2345678901234567E+80")]
+    [InlineData("1.2345678901234567E+81")]
+    [InlineData("123456789012345678e64")]
+    [InlineData("0e100")]
+    [InlineData("-0e-100")]
+    [InlineData("1e400")]
+    [InlineData("NaN")]
+    [InlineData("-Infinity")]
+    [InlineData("1,000")]
+    [InlineData(" 1")]
+    [InlineData("1 ")]
+    [InlineData("1e")]
+    [InlineData("1e+")]
+    [InlineData("e3")]
+    [InlineData(".")]
+    [InlineData("-")]
+    [InlineData("--1")]
+    [InlineData("1.2.3")]
+    [InlineData("0x10")]
+    [InlineData("")]
+    public void FloatingPoint_MatchesBcl(string value)
+    {
+        // The fast parser accepts a subset of what the BCL accepts, and gives the same values, with the same sign, for double, float and Half
+        AssertMatchesBcl<double>(value);
+        AssertMatchesBcl<float>(value);
+        AssertMatchesBcl<Half>(value);
+
+        if (double.TryParse(value, CultureInfo.InvariantCulture, out _))
+        {
+            var text = value + ";" + value + ";" + value;
+            var options = new CsvSerializerOptions { HasHeaderRow = false, Separator = ';' };
+            foreach (var model in new[] { CsvSerializer.Deserialize<FloatingPointModel>(text, options)[0], CsvSerializer.Deserialize<FloatingPointModel>(Encoding.UTF8.GetBytes(text), options)[0] })
+            {
+                Assert.Equal(Format(double.Parse(value, CultureInfo.InvariantCulture)), Format(model.Double));
+                Assert.Equal(Format(float.Parse(value, CultureInfo.InvariantCulture)), Format(model.Single));
+                Assert.Equal(Format(Half.Parse(value, CultureInfo.InvariantCulture)), Format(model.Half));
+            }
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_Half_MatchesBclForEveryFastValue()
+    {
+        // Every mantissa and exponent the fast path of Half can accept
+        var accepted = 0;
+        for (var mantissa = 0; mantissa <= 2100; mantissa++)
+        {
+            for (var exponent = -5; exponent <= 5; exponent++)
+            {
+                var text = mantissa.ToString(CultureInfo.InvariantCulture) + "e" + exponent.ToString(CultureInfo.InvariantCulture);
+                accepted += AssertMatchesBcl<Half>(text) ? 1 : 0;
+                AssertMatchesBcl<Half>("-" + text);
+            }
+        }
+
+        // The values that overflow, such as 100e4, are left to the BCL
+        Assert.True(accepted > 12_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData(0.1)]
+    [InlineData(0.2)]
+    [InlineData(0.29)]
+    [InlineData(0.3)]
+    [InlineData(0.30000000000000004)]
+    [InlineData(-12.3)]
+    [InlineData(1)]
+    [InlineData(100)]
+    [InlineData(1e8)]
+    [InlineData(1e-4)]
+    [InlineData(9.9e-5)]
+    [InlineData(0.0001234)]
+    [InlineData(999999999.9)]
+    [InlineData(1e9)]
+    [InlineData(123456789.123)]
+    [InlineData(123456789012345.6)]
+    [InlineData(1234.5678901234567)]
+    [InlineData(0.00010000000000000002)]
+    [InlineData(0.0001220703125)]
+    [InlineData(0.000244140625)]
+    [InlineData(1099511627776.0)]
+    [InlineData(999999999999999.875)]
+    [InlineData(1e15)]
+    [InlineData(4503599627370497.0)]
+    [InlineData(9007199254740993.0)]
+    [InlineData(1e16)]
+    [InlineData(12345678901234568.0)]
+    [InlineData(99999999999999984.0)]
+    [InlineData(1e17)]
+    [InlineData(1.2345678901234568e17)]
+    [InlineData(1e21)]
+    [InlineData(1e22)]
+    [InlineData(1e23)]
+    [InlineData(1.5e300)]
+    [InlineData(1e-5)]
+    [InlineData(9.9999e-5)]
+    [InlineData(0.000099999999999999991)]
+    [InlineData(1.2345e-7)]
+    [InlineData(1e-10)]
+    [InlineData(1e-48)]
+    [InlineData(1e80)]
+    [InlineData(1.2345678901234567e-48)]
+    [InlineData(1.2345678901234567e80)]
+    [InlineData(2.2250738585072014e-308)]
+    [InlineData(2.9802322387695312E-08)]
+    [InlineData(5e-324)]
+    [InlineData(double.MaxValue)]
+    [InlineData(double.NaN)]
+    [InlineData(double.PositiveInfinity)]
+    [InlineData(double.NegativeInfinity)]
+    [InlineData(0.0)]
+    public void FloatingPoint_FormatMatchesBcl(double value)
+    {
+        AssertFormatMatchesBcl(value);
+        AssertFormatMatchesBcl(-value);
+    }
+
+    [Fact]
+    public void FloatingPoint_FormatMatchesBclForRandomValues()
+    {
+        // Numbers with up to 12 decimals and up to 16 digits, and the doubles around them: the fast path writes those with few decimals, with the text
+        // of the BCL, and leaves the others to it
+        var state = 0x853C49E6748FEA9BUL;
+        var handled = 0;
+        for (var i = 0; i < 200_000; i++)
+        {
+            var decimals = (int)(Next(ref state) % 13);
+            var digits = Next(ref state) % (Next(ref state) % 2 == 0 ? 100_000UL : 10_000_000_000_000_000UL);
+            var value = (double)digits / Math.Pow(10, decimals) * (Next(ref state) % 2 == 0 ? 1 : -1);
+            handled += AssertFormatMatchesBcl(value) ? 1 : 0;
+            AssertFormatMatchesBcl(Math.BitIncrement(value));
+            AssertFormatMatchesBcl(Math.BitDecrement(value));
+            AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble((long)Next(ref state)));
+        }
+
+        Assert.True(handled > 50_000, "Too few values take the fast path: " + handled.ToString(CultureInfo.InvariantCulture));
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_FormatMatchesBclForShortestValues()
+    {
+        // The normal values from about 7e-49 to 5e80 are all handled, with or without an exponent: random values, and the powers of two and their
+        // neighbors, whose interval is narrower below them
+        var min = (long)InvariantFloatingPoint.MinShortestDoubleExponent << 52;
+        var max = ((long)InvariantFloatingPoint.MaxShortestDoubleExponent + 1) << 52;
+        var state = 0x9E3779B97F4A7C15UL;
+        for (var i = 0; i < 200_000; i++)
+        {
+            var value = BitConverter.Int64BitsToDouble(min + (long)(Next(ref state) % (ulong)(max - min)));
+            Assert.True(AssertFormatMatchesBcl(value), value.ToString("R", CultureInfo.InvariantCulture));
+            Assert.True(AssertFormatMatchesBcl(-value), value.ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        for (var exponent = InvariantFloatingPoint.MinShortestDoubleExponent; exponent <= InvariantFloatingPoint.MaxShortestDoubleExponent; exponent++)
+        {
+            var power = (long)exponent << 52;
+            for (var offset = -2; offset <= 2; offset++)
+            {
+                var value = BitConverter.Int64BitsToDouble(power + offset);
+                Assert.True(AssertFormatMatchesBcl(value) || offset < 0, value.ToString("R", CultureInfo.InvariantCulture));
+            }
+        }
+
+        // The limits, where k is the smallest and the largest of the table, and the values around 10^-4 and 10^17, where the BCL starts writing an
+        // exponent
+        Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min)));
+        Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(max - 1)));
+        Assert.False(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(min - 1)));
+        Assert.False(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(max)));
+        foreach (var limit in new[] { 1e-4, 1e17 })
+        {
+            var bits = BitConverter.DoubleToInt64Bits(limit);
+            for (var offset = -3; offset <= 3; offset++)
+            {
+                Assert.True(AssertFormatMatchesBcl(BitConverter.Int64BitsToDouble(bits + offset)));
+            }
+        }
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    [Theory]
+    [InlineData(0.1f)]
+    [InlineData(0.2f)]
+    [InlineData(0.3f)]
+    [InlineData(1f / 3)]
+    [InlineData(-12.3f)]
+    [InlineData(1f)]
+    [InlineData(100f)]
+    [InlineData(1e-4f)]
+    [InlineData(9.9e-5f)]
+    [InlineData(1e-5f)]
+    [InlineData(-2.5e-7f)]
+    [InlineData(1234567f)]
+    [InlineData(9999999f)]
+    [InlineData(16777216f)]
+    [InlineData(16777218f)]
+    [InlineData(1e8f)]
+    [InlineData(123456790f)]
+    [InlineData(999999940f)]
+    [InlineData(1e9f)]
+    [InlineData(1.5e9f)]
+    [InlineData(4294967296f)]
+    [InlineData(1e10f)]
+    [InlineData(1e20f)]
+    [InlineData(float.MaxValue)]
+    [InlineData(1.17549435e-38f)]
+    [InlineData(1.4e-45f)]
+    [InlineData(1e-40f)]
+    [InlineData(float.NaN)]
+    [InlineData(float.PositiveInfinity)]
+    [InlineData(float.NegativeInfinity)]
+    [InlineData(0f)]
+    public void FloatingPoint_SingleFormatMatchesBcl(float value)
+    {
+        AssertFormatMatchesBcl(value);
+        AssertFormatMatchesBcl(-value);
+    }
+
+    [Fact]
+    public void FloatingPoint_SingleFormatMatchesBclForNormalValues()
+    {
+        // Every normal float is handled (all of them were compared to the BCL once): one value every 4093 bit patterns, and the powers of two and
+        // their neighbors, from the subnormal values to the infinities
+        var handled = 0;
+        for (var bits = 0L; bits <= uint.MaxValue; bits += 4093)
+        {
+            var value = BitConverter.UInt32BitsToSingle((uint)bits);
+            var isHandled = AssertFormatMatchesBcl(value);
+            Assert.Equal(float.IsNormal(value) || value == 0, isHandled);
+            handled += isHandled ? 1 : 0;
+        }
+
+        Assert.True(handled > 1_000_000, "Too few values take the fast path: " + handled.ToString(CultureInfo.InvariantCulture));
+
+        for (var exponent = 0; exponent <= 255; exponent++)
+        {
+            var power = exponent << 23;
+            for (var offset = -2; offset <= 2; offset++)
+            {
+                var value = BitConverter.Int32BitsToSingle(power + offset);
+                Assert.Equal(float.IsNormal(value) || value == 0, AssertFormatMatchesBcl(value));
+            }
+        }
+    }
+
+    // The fast path writes the text of the BCL in UTF-16 and UTF-8, or reports a destination too small
+    private static bool AssertFormatMatchesBcl(double value)
+    {
+        // .NET 10 writes 2^-25 with 16 digits that do not parse back to it, 2.980232238769531E-08: the fast path writes the 17 digits of .NET 11
+        var expected = Math.Abs(value) == Math.ScaleB(1, -25) ? value.ToString("G17", CultureInfo.InvariantCulture) : value.ToString(CultureInfo.InvariantCulture);
+        var chars = new char[64];
+        if (!InvariantFloatingPoint.TryFormat(value, chars.AsSpan(), out var written, out var tooSmall))
+        {
+            Assert.False(InvariantFloatingPoint.TryFormat(value, new byte[64].AsSpan(), out _, out _));
+            return false;
+        }
+
+        Assert.False(tooSmall);
+        Assert.Equal(expected, new string(chars, 0, written));
+
+        var bytes = new byte[64];
+        Assert.True(InvariantFloatingPoint.TryFormat(value, bytes.AsSpan(), out var bytesWritten, out tooSmall));
+        Assert.False(tooSmall);
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+
+        Assert.True(InvariantFloatingPoint.TryFormat(value, new char[expected.Length - 1].AsSpan(), out written, out tooSmall));
+        Assert.True(tooSmall);
+        Assert.Equal(0, written);
+        return true;
+    }
+
+    // The fast path writes the text of the BCL in UTF-16 and UTF-8, or reports a destination too small
+    private static bool AssertFormatMatchesBcl(float value)
+    {
+        var expected = value.ToString(CultureInfo.InvariantCulture);
+        var chars = new char[64];
+        if (!InvariantFloatingPoint.TryFormat(value, chars.AsSpan(), out var written, out var tooSmall))
+        {
+            Assert.False(InvariantFloatingPoint.TryFormat(value, new byte[64].AsSpan(), out _, out _));
+            return false;
+        }
+
+        Assert.False(tooSmall);
+        Assert.Equal(expected, new string(chars, 0, written));
+
+        var bytes = new byte[64];
+        Assert.True(InvariantFloatingPoint.TryFormat(value, bytes.AsSpan(), out var bytesWritten, out tooSmall));
+        Assert.False(tooSmall);
+        Assert.Equal(expected, Encoding.UTF8.GetString(bytes, 0, bytesWritten));
+
+        Assert.True(InvariantFloatingPoint.TryFormat(value, new char[expected.Length - 1].AsSpan(), out written, out tooSmall));
+        Assert.True(tooSmall);
+        Assert.Equal(0, written);
+        return true;
+    }
+
+    [Fact]
+    public void FloatingPoint_PowersOfFive()
+    {
+        // The table of the algorithm of Eisel and Lemire, as fast_float computes it: the 128 most significant bits of 5^q, truncated for a positive q,
+        // and the reciprocal of 5^-q rounded up for a negative q
+        var powers = InvariantFloatingPoint.PowersOfFive;
+        Assert.HasCount(2 * (InvariantFloatingPoint.MaxPowerOfFive - InvariantFloatingPoint.MinPowerOfFive + 1), powers.ToArray());
+        var two128 = BigInteger.One << 128;
+        for (var q = InvariantFloatingPoint.MinPowerOfFive; q <= InvariantFloatingPoint.MaxPowerOfFive; q++)
+        {
+            BigInteger expected;
+            if (q < 0)
+            {
+                var power = BigInteger.Pow(5, -q);
+                var bits = (int)power.GetBitLength();
+                var shift = q >= -27 ? bits + 127 : (2 * bits) + 128;
+                expected = ((BigInteger.One << shift) / power) + 1;
+                while (expected >= two128)
+                {
+                    expected >>= 1;
+                }
+            }
+            else
+            {
+                expected = BigInteger.Pow(5, q);
+                while (expected < (BigInteger.One << 127))
+                {
+                    expected <<= 1;
+                }
+
+                while (expected >= two128)
+                {
+                    expected >>= 1;
+                }
+            }
+
+            var index = 2 * (q - InvariantFloatingPoint.MinPowerOfFive);
+            Assert.Equal(expected, ((BigInteger)powers[index] << 64) | powers[index + 1], "5^" + q.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_ShortestPowersOfTen()
+    {
+        // g of Schubfach: floor(10^e × 2^(125 - floor(log2(10^e)))) + 1, split in two halves of 63 bits
+        var powers = InvariantFloatingPoint.ShortestPowersOfTen;
+        Assert.HasCount(2 * (InvariantFloatingPoint.MaxPowerOfFive - InvariantFloatingPoint.MinPowerOfFive + 1), powers.ToArray());
+        var mask = (BigInteger.One << 63) - 1;
+        for (var e = InvariantFloatingPoint.MinPowerOfFive; e <= InvariantFloatingPoint.MaxPowerOfFive; e++)
+        {
+            // For a negative e, 10^e is 1 / 10^-e, and floor(log2(10^e)) is -bitLength(10^-e), as 10^-e is not a power of two
+            BigInteger g;
+            if (e >= 0)
+            {
+                var power = BigInteger.Pow(10, e);
+                g = ((power << 125) >> ((int)power.GetBitLength() - 1)) + 1;
+            }
+            else
+            {
+                var power = BigInteger.Pow(10, -e);
+                g = ((BigInteger.One << (125 + (int)power.GetBitLength())) / power) + 1;
+            }
+
+            var index = 2 * (e - InvariantFloatingPoint.MinPowerOfFive);
+            Assert.Equal(g >> 63, (BigInteger)powers[index], "g1 of 10^" + e.ToString(CultureInfo.InvariantCulture));
+            Assert.Equal(g & mask, (BigInteger)powers[index + 1], "g0 of 10^" + e.ToString(CultureInfo.InvariantCulture));
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_SerializeMatchesBcl()
+    {
+        // The serializer writes doubles and floats with the text of ToString with the invariant culture, in UTF-16 and UTF-8
+        double[] doubles = [0.1, 0.30000000000000004, -1.5e-7, 1e16, 1.2345678901234568e17, 1e300, 0, -0.0, double.NaN];
+        float[] singles = [0.1f, 1f / 3, -2.5e-7f, 1e8f, 1.5e9f, float.MaxValue, 0, -0f, float.PositiveInfinity];
+        var models = doubles.Select((value, index) => new FloatingPointModel { Double = value, Single = singles[index] }).ToArray();
+        var expected = new StringBuilder("Double,Single,Half\r\n");
+        foreach (var model in models)
+        {
+            expected.Append(model.Double.ToString(CultureInfo.InvariantCulture)).Append(',').Append(model.Single.ToString(CultureInfo.InvariantCulture)).Append(",0\r\n");
+        }
+
+        Assert.Equal(expected.ToString(), CsvSerializer.Serialize(models));
+        Assert.Equal(expected.ToString(), Encoding.UTF8.GetString(CsvSerializer.SerializeToUtf8Bytes(models)));
+    }
+
+    [Fact]
+    public void FloatingPoint_RoundTripValuesMatchBcl()
+    {
+        // The round-trip format of doubles has up to 17 digits, and the one of floats up to 9: those whose power of ten is in the table of Eisel-Lemire
+        // take the fast path, and those written with more digits and their neighbors give the same values as the BCL
+        var state = 0x2545F4914F6CDD1DUL;
+        var accepted = 0;
+        for (var i = 0; i < 50_000; i++)
+        {
+            var exponent = (int)(Next(ref state) % 130) - 50;
+            var number = (double)(Next(ref state) >> 11) / (1UL << 53) * Math.Pow(10, exponent);
+            var text = number.ToString("R", CultureInfo.InvariantCulture);
+            accepted += AssertMatchesBcl<double>(text) ? 1 : 0;
+            AssertMatchesBcl<double>("-" + text);
+            AssertMatchesBcl<double>(BitConverter.Int64BitsToDouble(BitConverter.DoubleToInt64Bits(number) + 1).ToString("R", CultureInfo.InvariantCulture));
+            AssertMatchesBcl<double>(number.ToString("E18", CultureInfo.InvariantCulture));
+        }
+
+        Assert.True(accepted > 45_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+
+        var acceptedSingles = 0;
+        for (var i = 0; i < 50_000; i++)
+        {
+            var exponent = (int)(Next(ref state) % 76) - 38;
+            var number = (float)((double)(Next(ref state) >> 11) / (1UL << 53) * Math.Pow(10, exponent));
+            var text = number.ToString("R", CultureInfo.InvariantCulture);
+            acceptedSingles += AssertMatchesBcl<float>(text) ? 1 : 0;
+            AssertMatchesBcl<float>("-" + text);
+            AssertMatchesBcl<float>(BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits(number) + 1).ToString("R", CultureInfo.InvariantCulture));
+            AssertMatchesBcl<float>(number.ToString("E12", CultureInfo.InvariantCulture));
+        }
+
+        Assert.True(acceptedSingles > 45_000, "Too few floats take the fast path: " + acceptedSingles.ToString(CultureInfo.InvariantCulture));
+
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_MatchesBclForRandomValues()
+    {
+        var state = 0x9E3779B97F4A7C15UL;
+        var accepted = 0;
+        for (var i = 0; i < 20_000; i++)
+        {
+            // Mantissas around the limits of the fast paths, written with a dot at any position or with an exponent
+            var mantissa = (Next(ref state) % 4) switch
+            {
+                0 => Next(ref state) % (1UL << 54),
+                1 => Next(ref state) % (1UL << 25),
+                2 => Next(ref state) % 100_000,
+                _ => Next(ref state) % 10_000_000_000_000_000_000UL,
+            };
+
+            var digits = mantissa.ToString(CultureInfo.InvariantCulture);
+            var dot = (int)(Next(ref state) % (ulong)(digits.Length + 1));
+            var withDot = digits[..dot] + "." + digits[dot..];
+            var exponent = (int)(Next(ref state) % 61) - 30;
+            foreach (var text in new[] { withDot, digits + "e" + exponent.ToString(CultureInfo.InvariantCulture), "-" + withDot + "E" + exponent.ToString(CultureInfo.InvariantCulture) })
+            {
+                accepted += AssertMatchesBcl<double>(text) ? 1 : 0;
+                AssertMatchesBcl<float>(text);
+            }
+
+            // The texts the BCL writes: shortest round-trip, and rounded to a few decimals
+            var number = BitConverter.Int64BitsToDouble((long)Next(ref state));
+            AssertMatchesBcl<double>(number.ToString("R", CultureInfo.InvariantCulture));
+            var small = (double)(Next(ref state) % 100_000_000) / 997;
+            accepted += AssertMatchesBcl<double>(small.ToString("R", CultureInfo.InvariantCulture)) ? 1 : 0;
+            accepted += AssertMatchesBcl<double>(small.ToString("F" + ((int)(Next(ref state) % 7)).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture)) ? 1 : 0;
+            AssertMatchesBcl<float>(((float)small).ToString("R", CultureInfo.InvariantCulture));
+        }
+
+        Assert.True(accepted > 20_000, "Too few values take the fast path: " + accepted.ToString(CultureInfo.InvariantCulture));
+
+        // xorshift: deterministic values, without the warnings about Random
+        static ulong Next(ref ulong state)
+        {
+            state ^= state << 13;
+            state ^= state >> 7;
+            state ^= state << 17;
+            return state;
+        }
+    }
+
+    [Fact]
+    public void FloatingPoint_ReadersUseFastPath()
+    {
+        // The fields parse with the fast path with the invariant culture, and with the BCL with another culture
+        using (var reader = CsvReader.CreateFromString("-123.45;1e3;0.1", new CsvReaderOptions { HasHeaderRow = false, Separator = ';' }))
+        {
+            Assert.True(reader.Read());
+            Assert.Equal(-123.45, reader.Current[0].Parse<double>());
+            Assert.Equal(1000f, reader.Current[1].Parse<float>());
+            Assert.True(reader.Current[2].TryParse<Half>(out var half));
+            Assert.Equal((Half)0.1, half);
+        }
+
+        using (var reader = Utf8CsvReader.Create("-123.45;1e3;0.1"u8.ToArray(), new CsvReaderOptions { HasHeaderRow = false, Separator = ';' }))
+        {
+            Assert.True(reader.Read());
+            Assert.Equal(-123.45, reader.Current[0].Parse<double>());
+            Assert.Equal(1000f, reader.Current[1].Parse<float>());
+            Assert.True(reader.Current[2].TryParse<Half>(out var half));
+            Assert.Equal((Half)0.1, half);
+        }
+
+        var french = new NumberFormatInfo { NumberDecimalSeparator = "," };
+        using (var reader = CsvReader.CreateFromString("-123,45", new CsvReaderOptions { HasHeaderRow = false, Separator = ';', FormatProvider = french }))
+        {
+            Assert.True(reader.Read());
+            Assert.Equal(-123.45, reader.Current[0].Parse<double>());
+        }
+
+        Assert.Equal(-123.45, CsvSerializer.Deserialize<FloatingPointModel>("-123,45;0;0", new CsvSerializerOptions { HasHeaderRow = false, Separator = ';', FormatProvider = french })[0].Double);
+    }
+
+    private static bool AssertMatchesBcl<T>(string value)
+        where T : IBinaryFloatingPointIeee754<T>, IUtf8SpanParsable<T>
+    {
+        var parsed = InvariantFloatingPoint.TryParse(value.AsSpan(), out T result);
+        Assert.Equal(parsed, InvariantFloatingPoint.TryParse((ReadOnlySpan<byte>)Encoding.UTF8.GetBytes(value), out T utf8Result));
+        if (parsed)
+        {
+            Assert.True(T.TryParse(value, CultureInfo.InvariantCulture, out var expected), "The BCL rejects a value the fast parser accepts: " + value);
+            Assert.Equal(Format(expected), Format(result));
+            Assert.Equal(Format(expected), Format(utf8Result));
+        }
+
+        return parsed;
+    }
+
+    // The round-trip format distinguishes every value, including the negative zero
+    private static string Format<T>(T value)
+        where T : IFormattable
+        => value.ToString("R", CultureInfo.InvariantCulture);
 
     [Fact]
     public void Metadata_ParameterWithoutMember()
@@ -717,12 +1775,262 @@ public class CsvSerializerTests
     [Fact]
     public void OptionsCopy()
     {
-        var options = new CsvSerializerOptions { Separator = ';', PropertyNameCaseInsensitive = true, Converters = [new PointConverter()] };
+        CsvBadDataHandler badDataHandler = _ => CsvBadDataAction.Skip;
+        CsvDeserializationErrorHandler errorHandler = _ => CsvDeserializationErrorAction.Ignore;
+        var options = new CsvSerializerOptions { Separator = ';', PropertyNameCaseInsensitive = true, Converters = [new PointConverter()], BadDataHandler = badDataHandler, DeserializationErrorHandler = errorHandler, MaxDegreeOfParallelism = 3 };
         var copy = new CsvSerializerOptions(options) { NewLine = "\n" };
+        Assert.Same(badDataHandler, copy.BadDataHandler);
+        Assert.Same(errorHandler, copy.DeserializationErrorHandler);
         Assert.Equal(';', copy.Separator);
         Assert.True(copy.PropertyNameCaseInsensitive);
         Assert.Single(copy.Converters);
         Assert.Equal("\n", copy.NewLine);
+        Assert.Equal(3, copy.MaxDegreeOfParallelism);
+    }
+
+    [Fact]
+    public void Parallel()
+    {
+        #region CsvSerializer_Parallel
+        var csv = "X,Y\n" + string.Concat(Enumerable.Range(0, 10_000).Select(i => FormattableString.Invariant($"{i},{i * 0.5}\n")));
+
+        // The data is split into records on the calling thread, and the records are converted to objects on the thread pool
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = Environment.ProcessorCount };
+        var values = CsvSerializer.Deserialize<ParallelModel>(csv, options);
+
+        Assert.HasCount(10_000, values);
+        Assert.Equal(4_999.5, values[^1].Y); // The objects are in the order of the records
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(0, 2)]
+    [InlineData(1, 2)]
+    [InlineData(255, 2)]
+    [InlineData(256, 2)]
+    [InlineData(257, 2)]
+    [InlineData(5_000, 2)]
+    [InlineData(5_000, 3)]
+    [InlineData(5_000, -1)]
+    public async Task Parallel_MatchesSequential(int count, int degreeOfParallelism)
+    {
+        // Quoted values, escaped quotes and line terminators in values: the positions, the line numbers and the unescaped values come from the copies of the records
+        var csv = new StringBuilder("Id,Name,Price\n");
+        var peopleCsv = new StringBuilder("Name,Age\n");
+        for (var i = 0; i < count; i++)
+        {
+            var name = (i % 7) switch
+            {
+                0 => "\"Name, with a separator\"",
+                1 => "\"Name with \"\"quotes\"\"\"",
+                2 => "\"Name on\ntwo lines\"",
+                3 => "Ünïcödé " + i.ToString(CultureInfo.InvariantCulture),
+                4 => "",
+                _ => "Name " + i.ToString(CultureInfo.InvariantCulture),
+            };
+
+            csv.Append(CultureInfo.InvariantCulture, $"{i},{name},{i * 1.25m}\n");
+            peopleCsv.Append(CultureInfo.InvariantCulture, $"{name},{i}\n");
+            if (i % 100 == 0)
+            {
+                csv.Append('\n'); // An empty line is skipped
+            }
+        }
+
+        var text = csv.ToString();
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var sequential = new CsvSerializerOptions();
+        var parallel = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+        var expected = CsvSerializer.Deserialize<Product>(text, sequential);
+        Assert.HasCount(count, expected);
+
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(text, parallel));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(bytes, parallel));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(new StringReader(text), parallel));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(new MemoryStream(bytes), parallel));
+        Assert.Equal(expected, await CsvSerializer.DeserializeAsync<Product>(new MemoryStream(bytes), parallel));
+        Assert.Equal(expected, await CsvSerializer.DeserializeAsync<Product>(new StringReader(text), parallel));
+        Assert.Equal(expected, CsvSerializer.DeserializeEnumerable<Product>(new StringReader(text), parallel).ToList());
+        Assert.Equal(expected, CsvSerializer.DeserializeEnumerable<Product>(new MemoryStream(bytes), parallel).ToList());
+        Assert.Equal(expected, await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Product>(new StringReader(text), parallel)));
+        Assert.Equal(expected, await ToListAsync(CsvSerializer.DeserializeAsyncEnumerable<Product>(new MemoryStream(bytes), parallel)));
+
+        // A type with setters, and a generated context
+        var context = new TestCsvContext(new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism });
+        var people = peopleCsv.ToString();
+        Assert.Equal(
+            CsvSerializer.Deserialize(people, TestCsvContext.Default.Person).Select(p => (p.Name, p.Age)),
+            CsvSerializer.Deserialize(people, context.Person).Select(p => (p.Name, p.Age)));
+    }
+
+    [Fact]
+    public async Task Parallel_ErrorsAreThrownInOrder()
+    {
+        // A conversion error in record 2000, then another one in record 2500, then malformed data in record 2800
+        static string CreateCsv(bool conversionErrors)
+        {
+            var csv = new StringBuilder("Id,Name,Price\n");
+            for (var i = 0; i < 3_000; i++)
+            {
+                var id = conversionErrors && i is 2_000 or 2_500 ? "x" : i.ToString(CultureInfo.InvariantCulture);
+                var name = i is 2_800 ? "\"a\"b" : "a";
+                csv.Append(CultureInfo.InvariantCulture, $"{id},{name},1\n");
+            }
+
+            return csv.ToString();
+        }
+
+        foreach (var (data, expectedCount) in new[] { (CreateCsv(conversionErrors: true), 2_000), (CreateCsv(conversionErrors: false), 2_800) })
+        {
+            var sequential = new CsvSerializerOptions { Strict = true };
+            var parallel = new CsvSerializerOptions { Strict = true, MaxDegreeOfParallelism = 4 };
+            var expected = Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(data, sequential));
+            Assert.Equal(expectedCount, expected.RowIndex);
+
+            void Check(CsvException exception)
+            {
+                Assert.Equal(expected.Message, exception.Message);
+                Assert.Equal(expected.RowIndex, exception.RowIndex);
+                Assert.Equal(expected.LineNumber, exception.LineNumber);
+                Assert.Equal(expected.Position, exception.Position);
+            }
+
+            Check(Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(data, parallel)));
+            Check(Assert.Throws<CsvException>(() => CsvSerializer.Deserialize<Product>(new MemoryStream(Encoding.UTF8.GetBytes(data)), parallel)));
+            Check(await Assert.ThrowsAsync<CsvException>(() => CsvSerializer.DeserializeAsync<Product>(new StringReader(data), parallel)));
+
+            // The enumerable overloads return the records before the error
+            var read = 0;
+            Check(Assert.Throws<CsvException>(() =>
+            {
+                foreach (var product in CsvSerializer.DeserializeEnumerable<Product>(new StringReader(data), parallel))
+                {
+                    Assert.Equal(read, product.Id);
+                    read++;
+                }
+            }));
+            Assert.Equal(expectedCount, read);
+
+            read = 0;
+            Check(await Assert.ThrowsAsync<CsvException>(async () =>
+            {
+                await foreach (var product in CsvSerializer.DeserializeAsyncEnumerable<Product>(new MemoryStream(Encoding.UTF8.GetBytes(data)), parallel))
+                {
+                    read++;
+                }
+            }));
+            Assert.Equal(expectedCount, read);
+        }
+    }
+
+    [Fact]
+    public async Task Parallel_LongRecords()
+    {
+        // Records longer than the buffer of a batch, alone in their batch or after short records
+        var csv = new StringBuilder("Id,Name,Price\n");
+        for (var i = 0; i < 600; i++)
+        {
+            var name = i % 50 == 0 ? new string((char)('a' + (i % 26)), 70_000 + i) : "\"a\"\"b\"";
+            csv.Append(CultureInfo.InvariantCulture, $"{i},{name},{i}\n");
+        }
+
+        var text = csv.ToString();
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = 3 };
+        var expected = CsvSerializer.Deserialize<Product>(text);
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(text, options));
+        Assert.Equal(expected, CsvSerializer.Deserialize<Product>(new StringReader(text), options));
+        Assert.Equal(expected, await CsvSerializer.DeserializeAsync<Product>(new MemoryStream(bytes), options));
+    }
+
+    [Fact]
+    public void Parallel_StopEnumerating()
+    {
+        var csv = "Id,Name,Price\n" + string.Concat(Enumerable.Range(0, 10_000).Select(i => $"{i},a,1\n"));
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = 4 };
+        Assert.Equal([0, 1, 2], CsvSerializer.DeserializeEnumerable<Product>(new StringReader(csv), options).Take(3).Select(p => p.Id));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(4)]
+    public async Task Parallel_CancelEnumerating(int degreeOfParallelism)
+    {
+        // The records are read before the first one is returned: the cancellation is still checked for each record
+        var csv = "Id,Name,Price\n1,a,1\n2,b,2\n3,c,3\n";
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+        using var cts = new CancellationTokenSource();
+        var ids = new List<int>();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            await foreach (var product in CsvSerializer.DeserializeAsyncEnumerable<Product>(new StringReader(csv), options, cts.Token))
+            {
+                ids.Add(product.Id);
+                await cts.CancelAsync();
+            }
+        });
+
+        Assert.Equal([1], ids);
+    }
+
+    [Fact]
+    public async Task Parallel_ConversionErrorBeforeCancellation()
+    {
+        // The setter of the second record cancels the token, then fails: the first record and the error come first, like reading the records one by one
+        var csv = "Id\n1\n2\n3\n";
+        foreach (var degreeOfParallelism in new[] { 1, 4 })
+        {
+            using var cts = new CancellationTokenSource();
+            CancelingModel.Source = cts;
+            var options = new CsvSerializerOptions { MaxDegreeOfParallelism = degreeOfParallelism };
+            var ids = new List<int>();
+            var exception = await Assert.ThrowsAnyAsync<Exception>(async () =>
+            {
+                await foreach (var item in CsvSerializer.DeserializeAsyncEnumerable<CancelingModel>(new StringReader(csv), options, cts.Token))
+                {
+                    ids.Add(item.Id);
+                }
+            });
+
+            Assert.Equal([1], ids);
+            Assert.IsNotAssignableTo<OperationCanceledException>(exception);
+        }
+    }
+
+    [Fact]
+    public void Parallel_DeserializationErrorHandler()
+    {
+        var csv = "Id,Name,Price\n" + string.Concat(Enumerable.Range(0, 5_000).Select(i => i % 10 == 0 ? "x,a,1\n" : $"{i},a,1\n"));
+        var callers = 0;
+        var maxCallers = 0;
+        var errors = new List<long?>();
+        var options = new CsvSerializerOptions
+        {
+            MaxDegreeOfParallelism = 4,
+            DeserializationErrorHandler = context =>
+            {
+                // The handler is not called by two threads at the same time
+                var current = Interlocked.Increment(ref callers);
+                maxCallers = Math.Max(maxCallers, current);
+                errors.Add(context.RowIndex);
+                Thread.SpinWait(1_000);
+                Interlocked.Decrement(ref callers);
+                return CsvDeserializationErrorAction.SkipRecord;
+            },
+        };
+
+        var products = CsvSerializer.Deserialize<Product>(csv, options);
+        Assert.Equal(Enumerable.Range(0, 5_000).Where(i => i % 10 != 0), products.Select(p => p.Id));
+        Assert.Equal(1, maxCallers);
+        Assert.Equal(Enumerable.Range(0, 500).Select(i => (long?)(i * 10)), errors.Order());
+    }
+
+    [Fact]
+    public void Parallel_InvalidDegreeOfParallelism()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CsvSerializerOptions { MaxDegreeOfParallelism = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new CsvSerializerOptions { MaxDegreeOfParallelism = -2 });
+        Assert.Equal(1, CsvSerializerOptions.Default.MaxDegreeOfParallelism);
     }
 
     private static async Task<List<T>> ToListAsync<T>(IAsyncEnumerable<T> values)
@@ -858,9 +2166,47 @@ public sealed class LabeledItem(int id, string label, int rank)
     public int Rank { get; } = rank;
 }
 
+#region CsvSerializer_ParallelModel
+public sealed class ParallelModel
+{
+    public int X { get; set; }
+
+    public double Y { get; set; }
+}
+#endregion
+
+public sealed class CancelingModel
+{
+    public static CancellationTokenSource? Source { get; set; }
+
+    public int Id
+    {
+        get;
+        set
+        {
+            if (value == 2)
+            {
+                Source?.Cancel();
+                throw new InvalidOperationException("Invalid id");
+            }
+
+            field = value;
+        }
+    }
+}
+
 public sealed class DecimalModel
 {
     public decimal Value { get; set; }
+}
+
+public sealed class FloatingPointModel
+{
+    public double Double { get; set; }
+
+    public float Single { get; set; }
+
+    public Half Half { get; set; }
 }
 
 public enum Color
@@ -1046,6 +2392,15 @@ public sealed class DefaultValuesModel(int a, int b = 42, string c = "default", 
     public decimal Ratio { get; } = ratio;
 
     public char Letter { get; } = letter;
+}
+
+public sealed class ValidatingSetterModel
+{
+    public int Value
+    {
+        get;
+        set => field = value >= 0 ? value : throw new ArgumentOutOfRangeException(nameof(value));
+    }
 }
 
 public sealed class ParameterOnlyModel(int value, int factor)

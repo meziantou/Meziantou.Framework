@@ -26,7 +26,7 @@
 
   <ItemGroup>
     <!-- The CMS signed data of the signatures and the RFC 3161 time stamps (Signing) -->
-    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -51,6 +51,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Tests" />
     <InternalsVisibleTo Include="Meziantou.Framework.Pdf.FuzzTests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Pdf.Fuzz" />
   </ItemGroup>
 
 </Project>

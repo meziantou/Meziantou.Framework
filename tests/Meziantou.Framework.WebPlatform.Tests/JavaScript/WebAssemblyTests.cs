@@ -1245,6 +1245,145 @@ public sealed class WebAssemblyTests : IDisposable
     }
 
     [Fact]
+    public async Task Documentation_WebAssemblyModuleCache()
+    {
+        #region WebPlatformWasm_ModuleCache
+        // Share the runtime between the pages: it keeps the modules it compiled (16 MiB of binaries by default), so the next
+        // pages that load a large module, such as the runtime of .NET, do not compile it again
+        using var runtime = new WasmWebAssemblyRuntime { ModuleCacheCapacity = 64 * 1024 * 1024 };
+        using var engine = new JavaScriptScriptEngine();
+
+        foreach (var (a, b) in new[] { (2, 3), (4, 5) })
+        {
+            using var context = new BrowsingContext(new BrowsingContextOptions
+            {
+                ScriptEngine = engine,
+                WebAssemblyRuntime = runtime,
+            });
+
+            var document = await context.NavigateAsync("https://example.com/", _ => $$"""
+                <output></output>
+                <script>
+                  // (module (func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add))
+                  const bytes = new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0, 1, 7, 1, 96, 2, 127, 127, 1, 127, 3, 2, 1, 0,
+                    7, 7, 1, 3, 97, 100, 100, 0, 0, 10, 9, 1, 7, 0, 32, 0, 32, 1, 106, 11]);
+                  WebAssembly.instantiate(bytes).then(({ instance }) => {
+                    document.querySelector('output').textContent = instance.exports.add({{a}}, {{b}});
+                  });
+                </script>
+                """);
+            await context.EventLoop.RunUntilIdleAsync();
+
+            Assert.Equal((a + b).ToString(System.Globalization.CultureInfo.InvariantCulture), document.QuerySelector("output")!.TextContent);
+        }
+        #endregion
+    }
+
+    /// <summary>A module whose binary is large enough to be kept by the module cache (a data segment of 1,100 bytes).</summary>
+    private static string LargeModule(string fields) => "(module (memory 1) (data (i32.const 0) \"" + new string('a', 1100) + "\") " + fields + ")";
+
+    [Fact]
+    public async Task ModuleCache_TheRealmsShareTheCompiledModuleButNotTheModuleObjects()
+    {
+        using var runtime = new WasmWebAssemblyRuntime();
+        var module = Wasm(LargeModule("""(func (export "add") (param i32 i32) (result i32) local.get 0 local.get 1 i32.add)"""));
+        var script = $$"""
+            async () => {
+              const first = new WebAssembly.Module({{module}});
+              const second = await WebAssembly.compile({{module}});
+              const { instance } = await WebAssembly.instantiate({{module}});
+              return [first === second, first instanceof WebAssembly.Module, new WebAssembly.Instance(first).exports.add(1, 2), instance.exports.add(3, 4)].join();
+            }
+            """;
+
+        Assert.Equal("false,true,3,7", await RunAsync(script, runtime: runtime));
+        Assert.Equal("false,true,3,7", await RunAsync(script, runtime: runtime));
+        Assert.Equal(1, runtime.ModuleCache.Count);
+    }
+
+    [Fact]
+    public void ModuleCache_SameBytesGiveTheSameCompiledModule()
+    {
+        using var runtime = new WasmWebAssemblyRuntime();
+        var bytes = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "f") (result i32) i32.const 1)"""));
+        var other = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "f") (result i32) i32.const 2)"""));
+
+        var first = (AdapterModule)runtime.Compile(bytes);
+        var second = (AdapterModule)runtime.Compile([.. bytes]);
+        var third = (AdapterModule)runtime.Compile(other);
+
+        Assert.NotSame(first, second);
+        Assert.Same(first.Value, second.Value);
+        Assert.NotSame(first.Value, third.Value);
+        Assert.Equal(2, runtime.ModuleCache.Count);
+        Assert.Equal(bytes.Length + other.Length, runtime.ModuleCache.Size);
+
+        runtime.Dispose();
+        Assert.Equal(0, runtime.ModuleCache.Count);
+    }
+
+    [Fact]
+    public void ModuleCache_SmallModulesAreNotCached()
+    {
+        using var runtime = new WasmWebAssemblyRuntime();
+        var bytes = WasmEngine.WasmRuntime.WatToWasm("""(module (func (export "f") (result i32) i32.const 1))""");
+
+        Assert.NotSame(((AdapterModule)runtime.Compile(bytes)).Value, ((AdapterModule)runtime.Compile(bytes)).Value);
+        Assert.Equal(0, runtime.ModuleCache.Count);
+    }
+
+    [Fact]
+    public void ModuleCache_InvalidModulesAreNotCached()
+    {
+        using var runtime = new WasmWebAssemblyRuntime();
+        var bytes = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "f"))"""))[..^1];
+
+        Assert.Throws<WasmCompileException>(() => runtime.Compile(bytes));
+        Assert.Throws<WasmCompileException>(() => runtime.Compile(bytes));
+        Assert.Equal(0, runtime.ModuleCache.Count);
+    }
+
+    [Fact]
+    public void ModuleCache_Capacity_RemovesTheLeastRecentlyUsedModules()
+    {
+        var a = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "a"))"""));
+        var b = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "b"))"""));
+        var c = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "c"))"""));
+        Assert.Equal(a.Length, b.Length);
+        Assert.Equal(a.Length, c.Length);
+        using var runtime = new WasmWebAssemblyRuntime { ModuleCacheCapacity = a.Length * 2 };
+
+        var moduleA = ((AdapterModule)runtime.Compile(a)).Value;
+        var moduleB = ((AdapterModule)runtime.Compile(b)).Value;
+        Assert.Same(moduleA, ((AdapterModule)runtime.Compile(a)).Value); // a is now the most recently used module
+        _ = runtime.Compile(c); // removes b
+
+        Assert.Equal(2, runtime.ModuleCache.Count);
+        Assert.Equal(a.Length * 2, runtime.ModuleCache.Size);
+        Assert.Same(moduleA, ((AdapterModule)runtime.Compile(a)).Value);
+        Assert.NotSame(moduleB, ((AdapterModule)runtime.Compile(b)).Value);
+    }
+
+    [Fact]
+    public void ModuleCache_ModulesLargerThanTheCapacityAreNotCached()
+    {
+        var bytes = WasmEngine.WasmRuntime.WatToWasm(LargeModule("""(func (export "f"))"""));
+        using var runtime = new WasmWebAssemblyRuntime { ModuleCacheCapacity = bytes.Length - 1 };
+        using var disabled = new WasmWebAssemblyRuntime { ModuleCacheCapacity = 0 };
+        using var defaults = new WasmWebAssemblyRuntime();
+
+        Assert.NotSame(((AdapterModule)runtime.Compile(bytes)).Value, ((AdapterModule)runtime.Compile(bytes)).Value);
+        Assert.NotSame(((AdapterModule)disabled.Compile(bytes)).Value, ((AdapterModule)disabled.Compile(bytes)).Value);
+        Assert.Equal(0, runtime.ModuleCache.Count);
+        Assert.Equal(0, disabled.ModuleCache.Count);
+        Assert.Equal(WasmWebAssemblyRuntime.DefaultModuleCacheCapacity, defaults.ModuleCacheCapacity);
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+        {
+            using var negative = new WasmWebAssemblyRuntime { ModuleCacheCapacity = -1 };
+        });
+    }
+
+    [Fact]
     public async Task Documentation_WebAssemblyModuleScripts()
     {
         #region WebPlatformWasm_ModuleScripts

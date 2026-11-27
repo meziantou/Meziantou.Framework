@@ -1109,7 +1109,11 @@ internal sealed class FragmentSlicer
     private void SkipSpanner(BoxFragment spanner, double bottom)
     {
         var end = bottom + _writingDirection.ToLogical(spanner.Margin).BlockEnd;
-        _firstAfterSpanners = Math.Max(_firstAfterSpanners, _map.Map(end).Index);
+
+        // (the columns after a spanner start at its end, where the columns after the next spanner start too when the content
+        // between them and the next spanner have no block size: the columns of the spanner are the ones of its order)
+        var sequence = _flow.Spanners.Find(placement => ReferenceEquals(placement.Fragment, spanner)).Sequence;
+        _firstAfterSpanners = Math.Max(_firstAfterSpanners, sequence > 0 ? _map.MapEmpty(end, sequence).Index : _map.Map(end).Index);
     }
 
     /// <summary>Returns the index of the column spanner whose margin box contains a position of the strip, or -1.</summary>

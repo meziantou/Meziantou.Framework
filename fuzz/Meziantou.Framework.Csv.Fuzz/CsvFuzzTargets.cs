@@ -2,10 +2,14 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Meziantou.Framework.Csv.Internals;
 using Meziantou.Framework.Csv.Serialization;
+using Meziantou.Framework.Csv.Serialization.Internals;
+using Meziantou.Framework.Csv.Serialization.Metadata;
 using Meziantou.Framework.Fuzzing;
 
 namespace Meziantou.Framework.Csv.Fuzz;
@@ -14,7 +18,8 @@ namespace Meziantou.Framework.Csv.Fuzz;
 /// <see cref="CsvReader"/> and <see cref="Utf8CsvReader"/> read any data without throwing, and return the same records whatever the SIMD path, the
 /// size of the buffer and the number of elements each read of the source returns, as a character-by-character reference parser. What the writers
 /// write reads back as the rows they were given, and is what a reference escaper writes, with every quote mode and buffer size. What the serializer writes reads back as the records it was given, with the generated metadata and
-/// with the reflection-based metadata, and both read any data the same way.
+/// with the reflection-based metadata, and both read any data the same way. The bad data and deserialization error handlers report the errors that throw
+/// without them, and accepting or ignoring every error reads what the lenient modes read.
 /// </summary>
 public static partial class CsvFuzzTargets
 {
@@ -35,17 +40,31 @@ public static partial class CsvFuzzTargets
     // Shared, so that the reflection-based metadata is discovered once
     private static readonly CsvSerializerOptions SmallBufferSerializerOptions = new() { BufferSize = 16 };
 
+    // Shared for the same reason: the handler reports the errors to the state of the current deserialization
+    private static readonly CsvSerializerOptions ErrorHandlerSerializerOptions = new() { DeserializationErrorHandler = OnDeserializationError };
+
+    private static readonly FuzzCsvContext ErrorHandlerCsvContext = new(new CsvSerializerOptions { DeserializationErrorHandler = OnDeserializationError });
+
+    [ThreadStatic]
+    private static DeserializeErrorState? s_deserializeErrorState;
+
     private static readonly string[] Tokens = [",", ";", "\t", "|", "\"", "\"\"", "'", "\r", "\n", "\r\n", ",\"", "\",", "\"\r\n", "\uFEFF", "\u8000", "\uFF0C", "\u0100", "😀", "é", "true", "1.5", "2026-11-21", "First", "Text,Number,Ratio,Kind,Date,Flag,bytes"];
 
     public static IReadOnlyList<FuzzTarget> All { get; } =
     [
         new("csv-reader", Reader) { Seeds = GetReaderSeeds, Dictionary = Tokens },
+        new("csv-reader-bad-data", ReaderBadData) { Seeds = GetReaderBadDataSeeds, Dictionary = Tokens },
         new("csv-roundtrip", RoundTrip) { Seeds = GetRoundTripSeeds, Dictionary = [.. Tokens, "=", "+", "-", "@", "=1+1"] },
         new("csv-writer", Writer) { Seeds = GetWriterSeeds, Dictionary = [.. Tokens, "=", "+", "-", "@", "\t", "=1+1"] },
         new("csv-serializer-roundtrip", SerializerRoundTrip) { Seeds = GetSerializerRoundTripSeeds, Dictionary = Tokens },
         new("csv-deserialize", Deserialize) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
+        new("csv-deserialize-errors", DeserializeErrors) { Seeds = GetDeserializeSeeds, Dictionary = Tokens },
+        new("csv-deserialize-parallel", DeserializeParallel) { Seeds = GetDeserializeParallelSeeds, Dictionary = Tokens },
         new("csv-iso8601", ParseIso8601) { Seeds = GetIso8601Seeds, Dictionary = ["-", ":", "T", "Z", ".", "+", "2024", "02", "29", "23", "59", "0000000", "+02:00", "+14:00", "0001-01-01", "9999-12-31"] },
         new("csv-decimal", ParseDecimal) { Seeds = GetDecimalSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.50", "123456789", "999999999999999999", " ", ",", "+", "e"] },
+        new("csv-numbers", ParseNumbers) { Seeds = GetNumberSeeds, Dictionary = ["-", ".", "0", "9", "00", "1.5", "999999999", "2147483648", "999999999999999", "9223372036854775808", " ", ",", "+", "e", "E", "NaN"] },
+        new("csv-floating-point", ParseFloatingPoint) { Seeds = GetFloatingPointSeeds, Dictionary = ["-", "+", ".", "0", "9", "e", "E", "e-", "e+", "22", "23", "2048", "65504", "16777216", "9007199254740992", "0.1", "NaN", "Infinity", " ", ","] },
+        new("csv-header", HeaderLookup) { Seeds = GetHeaderSeeds, Dictionary = [",", "Id", "Name", "id", "NAME", "é"] },
     ];
 
     /// <summary>
@@ -106,6 +125,343 @@ public static partial class CsvFuzzTargets
         }
 
         FuzzAssert.Equal(expectedUtf8, ReadUtf8(Utf8CsvReader.Create(new ChunkedStream(bytes, new ChunkSizer(chunks)), options)), "Reading the UTF-8 data in chunks gives different records");
+    }
+
+    /// <summary>
+    /// <c>dialect, chunks, text</c>, as <see cref="Reader"/>; bit 6 of <c>chunks</c> sets <see cref="CsvReaderOptions.ValidateColumnCount"/> and bit 7
+    /// trims the spaces around the values. With a bad data handler that accepts every error, the readers return the records of non-strict mode; the errors
+    /// are the same whatever the SIMD path and the chunks, they are in the order of the data and point into the records, and strict mode throws the first
+    /// one. With a handler that skips every record with an error, the readers return the other records.
+    /// </summary>
+    private static void ReaderBadData(ReadOnlySpan<byte> data)
+    {
+        var dialect = FuzzInput.ReadByte(ref data);
+        var chunks = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        var separator = ReaderSeparators[dialect & 0x07];
+        var quote = ReaderQuotes[(dialect >> 3) & 0x07];
+        if (separator is '\r' or '\n' || quote is '\r' or '\n' || quote == separator)
+            return;
+
+        var validateColumnCount = (chunks & 0x40) != 0;
+        var options = new CsvReaderOptions
+        {
+            Separator = separator,
+            Quote = quote,
+            HasHeaderRow = (dialect & 0x40) != 0,
+            CommentCharacter = (dialect & 0x80) != 0 ? '#' : null,
+            Trim = (chunks & 0x80) != 0 ? CsvTrimOptions.Outer : CsvTrimOptions.None,
+            BufferSize = 1 + (chunks % 17),
+        };
+
+        // Without a handler, the column count is only checked in strict mode: a record with other columns throws
+        var lenient = Describe([.. ReadWithErrors(options, o => CsvReader.CreateFromString(text, o), action: null, out _)]);
+        options = options with { ValidateColumnCount = validateColumnCount };
+        var acceptedRecords = ReadWithErrors(options, o => CsvReader.CreateFromString(text, o), CsvBadDataAction.Accept, out var errors);
+        var accepted = Describe([.. acceptedRecords]);
+        var acceptedErrors = DescribeErrors(errors);
+        FuzzAssert.Equal(lenient, accepted, "Accepting every error does not read the records of non-strict mode");
+        CheckErrors(text.Length, acceptedRecords, errors);
+
+        foreach (var vectorSize in VectorSizes)
+        {
+            var records = ReadWithErrors(options with { VectorSize = vectorSize }, o => CsvReader.CreateFromString(text, o), CsvBadDataAction.Accept, out var otherErrors);
+            FuzzAssert.Equal(accepted + "\n" + acceptedErrors, Describe([.. records]) + "\n" + DescribeErrors(otherErrors), "A SIMD path reports different errors; vector size: " + vectorSize.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var chunkedRecords = ReadWithErrors(options, o => CsvReader.Create(new ChunkedTextReader(text, new ChunkSizer(chunks)), o), CsvBadDataAction.Accept, out var chunkedErrors);
+        FuzzAssert.Equal(accepted + "\n" + acceptedErrors, Describe([.. chunkedRecords]) + "\n" + DescribeErrors(chunkedErrors), "Reading the text in chunks reports different errors");
+
+        // Strict mode throws the first error
+        try
+        {
+            ReadWithErrors(options with { Strict = true }, o => CsvReader.CreateFromString(text, o), action: null, out _);
+            FuzzAssert.True(errors.Count is 0, "Strict mode accepts data with errors: " + acceptedErrors);
+        }
+        catch (CsvException ex)
+        {
+            FuzzAssert.True(errors.Count > 0, "Strict mode throws for data without errors: " + ex.Message);
+            FuzzAssert.Equal(errors[0].Exception, ex.Message, "Strict mode does not throw the first error");
+        }
+
+        // Skipping every record with an error returns the other records. A skipped header row makes the next row the header row, and the expected
+        // number of columns comes from the first record that is not skipped: the records are compared when neither applies.
+        var skippedRecords = ReadWithErrors(options, o => CsvReader.CreateFromString(text, o), CsvBadDataAction.Skip, out var skipErrors);
+        if (!validateColumnCount && errors.TrueForAll(e => e.RowIndex is not null))
+        {
+            var skippedRows = errors.Select(e => e.RowIndex!.Value).ToHashSet();
+            FuzzAssert.Equal(Describe([.. acceptedRecords.Where((_, index) => !skippedRows.Contains(index))]), Describe([.. skippedRecords]), "Skipping the records with an error does not return the other records");
+            FuzzAssert.Equal(DescribeErrors([.. errors.DistinctBy(e => e.RowIndex)]), DescribeErrors(skipErrors), "Skipping the records reports other errors than the first error of each record");
+        }
+
+        if (separator > 0x7F || quote > 0x7F)
+            return;
+
+        // UTF-8 cannot represent a lone surrogate: the UTF-8 readers read the text with replacement characters. The positions are in bytes.
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expectedUtf8 = Describe([.. ReadWithErrors(options, o => CsvReader.CreateFromString(Encoding.UTF8.GetString(bytes), o), CsvBadDataAction.Accept, out var expectedUtf8Errors)]) + "\n" + DescribeWithoutPositions(expectedUtf8Errors);
+        foreach (var vectorSize in VectorSizes)
+        {
+            var records = ReadWithErrors(options with { VectorSize = vectorSize }, o => Utf8CsvReader.Create(bytes, o), CsvBadDataAction.Accept, out var utf8Errors);
+            CheckErrors(bytes.Length, records, utf8Errors);
+            FuzzAssert.Equal(expectedUtf8, Describe([.. records]) + "\n" + DescribeWithoutPositions(utf8Errors), "The UTF-8 reader reports different errors; vector size: " + vectorSize.ToString(CultureInfo.InvariantCulture));
+        }
+
+        var chunkedUtf8 = ReadWithErrors(options, o => Utf8CsvReader.Create(new ChunkedStream(bytes, new ChunkSizer(chunks)), o), CsvBadDataAction.Accept, out var chunkedUtf8Errors);
+        FuzzAssert.Equal(expectedUtf8, Describe([.. chunkedUtf8]) + "\n" + DescribeWithoutPositions(chunkedUtf8Errors), "Reading the UTF-8 data in chunks reports different errors");
+
+        static string DescribeErrors(List<BadData> errors) => string.Join("\n", errors);
+
+        static string DescribeWithoutPositions(List<BadData> errors) => string.Join("\n", errors.Select(e => e with { Position = 0, Exception = "" }));
+    }
+
+    private static void CheckErrors(int length, List<string[]> records, List<BadData> errors)
+    {
+        BadData? previous = null;
+        foreach (var error in errors)
+        {
+            FuzzAssert.True(error.Position >= 0 && error.Position <= length, "The position of an error is out of the data: " + error);
+            FuzzAssert.True(error.LineNumber >= 1, "The line number of an error is not positive: " + error);
+            if (previous is not null)
+            {
+                FuzzAssert.True(error.Position >= previous.Position && error.LineNumber >= previous.LineNumber, "The errors are not in the order of the data: " + error);
+            }
+
+            if (error.RowIndex is { } rowIndex)
+            {
+                FuzzAssert.True(previous?.RowIndex is null || rowIndex >= previous.RowIndex, "The row indexes of the errors decrease: " + error);
+                FuzzAssert.True(rowIndex < records.Count, "The row index of an error is not the index of a record: " + error);
+                if (error.ColumnIndex is { } columnIndex)
+                {
+                    FuzzAssert.True(columnIndex >= 0 && columnIndex < records[(int)rowIndex].Length, "The column of an error is not a column of the record: " + error);
+                }
+            }
+            else
+            {
+                FuzzAssert.True(previous is null || previous.RowIndex is null, "An error of the header row follows an error of a record: " + error);
+            }
+
+            FuzzAssert.Equal(error.Kind is CsvBadDataKind.ColumnCountMismatch, error.ColumnIndex is null, "Only a column count error is about the whole record: " + error);
+            previous = error;
+        }
+    }
+
+    private static List<string[]> ReadWithErrors(CsvReaderOptions options, Func<CsvReaderOptions, CsvReader> create, CsvBadDataAction? action, out List<BadData> errors)
+    {
+        var list = new List<BadData>();
+        errors = list;
+        if (action is { } value)
+        {
+            options = options with { BadDataHandler = context => { list.Add(BadData.Create(context)); return value; } };
+        }
+
+        using var reader = create(options);
+        var records = new List<string[]>();
+        while (reader.Read())
+        {
+            FuzzAssert.True(records.Count <= 1_000_000, "The reader returns too many records");
+            records.Add(reader.Current.ToStringArray());
+        }
+
+        return records;
+    }
+
+    private static List<string[]> ReadWithErrors(CsvReaderOptions options, Func<CsvReaderOptions, Utf8CsvReader> create, CsvBadDataAction? action, out List<BadData> errors)
+    {
+        var list = new List<BadData>();
+        errors = list;
+        if (action is { } value)
+        {
+            options = options with { BadDataHandler = context => { list.Add(BadData.Create(context)); return value; } };
+        }
+
+        using var reader = create(options);
+        var records = new List<string[]>();
+        while (reader.Read())
+        {
+            FuzzAssert.True(records.Count <= 1_000_000, "The reader returns too many records");
+            records.Add(reader.Current.ToStringArray());
+        }
+
+        return records;
+    }
+
+    /// <summary>
+    /// <c>text</c>, as <see cref="Deserialize"/>, with a deserialization error handler. Ignoring every error never throws, and reads the records that the
+    /// serializer reads without a handler when it reports no error. Skipping the records with an error reads the other records. The generated metadata,
+    /// the reflection-based metadata and the UTF-8 path report the same errors.
+    /// </summary>
+    private static void DeserializeErrors(ReadOnlySpan<byte> data)
+    {
+        var text = FuzzInput.ReadText(data);
+        var ignored = DeserializeWithErrors(text, utf8: false, generated: true, CsvDeserializationErrorAction.Ignore, out var errors);
+        var reflection = DeserializeWithErrors(text, utf8: false, generated: false, CsvDeserializationErrorAction.Ignore, out var reflectionErrors);
+        FuzzAssert.Equal(DescribeResult(ignored, errors), DescribeResult(reflection, reflectionErrors), "The generated metadata and the reflection report different errors");
+
+        var withoutHandler = TryDeserialize(() => CsvSerializer.Deserialize(text, FuzzCsvContext.Default.FuzzRecord));
+        FuzzAssert.Equal(errors.Count is 0 ? string.Join("\n", ignored) : "CsvException", withoutHandler, "The errors reported are not the errors that throw without a handler: " + string.Join("\n", errors));
+
+        var skipped = DeserializeWithErrors(text, utf8: false, generated: true, CsvDeserializationErrorAction.SkipRecord, out var skipErrors);
+        var skippedRows = errors.Select(e => e.RowIndex).ToHashSet();
+        FuzzAssert.Equal(DescribeResult([.. ignored.Where((_, index) => !skippedRows.Contains(index))], [.. errors.DistinctBy(e => e.RowIndex)]), DescribeResult(skipped, skipErrors), "Skipping the records with an error does not return the other records, or reports other errors than the first error of each record");
+
+        // UTF-8 cannot represent a lone surrogate: the UTF-8 path reads the text with replacement characters
+        var utf8Text = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text));
+        var expectedUtf8 = DeserializeWithErrors(utf8Text, utf8: false, generated: true, CsvDeserializationErrorAction.Ignore, out var expectedUtf8Errors);
+        var actualUtf8 = DeserializeWithErrors(utf8Text, utf8: true, generated: true, CsvDeserializationErrorAction.Ignore, out var utf8Errors);
+        FuzzAssert.Equal(DescribeResult(expectedUtf8, expectedUtf8Errors), DescribeResult(actualUtf8, utf8Errors), "Reading UTF-8 data reports different errors");
+
+        static string DescribeResult(List<string> records, List<DeserializeError> errors) => string.Join("\n", records) + "\n" + string.Join("\n", errors);
+
+        static List<string> DeserializeWithErrors(string text, bool utf8, bool generated, CsvDeserializationErrorAction action, out List<DeserializeError> errors)
+        {
+            var state = new DeserializeErrorState(action);
+            s_deserializeErrorState = state;
+            try
+            {
+                List<FuzzRecord> records;
+                if (generated)
+                {
+                    var typeInfo = ErrorHandlerCsvContext.FuzzRecord;
+                    records = utf8 ? CsvSerializer.Deserialize(new MemoryStream(Encoding.UTF8.GetBytes(text)), typeInfo) : CsvSerializer.Deserialize(text, typeInfo);
+                }
+                else
+                {
+                    records = CsvSerializer.Deserialize<FuzzRecord>(text, ErrorHandlerSerializerOptions);
+                }
+
+                errors = state.Errors;
+                return [.. records.Select(Describe)];
+            }
+            finally
+            {
+                s_deserializeErrorState = null;
+            }
+        }
+    }
+
+    /// <summary>
+    /// <c>mode, text</c>: converting the records on the thread pool, in batches of 1 to 8 records (bits 0-2 of <c>mode</c>) with 1 to 4 pending batches
+    /// (bits 3-4), from UTF-16 or UTF-8 (bit 5), returns the records that converting them one by one returns, in the same order, then throws the same
+    /// exception. With a deserialization error handler that ignores the errors or skips the records (bits 6-7), it reports the same errors, in any order.
+    /// The public overloads give the same result.
+    /// </summary>
+    private static void DeserializeParallel(ReadOnlySpan<byte> data)
+    {
+        var mode = FuzzInput.ReadByte(ref data);
+        var text = FuzzInput.ReadText(data);
+        var maxBatchRows = 1 + (mode & 7);
+        var maxPendingBatches = 1 + ((mode >> 3) & 3);
+        var utf8 = (mode & 0x20) != 0;
+        CsvDeserializationErrorAction? action = (mode >> 6) switch
+        {
+            1 => CsvDeserializationErrorAction.Ignore,
+            2 => CsvDeserializationErrorAction.SkipRecord,
+            _ => null,
+        };
+
+        var bytes = Encoding.UTF8.GetBytes(text);
+        var expected = Read(parallel: false);
+        FuzzAssert.Equal(expected, Read(parallel: true), "Converting the records in parallel gives other records, errors or exceptions");
+
+        // The public overloads, with the default size of the batches
+        var options = new CsvSerializerOptions { MaxDegreeOfParallelism = maxPendingBatches + 1 };
+        var expectedRecords = TryDeserialize(() => utf8 ? CsvSerializer.Deserialize(new MemoryStream(bytes), FuzzCsvContext.Default.FuzzRecord) : CsvSerializer.Deserialize(text, FuzzCsvContext.Default.FuzzRecord));
+        var actualRecords = TryDeserialize(() => utf8 ? CsvSerializer.Deserialize(new MemoryStream(bytes), new FuzzCsvContext(options).FuzzRecord) : CsvSerializer.Deserialize(text, new FuzzCsvContext(options).FuzzRecord));
+        FuzzAssert.Equal(expectedRecords, actualRecords, "Deserialize with MaxDegreeOfParallelism gives other records");
+
+        string Read(bool parallel)
+        {
+            var errors = new List<string>();
+            var serializerOptions = new CsvSerializerOptions
+            {
+                DeserializationErrorHandler = action is { } value
+                    ? context =>
+                    {
+                        // Called from the tasks that convert the records
+                        lock (errors)
+                        {
+                            errors.Add(string.Create(CultureInfo.InvariantCulture, $"{context.Kind} {context.RowIndex} {context.LineNumber} {context.Position} {context.ColumnIndex} {context.MemberName} {context.RawValue}"));
+                        }
+
+                        return value;
+                    }
+                    : null,
+            };
+
+            var typeInfo = new FuzzCsvContext(serializerOptions).FuzzRecord;
+            var records = new List<string>();
+            var exception = "";
+            try
+            {
+                if (utf8)
+                {
+                    using var parser = new CsvParser<byte>(serializerOptions.ReaderOptions, source: null, bytes);
+                    ReadRecords(parser, typeInfo, parallel, maxPendingBatches, maxBatchRows, records);
+                }
+                else
+                {
+                    using var parser = new CsvParser<char>(serializerOptions.ReaderOptions, source: null, text.AsMemory());
+                    ReadRecords(parser, typeInfo, parallel, maxPendingBatches, maxBatchRows, records);
+                }
+            }
+            catch (CsvException ex)
+            {
+                exception = string.Create(CultureInfo.InvariantCulture, $"{ex.Message} {ex.RowIndex} {ex.LineNumber} {ex.Position} {ex.ColumnIndex}");
+            }
+
+            errors.Sort(StringComparer.Ordinal);
+            return string.Join("\n", records) + "\n" + exception + "\n" + string.Join("\n", errors);
+        }
+
+        static void ReadRecords<TChar>(CsvParser<TChar> parser, CsvTypeInfo<FuzzRecord> typeInfo, bool parallel, int maxPendingBatches, int maxBatchRows, List<string> records)
+            where TChar : unmanaged, IBinaryInteger<TChar>
+        {
+            if (parallel)
+            {
+                using var deserializer = new CsvParallelDeserializer<FuzzRecord, TChar>(typeInfo, maxPendingBatches, maxBatchRows);
+                while (deserializer.MoveNext(parser))
+                {
+                    foreach (var record in deserializer.Current)
+                    {
+                        records.Add(Describe(record));
+                    }
+                }
+
+                return;
+            }
+
+            CsvRecordBinder<FuzzRecord>? binder = null;
+            while (parser.Read())
+            {
+                binder ??= CsvRecordBinder<FuzzRecord>.Create(typeInfo, parser);
+                if (binder.TryRead(parser, out var record))
+                {
+                    records.Add(Describe(record));
+                }
+            }
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetDeserializeParallelSeeds()
+    {
+        // Batches of 1 to 8 records, UTF-16 and UTF-8, without a handler, ignoring and skipping the errors
+        byte[] modes = [0x00, 0x09, 0x23, 0x5A, 0x9F, 0x41, 0xB2, 0x07];
+        var index = 0;
+        foreach (var seed in GetDeserializeSeeds())
+        {
+            yield return new FuzzSeed("parallel-" + seed.Name, (byte[])[modes[index++ % modes.Length], .. seed.Data.Span]);
+        }
+    }
+
+    private static CsvDeserializationErrorAction OnDeserializationError(CsvDeserializationErrorContext context)
+    {
+        var state = s_deserializeErrorState ?? throw new InvalidOperationException("No deserialization is in progress");
+        FuzzAssert.True(context.Type == typeof(FuzzRecord), "The error is not about the type read");
+        FuzzAssert.Equal(context.Kind is CsvDeserializationErrorKind.ConversionFailed, context.RawValue is not null, "Only a conversion error has a value");
+        FuzzAssert.Equal(context.Kind is CsvDeserializationErrorKind.ConversionFailed, context.Exception.InnerException is not null, "Only a conversion error has an inner exception");
+        state.Errors.Add(new DeserializeError(context.Kind, context.RowIndex, context.LineNumber, context.ColumnIndex, context.MemberName, context.RawValue is null ? null : FuzzText.Escape(context.RawValue)));
+        return state.Action;
     }
 
     /// <summary>
@@ -334,7 +690,8 @@ public static partial class CsvFuzzTargets
 
     /// <summary>
     /// <c>records</c>: the records are separated by <c>FF</c>; each gives the values of the members of <see cref="FuzzRecord"/>. The serializer writes
-    /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8.
+    /// the same text with the generated metadata and with reflection, and the text reads back as the records, as UTF-16 and as UTF-8. The UTF-8
+    /// bytes returned by <see cref="CsvSerializer.SerializeToUtf8Bytes{T}(IEnumerable{T}, CsvTypeInfo{T})"/> are the bytes written to a stream.
     /// </summary>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The fuzz targets compare the reflection-based serializer with the generated one.")]
     [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The fuzz targets compare the reflection-based serializer with the generated one.")]
@@ -359,6 +716,12 @@ public static partial class CsvFuzzTargets
         using var stream = new MemoryStream();
         CsvSerializer.Serialize(stream, records, typeInfo);
         FuzzAssert.Equal(Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(text)), Encoding.UTF8.GetString(stream.ToArray()), "The UTF-8 data is not the UTF-16 text");
+
+        // Without a target, the bytes are kept in chunks, of growing sizes with a small buffer, before the array is created
+        var utf8 = stream.ToArray();
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records, typeInfo)), "The UTF-8 bytes are not the data written to a stream");
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records)), "The generated metadata and the reflection write different UTF-8 bytes");
+        FuzzAssert.True(utf8.AsSpan().SequenceEqual(CsvSerializer.SerializeToUtf8Bytes(records, SmallBufferSerializerOptions)), "The UTF-8 bytes written in chunks are not the bytes written in one buffer");
         stream.Position = 0;
         var utf8Expected = string.Join('\n', records.Select(record => Describe(record, utf8: true)));
         FuzzAssert.Equal(utf8Expected, string.Join('\n', CsvSerializer.Deserialize(stream, typeInfo).Select(record => Describe(record, utf8: true))), "The records read back from UTF-8 are not the records written");
@@ -381,17 +744,17 @@ public static partial class CsvFuzzTargets
         var expectedUtf8 = TryDeserialize(() => CsvSerializer.Deserialize(Encoding.UTF8.GetString(bytes), FuzzCsvContext.Default.FuzzRecord));
         var actualUtf8 = TryDeserialize(() => CsvSerializer.Deserialize(new MemoryStream(bytes), FuzzCsvContext.Default.FuzzRecord));
         FuzzAssert.Equal(expectedUtf8, actualUtf8, "Reading UTF-8 data gives different records");
+    }
 
-        static string TryDeserialize(Func<List<FuzzRecord>> deserialize)
+    private static string TryDeserialize(Func<List<FuzzRecord>> deserialize)
+    {
+        try
         {
-            try
-            {
-                return string.Join("\n", deserialize().Select(Describe));
-            }
-            catch (CsvException)
-            {
-                return "CsvException";
-            }
+            return string.Join("\n", deserialize().Select(Describe));
+        }
+        catch (CsvException)
+        {
+            return "CsvException";
         }
     }
 
@@ -502,6 +865,66 @@ public static partial class CsvFuzzTargets
         static string Describe(decimal value) => string.Join(',', decimal.GetBits(value));
     }
 
+    /// <summary>
+    /// <c>mode, value</c>: when bit 0 of <c>mode</c> is set and <c>value</c> has 8 bytes, they are a double, written with its shortest text or with
+    /// up to 15 decimals (bits 1-4); otherwise <c>value</c> is the text. The fast parsers of <see cref="int"/> and <see cref="long"/> agree
+    /// in UTF-16 and UTF-8, and give the value of the BCL; the texts of doubles check that they are rejected or parsed as the BCL parses them.
+    /// </summary>
+    private static void ParseNumbers(ReadOnlySpan<byte> data)
+    {
+        var mode = FuzzInput.ReadByte(ref data);
+        string text;
+        if ((mode & 1) != 0 && data.Length >= 8)
+        {
+            var number = BinaryPrimitives.ReadDoubleLittleEndian(data);
+            var decimals = (mode >> 1) & 0x0F;
+            text = decimals == 0 ? number.ToString("R", CultureInfo.InvariantCulture) : number.ToString("F" + Math.Min(decimals, 15).ToString(CultureInfo.InvariantCulture), CultureInfo.InvariantCulture);
+        }
+        else
+        {
+            text = FuzzInput.ReadText(data);
+        }
+
+        var utf8 = Encoding.UTF8.GetBytes(text);
+        Check<int>(text, utf8, value => value.ToString(CultureInfo.InvariantCulture));
+        Check<long>(text, utf8, value => value.ToString(CultureInfo.InvariantCulture));
+
+        static void Check<T>(string text, byte[] utf8, Func<T, string> describe)
+            where T : ISpanParsable<T>
+        {
+            var invariant = CultureInfo.InvariantCulture;
+            var parsed = Serialization.Converters.PlainNumberParser.TryParse<char, T>(text, invariant, out var result);
+            var utf8Parsed = Serialization.Converters.PlainNumberParser.TryParse<byte, T>(utf8, invariant, out var utf8Result);
+            FuzzAssert.Equal(parsed, utf8Parsed, "The UTF-16 and UTF-8 fast parsers disagree: " + typeof(T).Name);
+            if (!parsed)
+                return;
+
+            if (!T.TryParse(text, invariant, out var expected))
+                FuzzAssert.Fail("The BCL rejects a value the fast parser accepts: " + typeof(T).Name + " " + FuzzAssert.Format(text));
+
+            FuzzAssert.Equal(describe(expected), describe(result), "The number is not the number of the BCL: " + typeof(T).Name);
+            FuzzAssert.Equal(describe(expected), describe(utf8Result), "The UTF-8 number is not the number of the BCL: " + typeof(T).Name);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetNumberSeeds()
+    {
+        string[] values = ["0", "-0", "0.0", "-0.00", "007", "1.5", "-123.45", "0.1", "999999999", "1234567890", "2147483648", "-2147483648", "999999999999999999", "9223372036854775808", "999999999999999", "9999999999999999", "0.123456789012345", "12345678.9012345", "9007199254740993", "1.", ".5", "1e3", "+1", " 1", "1,000", "NaN"];
+        for (var i = 0; i < values.Length; i++)
+        {
+            yield return FuzzSeed.FromText("number-" + i.ToString(CultureInfo.InvariantCulture), [0], values[i]);
+        }
+
+        double[] doubles = [0.1, 123.456, -42.5, 1e-7, 1e22, 6.02214076e23, double.Epsilon, double.MaxValue, -0.0, 23.4];
+        for (var i = 0; i < doubles.Length; i++)
+        {
+            var bytes = new byte[9];
+            bytes[0] = (byte)(1 | ((i % 8) << 1));
+            BinaryPrimitives.WriteDoubleLittleEndian(bytes.AsSpan(1), doubles[i]);
+            yield return new FuzzSeed("double-" + i.ToString(CultureInfo.InvariantCulture), bytes);
+        }
+    }
+
     private static IEnumerable<FuzzSeed> GetDecimalSeeds()
     {
         string[] values = ["0", "-0", "1.50", "-123.45", "007", "123456789012345678", "-12345678901234567.8", "1234567890123456789", "0.000000000000000001", "1.", ".5", "1e3", "1,000"];
@@ -509,6 +932,174 @@ public static partial class CsvFuzzTargets
         {
             yield return FuzzSeed.FromText("decimal-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
         }
+    }
+
+    /// <summary>
+    /// The fast parser of <see cref="double"/>, <see cref="float"/> and <see cref="Half"/> values accepts a subset of what the BCL accepts with the
+    /// invariant culture, and gives the same values, with the same sign, in UTF-16 and in UTF-8. The data is read as text, and its first bytes as the
+    /// bits of a value, written as the BCL writes it, so that the values around the limits of the fast path are covered. The fast formatter of
+    /// <see cref="double"/> values writes the text of the BCL for this value, and for the value rounded to a few decimals, and the formatter of
+    /// <see cref="float"/> values for the float of the first 4 bytes.
+    /// </summary>
+    private static void ParseFloatingPoint(ReadOnlySpan<byte> data)
+    {
+        if (data.Length >= 8)
+        {
+            var number = BitConverter.Int64BitsToDouble(BinaryPrimitives.ReadInt64LittleEndian(data));
+            var decimals = (data[0] & 0x7).ToString(CultureInfo.InvariantCulture);
+            CheckFloatingPoint<double>(number.ToString("R", CultureInfo.InvariantCulture));
+            CheckFloatingPoint<double>(number.ToString("F" + decimals, CultureInfo.InvariantCulture));
+            CheckFloatingPoint<double>(number.ToString("E" + decimals, CultureInfo.InvariantCulture));
+            CheckFormat(number);
+            CheckFormat(Math.Round(number % 1e9, data[0] & 0x7, MidpointRounding.ToEven));
+
+            var single = BitConverter.Int32BitsToSingle(BinaryPrimitives.ReadInt32LittleEndian(data));
+            CheckFloatingPoint<float>(single.ToString("R", CultureInfo.InvariantCulture));
+            CheckFloatingPoint<float>(single.ToString("F" + decimals, CultureInfo.InvariantCulture));
+            CheckFormat(single);
+
+            var half = BitConverter.Int16BitsToHalf(BinaryPrimitives.ReadInt16LittleEndian(data));
+            CheckFloatingPoint<Half>(half.ToString("R", CultureInfo.InvariantCulture));
+            CheckFloatingPoint<Half>(half.ToString("F" + decimals, CultureInfo.InvariantCulture));
+        }
+
+        var text = FuzzInput.ReadText(data);
+        CheckFloatingPoint<double>(text);
+        CheckFloatingPoint<float>(text);
+        CheckFloatingPoint<Half>(text);
+    }
+
+    // The fast formatter of doubles writes the text of the BCL, in UTF-16 and UTF-8, when it handles a value
+    private static void CheckFormat(double value)
+    {
+        Span<char> chars = stackalloc char[64];
+        Span<byte> bytes = stackalloc byte[64];
+        var handled = Internals.InvariantFloatingPoint.TryFormat(value, chars, out var written, out var tooSmall);
+        FuzzAssert.Equal(handled, Internals.InvariantFloatingPoint.TryFormat(value, bytes, out var bytesWritten, out _), "The UTF-16 and UTF-8 formatters disagree on " + value.ToString("R", CultureInfo.InvariantCulture));
+        if (handled)
+        {
+            // .NET 10 writes 2^-25 with 16 digits that do not parse back to it: the fast path writes the 17 digits of .NET 11
+            var expected = Math.Abs(value) == Math.ScaleB(1, -25) ? value.ToString("G17", CultureInfo.InvariantCulture) : value.ToString(CultureInfo.InvariantCulture);
+            FuzzAssert.False(tooSmall, "The destination is too small for " + expected);
+            FuzzAssert.Equal(expected, chars[..written].ToString(), "The text is not the text of the BCL");
+            FuzzAssert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]), "The UTF-8 text is not the text of the BCL");
+        }
+    }
+
+    // The fast formatter of floats writes the text of the BCL, in UTF-16 and UTF-8, when it handles a value: the zeros and every normal value
+    private static void CheckFormat(float value)
+    {
+        Span<char> chars = stackalloc char[64];
+        Span<byte> bytes = stackalloc byte[64];
+        var handled = Internals.InvariantFloatingPoint.TryFormat(value, chars, out var written, out var tooSmall);
+        FuzzAssert.Equal(handled, Internals.InvariantFloatingPoint.TryFormat(value, bytes, out var bytesWritten, out _), "The UTF-16 and UTF-8 formatters disagree on " + value.ToString("R", CultureInfo.InvariantCulture));
+        FuzzAssert.Equal(float.IsNormal(value) || value == 0, handled, "The formatter of floats does not handle " + value.ToString("R", CultureInfo.InvariantCulture));
+        if (handled)
+        {
+            var expected = value.ToString(CultureInfo.InvariantCulture);
+            FuzzAssert.False(tooSmall, "The destination is too small for " + expected);
+            FuzzAssert.Equal(expected, chars[..written].ToString(), "The text is not the text of the BCL");
+            FuzzAssert.Equal(expected, Encoding.UTF8.GetString(bytes[..bytesWritten]), "The UTF-8 text is not the text of the BCL");
+        }
+    }
+
+    private static void CheckFloatingPoint<T>(string text)
+        where T : IFormattable, IUtf8SpanParsable<T>, ISpanParsable<T>
+    {
+        var parsed = Internals.InvariantFloatingPoint.TryParse(text.AsSpan(), out T result);
+        var utf8Parsed = Internals.InvariantFloatingPoint.TryParse((ReadOnlySpan<byte>)Encoding.UTF8.GetBytes(text), out T utf8Result);
+        FuzzAssert.Equal(parsed, utf8Parsed, "The UTF-16 and UTF-8 fast parsers disagree on " + FuzzAssert.Format(text));
+        if (parsed)
+        {
+            if (!T.TryParse(text, CultureInfo.InvariantCulture, out var expected))
+                FuzzAssert.Fail("The BCL rejects a value the fast parser accepts: " + FuzzAssert.Format(text));
+
+            // The round-trip format distinguishes every value, including the negative zero
+            var expectedText = expected.ToString("R", CultureInfo.InvariantCulture);
+            FuzzAssert.Equal(expectedText, result.ToString("R", CultureInfo.InvariantCulture), "The " + typeof(T).Name + " is not the value of the BCL for " + FuzzAssert.Format(text));
+            FuzzAssert.Equal(expectedText, utf8Result.ToString("R", CultureInfo.InvariantCulture), "The UTF-8 " + typeof(T).Name + " is not the value of the BCL for " + FuzzAssert.Format(text));
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetFloatingPointSeeds()
+    {
+        // The values of the unit tests
+        string[] values =
+        [
+            "0", "-0", "+0", "0.0", "-0.000", "1", "-1", "+1.5", "1.50", "-123.45", "0.1", "0.3", "3.14159", "1.", ".5", "-.5", "1e3", "1E3", "1e+3",
+            "1.5e-3", "1.e3", ".5e1", "1e0000", "1e22", "1e23", "1e-22", "1e-23", "9007199254740992", "9007199254740993", "16777216", "16777217", "2048",
+            "2049", "65504", "65520", "100000", "0.00001", "1234567890123456789", "12345678901234567890", "0.0000000000000000001", "12345.678901234567",
+            "1.7976931348623157E+308", "4.9406564584124654E-324", "1e400", "NaN", "-Infinity", "1,000", " 1", "1 ", "1e", "1e+", "e3", ".", "-", "--1",
+            "1.2.3", "0x10", "",
+        ];
+        for (var i = 0; i < values.Length; i++)
+        {
+            yield return FuzzSeed.FromText("floating-point-" + i.ToString(CultureInfo.InvariantCulture), values[i]);
+        }
+
+        // The bits of the values of the unit tests of the formatter: few decimals, the shortest number, and the limits of the fast path
+        double[] formatted =
+        [
+            0.1, 0.30000000000000004, -12.3, 1e-4, 9.9e-5, 999999999.9, 1e9, 123456789012345.6, 1234.5678901234567, 0.00010000000000000002,
+            0.0001220703125, 1099511627776.0, 999999999999999.875, 1e15, 4503599627370497.0, double.MaxValue, double.NaN,
+            1e16, 1e17, 99999999999999984.0, 1.2345678901234568e17, 1e23, 1e-5, 1.2345e-7, 2.9802322387695312E-08, 1e-48, 1e80, 0.0, -0.0,
+            BitConverter.Int64BitsToDouble(0x35F0000000000000), BitConverter.Int64BitsToDouble(0x50AFFFFFFFFFFFFF),
+        ];
+        for (var i = 0; i < formatted.Length; i++)
+        {
+            var bits = new byte[8];
+            BinaryPrimitives.WriteInt64LittleEndian(bits, BitConverter.DoubleToInt64Bits(formatted[i]));
+            yield return new FuzzSeed("floating-point-bits-" + i.ToString(CultureInfo.InvariantCulture), bits);
+        }
+
+        // The bits of floats in the first 4 bytes, and of a double whose low half is 0 after them: with and without an exponent, the smallest
+        // normal value, and the values that are left to the BCL
+        float[] singles = [0.1f, 1f / 3, -12.3f, 1e-4f, 9.9e-5f, 1e8f, 1e9f, 16777216f, float.MaxValue, 1.17549435e-38f, 1e-40f, float.NaN, -0f];
+        for (var i = 0; i < singles.Length; i++)
+        {
+            var bits = new byte[8];
+            BinaryPrimitives.WriteInt32LittleEndian(bits, BitConverter.SingleToInt32Bits(singles[i]));
+            yield return new FuzzSeed("floating-point-single-bits-" + i.ToString(CultureInfo.InvariantCulture), bits);
+        }
+    }
+
+    /// <summary>
+    /// <c>flags, names, 0xFF, lookups</c>: bit 0 of <c>flags</c> compares the names ignoring the case; <c>names</c> are the names of the header, separated
+    /// by commas; each byte of <c>lookups</c> picks a name of a column, one of another case, or a missing one, as the instance of the header, a
+    /// reused instance, or a new one. Whatever the order and the instances, the header finds the first column with the name, as a linear search does.
+    /// </summary>
+    private static void HeaderLookup(ReadOnlySpan<byte> data)
+    {
+        var flags = FuzzInput.ReadByte(ref data);
+        var names = FuzzText.Decode(FuzzInput.ReadUntil(ref data, 0xFF)).Split(',');
+        if (names.Length > 64)
+        {
+            names = names[..64];
+        }
+
+        var comparer = (flags & 1) != 0 ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+        var header = new CsvHeader(names, comparer);
+        string[] queries = [.. names.Select(name => new string(name.AsSpan())), .. names.Select(name => name.ToUpperInvariant()), "missing"];
+        foreach (var lookup in data)
+        {
+            var index = lookup & 0x3F;
+            var query = (lookup >> 6) switch
+            {
+                0 => queries[index % queries.Length],
+                1 => new string(queries[index % queries.Length].AsSpan()),
+                _ => names[index % names.Length],
+            };
+
+            var expected = Array.FindIndex(names, name => comparer.Equals(name, query));
+            FuzzAssert.Equal(expected, header.IndexOf(query), "The header does not find the first column with the name: " + query);
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetHeaderSeeds()
+    {
+        yield return new FuzzSeed("header-in-order", (byte[])[0x00, .. "Id,Name,Email,Amount"u8, 0xFF, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3]);
+        yield return new FuzzSeed("header-any-order", (byte[])[0x01, .. "Id,Name,id,Email"u8, 0xFF, 3, 2, 1, 0, 0x44, 0x83, 6, 5, 4, 8, 0xC2, 2, 1]);
+        yield return new FuzzSeed("header-wide", (byte[])[0x00, .. Encoding.UTF8.GetBytes(string.Join(',', Enumerable.Range(0, 20).Select(i => "c" + (i % 18).ToString(CultureInfo.InvariantCulture)))), 0xFF, 0, 1, 19, 18, 0x52, 0x93, 40, 20, 19, 0, 17]);
     }
 
     private static IEnumerable<FuzzSeed> GetIso8601Seeds()
@@ -614,13 +1205,26 @@ public static partial class CsvFuzzTargets
         foreach (var (name, text) in GetTexts())
         {
             // Comma and double quote, with and without a header, read whole or in small chunks; then other dialects
-            var dialect = (byte)(index % 4 switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
+            var dialect = (byte)((index % 4) switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
             if (index % 5 is 0)
             {
                 dialect |= 0x80;
             }
 
             yield return FuzzSeed.FromText(name, [dialect, (byte)(index % 3 is 0 ? 0 : 0x13)], text);
+            index++;
+        }
+    }
+
+    private static IEnumerable<FuzzSeed> GetReaderBadDataSeeds()
+    {
+        var index = 0;
+        foreach (var (name, text) in GetTexts())
+        {
+            // Comma and double quote, with and without a header, with the column count checked, with the values trimmed, then other dialects
+            var dialect = (byte)((index % 4) switch { 0 => 0x00, 1 => 0x40, 2 => 0x09, _ => 0x10 | 0x03 });
+            var chunks = (byte)((index % 3 is 0 ? 0 : 0x13) | (index % 5 is 1 ? 0x40 : 0) | (index % 7 is 2 ? 0x80 : 0));
+            yield return FuzzSeed.FromText("bad-data-" + name, [dialect, chunks], text);
             index++;
         }
     }
@@ -744,8 +1348,29 @@ public static partial class CsvFuzzTargets
         yield return ("comments", "# c,\"x\na,b\n#\n\n\"#q\",1\r\n# end,\r\nz");
         yield return ("bom", "\uFEFFa,b\n1,2");
         yield return ("long", new string('a', 100) + "," + new string('b', 70) + "\n\"" + new string('q', 50) + "\"\"\"");
+
+        // Records longer than the SIMD blocks, whose quotes, escaped quotes and line terminators fall anywhere in them, then records the SIMD scan
+        // leaves to the general scan, and regular records again
+        yield return ("long-records", string.Concat(Enumerable.Range(0, 12).Select(i => "\"" + new string('a', i * 7) + "\"\"x\"," + new string('b', 61 - i) + ",\"c,d\"" + (i % 3 is 0 ? "\r\n" : "\n"))) + "\"e\"f,g\nh,\"i\nj\"\n\"k\",l\r\n" + string.Concat(Enumerable.Repeat("m,\"n\"\"o\",p\n", 10)));
+
+        // ASCII records, whose values become strings without validation, around records with other characters in the same blocks
+        yield return ("ascii-records", string.Concat(Enumerable.Range(0, 16).Select(i => new string('a', i * 5) + "," + (i % 4 is 1 ? "é" : i % 4 is 2 ? "😀" : "b") + ",\"c\"\"d\"\n")));
     }
 
     [GeneratedRegex("""(?<![@$"\\])"(?<value>(?:[^"\\\r\n]|\\.)*)"(?!")""", RegexOptions.ExplicitCapture, matchTimeoutMilliseconds: 10_000)]
     private static partial Regex StringLiteralRegex();
+
+    private sealed record BadData(CsvBadDataKind Kind, long? RowIndex, long LineNumber, long Position, int? ColumnIndex, string? ColumnName, string Message, string Exception)
+    {
+        public static BadData Create(CsvBadDataContext context) => new(context.Kind, context.RowIndex, context.LineNumber, context.Position, context.ColumnIndex, context.ColumnName, context.Message, context.Exception.Message);
+    }
+
+    private sealed class DeserializeErrorState(CsvDeserializationErrorAction action)
+    {
+        public CsvDeserializationErrorAction Action { get; } = action;
+
+        public List<DeserializeError> Errors { get; } = [];
+    }
+
+    private sealed record DeserializeError(CsvDeserializationErrorKind Kind, long? RowIndex, long? LineNumber, int? ColumnIndex, string? MemberName, string? RawValue);
 }

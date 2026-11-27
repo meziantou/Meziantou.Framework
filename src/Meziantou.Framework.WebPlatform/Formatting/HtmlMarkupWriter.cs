@@ -148,7 +148,7 @@ public class HtmlMarkupWriter
     protected virtual void WriteText(Text text)
     {
         ArgumentNullException.ThrowIfNull(text);
-        if (text.ParentNode is Element parent && HtmlFormatter.HasRawTextContent(parent))
+        if (text.ParentNode?.AsElement is { } parent && HtmlFormatter.HasRawTextContent(parent))
         {
             WriteRawText(text);
         }
@@ -337,20 +337,24 @@ public class HtmlMarkupWriter
             }
 
             frame.Next = frame.IsSingleNode ? null : current.NextSibling;
-            if (current is not (Document or DocumentFragment) && !ShouldWrite(current))
+            if ((current.IsElement || current is not (Document or DocumentFragment)) && !ShouldWrite(current))
                 continue;
+
+            // The elements are tested first, without a type test (see Node.IsElement)
+            if (current.AsElement is { } element)
+            {
+                WriteStartTag(element);
+                if (!HtmlFormatter.IsVoidElement(element))
+                {
+                    Depth++;
+                    PushChildren(element, frames, element);
+                }
+
+                continue;
+            }
 
             switch (current)
             {
-                case Element element:
-                    WriteStartTag(element);
-                    if (HtmlFormatter.IsVoidElement(element))
-                        break;
-
-                    Depth++;
-                    PushChildren(element, frames, element);
-                    break;
-
                 case Text text:
                     WriteText(text);
                     break;

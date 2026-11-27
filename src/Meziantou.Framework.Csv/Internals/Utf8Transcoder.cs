@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Diagnostics;
 using System.Text.Unicode;
 
 namespace Meziantou.Framework.Csv.Internals;
@@ -16,9 +17,21 @@ internal static class Utf8Transcoder
     public static string GetString(ReadOnlySpan<byte> utf8)
     {
         if (Ascii.IsValid(utf8))
-            return string.Create(utf8.Length, utf8, (destination, value) => Ascii.ToUtf16(value, destination, out _));
+            return GetAsciiString(utf8);
 
         return Encoding.UTF8.GetString(utf8);
+    }
+
+    /// <summary>Decodes a value that is known to be ASCII into a string.</summary>
+    /// <remarks>
+    /// <c>Encoding.Latin1.GetString</c> decodes ASCII too, but it shares <see cref="Encoding.GetString(ReadOnlySpan{byte})"/> with <see cref="Encoding.UTF8"/>:
+    /// the JIT specializes that method for the encoding it sees most, and the other one goes through virtual calls, which made the values that are not
+    /// ASCII slower.
+    /// </remarks>
+    public static string GetAsciiString(ReadOnlySpan<byte> ascii)
+    {
+        Debug.Assert(Ascii.IsValid(ascii));
+        return string.Create(ascii.Length, ascii, (destination, value) => Ascii.ToUtf16(value, destination, out _));
     }
 
     public static ReadOnlySpan<char> Decode(ReadOnlySpan<byte> utf8, Span<char> stackBuffer, out char[]? rented)

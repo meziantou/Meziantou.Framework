@@ -12,6 +12,11 @@ public sealed class PdfLexerTests
     [InlineData("-98", -98L)]
     [InlineData("0", 0L)]
     [InlineData("00987", 987L)]
+    [InlineData("-0", 0L)]
+    [InlineData("999999999999999", 999999999999999L)]
+    [InlineData("-9999999999999999", -9999999999999999L)]
+    [InlineData("9223372036854775807", long.MaxValue)]
+    [InlineData("0000000000000000000042", 42L)]
     public void Integers(string text, long expected)
     {
         var token = new PdfLexer(Encoding.ASCII.GetBytes(text)).Next();
@@ -38,6 +43,43 @@ public sealed class PdfLexerTests
 
         Assert.True(token.Kind is PdfTokenKind.Real or PdfTokenKind.Integer);
         Assert.Equal(expected, token.Kind == PdfTokenKind.Real ? token.RealValue : token.IntegerValue, 9);
+    }
+
+    [Theory]
+    [InlineData("0.1")]
+    [InlineData("-0.0")]
+    [InlineData("-.0")]
+    [InlineData("+.5")]
+    [InlineData("12345678.9012345")]
+    [InlineData("1234567890.123456")]
+    [InlineData("0.000000000000001")]
+    [InlineData("0.0000000000000001")]
+    [InlineData("99999999999999.9")]
+    [InlineData("612.0")]
+    [InlineData("--0.3")]
+    [InlineData("-0.")]
+    [InlineData("-+00.")]
+    [InlineData("1.5.5")]
+    [InlineData("4.-5")]
+    [InlineData("3.14159265358979")]
+    public void RealsHaveTheValueOfTheGeneralParser(string text)
+    {
+        var bytes = Encoding.ASCII.GetBytes(text);
+
+        Assert.True(PdfLexer.TryParseNumber(bytes, out var isInteger, out var integer, out var real));
+        Assert.True(PdfLexer.TryParseAnyNumber(bytes, out var expectedIsInteger, out var expectedInteger, out var expectedReal));
+        Assert.Equal(expectedIsInteger, isInteger);
+        Assert.Equal(expectedInteger, integer);
+        Assert.Equal(BitConverter.DoubleToInt64Bits(expectedReal), BitConverter.DoubleToInt64Bits(real));
+    }
+
+    [Fact]
+    public void NegativeZeroKeepsItsSign()
+    {
+        var token = new PdfLexer("-0.0"u8.ToArray()).Next();
+
+        Assert.Equal(PdfTokenKind.Real, token.Kind);
+        Assert.True(double.IsNegative(token.RealValue));
     }
 
     [Theory]

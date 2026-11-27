@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="../src/Meziantou.Framework.MsQuic/Meziantou.Framework.MsQuic.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="../tests/Meziantou.Framework.MsQuic.Tests/Meziantou.Framework.MsQuic.Tests.csproj" />
+  </Folder>
+</Solution>

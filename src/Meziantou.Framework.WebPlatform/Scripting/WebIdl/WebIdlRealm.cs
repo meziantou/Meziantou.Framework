@@ -143,16 +143,20 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 
         var isWindowOrWorker = IsExposed(ExposureSet.Window | ExposureSet.DedicatedWorker | ExposureSet.SharedWorker | ExposureSet.ServiceWorker);
 
+        // The Device Memory API has no IDL in webref: navigator.deviceMemory is defined by hand (WebIdlRealm.DeviceMemory.cs)
+        InitializeDeviceMemory(Features.DeviceMemoryEnabled && IsSecureContext && isWindowOrWorker);
+
         // The global object gets an interface object per exposed interface, and the members of its interface
         Adapter.ReserveProperties(Global, WebIdlBindings<TAdapter, TValue>.Interfaces.Count + 256);
 
         var isSecureContext = IsSecureContext;
-        foreach (var binding in WebIdlBindings<TAdapter, TValue>.Interfaces.Values)
+        var features = Features;
+        foreach (var (binding, isEnabled) in GetInterfaceFeatures())
         {
             // https://webidl.spec.whatwg.org/#dfn-exposed: an interface is exposed in the global objects of its exposure set,
             // and a [SecureContext] interface is only exposed in a secure context
-            // and the interfaces of the disabled features are not exposed
-            if (!IsExposed(binding.Exposure) || (!isSecureContext && binding.Flags.HasFlag(InterfaceBindingFlags.SecureContext)) || !IsInterfaceEnabled(binding.Name))
+            // and the interfaces of the disabled features are not exposed (see IsInterfaceEnabled)
+            if (!IsExposed(binding.Exposure) || (!isSecureContext && binding.Flags.HasFlag(InterfaceBindingFlags.SecureContext)) || (isEnabled is not null && !isEnabled(features)))
                 continue;
 
             DefineLazyGlobal(binding.Name, binding);
@@ -184,10 +188,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
             DefineFileSystemGlobals();
         }
 
-        // The Device Memory API has no IDL in webref: navigator.deviceMemory is defined by hand (WebIdlRealm.DeviceMemory.cs)
-        if (Features.DeviceMemoryEnabled && isSecureContext && isWindowOrWorker)
+        // WebTransport and its streams are implemented in Streams.js ([SecureContext, Exposed=(Window,Worker)])
+        if (Features.WebTransportEnabled && isSecureContext && isWindowOrWorker && IsInterfaceEnabled("WritableStream"))
         {
-            DefineDeviceMemory();
+            DefineWebTransportGlobals();
         }
 
         DefineConsoleGlobal();
@@ -553,6 +557,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         else if (binding.Name == "WebSocketStream")
         {
             DefineWebSocketStreamMembers(prototype);
+        }
+        else if (_deviceMemoryInterface is not null && binding.Name == _deviceMemoryInterface)
+        {
+            DefineDeviceMemory(prototype);
         }
 
         binding.InterfaceObjectPropertyCount = Math.Max(binding.InterfaceObjectPropertyCount, Adapter.GetPropertyCount(interfaceObject));
@@ -1187,7 +1195,7 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         // https://webidl.spec.whatwg.org/#internally-create-a-new-object-implementing-the-interface
         var prototype = GetPrototypeFromConstructor(newTarget, binding);
 
-        if (Agent.Wrappers.TryGetValue(instance, out var existing))
+        if (TryGetExistingWrapper(instance, out var existing))
             return existing;
 
         return GetWrapper(instance, prototype);
@@ -1205,10 +1213,22 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (target is Window window)
             return GetWindowProxy(window);
 
-        if (Agent.Wrappers.TryGetValue(target, out var wrapper))
+        if (TryGetExistingWrapper(target, out var wrapper))
             return wrapper;
 
         return CreateWrapper(target, prototype);
+    }
+
+    /// <summary>Gets the JavaScript object of a .NET platform object created by the agent, if any.</summary>
+    private bool TryGetExistingWrapper(object target, [MaybeNullWhen(false)] out TValue wrapper)
+    {
+        if (target is IScriptWrapperHolder { ScriptWrapper: { } slot } && ReferenceEquals(slot.Agent, Agent))
+        {
+            wrapper = (TValue)slot.Wrapper;
+            return true;
+        }
+
+        return Agent.Wrappers.TryGetValue(target, out wrapper);
     }
 
     // Not in GetWrapper: the lambdas capture the new wrapper, and their closure would be allocated by each call of GetWrapper
@@ -1248,7 +1268,16 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
 #pragma warning restore WEBPLATEXP0014
         }
 
-        Agent.Wrappers.AddOrUpdate(target, wrapper);
+        // The object keeps its wrapper when it keeps the window of the realm alive (which keeps the agent alive)
+        if (target is IScriptWrapperHolder holder && Window is { } window && ReferenceEquals(holder.ScriptWrapperWindow, window))
+        {
+            holder.ScriptWrapper = new ScriptWrapperSlot(Agent, wrapper);
+        }
+        else
+        {
+            Agent.Wrappers.AddOrUpdate(target, wrapper);
+        }
+
         if (target is Location)
         {
             // The internal methods of a Location object depend on the current realm: its members are defined in its realm
@@ -1643,7 +1672,10 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
         if (source.Value is TValue value)
             return value;
 
-        var created = FromBuffer(source.Kind, source.Bytes);
+        // A view of the buffer of another source (whose object is created first)
+        var created = source.ViewOf is { } viewed
+            ? Adapter.RunInRealm(EngineRealm, () => Adapter.CreateArrayBufferView(source.Kind, Adapter.Get(FromBufferSource(viewed), Adapter.FromString("buffer")), source.ViewOffset, source.Bytes.Length))
+            : FromBuffer(source.Kind, source.Bytes);
         if (Adapter.TryGetBufferSource(created, out _, out _, out var bytes))
         {
             source.Bind(created, bytes);
@@ -1788,17 +1820,18 @@ public sealed partial class WebIdlRealm<TAdapter, TValue>
     }
 
     /// <summary>https://webidl.spec.whatwg.org/#js-frozen-array: a frozen array, the same object while the .NET object is the same.</summary>
-    [UnconditionalSuppressMessage("Trimming", "IL2091", Justification = "GetValue creates the value with the callback, not with the public parameterless constructor")]
     internal TValue FromFrozenArray<T>(IEnumerable<T>? values, Func<WebIdlRealm<TAdapter, TValue>, T, TValue> convert)
     {
         if (values is null)
             return Adapter.Null;
 
-        return Agent.FrozenArrays.GetValue(values, _ =>
-        {
-            var array = FromSequence(values, convert);
-            return Adapter.Call(EvaluateBuiltIn("Object.freeze"), Adapter.Undefined, [array]);
-        });
+        var arrays = Agent.FrozenArrays;
+        if (arrays.TryGetValue(values, out var reference) && reference.TryGetTarget(out var existing))
+            return existing;
+
+        var array = Freeze(FromSequence(values, convert));
+        arrays.AddOrUpdate(values, new WeakReference<TValue>(array));
+        return array;
     }
 
     /// <summary>Freezes an object (<c>Object.freeze</c>), e.g. an element of a frozen array that the specification freezes.</summary>

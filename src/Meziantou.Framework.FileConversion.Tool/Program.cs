@@ -120,11 +120,17 @@ internal static class Program
             }
         });
 
+        // SVG input
+        var svgWidthOption = AddFormatOption(new Option<int?>("--svg-width") { Description = "The width of the images of the SVG documents, in pixels. With only --svg-width, the height keeps the aspect ratio. Default: the width of the document, one pixel per CSS pixel" }, format => format.Kind is FileFormatKind.Svg);
+        svgWidthOption.Validators.Add(result => ValidateRange(result, svgWidthOption, 1, 32768));
+        var svgHeightOption = AddFormatOption(new Option<int?>("--svg-height") { Description = "The height of the images of the SVG documents, in pixels. With --svg-width too, the image fits in both, keeping the aspect ratio. Default: the height of the document" }, format => format.Kind is FileFormatKind.Svg);
+        svgHeightOption.Validators.Add(result => ValidateRange(result, svgHeightOption, 1, 32768));
+
         // PDF input
         var pdfPasswordOption = AddFormatOption(new Option<string?>("--pdf-password") { Description = "The password of the encrypted PDF inputs" }, format => format.Kind is FileFormatKind.Pdf);
         var pdfRenderAnnotationsOption = AddFormatOption(new Option<bool>("--pdf-render-annotations")
         {
-            Description = "Render the annotations of the PDF pages (form fields, stamps, comments) in the images. Use '--pdf-render-annotations false' to leave them out. Default: true",
+            Description = "Render the annotations of the PDF pages (form fields, stamps, comments) in the images. Use '--pdf-render-annotations false' to leave them out",
             DefaultValueFactory = _ => defaults.PdfRenderAnnotations,
         }, format => format.Kind is FileFormatKind.Pdf);
 
@@ -286,7 +292,7 @@ internal static class Program
         var sevenZipMethodOption = AddFormatOption(new Option<SevenZipCompressionMethod?>("--7z-compression-method") { Description = "The compression method of a 7z output. Default: Lzma2" }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
         var sevenZipSolidOption = AddFormatOption(new Option<bool>("--7z-solid")
         {
-            Description = "Compress the files of a 7z output together, which makes it smaller. Use '--7z-solid false' to compress each file on its own. Default: true",
+            Description = "Compress the files of a 7z output together, which makes it smaller. Use '--7z-solid false' to compress each file on its own",
             DefaultValueFactory = _ => defaults.SevenZipSolid,
         }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
         var sevenZipPasswordOption = AddFormatOption(new Option<string?>("--7z-password") { Description = "Encrypt the content of a 7z output with this password (AES-256)" }, format => IsArchive(format) && format.ArchiveType is ArchiveType.SevenZip);
@@ -312,12 +318,12 @@ internal static class Program
             DefaultValueFactory = _ => defaults.PstEncryption,
         }, format => format == FileFormat.Pst || format == FileFormat.Ost);
 
-        var rootCommand = new RootCommand("Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)");
+        var rootCommand = new RootCommand("Convert files from one format to another: images (PNG, JPEG, WebP, AVIF, HEIC, JPEG XL, TIFF, GIF...), PDF, SVG, EPUB, MOBI, AZW3, Markdown, HTML, comic book archives (CBZ, CBR, CB7, CBT), archives (zip, 7z, RAR, tar...), mailboxes (PST, OST, mbox, Maildir) and email messages (EML, MSG, EMLX, winmail.dat)");
         rootCommand.Arguments.Add(inputsArgument);
         Option[] options =
         [
             outputOption, inputFormatOption, outputFormatOption, overwriteOption, perInputOption, perPageOption, pagesOption, listFormatsOption,
-            maxWidthOption, maxHeightOption, dpiOption,
+            maxWidthOption, maxHeightOption, dpiOption, svgWidthOption, svgHeightOption,
             backgroundOption, jpegQualityOption, webpQualityOption, webpLosslessOption, avifQualityOption, avifEffortOption, avifLosslessOption,
             heicQualityOption, jpegXlQualityOption, jpegXlLosslessOption, pngCompressionLevelOption, tiffCompressionOption, gifMaxColorsOption,
             pdfPasswordOption, pdfRenderAnnotationsOption,
@@ -373,6 +379,8 @@ internal static class Program
                 TiffCompression = parseResult.GetValue(tiffCompressionOption),
                 GifMaxColors = parseResult.GetValue(gifMaxColorsOption),
                 Dpi = parseResult.GetValue(dpiOption),
+                SvgWidth = parseResult.GetValue(svgWidthOption),
+                SvgHeight = parseResult.GetValue(svgHeightOption),
                 PdfPassword = parseResult.GetValue(pdfPasswordOption),
                 PdfRenderAnnotations = parseResult.GetValue(pdfRenderAnnotationsOption),
                 PageSize = parseResult.GetValue(pageSizeOption) ?? PageSize.Fit,

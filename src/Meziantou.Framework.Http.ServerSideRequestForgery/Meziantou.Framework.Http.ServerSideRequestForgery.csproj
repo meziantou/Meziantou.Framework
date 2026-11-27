@@ -12,10 +12,11 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.Http.ServerSideRequestForgery.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.Http.ServerSideRequestForgery.Benchmarks" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="11.0.0" />
   </ItemGroup>
 
 </Project>

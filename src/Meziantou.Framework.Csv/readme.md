@@ -38,6 +38,8 @@ Assert.Equal(["Alice is 30 years old", "Bob is 25 years old"], lines);
 
 ### Reading UTF-8 data
 
+Prefer `Utf8CsvReader` for UTF-8 files, streams and bytes: it has the same options and members as `CsvReader`, and does not decode the values you do not read.
+
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=Utf8CsvReader_Read;format=md-fenced-code-block;dedent=true -->
 ```csharp
 using var stream = new MemoryStream("Name,Age\nAlice,30\nBob,25"u8.ToArray());
@@ -77,6 +79,8 @@ Assert.Equal("Name,Age,City\nAlice,30,New York\nBob,25,\"London, UK\"\n", output
 ```
 <!-- endref -->
 
+Prefer `Utf8CsvWriter` to write UTF-8 files, streams and `IBufferWriter<byte>`: it formats values directly to UTF-8 bytes.
+
 ### Serializing objects
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvSerializerTests.cs;region=CsvSerializer_PersonModel;format=md-fenced-code-block;dedent=true -->
@@ -108,6 +112,8 @@ Assert.Equal("Bob, Jr.", result[1].Name);
 Assert.Null(result[1].BirthDate); // An empty value is null for a nullable type
 ```
 <!-- endref -->
+
+`CsvSerializer.SerializeToUtf8Bytes` returns the UTF-8 data as a `byte[]`, without creating a string first.
 
 ### Source generation for Native AOT
 

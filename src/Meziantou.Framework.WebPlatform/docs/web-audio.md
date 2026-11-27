@@ -111,9 +111,11 @@ a task of the event loop.
 - **Latency**: `baseLatency` is 2 render quanta for `interactive` (the default), 8 for `balanced` and 32 for `playback`;
   a latency in seconds is rounded up to render quanta, in this range. `outputLatency` is 0.
 - **Sample rate**: 48000 Hz by default, or the `sampleRate` option (from 3000 to 768000 Hz).
-- **Output devices**: there is only the default device (the sink identifier `""`) and the sinks without device
-  (`{ type: 'none' }`). Another identifier is an `error` event at the construction, and a `NotFoundError` for
-  `setSinkId()`, which also requires the `speaker-selection` permissions policy feature (a `NotAllowedError`).
+- **Output devices**: the default device (the sink identifier `""`), the sinks without device (`{ type: 'none' }`), and
+  the audio output devices that `navigator.mediaDevices.enumerateDevices()` lists (the outputs of a captured microphone,
+  and the devices chosen with `selectAudioOutput()`). Another identifier is an `error` event at the construction, and a
+  `NotFoundError` for `setSinkId()`, which also requires the `speaker-selection` permissions policy feature (a
+  `NotAllowedError`). The rendered audio is not played on a device.
 - **`playbackStats`**: `totalDuration` is the time during which the context ran since its first render quantum, the
   underruns are the skipped times, and the latencies are `baseLatency + outputLatency`. The values do not change until
   the next microtask checkpoint.

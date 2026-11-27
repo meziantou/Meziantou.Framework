@@ -170,7 +170,7 @@ internal static class PublicApiEmitter
         if (orderedTypes.Count == 0)
             return;
 
-        var conflictingNamespaceIdentifiers = GetConflictingNamespaceIdentifiers(namespaceName);
+        var conflictingNamespaceReference = GetConflictingNamespaceReference(namespaceName);
         if (string.IsNullOrEmpty(namespaceName))
         {
             for (var i = 0; i < orderedTypes.Count; i++)
@@ -180,7 +180,7 @@ internal static class PublicApiEmitter
                     sb.AppendLine();
                 }
 
-                var source = conflictingNamespaceIdentifiers.Count > 0 ? QualifyConflictingNamespaceReferences(orderedTypes[i].Source, conflictingNamespaceIdentifiers) : orderedTypes[i].Source;
+                var source = conflictingNamespaceReference is not null ? QualifyConflictingNamespaceReferences(orderedTypes[i].Source, conflictingNamespaceReference) : orderedTypes[i].Source;
                 sb.AppendLine(source);
             }
 
@@ -197,17 +197,19 @@ internal static class PublicApiEmitter
                 sb.AppendLine();
             }
 
-            var source = conflictingNamespaceIdentifiers.Count > 0 ? QualifyConflictingNamespaceReferences(orderedTypes[i].Source, conflictingNamespaceIdentifiers) : orderedTypes[i].Source;
+            var source = conflictingNamespaceReference is not null ? QualifyConflictingNamespaceReferences(orderedTypes[i].Source, conflictingNamespaceReference) : orderedTypes[i].Source;
             AppendIndented(sb, source, 1);
         }
 
         sb.AppendLine("}");
     }
 
-    private static HashSet<string> GetConflictingNamespaceIdentifiers(string namespaceName)
+    // Returns the last segment of the namespace followed by a dot (e.g. "Generic." for "System.Collections.Generic"), or null when there is none.
+    // Inside the namespace, a reference that starts with this identifier binds to the namespace itself, so it must be qualified with "global::".
+    internal static string? GetConflictingNamespaceReference(string namespaceName)
     {
         if (string.IsNullOrEmpty(namespaceName))
-            return [with(StringComparer.Ordinal)];
+            return null;
 
         var lastSeparatorIndex = namespaceName.LastIndexOf('.', StringComparison.Ordinal);
         var lastSegment = lastSeparatorIndex < 0
@@ -215,20 +217,24 @@ internal static class PublicApiEmitter
             : namespaceName[(lastSeparatorIndex + 1)..];
 
         if (string.IsNullOrEmpty(lastSegment))
-            return [with(StringComparer.Ordinal)];
+            return null;
 
-        return [with(StringComparer.Ordinal), lastSegment];
+        return lastSegment + ".";
     }
 
-    private static string QualifyConflictingNamespaceReferences(string source, IReadOnlySet<string> conflictingNamespaceIdentifiers)
+    internal static string QualifyConflictingNamespaceReferences(string source, string conflictingNamespaceReference)
     {
+        // Every qualified reference contains the identifier followed by a dot, so a source without it is unchanged
+        if (!source.Contains(conflictingNamespaceReference, StringComparison.Ordinal))
+            return source;
+
         var sb = new StringBuilder(source.Length);
         var inString = false;
         var inChar = false;
         var escapeNext = false;
         for (var i = 0; i < source.Length; i++)
         {
-            if (!inString && !inChar && TryGetConflictingIdentifierLength(source, i, conflictingNamespaceIdentifiers, out var identifierLength))
+            if (!inString && !inChar && TryGetConflictingIdentifierLength(source, i, conflictingNamespaceReference, out var identifierLength))
             {
                 sb.Append("global::");
                 sb.Append(source, i, identifierLength + 1);
@@ -290,11 +296,20 @@ internal static class PublicApiEmitter
         return sb.ToString();
     }
 
-    private static bool TryGetConflictingIdentifierLength(string source, int index, IReadOnlySet<string> conflictingNamespaceIdentifiers, out int identifierLength)
+    private static bool TryGetConflictingIdentifierLength(string source, int index, string conflictingNamespaceReference, out int identifierLength)
     {
         identifierLength = 0;
         if (index >= source.Length || (!char.IsLetter(source[index]) && source[index] != '_'))
             return false;
+
+        // An identifier that follows another identifier or a dot is not the start of a reference.
+        // This is checked first, as it rejects most positions without scanning the identifier.
+        if (index > 0)
+        {
+            var previousCharacter = source[index - 1];
+            if (char.IsLetterOrDigit(previousCharacter) || previousCharacter is '_' or '.')
+                return false;
+        }
 
         var currentIndex = index + 1;
         while (currentIndex < source.Length && (char.IsLetterOrDigit(source[currentIndex]) || source[currentIndex] == '_'))
@@ -305,49 +320,38 @@ internal static class PublicApiEmitter
         if (currentIndex >= source.Length || source[currentIndex] != '.')
             return false;
 
-        var identifier = source[index..currentIndex];
-        if (!conflictingNamespaceIdentifiers.Contains(identifier))
+        // The identifier and the dot that follows it
+        if (!source.AsSpan(index, currentIndex + 1 - index).SequenceEqual(conflictingNamespaceReference))
             return false;
 
-        if (index >= "global::".Length &&
-            source[index - 8] == 'g' &&
-            source[index - 7] == 'l' &&
-            source[index - 6] == 'o' &&
-            source[index - 5] == 'b' &&
-            source[index - 4] == 'a' &&
-            source[index - 3] == 'l' &&
-            source[index - 2] == ':' &&
-            source[index - 1] == ':')
-        {
-            return false;
-        }
-
-        if (index == 0)
-        {
-            identifierLength = identifier.Length;
-            return true;
-        }
-
-        var previousCharacter = source[index - 1];
-        if (char.IsLetterOrDigit(previousCharacter) || previousCharacter is '_' or '.')
+        if (source.AsSpan(0, index).EndsWith("global::", StringComparison.Ordinal))
             return false;
 
-        identifierLength = identifier.Length;
+        identifierLength = currentIndex - index;
         return true;
     }
 
-    private static void AppendIndented(StringBuilder sb, string text, int indentationLevel)
+    // Splits the lines like StringReader.ReadLine ("\r\n", "\r" or "\n", and no empty line after the last line break)
+    // without allocating a string per line
+    internal static void AppendIndented(StringBuilder sb, string text, int indentationLevel)
     {
-        using var reader = new StringReader(text);
-        string? line;
-        while ((line = reader.ReadLine()) is not null)
+        var remaining = text.AsSpan();
+        while (!remaining.IsEmpty)
         {
-            if (line.Length > 0)
+            var lineEnd = remaining.IndexOfAny('\r', '\n');
+            var line = lineEnd < 0 ? remaining : remaining[..lineEnd];
+            if (!line.IsEmpty)
             {
                 sb.Append(' ', indentationLevel * 4);
             }
 
-            sb.AppendLine(line);
+            sb.Append(line);
+            sb.AppendLine();
+            if (lineEnd < 0)
+                break;
+
+            var lineBreakLength = remaining[lineEnd] == '\r' && lineEnd + 1 < remaining.Length && remaining[lineEnd + 1] == '\n' ? 2 : 1;
+            remaining = remaining[(lineEnd + lineBreakLength)..];
         }
     }
 

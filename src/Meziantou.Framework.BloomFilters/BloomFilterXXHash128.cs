@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -81,6 +82,18 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
         high *= AvalancheMultiplier;
         high ^= high >> 32;
         return high;
+    }
+
+    /// <summary>
+    /// Returns the same hash as <see cref="Hash(ReadOnlySpan{byte})"/> of the 8 bytes of <paramref name="value"/> in
+    /// memory, without the call and the length checks of <see cref="XxHash128"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static BloomFilterHash HashInteger(ulong value)
+    {
+        // XxHash128 reads the bytes as a little-endian integer
+        var high = HashUInt64(BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value), out var low);
+        return BloomFilterHash.FromUInt128(low, high);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

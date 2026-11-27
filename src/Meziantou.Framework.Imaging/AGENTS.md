@@ -1362,6 +1362,13 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     next change (`WalkBetweenChanges`): -20 % instructions on a page of text. Recording every change cost 1.5 % on
     short lines (100 labels). The spans of the sweep are taken once per row (`SweepSpans`), not at each access, and
     the edges of the sweep line are copies in the scratch of their slots (`SlotEdges`), which stay in the cache.
+  - The events of a row are sorted as packed integers (`TrySortPacked`: unique, so any sort gives the same order); up to
+    `MaxVectorSortLength` of them go through a bitonic network of AVX-512 vectors (`SortVector512`), which makes the
+    same comparisons whatever the values: a comparison sort of the ~90 events of a row of text mispredicted about every
+    other comparison (0.92 ms of a 6.2 ms paragraph, 0.27 ms with the network; the rows of more than 256 events
+    were a third of it). The binary search of `Insert` stays
+    branchy: a branchless one with the same probes was slower, the probes are bound by their latency. The window of
+    `PositionHint` is not what `Remove` costs (a window of 128 positions changed nothing).
   - The sweep carries its state (the order of the sweep line, the slots, the pending crossings, which crossings were
     found late) from one row to the next: a band of rows cannot be swept apart and give the same sums. What a row
     gives is the ordered list of the pieces of boundary that `AddBoundary` accumulates, a pure function of the piece and
@@ -1375,6 +1382,17 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   - Compositing is exact integer source-over (`ulong`), the generalization of `AnimationCompositor.BlendOver8/16` to a
     fractional source alpha. Colors are converted to the pixel format first (`PixelConverter` rules). A floating-point frame is
     composited by `FloatDrawingKernels` instead (the same formulas in double precision, not rounded to a grid).
+  - The vector kernels of source-over on 8-bit pixels (`CompositeOver8`, `...Avx2`, `...Avx512`) take a whole row: they
+    skip the blocks without coverage, write an opaque single paint to the blocks covered entirely (`FillFullBlocks`;
+    `TryCompositeFullRuns` is not used for it), and composite the last pixels of a run as its last whole block, whose
+    pixels composited already get no coverage (which leaves a pixel as it is in every path), not through the narrower
+    kernels down to the scalar one. A row of a thin stroke was ~16 calls of four kernels each. Their blending loop is a
+    method of its own without any call (`BlendBlocks8*`): with calls in the loop, the vectors live across them were
+    spilled, and the code dynamic PGO produced for the same loop ran 5x slower or not depending on its layout (a
+    `Stopwatch` added in the loop made it fast again). That loop also passes the blocks without coverage and ends the
+    run, so that the row of a glyph mask is one call (the kernel itself is inlined, and its other blocks are in
+    `...Rest`): a second call per run, or a run copied to a padded block, cost the glyph masks of a paragraph 5-17%. A
+    run shorter than a block still goes to the narrower kernel.
   - The other operators of `CompositeMode` (a property of the brush, so that the canvas has no state) have one kernel
     for all of them, from the two factors of the operator; source-over keeps its own, unchanged. A paint without
     opacity is skipped only with the operators it changes nothing with (`IsTransparentPaintInert`): with the others it
@@ -1388,7 +1406,11 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     the alpha of source-over does not depend on the blend mode). The backdrop removal of non-isolated groups and the
     composite of the elements of knockout groups (ISO 32000-2, 11.4.8) run when the group or the element ends, in
     double precision on the stored samples; nothing in the rasterizer or the kernels knows about groups.
-  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center. With a
+  - Gradients interpolate premultiplied values of the converted stops, evaluated per pixel at its center. The vector
+    path (`EvaluateStopsVector`) computes a group of lanes on both sides of one stop as both segments and a selection,
+    each lane with the segment the scalar search finds for it (its local function must stay inlined: as a call, its
+    vectors went through memory and the gradient was twice as slow). The four divisions per group are most of what
+    is left; a reciprocal would need a proof that no rounded sample changes. With a
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
@@ -1677,6 +1699,15 @@ thin public types over its `FontFace`.
   after a line, only the start is shaped again (`ShapeStart`: two line widths, cut after a space), and the rest is a
   pending item that keeps its advances: shaping the whole rest after each line made a layout quadratic. A line is
   still shaped as a whole: `BuildLine` merges the parts of a run that such a cut separated.
+- **Shaped glyphs are kept where shaping them again gives them** (`Item.Shaping`, `CutGlyphs`, `MergeGlyphs`). An item
+  whose glyphs are those shaping its characters alone gives keeps them when it is cut before the first glyph of a
+  cluster the shaper did not mark unsafe to break (`GlyphInfo.IsUnsafeToBreak`): each part gets its glyphs, and
+  `Shape` does not shape it again. Two parts of the same shaping, next to each other, are merged back without shaping.
+  Anything else (a cut inside a cluster or before a marked glyph, a ruby base, what a line adds, a combined text)
+  is shaped again, as before. A paragraph whose breaks are all safe is shaped once. The layout must stay the one
+  shaping each part again gives: `TextLayoutEngine.Create(..., reusesShapedGlyphs: false)` gives it, and
+  `TextLayoutTests` and `TextLayoutFuzzTests` compare the two. A difference is a missing mark of the shaper (see
+  `TextShaperTests.ShapingTheTwoPartsOfATextCut...`), to fix there, not here.
 - **Measuring a line** goes through `LinePen`: the width so far, and the aligned tabulation stop
   (`TextLayoutOptions.TabStops`) whose advance depends on the text after it, up to the next tabulation or the white
   space that hangs. `FindBreak`, `FindOptimalBreaks`, `Trim` and `BuildLine` all measure with it, so a wrapped line

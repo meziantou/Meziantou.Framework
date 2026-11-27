@@ -6,7 +6,7 @@ namespace Meziantou.Framework.WebPlatform.Scripting;
 /// The internal methods of the legacy platform objects, which support indexed or named properties
 /// (https://webidl.spec.whatwg.org/#es-legacy-platform-objects).
 /// </summary>
-internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, InterfaceBinding<TAdapter, TValue> binding, LegacyPlatformObjectBinding<TAdapter, TValue> legacy) : IJsHostObjectHandler<TValue>
+internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<TAdapter, TValue> realm, InterfaceBinding<TAdapter, TValue> binding, LegacyPlatformObjectBinding<TAdapter, TValue> legacy) : ILegacyPlatformObjectHandler<TValue>
     where TAdapter : struct, IJsAdapter<TValue>
     where TValue : class
 {
@@ -60,13 +60,17 @@ internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<
     }
 
     /// <summary>https://webidl.spec.whatwg.org/#dfn-named-property-visibility</summary>
-    private bool IsNamedPropertyVisible(TValue obj, object target, string name)
+    /// <param name="obj">The object.</param>
+    /// <param name="target">The platform object of <paramref name="obj"/>.</param>
+    /// <param name="name">The name of the property.</param>
+    /// <param name="hasNoOwnProperty">Whether the caller checked that the object has no ordinary own property of this name.</param>
+    private bool IsNamedPropertyVisible(TValue obj, object target, string name, bool hasNoOwnProperty = false)
     {
         if (!IsSupportedPropertyName(target, name))
             return false;
 
         var key = Adapter.FromString(name);
-        if (Adapter.OrdinaryGetOwnProperty(obj, key, out _))
+        if (!hasNoOwnProperty && Adapter.OrdinaryGetOwnProperty(obj, key, out _))
             return false;
 
         if ((binding.Flags & InterfaceBindingFlags.LegacyOverrideBuiltIns) != InterfaceBindingFlags.None)
@@ -112,7 +116,12 @@ internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<
     }
 
     /// <summary>https://webidl.spec.whatwg.org/#LegacyPlatformObjectGetOwnProperty</summary>
-    public bool TryGetOwnProperty(TValue obj, TValue key, out JsPropertyDescriptor<TValue> descriptor)
+    public bool TryGetOwnProperty(TValue obj, TValue key, out JsPropertyDescriptor<TValue> descriptor) => TryGetOwnProperty(obj, key, hasNoOwnProperty: false, out descriptor);
+
+    /// <inheritdoc/>
+    public bool TryGetOwnPropertyWithoutOrdinaryProperty(TValue obj, TValue key, out JsPropertyDescriptor<TValue> descriptor) => TryGetOwnProperty(obj, key, hasNoOwnProperty: true, out descriptor);
+
+    private bool TryGetOwnProperty(TValue obj, TValue key, bool hasNoOwnProperty, out JsPropertyDescriptor<TValue> descriptor)
     {
         var target = Target(realm, obj);
         var ignoreNamedProperties = false;
@@ -124,7 +133,7 @@ internal sealed class LegacyPlatformObjectHandler<TAdapter, TValue>(WebIdlRealm<
             ignoreNamedProperties = true;
         }
 
-        if (legacy.SupportsNamedProperties && !ignoreNamedProperties && Adapter.IsString(key) && IsNamedPropertyVisible(obj, target, Adapter.AsString(key)))
+        if (legacy.SupportsNamedProperties && !ignoreNamedProperties && Adapter.IsString(key) && IsNamedPropertyVisible(obj, target, Adapter.AsString(key), hasNoOwnProperty))
         {
             var name = Adapter.AsString(key);
             var value = Invoke((legacy, realm, target, name), static state => state.legacy.NamedGetter!(state.realm, state.target, state.name));

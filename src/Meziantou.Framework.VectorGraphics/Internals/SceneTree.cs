@@ -174,20 +174,22 @@ internal static class SceneTree
                     }
                 }
 
-                if (element is SceneGroup group)
-                {
-                    var children = group.Children;
-                    for (var i = 0; i < children.Count; i++)
-                    {
-                        contents.Add((children[i], isClip));
-                    }
-                }
-
+                // The contents are pushed from the last one: the clipping paths, the other contents, the children, then
+                // the content of a use of a clipping path. The children are pushed directly, so a large group is not copied.
                 // A use of a clipping path is written inline: its content is geometry too (its texts need their fonts).
                 // Each one is followed once, so a use in its own content stops.
                 if (isClip && element is SceneUse clipUse && !clipUse.IsCircular() && clipUses.Add(clipUse))
                 {
-                    contents.Add((clipUse.Content, true));
+                    stack.Push((clipUse.Content, true));
+                }
+
+                if (element is SceneGroup group)
+                {
+                    var children = group.Children;
+                    for (var i = children.Count - 1; i >= 0; i--)
+                    {
+                        stack.Push((children[i], isClip));
+                    }
                 }
 
                 for (var i = contents.Count - 1; i >= 0; i--)

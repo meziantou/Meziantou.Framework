@@ -15,6 +15,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Wpt" />
     <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Tests" />
+    <InternalsVisibleTo Include="Meziantou.Framework.WebPlatform.Fuzz" />
     <!-- The deprecated package forwards its runtime to WasmWebAssemblyRuntime -->
   </ItemGroup>
 </Project>

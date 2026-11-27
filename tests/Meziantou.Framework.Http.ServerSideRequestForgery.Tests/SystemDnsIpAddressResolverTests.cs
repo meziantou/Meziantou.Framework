@@ -8,6 +8,7 @@ public sealed class SystemDnsIpAddressResolverTests
     [InlineData("203.0.113.10", "203.0.113.10")]
     [InlineData("2001:db8::1", "2001:db8::1")]
     [InlineData("[2001:db8::1]", "2001:db8::1")]
+    [InlineData("[203.0.113.10]", "203.0.113.10")]
     [InlineData("::ffff:203.0.113.10", "::ffff:203.0.113.10")]
     public async Task ResolveAsync_ReturnsLiteralWithoutQueryingDns(string host, string expectedAddress)
     {

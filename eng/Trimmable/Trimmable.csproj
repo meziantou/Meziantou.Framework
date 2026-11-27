@@ -334,6 +334,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.Markdown\Meziantou.Framework.Markdown.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.MediaTags\Meziantou.Framework.MediaTags.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Mermaid\Meziantou.Framework.Mermaid.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.MsQuic\Meziantou.Framework.MsQuic.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NodeJs\Meziantou.Framework.NodeJs.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpClient\Meziantou.Framework.NtpClient.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.NtpServer\Meziantou.Framework.NtpServer.csproj" />
@@ -376,6 +377,7 @@
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.JavaScript\Meziantou.Framework.WebPlatform.JavaScript.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.PdfRendering\Meziantou.Framework.WebPlatform.PdfRendering.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.WebPlatform.Wasm\Meziantou.Framework.WebPlatform.Wasm.csproj" />
+    <ProjectReference Include="..\..\src\Meziantou.Framework.WebTransport\Meziantou.Framework.WebTransport.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.CredentialManager\Meziantou.Framework.Win32.CredentialManager.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Win32.RecentDocuments\Meziantou.Framework.Win32.RecentDocuments.csproj" />
     <ProjectReference Include="..\..\src\Meziantou.Framework.Yaml\Meziantou.Framework.Yaml.csproj" />
@@ -704,6 +706,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.Markdown" />
     <TrimmerRootAssembly Include="Meziantou.Framework.MediaTags" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Mermaid" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.MsQuic" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NodeJs" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpClient" />
     <TrimmerRootAssembly Include="Meziantou.Framework.NtpServer" />
@@ -746,6 +749,7 @@
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.JavaScript" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.PdfRendering" />
     <TrimmerRootAssembly Include="Meziantou.Framework.WebPlatform.Wasm" />
+    <TrimmerRootAssembly Include="Meziantou.Framework.WebTransport" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.CredentialManager" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Win32.RecentDocuments" />
     <TrimmerRootAssembly Include="Meziantou.Framework.Yaml" />

@@ -78,6 +78,9 @@ internal static class FallbackMarkPositioner
                 {
                     scratch ??= new GlyphScratch(face.Data.Environment.CreateAllocator("TextShaper"));
                     PositionAroundBase(buffer, face, scratch, i, end, isRightToLeft);
+
+                    // The marks are placed from their base: a break between them would place them elsewhere.
+                    buffer.MarkUnsafeToBreak(i, end);
                 }
 
                 i = end - 1;

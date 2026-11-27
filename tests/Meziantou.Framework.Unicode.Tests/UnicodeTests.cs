@@ -242,6 +242,62 @@ public sealed class UnicodeTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void CaseMapping_OfATextWithoutContext_IsTheMappingOfEachCodePoint()
+    {
+        // Runs of ASCII characters of every length between characters that are not ASCII: those that expand (sharp s,
+        // ligature, dotted capital I), supplementary characters, lone surrogates and characters without case. There is
+        // no capital sigma, the only character whose mapping depends on the context without a language.
+        string[] pieces = ["a", "B", "z", "Z", "0", " ", "_", "\u007F", "é", "É", "ß", "ﬁ", "İ", "ŉ", "ǅ", "α", "Ж", "中", "\U00010400", "\U00010428", "\U0001F600", "\uD800", "\uDC00"];
+        var random = new Random(42);
+        Span<int> mapping = stackalloc int[UnicodeProperties.MaxCaseMappingLength];
+        for (var iteration = 0; iteration < 2000; iteration++)
+        {
+            var text = new StringBuilder();
+            var upper = new StringBuilder();
+            var lower = new StringBuilder();
+            var count = random.Next(0, 80);
+            for (var i = 0; i < count; i++)
+            {
+                // Mostly ASCII letters, so that the runs of ASCII characters have many lengths.
+                var piece = random.Next(4) == 0 ? pieces[random.Next(pieces.Length)] : ((char)random.Next(0x20, 0x7F)).ToString();
+                if (text.Length > 0 && char.IsHighSurrogate(text[^1]) && char.IsLowSurrogate(piece[0]))
+                    continue;
+
+                text.Append(piece);
+                if (piece.Length == 1 && char.IsSurrogate(piece[0]))
+                {
+                    upper.Append(piece);
+                    lower.Append(piece);
+                    continue;
+                }
+
+                var codePoint = char.ConvertToUtf32(piece, 0);
+                upper.Append(ToString(mapping[..UnicodeProperties.GetUppercaseMapping(codePoint, mapping)]));
+                lower.Append(ToString(mapping[..UnicodeProperties.GetLowercaseMapping(codePoint, mapping)]));
+            }
+
+            var value = text.ToString();
+            Assert.Equal(upper.ToString(), UnicodeCaseMapping.ToUpper(value));
+            Assert.Equal(lower.ToString(), UnicodeCaseMapping.ToLower(value));
+            Assert.Equal(upper.ToString(), UnicodeCaseMapping.ToUpper(value, "fr"));
+            Assert.Equal(lower.ToString(), UnicodeCaseMapping.ToLower(value, "fr"));
+        }
+    }
+
+    [Fact]
+    public void CaseMapping_FilterOfTheSpecialCasings_AcceptsEveryEntry()
+    {
+        // The filter rules out the code points before the entries are searched: it must accept every entry.
+        var records = UnicodeTables.SpecialCasingMappings;
+        for (var offset = 0; offset < records.Length; offset += 6)
+        {
+            var codePoint = UnicodeTableReader.ReadUInt24(records, offset);
+            Assert.True(UnicodeTables.MayHaveSpecialCasing(codePoint), $"U+{codePoint:X4}");
+        }
+    }
+
+    [Fact]
     public void CaseMapping_ThrowsForANullText()
     {
         Assert.Throws<ArgumentNullException>("value", () => UnicodeCaseMapping.ToUpper(null!));
@@ -2053,6 +2109,15 @@ public sealed class UnicodeTests
     [InlineData("\u1100\u1161\u11A8\uAC00", new[] { 3, 1 })]
     // A Devanagari conjunct: consonant, virama, consonant.
     [InlineData("\u0915\u094D\u0937\u093F", new[] { 4 })]
+    // GB9c: the extending marks after the linker, and the conjuncts of more than two consonants.
+    [InlineData("\u0915\u0300\u094D\u0300\u0937", new[] { 5 })]
+    [InlineData("\u0915\u094D\u0937\u094D\u0924", new[] { 5 })]
+    // Since Unicode 18.0, GB9c does not need a consonant before the linker, but it needs a linker before the consonant.
+    [InlineData("\u0600\u094D\u0915", new[] { 3 })]
+    [InlineData("a\u094D\u0915", new[] { 3 })]
+    [InlineData("a\u094D\u094D\u0915", new[] { 4 })]
+    [InlineData("\u094D\u0915", new[] { 2 })]
+    [InlineData("\u0915\u0300\u0937", new[] { 2, 1 })]
     // The last ASCII letter takes the mark that follows it.
     [InlineData("ab\u0301", new[] { 1, 2 })]
     [InlineData("a\r\n", new[] { 1, 2 })]
@@ -2174,6 +2239,241 @@ public sealed class UnicodeTests
 
         Assert.Equal(expectedSegments, segments.ToArray());
         Assert.Equal(expectedKinds, kinds.ToArray());
+    }
+
+    [Fact]
+    public void EnumerateWordBoundaries_MatchesTheRulesForEveryShortAsciiText()
+    {
+        // The segments that start with an ASCII character are found without looking up the characters when no rule can
+        // join the next character: they are those of the rules applied to each character, as is the kind of the
+        // segments that end with an ASCII letter or digit.
+        Span<char> buffer = stackalloc char[3];
+        for (var length = 1; length <= 3; length++)
+        {
+            var text = buffer[..length];
+            var count = 1 << (7 * length);
+            for (var value = 0; value < count; value++)
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    text[i] = (char)((value >> (7 * i)) & 0x7F);
+                }
+
+                var expected = Unicode.GetWordSegmentLength(text);
+                var actual = Unicode.GetAsciiWordSegmentLength(text);
+                if ((actual != 0 && expected != actual) || (Unicode.TryGetAsciiWordKind(text[..expected], out var kind) && Unicode.GetWordKind(text[..expected]) != kind))
+                {
+                    Assert.Fail($"Text: {string.Join(' ', text.ToArray().Select(c => ((int)c).ToString("X2", CultureInfo.InvariantCulture)))}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void EnumerateWordBoundaries_MatchesTheRulesForRandomTexts()
+    {
+        // ASCII characters around characters that the rules join to them: letters that are not ASCII, marks, format
+        // characters, joiners, Hebrew letters, katakana, ideographs, regional indicators and emoji.
+        string[] pieces =
+        [
+            "a", "Z", "7", "_", " ", "  ", "'", "\"", ".", ":", ",", ";", "-", "!", "\r", "\n", "\r\n", "\t", "\u00E9", "\u0301", "\u00AD", "\u200D", "\u2019",
+            "\u05D0", "\u30AB", "\u4E2D", "\u0660", "\u3000", "\U0001F1EB", "\U0001F600", "\u00A0",
+        ];
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 12);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            for (var start = 0; start < text.Length; start++)
+            {
+                var segment = text.AsSpan(start);
+                var length = Unicode.GetWordSegmentLength(segment);
+                var asciiLength = Unicode.GetAsciiWordSegmentLength(segment);
+                Assert.True(asciiLength == 0 || asciiLength == length);
+                if (Unicode.TryGetAsciiWordKind(segment[..length], out var kind))
+                {
+                    Assert.Equal(Unicode.GetWordKind(segment[..length]), kind);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void GetSentenceLength_MatchesTheRulesForEveryShortAsciiText()
+    {
+        // The code points that cannot end a sentence are skipped without applying the rules to each of them.
+        Span<char> buffer = stackalloc char[3];
+        for (var length = 1; length <= 3; length++)
+        {
+            var text = buffer[..length];
+            var count = 1 << (7 * length);
+            for (var value = 0; value < count; value++)
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    text[i] = (char)((value >> (7 * i)) & 0x7F);
+                }
+
+                if (Unicode.GetSentenceLength(text) != Unicode.GetSentenceLengthByRules(text))
+                {
+                    Assert.Fail($"Text: {string.Join(' ', text.ToArray().Select(c => ((int)c).ToString("X2", CultureInfo.InvariantCulture)))}");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void GetSentenceLength_MatchesTheRulesForRandomTexts()
+    {
+        // ASCII characters around terminal punctuation, closing punctuation, spaces, paragraph separators, marks,
+        // format characters, letters that are not ASCII, supplementary characters and unpaired surrogates.
+        string[] pieces =
+        [
+            "a", "Z", "7", " ", "  ", "'", "\"", "(", ")", ".", "!", "?", ",", ":", ";", "-", "\r", "\n", "\r\n", "\t", "\u00E9", "\u00C9", "\u0301", "\u00AD",
+            "\u200D", "\u2019", "\u00BB", "\u3002", "\uFF0E", "\u0085", "\u2028", "\u2029", "\u00A0", "\u4E2D", "\u0E01", "\u05D0", "\U0001D400", "\U0001F600", "\uD800", "\uDC00",
+        ];
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 16);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            for (var start = 0; start < text.Length; start++)
+            {
+                var segment = text.AsSpan(start);
+                Assert.Equal(Unicode.GetSentenceLengthByRules(segment), Unicode.GetSentenceLength(segment));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void GetGraphemeClusterLength_MatchesTheRulesForRandomTexts()
+    {
+        // The rules that only depend on the classes of two code points are read from a table.
+        string[] pieces =
+        [
+            "a", " ", "\r", "\n", "\u0000", "\u0301", "\u200D", "\u200C", "\u0915", "\u094D", "\u093F", "\u0903", "\u0600", "\u1100", "\u1161", "\u11A8", "\uAC00", "\uAC01",
+            "\U0001F1EB", "\U0001F1F7", "\U0001F468", "\U0001F3FD", "\u2764", "\uFE0F", "\u00A9", "\u0E01", "\u0E31", "\u0E33", "\uD800", "\uDC00", "\u2028",
+        ];
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 12);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            for (var start = 0; start < text.Length; start++)
+            {
+                var segment = text.AsSpan(start);
+                Assert.Equal(GetGraphemeClusterLengthByRules(segment), Unicode.GetGraphemeClusterLength(segment));
+            }
+        }
+    }
+
+    /// <summary>The rules of UAX #29 for the extended grapheme clusters, applied as the annex lists them.</summary>
+    private static int GetGraphemeClusterLengthByRules(ReadOnlySpan<char> text)
+    {
+        if (text.IsEmpty)
+            return 0;
+
+        var codePoints = new List<(int CodePoint, int Length)>();
+        for (var index = 0; index < text.Length;)
+        {
+            var length = char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]) ? 2 : 1;
+            codePoints.Add((length == 2 ? char.ConvertToUtf32(text[index], text[index + 1]) : text[index], length));
+            index += length;
+        }
+
+        var end = codePoints[0].Length;
+        for (var i = 1; i < codePoints.Count; i++)
+        {
+            var previous = UnicodeProperties.GetGraphemeClusterBreak(codePoints[i - 1].CodePoint);
+            var next = UnicodeProperties.GetGraphemeClusterBreak(codePoints[i].CodePoint);
+            if (!IsGraphemeJoined(codePoints, i, previous, next))
+                break;
+
+            end += codePoints[i].Length;
+        }
+
+        return end;
+
+        static bool IsGraphemeJoined(List<(int CodePoint, int Length)> codePoints, int i, UnicodeGraphemeClusterBreak previous, UnicodeGraphemeClusterBreak next)
+        {
+            if (previous is UnicodeGraphemeClusterBreak.CR && next is UnicodeGraphemeClusterBreak.LF)
+                return true;
+
+            if (previous is UnicodeGraphemeClusterBreak.Control or UnicodeGraphemeClusterBreak.CR or UnicodeGraphemeClusterBreak.LF || next is UnicodeGraphemeClusterBreak.Control or UnicodeGraphemeClusterBreak.CR or UnicodeGraphemeClusterBreak.LF)
+                return false;
+
+            if ((previous is UnicodeGraphemeClusterBreak.L && next is UnicodeGraphemeClusterBreak.L or UnicodeGraphemeClusterBreak.V or UnicodeGraphemeClusterBreak.LV or UnicodeGraphemeClusterBreak.LVT)
+                || (previous is UnicodeGraphemeClusterBreak.LV or UnicodeGraphemeClusterBreak.V && next is UnicodeGraphemeClusterBreak.V or UnicodeGraphemeClusterBreak.T)
+                || (previous is UnicodeGraphemeClusterBreak.LVT or UnicodeGraphemeClusterBreak.T && next is UnicodeGraphemeClusterBreak.T))
+            {
+                return true;
+            }
+
+            if (next is UnicodeGraphemeClusterBreak.Extend or UnicodeGraphemeClusterBreak.ZWJ or UnicodeGraphemeClusterBreak.SpacingMark || previous is UnicodeGraphemeClusterBreak.Prepend)
+                return true;
+
+            // GB9c, as revised in Unicode 18.0: \p{InCB=Linker} \p{InCB=Extend}* × \p{InCB=Consonant}. Before, it also required an
+            // InCB=Consonant before the linker.
+            if (UnicodeProperties.GetIndicConjunctBreak(codePoints[i].CodePoint) is UnicodeIndicConjunctBreak.Consonant)
+            {
+                var j = i - 1;
+                while (j >= 0 && UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint) is UnicodeIndicConjunctBreak.Extend)
+                {
+                    j--;
+                }
+
+                if (j >= 0 && UnicodeProperties.GetIndicConjunctBreak(codePoints[j].CodePoint) is UnicodeIndicConjunctBreak.Linker)
+                    return true;
+            }
+
+            // GB11: \p{Extended_Pictographic} Extend* ZWJ × \p{Extended_Pictographic}
+            if (previous is UnicodeGraphemeClusterBreak.ZWJ && UnicodeEmoji.IsExtendedPictographic(codePoints[i].CodePoint))
+            {
+                var j = i - 2;
+                while (j >= 0 && UnicodeProperties.GetGraphemeClusterBreak(codePoints[j].CodePoint) is UnicodeGraphemeClusterBreak.Extend)
+                {
+                    j--;
+                }
+
+                if (j >= 0 && UnicodeEmoji.IsExtendedPictographic(codePoints[j].CodePoint))
+                    return true;
+            }
+
+            // GB12, GB13: an odd number of regional indicators before the position
+            if (previous is UnicodeGraphemeClusterBreak.RegionalIndicator && next is UnicodeGraphemeClusterBreak.RegionalIndicator)
+            {
+                var count = 0;
+                for (var j = i - 1; j >= 0 && UnicodeProperties.GetGraphemeClusterBreak(codePoints[j].CodePoint) is UnicodeGraphemeClusterBreak.RegionalIndicator; j--)
+                {
+                    count++;
+                }
+
+                return count % 2 == 1;
+            }
+
+            return false;
+        }
     }
 
     [Theory]
@@ -2303,6 +2603,151 @@ public sealed class UnicodeTests
         Assert.Throws<ArgumentOutOfRangeException>("strictness", () => { _ = Unicode.EnumerateLineBreaks("a", (UnicodeLineBreakStrictness)3); });
         Assert.Throws<ArgumentOutOfRangeException>("strictness", () => { _ = Unicode.EnumerateLineBreaks("a", (UnicodeLineBreakStrictness)(-1)); });
         Assert.Throws<ArgumentOutOfRangeException>("wordBreak", () => { _ = Unicode.EnumerateLineBreaks("a", wordBreak: (UnicodeWordBreakBehavior)3); });
+    }
+
+    [Fact]
+    public void EnumerateLineBreaks_ShortcutKindsMatchTheProperties()
+    {
+        // The shortcut for the words reads these characters without looking them up: the rules read their class, and
+        // whether they are final quotation marks.
+        for (var c = 0; c <= char.MaxValue; c++)
+        {
+            var kind = UnicodeLineBreakEnumerator.GetShortcutKind((char)c);
+            if (kind is 0)
+                continue;
+
+            var actual = UnicodeProperties.GetLineBreakClass(c);
+            var category = CharUnicodeInfo.GetUnicodeCategory(c);
+            Assert.True(UnicodeProperties.GetEastAsianWidth(c) is not (UnicodeEastAsianWidth.Fullwidth or UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Halfwidth), $"U+{c:X4} is wide");
+            Assert.True(category is not UnicodeCategory.InitialQuotePunctuation, $"U+{c:X4} is an initial quotation mark");
+            Assert.True(category is not UnicodeCategory.FinalQuotePunctuation || c is '\u2019' or '\u00BB', $"U+{c:X4} is a final quotation mark");
+            if ((kind & (UnicodeLineBreakEnumerator.WordCharacter | UnicodeLineBreakEnumerator.InnerMark | UnicodeLineBreakEnumerator.OpeningMark | UnicodeLineBreakEnumerator.NumericAffix)) != 0)
+            {
+                var expected = UnicodeLineBreakEnumerator.GetShortcutClass((char)c);
+                Assert.True(actual == expected || (expected is UnicodeLineBreakClass.Alphabetic && actual is UnicodeLineBreakClass.Ambiguous), $"U+{c:X4} is {actual}");
+            }
+
+            if (kind is UnicodeLineBreakEnumerator.WordCharacter)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.Alphabetic or UnicodeLineBreakClass.Ambiguous or UnicodeLineBreakClass.Numeric, $"U+{c:X4} is {actual}");
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.InnerMark) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.Quotation or UnicodeLineBreakClass.Hyphen or UnicodeLineBreakClass.InfixNumeric, $"U+{c:X4} is {actual}");
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.ClosingMark) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.InfixNumeric or UnicodeLineBreakClass.Exclamation or UnicodeLineBreakClass.CloseParenthesis or UnicodeLineBreakClass.ClosePunctuation
+                    or UnicodeLineBreakClass.BreakSymbols or UnicodeLineBreakClass.Quotation or UnicodeLineBreakClass.Glue, $"U+{c:X4} is {actual}");
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.OpeningMark) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.OpenPunctuation or UnicodeLineBreakClass.Quotation or UnicodeLineBreakClass.Hyphen or UnicodeLineBreakClass.PrefixNumeric or UnicodeLineBreakClass.PostfixNumeric, $"U+{c:X4} is {actual}");
+            }
+
+            if (kind is UnicodeLineBreakEnumerator.Space)
+            {
+                Assert.Equal(UnicodeLineBreakClass.Space, actual);
+            }
+
+            if ((kind & UnicodeLineBreakEnumerator.NumericAffix) != 0)
+            {
+                Assert.True(actual is UnicodeLineBreakClass.PrefixNumeric or UnicodeLineBreakClass.PostfixNumeric, $"U+{c:X4} is {actual}");
+            }
+        }
+    }
+
+    [Fact]
+    public void EnumerateLineBreaks_MatchesTheRulesForEveryShortText()
+    {
+        // The shortcuts give the breaks of the rules applied to each unit: every ASCII text of up to 3 characters, and
+        // every text of up to 4 (6) characters of the alphabet that has a character of each kind the shortcuts read.
+        Span<char> buffer = stackalloc char[6];
+        for (var length = 1; length <= 3; length++)
+        {
+            var text = buffer[..length];
+            var count = 1 << (7 * length);
+            for (var value = 0; value < count; value++)
+            {
+                for (var i = 0; i < length; i++)
+                {
+                    text[i] = (char)((value >> (7 * i)) & 0x7F);
+                }
+
+                AssertLineBreaksMatchTheRules(text, UnicodeWordBreakBehavior.Normal);
+            }
+        }
+
+        CheckEveryText(buffer[..4], "a7# ,.:;!?)]}/-([{\"'%$+|\n\r\t\u0001\u00E9\u00D7\u0301\u200D\u00A0\u00AB\u00BB\u2019\u0E01\u3001\u05D0");
+        CheckEveryText(buffer[..6], "a1 .)(-'%\u00E9\u0301\u05D0");
+
+        static void CheckEveryText(Span<char> text, string alphabet)
+        {
+            var count = (int)Math.Pow(alphabet.Length, text.Length);
+            for (var value = 0; value < count; value++)
+            {
+                var remainder = value;
+                for (var i = 0; i < text.Length; i++)
+                {
+                    text[i] = alphabet[remainder % alphabet.Length];
+                    remainder /= alphabet.Length;
+                }
+
+                AssertLineBreaksMatchTheRules(text, UnicodeWordBreakBehavior.Normal);
+                AssertLineBreaksMatchTheRules(text, UnicodeWordBreakBehavior.KeepAll);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void EnumerateLineBreaks_MatchesTheRulesForRandomTexts()
+    {
+        string[] pieces =
+        [
+            "a", "Z", "7", "word", "123", " ", "  ", ",", ".", ":", ";", "!", "?", ")", "]", "}", "/", "(", "-", "\"", "'", "%", "$", "#",
+            "\r", "\n", "\r\n", "\t", "\u0001", "\u00E9", "\u00C0", "\u017F", "\u0153", "\u00D7", "\u0301", "\u200D", "\u200B", "\u00A0",
+            "\u2019", "\u00AB", "\u00BB", "e-mail", "2024-05-17", "3.14", "1,024", "12.5%", "$9.99", "www.example.com/help?id=7", "\\", "n\u2019est-ce", "don't", "\u00A0!\u00A0\u00BB ", "\u00AB\u00A0", "\u05D0", "\u0660", "\u30AB", "\u3041", "\u4E2D", "\u3001", "\u25CC", "\uAC00", "\U0001F1EB",
+            "\U0001F600", "\U0001F3FD", ThaiPhasa, ThaiThai, "\u0E01", "\u0E34",
+        ];
+        var dictionary = LineBreakDictionary.Parse(ThaiPhasa + "\n" + ThaiThai);
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 20000; iteration++)
+        {
+            var builder = new StringBuilder();
+            var count = random.Next(1, 16);
+            for (var i = 0; i < count; i++)
+            {
+                builder.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var text = builder.ToString();
+            foreach (var wordBreak in new[] { UnicodeWordBreakBehavior.Normal, UnicodeWordBreakBehavior.BreakAll, UnicodeWordBreakBehavior.KeepAll })
+            {
+                AssertLineBreaksMatchTheRules(text, wordBreak);
+                AssertLineBreaksMatchTheRules(text, wordBreak, UnicodeLineBreakStrictness.Normal, dictionary);
+            }
+        }
+    }
+
+    private static void AssertLineBreaksMatchTheRules(ReadOnlySpan<char> text, UnicodeWordBreakBehavior wordBreak, UnicodeLineBreakStrictness strictness = UnicodeLineBreakStrictness.Strict, LineBreakDictionary? dictionary = null)
+    {
+        var expected = new UnicodeLineBreakEnumerator(text, strictness, wordBreak, dictionary, useShortcuts: false);
+        var actual = new UnicodeLineBreakEnumerator(text, strictness, wordBreak, dictionary);
+        while (true)
+        {
+            var hasExpected = expected.MoveNext();
+            if (hasExpected != actual.MoveNext() || (hasExpected && expected.Current != actual.Current))
+            {
+                Assert.Fail($"Text: {string.Join(' ', text.ToArray().Select(c => ((int)c).ToString("X4", CultureInfo.InvariantCulture)))} ({wordBreak}, {strictness}), break {expected.Current.Index}");
+            }
+
+            if (!hasExpected)
+                break;
+        }
     }
 
     // Thai: phasa (language), thai, sawatdi (hello), khrap (a polite particle), chan (I), kin (to eat), khao (rice),
@@ -3385,6 +3830,103 @@ public sealed class UnicodeTests
         Assert.Same(maybe, UnicodeNormalization.Normalize(maybe));
     }
 
+    [Theory]
+    [InlineData(NormalizationForm.FormC)]
+    [InlineData(NormalizationForm.FormD)]
+    [InlineData(NormalizationForm.FormKC)]
+    [InlineData(NormalizationForm.FormKD)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void Normalize_OfARandomText_IsTheNormalizationOfTheDefinition(NormalizationForm form)
+    {
+        // The definition (UAX #15): the decomposition of each code point, the canonical ordering of the marks, then the
+        // canonical composition for the composed forms. The pieces mix the characters that stay as they are with marks
+        // of several classes, characters that compose (including the starters that compose with the character before
+        // them), singletons, composition exclusions, Hangul and compatibility characters.
+        string[] pieces =
+        [
+            "a", "e", "o", "x", " ", ".", "é", "Å", "ñ", "ộ", "̀", "́", "̈", "̣", "̖", "̧", "̛",
+            "ְ", "̈́", "ཱི", "େ", "ା", "ᄀ", "ᅡ", "ᆨ", "가", "각", "Ω", "Å", "क़", "中",
+            "\U0001F600", "\U0001D15E", "ﬁ", "²", "Ａ", "。",
+        ];
+        var decomposition = form is NormalizationForm.FormC or NormalizationForm.FormD ? NormalizationForm.FormD : NormalizationForm.FormKD;
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 3000; iteration++)
+        {
+            var text = new StringBuilder();
+            var count = random.Next(0, 60);
+            for (var i = 0; i < count; i++)
+            {
+                // Runs of ASCII letters of several lengths, so that the normalized text has unchanged parts of every size
+                text.Append(random.Next(3) == 0 ? pieces[random.Next(pieces.Length)] : ((char)random.Next('a', 'z' + 1)).ToString());
+            }
+
+            var value = text.ToString();
+            var codePoints = new List<int>();
+            foreach (var rune in value.EnumerateRunes())
+            {
+                foreach (var decomposed in UnicodeNormalization.Normalize(rune.ToString(), decomposition).EnumerateRunes())
+                {
+                    codePoints.Add(decomposed.Value);
+                }
+            }
+
+            // Canonical ordering: a stable sort of each run of marks by combining class
+            for (var i = 1; i < codePoints.Count; i++)
+            {
+                var codePoint = codePoints[i];
+                var combiningClass = UnicodeProperties.GetCanonicalCombiningClass(codePoint);
+                var j = i;
+                while (combiningClass != 0 && j > 0 && UnicodeProperties.GetCanonicalCombiningClass(codePoints[j - 1]) > combiningClass)
+                {
+                    codePoints[j] = codePoints[j - 1];
+                    j--;
+                }
+
+                codePoints[j] = codePoint;
+            }
+
+            if (form is NormalizationForm.FormC or NormalizationForm.FormKC)
+            {
+                // Canonical composition: a character combines with the last starter unless a character between them
+                // has a class of 0 or a class that is not lower than its own.
+                var composed = new List<int>();
+                var starter = -1;
+                var lastClass = -1;
+                foreach (var codePoint in codePoints)
+                {
+                    var combiningClass = UnicodeProperties.GetCanonicalCombiningClass(codePoint);
+                    if (starter >= 0 && (lastClass < 0 || (lastClass != 0 && lastClass < combiningClass)) && UnicodeNormalization.TryComposeCanonical(composed[starter], codePoint, out var composite))
+                    {
+                        composed[starter] = composite;
+                        continue;
+                    }
+
+                    if (combiningClass == 0)
+                    {
+                        starter = composed.Count;
+                        lastClass = -1;
+                    }
+                    else
+                    {
+                        lastClass = combiningClass;
+                    }
+
+                    composed.Add(codePoint);
+                }
+
+                codePoints = composed;
+            }
+
+            var expected = ToString(codePoints.ToArray());
+            Assert.Equal(expected, UnicodeNormalization.Normalize(value, form));
+            Assert.Equal(string.Equals(value, expected, StringComparison.Ordinal), UnicodeNormalization.IsNormalized(value, form));
+            Assert.Equal(expected.Length, UnicodeNormalization.GetNormalizedLength(value, form));
+            var buffer = new char[expected.Length];
+            Assert.True(UnicodeNormalization.TryNormalize(value, buffer, out var written, form));
+            Assert.Equal(expected, new string(buffer, 0, written));
+        }
+    }
+
     [Fact]
     public void Normalize_SortsALongRunOfMarks()
     {
@@ -3543,6 +4085,37 @@ public sealed class UnicodeTests
         Assert.Equal(new byte[] { 0, 1, 1, 1, 1, 0 }, levels);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("\u200D\u200D")]
+    [InlineData("\u0627\u0644 (12.5%) \u05D0[\u0301b]\u0301\u05D1 \U0001F468\u200D\U0001F469 1,2 $3 \u0661\u066B\u0662")]
+    [InlineData("\u05D0 1.2 -3 4,5 6%  \u0661/\u0662 (a) [\u05D1] {c\u05D2} \u2329\u05D3\u3009")]
+    [InlineData("\u0301\u05D0 abc\tdef \u0627\u0661\u0301 \u200B\u05D1")]
+    public void ResolveLevels_ParagraphWithoutExplicitFormattingMatchesTheGeneralPath(string text)
+    {
+        AssertResolveLevelsMatchesTheGeneralPath(text);
+    }
+
+    [Fact]
+    public void ResolveLevels_ParagraphWithUnpairedSurrogatesMatchesTheGeneralPath()
+    {
+        // Built in code: test data cannot hold an unpaired surrogate.
+        AssertResolveLevelsMatchesTheGeneralPath("a" + (char)0xD800 + "b \u05D0" + (char)0xDC00 + " (" + (char)0xDBFF + ")\u05D1");
+    }
+
+    private static void AssertResolveLevelsMatchesTheGeneralPath(string text)
+    {
+        foreach (var direction in (UnicodeBidiDirection[])[UnicodeBidiDirection.Auto, UnicodeBidiDirection.LeftToRight, UnicodeBidiDirection.RightToLeft])
+        {
+            var expected = new byte[text.Length];
+            var expectedParagraphLevel = UnicodeBidi.ResolveLevels(text, direction, expected, new int[UnicodeBidi.GetWorkspaceLength(text.Length)], allowFastPath: false);
+
+            var levels = new byte[text.Length];
+            Assert.Equal(expectedParagraphLevel, UnicodeBidi.ResolveLevels(text, direction, levels));
+            Assert.Equal(expected, levels);
+        }
+    }
+
     [Fact]
     public void ResetLineLevels_GivesTrailingWhiteSpaceTheParagraphLevel()
     {
@@ -3698,6 +4271,46 @@ public sealed class UnicodeTests
         Assert.Equal(text.Length, position);
         Assert.Equal(expectedLengths, lengths.ToArray());
         Assert.Equal(expectedScripts, scripts.ToArray());
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void EnumerateScriptRuns_MatchesTheRunsOfTheClusters()
+    {
+        // The characters below U+0300 are read without looking up their cluster: the runs are those of the general
+        // case, which reads each grapheme cluster. The pieces mix Latin letters, script-neutral characters, characters
+        // that have Script_Extensions, brackets, combining marks and characters of other scripts.
+        string[] pieces =
+        [
+            "a", "Z", "1", " ", ".", "'", "(", ")", "[", "]", "{", "}", "\n", "\u00E9", "\u00C7", "\u00DF", "\u00D7", "\u00F7", "\u00AB", "\u00BB", "\u00B7",
+            "\u00AA", "\u00B5", "\u01C5", "\u02BC", "\u02C7", "\u02E5", "\u0301", "\u0483", "\u0951", "\u200D", "\u0430", "\u03B1", "\u05D0", "\u0627",
+            "\u0660", "\u4E2D", "\u3042", "\u30FC", "\u3001", "\uFF08", "\uFF09", "\U0001F600", "\u2019", "\u0E01",
+        ];
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 3000; iteration++)
+        {
+            var text = new StringBuilder();
+            var count = random.Next(0, 40);
+            for (var i = 0; i < count; i++)
+            {
+                text.Append(pieces[random.Next(pieces.Length)]);
+            }
+
+            var value = text.ToString();
+            var expected = new List<UnicodeScriptRun>();
+            foreach (var run in new UnicodeScriptRunEnumerator(value, skipSimpleCharacters: false))
+            {
+                expected.Add(run);
+            }
+
+            var actual = new List<UnicodeScriptRun>();
+            foreach (var run in Unicode.EnumerateScriptRuns(value))
+            {
+                actual.Add(run);
+            }
+
+            Assert.Equal(expected, actual);
+        }
     }
 
     [Theory]
@@ -3981,6 +4594,38 @@ public sealed class UnicodeTests
         Assert.True(UnicodeIdna.TryEncodePunycode(text, out encoded));
         Assert.True(UnicodeIdna.TryDecodePunycode(encoded, out decoded));
         Assert.Equal(text, decoded);
+    }
+
+    [Theory]
+    [InlineData("B\u00FCcher.example")]
+    [InlineData("xn--bcher-kva.example")]
+    [InlineData("\u4F8B\u3048.\u30C6\u30B9\u30C8")]
+    [InlineData("\u0645\u062B\u0627\u0644.\u0625\u062E\u062A\u0628\u0627\u0631")]
+    [InlineData("\uFF37\uFF37\uFF37\u3002example\u3002com")]
+    [InlineData("\u043F\u0440\u0438\u043C\u0435\u0440.\u0438\u0441\u043F\u044B\u0442\u0430\u043D\u0438\u0435")]
+    [InlineData("a\u200Db.xn--a-ecp.-x")]
+    public void Idna_LongDomainNamesAreTheirLabelsJoined(string domainName)
+    {
+        // The labels are processed in buffers on the stack, which a long domain name outgrows
+        var options = new UnicodeIdnaOptions { VerifyDnsLength = false };
+        var expectedUnicode = UnicodeIdna.ToUnicode(domainName, options, out var expectedHasErrors);
+        var expectedIsValid = UnicodeIdna.TryToAscii(domainName, options, out var expectedAscii);
+        foreach (var count in (int[])[10, 30, 100])
+        {
+            var longDomainName = string.Join('.', Enumerable.Repeat(domainName, count));
+            Assert.Equal(string.Join('.', Enumerable.Repeat(expectedUnicode, count)), UnicodeIdna.ToUnicode(longDomainName, options, out var hasErrors));
+            Assert.Equal(expectedHasErrors, hasErrors);
+            Assert.Equal(expectedIsValid, UnicodeIdna.TryToAscii(longDomainName, options, out var ascii));
+            Assert.Equal(expectedIsValid ? string.Join('.', Enumerable.Repeat(expectedAscii, count)) : null, ascii);
+        }
+
+        var longLabel = string.Concat(Enumerable.Repeat(domainName.Replace(".", "", StringComparison.Ordinal).Replace("\u3002", "", StringComparison.Ordinal), 20));
+        var unicode = UnicodeIdna.ToUnicode(longLabel, options, out _);
+        if (UnicodeIdna.TryToAscii(longLabel, options, out var asciiLabel) && asciiLabel.StartsWith("xn--", StringComparison.Ordinal))
+        {
+            Assert.True(UnicodeIdna.TryDecodePunycode(asciiLabel.AsSpan(4), out var decoded));
+            Assert.Equal(unicode, decoded);
+        }
     }
 
     [Fact]

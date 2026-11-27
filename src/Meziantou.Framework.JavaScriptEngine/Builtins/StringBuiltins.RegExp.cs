@@ -29,7 +29,12 @@ internal static class StringRegExpBuiltins
 
     private static JsValue RequireObjectCoercible(JsValue thisValue, string methodName)
     {
-        JsOperations.RequireObjectCoercible(thisValue, "String.prototype." + methodName);
+        // The name of the method is only formatted for the error
+        if (thisValue.IsNullOrUndefined)
+        {
+            JsOperations.RequireObjectCoercible(thisValue, "String.prototype." + methodName);
+        }
+
         return thisValue;
     }
 

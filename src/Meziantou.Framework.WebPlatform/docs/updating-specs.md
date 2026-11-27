@@ -85,7 +85,11 @@ Sources:
     hand-written; `[ReflectSetter]` getters are partial methods (`Compute*`) that must be implemented.
   - `WebIdlBindingsGenerator` generates the engine-agnostic WebIDL bindings of the DOM
     (`src/Meziantou.Framework.WebPlatform/Scripting/WebIdl/Generated/`) from the webref IDL and the `[IdlInterface]`/`[IdlMember]`
-    annotations. It fails when a member of an in-scope specification has no .NET member and no exclusion in
+    annotations. These attributes are `[Conditional("WEBPLATFORM_IDL_METADATA")]`: the published assembly does not carry
+    them (about 1 MB), so SpecGen references the build of the library with `WebPlatformIdlMetadata=true`, which defines the
+    symbol in its own output directory (`artifacts/bin/Meziantou.Framework.WebPlatform/<configuration>_idlmetadata_<tfm>/`).
+    `IdlCoverageTests` loads this build from `idl-metadata/`. SpecGen fails when a member of an in-scope specification has
+    no .NET member and no exclusion in
     `tests/Meziantou.Framework.WebPlatform.Wpt/idl-exclusions.json`, or when no .NET overload matches an IDL overload.
   - `--dump-html` prints the data extracted from the HTML source (useful when the markup of the specification changes).
   - `CssPropertiesGenerator` generates the CSS property registry from the webref CSS definitions. When a property or a

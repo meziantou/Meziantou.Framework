@@ -115,84 +115,83 @@ internal static class SvgNumber
 
     public static string FormatPath(PathData path, int precision)
     {
-        using var writer = new StringWriter(CultureInfo.InvariantCulture);
-        WritePath(writer, path, precision);
-        return writer.ToString();
+        using var output = new SvgOutput(initialCapacity: 256);
+        WritePath(output, path, precision);
+        return output.ToString();
     }
 
     /// <summary>Writes the commands of a path, separated by spaces: the characters never need to be escaped in XML.</summary>
-    public static void WritePath(TextWriter writer, PathData path, int precision)
+    public static void WritePath(SvgOutput output, PathData path, int precision)
     {
-        Span<char> buffer = stackalloc char[MaxFastLength];
         var first = true;
-        foreach (var command in path.Commands)
+        foreach (ref readonly var command in path.CommandSpan)
         {
             if (!first)
             {
-                writer.Write(' ');
+                output.Write(' ');
             }
 
             first = false;
             switch (command.Kind)
             {
                 case PathCommandKind.MoveTo:
-                    writer.Write('M');
-                    WritePoint(writer, command.X, command.Y, precision, buffer);
+                    output.Write('M');
+                    WritePoint(output, command.X, command.Y, precision);
                     break;
                 case PathCommandKind.LineTo:
-                    writer.Write('L');
-                    WritePoint(writer, command.X, command.Y, precision, buffer);
+                    output.Write('L');
+                    WritePoint(output, command.X, command.Y, precision);
                     break;
                 case PathCommandKind.CubicTo:
-                    writer.Write('C');
-                    WritePoint(writer, command.X1, command.Y1, precision, buffer);
-                    writer.Write(' ');
-                    WritePoint(writer, command.X2, command.Y2, precision, buffer);
-                    writer.Write(' ');
-                    WritePoint(writer, command.X, command.Y, precision, buffer);
+                    output.Write('C');
+                    WritePoint(output, command.X1, command.Y1, precision);
+                    output.Write(' ');
+                    WritePoint(output, command.X2, command.Y2, precision);
+                    output.Write(' ');
+                    WritePoint(output, command.X, command.Y, precision);
                     break;
                 case PathCommandKind.QuadraticTo:
-                    writer.Write('Q');
-                    WritePoint(writer, command.X1, command.Y1, precision, buffer);
-                    writer.Write(' ');
-                    WritePoint(writer, command.X, command.Y, precision, buffer);
+                    output.Write('Q');
+                    WritePoint(output, command.X1, command.Y1, precision);
+                    output.Write(' ');
+                    WritePoint(output, command.X, command.Y, precision);
                     break;
                 case PathCommandKind.ArcTo:
-                    writer.Write('A');
-                    WritePoint(writer, command.X1, command.Y1, precision, buffer);
-                    writer.Write(' ');
-                    Write(writer, command.X2, precision, buffer);
-                    writer.Write(' ');
-                    writer.Write(command.LargeArc ? '1' : '0');
-                    writer.Write(',');
-                    writer.Write(command.Sweep ? '1' : '0');
-                    writer.Write(' ');
-                    WritePoint(writer, command.X, command.Y, precision, buffer);
+                    output.Write('A');
+                    WritePoint(output, command.X1, command.Y1, precision);
+                    output.Write(' ');
+                    Write(output, command.X2, precision);
+                    output.Write(' ');
+                    output.Write(command.LargeArc ? '1' : '0');
+                    output.Write(',');
+                    output.Write(command.Sweep ? '1' : '0');
+                    output.Write(' ');
+                    WritePoint(output, command.X, command.Y, precision);
                     break;
                 case PathCommandKind.Close:
-                    writer.Write('Z');
+                    output.Write('Z');
                     break;
             }
         }
     }
 
-    /// <summary>Writes a number as <see cref="Format"/> does; the buffer has <see cref="MaxFastLength"/> characters at least.</summary>
-    public static void Write(TextWriter writer, double value, int precision, Span<char> buffer)
+    /// <summary>Writes a number as <see cref="Format"/> does.</summary>
+    public static void Write(SvgOutput output, double value, int precision)
     {
-        if (TryFormat(value, precision, buffer, out var written))
+        if (TryFormat(value, precision, output.GetSpan(MaxFastLength), out var written))
         {
-            writer.Write(buffer[..written]);
+            output.Advance(written);
         }
         else
         {
-            writer.Write(FormatSlow(value, precision));
+            output.Write(FormatSlow(value, precision));
         }
     }
 
-    private static void WritePoint(TextWriter writer, double x, double y, int precision, Span<char> buffer)
+    private static void WritePoint(SvgOutput output, double x, double y, int precision)
     {
-        Write(writer, x, precision, buffer);
-        writer.Write(',');
-        Write(writer, y, precision, buffer);
+        Write(output, x, precision);
+        output.Write(',');
+        Write(output, y, precision);
     }
 }

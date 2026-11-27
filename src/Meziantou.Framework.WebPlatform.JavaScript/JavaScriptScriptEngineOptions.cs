@@ -45,4 +45,12 @@ public sealed class JavaScriptScriptEngineOptions
     /// of the library and must not be replaced.
     /// </summary>
     public Action<JsEngineOptions>? ConfigureEngine { get; init; }
+
+    /// <summary>
+    /// Gets the cache of the parsed classic scripts (the inline scripts, the external scripts and the event handler content
+    /// attributes): a document loaded again, or a script shared by several documents, is not parsed again, and its hot
+    /// functions are not compiled again. The default is <see cref="JavaScriptScriptCache.Shared"/>, the cache of the process.
+    /// Null disables the cache: each script is parsed for each document.
+    /// </summary>
+    public JavaScriptScriptCache? ScriptCache { get; init; } = JavaScriptScriptCache.Shared;
 }

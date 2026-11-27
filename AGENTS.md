@@ -3,9 +3,17 @@
 You MUST make your best effort to ensure your changes satisfy those criteria before committing. If for any reason you were unable to build or test the changes, you MUST report that. You MUST NOT claim success unless all builds and tests pass as described above.
 
 Do not complete without checking the relevant code builds and relevant tests still pass after the last edits you make. Do not simply assume that your changes fix test failures you see, actually build and run those tests again to confirm.
-When building and running tests, use `/p:TreatsWarningsAsErrors=true`.
+When building and running tests, use `/p:TreatWarningsAsErrors=true`.
 Also, do not assume that tests pass just because you did not see any failures in your last test run; verify that all relevant tests were actually run.
 When running tests, you can ignore the warning about "Blame" data collector errors.
+
+A Debug build and `dotnet test` do not report all the diagnostics that CI reports. The code-style rules (`IDExxxx`, such as the naming rules of `IDE1006`) run only in Release or on CI (`EnforceCodeStyleInBuild`), and `dotnet test` turns off all the analyzers (`RunAnalyzers=false`). Before committing, build every project you changed or added in Release, as CI does: the libraries, and also their test, fuzz, sample and benchmark projects. For example:
+
+```shell
+dotnet build fuzz/Meziantou.Framework.Csv.Fuzz/Meziantou.Framework.Csv.Fuzz.csproj --configuration Release
+```
+
+The build must report no errors and no warnings.
 
 In addition to building and testing your changes, you MUST run the following scripts:
 - `dotnet run ./eng/update-all.cs`
@@ -34,6 +42,8 @@ In addition to the rules enforced by `.editorconfig`, you SHOULD:
 Do not consider solution files (sln, slnx) in the slnx folders. These files are automatically generated and only for developers working on the project.
 
 Do not manually update files under the `ref/` folder. Their content is generated when building the solution, and any resulting changes must be committed to git. The build never deletes a file there: `dotnet run ./eng/update-all.cs` deletes the files of assemblies that no project of `src/` builds anymore (renamed or removed projects).
+
+The workflows run the actions at the commits recorded in `.github/workflows/actions.lock` (a [workflow lockfile](https://gh.io/actions-lockfile)). Reference actions by their full version tag (`actions/checkout@v7.0.1`), and same-repository actions as `uses: $/.github/actions/<name>`, not `./`. After adding, removing or updating an action in `.github/workflows/` or `.github/actions/`, run `gh actions-lock` (install it with `gh extension install github/gh-actions-lock`) and commit the lockfile. Do not edit the lockfile by hand. CI runs `gh actions-lock --verify`.
 
 CI only runs the tests of a project in invariant globalization mode (`/p:InvariantGlobalization=true`) when the test project sets `<GlobalizationSensitive>true</GlobalizationSensitive>`. The `MFGS0001` diagnostic reports code that depends on ICU (named cultures, linguistic comparisons, string normalization, time zone names and ID conversion, `IdnMapping`). Either suppress it with a justification explaining why the result does not depend on ICU, or set the property in the project. A library that sets the property makes `MFGS0002` require it in every test project that tests the library, or tests a library that references it. The tested library is the referenced assembly whose name is the longest prefix of the test project name; set `GlobalizationSensitiveTestedAssemblies` to a comma-separated list of assembly names when the names do not match. The references a test project adds itself, such as test helpers, do not count. Set the property by hand when the ICU dependency is inside a package, such as a database client.
 

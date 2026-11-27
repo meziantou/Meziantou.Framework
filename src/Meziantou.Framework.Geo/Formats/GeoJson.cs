@@ -181,11 +181,11 @@ public static class GeoJson
         switch (GetType(root))
         {
             case "FeatureCollection":
-                if (!root.TryGetProperty("features", out var features) || features.ValueKind is not JsonValueKind.Array)
+                if (!TryGetMember(root, "features", out var features) || features.ValueKind is not JsonValueKind.Array)
                     throw new FormatException("A FeatureCollection must have a 'features' array.");
 
                 var collection = new GeoFeatureCollection(features.EnumerateArray().Select(ReadFeature));
-                if (root.TryGetProperty("name", out var name) && name.ValueKind is JsonValueKind.String)
+                if (TryGetMember(root, "name", out var name) && name.ValueKind is JsonValueKind.String)
                 {
                     collection.Name = name.GetString();
                 }
@@ -206,9 +206,9 @@ public static class GeoJson
         if (GetType(element) is not "Feature")
             throw new FormatException("The items of a FeatureCollection must be features.");
 
-        var geometry = element.TryGetProperty("geometry", out var geometryElement) && geometryElement.ValueKind is not JsonValueKind.Null ? ReadGeometry(geometryElement) : null;
+        var geometry = TryGetMember(element, "geometry", out var geometryElement) && geometryElement.ValueKind is not JsonValueKind.Null ? ReadGeometry(geometryElement) : null;
         var properties = new Dictionary<string, object?>(StringComparer.Ordinal);
-        if (element.TryGetProperty("properties", out var propertiesElement) && propertiesElement.ValueKind is JsonValueKind.Object)
+        if (TryGetMember(element, "properties", out var propertiesElement) && propertiesElement.ValueKind is JsonValueKind.Object)
         {
             foreach (var property in propertiesElement.EnumerateObject())
             {
@@ -216,7 +216,37 @@ public static class GeoJson
             }
         }
 
-        return new GeoFeature(geometry, properties, element.TryGetProperty("id", out var id) ? ReadId(id) : null);
+        return new GeoFeature(geometry, properties, TryGetMember(element, "id", out var id) ? ReadId(id) : null);
+    }
+
+    /// <summary>
+    /// Gets a member of an object. A name with an escaped unpaired surrogate (<c>"\ud800"</c>) is not one of the members
+    /// of GeoJSON: <see cref="JsonElement.TryGetProperty(string, out JsonElement)"/> throws when it compares such a name of
+    /// the length of the member, which is skipped instead, as the streaming reader does (fuzz regression).
+    /// </summary>
+    internal static bool TryGetMember(JsonElement element, string name, out JsonElement value)
+    {
+        try
+        {
+            return element.TryGetProperty(name, out value);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+
+        // The last member of the name wins, as for TryGetProperty
+        value = default;
+        var found = false;
+        foreach (var property in element.EnumerateObject())
+        {
+            if (GeoJsonStreamReader.NameEquals(property, name))
+            {
+                value = property.Value;
+                found = true;
+            }
+        }
+
+        return found;
     }
 
     /// <summary>Reads an identifier: a string, or the JSON text of a number.</summary>
@@ -275,30 +305,53 @@ public static class GeoJson
         var type = GetType(element);
         if (type is "GeometryCollection")
         {
-            if (!element.TryGetProperty("geometries", out var geometries) || geometries.ValueKind is not JsonValueKind.Array)
+            if (!TryGetMember(element, "geometries", out var geometries) || geometries.ValueKind is not JsonValueKind.Array)
                 throw new FormatException("A GeometryCollection must have a 'geometries' array.");
 
             return new GeoGeometryCollection([.. geometries.EnumerateArray().Select(ReadGeometry)]);
         }
 
-        if (!element.TryGetProperty("coordinates", out var coordinates) || coordinates.ValueKind is not JsonValueKind.Array)
+        if (!TryGetMember(element, "coordinates", out var coordinates) || coordinates.ValueKind is not JsonValueKind.Array)
             throw new FormatException($"A {type} must have a 'coordinates' array.");
 
         return type switch
         {
             "Point" => new GeoPoint(ReadPosition(coordinates)),
             "MultiPoint" => new GeoMultiPoint(ReadPositions(coordinates)),
-            "LineString" => new GeoLineString(ReadPositions(coordinates)),
-            "MultiLineString" => new GeoMultiLineString([.. ReadArray(coordinates).Select(line => new GeoLineString(ReadPositions(line)))]),
+            "LineString" => GeoLineString.FromOwnedArray(ReadPositions(coordinates)),
+            "MultiLineString" => new GeoMultiLineString([.. ReadArray(coordinates).Select(line => GeoLineString.FromOwnedArray(ReadPositions(line)))]),
             "Polygon" => ReadPolygon(coordinates),
             "MultiPolygon" => new GeoMultiPolygon([.. ReadArray(coordinates).Select(ReadPolygon)]),
             _ => throw new FormatException($"'{type}' is not a GeoJSON type."),
         };
     }
 
-    private static GeoPolygon ReadPolygon(JsonElement rings) => new([.. ReadArray(rings).Select(ReadPositions)]);
+    private static GeoPolygon ReadPolygon(JsonElement rings)
+    {
+        var enumerator = ReadArray(rings);
+        var result = new GeoPosition[rings.GetArrayLength()][];
+        var index = 0;
+        foreach (var ring in enumerator)
+        {
+            result[index++] = ReadPositions(ring);
+        }
 
-    private static List<GeoPosition> ReadPositions(JsonElement positions) => [.. ReadArray(positions).Select(ReadPosition)];
+        return GeoPolygon.FromOwnedArrays(result);
+    }
+
+    // The positions are read in an array of the length of the JSON array: no list to grow, no copy
+    private static GeoPosition[] ReadPositions(JsonElement positions)
+    {
+        var enumerator = ReadArray(positions);
+        var result = new GeoPosition[positions.GetArrayLength()];
+        var index = 0;
+        foreach (var position in enumerator)
+        {
+            result[index++] = ReadPosition(position);
+        }
+
+        return result;
+    }
 
     private static JsonElement.ArrayEnumerator ReadArray(JsonElement element)
     {
@@ -311,11 +364,30 @@ public static class GeoJson
     // A position is [longitude, latitude], possibly followed by an altitude; the other values are ignored
     private static GeoPosition ReadPosition(JsonElement position)
     {
-        if (position.ValueKind is not JsonValueKind.Array || position.GetArrayLength() < 2 || position[0].ValueKind is not JsonValueKind.Number || position[1].ValueKind is not JsonValueKind.Number)
+        if (position.ValueKind is not JsonValueKind.Array)
             throw new FormatException("A GeoJSON position must be an array of at least two numbers.");
 
-        double? altitude = position.GetArrayLength() > 2 && position[2].ValueKind is JsonValueKind.Number ? ReadCoordinate(position[2]) : null;
-        return new GeoPosition(ReadCoordinate(position[0]), ReadCoordinate(position[1]), altitude);
+        var length = position.GetArrayLength();
+        if (length < 2)
+            throw new FormatException("A GeoJSON position must be an array of at least two numbers.");
+
+        var longitude = position[0];
+        var latitude = position[1];
+        if (longitude.ValueKind is not JsonValueKind.Number || latitude.ValueKind is not JsonValueKind.Number)
+            throw new FormatException("A GeoJSON position must be an array of at least two numbers.");
+
+        // The altitude is read first, as it always was: the error of a coordinate that is too large is the same
+        double? altitude = null;
+        if (length > 2)
+        {
+            var value = position[2];
+            if (value.ValueKind is JsonValueKind.Number)
+            {
+                altitude = ReadCoordinate(value);
+            }
+        }
+
+        return new GeoPosition(ReadCoordinate(longitude), ReadCoordinate(latitude), altitude);
     }
 
     /// <summary>Reads a coordinate: a number too large for a <see cref="double"/>, such as <c>1e999</c>, is invalid.</summary>
@@ -330,7 +402,7 @@ public static class GeoJson
 
     private static string GetType(JsonElement element)
     {
-        if (element.ValueKind is not JsonValueKind.Object || !element.TryGetProperty("type", out var type) || type.ValueKind is not JsonValueKind.String)
+        if (element.ValueKind is not JsonValueKind.Object || !TryGetMember(element, "type", out var type) || type.ValueKind is not JsonValueKind.String)
             throw new FormatException("A GeoJSON object must have a 'type' member.");
 
         return type.GetString()!;
@@ -464,7 +536,9 @@ public static class GeoJson
     private static void WritePositions(Utf8JsonWriter writer, IReadOnlyList<GeoPosition> positions)
     {
         writer.WriteStartArray();
-        foreach (var position in positions)
+
+        // The positions of a geometry are an array: no enumerator
+        foreach (ref readonly var position in positions is GeoPosition[] array ? array.AsSpan() : [.. positions])
         {
             WritePosition(writer, position);
         }
@@ -472,7 +546,7 @@ public static class GeoJson
         writer.WriteEndArray();
     }
 
-    private static void WritePosition(Utf8JsonWriter writer, GeoPosition position)
+    private static void WritePosition(Utf8JsonWriter writer, in GeoPosition position)
     {
         writer.WriteStartArray();
         writer.WriteNumberValue(position.Longitude);

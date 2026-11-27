@@ -297,7 +297,11 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`OpenType/`) applies t
   glyph; an attached glyph records what it is attached to, and `FinishPositions` resolves the chains once.
 - **Clusters are the contract with the rest of the layout**: every glyph has the index of the first character of its
   cluster, a cluster never splits what shaping tied together (a ligature, a character and its marks), and clusters never
-  decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed.
+  decrease along a run. Merge clusters whenever glyphs are merged, reordered or removed. `GlyphBuffer.MergeClusters`
+  extends a range to the glyphs that share the largest cluster of the range, not only the cluster of its last glyph:
+  the Indic shaper merges after reordering, and a joiner drawn before an anusvara (U+0982 U+200C U+09CD U+09A4) would
+  otherwise leave the next syllable in a cluster that starts at the joiner's character. The reference shaper gives
+  that cluster; the library does not (`TextShaperTests`).
 - **Bounds.** The buffer refuses to grow beyond `MaxTextGlyphs`. A pass of a lookup over the glyphs is what shaping
   is: it is not charged, and the subtables of the lookups of one run are limited in number instead (a font can have
   several thousand, tried at each glyph; it cannot have millions by pointing every offset at one table). What a rule
@@ -305,6 +309,15 @@ glyphs and positions in a `GlyphBuffer`; `LayoutApplier` (`OpenType/`) applies t
   with the text. Nested lookups are limited in depth; sequences are limited in length. A layout table is read
   through `FontBinary` like any other: a reference outside the table is `InvalidFontException`, raised when the
   layout is created.
+- **What is passed over.** `LookupDigests` keeps a digest of the glyphs each lookup and each subtable may apply at
+  (their first coverage tables): a glyph a digest does not contain is not tried, and a lookup with many subtables finds
+  the subtables whose digests contain a glyph from the bits of the glyph (`SubtableDigests`). While a stage of
+  substitutions, or the positioning, is applied, the applier keeps a digest of the glyphs of the buffer
+  (`LayoutApplier.TrackGlyphs`) and passes over a lookup whose digest has none of them. Between `TrackGlyphs` and
+  `StopTrackingGlyphs` only the lookups of the applier may change the glyphs, and every glyph a substitution writes goes
+  through `SetGlyph`, which adds it to the digest: code that changes glyphs in between (a model of a script, a new
+  kind of substitution) stops the tracking first or adds its glyphs. Nothing is passed over that could have thrown: a
+  lookup that reads the mark glyph sets of the GDEF table to skip glyphs is still walked.
 - A feature value lives in bits of the mask of each glyph, so a feature can differ along a run without splitting it.
 - **Languages** (`OpenTypeLanguage`). `TextStyle.Language` is a BCP 47 language tag; the shaper takes the tags of the
   language systems it can use, by order of preference, and uses the first one the font has for the script. The table

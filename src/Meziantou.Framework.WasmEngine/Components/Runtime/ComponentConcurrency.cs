@@ -315,13 +315,7 @@ internal sealed class Continuation
     private static Handler? s_handler;
 
     private readonly SemaphoreSlim _lock = new(0);
-    private readonly ComponentStoreState _store;
     private bool _abandoned;
-
-    private Continuation(ComponentStoreState store)
-    {
-        _store = store;
-    }
 
     public Handler? Handler { get; set; }
 
@@ -330,7 +324,7 @@ internal sealed class Continuation
 
     public static Continuation New(ComponentStoreState store, Func<ComponentThread?> body)
     {
-        var continuation = new Continuation(store);
+        var continuation = new Continuation();
         store.Register(continuation);
         store.StartOnWorker(() =>
         {
@@ -390,7 +384,7 @@ internal sealed class Continuation
     /// <summary>Blocks the current continuation: control returns to the thread that resumed it.</summary>
     public static void Block(ComponentStoreState store, ComponentThread? switchTo)
     {
-        var continuation = new Continuation(store);
+        var continuation = new Continuation();
         store.Register(continuation);
         var handler = s_handler ?? throw new InvalidOperationException("The thread is not running in a continuation");
         handler.Continuation = continuation;

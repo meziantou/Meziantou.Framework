@@ -12,7 +12,7 @@ internal sealed class ManagedStore : WasmStore
     // The machine of the OS thread, when it runs the continuations of the asynchronous calls of the components (see
     // Components.Runtime.ContinuationWorker): each continuation needs its own stack of values
     [ThreadStatic]
-    private static Machine? t_threadMachine;
+    private static Machine? s_threadMachine;
 
     private readonly Machine _machine;
     private Components.Runtime.ComponentStoreState? _components;
@@ -38,7 +38,7 @@ internal sealed class ManagedStore : WasmStore
     public WasmStoreOptions Options { get; }
 
     /// <summary>The machine that runs the code on the current OS thread.</summary>
-    public Machine Machine => t_threadMachine is { } machine && machine.Store == this ? machine : _machine;
+    public Machine Machine => s_threadMachine is { } machine && machine.Store == this ? machine : _machine;
 
     public TypeRegistry Registry => _runtime.Registry;
 
@@ -49,7 +49,7 @@ internal sealed class ManagedStore : WasmStore
     public Machine CreateThreadMachine()
     {
         var machine = new Machine(this);
-        t_threadMachine = machine;
+        s_threadMachine = machine;
         return machine;
     }
 
@@ -60,7 +60,7 @@ internal sealed class ManagedStore : WasmStore
             _runtime.Interruptions.Unregister(machine);
         }
 
-        t_threadMachine = null;
+        s_threadMachine = null;
     }
 
     /// <summary>Calls the interruption action of the store, while the components wait for the host.</summary>

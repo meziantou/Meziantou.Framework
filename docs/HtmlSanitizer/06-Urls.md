@@ -77,6 +77,9 @@ Assert.Equal("<img srcset=\"https://example.com/img1.jpg 300w, https://example.c
 ```
 <!-- endref -->
 
+The value is split into candidates the way a browser splits it: a comma inside the parentheses of a descriptor does
+not end the candidate, so `a 1x(,q)/,javascript:alert(1) 2x` contains the URL `javascript:alert(1)` and is rejected.
+
 An attribute can be in both sets. Its value must then pass both validations.
 
 ## Validate your own URL attributes

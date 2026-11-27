@@ -537,11 +537,6 @@ public static class YamlFuzzTargets
 
         FuzzAssert.Equal(yaml, stream.ToStringPreservingFormatting(), "An unchanged stream is not written as its text");
 
-        // A node that is written again is written by the emitter, which writes a tag of a %TAG handle in its verbatim
-        // form: a prefix that is not a URI, which %TAG accepts, gives a verbatim tag that is not valid
-        if (yaml.Contains("%TAG", StringComparison.Ordinal))
-            return;
-
         var changed = 0;
         foreach (var document in stream)
         {

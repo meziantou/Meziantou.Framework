@@ -30,6 +30,12 @@ public sealed class DocumentStart : ParsingEvent
     public bool IsImplicit { get; }
 
     /// <summary>
+    /// Gets a value indicating whether the emitter writes the <see cref="Tags"/>. When it does not, the text that the
+    /// document goes in declares them: the emitter only uses them to write the tags.
+    /// </summary>
+    internal bool WritesTagDirectives { get; init; } = true;
+
+    /// <summary>
     /// Initializes a new instance of the <see cref="DocumentStart"/> class.
     /// </summary>
     /// <param name="version">The version.</param>

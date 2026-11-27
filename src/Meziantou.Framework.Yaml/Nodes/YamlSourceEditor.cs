@@ -96,6 +96,10 @@ internal static class YamlSourceEditor
     [ThreadStatic]
     private static HashSet<YamlNode>? s_liveNodes;
 
+    // The %TAG directives of the document being written, which the text declares: a node written again uses them
+    [ThreadStatic]
+    private static TagDirectiveCollection? s_documentTags;
+
     private static HashSet<YamlNode> CollectNodes(YamlStream stream)
     {
         var nodes = new HashSet<YamlNode>(ReferenceEqualityComparer.Instance);
@@ -152,6 +156,13 @@ internal static class YamlSourceEditor
         {
             foreach (var document in stream)
             {
+                // A tag that only a directive can write needs one that the document declares: a new directive is
+                // written by writing the stream again
+                var tags = document.DocumentStart.Tags ?? [];
+                if (!ReferenceEquals(YamlModelText.GetTagDirectives(document.Contents, tags, keepDeclared: true), tags))
+                    return EmitStream(stream);
+
+                s_documentTags = tags;
                 if (!AddDocumentEdits(document, source, edits))
                     return EmitStream(stream);
             }
@@ -159,6 +170,7 @@ internal static class YamlSourceEditor
         finally
         {
             s_liveNodes = null;
+            s_documentTags = null;
         }
 
         if (edits.Count == 0)
@@ -739,7 +751,7 @@ internal static class YamlSourceEditor
         WriteEmptyScalarsAsNull(element);
 
         var writer = new StringWriter(CultureInfo.InvariantCulture);
-        element.WriteTo(writer, suppressDocumentTags: true);
+        YamlModelText.WriteTo(element, new Emitter(writer), suppressDocumentTags: true, s_documentTags ?? []);
         var text = writer.ToString().Replace("\r\n", "\n", StringComparison.Ordinal);
 
         // Remove the document markers that the emitter writes for a single node

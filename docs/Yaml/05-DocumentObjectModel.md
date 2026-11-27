@@ -143,6 +143,10 @@ Assert.Equal("""
   document and a node have the same methods. `ToString` returns their YAML, trimmed.
 - [WriteTo](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.WriteTo) writes the nodes again, without the comments and the layout of the text. To keep them, see
   [Keep the formatting](#keep-the-formatting).
+- A tag that is neither a local tag nor a URI, such as the `tag.com,2000:app/foo` of `%TAG !e! tag.com,2000:app/`, has
+  no verbatim form: it is written with the handle of a `%TAG` directive. The directive of the document whose prefix
+  starts the tag is written, even when `suppressDocumentTags` is `true`. Without one, such as for a node written alone,
+  a new directive is written, with the handle `!t!`.
 - [DeepClone](cref:Meziantou.Framework.Yaml.Nodes.YamlNode.DeepClone) copies a node and all its children; a stream and a document have their own.
 
 ## Keep the formatting
@@ -182,6 +186,8 @@ Assert.Equal("""
   of the others. A removed entry or item removes its lines.
 - A change the text cannot take in place, such as entries in a new order or a change in a flow collection, rewrites the
   smallest node that contains it, in the style of [WriteTo](cref:Meziantou.Framework.Yaml.Nodes.YamlStream.WriteTo).
+- A node written again uses the `%TAG` handles of its document. A new tag that needs a directive the document does
+  not declare writes the stream again, with the directive.
 - The model copies the node of an anchor for each of its aliases. When a copy or the anchored node changes, the alias
   is replaced by the content of the copy.
 - A stream that was not loaded from a text, or whose list of documents changed, is written like

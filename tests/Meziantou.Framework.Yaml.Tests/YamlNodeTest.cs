@@ -471,6 +471,32 @@ public class YamlNodeTest
         Assert.Equal("k: !<tag:example.com,2000:foo> x", mapping.ToString());
     }
 
+    [Fact]
+    public void TagThatIsNotAUri_IsWrittenWithADirective()
+    {
+        // A %TAG prefix does not need a URI scheme, unlike a verbatim tag: the tag is written with the handle of a directive
+        var stream = YamlStream.Load(new StringReader("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n---\na: !e!foo x\nb: !u!bar y\n"));
+        var root = (YamlMapping)stream[0].Contents!;
+
+        Assert.Equal("tag.com,2000:app/foo", root["a"]!.Tag);
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n---\na: !e!foo x\nb: !u!bar y\n", WriteTo(stream, suppressDocumentTags: false));
+
+        // Without the directives of the document, the ones that a tag needs are kept, and a node alone gets a new one
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n---\na: !e!foo x\nb: !<tag:example.com,2000:bar> y\n", WriteTo(stream, suppressDocumentTags: true));
+        Assert.Equal("%TAG !t! tag.com,2000:app/\n--- !t!foo x", root["a"]!.ToString().ReplaceLineEndings("\n"));
+        Assert.Equal("x", root["a"]!.ToObject<string>());
+
+        root["c"] = new YamlValue("z") { Tag = "other.org,2000:baz" };
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n%TAG !u! tag:example.com,2000:\n%TAG !t! other.org,2000:\n---\na: !e!foo x\nb: !u!bar y\nc: !t!baz z\n", WriteTo(stream, suppressDocumentTags: false));
+
+        static string WriteTo(YamlStream stream, bool suppressDocumentTags)
+        {
+            using var writer = new StringWriter(CultureInfo.InvariantCulture) { NewLine = "\n" };
+            stream.WriteTo(writer, suppressDocumentTags);
+            return writer.ToString().ReplaceLineEndings("\n");
+        }
+    }
+
     public static TheoryData<string> YamlTestSuiteJsonCases() => YamlTestSuite.Ids(testCase => !testCase.Error && testCase.Json is not null);
 
     [Theory]

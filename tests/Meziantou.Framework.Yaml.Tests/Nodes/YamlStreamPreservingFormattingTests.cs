@@ -162,6 +162,30 @@ public sealed class YamlStreamPreservingFormattingTests
     }
 
     [Fact]
+    public void RewrittenNode_UsesTheTagDirectivesOfTheDocument()
+    {
+        var stream = Load("%TAG !e! tag.com,2000:app/\n---\na: !e!foo x  # first\nb: !e!bar [1, 2]\nc: 3\n");
+        var root = Root(stream);
+        ((YamlSequence)root["b"]!).Add(new YamlValue("3"));
+        var result = stream.ToStringPreservingFormatting();
+
+        Assert.Equal("%TAG !e! tag.com,2000:app/\n---\na: !e!foo x  # first\nb: !e!bar [1, 2, 3]\nc: 3\n", result);
+        AssertSameData(stream, result);
+    }
+
+    [Fact]
+    public void TagThatNeedsANewDirective_WritesTheStreamAgain()
+    {
+        // A tag that is not a URI is written with a directive, which the document does not declare
+        var stream = Load("a: 1  # first\n");
+        Root(stream)["a"] = new YamlValue("2") { Tag = "other.org,2000:baz" };
+        var result = stream.ToStringPreservingFormatting().ReplaceLineEndings("\n");
+
+        Assert.Equal("%TAG !t! other.org,2000:\n---\na: !t!baz 2\n", result);
+        AssertSameData(stream, result);
+    }
+
+    [Fact]
     public void ChangedAliasCopy_ReplacesTheAlias()
     {
         var yaml = "base: &b {x: 1}\ncopy: *b\nother: *b\n";

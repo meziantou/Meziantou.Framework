@@ -695,7 +695,7 @@ public partial class Emitter : IEmitter
 
 
             // The default directives are always in effect, so only the other ones need to be written.
-            var explicitTags = documentStart.Tags?.Where(tag => !Constants.DefaultTagDirectives.Contains(tag)).ToList();
+            var explicitTags = !documentStart.WritesTagDirectives ? null : documentStart.Tags?.Where(tag => !Constants.DefaultTagDirectives.Contains(tag)).ToList();
             var hasDirectives = documentStart.Version != null || explicitTags is { Count: > 0 };
 
             // A directive is only recognized after a document is explicitly ended.

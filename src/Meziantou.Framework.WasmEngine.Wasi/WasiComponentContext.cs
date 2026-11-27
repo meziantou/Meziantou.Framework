@@ -1,3 +1,4 @@
+using Meziantou.Framework.Versioning;
 using Meziantou.Framework.WasmEngine.Components;
 using Meziantou.Framework.WasmEngine.Wasi.Components;
 
@@ -134,24 +135,19 @@ public sealed class WasiComponentContext
 
     private static string? FindRunExport(WasmComponentInstance instance, string versionPrefix) => FindExport(instance, "wasi:cli/run@", versionPrefix);
 
-    private static string? FindExport(WasmComponentInstance instance, string prefix, string versionPrefix)
+    private static string? FindExport(WasmComponentInstance instance, string prefix, string versionPrefix) => FindLatestVersion(instance.Exports.Select(export => export.Name), prefix, versionPrefix);
+
+    /// <summary>Returns the name of the latest version of an interface (<paramref name="prefix"/> followed by a version that starts with <paramref name="versionPrefix"/>), or null.</summary>
+    internal static string? FindLatestVersion(IEnumerable<string> names, string prefix, string versionPrefix)
     {
-        return instance.Exports
-            .Select(export => export.Name)
+        return names
             .Where(name => name.StartsWith(prefix, StringComparison.Ordinal) && name.AsSpan(prefix.Length).StartsWith(versionPrefix, StringComparison.Ordinal))
-            .Select(name => (Name: name, Version: ParseVersion(name[prefix.Length..])))
-            // The latest version: 0.3.10 is after 0.3.9, and a release is after its pre-releases (0.3.0-rc-...)
-            .OrderByDescending(export => export.Version.Number)
-            .ThenBy(export => export.Version.PreRelease is not null)
-            .ThenByDescending(export => export.Version.PreRelease, StringComparer.Ordinal)
+            .Select(name => (Name: name, Version: SemanticVersion.TryParse(name.AsSpan(prefix.Length), out var version) ? version : null))
+            .Where(export => export.Version is not null)
+            // The latest version, by the precedence of semantic versioning: 0.3.10 is after 0.3.9, a release is after its
+            // pre-releases (0.3.0-rc.10 is after 0.3.0-rc.9), and the build metadata is ignored
+            .OrderByDescending(export => export.Version)
             .Select(export => export.Name)
             .FirstOrDefault();
-    }
-
-    private static (Version? Number, string? PreRelease) ParseVersion(string version)
-    {
-        var separator = version.IndexOf('-', StringComparison.Ordinal);
-        var number = separator < 0 ? version : version[..separator];
-        return (Version.TryParse(number, out var parsed) ? parsed : null, separator < 0 ? null : version[(separator + 1)..]);
     }
 }

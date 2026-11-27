@@ -9,6 +9,7 @@
     <PackageTags>webassembly;wasm;wasi;wasip1;wasip2;wasip3;component;engine;runtime;sandbox;sockets;http</PackageTags>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="../Meziantou.Framework.Versioning/Meziantou.Framework.Versioning.csproj" />
     <ProjectReference Include="../Meziantou.Framework.WasmEngine/Meziantou.Framework.WasmEngine.csproj" />
     <!-- The host functions are methods marked with [WasmImport]: the source generator of the engine writes their conversions -->
     <ProjectReference Include="../Meziantou.Framework.WasmEngine.SourceGenerator/Meziantou.Framework.WasmEngine.SourceGenerator.csproj" PrivateAssets="all" ReferenceOutputAssembly="false" OutputItemType="Analyzer" SetTargetFramework="TargetFramework=netstandard2.0" />

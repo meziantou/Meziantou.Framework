@@ -529,6 +529,21 @@ public sealed class WasiComponentContextTests
         Assert.Throws<InvalidOperationException>(() => wasi.HandleHttpRequest(instance, request));
     }
 
+    [Theory]
+    [InlineData("0.3.9", "0.3.10", "0.3.10")]
+    [InlineData("0.3.0-rc.9", "0.3.0-rc.10", "0.3.0-rc.10")]
+    [InlineData("0.3.0-rc-2025-09-16", "0.3.0", "0.3.0")]
+    [InlineData("0.3.1", "0.3.2+build.1", "0.3.2+build.1")]
+    [InlineData("0.3.1", "0.3.2+build-1", "0.3.2+build-1")]
+    [InlineData("0.3.0-alpha", "0.3.0-1", "0.3.0-alpha")]
+    public void Exports_TheLatestVersionIsCalled(string first, string second, string expected)
+    {
+        // The versions are ordered by the precedence of semantic versioning, in any order of the exports
+        string[] names = ["wasi:cli/run@" + first, "wasi:cli/run@" + second, "wasi:cli/run@0.2.6", "wasi:http/handler@0.3.99"];
+        Assert.Equal("wasi:cli/run@" + expected, WasiComponentContext.FindLatestVersion(names, "wasi:cli/run@", "0.3."));
+        Assert.Equal("wasi:cli/run@" + expected, WasiComponentContext.FindLatestVersion(names.Reverse(), "wasi:cli/run@", "0.3."));
+    }
+
     [Fact]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The clients dispose the requests")]
     public async Task HttpClients()

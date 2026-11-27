@@ -7,6 +7,12 @@ public sealed class ComponentWastTests
 {
     public static TheoryData<string> Scripts => [.. SpecTestPaths.GetComponentScripts()];
 
+    static ComponentWastTests()
+    {
+        // The code compiled to .NET that is not valid fails the tests, instead of being interpreted
+        JitOps.ThrowOnInvalidProgram = true;
+    }
+
     /// <summary>Runs a script with the interpreter.</summary>
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(Scripts), DisableDiscoveryEnumeration = true)]

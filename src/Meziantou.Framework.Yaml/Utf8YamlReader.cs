@@ -42,6 +42,12 @@ public ref struct Utf8YamlReader
     private readonly int _maxDepth;
     private readonly Utf8YamlReaderOptions _options;
 
+    // Set by the token source, which reads the tokens of a block again when one is incomplete: a partial read then keeps
+    // no copy of the state to go back to, and the reader stops instead
+    private readonly bool _stopsAtIncompleteToken;
+    private bool _stoppedAtIncompleteToken;
+    private int _readCount;
+
     // Absolute offset of the first byte of the buffer, and number of lines before it
     private readonly long _bufferStart;
     private readonly int _lineNumber;
@@ -109,7 +115,21 @@ public ref struct Utf8YamlReader
     /// <param name="isFinalBlock"><see langword="true"/> when <paramref name="utf8Yaml"/> holds the end of the input.</param>
     /// <param name="state">The <see cref="CurrentState"/> of the previous reader, or a new state for the first block.</param>
     public Utf8YamlReader(ReadOnlySpan<byte> utf8Yaml, bool isFinalBlock, Utf8YamlReaderState state)
+        : this(utf8Yaml, isFinalBlock, state, stopsAtIncompleteToken: false)
     {
+    }
+
+    /// <summary>Initializes a reader over a part of a UTF-8 YAML input.</summary>
+    /// <param name="utf8Yaml">The bytes not consumed by the previous reader, followed by the new data.</param>
+    /// <param name="isFinalBlock"><see langword="true"/> when <paramref name="utf8Yaml"/> holds the end of the input.</param>
+    /// <param name="state">The <see cref="CurrentState"/> of the previous reader, or a new state for the first block.</param>
+    /// <param name="stopsAtIncompleteToken">
+    /// <see langword="true"/> when the caller reads the block again from <paramref name="state"/> after an incomplete
+    /// token, see <see cref="StoppedAtIncompleteToken"/>, instead of the reader going back to its state before the token.
+    /// </param>
+    internal Utf8YamlReader(ReadOnlySpan<byte> utf8Yaml, bool isFinalBlock, Utf8YamlReaderState state, bool stopsAtIncompleteToken)
+    {
+        _stopsAtIncompleteToken = stopsAtIncompleteToken;
         _buffer = utf8Yaml;
         _isFinalBlock = isFinalBlock;
         _options = state.Options;
@@ -393,10 +413,56 @@ public ref struct Utf8YamlReader
         {
             _hasPending = false;
             _token = _pending;
+            _readCount++;
             return true;
         }
 
-        return _isFinalBlock ? ReadCore() : ReadPartial();
+        if (_isFinalBlock)
+            return ReadCore();
+
+        return _stopsAtIncompleteToken ? ReadUntilIncompleteToken() : ReadPartial();
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the last read found a token that the buffer does not hold completely. The state of
+    /// the reader is then lost: a new reader created with the same arguments and read <see cref="ReadCount"/> times has
+    /// the state after the last complete token.
+    /// </summary>
+    internal readonly bool StoppedAtIncompleteToken => _stoppedAtIncompleteToken;
+
+    /// <summary>
+    /// Gets the number of calls to <see cref="Read"/> that returned a token, which is exact for a reader created with
+    /// <c>stopsAtIncompleteToken</c> over a block that is not the final one.
+    /// </summary>
+    internal readonly int ReadCount => _readCount;
+
+    // Like ReadPartial, without the copy of the state that it takes before each token: the caller reads the block again
+    // when a token is incomplete, which happens once per block
+    private bool ReadUntilIncompleteToken()
+    {
+        if (_stoppedAtIncompleteToken)
+            return false;
+
+        try
+        {
+            var result = ReadCore();
+            if (_pos <= _lastLineBreak)
+            {
+                if (result)
+                {
+                    _readCount++;
+                }
+
+                return result;
+            }
+        }
+        catch (YamlException)
+        {
+            // The error may come from the missing data. It is reported again when the final block is read.
+        }
+
+        _stoppedAtIncompleteToken = true;
+        return false;
     }
 
     // The input continues after the buffer: a token is accepted only when a line break follows the position where the

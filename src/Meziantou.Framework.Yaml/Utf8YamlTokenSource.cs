@@ -21,6 +21,9 @@ internal sealed class Utf8YamlTokenSource
 {
     private const int BlockSize = 16 * 1024;
 
+    // The longest text between two locations that GetMark reads with a loop instead of searches
+    private const int ShortSegmentLength = 64;
+
     // A seekable UTF-8 stream up to this size is read whole: the locations are then computed only for errors, and the
     // buffer is never refilled. Larger streams are read by blocks, so the memory does not grow with them.
     private const int WholeStreamMaxLength = 1024 * 1024;
@@ -35,6 +38,9 @@ internal sealed class Utf8YamlTokenSource
     private readonly char[]? _chars;
     private readonly Stream? _stream;
     private bool _isPooledBuffer;
+
+    // The pooled buffer was given back: the locations of the input can no longer be computed
+    private bool _bufferReturned;
 
     private byte[] _buffer;
     private int _start;
@@ -244,7 +250,14 @@ internal sealed class Utf8YamlTokenSource
     public long TokenEndOffset => _tokenBufferOffset + _token.Start + _token.Length;
 
     /// <summary>Computes the location of an offset of the input. When the source does not keep the whole input, only the offsets of the current buffer are known.</summary>
-    public Mark GetMarkAt(long offset) => GetMark(offset);
+    /// <exception cref="InvalidOperationException">The bytes of the input were given back by <see cref="ReturnPooledBuffer"/>.</exception>
+    public Mark GetMarkAt(long offset)
+    {
+        if (_bufferReturned)
+            throw new InvalidOperationException("The location of a node can only be computed while its YAML is read.");
+
+        return GetMark(offset);
+    }
 
     /// <summary>Gives back the pooled copy of the bytes of a span. The source must not be read afterward.</summary>
     public void ReturnPooledBuffer()
@@ -252,6 +265,7 @@ internal sealed class Utf8YamlTokenSource
         if (_isPooledBuffer)
         {
             _isPooledBuffer = false;
+            _bufferReturned = true;
             var buffer = _buffer;
             _buffer = [];
             _start = 0;
@@ -397,7 +411,7 @@ internal sealed class Utf8YamlTokenSource
             var bufferIndex = _start;
             var lineNumber = _state._data.LineNumber;
             var charOffset = _state._data.CharOffset;
-            var reader = new Utf8YamlReader(_buffer.AsSpan(_start, _length), _isFinalBlock, _state);
+            var reader = new Utf8YamlReader(_buffer.AsSpan(_start, _length), _isFinalBlock, _state, stopsAtIncompleteToken: true);
             _batchCount = 0;
             _batchIndex = 0;
             _batchBufferIndex = bufferIndex;
@@ -431,6 +445,18 @@ internal sealed class Utf8YamlTokenSource
 
                 _batchError = ExceptionDispatchInfo.Capture(error);
                 continue;
+            }
+
+            // The last token is not complete in the buffer, and the reader did not keep its state before it: the tokens of
+            // the batch are read again from the start of the batch
+            if (reader.StoppedAtIncompleteToken)
+            {
+                var readCount = reader.ReadCount;
+                reader = new Utf8YamlReader(_buffer.AsSpan(_start, _length), _isFinalBlock, _state, stopsAtIncompleteToken: true);
+                for (var i = 0; i < readCount; i++)
+                {
+                    _ = reader.Read();
+                }
             }
 
             if (_batchCount > 0)
@@ -578,6 +604,12 @@ internal sealed class Utf8YamlTokenSource
         if (offset >= _markOffset)
         {
             var segment = buffer[from..to];
+            if (segment.Length <= ShortSegmentLength && TryAdvanceOverShortAsciiSegment(segment))
+            {
+                _markOffset = offset;
+                return CurrentMark();
+            }
+
             var lastBreak = segment.LastIndexOfAny((byte)'\r', (byte)'\n');
             if (lastBreak >= 0)
             {
@@ -613,6 +645,46 @@ internal sealed class Utf8YamlTokenSource
 
     // The input is valid UTF-8. Most of the text between two locations is a few ASCII characters, whose count is their length.
     private static int GetCharCount(ReadOnlySpan<byte> utf8) => Ascii.IsValid(utf8) ? utf8.Length : Encoding.UTF8.GetCharCount(utf8);
+
+    // Most of the text between two locations is a few ASCII characters on one or two lines: a loop over its bytes replaces
+    // the searches of GetMark, whose cost is in their calls. A carriage return and the other bytes take the general path.
+    private bool TryAdvanceOverShortAsciiSegment(ReadOnlySpan<byte> segment)
+    {
+        var lineBreaks = 0;
+        var lastBreak = -1;
+        var bits = 0;
+        for (var i = 0; i < segment.Length; i++)
+        {
+            var b = segment[i];
+            bits |= b;
+            if (b == (byte)'\n')
+            {
+                lineBreaks++;
+                lastBreak = i;
+            }
+            else if (b == (byte)'\r')
+            {
+                return false;
+            }
+        }
+
+        if (bits >= 0x80)
+            return false;
+
+        if (lastBreak < 0)
+        {
+            _markCharIndex += segment.Length;
+            return true;
+        }
+
+        // An ASCII line does not start with a byte order mark
+        _markLine += lineBreaks;
+        _markLineStartCharIndex = _markCharIndex + lastBreak + 1;
+        _markLineStartOffset = _markOffset + lastBreak + 1;
+        _markCharIndex = _markLineStartCharIndex + segment.Length - (lastBreak + 1);
+        _markLineStartsAfterByteOrderMark = false;
+        return true;
+    }
 
     private Mark CurrentMark() => new((int)Math.Min(_markCharIndex, int.MaxValue), _markLine, (int)Math.Min(_markCharIndex - _markLineStartCharIndex, int.MaxValue));
 

@@ -124,6 +124,35 @@ public sealed class YamlConverterAttributeTests
     }
     #endregion
 
+    [Fact]
+    public void CurrentLocation_IsResolvedWhileTheInputIsRead()
+    {
+        var fromString = YamlSerializer.Deserialize<LocatedValue>("\n  value\n");
+        Assert.Equal((1, 2), (fromString.Start.Line, fromString.Start.Column));
+        Assert.Equal((1, 2), (fromString.Location.Start.Line, fromString.Location.Start.Column));
+
+        // The bytes are copied to a pooled buffer, which the serializer gives back when it returns
+        var fromBytes = YamlSerializer.Deserialize<LocatedValue>("\n  value\n"u8);
+        Assert.Equal((1, 2), (fromBytes.Start.Line, fromBytes.Start.Column));
+        Assert.Throws<InvalidOperationException>(() => fromBytes.Location.Start);
+    }
+
+    [YamlConverter(typeof(LocatedValueConverter))]
+    internal readonly record struct LocatedValue(YamlLocation Location, Mark Start);
+
+    internal sealed class LocatedValueConverter : YamlConverter<LocatedValue>
+    {
+        public override LocatedValue Read(YamlReader reader)
+        {
+            var location = reader.CurrentLocation;
+            var value = new LocatedValue(location, location.Start);
+            reader.Read();
+            return value;
+        }
+
+        public override void Write(YamlWriter writer, LocatedValue value) => writer.WriteNullValue();
+    }
+
     #region YamlConverter_Create
     internal sealed class UriConverter : YamlConverter<Uri>
     {

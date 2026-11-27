@@ -174,6 +174,7 @@ public sealed class YamlReader : YamlReaderWriterBase
     /// Gets the location of the current token. Unlike <see cref="Start"/> and <see cref="End"/>, its line and column are
     /// computed only when they are asked for, which makes it cheap to keep for an error that may never be reported.
     /// </summary>
+    /// <remarks>Read the start and the end of the location before the deserialization returns, see <see cref="YamlLocation"/>.</remarks>
     public YamlLocation CurrentLocation => _state.CurrentLocation;
 
     /// <summary>Gets the UTF-8 bytes of the current scalar, when they are its value, without decoding it.</summary>
@@ -398,7 +399,7 @@ public sealed class YamlReader : YamlReaderWriterBase
     /// <summary>
     /// Ensures the current token is <see cref="YamlTokenType.Scalar"/> and returns its value.
     /// </summary>
-    /// <exception cref="InvalidOperationException">The current token is not a scalar.</exception>
+    /// <exception cref="YamlException">The current token is not a scalar.</exception>
     public string GetScalarValue()
     {
         if (TokenType != YamlTokenType.Scalar)

@@ -6,6 +6,10 @@ namespace Meziantou.Framework.Yaml.Serialization;
 /// The location of a node, for an error that may never be reported: when the reader keeps the whole input, the line
 /// and column are computed only when they are asked for, from the offsets of the node.
 /// </summary>
+/// <remarks>
+/// Read <see cref="Start"/> and <see cref="End"/> while the input is read, for instance in the converter that got the
+/// location: once <see cref="YamlSerializer"/> returns, the bytes that a deferred location needs may be gone.
+/// </remarks>
 [StructLayout(LayoutKind.Auto)]
 public readonly struct YamlLocation
 {
@@ -32,8 +36,10 @@ public readonly struct YamlLocation
     }
 
     /// <summary>Gets the start of the node.</summary>
+    /// <exception cref="InvalidOperationException">The location is deferred, and the deserialization that read the input has returned.</exception>
     public Mark Start => _source is null ? _start : _source.GetMarkAt(_startOffset);
 
     /// <summary>Gets the end of the node.</summary>
+    /// <exception cref="InvalidOperationException">The location is deferred, and the deserialization that read the input has returned.</exception>
     public Mark End => _source is null ? _end : _source.GetMarkAt(_endOffset);
 }

@@ -385,6 +385,7 @@ namespace Meziantou.Framework.Yaml
         public string? Tag { get => throw null; }
         public int Utf8Length { get => throw null; }
         public int Utf8Offset { get => throw null; }
+        public Meziantou.Framework.Yaml.YamlReadOnlyNode Clone() => throw null;
         public Meziantou.Framework.Yaml.YamlReadOnlyNode.MappingEnumerator EnumerateMapping() => throw null;
         public Meziantou.Framework.Yaml.YamlReadOnlyNode.SequenceEnumerator EnumerateSequence() => throw null;
         public bool Equals(Meziantou.Framework.Yaml.YamlReadOnlyNode other) => throw null;

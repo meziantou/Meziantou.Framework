@@ -25,6 +25,12 @@ public sealed class YamlReadOnlyDocument : IDisposable
     private readonly Utf8YamlReader.TagDirective[]?[] _documentTagDirectives;
     private LineIndex? _lineIndex;
 
+    // A clone owns its arrays, which are not pooled. Its text is made of segments of the input: the offset of each one in
+    // the text of the clone and in the input give the positions of its nodes in the input.
+    private readonly bool _isClone;
+    private readonly int[]? _segmentStarts;
+    private readonly int[]? _segmentSourceStarts;
+
     private YamlReadOnlyDocument(ReadOnlyMemory<byte> utf8, byte[]? ownedBuffer, Row[] rows, int rowCount, int[] documentRoots, string?[]? tags, Utf8YamlReader.TagDirective[]?[] documentTagDirectives)
     {
         _documentTagDirectives = documentTagDirectives;
@@ -34,6 +40,15 @@ public sealed class YamlReadOnlyDocument : IDisposable
         _rowCount = rowCount;
         _documentRoots = documentRoots;
         _tags = tags;
+    }
+
+    private YamlReadOnlyDocument(byte[] utf8, Row[] rows, string?[]? tags, LineIndex lineIndex, int[] segmentStarts, int[] segmentSourceStarts)
+        : this(utf8, ownedBuffer: null, rows, rows.Length, documentRoots: [0], tags, documentTagDirectives: [null])
+    {
+        _isClone = true;
+        _lineIndex = lineIndex;
+        _segmentStarts = segmentStarts;
+        _segmentSourceStarts = segmentSourceStarts;
     }
 
     /// <summary>Gets the number of documents of the stream.</summary>
@@ -391,8 +406,9 @@ public sealed class YamlReadOnlyDocument : IDisposable
     /// <summary>Returns the buffers of the document to the pool.</summary>
     public void Dispose()
     {
+        // The arrays of a clone are not pooled: its nodes stay valid
         var rows = _rows;
-        if (rows is null)
+        if (rows is null || _isClone)
             return;
 
         _rows = null;
@@ -446,7 +462,209 @@ public sealed class YamlReadOnlyDocument : IDisposable
             columnStart += 3;
         }
 
-        return new Mark((int)Math.Min(index, int.MaxValue), line, Encoding.UTF8.GetCharCount(buffer[columnStart..offset]));
+        var lineNumber = lines.Lines is null ? line : lines.Lines[line];
+        return new Mark((int)Math.Min(index, int.MaxValue), lineNumber, Encoding.UTF8.GetCharCount(buffer[columnStart..offset]));
+    }
+
+    // The offset in the input of an offset of the text: they differ in a clone, whose text is made of parts of the input
+    internal int GetSourceOffset(int offset)
+    {
+        if (_segmentStarts is null)
+            return offset;
+
+        var segment = Array.BinarySearch(_segmentStarts, offset);
+        if (segment < 0)
+        {
+            segment = ~segment - 1;
+        }
+
+        return _segmentSourceStarts![segment] + (offset - _segmentStarts[segment]);
+    }
+
+    // A copy of the node in a document that owns its arrays: the rows of the node, and the rows of the anchors that its
+    // aliases refer to before it, so that an alias resolves to the same node. The bytes are copied by lines, so that the
+    // positions are the ones of the input and a block scalar is followed by the same byte.
+    internal YamlReadOnlyNode CloneNode(int index)
+    {
+        if (_isClone)
+            return new YamlReadOnlyNode(this, index);
+
+        var rows = _rows;
+        ObjectDisposedException.ThrowIf(rows is null, this);
+        var buffer = Utf8Span;
+        var ranges = new List<(int Start, int End)>();
+        var pending = new Stack<int>();
+        AddRange(index);
+        while (pending.TryPop(out var start))
+        {
+            for (var i = start; i < rows[start].EndRow; i++)
+            {
+                if (rows[i].Token.Kind is Utf8YamlTokenKind.Alias && FindAnchor(i) is >= 0 and var anchored)
+                {
+                    AddRange(anchored);
+                }
+            }
+        }
+
+        // The lines of the rows, merged when they overlap
+        var sourceLines = _lineIndex ??= LineIndex.Create(buffer);
+        var spans = new List<(int Start, int End)>();
+        var rangeSpans = new int[ranges.Count];
+        for (var i = 0; i < ranges.Count; i++)
+        {
+            ref readonly var first = ref rows[ranges[i].Start];
+            var start = LineStart(buffer, first.NodeStart);
+            var end = LineEnd(buffer, first.NodeEnd);
+            if (spans.Count > 0 && start <= spans[^1].End)
+            {
+                spans[^1] = (spans[^1].Start, Math.Max(end, spans[^1].End));
+            }
+            else
+            {
+                spans.Add((start, end));
+            }
+
+            rangeSpans[i] = spans.Count - 1;
+        }
+
+        var segmentStarts = new int[spans.Count];
+        var segmentSourceStarts = new int[spans.Count];
+        var length = 0;
+        foreach (var span in spans)
+        {
+            length += span.End - span.Start;
+        }
+
+        var text = new byte[length];
+        var written = 0;
+        for (var i = 0; i < spans.Count; i++)
+        {
+            segmentStarts[i] = written;
+            segmentSourceStarts[i] = spans[i].Start;
+            buffer[spans[i].Start..spans[i].End].CopyTo(text.AsSpan(written));
+            written += spans[i].End - spans[i].Start;
+        }
+
+        var rowCount = 0;
+        foreach (var range in ranges)
+        {
+            rowCount += range.End - range.Start;
+        }
+
+        var cloneRows = new Row[rowCount];
+        var cloneIndex = -1;
+        var rowStart = 0;
+        for (var i = 0; i < ranges.Count; i++)
+        {
+            var range = ranges[i];
+            var delta = segmentStarts[rangeSpans[i]] - segmentSourceStarts[rangeSpans[i]];
+            for (var row = range.Start; row < range.End; row++)
+            {
+                cloneRows[rowStart + row - range.Start] = Rebase(rows[row], delta, rowStart - range.Start);
+            }
+
+            if (index >= range.Start && index < range.End)
+            {
+                cloneIndex = rowStart + index - range.Start;
+            }
+
+            rowStart += range.End - range.Start;
+        }
+
+        var clone = new YamlReadOnlyDocument(text, cloneRows, _tags, CreateLineIndex(text, segmentStarts, segmentSourceStarts, sourceLines), segmentStarts, segmentSourceStarts);
+        return new YamlReadOnlyNode(clone, cloneIndex);
+
+        // Adds the node and its descendants, unless a range has them; a range they contain is replaced
+        void AddRange(int row)
+        {
+            var end = rows[row].EndRow;
+            foreach (var range in ranges)
+            {
+                if (row >= range.Start && end <= range.End)
+                    return;
+            }
+
+            ranges.RemoveAll(range => range.Start >= row && range.End <= end);
+            var position = 0;
+            while (position < ranges.Count && ranges[position].Start < row)
+            {
+                position++;
+            }
+
+            ranges.Insert(position, (row, end));
+            pending.Push(row);
+        }
+
+        static Row Rebase(Row row, int delta, int rowDelta)
+        {
+            row.Token.Start += delta;
+            row.Token.ValueStart += delta;
+            row.Token.Indicator = row.Token.Indicator < 0 ? row.Token.Indicator : row.Token.Indicator + delta;
+            row.Token.ExplicitKeyIndicator = row.Token.ExplicitKeyIndicator < 0 ? row.Token.ExplicitKeyIndicator : row.Token.ExplicitKeyIndicator + delta;
+            row.Token.Properties.AnchorStart = row.Token.Properties.AnchorStart < 0 ? row.Token.Properties.AnchorStart : row.Token.Properties.AnchorStart + delta;
+            row.Token.Properties.TagStart = row.Token.Properties.TagStart < 0 ? row.Token.Properties.TagStart : row.Token.Properties.TagStart + delta;
+            row.NodeStart += delta;
+            row.NodeEnd += delta;
+            row.EndRow += rowDelta;
+            return row;
+        }
+
+        static int LineStart(ReadOnlySpan<byte> buffer, int offset) => buffer[..offset].LastIndexOfAny((byte)'\r', (byte)'\n') + 1;
+
+        // After the line break of the line, so that a block scalar at the end of the line is followed by it
+        static int LineEnd(ReadOnlySpan<byte> buffer, int offset)
+        {
+            var lineBreak = buffer[offset..].IndexOfAny((byte)'\r', (byte)'\n');
+            if (lineBreak < 0)
+                return buffer.Length;
+
+            lineBreak += offset;
+            return buffer[lineBreak] == '\r' && lineBreak + 1 < buffer.Length && buffer[lineBreak + 1] == '\n' ? lineBreak + 2 : lineBreak + 1;
+        }
+    }
+
+    // The lines of the text of a clone, numbered like the lines of the input they come from: each segment starts a line
+    private static LineIndex CreateLineIndex(ReadOnlySpan<byte> text, int[] segmentStarts, int[] segmentSourceStarts, LineIndex sourceLines)
+    {
+        var starts = new List<int>();
+        var charStarts = new List<long>();
+        var lineNumbers = new List<int>();
+        for (var i = 0; i < segmentStarts.Length; i++)
+        {
+            var line = Array.BinarySearch(sourceLines.Starts, segmentSourceStarts[i]);
+            var position = segmentStarts[i];
+            var end = i + 1 < segmentStarts.Length ? segmentStarts[i + 1] : text.Length;
+            var charIndex = sourceLines.CharStarts[line];
+            starts.Add(position);
+            charStarts.Add(charIndex);
+            lineNumbers.Add(line);
+            while (true)
+            {
+                var next = text[position..end].IndexOfAny((byte)'\r', (byte)'\n');
+                if (next < 0)
+                    break;
+
+                var lineBreak = position + next;
+                if (text[lineBreak] == '\r' && lineBreak + 1 < end && text[lineBreak + 1] == '\n')
+                {
+                    lineBreak++;
+                }
+
+                charIndex += Encoding.UTF8.GetCharCount(text[position..(lineBreak + 1)]);
+                position = lineBreak + 1;
+                line++;
+
+                // The next segment starts the next line; after the last one, the line is empty like in the input
+                if (position == end && i + 1 < segmentStarts.Length)
+                    break;
+
+                starts.Add(position);
+                charStarts.Add(charIndex);
+                lineNumbers.Add(line);
+            }
+        }
+
+        return new LineIndex([.. starts], [.. charStarts], [.. lineNumbers]);
     }
 
     // The last node before the alias that has its anchor, in the same document: an anchor is not defined in the others
@@ -477,11 +695,14 @@ public sealed class YamlReadOnlyDocument : IDisposable
 
     // The byte offset and the UTF-16 index of the start of every line. A line ends at a line feed, or at a carriage
     // return that is not followed by a line feed.
-    private sealed class LineIndex(int[] starts, long[] charStarts)
+    private sealed class LineIndex(int[] starts, long[] charStarts, int[]? lines = null)
     {
         public int[] Starts { get; } = starts;
 
         public long[] CharStarts { get; } = charStarts;
+
+        // The number of each line in the input, when it is not its index: the lines of a clone come from parts of the input
+        public int[]? Lines { get; } = lines;
 
         public static LineIndex Create(ReadOnlySpan<byte> buffer)
         {

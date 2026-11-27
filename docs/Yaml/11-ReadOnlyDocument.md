@@ -42,8 +42,9 @@ Assert.Equal("nginx", image.GetRawText());
 ```
 <!-- endref -->
 
-Dispose the document when you are done: it returns its buffers to a pool, and its nodes cannot be used after that.
-When you parse bytes, the document reads them in place: do not change them while you use it.
+Dispose the document when you are done: it returns its buffers to a pool, and its nodes cannot be used after that. To
+keep a node, [clone it](#keep-a-node). When you parse bytes, the document reads them in place: do not change them
+while you use it.
 
 ## Nodes
 
@@ -60,10 +61,43 @@ alias.
 | Get the text of a node | [GetRawText](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.GetRawText), or [GetRawUtf8Text](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.GetRawUtf8Text) without allocating |
 | Locate a node | [Start](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Start) and [End](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.End), or [Utf8Offset](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Utf8Offset) and [Utf8Length](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Utf8Length) in the UTF-8 bytes |
 | Write a node | [WriteTo](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.WriteTo), with a [UTF-8 writer](12-Utf8Writer.md#copy-a-read-only-document) |
+| Keep a node after the document is disposed | [Clone](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Clone) |
 
 The number methods read plain scalars in the notation of the core schema; a quoted scalar is a string, and they return
 `false` for it. [ValueEquals](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.ValueEquals) and [TryGetProperty](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.TryGetProperty) take a string, a span of
 characters or UTF-8 bytes, and allocate nothing.
+
+## Keep a node
+
+[Clone](cref:Meziantou.Framework.Yaml.YamlReadOnlyNode.Clone) copies a node to a document of its own, like `JsonElement.Clone` in System.Text.Json. The copy owns its
+memory, so it stays valid after the document is disposed, and it does not need to be disposed. It holds the lines of
+the node, not the whole input, with the nodes of the anchors that its aliases refer to. It keeps the positions of the
+node in the input. The clone of a copy is the copy itself.
+
+<!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/YamlReadOnlyDocumentTests.cs;region=YamlReadOnlyDocument_Clone;format=md-fenced-code-block;dedent=true -->
+```csharp
+YamlReadOnlyNode settings;
+using (var document = YamlReadOnlyDocument.Parse("""
+    defaults: &defaults
+      timeout: 30
+    settings:
+      retries: 3
+      base: *defaults
+    """))
+{
+    // The copy owns its memory: it stays valid after the document is disposed
+    settings = document.Root["settings"].Clone();
+}
+
+Assert.True(settings["retries"].TryGetInt64(out var retries));
+Assert.Equal(3, retries);
+
+// The anchor of an alias is copied with the node, and the positions are the ones of the input
+Assert.True(settings["base"].ResolveAlias()["timeout"].TryGetInt64(out var timeout));
+Assert.Equal(30, timeout);
+Assert.Equal(3, settings.Start.Line);
+```
+<!-- endref -->
 
 ## Positions
 

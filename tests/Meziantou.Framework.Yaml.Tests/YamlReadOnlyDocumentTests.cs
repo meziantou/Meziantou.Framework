@@ -40,6 +40,144 @@ public sealed class YamlReadOnlyDocumentTests
     }
 
     [Fact]
+    public void Documentation_Clone()
+    {
+        #region YamlReadOnlyDocument_Clone
+        YamlReadOnlyNode settings;
+        using (var document = YamlReadOnlyDocument.Parse("""
+            defaults: &defaults
+              timeout: 30
+            settings:
+              retries: 3
+              base: *defaults
+            """))
+        {
+            // The copy owns its memory: it stays valid after the document is disposed
+            settings = document.Root["settings"].Clone();
+        }
+
+        Assert.True(settings["retries"].TryGetInt64(out var retries));
+        Assert.Equal(3, retries);
+
+        // The anchor of an alias is copied with the node, and the positions are the ones of the input
+        Assert.True(settings["base"].ResolveAlias()["timeout"].TryGetInt64(out var timeout));
+        Assert.Equal(30, timeout);
+        Assert.Equal(3, settings.Start.Line);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("a: 1\nb:\n  c: [x, y]\n  d: \"q\"\n")]
+    [InlineData("a: 1\r\nb:\r\n  - café\r\n  - 😀 # c\r\n  - x\r    y\r\n")]
+    [InlineData("\uFEFFa: |\n  text\n  more\nb: >-\n  folded\n  line\n")]
+    [InlineData("k: |\n  last")]
+    [InlineData("k: |\n  last\n")]
+    [InlineData("list: [a, {b: c}, [d, 'e f']] # comment\nother: !!str 2\n")]
+    [InlineData("x: &a [1, 2]\ny: &b {k: *a}\nz:\n  - *b\n  - *a\n  - &c v\n  - *c\n")]
+    [InlineData("&r [*r]\n")]
+    [InlineData("a: &x 1\n---\nb: *x\nc: &x 2\nd: *x\n")]
+    [InlineData("? complex key\n: value\nk: plain multi\n  line\n")]
+    public void Clone_KeepsEveryNode(string yaml)
+    {
+        using var document = YamlReadOnlyDocument.Parse(yaml);
+        for (var i = 0; i < document.DocumentCount; i++)
+        {
+            foreach (var node in Descendants(document.GetDocumentRoot(i)))
+            {
+                var clone = node.Clone();
+                AssertSameNode(node, clone);
+                Assert.Equal(Write(node), Write(clone));
+                Assert.Equal(clone, clone.Clone());
+            }
+        }
+
+        static IEnumerable<YamlReadOnlyNode> Descendants(YamlReadOnlyNode node)
+        {
+            yield return node;
+            IEnumerable<YamlReadOnlyNode> children = node.Kind switch
+            {
+                YamlReadOnlyNodeKind.Sequence => node.EnumerateSequence(),
+                YamlReadOnlyNodeKind.Mapping => node.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }),
+                _ => [],
+            };
+
+            foreach (var child in children.ToList())
+            {
+                foreach (var descendant in Descendants(child))
+                {
+                    yield return descendant;
+                }
+            }
+        }
+
+        static void AssertSameNode(YamlReadOnlyNode expected, YamlReadOnlyNode actual)
+        {
+            Assert.Equal(expected.Kind, actual.Kind);
+            Assert.Equal(expected.Anchor, actual.Anchor);
+            Assert.Equal(expected.Tag, actual.Tag);
+            Assert.Equal(expected.ScalarStyle, actual.ScalarStyle);
+            Assert.Equal(expected.IsFlow, actual.IsFlow);
+            Assert.Equal(expected.GetRawText(), actual.GetRawText());
+            Assert.Equal(expected.Start, actual.Start);
+            Assert.Equal(expected.End, actual.End);
+            Assert.Equal(expected.Utf8Offset, actual.Utf8Offset);
+            Assert.Equal(expected.Utf8Length, actual.Utf8Length);
+            switch (expected.Kind)
+            {
+                case YamlReadOnlyNodeKind.Scalar:
+                    Assert.Equal(expected.GetString(), actual.GetString());
+                    break;
+
+                case YamlReadOnlyNodeKind.Alias:
+                    var target = Record.Exception(() => expected.ResolveAlias());
+                    if (target is null)
+                    {
+                        Assert.Equal(expected.ResolveAlias().Start, actual.ResolveAlias().Start);
+                    }
+                    else
+                    {
+                        Assert.Throws<InvalidOperationException>(() => actual.ResolveAlias());
+                    }
+
+                    break;
+
+                default:
+                    Assert.Equal(expected.GetLength(), actual.GetLength());
+                    var expectedChildren = expected.Kind is YamlReadOnlyNodeKind.Sequence ? expected.EnumerateSequence().ToList() : expected.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }).ToList();
+                    var actualChildren = actual.Kind is YamlReadOnlyNodeKind.Sequence ? actual.EnumerateSequence().ToList() : actual.EnumerateMapping().SelectMany(entry => new[] { entry.Key, entry.Value }).ToList();
+                    Assert.HasCount(expectedChildren.Count, actualChildren);
+                    for (var i = 0; i < expectedChildren.Count; i++)
+                    {
+                        AssertSameNode(expectedChildren[i], actualChildren[i]);
+                    }
+
+                    break;
+            }
+        }
+
+        static string Write(YamlReadOnlyNode node)
+        {
+            var buffer = new System.Buffers.ArrayBufferWriter<byte>();
+            using (var writer = new Utf8YamlWriter(buffer))
+            {
+                node.WriteTo(writer);
+            }
+
+            return System.Text.Encoding.UTF8.GetString(buffer.WrittenSpan);
+        }
+    }
+
+    [Fact]
+    public void Clone_OfADisposedDocument_Throws()
+    {
+        var document = YamlReadOnlyDocument.Parse("a: 1\n");
+        var root = document.Root;
+        document.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => root.Clone());
+    }
+
+    [Fact]
     public void ReadmeExample_Read()
     {
         #region YamlReadOnlyDocument_Read

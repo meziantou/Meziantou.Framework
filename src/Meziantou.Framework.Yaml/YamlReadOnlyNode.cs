@@ -55,9 +55,9 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     /// <summary>Gets the offset of the node in <see cref="YamlReadOnlyDocument.Utf8Text"/>, in bytes, at its anchor or tag if any.</summary>
     /// <remarks>
     /// The offset counts UTF-8 bytes, even when the document was parsed from a string. Use <see cref="Start"/> for a
-    /// position in the string.
+    /// position in the string. The offset of a node of a <see cref="Clone"/> is the offset in the input of the original.
     /// </remarks>
-    public int Utf8Offset => Row.NodeStart;
+    public int Utf8Offset => _document.GetSourceOffset(Row.NodeStart);
 
     /// <summary>Gets the length of the text of the node in <see cref="YamlReadOnlyDocument.Utf8Text"/>, in bytes, with its properties and its content.</summary>
     public int Utf8Length => Row.NodeEnd - Row.NodeStart;
@@ -77,7 +77,24 @@ public readonly struct YamlReadOnlyNode : IEquatable<YamlReadOnlyNode>
     public string GetRawText() => Encoding.UTF8.GetString(GetRawUtf8Text());
 
     /// <summary>Gets the text of the node in the input, byte for byte, without allocating.</summary>
-    public ReadOnlySpan<byte> GetRawUtf8Text() => _document.Utf8Span.Slice(Utf8Offset, Utf8Length);
+    public ReadOnlySpan<byte> GetRawUtf8Text() => _document.Utf8Span.Slice(Row.NodeStart, Utf8Length);
+
+    /// <summary>
+    /// Gets a copy of the node that stays valid after its document is disposed, like <c>JsonElement.Clone</c> in
+    /// System.Text.Json.
+    /// </summary>
+    /// <returns>The node in a document of its own, which owns its memory and does not need to be disposed.</returns>
+    /// <remarks>
+    /// <para>
+    /// The copy holds the text of the lines of the node and of its descendants, not the whole input. It has the same
+    /// values, text, anchors and tags, and the same positions in the input: <see cref="Start"/>, <see cref="End"/> and
+    /// <see cref="Utf8Offset"/>. An alias of the node still resolves to the node of its anchor: the anchored nodes that
+    /// are not in the node are copied too.
+    /// </para>
+    /// <para>A node of a copy is returned as is. A copy is another node: it is not equal to the original.</para>
+    /// </remarks>
+    /// <exception cref="ObjectDisposedException">The document of the node is disposed.</exception>
+    public YamlReadOnlyNode Clone() => _document.CloneNode(_index);
 
     /// <summary>Writes the node and its descendants: their values, styles, anchors and tags.</summary>
     /// <param name="writer">The destination.</param>

@@ -60,7 +60,7 @@ public static class YamlFuzzTargets
     /// <see cref="Utf8YamlReader"/> reads the same nodes as the scanner-based parser (<see cref="Parser{TBuffer}"/>) from
     /// every document that parser accepts. Its tokens, indicators and properties cover every byte that is not
     /// whitespace, a line break or a comment. Reading the input in parts gives the same tokens at the same positions,
-    /// and <see cref="YamlReadOnlyDocument"/> holds the same nodes.
+    /// and <see cref="YamlReadOnlyDocument"/> holds the same nodes. A clone of a node holds the same nodes at the same positions.
     /// </summary>
     private static void Utf8Reader(ReadOnlySpan<byte> data)
     {
@@ -85,6 +85,7 @@ public static class YamlFuzzTargets
 
             var readerNodes = actual.Events.Split('\n').Where(line => line.Length > 0 && !line.StartsWith("+DOC", StringComparison.Ordinal) && !line.StartsWith("-DOC", StringComparison.Ordinal));
             FuzzAssert.Equal(string.Join('\n', readerNodes), string.Join('\n', documentNodes), "The read-only document and the reader read different nodes");
+            CheckClones(document, data.Length);
         }
 
         // A byte order mark is a document prefix, which can repeat (YAML 1.2 §9.2): the parser reads an empty document for
@@ -409,6 +410,74 @@ public static class YamlFuzzTargets
                     var text = tag == Schemas.CoreSchema.Instance.ExpandTag("!!null") ? "" : value.Value;
                     builder.Append("=VAL ").Append(tag).Append(' ').Append(EscapeValue(text)).Append('\n');
                     break;
+            }
+        }
+    }
+
+    // A clone of a node holds the same nodes, with the same text and positions, and its aliases resolve to the same nodes.
+    // Every node is cloned in a small document, and a sample of them in a larger one.
+    private static void CheckClones(YamlReadOnlyDocument document, int seed)
+    {
+        var nodes = new List<YamlReadOnlyNode>();
+        for (var i = 0; i < document.DocumentCount; i++)
+        {
+            CollectReadOnlyNodes(document.GetDocumentRoot(i), nodes);
+        }
+
+        var step = Math.Max(1, nodes.Count / 32);
+        for (var i = seed % step; i < nodes.Count; i += step)
+        {
+            var node = nodes[i];
+            var clone = node.Clone();
+            var expected = new List<string>();
+            var actual = new List<string>();
+            DescribeReadOnlyNodes(node, expected);
+            DescribeReadOnlyNodes(clone, actual);
+            FuzzAssert.Equal(string.Join('\n', expected), string.Join('\n', actual), "The clone of a node holds other nodes");
+            FuzzAssert.True(clone.Clone() == clone, "The clone of a clone is another node");
+        }
+
+        static void CollectReadOnlyNodes(YamlReadOnlyNode node, List<YamlReadOnlyNode> nodes)
+        {
+            nodes.Add(node);
+            if (node.Kind is YamlReadOnlyNodeKind.Sequence)
+            {
+                foreach (var item in node.EnumerateSequence())
+                {
+                    CollectReadOnlyNodes(item, nodes);
+                }
+            }
+            else if (node.Kind is YamlReadOnlyNodeKind.Mapping)
+            {
+                foreach (var entry in node.EnumerateMapping())
+                {
+                    CollectReadOnlyNodes(entry.Key, nodes);
+                    CollectReadOnlyNodes(entry.Value, nodes);
+                }
+            }
+        }
+
+        static void DescribeReadOnlyNodes(YamlReadOnlyNode node, List<string> lines)
+        {
+            var descendants = new List<YamlReadOnlyNode>();
+            CollectReadOnlyNodes(node, descendants);
+            AddReadOnlyNodes(node, lines);
+            foreach (var descendant in descendants)
+            {
+                var target = "";
+                if (descendant.Kind is YamlReadOnlyNodeKind.Alias)
+                {
+                    try
+                    {
+                        target = " -> " + descendant.ResolveAlias().Start;
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        target = " -> undefined";
+                    }
+                }
+
+                lines.Add(FormattableString.Invariant($"{descendant.Start} {descendant.End} {descendant.Utf8Offset}+{descendant.Utf8Length} {EscapeValue(descendant.GetRawText())}{target}"));
             }
         }
     }

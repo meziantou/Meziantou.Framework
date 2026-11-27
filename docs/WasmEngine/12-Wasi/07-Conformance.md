@@ -29,5 +29,12 @@ listed in `wasi-expectations.txt`.
 | assemblyscript | 12 | 100.00% | 100.00% | 100.00% |
 | c | 14 | 100.00% | 100.00% | 100.00% |
 | rust | 46 | 100.00% | 100.00% | 100.00% |
-| rust-wasip3 | 55 | 100.00% | 100.00% | 100.00% |
-| **Total** | 127 | 100.00% | 100.00% | 100.00% |
+| rust-wasip3 | 55 | 98.18% | 100.00% | 98.18% |
+| **Total** | 127 | 99.21% | 100.00% | 99.21% |
+
+The known failures:
+
+| Test | Reason |
+| --- | --- |
+| `compiled:rust-wasip3/http-client-trailers` | the HTTP/1.1 client of .NET does not send the trailers of the requests |
+| `host:rust-wasip3/http-client-trailers` | the HTTP/1.1 client of .NET does not send the trailers of the requests |

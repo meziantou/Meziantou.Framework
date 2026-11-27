@@ -197,7 +197,7 @@ internal static class WasiNetworkFuzzTargets
                     client.ConnectAsync(endPoint, CancellationToken.None).AsTask().GetAwaiter().GetResult();
                     var server = listeners.FirstOrDefault(socket => socket.LocalEndPoint is { } local && local.Port == endPoint.Port && local.AddressFamily == endPoint.AddressFamily && (local.Address.Equals(endPoint.Address) || local.Address.Equals(IPAddress.Any) || local.Address.Equals(IPAddress.IPv6Any)));
                     FuzzAssert.True(server is not null, "A connection succeeded without a listener on " + endPoint);
-                    var connection = server!.AcceptAsync(CancellationToken.None).AsTask().GetAwaiter().GetResult();
+                    var connection = server.AcceptAsync(CancellationToken.None).AsTask().GetAwaiter().GetResult();
                     tcp.Add(connection);
                     accepted.Add(connection);
                     client.SendAsync(new byte[] { index }, CancellationToken.None).AsTask().GetAwaiter().GetResult();

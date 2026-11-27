@@ -85,6 +85,9 @@ public sealed class WasiHostNetwork : WasiNetwork
 
     private static SocketException AccessDenied() => new((int)SocketError.AccessDenied);
 
+    /// <summary>Returns the size of a buffer as the component set it: Linux doubles the size it is given, for its bookkeeping.</summary>
+    private static int GetBufferSize(int value) => OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() ? value / 2 : value;
+
     private void Check(IPEndPoint endPoint, WasiSocketAddressUse use)
     {
         if (_options.AddressCheck?.Invoke(endPoint, use) != true)
@@ -133,7 +136,10 @@ public sealed class WasiHostNetwork : WasiNetwork
 
             if (!OperatingSystem.IsWindows() && type == SocketType.Stream)
             {
-                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, optionValue: true);
+                // SocketOptionName.ReuseAddress also sets SO_REUSEPORT on Unix, which lets another socket bind to the port of
+                // a listening socket: only SO_REUSEADDR is set (SOL_SOCKET and SO_REUSEADDR of Linux, or of the BSDs)
+                var (level, name) = OperatingSystem.IsLinux() || OperatingSystem.IsAndroid() ? (1, 2) : (0xFFFF, 4);
+                socket.SetRawSocketOption(level, name, BitConverter.GetBytes(1));
             }
         }
         catch
@@ -239,13 +245,13 @@ public sealed class WasiHostNetwork : WasiNetwork
 
         public override int ReceiveBufferSize
         {
-            get => socket.ReceiveBufferSize;
+            get => GetBufferSize(socket.ReceiveBufferSize);
             set => socket.ReceiveBufferSize = value;
         }
 
         public override int SendBufferSize
         {
-            get => socket.SendBufferSize;
+            get => GetBufferSize(socket.SendBufferSize);
             set => socket.SendBufferSize = value;
         }
 
@@ -318,8 +324,8 @@ public sealed class WasiHostNetwork : WasiNetwork
             try
             {
                 replacement.Ttl = _socket.Ttl;
-                replacement.ReceiveBufferSize = _socket.ReceiveBufferSize;
-                replacement.SendBufferSize = _socket.SendBufferSize;
+                replacement.ReceiveBufferSize = GetBufferSize(_socket.ReceiveBufferSize);
+                replacement.SendBufferSize = GetBufferSize(_socket.SendBufferSize);
                 if (OperatingSystem.IsWindows())
                 {
                     replacement.IOControl(unchecked((int)0x9800000C), [0, 0, 0, 0], null);
@@ -364,13 +370,13 @@ public sealed class WasiHostNetwork : WasiNetwork
 
         public override int ReceiveBufferSize
         {
-            get => _socket.ReceiveBufferSize;
+            get => GetBufferSize(_socket.ReceiveBufferSize);
             set => _socket.ReceiveBufferSize = value;
         }
 
         public override int SendBufferSize
         {
-            get => _socket.SendBufferSize;
+            get => GetBufferSize(_socket.SendBufferSize);
             set => _socket.SendBufferSize = value;
         }
 

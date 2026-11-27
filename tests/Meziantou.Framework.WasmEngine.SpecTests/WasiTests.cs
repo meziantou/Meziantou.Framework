@@ -37,14 +37,18 @@ public sealed class WasiTests
         var failure = WasiTestRunner.Run(test, mode);
 
         // Windows allows the symbolic links only to the administrators and in the developer mode: a test that fails on the
-        // disk of such a machine and passes in memory is skipped, instead of recording a failure that depends on the machine
-        if (failure is not null && mode != WasiMode.Memory && !WasiTestRunner.CanCreateSymbolicLinks && !WasiExpectations.IsExpectedToFail(test, mode) && WasiTestRunner.Run(test, WasiMode.Memory) is null)
+        // disk of such a machine because it is not permitted to create a link, and passes in memory, is skipped, instead of
+        // recording a failure that depends on the machine. The other failures are reported
+        if (failure is not null && mode != WasiMode.Memory && !WasiTestRunner.CanCreateSymbolicLinks && IsPermissionError(failure) && !WasiExpectations.IsExpectedToFail(test, mode) && WasiTestRunner.Run(test, WasiMode.Memory) is null)
         {
             global::Xunit.Assert.Skip("This machine does not allow creating symbolic links, and the test fails on the disk: " + failure);
         }
 
         WasiExpectations.Check(test, mode, failure);
     }
+
+    // The error of a link that cannot be created: EPERM of WASI Preview 1 ("PERM"), not-permitted of the components
+    private static bool IsPermissionError(string failure) => failure.Contains("\"PERM\"", StringComparison.Ordinal) || failure.Contains("ErrorCode::NotPermitted", StringComparison.Ordinal);
 
     [Fact]
     public void SummaryIsUpToDate()

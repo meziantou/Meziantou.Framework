@@ -247,9 +247,22 @@ internal static class HostEnds
         end.Copy(buffer);
         if (!end.HasPendingEvent())
         {
-            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-            // A second event can replace the first one before the continuation runs
-            end.OnPendingEvent = () => completion.TrySetResult();
+            // On the thread of a store, the copy continues on it: the event posts the continuation to the store at once, so
+            // that a call that returns after the copy runs it before returning (a continuation that runs asynchronously
+            // would reach the store through the thread pool, possibly after the call returned). A second event can replace
+            // the first one before the continuation runs.
+            TaskCompletionSource completion;
+            if (SynchronizationContext.Current is Runtime.ComponentSynchronizationContext store)
+            {
+                completion = new TaskCompletionSource();
+                end.OnPendingEvent = () => store.Post(_ => completion.TrySetResult(), null);
+            }
+            else
+            {
+                completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                end.OnPendingEvent = () => completion.TrySetResult();
+            }
+
             await using (cancellationToken.Register(() => end.Cancel()).ConfigureAwait(true))
             {
                 if (!end.HasPendingEvent())

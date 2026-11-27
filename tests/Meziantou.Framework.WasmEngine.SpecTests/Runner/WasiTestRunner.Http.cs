@@ -17,7 +17,6 @@ internal static partial class WasiTestRunner
     /// </summary>
     private sealed class HttpTestEnvironment : IDisposable
     {
-        private readonly WasiMode _mode;
         private readonly List<IDisposable> _disposables = [];
         private readonly Dictionary<string, Func<HttpRequestMessage, Task<HttpResponseMessage>>?> _routes = new(StringComparer.Ordinal);
         private BlockingCollection<(HttpRequestMessage Request, TaskCompletionSource<HttpResponseMessage> Response)>? _requests;
@@ -26,7 +25,6 @@ internal static partial class WasiTestRunner
 
         public HttpTestEnvironment(WasiSpecification specification, WasiMode mode)
         {
-            _mode = mode;
             var port = 50000;
             foreach (var server in specification.Servers)
             {

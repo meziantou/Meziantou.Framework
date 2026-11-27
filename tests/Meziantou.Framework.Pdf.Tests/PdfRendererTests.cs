@@ -2319,6 +2319,17 @@ public sealed class PdfRendererTests
         Assert.Equal(RenderCmyk(1), RenderCmyk(300));
     }
 
+    [Fact]
+    public void AnImageBeyondTheCoordinatesOfTheCanvasIsNotDrawn()
+    {
+        // A corner of the image is at 5e65: the image is skipped, the content after it is drawn (fuzz regression)
+        var document = new PdfDocument();
+        document.Pages.Add(Size).CreateContentBuilder().AppendRawContent(Encoding.ASCII.GetBytes("q 500000000000000000000000000000000000000000000000000000000000000000 0 0 50 0 0 cm BI /W 1 /H 1 /CS /G /BPC 8 /F /AHx ID 00> EI Q 1 0 0 rg 50 0 50 100 re f"));
+        using var image = Render(document);
+        AssertColor(Pixel(image, 25, 50), 255, 255, 255);
+        AssertColor(Pixel(image, 75, 50), 255, 0, 0);
+    }
+
     private static void AssertSamePixels(Image<Rgba32> expected, Image<Rgba32> actual)
     {
         Assert.Equal(expected.Width, actual.Width);

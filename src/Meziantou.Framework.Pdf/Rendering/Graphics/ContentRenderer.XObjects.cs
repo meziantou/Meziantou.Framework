@@ -320,18 +320,27 @@ internal sealed partial class ContentRenderer
         }
     }
 
-    /// <summary>Gets the pixels an image covers once transformed, with a pixel around them for the filtering; <see langword="null"/> when none is on the device.</summary>
+    /// <summary>
+    /// Gets the pixels an image covers once transformed, with a pixel around them for the filtering; <see langword="null"/>
+    /// when none is on the device, or when a corner of the image is beyond the coordinates the canvas draws.
+    /// </summary>
     private Rectangle? GetImageBounds(AffineTransform transform, int width, int height)
     {
         var p0 = transform.Transform(new PointD(0, 0));
         var p1 = transform.Transform(new PointD(width, 0));
         var p2 = transform.Transform(new PointD(0, height));
         var p3 = transform.Transform(new PointD(width, height));
+        if (!IsDrawable(p0) || !IsDrawable(p1) || !IsDrawable(p2) || !IsDrawable(p3))
+            return null;
+
         var left = Math.Min(Math.Min(p0.X, p1.X), Math.Min(p2.X, p3.X));
         var top = Math.Min(Math.Min(p0.Y, p1.Y), Math.Min(p2.Y, p3.Y));
         var right = Math.Max(Math.Max(p0.X, p1.X), Math.Max(p2.X, p3.X));
         var bottom = Math.Max(Math.Max(p0.Y, p1.Y), Math.Max(p2.Y, p3.Y));
         return ToPixelBounds(new RectangleD(left, top, right - left, bottom - top), margin: 1);
+
+        // Written so that a value that is not a number is not drawable either
+        static bool IsDrawable(PointD point) => Math.Abs(point.X) <= MaxCoordinate && Math.Abs(point.Y) <= MaxCoordinate;
     }
 
     private static bool IsDownscaled(AffineTransform transform) => Math.Abs(transform.Determinant) < 1;

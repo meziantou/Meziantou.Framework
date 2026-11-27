@@ -128,6 +128,7 @@ public sealed class PdfImageOccurrence
         var dictionary = new PdfDictionary();
         foreach (var (key, value) in inline)
         {
+            // A key that is not abbreviated is kept as read: its text can have a null character, which PdfName.Create rejects (fuzz regression)
             var name = key.Value switch
             {
                 "W" => "Width",
@@ -139,7 +140,7 @@ public sealed class PdfImageOccurrence
                 "F" => "Filter",
                 "IM" => "ImageMask",
                 "I" => "Interpolate",
-                _ => key.Value,
+                _ => null,
             };
             var expanded = PdfReference.ResolveIfReference(value) switch
             {
@@ -156,7 +157,7 @@ public sealed class PdfImageOccurrence
                 PdfName { Value: "DCT" } => PdfName.Create("DCTDecode"),
                 var other => other,
             };
-            dictionary[PdfName.Create(name)] = expanded;
+            dictionary[name is null ? key : PdfName.Create(name)] = expanded;
         }
 
         return dictionary;

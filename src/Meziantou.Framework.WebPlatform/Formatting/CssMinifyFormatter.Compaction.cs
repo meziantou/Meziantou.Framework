@@ -126,6 +126,10 @@ public sealed partial class CssMinifyFormatter
         if (IsDelim(previous, "<>") && IsDelim(next, "="))
             return false;
 
+        // "-- >" is the identifier "--" and a combinator: without the whitespace, "-->" is the CDC token (fuzz regression)
+        if (previous.Type == CssTokenType.Ident && previous.Value == "--" && IsDelim(next, ">"))
+            return false;
+
         return kind switch
         {
             // The whitespace is the descendant combinator: it is only removed around the other combinators

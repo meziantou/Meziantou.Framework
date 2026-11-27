@@ -241,10 +241,12 @@ public static class MarkdownFormatter
                 {
                     AddBlankLine(lines);
                 }
-                else if (previous is MarkdownBlockQuoteSyntax or MarkdownAlertSyntax && GetLastBlock(previous) is MarkdownParagraphSyntax && block is MarkdownParagraphSyntax or MarkdownHeadingSyntax { IsSetext: true } or MarkdownTableSyntax or MarkdownLinkReferenceDefinitionSyntax or MarkdownDefinitionListSyntax)
+                else if (previous is MarkdownBlockQuoteSyntax or MarkdownAlertSyntax && GetLastBlock(previous) is MarkdownParagraphSyntax
+                    && (block is MarkdownParagraphSyntax or MarkdownTableSyntax or MarkdownLinkReferenceDefinitionSyntax or MarkdownDefinitionListSyntax || (block is MarkdownHeadingSyntax heading && StaysSetext(heading, GetHeadingLines(heading)))))
                 {
                     // A line of text after the paragraph that ends a block quote would be a lazy line of the paragraph: an empty
-                    // line of the block quote ends the paragraph
+                    // line of the block quote ends the paragraph (not before a setext heading written as an ATX heading, which
+                    // interrupts the paragraph: fuzz regression)
                     lines.Add(">");
                 }
 

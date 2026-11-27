@@ -1869,8 +1869,8 @@ public sealed class YamlWriter : YamlReaderWriterBase
     internal bool ReadsAsBooleanOrNumber(ReadOnlySpan<char> value)
     {
         // A boolean, a number, a schema value such as a timestamp, and a .NET spelling such as "NaN" or "Infinity" start
-        // with a digit, a sign, '.', or one of these letters, after optional whitespace: the parsers are not run for the
-        // other texts, such as most names and sentences.
+        // with a digit, a sign, '.', '_', which the number parsers ignore ("_2" is 2), or one of these letters, after
+        // optional whitespace: the parsers are not run for the other texts, such as most names and sentences.
         if (value.Length > 0 && value[0] < 0x80 && !char.IsWhiteSpace(value[0]) && !NonStringScalarStarts.Contains(value[0]))
         {
             return false;
@@ -1937,7 +1937,7 @@ public sealed class YamlWriter : YamlReaderWriterBase
         return false;
     }
 
-    private static readonly SearchValues<char> NonStringScalarStarts = SearchValues.Create("0123456789+-.~<tTfFyYnNoOiI");
+    private static readonly SearchValues<char> NonStringScalarStarts = SearchValues.Create("0123456789+-._~<tTfFyYnNoOiI");
 
     // The printable ASCII characters that a double-quoted scalar contains as is: all but the quote and the backslash
     private static readonly SearchValues<char> EscapeFreeCharacters = SearchValues.Create(" !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmnopqrstuvwxyz{|}~");

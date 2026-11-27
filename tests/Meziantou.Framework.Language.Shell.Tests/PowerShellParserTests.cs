@@ -893,6 +893,33 @@ public sealed class PowerShellParserTests
         ShellSyntaxAssert.TextIsFaithful(text, ShellDialect.PowerShellCore);
     }
 
+    /// <summary>
+    /// A hash literal key with no <c>=</c> after it is read again as statements. When the key nests another hash
+    /// literal, parsing each key again at every level used to double the work per level of nesting.
+    /// </summary>
+    [Theory]
+    [InlineData("$(@{", 64)]
+    [InlineData("@{$(", 64)]
+    [InlineData("{@{", 64)]
+    [InlineData("@{", 4000)]
+    public async Task HashLiteralKeysNestingHashLiterals_ParseInLinearTime(string fragment, int count)
+    {
+        var text = string.Concat(Enumerable.Repeat(fragment, count));
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var tree = await Task.Run(() => ShellSyntaxTree.ParseText(text, ShellDialect.PowerShell), cancellationToken).WaitAsync(TimeSpan.FromSeconds(10), cancellationToken);
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
+    [Fact]
+    public void HashLiteralKeysNestingHashLiterals_StopAtTheMaximumDepth()
+    {
+        var text = string.Concat(Enumerable.Repeat("@{", 100_000));
+        var tree = ShellSyntaxTree.ParseText(text, new ShellParseOptions(ShellDialect.PowerShell) { MaxRecursionDepth = 8 });
+
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
     [Fact]
     public void UnaryExpressionSpanStartsAtItsOperator()
     {

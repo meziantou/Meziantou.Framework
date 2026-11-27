@@ -18,6 +18,16 @@ internal sealed partial class PowerShellParser
     private bool _paramBlockAllowed;
     private int _lineBreakTriviaEnd = -1;
 
+    // The deepest nesting a TryEnterRecursion call started from, which tells whether a speculative parse reached the limit.
+    private int _deepestRecursion = -1;
+
+    // The hash literal keys that turned out to be followed by no `=`. Each failed key is read again as statements, so
+    // without this a key that nests another hash literal would be parsed twice per level of nesting.
+    private readonly Dictionary<HashKeyStart, FailedHashKey> _failedHashKeys = [];
+
+    // The number of hash literal keys being parsed, whose parse is thrown away when it reaches the end of the text.
+    private int _hashKeySpeculations;
+
     public PowerShellParser(SourceText source, ShellParseOptions options)
     {
         _options = options;
@@ -1212,9 +1222,9 @@ internal sealed partial class PowerShellParser
 
     /// <summary>A point the parser can go back to, when what it read turns out to belong to something else.</summary>
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct ParserCheckpoint(int Position, GreenNode?[] PendingTrivia, int PendingTriviaStart, int DiagnosticCount);
+    private readonly record struct ParserCheckpoint(int Position, GreenNode?[] PendingTrivia, int PendingTriviaStart, int DiagnosticCount, int LineBreakTriviaEnd);
 
-    private ParserCheckpoint CreateCheckpoint() => new(_lexer.Position, [.. _pendingTrivia], _pendingTriviaStart, _diagnostics.Count);
+    private ParserCheckpoint CreateCheckpoint() => new(_lexer.Position, [.. _pendingTrivia], _pendingTriviaStart, _diagnostics.Count, _lineBreakTriviaEnd);
 
     private void Restore(ParserCheckpoint checkpoint)
     {
@@ -1223,6 +1233,22 @@ internal sealed partial class PowerShellParser
         _pendingTrivia.AddRange(checkpoint.PendingTrivia);
         _pendingTriviaStart = checkpoint.PendingTriviaStart;
         _diagnostics.RemoveRange(checkpoint.DiagnosticCount, _diagnostics.Count - checkpoint.DiagnosticCount);
+        _lineBreakTriviaEnd = checkpoint.LineBreakTriviaEnd;
+    }
+
+    /// <summary>The position of a hash literal key, and the state of the parser that the parse of the key can depend on.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct HashKeyStart(int Position, bool HasPendingTrivia, bool FollowsLineBreak, bool AllowEmptyParentheses, bool ParamBlockAllowed);
+
+    /// <summary>
+    /// A hash literal key that no <c>=</c> followed, when parsed at <paramref name="Depth"/>. Only the nesting limit
+    /// makes the parse depend on the depth, and reaching the limit consumes the rest of the text, which leaves no
+    /// <c>=</c> either. So a key that reached the limit fails again at any deeper level, and one that did not, at any
+    /// level: <paramref name="RelativeDeepest"/> tells how much deeper than its start it went, or -1 for not at all.
+    /// </summary>
+    private readonly record struct FailedHashKey(int Depth, int RelativeDeepest, bool ReachedLimit)
+    {
+        public bool AppliesAt(int depth) => !ReachedLimit || depth >= Depth;
     }
 
     private void AddTrivia(GreenNode? trivia)
@@ -1256,6 +1282,7 @@ internal sealed partial class PowerShellParser
 
     private bool TryEnterRecursion(TextSpan span)
     {
+        _deepestRecursion = Math.Max(_deepestRecursion, _depth);
         if (_depth >= _options.MaxRecursionDepth)
         {
             AddDiagnostic(span, "SHELL0100", "The script nests constructs more deeply than the configured maximum.");
@@ -1267,12 +1294,19 @@ internal sealed partial class PowerShellParser
         return true;
     }
 
+    /// <summary>
+    /// Returns the text from <paramref name="start"/> to the end. A hash literal key that reaches the end of the text has
+    /// no <c>=</c> after it, so its parse is thrown away, and copying the text again for each level of nesting would only
+    /// make it quadratic.
+    /// </summary>
+    private string GetRestOfText(int start) => _hashKeySpeculations > 0 ? string.Empty : _lexer.Text[start..];
+
     private ShellSkippedTextSyntax ConsumeRestAsSkippedText()
     {
         var (trivia, fullStart) = TakeTrivia();
         var start = _lexer.Position;
         _lexer.Position = _lexer.Text.Length;
-        var text = _lexer.Text[start..];
+        var text = GetRestOfText(start);
 
         return new ShellSkippedTextSyntax(ParserHelpers.SkippedTokens([new ScannedToken(SyntaxKind.BadToken, text, text, leadingTrivia: trivia, fullStart: fullStart)]));
     }

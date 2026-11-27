@@ -104,4 +104,13 @@ foreach (var line in result.Output.StandardOutput)
   `yes | head -n 1`:
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_PipeOperatorBrokenPipe;format=md-fenced-code-block;dedent=true -->
+```csharp
+// yes never ends by itself: it stops when head exits and closes the pipe.
+// It then exits with a non-zero exit code, so its validation is disabled.
+var result = await (ProcessWrapper.Create("yes").WithValidation(ProcessValidationMode.None)
+    | ProcessWrapper.Create("head").WithArguments("-n", "1"))
+    .ExecuteBufferedAsync();
+
+Assert.Equal("y", result.Output.StandardOutput.Single().Text);
+```
 <!-- endref -->

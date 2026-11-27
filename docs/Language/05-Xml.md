@@ -208,6 +208,11 @@ a deeply nested document does not produce an output much larger than itself. A v
 `ArgumentOutOfRangeException`.
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlFormattingOptions_MaxDepth;format=md-fenced-code-block;dedent=true -->
+```csharp
+var tree = XmlSyntaxTree.ParseText("<root><a><b><c/></b></a><d>  <e/></d></root>");
+var formatted = Formatter.Format(tree.GetRoot(), new XmlFormattingOptions { MaxDepth = 2 });
+Assert.Equal("<root>\n  <a>\n    <b><c /></b>\n  </a>\n  <d>\n    <e />\n  </d>\n</root>", formatted.ToFullString());
+```
 <!-- endref -->
 
 [XmlDocumentSyntax.NormalizeWhitespace()](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax.NormalizeWhitespace) formats a document with the default options.

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.XPath;
@@ -619,6 +620,25 @@ public sealed class XmlSyntaxTreeTests
         var formatted = FormatText("<root x='&#10;'>\n<a>l1\nl2</a>\n</root>", new XmlFormattingOptions { NewLine = "\r\n" });
 
         Assert.Equal("<root x=\"&#xA;\">\r\n  <a>l1\nl2</a>\r\n</root>", formatted);
+    }
+
+    [Fact]
+    public void Formatter_FormatsManySiblingsInLinearTime()
+    {
+        const int Count = 80_000;
+        var compact = "<r>" + string.Concat(Enumerable.Repeat("<a/>", Count)) + "</r>";
+        var expected = "<r>" + string.Concat(Enumerable.Repeat("\n  <a />", Count)) + "\n</r>";
+
+        var stopwatch = Stopwatch.StartNew();
+        var formatted = Formatter.Format(XmlSyntaxTree.ParseText(compact)).ToFullString();
+        var formattedAgain = Formatter.Format(XmlSyntaxTree.ParseText(formatted)).ToFullString();
+        var withCarriageReturns = Formatter.Format(XmlSyntaxTree.ParseText("<r>" + string.Concat(Enumerable.Repeat("x&#13;<a/>", Count)) + "</r>")).ToFullString();
+        stopwatch.Stop();
+
+        Assert.Equal(expected, formatted);
+        Assert.Equal(expected, formattedAgain);
+        Assert.Equal("<r>" + string.Concat(Enumerable.Repeat("x&#xD;<a />", Count)) + "</r>", withCarriageReturns);
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(15), $"Formatting took {stopwatch.Elapsed}");
     }
 
     private static string FormatText(string text, XmlFormattingOptions options) => Formatter.Format(XmlSyntaxTree.ParseText(text).GetRoot(), options).ToFullString();

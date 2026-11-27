@@ -153,11 +153,29 @@ public static class Formatter
     // reference. NewLineHandling.None writes it as it is, and reading it back would turn it into a line feed.
     private static void EscapeCarriageReturns(XDocument document)
     {
-        foreach (var node in document.DescendantNodes().ToList())
+        // Replacing the nodes one by one would walk the siblings of each one, so each container is rebuilt at once.
+        foreach (var container in document.Descendants().Prepend<XContainer>(document).ToList())
         {
-            if (node is XText text and not XCData && text.Value.Contains('\r', StringComparison.Ordinal))
+            List<XNode>? content = null;
+            var index = 0;
+            foreach (var node in container.Nodes())
             {
-                node.ReplaceWith(new CarriageReturnText(text.Value));
+                if (node is XText text and not XCData && text.Value.Contains('\r', StringComparison.Ordinal))
+                {
+                    content ??= [.. container.Nodes().Take(index)];
+                    content.Add(new CarriageReturnText(text.Value));
+                }
+                else
+                {
+                    content?.Add(node);
+                }
+
+                index++;
+            }
+
+            if (content is not null)
+            {
+                container.ReplaceNodes(content);
             }
         }
     }
@@ -239,26 +257,35 @@ public static class Formatter
         public void LayOutDocument(XDocument document)
         {
             var endsWithLineBreak = document.LastNode is XText last && last.Value.AsSpan().ContainsAny('\r', '\n');
-            RemoveWhitespace(document);
+            var children = GetNonWhitespaceNodes(document);
 
+            // XNode only links to the next node, so inserting before a node or removing it walks the siblings from the
+            // first one. Rebuilding the whole content at once keeps the layout linear in the number of siblings.
+            var content = new List<XNode>(children.Count * 2 + 1);
             var isFirst = document.Declaration is null;
-            foreach (var node in document.Nodes().ToList())
+            foreach (var node in children)
             {
                 if (!isFirst)
                 {
-                    node.AddBeforeSelf(new XText(options.NewLine));
+                    content.Add(new XText(options.NewLine));
                 }
 
                 isFirst = false;
-                if (node is XElement element)
-                {
-                    LayOutElement(element, depth: 0);
-                }
+                content.Add(node);
             }
 
             if (endsWithLineBreak)
             {
-                document.Add(new XText(options.NewLine));
+                content.Add(new XText(options.NewLine));
+            }
+
+            document.ReplaceNodes(content);
+            foreach (var node in children)
+            {
+                if (node is XElement element)
+                {
+                    LayOutElement(element, depth: 0);
+                }
             }
         }
 
@@ -287,18 +314,24 @@ public static class Formatter
             if (!HasElementOnlyContent(element) || string.Equals((string?)element.Attribute(XmlSpaceName), "preserve", StringComparison.Ordinal))
                 return;
 
-            RemoveWhitespace(element);
+            var children = GetNonWhitespaceNodes(element);
             var childIndentation = options.NewLine + GetIndentation(depth + 1);
-            foreach (var child in element.Nodes().ToList())
+            var content = new List<XNode>(children.Count * 2 + 1);
+            foreach (var child in children)
             {
-                child.AddBeforeSelf(new XText(childIndentation));
+                content.Add(new XText(childIndentation));
+                content.Add(child);
+            }
+
+            content.Add(new XText(options.NewLine + GetIndentation(depth)));
+            element.ReplaceNodes(content);
+            foreach (var child in children)
+            {
                 if (child is XElement childElement)
                 {
                     LayOutElement(childElement, depth + 1);
                 }
             }
-
-            element.Add(new XText(options.NewLine + GetIndentation(depth)));
         }
 
         private bool IsSingleLine(XElement element)
@@ -339,15 +372,18 @@ public static class Formatter
             return hasNonText;
         }
 
-        private static void RemoveWhitespace(XContainer container)
+        private static List<XNode> GetNonWhitespaceNodes(XContainer container)
         {
-            foreach (var node in container.Nodes().ToList())
+            var result = new List<XNode>();
+            foreach (var node in container.Nodes())
             {
-                if (node is XText text and not XCData && IsWhitespace(text.Value))
+                if (node is not XText text || node is XCData || !IsWhitespace(text.Value))
                 {
-                    node.Remove();
+                    result.Add(node);
                 }
             }
+
+            return result;
         }
 
         private static bool IsWhitespace(string value) => !value.AsSpan().ContainsAnyExcept(" \t\r\n");
